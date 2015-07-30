@@ -21,11 +21,29 @@ import co.cask.cdap.proto.Id;
 import co.cask.cdap.template.etl.api.PipelineConfigurable;
 import co.cask.cdap.template.etl.api.batch.BatchSource;
 import co.cask.cdap.template.etl.batch.ETLBatchTemplate;
+import co.cask.cdap.template.etl.batch.sink.BatchCubeSink;
+import co.cask.cdap.template.etl.batch.sink.DBSink;
+import co.cask.cdap.template.etl.batch.sink.KVTableSink;
+import co.cask.cdap.template.etl.batch.sink.TableSink;
+import co.cask.cdap.template.etl.batch.sink.TimePartitionedFileSetDatasetAvroSink;
+import co.cask.cdap.template.etl.batch.source.DBSource;
+import co.cask.cdap.template.etl.batch.source.KVTableSource;
+import co.cask.cdap.template.etl.batch.source.StreamBatchSource;
+import co.cask.cdap.template.etl.batch.source.TableSource;
+import co.cask.cdap.template.etl.common.DBRecord;
 import co.cask.cdap.template.etl.common.ETLConfig;
+import co.cask.cdap.template.etl.transform.ProjectionTransform;
+import co.cask.cdap.template.etl.transform.ScriptFilterTransform;
+import co.cask.cdap.template.etl.transform.StructuredRecordToGenericRecordTransform;
 import co.cask.cdap.test.TestBase;
+import com.google.gson.Gson;
+import org.apache.avro.mapred.AvroKey;
+import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import plugins.sink.ElasticsearchSink;
-import plugins.source.StreamBatchSource;
+//import plugins.source.StreamBatchSource;
+
 
 import java.io.IOException;
 
@@ -33,13 +51,23 @@ import java.io.IOException;
  * Base test class that sets up plugins and the batch template.
  */
 public class BaseETLBatchTest extends TestBase {
+
+  @ClassRule
+  public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
+
   protected static final Id.Namespace NAMESPACE = Constants.DEFAULT_NAMESPACE_ID;
   protected static final Id.ApplicationTemplate TEMPLATE_ID = Id.ApplicationTemplate.from("ETLBatch");
+  protected static final Gson GSON = new Gson();
 
   @BeforeClass
   public static void setupTest() throws IOException {
     addTemplatePlugins(TEMPLATE_ID, "batch-plugins-1.0.0.jar",
-                       StreamBatchSource.class, ElasticsearchSink.class);
+                       DBSource.class, KVTableSource.class, StreamBatchSource.class, TableSource.class, DBRecord.class,
+                       BatchCubeSink.class, DBSink.class, KVTableSink.class, TableSink.class,
+                       TimePartitionedFileSetDatasetAvroSink.class, AvroKeyOutputFormat.class, AvroKey.class,
+                       ElasticsearchSink.class);
+    addTemplatePlugins(TEMPLATE_ID, "transforms-1.0.0.jar",
+                       ProjectionTransform.class, ScriptFilterTransform.class, StructuredRecordToGenericRecordTransform.class);
     deployTemplate(NAMESPACE, TEMPLATE_ID, ETLBatchTemplate.class,
                    PipelineConfigurable.class.getPackage().getName(),
                    BatchSource.class.getPackage().getName(),

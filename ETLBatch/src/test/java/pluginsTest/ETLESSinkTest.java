@@ -112,7 +112,7 @@ public class ETLESSinkTest extends BaseETLBatchTest {
       AdapterManager manager = createAdapter(adapterId, adapterConfig);
 
       manager.start();
-      manager.waitForOneRunToFinish(5, TimeUnit.MINUTES);
+      manager.waitForOneRunToFinish(1, TimeUnit.MINUTES);
       manager.stop();
 
       SearchResponse searchResponse = client.prepareSearch("test").execute().actionGet();
@@ -127,6 +127,8 @@ public class ETLESSinkTest extends BaseETLBatchTest {
 
       DeleteResponse response = client.prepareDelete("test", "testing", "CDAP").execute().actionGet();
       Assert.assertTrue(response.isFound());
+    } catch (Exception e) {
+      e.printStackTrace();
     } finally {
       DeleteIndexResponse delete = client.admin().indices().delete(new DeleteIndexRequest("test")).actionGet();
       Assert.assertTrue(delete.isAcknowledged());

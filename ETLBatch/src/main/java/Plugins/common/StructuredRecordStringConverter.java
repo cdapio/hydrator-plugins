@@ -42,7 +42,6 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nullable;
 
 /**
  * Utility class for converting {@link StructuredRecord} to and from json.
@@ -395,7 +394,7 @@ public final class StructuredRecordStringConverter {
     writer.endObject();
   }
 
-  private static Schema findUnionSchema(Schema unionSchema, @Nullable Object value) throws IOException {
+  private static Schema findUnionSchema(Schema unionSchema, Object value) throws IOException {
     Schema.Type type = getSchemaType(value);
 
     for (Schema schema : unionSchema.getUnionSchemas()) {
@@ -407,7 +406,7 @@ public final class StructuredRecordStringConverter {
     throw new IOException("Value type " + type + " not valid in union: " + unionSchema);
   }
 
-  private static Schema.Type getSchemaType(@Nullable Object value) throws IOException {
+  private static Schema.Type getSchemaType(Object value) throws IOException {
     if (value == null) {
       return Schema.Type.NULL;
     }
