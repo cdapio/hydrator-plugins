@@ -22,7 +22,6 @@ import co.cask.cdap.proto.AdapterConfig;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.template.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.template.etl.common.ETLStage;
-import co.cask.cdap.template.etl.common.Properties;
 import co.cask.cdap.test.AdapterManager;
 import co.cask.cdap.test.SlowTests;
 import co.cask.cdap.test.StreamManager;
@@ -43,6 +42,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 import plugins.sink.ElasticsearchSink;
+import plugins.source.StreamBatchSource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -90,11 +90,11 @@ public class ETLESSinkTest extends BaseETLBatchTest {
     streamManager.send(ImmutableMap.of("header1", "bar"), "CDAP|13|212.36");
 
     ETLStage source = new ETLStage("Stream", ImmutableMap.<String, String>builder()
-      .put(Properties.Stream.NAME, "myStream")
-      .put(Properties.Stream.DURATION, "10m")
-      .put(Properties.Stream.DELAY, "0d")
-      .put(Properties.Stream.FORMAT, Formats.CSV)
-      .put(Properties.Stream.SCHEMA, BODY_SCHEMA.toString())
+      .put(StreamBatchSource.StreamProperties.NAME, "myStream")
+      .put(StreamBatchSource.StreamProperties.DURATION, "10m")
+      .put(StreamBatchSource.StreamProperties.DELAY, "0d")
+      .put(StreamBatchSource.StreamProperties.FORMAT, Formats.CSV)
+      .put(StreamBatchSource.StreamProperties.SCHEMA, BODY_SCHEMA.toString())
       .put("format.setting.delimiter", "|")
       .build());
 
@@ -112,7 +112,7 @@ public class ETLESSinkTest extends BaseETLBatchTest {
       AdapterManager manager = createAdapter(adapterId, adapterConfig);
 
       manager.start();
-      manager.waitForOneRunToFinish(1, TimeUnit.MINUTES);
+      manager.waitForOneRunToFinish(5, TimeUnit.MINUTES);
       manager.stop();
 
       SearchResponse searchResponse = client.prepareSearch("test").execute().actionGet();

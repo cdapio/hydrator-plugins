@@ -234,5 +234,19 @@ public class StreamBatchSource extends BatchSource<LongWritable, Object, Structu
       }
     }
   }
+  /**
+   * Properties for the StreamBatchSource as well as the real-time StreamSink
+   */
+  public static class StreamProperties {
+    public static final String NAME = "name";
+    public static final String SCHEMA = "schema";
+    public static final String FORMAT = "format";
+    public static final String DELAY = "delay";
+    public static final String DURATION = "duration";
+    public static final String BODY_FIELD = "body.field";
+    public static final String DEFAULT_BODY_FIELD = "body";
+    public static final String HEADERS_FIELD = "headers.field";
+    public static final String DEFAULT_HEADERS_FIELD = "headers";
+  }
 }
 

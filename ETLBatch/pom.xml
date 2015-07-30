@@ -53,39 +53,10 @@
       <version>1.0</version>
     </dependency>
     <dependency>
-      <groupId>org.hsqldb</groupId>
-      <artifactId>hsqldb</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <!--<dependency>-->
-      <!--<groupId>co.cask.cdap</groupId>-->
-      <!--<artifactId>cdap-api</artifactId>-->
-      <!--<version>${cdap.version}</version>-->
-      <!--<scope>provided</scope>-->
-    <!--</dependency>-->
-    <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-etl-api</artifactId>
       <version>${cdap.version}</version>
       <scope>provided</scope>
-    </dependency>
-    <!--<dependency>-->
-      <!--<groupId>co.cask.cdap</groupId>-->
-      <!--<artifactId>cdap-etl-core</artifactId>-->
-      <!--<version>${cdap.version}</version>-->
-      <!--<scope>provided</scope>-->
-    <!--</dependency>-->
-    <dependency>
-      <groupId>co.cask.cdap</groupId>
-      <artifactId>cdap-etl-lib</artifactId>
-      <version>${cdap.version}</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>log4j</groupId>
-          <artifactId>log4j</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
@@ -114,6 +85,26 @@
       <groupId>it.unimi.dsi</groupId>
       <artifactId>fastutil</artifactId>
       <version>${fastutil.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-mapper-asl</artifactId>
+      <version>1.8.8</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-logging</groupId>
+      <artifactId>commons-logging</artifactId>
+      <version>1.1.1</version>
+      <exclusions>
+        <exclusion>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>logkit</groupId>
+          <artifactId>logkit</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <!-- elasticsearch-hadoop-mr includes a class, StringUtils, which requires commons-httpclient-->
     <dependency>
@@ -267,7 +258,7 @@
               <Embed-Directory>lib</Embed-Directory>
               <!--Only @Plugin classes in the export packages will be included as plugin-->
               <Export-Package>plugins.sink.*;plugins.common.*;
-                org.elasticsearch.hadoop.mr.EsOutputFormat
+                org.elasticsearch.hadoop.mr.*
               </Export-Package>
               <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
               <Embed-Transitive>true</Embed-Transitive>
