@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: co.cask.cdap:hive-exec:0.13.0">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/co/cask/cdap/hive-exec/0.13.0/hive-exec-0.13.0.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/co/cask/cdap/hive-exec/0.13.0/hive-exec-0.13.0-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/co/cask/cdap/hive-exec/0.13.0/hive-exec-0.13.0-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
