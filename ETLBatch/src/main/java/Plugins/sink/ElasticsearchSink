@@ -28,6 +28,8 @@ import co.cask.cdap.template.etl.api.batch.BatchSinkContext;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
+
+
 import org.apache.hadoop.mapreduce.Job;
 import org.elasticsearch.hadoop.mr.EsOutputFormat;
 import plugins.common.StructuredRecordStringConverter;
