@@ -28,7 +28,7 @@ import co.cask.cdap.template.etl.batch.sink.TableSink;
 import co.cask.cdap.template.etl.batch.sink.TimePartitionedFileSetDatasetAvroSink;
 import co.cask.cdap.template.etl.batch.source.DBSource;
 import co.cask.cdap.template.etl.batch.source.KVTableSource;
-import co.cask.cdap.template.etl.batch.source.StreamBatchSource;
+//import co.cask.cdap.template.etl.batch.source.StreamBatchSource;
 import co.cask.cdap.template.etl.batch.source.TableSource;
 import co.cask.cdap.template.etl.common.DBRecord;
 import co.cask.cdap.template.etl.common.ETLConfig;
@@ -42,7 +42,7 @@ import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import plugins.sink.ElasticsearchSink;
-//import plugins.source.StreamBatchSource;
+import plugins.source.StreamBatchSource;
 
 
 import java.io.IOException;
