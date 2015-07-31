@@ -62,6 +62,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * A {@link BatchSource} for {@link Stream} to use {@link Stream} as Source.
@@ -186,12 +187,15 @@ public class StreamBatchSource extends BatchSource<LongWritable, Object, Structu
     private String duration;
 
     @Description(DELAY_DESCRIPTION)
+    @Nullable
     private String delay;
 
     @Description(FORMAT_DESCRIPTION)
+    @Nullable
     private String format;
 
     @Description(SCHEMA_DESCRIPTION)
+    @Nullable
     private String schema;
 
     private void validate() {
