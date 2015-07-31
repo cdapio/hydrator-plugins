@@ -14,7 +14,7 @@
  * the License.
  */
 
-package plugins.source;
+package co.cask.plugin.etl.source;
 
 /*
  * Copyright © 2015 Cask Data, Inc.
@@ -48,6 +48,7 @@ import co.cask.cdap.template.etl.api.Emitter;
 import co.cask.cdap.template.etl.api.PipelineConfigurer;
 import co.cask.cdap.template.etl.api.batch.BatchSource;
 import co.cask.cdap.template.etl.api.batch.BatchSourceContext;
+import co.cask.plugin.etl.common.ETLUtils;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -57,7 +58,6 @@ import com.google.common.collect.Maps;
 import org.apache.hadoop.io.LongWritable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import plugins.common.ETLUtils;
 
 import java.io.IOException;
 import java.util.List;

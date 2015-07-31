@@ -14,7 +14,7 @@
  * the License.
  */
 
-package pluginsTest;
+package co.cask.plugin.etl.pluginsTest;
 
 import co.cask.cdap.api.data.format.Formats;
 import co.cask.cdap.api.data.schema.Schema;
@@ -41,8 +41,8 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
-import plugins.sink.ElasticsearchSink;
-import plugins.source.StreamBatchSource;
+import co.cask.plugin.etl.sink.ElasticsearchSink;
+import co.cask.plugin.etl.source.StreamBatchSource;
 
 import java.util.ArrayList;
 import java.util.List;

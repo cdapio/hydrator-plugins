@@ -14,7 +14,7 @@
  * the License.
  */
 
-package plugins.common;
+package co.cask.plugin.etl.common;
 
 import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;

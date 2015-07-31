@@ -14,7 +14,7 @@
  * the License.
  */
 
-package plugins.sink;
+package co.cask.plugin.etl.sink;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
@@ -25,12 +25,12 @@ import co.cask.cdap.api.templates.plugins.PluginConfig;
 import co.cask.cdap.template.etl.api.Emitter;
 import co.cask.cdap.template.etl.api.batch.BatchSink;
 import co.cask.cdap.template.etl.api.batch.BatchSinkContext;
+import co.cask.plugin.etl.common.StructuredRecordStringConverter;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.Job;
 import org.elasticsearch.hadoop.mr.EsOutputFormat;
-import plugins.common.StructuredRecordStringConverter;
 
 /**
  * A {@link BatchSink} that writes data to a Elasticsearch.

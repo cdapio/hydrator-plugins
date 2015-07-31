@@ -14,7 +14,7 @@
  * the License.
  */
 
-package plugins.common;
+package co.cask.plugin.etl.common;
 
 /*
  * Copyright © 2015 Cask Data, Inc.

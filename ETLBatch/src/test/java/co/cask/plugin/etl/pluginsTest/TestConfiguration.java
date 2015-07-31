@@ -14,7 +14,7 @@
  * the License.
  */
 
-package pluginsTest;
+package co.cask.plugin.etl.pluginsTest;
 
 import com.google.common.base.Preconditions;
 import org.junit.rules.ExternalResource;
