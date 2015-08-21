@@ -26,7 +26,6 @@ import co.cask.cdap.test.TestConfiguration;
 import co.cask.plugin.etl.sink.BatchCassandraSink;
 import co.cask.plugin.etl.sink.TableSink;
 import co.cask.plugin.etl.source.CassandraBatchSource;
-import com.google.gson.Gson;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import co.cask.plugin.etl.source.StreamBatchSource;
@@ -40,7 +39,6 @@ public class BaseETLBatchTest extends TestBase {
 
   @ClassRule
   public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
-
   protected static final Id.Namespace NAMESPACE = Id.Namespace.DEFAULT;
   protected static final Id.ApplicationTemplate TEMPLATE_ID = Id.ApplicationTemplate.from("ETLBatch");
 

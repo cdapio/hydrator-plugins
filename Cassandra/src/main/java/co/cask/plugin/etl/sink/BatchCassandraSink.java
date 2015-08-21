@@ -58,7 +58,6 @@ import java.util.Map;
   "and the keyspace and column family should be created.")
 public class BatchCassandraSink extends BatchSink<StructuredRecord, Map<String, ByteBuffer>, List<ByteBuffer>> {
   private static final Logger LOG = LoggerFactory.getLogger(BatchCassandraSink.class);
-
   private final CassandraBatchConfig config;
 
   public BatchCassandraSink(CassandraBatchConfig config) {
