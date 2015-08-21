@@ -53,6 +53,7 @@ import java.util.concurrent.TimeUnit;
 public class ETLCassandraTest extends BaseETLBatchTest {
   private static final Gson GSON = new Gson();
   private static final String STREAM_NAME = "myStream";
+  private static final String TABLE_NAME = "outputTable";
 
   private static final Schema BODY_SCHEMA = Schema.recordOf(
     "event",
