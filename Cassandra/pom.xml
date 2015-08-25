@@ -232,7 +232,8 @@
               <Embed-Transitive>true</Embed-Transitive>
               <Embed-Directory>lib</Embed-Directory>
               <!--Only @Plugin classes in the export packages will be included as plugin-->
-              <Export-Package>co.cask.plugin.etl.sink.*;org.apache.cassandra.hadoop.cql3</Export-Package>
+              <Export-Package>co.cask.plugin.etl.sink.;co.cask.plugin.etl.source;
+                org.apache.cassandra.hadoop.*</Export-Package>
               <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
               <Embed-Transitive>true</Embed-Transitive>
             </instructions>

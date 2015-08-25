@@ -24,6 +24,8 @@ import co.cask.cdap.template.etl.common.ETLConfig;
 import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.plugin.etl.sink.BatchCassandraSink;
+import co.cask.plugin.etl.sink.TableSink;
+import co.cask.plugin.etl.source.CassandraBatchSource;
 import com.google.gson.Gson;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -45,7 +47,7 @@ public class BaseETLBatchTest extends TestBase {
   @BeforeClass
   public static void setupTest() throws IOException {
     addTemplatePlugins(TEMPLATE_ID, "batch-plugins-1.0.0.jar",
-                       StreamBatchSource.class, BatchCassandraSink.class);
+                       StreamBatchSource.class, CassandraBatchSource.class, TableSink.class, BatchCassandraSink.class);
     deployTemplate(NAMESPACE, TEMPLATE_ID, ETLBatchTemplate.class,
                    PipelineConfigurable.class.getPackage().getName(),
                    BatchSource.class.getPackage().getName(),

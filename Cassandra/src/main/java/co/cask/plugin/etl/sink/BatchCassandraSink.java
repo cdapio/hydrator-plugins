@@ -154,7 +154,7 @@ public class BatchCassandraSink extends BatchSink<StructuredRecord, Map<String, 
    * Config class for Batch Cassandra
    */
   public static class CassandraBatchConfig extends PluginConfig {
-    @Name(Cassandra.PARITIONER)
+    @Name(Cassandra.PARTITIONER)
     @Description("The partitioner for the keyspace")
     private String partitioner;
 
@@ -200,7 +200,7 @@ public class BatchCassandraSink extends BatchSink<StructuredRecord, Map<String, 
    * Properties for Cassandra
    */
   public static class Cassandra {
-    public static final String PARITIONER = "partitioner";
+    public static final String PARTITIONER = "partitioner";
     public static final String PORT = "port";
     public static final String COLUMN_FAMILY = "columnFamily";
     public static final String KEYSPACE = "keyspace";

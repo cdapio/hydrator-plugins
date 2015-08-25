@@ -18,13 +18,19 @@ package co.cask.plugin.etl.pluginsTest;
 
 import co.cask.cdap.api.data.format.Formats;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.table.Row;
+import co.cask.cdap.api.dataset.table.Scanner;
+import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.proto.AdapterConfig;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.template.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.template.etl.common.ETLStage;
 import co.cask.cdap.test.AdapterManager;
+import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.StreamManager;
 import co.cask.plugin.etl.sink.BatchCassandraSink;
+import co.cask.plugin.etl.sink.TableSink;
+import co.cask.plugin.etl.source.CassandraBatchSource;
 import co.cask.plugin.etl.source.StreamBatchSource;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
@@ -43,8 +49,10 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -89,6 +97,16 @@ public class ETLCassandraTest extends BaseETLBatchTest {
   }
 
   @Test
+  public void testCassandra() throws Exception {
+    testCassandraSink();
+    client.execute_cql3_query(ByteBufferUtil.bytes("DROP TABLE testtable;"),
+                              Compression.NONE, ConsistencyLevel.ALL);
+    client.execute_cql3_query(
+      ByteBufferUtil.bytes("CREATE TABLE testkeyspace.testtable ( ticker text PRIMARY KEY, price double, num int );"),
+      Compression.NONE, ConsistencyLevel.ALL);
+    testCassandraSource();
+  }
+
   public void testCassandraSink() throws Exception {
     StreamManager streamManager = getStreamManager(STREAM_NAME);
     streamManager.createStream();
@@ -107,7 +125,7 @@ public class ETLCassandraTest extends BaseETLBatchTest {
     ETLStage sink = new ETLStage("Cassandra", new ImmutableMap.Builder<String, String>()
       .put(BatchCassandraSink.Cassandra.INITIAL_ADDRESS, "localhost")
       .put(BatchCassandraSink.Cassandra.PORT, "9171")
-      .put(BatchCassandraSink.Cassandra.PARITIONER, "org.apache.cassandra.dht.Murmur3Partitioner")
+      .put(BatchCassandraSink.Cassandra.PARTITIONER, "org.apache.cassandra.dht.Murmur3Partitioner")
       .put(BatchCassandraSink.Cassandra.KEYSPACE, "testkeyspace")
       .put(BatchCassandraSink.Cassandra.COLUMN_FAMILY, "testtable")
       .put(BatchCassandraSink.Cassandra.COLUMNS, "ticker,num,price")
@@ -144,5 +162,58 @@ public class ETLCassandraTest extends BaseETLBatchTest {
     Assert.assertEquals(ByteBufferUtil.bytes(13), result.getRows().get(1).getColumns().get(1).bufferForValue());
     Assert.assertEquals(ByteBufferUtil.bytes("price"), result.getRows().get(1).getColumns().get(2).bufferForName());
     Assert.assertEquals(ByteBufferUtil.bytes(212.36), result.getRows().get(1).getColumns().get(2).bufferForValue());
+  }
+
+  @SuppressWarnings("ConstantConditions")
+  private void testCassandraSource() throws Exception {
+    ETLStage source = new ETLStage("Cassandra",
+                                   new ImmutableMap.Builder<String, String>()
+                                     .put(CassandraBatchSource.Cassandra.INITIAL_ADDRESS, "localhost")
+                                     .put(CassandraBatchSource.Cassandra.PORT, "9171")
+                                     .put(CassandraBatchSource.Cassandra.PARTITIONER,
+                                          "org.apache.cassandra.dht.Murmur3Partitioner")
+                                     .put(CassandraBatchSource.Cassandra.KEYSPACE, "testkeyspace")
+                                     .put(CassandraBatchSource.Cassandra.COLUMN_FAMILY, "testtable")
+                                     .put(CassandraBatchSource.Cassandra.QUERY, "SELECT * from testtable " +
+                                                                                "where token(ticker) > ? " +
+                                                                                "and token(ticker) <= ?")
+                                     .put(CassandraBatchSource.Cassandra.SCHEMA, BODY_SCHEMA.toString()).build());
+    ETLStage sink = new ETLStage("Table",
+                                 ImmutableMap.of("name", TABLE_NAME,
+                                                 "schema", BODY_SCHEMA.toString(),
+                                                 "schema.row.field", "ticker"));
+
+    List<ETLStage> transforms = new ArrayList<>();
+    ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, transforms);
+    Id.Adapter adapterId = Id.Adapter.from(NAMESPACE, "cassandraSourceTest");
+    AdapterConfig adapterConfig = new AdapterConfig("", TEMPLATE_ID.getId(), GSON.toJsonTree(etlConfig));
+    AdapterManager manager = createAdapter(adapterId, adapterConfig);
+
+    manager.start();
+    manager.waitForOneRunToFinish(5, TimeUnit.MINUTES);
+    manager.stop();
+
+    DataSetManager<Table> outputManager = getDataset(TABLE_NAME);
+    Table outputTable = outputManager.get();
+
+    // Scanner to verify number of rows
+    Scanner scanner = outputTable.scan(null, null);
+    Row row1 = scanner.next();
+    Assert.assertNotNull(row1);
+    Row row2 = scanner.next();
+    Assert.assertNotNull(row2);
+    Assert.assertNull(scanner.next());
+    scanner.close();
+    // Verify data
+    Assert.assertEquals(10, (int) row1.getInt("num"));
+    Assert.assertEquals(500.32, row1.getDouble("price"), 0.000001);
+    Assert.assertNull(row1.get("NOT_IMPORTED"));
+
+    Assert.assertEquals(13, (int) row1.getInt("num"));
+    Assert.assertEquals(212.36, row1.getDouble("price"), 0.000001);
+
+    manager.start();
+    manager.waitForOneRunToFinish(5, TimeUnit.MINUTES);
+    manager.stop();
   }
 }
