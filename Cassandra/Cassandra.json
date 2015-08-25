@@ -1,0 +1,62 @@
+{
+  "id": "Cassandra",
+  "groups" : {
+    "position": [ "group1" ],
+    "group1": {
+      "display" : "Cassandra Configuration",
+      "position" : [ "initialAddress", "port", "keyspace", "partitioner", "columnFamily", "primaryKey", "columns" ],
+      "fields" : {
+        "initialAddress": {
+          "widget": "textbox",
+          "label": "Initial Address",
+          "properties": {
+            "width": "large"
+          }
+        },
+        "port": {
+          "widget": "textbox",
+          "label": "Port",
+          "properties": {
+            "width": "medium"
+          }
+        },
+
+        "keyspace": {
+          "widget": "textbox",
+          "label": "Keyspace",
+          "properties": {
+            "width": "medium"
+          }
+        },
+        "partitioner" : {
+          "widget": "textbox",
+          "label": "Partitioner",
+          "properties": {
+            "width": "large"
+          }
+        },
+        "columnFamily" : {
+          "widget": "textbox",
+          "label": "Column Family",
+          "properties": {
+            "width":"medium"
+          }
+        },
+        "primaryKey" : {
+          "widget": "textbox",
+          "label": "Primary Key",
+          "properties": {
+            "width":"large"
+          }
+        },
+        "columns" : {
+          "widget": "textbox",
+          "label": "Columns",
+          "properties": {
+            "width": "large"
+          }
+        }
+      }
+    }
+  }
+}
