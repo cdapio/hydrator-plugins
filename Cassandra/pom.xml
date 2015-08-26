@@ -77,6 +77,12 @@
       <artifactId>cdap-unit-test</artifactId>
       <version>${cdap.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>asm</groupId>
+          <artifactId>asm</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
@@ -233,7 +239,7 @@
               <Embed-Directory>lib</Embed-Directory>
               <!--Only @Plugin classes in the export packages will be included as plugin-->
               <Export-Package>co.cask.plugin.etl.sink.;co.cask.plugin.etl.source;
-                org.apache.cassandra.hadoop.*</Export-Package>
+                org.apache.cassandra.hadoop.*;org.apache.commons.lang</Export-Package>
               <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
               <Embed-Transitive>true</Embed-Transitive>
             </instructions>

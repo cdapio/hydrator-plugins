@@ -8,10 +8,8 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.templates.plugins.PluginConfig;
 import co.cask.cdap.template.etl.api.Emitter;
-import co.cask.cdap.template.etl.api.batch.BatchSinkContext;
 import co.cask.cdap.template.etl.api.batch.BatchSource;
 import co.cask.cdap.template.etl.api.batch.BatchSourceContext;
-import co.cask.plugin.etl.common.StructuredRecordStringConverter;
 import com.datastax.driver.core.Row;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -19,21 +17,20 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.hadoop.cql3.CqlConfigHelper;
 import org.apache.cassandra.hadoop.cql3.CqlInputFormat;
-import org.apache.cassandra.hadoop.cql3.CqlOutputFormat;
-import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.Job;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
  * Batch source for Cassandra.
+ * <p>
+ *   Note that one mapper will be created for each token. The default number of tokens is 256,
+ *   so a Map-Reduce job will run with 257 mappers, even for small datasets.
+ * </p>
  */
 
 @Plugin(type = "source")
@@ -52,7 +49,6 @@ public class CassandraBatchSource extends BatchSource<Long, Row, StructuredRecor
                                                                     .put(Schema.Type.LONG, long.class)
                                                                     .put(Schema.Type.ENUM, String.class)
                                                                     .build();
-
   private final CassandraSourceConfig config;
 
   public CassandraBatchSource(CassandraSourceConfig config) {
@@ -69,19 +65,21 @@ public class CassandraBatchSource extends BatchSource<Long, Row, StructuredRecor
     ConfigHelper.setInputPartitioner(conf, config.partitioner);
     ConfigHelper.setInputRpcPort(conf, config.port);
     Preconditions.checkArgument(!(Strings.isNullOrEmpty(config.username) ^ Strings.isNullOrEmpty(config.password)),
-                                "You must either set both username and password, or neither username or password. " +
+                                "You must either set both username and password or neither username or password. " +
                                   "Currently, they are username: " + config.username +
                                   " and password: " + config.password);
     if (!Strings.isNullOrEmpty(config.username)) {
       ConfigHelper.setInputKeyspaceUserNameAndPassword(conf, config.username, config.password);
     }
 
+    if (!Strings.isNullOrEmpty(config.properties)) {
+      for (String pair : config.properties.split(",")) {
+        conf.set(pair.split(":")[0], pair.split(":")[1]);
+      }
+    }
     CqlConfigHelper.setInputCql(conf, config.query);
-    CqlConfigHelper.setInputNativePort(conf, "9142");
-    CqlConfigHelper.getInputCluster("localhost", conf);
 
     job.setInputFormatClass(CqlInputFormat.class);
-    //job.waitForCompletion(true);
   }
 
   @Override
@@ -123,7 +121,7 @@ public class CassandraBatchSource extends BatchSource<Long, Row, StructuredRecor
         return row.getList(field.getName(), TYPE_CLASS_MAP.get(field.getSchema().getType()));
       case MAP:
         return row.getMap(field.getName(), TYPE_CLASS_MAP.get(field.getSchema().getMapSchema().getKey().getType()),
-                          TYPE_CLASS_MAP.get(field.getSchema().getMapSchema().getValue().getType()));
+                                       TYPE_CLASS_MAP.get(field.getSchema().getMapSchema().getValue().getType()));
       case UNION:
         if (field.getSchema().isNullableSimple()) {
           try {
@@ -133,7 +131,8 @@ public class CassandraBatchSource extends BatchSource<Long, Row, StructuredRecor
           }
         }
     }
-    throw new IOException("Unsupported schema: " + field.getSchema() + " for field: " + field.getName());
+    throw new IOException(String.format("Unsupported schema: %s for field: \'%s\'",
+                                        field.getSchema(), field.getName()));
   }
 
   /**
@@ -162,21 +161,35 @@ public class CassandraBatchSource extends BatchSource<Long, Row, StructuredRecor
     private String initialAddress;
 
     @Name(Cassandra.USERNAME)
+    @Description("The username for the keyspace (if one exists). " +
+      "If this is nonempty, then you must also supply a password")
     @Nullable
     private String username;
 
     @Name(Cassandra.PASSWORD)
+    @Description("The password for the keyspace (if one exists). " +
+      "If this is nonempty, then you must also supply a username")
     @Nullable
     private String password;
 
     @Name(Cassandra.QUERY)
+    @Description("The query to select data on. For example: \'SELECT * from table " +
+      "where token(id) > ? and token(id) <= ?\'")
     private String query;
 
     @Name(Cassandra.SCHEMA)
+    @Description("The schema for the data as it will be formatted in CDAP")
     private String schema;
 
+    @Name(Cassandra.PROPERTIES)
+    @Description("Any extra properties to include. The property-value pairs should be comma-separated, " +
+      "and each property should be separated by a colon from its corresponding value. " +
+      "For example: \'cassandra.consistencylevel.read:LOCAL_ONE,cassandra.input.native.port:9042\'")
+    @Nullable
+    private String properties;
+
     public CassandraSourceConfig(String partitioner, String port, String columnFamily, String schema,
-                                 String keyspace, String initialAddress, String query,
+                                 String keyspace, String initialAddress, String query, @Nullable String properties,
                                  @Nullable String username, @Nullable String password) {
       this.partitioner = partitioner;
       this.initialAddress = initialAddress;
@@ -187,6 +200,7 @@ public class CassandraBatchSource extends BatchSource<Long, Row, StructuredRecor
       this.password = password;
       this.query = query;
       this.schema = schema;
+      this.properties = properties;
     }
   }
 
@@ -203,6 +217,7 @@ public class CassandraBatchSource extends BatchSource<Long, Row, StructuredRecor
     public static final String PASSWORD = "password";
     public static final String QUERY = "query";
     public static final String SCHEMA = "schema";
+    public static final String PROPERTIES = "properties";
   }
 }
 

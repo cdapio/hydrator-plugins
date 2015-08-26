@@ -71,19 +71,20 @@ public class ETLCassandraTest extends BaseETLBatchTest {
   public static TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   private Cassandra.Client client;
+  private int rpcPort;
 
   @Before
   public void beforeTest() throws Exception {
-    EmbeddedCassandraServerHelper.startEmbeddedCassandra(30*1000);
+    rpcPort = 9160;
+    EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra210.yaml", 30*1000);
 
-    client = ConfigHelper.createConnection(new Configuration(), "localhost", 9171);
+    client = ConfigHelper.createConnection(new Configuration(), "localhost", rpcPort);
     client.execute_cql3_query(
       ByteBufferUtil.bytes("CREATE KEYSPACE testkeyspace " +
                              "WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };"),
       Compression.NONE, ConsistencyLevel.ALL);
 
     client.execute_cql3_query(ByteBufferUtil.bytes("USE testkeyspace"), Compression.NONE, ConsistencyLevel.ALL);
-
     client.execute_cql3_query(
       ByteBufferUtil.bytes("CREATE TABLE testtable ( ticker text PRIMARY KEY, price double, num int );"),
       Compression.NONE, ConsistencyLevel.ALL);
@@ -97,11 +98,6 @@ public class ETLCassandraTest extends BaseETLBatchTest {
   @Test
   public void testCassandra() throws Exception {
     testCassandraSink();
-    client.execute_cql3_query(ByteBufferUtil.bytes("DROP TABLE testtable;"),
-                              Compression.NONE, ConsistencyLevel.ALL);
-    client.execute_cql3_query(
-      ByteBufferUtil.bytes("CREATE TABLE testkeyspace.testtable ( ticker text PRIMARY KEY, price double, num int );"),
-      Compression.NONE, ConsistencyLevel.ALL);
     testCassandraSource();
   }
 
@@ -122,7 +118,7 @@ public class ETLCassandraTest extends BaseETLBatchTest {
 
     ETLStage sink = new ETLStage("Cassandra", new ImmutableMap.Builder<String, String>()
       .put(BatchCassandraSink.Cassandra.INITIAL_ADDRESS, "localhost")
-      .put(BatchCassandraSink.Cassandra.PORT, "9171")
+      .put(BatchCassandraSink.Cassandra.PORT, Integer.toString(rpcPort))
       .put(BatchCassandraSink.Cassandra.PARTITIONER, "org.apache.cassandra.dht.Murmur3Partitioner")
       .put(BatchCassandraSink.Cassandra.KEYSPACE, "testkeyspace")
       .put(BatchCassandraSink.Cassandra.COLUMN_FAMILY, "testtable")
@@ -167,7 +163,7 @@ public class ETLCassandraTest extends BaseETLBatchTest {
     ETLStage source = new ETLStage("Cassandra",
                                    new ImmutableMap.Builder<String, String>()
                                      .put(CassandraBatchSource.Cassandra.INITIAL_ADDRESS, "localhost")
-                                     .put(CassandraBatchSource.Cassandra.PORT, "9171")
+                                     .put(CassandraBatchSource.Cassandra.PORT, Integer.toString(rpcPort))
                                      .put(CassandraBatchSource.Cassandra.PARTITIONER,
                                           "org.apache.cassandra.dht.Murmur3Partitioner")
                                      .put(CassandraBatchSource.Cassandra.KEYSPACE, "testkeyspace")
@@ -175,11 +171,12 @@ public class ETLCassandraTest extends BaseETLBatchTest {
                                      .put(CassandraBatchSource.Cassandra.QUERY, "SELECT * from testtable " +
                                                                                 "where token(ticker) > ? " +
                                                                                 "and token(ticker) <= ?")
-                                     .put(CassandraBatchSource.Cassandra.SCHEMA, BODY_SCHEMA.toString()).build());
+                                     .put(CassandraBatchSource.Cassandra.SCHEMA, BODY_SCHEMA.toString())
+                                     .build());
     ETLStage sink = new ETLStage("Table",
-                                 ImmutableMap.of("name", TABLE_NAME,
-                                                 "schema", BODY_SCHEMA.toString(),
-                                                 "schema.row.field", "ticker"));
+                                 ImmutableMap.of(TableSink.NAME, TABLE_NAME,
+                                                 TableSink.PROPERTY_SCHEMA, BODY_SCHEMA.toString(),
+                                                 TableSink.PROPERTY_SCHEMA_ROW_FIELD, "ticker"));
 
     List<ETLStage> transforms = new ArrayList<>();
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, transforms);
@@ -202,16 +199,13 @@ public class ETLCassandraTest extends BaseETLBatchTest {
     Assert.assertNotNull(row2);
     Assert.assertNull(scanner.next());
     scanner.close();
+
     // Verify data
     Assert.assertEquals(10, (int) row1.getInt("num"));
     Assert.assertEquals(500.32, row1.getDouble("price"), 0.000001);
     Assert.assertNull(row1.get("NOT_IMPORTED"));
 
-    Assert.assertEquals(13, (int) row1.getInt("num"));
-    Assert.assertEquals(212.36, row1.getDouble("price"), 0.000001);
-
-    manager.start();
-    manager.waitForOneRunToFinish(5, TimeUnit.MINUTES);
-    manager.stop();
+    Assert.assertEquals(13, (int) row2.getInt("num"));
+    Assert.assertEquals(212.36, row2.getDouble("price"), 0.000001);
   }
 }

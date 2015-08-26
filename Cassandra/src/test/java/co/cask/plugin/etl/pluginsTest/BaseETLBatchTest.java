@@ -26,6 +26,9 @@ import co.cask.cdap.test.TestConfiguration;
 import co.cask.plugin.etl.sink.BatchCassandraSink;
 import co.cask.plugin.etl.sink.TableSink;
 import co.cask.plugin.etl.source.CassandraBatchSource;
+import org.apache.cassandra.hadoop.ColumnFamilySplit;
+import org.apache.cassandra.hadoop.cql3.CqlInputFormat;
+import org.apache.cassandra.hadoop.cql3.CqlOutputFormat;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import co.cask.plugin.etl.source.StreamBatchSource;
@@ -45,7 +48,10 @@ public class BaseETLBatchTest extends TestBase {
   @BeforeClass
   public static void setupTest() throws IOException {
     addTemplatePlugins(TEMPLATE_ID, "batch-plugins-1.0.0.jar",
-                       StreamBatchSource.class, CassandraBatchSource.class, TableSink.class, BatchCassandraSink.class);
+                       StreamBatchSource.class, CassandraBatchSource.class,
+                       TableSink.class, BatchCassandraSink.class,
+                       CqlInputFormat.class, CqlOutputFormat.class,
+                       ColumnFamilySplit.class);
     deployTemplate(NAMESPACE, TEMPLATE_ID, ETLBatchTemplate.class,
                    PipelineConfigurable.class.getPackage().getName(),
                    BatchSource.class.getPackage().getName(),
