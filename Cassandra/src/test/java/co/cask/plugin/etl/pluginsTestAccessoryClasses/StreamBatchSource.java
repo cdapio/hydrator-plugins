@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.plugin.etl.source;
+package co.cask.plugin.etl.pluginsTestAccessoryClasses;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
@@ -57,7 +57,7 @@ import javax.annotation.Nullable;
 @Description("Batch source for a stream.")
 public class StreamBatchSource extends BatchSource<LongWritable, Object, StructuredRecord> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(StreamBatchSource.class);
+  private static final Logger LOG = LoggerFactory.getLogger(co.cask.cdap.template.etl.batch.source.StreamBatchSource.class);
   private static final String FORMAT_SETTING_PREFIX = "format.setting.";
   private static final Schema DEFAULT_SCHEMA = Schema.recordOf(
     "event",
@@ -160,7 +160,7 @@ public class StreamBatchSource extends BatchSource<LongWritable, Object, Structu
   }
 
   /**
-   * {@link PluginConfig} class for {@link StreamBatchSource}
+   * {@link PluginConfig} class for {@link co.cask.cdap.template.etl.batch.source.StreamBatchSource}
    */
   public static class StreamBatchConfig extends PluginConfig {
 
@@ -222,19 +222,4 @@ public class StreamBatchSource extends BatchSource<LongWritable, Object, Structu
       }
     }
   }
-  /**
-   * Properties for the StreamBatchSource as well as the real-time StreamSink
-   */
-  public static class StreamProperties {
-    public static final String NAME = "name";
-    public static final String SCHEMA = "schema";
-    public static final String FORMAT = "format";
-    public static final String DELAY = "delay";
-    public static final String DURATION = "duration";
-    public static final String BODY_FIELD = "body.field";
-    public static final String DEFAULT_BODY_FIELD = "body";
-    public static final String HEADERS_FIELD = "headers.field";
-    public static final String DEFAULT_HEADERS_FIELD = "headers";
-  }
 }
-

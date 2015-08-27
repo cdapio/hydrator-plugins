@@ -23,15 +23,15 @@ import co.cask.cdap.template.etl.batch.ETLBatchTemplate;
 import co.cask.cdap.template.etl.common.ETLConfig;
 import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
+import co.cask.plugin.etl.pluginsTestAccessoryClasses.StreamBatchSource;
+import co.cask.plugin.etl.pluginsTestAccessoryClasses.TableSink;
 import co.cask.plugin.etl.sink.BatchCassandraSink;
-import co.cask.plugin.etl.sink.TableSink;
 import co.cask.plugin.etl.source.CassandraBatchSource;
 import org.apache.cassandra.hadoop.ColumnFamilySplit;
 import org.apache.cassandra.hadoop.cql3.CqlInputFormat;
 import org.apache.cassandra.hadoop.cql3.CqlOutputFormat;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import co.cask.plugin.etl.source.StreamBatchSource;
 
 import java.io.IOException;
 

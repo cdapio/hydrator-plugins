@@ -25,13 +25,12 @@ import co.cask.cdap.proto.AdapterConfig;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.template.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.template.etl.common.ETLStage;
+import co.cask.cdap.template.etl.common.Properties;
 import co.cask.cdap.test.AdapterManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.StreamManager;
 import co.cask.plugin.etl.sink.BatchCassandraSink;
-import co.cask.plugin.etl.sink.TableSink;
 import co.cask.plugin.etl.source.CassandraBatchSource;
-import co.cask.plugin.etl.source.StreamBatchSource;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import org.apache.cassandra.hadoop.ConfigHelper;
@@ -108,11 +107,11 @@ public class ETLCassandraTest extends BaseETLBatchTest {
     streamManager.send(ImmutableMap.of("header1", "bar"), "CDAP|13|212.36");
 
     ETLStage source = new ETLStage("Stream", ImmutableMap.<String, String>builder()
-      .put(StreamBatchSource.StreamProperties.NAME, STREAM_NAME)
-      .put(StreamBatchSource.StreamProperties.DURATION, "10m")
-      .put(StreamBatchSource.StreamProperties.DELAY, "0d")
-      .put(StreamBatchSource.StreamProperties.FORMAT, Formats.CSV)
-      .put(StreamBatchSource.StreamProperties.SCHEMA, BODY_SCHEMA.toString())
+      .put(Properties.Stream.NAME, STREAM_NAME)
+      .put(Properties.Stream.DURATION, "10m")
+      .put(Properties.Stream.DELAY, "0d")
+      .put(Properties.Stream.FORMAT, Formats.CSV)
+      .put(Properties.Stream.SCHEMA, BODY_SCHEMA.toString())
       .put("format.setting.delimiter", "|")
       .build());
 
@@ -174,9 +173,9 @@ public class ETLCassandraTest extends BaseETLBatchTest {
                                      .put(CassandraBatchSource.Cassandra.SCHEMA, BODY_SCHEMA.toString())
                                      .build());
     ETLStage sink = new ETLStage("Table",
-                                 ImmutableMap.of(TableSink.NAME, TABLE_NAME,
-                                                 TableSink.PROPERTY_SCHEMA, BODY_SCHEMA.toString(),
-                                                 TableSink.PROPERTY_SCHEMA_ROW_FIELD, "ticker"));
+                                 ImmutableMap.of(Properties.Table.NAME, TABLE_NAME,
+                                                 Properties.Table.PROPERTY_SCHEMA, BODY_SCHEMA.toString(),
+                                                 Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ticker"));
 
     List<ETLStage> transforms = new ArrayList<>();
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, transforms);

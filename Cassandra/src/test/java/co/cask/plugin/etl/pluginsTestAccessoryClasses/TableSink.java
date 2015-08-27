@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.plugin.etl.sink;
+package co.cask.plugin.etl.pluginsTestAccessoryClasses;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
@@ -28,6 +28,9 @@ import co.cask.cdap.etl.common.RecordPutTransformer;
 import co.cask.cdap.template.etl.api.Emitter;
 import co.cask.cdap.template.etl.api.PipelineConfigurer;
 import co.cask.cdap.template.etl.api.batch.BatchSinkContext;
+import co.cask.cdap.template.etl.batch.sink.BatchWritableSink;
+import co.cask.cdap.template.etl.common.Properties;
+import co.cask.cdap.template.etl.common.TableSinkConfig;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
@@ -35,7 +38,6 @@ import com.google.common.collect.Maps;
 import java.util.Map;
 
 /**
- * This class is copied from CDAP for testing.
  * CDAP Table Dataset Batch Sink.
  */
 @Plugin(type = "sink")
@@ -43,11 +45,6 @@ import java.util.Map;
 @Description("Writes records to a Table with one record field mapping to the Table rowkey," +
   " and all other record fields mapping to Table columns.")
 public class TableSink extends BatchWritableSink<StructuredRecord, byte[], Put> {
-  public static final String NAME = "name";
-  public static final String PROPERTY_SCHEMA = co.cask.cdap.api.dataset.table.Table.PROPERTY_SCHEMA;
-  public static final String PROPERTY_SCHEMA_ROW_FIELD =
-    co.cask.cdap.api.dataset.table.Table.PROPERTY_SCHEMA_ROW_FIELD;
-  public static final String CASE_SENSITIVE_ROW_FIELD = "case.sensitive.row.field";
 
   private final TableSinkConfig tableSinkConfig;
   private RecordPutTransformer recordPutTransformer;
@@ -69,7 +66,7 @@ public class TableSink extends BatchWritableSink<StructuredRecord, byte[], Put> 
     Schema outputSchema = null;
     // If a schema string is present in the properties, use that to construct the outputSchema and pass it to the
     // recordPutTransformer
-    String schemaString = context.getPluginProperties().getProperties().get(PROPERTY_SCHEMA);
+    String schemaString = context.getPluginProperties().getProperties().get(Properties.Table.PROPERTY_SCHEMA);
     if (schemaString != null) {
       outputSchema = Schema.parseJson(schemaString);
     }
@@ -80,8 +77,8 @@ public class TableSink extends BatchWritableSink<StructuredRecord, byte[], Put> 
   @Override
   protected Map<String, String> getProperties() {
     Map<String, String> properties = Maps.newHashMap(tableSinkConfig.getProperties().getProperties());
-    properties.put(BatchReadableWritable.NAME, tableSinkConfig.getName());
-    properties.put(BatchReadableWritable.TYPE, Table.class.getName());
+    properties.put(Properties.BatchReadableWritable.NAME, tableSinkConfig.getName());
+    properties.put(Properties.BatchReadableWritable.TYPE, Table.class.getName());
     return properties;
   }
 
