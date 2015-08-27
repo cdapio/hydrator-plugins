@@ -1,3 +1,19 @@
+/*
+ * Copyright © 2015 Cask Data, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package co.cask.plugin.etl.source;
 
 import co.cask.cdap.api.annotation.Description;
@@ -28,10 +44,12 @@ import javax.annotation.Nullable;
 /**
  * Batch source for Cassandra.
  * <p>
- *   Note that one mapper will be created for each token. The default number of tokens is 256,
- *   so a Map-Reduce job will run with 257 mappers, even for small datasets.
+ * Note that one mapper will be created for each token. The default number of tokens is 256,
+ * so a Map-Reduce job will run with 257 mappers, even for small datasets.
  * </p>
  */
+// The issue of each token creating one mapper is documented in this Cassandra JIRA:
+// https://issues.apache.org/jira/browse/CASSANDRA-6091
 
 @Plugin(type = "source")
 @Name("Cassandra")
@@ -65,7 +83,7 @@ public class CassandraBatchSource extends BatchSource<Long, Row, StructuredRecor
     ConfigHelper.setInputPartitioner(conf, config.partitioner);
     ConfigHelper.setInputRpcPort(conf, config.port);
     Preconditions.checkArgument(!(Strings.isNullOrEmpty(config.username) ^ Strings.isNullOrEmpty(config.password)),
-                                "You must either set both username and password or neither username or password. " +
+                                "You must either set both username and password or neither username nor password. " +
                                   "Currently, they are username: " + config.username +
                                   " and password: " + config.password);
     if (!Strings.isNullOrEmpty(config.username)) {
@@ -121,7 +139,7 @@ public class CassandraBatchSource extends BatchSource<Long, Row, StructuredRecor
         return row.getList(field.getName(), TYPE_CLASS_MAP.get(field.getSchema().getType()));
       case MAP:
         return row.getMap(field.getName(), TYPE_CLASS_MAP.get(field.getSchema().getMapSchema().getKey().getType()),
-                                       TYPE_CLASS_MAP.get(field.getSchema().getMapSchema().getValue().getType()));
+                          TYPE_CLASS_MAP.get(field.getSchema().getMapSchema().getValue().getType()));
       case UNION:
         if (field.getSchema().isNullableSimple()) {
           try {
@@ -144,8 +162,8 @@ public class CassandraBatchSource extends BatchSource<Long, Row, StructuredRecor
     private String partitioner;
 
     @Name(Cassandra.PORT)
-    @Description("The rpc port for Cassandra. For example, 9160. " +
-      "Please also check the configuration to make sure that start_rpc is true in cassandra.yaml")
+    @Description("The rpc port for Cassandra; for example, 9160. " +
+      "Check the configuration to make sure that start_rpc is true in cassandra.yaml")
     private String port;
 
     @Name(Cassandra.COLUMN_FAMILY)
@@ -162,13 +180,13 @@ public class CassandraBatchSource extends BatchSource<Long, Row, StructuredRecor
 
     @Name(Cassandra.USERNAME)
     @Description("The username for the keyspace (if one exists). " +
-      "If this is nonempty, then you must also supply a password")
+      "If this is not empty, then you must supply a password")
     @Nullable
     private String username;
 
     @Name(Cassandra.PASSWORD)
     @Description("The password for the keyspace (if one exists). " +
-      "If this is nonempty, then you must also supply a username")
+      "If this is not empty, then you must supply a username")
     @Nullable
     private String password;
 
