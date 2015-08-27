@@ -23,11 +23,15 @@ import co.cask.cdap.template.etl.batch.ETLBatchTemplate;
 import co.cask.cdap.template.etl.common.ETLConfig;
 import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
+import co.cask.plugin.etl.pluginsTestAccessoryClasses.StreamBatchSource;
+import co.cask.plugin.etl.pluginsTestAccessoryClasses.TableSink;
 import co.cask.plugin.etl.sink.BatchCassandraSink;
-import com.google.gson.Gson;
+import co.cask.plugin.etl.source.CassandraBatchSource;
+import org.apache.cassandra.hadoop.ColumnFamilySplit;
+import org.apache.cassandra.hadoop.cql3.CqlInputFormat;
+import org.apache.cassandra.hadoop.cql3.CqlOutputFormat;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import co.cask.plugin.etl.source.StreamBatchSource;
 
 import java.io.IOException;
 
@@ -38,14 +42,16 @@ public class BaseETLBatchTest extends TestBase {
 
   @ClassRule
   public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
-
   protected static final Id.Namespace NAMESPACE = Id.Namespace.DEFAULT;
   protected static final Id.ApplicationTemplate TEMPLATE_ID = Id.ApplicationTemplate.from("ETLBatch");
 
   @BeforeClass
   public static void setupTest() throws IOException {
     addTemplatePlugins(TEMPLATE_ID, "batch-plugins-1.0.0.jar",
-                       StreamBatchSource.class, BatchCassandraSink.class);
+                       StreamBatchSource.class, CassandraBatchSource.class,
+                       TableSink.class, BatchCassandraSink.class,
+                       CqlInputFormat.class, CqlOutputFormat.class,
+                       ColumnFamilySplit.class);
     deployTemplate(NAMESPACE, TEMPLATE_ID, ETLBatchTemplate.class,
                    PipelineConfigurable.class.getPackage().getName(),
                    BatchSource.class.getPackage().getName(),
