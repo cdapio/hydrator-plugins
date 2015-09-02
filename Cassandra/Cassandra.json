@@ -4,7 +4,7 @@
     "position": [ "group1", "group2" ],
     "group1": {
       "display": "Cassandra Configuration",
-      "position": [ "initialAddress", "port", "username", "password", "properties" ],
+      "position": [ "initialAddress", "addresses", "port", "consistencyLevel", "compression", "username", "password", "properties" ],
       "fields": {
         "initialAddress": {
           "widget": "textbox",
@@ -13,9 +13,30 @@
             "width": "large"
           }
         },
+        "addresses": {
+          "widget": "csv",
+          "label": "Addresses",
+          "properties": {
+            "delimiter": ","
+          }
+        },
         "port": {
           "widget": "textbox",
           "label": "Port",
+          "properties": {
+            "width": "medium"
+          }
+        },
+        "consistencyLevel": {
+          "widget": "textbox",
+          "label": "Consistency Level",
+          "properties": {
+            "width": "medium"
+          }
+        },
+        "compression": {
+          "widget": "textbox",
+          "label": "Compression",
           "properties": {
             "width": "medium"
           }

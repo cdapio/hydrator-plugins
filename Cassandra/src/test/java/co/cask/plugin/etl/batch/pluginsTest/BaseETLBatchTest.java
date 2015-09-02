@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.plugin.etl.pluginsTest;
+package co.cask.plugin.etl.batch.pluginsTest;
 
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.template.etl.api.PipelineConfigurable;
@@ -25,8 +25,8 @@ import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.plugin.etl.pluginsTestAccessoryClasses.StreamBatchSource;
 import co.cask.plugin.etl.pluginsTestAccessoryClasses.TableSink;
-import co.cask.plugin.etl.sink.BatchCassandraSink;
-import co.cask.plugin.etl.source.CassandraBatchSource;
+import co.cask.plugin.etl.batch.sink.BatchCassandraSink;
+import co.cask.plugin.etl.batch.source.CassandraBatchSource;
 import org.apache.cassandra.hadoop.ColumnFamilySplit;
 import org.apache.cassandra.hadoop.cql3.CqlInputFormat;
 import org.apache.cassandra.hadoop.cql3.CqlOutputFormat;
