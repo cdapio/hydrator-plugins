@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.plugin.etl.pluginsTest;
+package co.cask.plugin.etl.batch.pluginsTest;
 
 import co.cask.cdap.api.data.format.Formats;
 import co.cask.cdap.api.data.schema.Schema;
@@ -29,8 +29,8 @@ import co.cask.cdap.template.etl.common.Properties;
 import co.cask.cdap.test.AdapterManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.StreamManager;
-import co.cask.plugin.etl.sink.BatchCassandraSink;
-import co.cask.plugin.etl.source.CassandraBatchSource;
+import co.cask.plugin.etl.batch.sink.BatchCassandraSink;
+import co.cask.plugin.etl.batch.source.CassandraBatchSource;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import org.apache.cassandra.hadoop.ConfigHelper;

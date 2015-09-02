@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.plugin.etl.sink;
+package co.cask.plugin.etl.batch.sink;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
