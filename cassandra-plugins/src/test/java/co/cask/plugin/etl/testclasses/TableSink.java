@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.plugin.etl.pluginsTestAccessoryClasses;
+package co.cask.plugin.etl.testclasses;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;

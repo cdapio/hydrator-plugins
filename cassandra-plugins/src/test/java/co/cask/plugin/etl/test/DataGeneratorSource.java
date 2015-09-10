@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.plugin.etl.pluginsTest;
+package co.cask.plugin.etl.test;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
@@ -42,7 +42,7 @@ import javax.annotation.Nullable;
 @Name("DataGenerator")
 @Description("Source that can generate test data for Real-time Stream and Table Sinks.")
 public class DataGeneratorSource extends RealtimeSource<StructuredRecord> {
-  private static final Logger LOG = LoggerFactory.getLogger(co.cask.cdap.template.etl.realtime.source.DataGeneratorSource.class);
+  private static final Logger LOG = LoggerFactory.getLogger(DataGeneratorSource.class);
   private static final String COUNT = "count";
   private static final String TYPE_DESCRIPTION = "The type of data to be generated. Currently, only two types " +
     "('stream' and 'table') are supported. By default, it generates a structured record containing one field " +
@@ -141,7 +141,7 @@ public class DataGeneratorSource extends RealtimeSource<StructuredRecord> {
   }
 
   /**
-   * {@link PluginConfig} class for {@link co.cask.cdap.template.etl.realtime.source.DataGeneratorSource}
+   * {@link PluginConfig} class for {@link DataGeneratorSource}
    */
   public static class DataGeneratorConfig extends PluginConfig {
     @Description(TYPE_DESCRIPTION)

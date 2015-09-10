@@ -35,7 +35,6 @@
     <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-etl-api</artifactId>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
@@ -44,22 +43,18 @@
     <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-etl-realtime</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-test</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-etl-lib</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-unit-test</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
@@ -72,13 +67,10 @@
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-common</artifactId>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-mapreduce-client-core</artifactId>
-      <version>${hadoop.version}</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.cassandra</groupId>

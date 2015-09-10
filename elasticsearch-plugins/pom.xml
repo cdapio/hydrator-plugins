@@ -31,23 +31,18 @@
     <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-etl-api</artifactId>
-      <version>${cdap.version}</version>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-etl-lib</artifactId>
-      <version>${cdap.version}</version>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-etl-core</artifactId>
-      <version>${cdap.version}</version>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-proto</artifactId>
-      <version>${cdap.version}</version>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
@@ -78,14 +73,11 @@
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-common</artifactId>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <!-- change to hadoop-aws when hadoop dependency is updated to 2.6 -->
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-common</artifactId>
-      <type>test-jar</type>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

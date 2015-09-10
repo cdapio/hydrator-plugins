@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.plugin.etl.pluginsTest;
+package co.cask.plugin.etl.test;
 
 import co.cask.cdap.api.artifact.ArtifactVersion;
 import co.cask.cdap.api.data.format.Formats;
@@ -51,7 +51,7 @@ import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkerManager;
 import co.cask.plugin.etl.batch.sink.BatchCassandraSink;
 import co.cask.plugin.etl.batch.source.CassandraBatchSource;
-import co.cask.plugin.etl.pluginsTestAccessoryClasses.StreamBatchSource;
+import co.cask.plugin.etl.testclasses.StreamBatchSource;
 import co.cask.plugin.etl.realtime.RealtimeCassandraSink;
 import com.google.common.collect.ImmutableMap;
 import org.apache.cassandra.hadoop.ColumnFamilySplit;

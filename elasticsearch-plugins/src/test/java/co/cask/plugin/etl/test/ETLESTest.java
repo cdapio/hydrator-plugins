@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.plugin.etl.pluginsTest;
+package co.cask.plugin.etl.test;
 
 import co.cask.cdap.api.artifact.ArtifactVersion;
 import co.cask.cdap.api.data.format.Formats;
@@ -52,7 +52,7 @@ import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkerManager;
 import co.cask.plugin.etl.batch.sink.BatchElasticsearchSink;
 import co.cask.plugin.etl.batch.source.ElasticsearchSource;
-import co.cask.plugin.etl.pluginsTestAccessoryClasses.StreamBatchSource;
+import co.cask.plugin.etl.testclasses.StreamBatchSource;
 import co.cask.plugin.etl.realtime.RealtimeElasticsearchSink;
 import com.google.common.collect.ImmutableMap;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
