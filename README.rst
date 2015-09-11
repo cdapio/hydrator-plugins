@@ -6,13 +6,10 @@
 CDAP-Plugins
 ============
 
-.. image:: cdap-docs/developers-manual/source/_images/CDAP.png
-
-
 Introduction
 ============
 
-The Cask™ Data Application Platform (CDAP)is an integrated, open source application
+The Cask™ Data Application Platform (CDAP) is an integrated, open source application
 development platform for the Hadoop ecosystem that provides developers with data and
 application abstractions to simplify and accelerate application development, address a
 broader range of real-time and batch use cases, and deploy applications into production
