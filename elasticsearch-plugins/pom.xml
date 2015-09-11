@@ -54,11 +54,11 @@
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
-      <artifactId>cdap-etl-batch-app</artifactId>
+      <artifactId>cdap-etl-batch</artifactId>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
-      <artifactId>cdap-etl-realtime-app</artifactId>
+      <artifactId>cdap-etl-realtime</artifactId>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
