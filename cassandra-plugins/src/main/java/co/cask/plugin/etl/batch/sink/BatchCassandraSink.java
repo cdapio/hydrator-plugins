@@ -29,12 +29,8 @@ import co.cask.cdap.template.etl.api.Emitter;
 import co.cask.cdap.template.etl.api.batch.BatchSink;
 import co.cask.cdap.template.etl.api.batch.BatchSinkContext;
 import com.google.common.base.Preconditions;
-import org.apache.cassandra.hadoop.ConfigHelper;
-import org.apache.cassandra.hadoop.cql3.CqlConfigHelper;
 import org.apache.cassandra.hadoop.cql3.CqlOutputFormat;
 import org.apache.cassandra.utils.ByteBufferUtil;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapreduce.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -187,7 +183,7 @@ public class BatchCassandraSink extends BatchSink<StructuredRecord, Map<String, 
       conf.put("mapreduce.output.basename", config.columnFamily);
       conf.put("cassandra.output.partitioner.class", config.partitioner);
 
-      // The query needs to include the non-primary key columns. Creating the query
+      // The query needs to include the non-primary key columns.
       // For example, the query might be "UPDATE keyspace.columnFamily SET column1 = ?, column2 = ? "
       // The primary keys are then added by Cassandra
       String query = String.format("UPDATE %s.%s SET ", config.keyspace, config.columnFamily);
@@ -198,7 +194,6 @@ public class BatchCassandraSink extends BatchSink<StructuredRecord, Map<String, 
       }
       query = query.substring(0, query.lastIndexOf(",")) + " "; //to remove the last comma
       conf.put("cassandra.output.cql", query);
-
     }
 
     @Override

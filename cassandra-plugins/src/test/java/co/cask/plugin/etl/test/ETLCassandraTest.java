@@ -53,7 +53,6 @@ import co.cask.plugin.etl.batch.sink.BatchCassandraSink;
 import co.cask.plugin.etl.batch.source.CassandraBatchSource;
 import co.cask.plugin.etl.testclasses.StreamBatchSource;
 import co.cask.plugin.etl.realtime.RealtimeCassandraSink;
-import com.datastax.driver.core.CloseFuture;
 import com.google.common.collect.ImmutableMap;
 import org.apache.cassandra.hadoop.ColumnFamilySplit;
 import org.apache.cassandra.hadoop.ConfigHelper;
