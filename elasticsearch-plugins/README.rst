@@ -105,7 +105,7 @@ Sinks: Real-time: Elasticsearch
 
 Description
 -----------
-Realt-ime sink to use Elasticsearch as a sink.
+Real-time sink to use Elasticsearch as a sink.
 
 Use Case
 --------
