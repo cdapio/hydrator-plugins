@@ -91,8 +91,8 @@ Example
       "properties": {
         "es.host": "localhost:9200",
         "es.index": "megacorp",
-        "es.type": "employee"
-        "es.idField": "id",
+        "es.type": "employee",
+        "es.idField": "id"
       }
   }
 
@@ -142,8 +142,8 @@ If left blank, Elasticsearch will create a unique id for each document.
       "properties": {
         "es.transportAddresses": "localhost:9300",
         "es.index": "logs",
-        "es.type": "cdap"
-        "es.idField": "ts",
+        "es.type": "cdap",
+        "es.idField": "ts"
       }
   }
 
