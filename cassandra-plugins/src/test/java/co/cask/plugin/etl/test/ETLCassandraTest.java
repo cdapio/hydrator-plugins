@@ -181,6 +181,7 @@ public class ETLCassandraTest extends TestBase {
 
   @Test
   public void testCassandra() throws Exception {
+    testCassandraRealtimeSink();
     testCassandraSink();
     testCassandraSource();
   }
@@ -295,8 +296,7 @@ public class ETLCassandraTest extends TestBase {
     Assert.assertEquals(212.36, row2.getDouble("price"), 0.000001);
   }
 
-  @Test
-  public void testCassandraRealtimeSink() throws Exception {
+  private void testCassandraRealtimeSink() throws Exception {
     ETLStage source = new ETLStage("DataGenerator", ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE,
                                                                     DataGeneratorSource.TABLE_TYPE));
     ETLStage sink = new ETLStage("Cassandra",
