@@ -1,31 +1,24 @@
-.. meta::
-:author: Cask Data, Inc.
-    :copyright: Copyright © 2015 Cask Data, Inc.
-
 ================
 Apache Cassandra
 ================
 
-.. rubric:: Description
-
 Plugins to use Apache Cassandra as a source or sink
 
---------------------------------
 Sources: Batch: Apache Cassandra
---------------------------------
+================================
 
-.. rubric:: Description
-
+Description
+-----------
 Batch source to use Apache Cassandra as a source
 
-.. rubric:: Use Case
-
+Use Case
+--------
 This source is used whenever you need to read data from Apache Cassandra.
 For example, you may want to read in a column family from Cassandra
 and store the data in an HBase table.
 
-.. rubric:: Properties
-
+Properties
+----------
 **partitioner**: The partitioner for the keyspace.
 
 **port**: The rpc port for Cassandra.
@@ -50,8 +43,8 @@ If this is not empty, then you must supply a username.
 **properties:** Any extra properties to include. The property-value pairs should be comma-separated,
 and each property should be separated by a colon from its corresponding value.
 
-.. rubric:: Example
-
+Example
+-------
 ::
 
   {
@@ -77,22 +70,21 @@ This example connects to Apache Cassandra, which is running locally, and reads i
 specified keyspace (megacorp) and column family (employee) which match the query, in this case, select all records.
 All data from the column family will be read on each run.
 
-------------------------------
 Sinks: Batch: Apache Cassandra
-------------------------------
+==============================
 
-.. rubric:: Description
-
+Description
+-----------
 Batch sink to use Apache Cassandra as a sink
 
-.. rubric:: Use Case
-
+Use Case
+--------
 This sink is used whenever you need to write data into Cassandra.
 For example, you may want to parse a file and read its contents into Cassandra,
 which you can achieve with a stream batch source and Cassandra as a sink.
 
-.. rubric:: Properties
-
+Properties
+----------
 **partitioner**: The partitioner for the keyspace.
 
 **port**: The rpc port for Cassandra.
@@ -111,8 +103,8 @@ The columns should be listed in the same order as they are stored in the column 
 
 **primaryKey:** A comma-separated list of primary keys.
 
-.. rubric:: Example
-
+Example
+-------
 ::
 
   {
@@ -133,21 +125,24 @@ the specified column family (employees), which is in the 'megacorp' keyspace.
 This column family has four columns and two primary keys, and Apache Cassandra
 uses the default Murmur3 partitioner.
 
----------------------------------
-Sinks: Realtime: Apache Cassandra
----------------------------------
 
-.. rubric:: Description
+Sinks: Realtime: Apache Cassandra
+=================================
+
+Description
+-----------
 
 Realtime sink to use Elasticsearch as a sink
 
-.. rubric:: Use Case
+Use Case
+--------
 
 This sink is used whenever you need to write data into Cassandra.
 For example, you may want to in realtime collect purchase records
 and store them in Cassandra for later access.
 
-.. rubric:: Properties
+Properties
+----------
 
 **columnFamily**: The column family or table to inject data into.
 Create the column family before starting the adapter.
@@ -170,7 +165,8 @@ The columns should be listed in the same order as they are stored in the column 
 
 **compression:** The string representation of the compression for the query.
 
-.. rubric:: Example
+Example
+-------
 
 ::
 
@@ -187,4 +183,24 @@ The columns should be listed in the same order as they are stored in the column 
   }
 
 This example connects to Apache Cassandra, which is running locally, and writes the data to
-the specified keypsace (megacorp) and table (purchases).
+the specified keyspace (megacorp) and table (purchases).
+
+License and Trademarks
+======================
+
+Copyright © 2015 Cask Data, Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+in compliance with the License. You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed under the 
+License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
+either express or implied. See the License for the specific language governing permissions 
+and limitations under the License.
+
+Cask is a trademark of Cask Data, Inc. All rights reserved.
+
+Apache, Apache Cassandra, Apache HBase, and HBase are trademarks of The Apache Software Foundation. Used with
+permission. No endorsement by The Apache Software Foundation is implied by the use of these marks.
