@@ -55,7 +55,7 @@ Example
         "keyspace": "megacorp",
         "partitioner": "org.apache.cassandra.dht.Murmur3Partitioner",
         "columnFamily": "employees",
-        "query": "select * from employees where token(id) > ? and token(id) <= ?"
+        "query": "select * from employees where token(id) > ? and token(id) <= ?",
         "schema": "{
           \"type\":\"record\",
           \"name\":\"etlSchemaBody\",
