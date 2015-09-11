@@ -2,14 +2,14 @@
 Apache Cassandra
 ================
 
-Plugins to use Apache Cassandra as a source or sink
+Plugins to use Apache Cassandra as a source or sink.
 
 Sources: Batch: Apache Cassandra
 ================================
 
 Description
 -----------
-Batch source to use Apache Cassandra as a source
+Batch source to use Apache Cassandra as a source.
 
 Use Case
 --------
@@ -21,8 +21,8 @@ Properties
 ----------
 **partitioner:** The partitioner for the keyspace.
 
-**port:** The rpc port for Cassandra.
-Check the configuration to make sure that start_rpc is true in cassandra.yaml
+**port:** The RPC port for Cassandra.
+Check the configuration to make sure that ``start_rpc`` is true in ``cassandra.yaml``.
 
 **columnFamily:** The column family or table to select data from.
 
@@ -67,7 +67,7 @@ Example
   }
 
 This example connects to Apache Cassandra, which is running locally, and reads in records in the
-specified keyspace (megacorp) and column family (employee) which match the query, in this case, select all records.
+specified keyspace (*megacorp*) and column family (*employee*) which match the query to (in this case) select all records.
 All data from the column family will be read on each run.
 
 Sinks: Batch: Apache Cassandra
@@ -75,7 +75,7 @@ Sinks: Batch: Apache Cassandra
 
 Description
 -----------
-Batch sink to use Apache Cassandra as a sink
+Batch sink to use Apache Cassandra as a sink.
 
 Use Case
 --------
@@ -87,8 +87,8 @@ Properties
 ----------
 **partitioner:** The partitioner for the keyspace.
 
-**port:** The rpc port for Cassandra.
-Check the configuration to make sure that start_rpc is true in cassandra.yaml
+**port:** The RPC port for Cassandra.
+Check the configuration to make sure that ``start_rpc`` is true in ``cassandra.yaml``.
 
 **columnFamily:** The column family or table to inject data into.
 Create the column family before starting the adapter.
@@ -121,9 +121,9 @@ Example
   }
 
 This example connects to Apache Cassandra, which is running locally, and writes the data to
-the specified column family (employees), which is in the 'megacorp' keyspace.
+the specified column family (*employees*), which is in the *megacorp* keyspace.
 This column family has four columns and two primary keys, and Apache Cassandra
-uses the default Murmur3 partitioner.
+uses the default *Murmur3* partitioner.
 
 
 Sinks: Realtime: Apache Cassandra
@@ -132,13 +132,13 @@ Sinks: Realtime: Apache Cassandra
 Description
 -----------
 
-Realtime sink to use Elasticsearch as a sink
+Realtime sink to use Elasticsearch as a sink.
 
 Use Case
 --------
 
 This sink is used whenever you need to write data into Cassandra.
-For example, you may want to in realtime collect purchase records
+For example, you may want, in real time, to collect purchase records
 and store them in Cassandra for later access.
 
 Properties
@@ -161,7 +161,7 @@ If this is not empty, then you must also supply a username.
 **columns:** A comma-separated list of columns in the column family.
 The columns should be listed in the same order as they are stored in the column family.
 
-**consistencyLevel:** The string representation fo the consistency level for the query.
+**consistencyLevel:** The string representation of the consistency level for the query.
 
 **compression:** The string representation of the compression for the query.
 
@@ -183,7 +183,7 @@ Example
   }
 
 This example connects to Apache Cassandra, which is running locally, and writes the data to
-the specified keyspace (megacorp) and table (purchases).
+the specified keyspace (*megacorp*) and table (*purchases*).
 
 License and Trademarks
 ======================
