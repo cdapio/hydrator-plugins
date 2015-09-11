@@ -6,7 +6,7 @@ Plugins to use Apache Cassandra as a source or sink.
 
 Prerequisites
 -------------
-Apache Cassandra v. 2.1.0 is the only version of Apache Cassandra CDAP-plugins supports.
+Apache Cassandra v. 2.1.0 is the only version of Apache Cassandra that the CDAP-plugins support.
 
 Sources: Batch: Apache Cassandra
 ================================
