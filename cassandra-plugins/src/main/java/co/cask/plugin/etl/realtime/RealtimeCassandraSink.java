@@ -161,7 +161,7 @@ public class RealtimeCassandraSink extends RealtimeSink<StructuredRecord> {
     private String consistencyLevel;
 
     @Name(Cassandra.COMPRESSION)
-    @Description("The string representation fo the compression for the query. For example: \"NONE\"")
+    @Description("The string representation of the compression for the query. For example: \"NONE\"")
     private String compression;
 
     public RealtimeCassandraSinkConfig(String columnFamily, String columns, String compression,
