@@ -1,7 +1,3 @@
-.. meta::
-    :author: Cask Data, Inc.
-    :copyright: Copyright © 2015 Cask Data, Inc.
-
 ============
 CDAP-Plugins
 ============
@@ -42,7 +38,7 @@ The CDAP-plugins repository is a related repository that includes source and sin
 meant to be used with CDAP. For more information about CDAP, head to the `CDAP repository
 <http://github.com/caskdata/cdap>`__.
 
-For questions about CDAP-plugins, please use any of the communication channels enumerated
+For questions about CDAP-plugins, please use any of the communication channels listed
 at the CDAP repository.
 
 Getting Started
@@ -51,7 +47,7 @@ Getting Started
 Prerequisites
 -------------
 
-To use CDAP-plugins, you must have CDAP version 3.2.0. Prerequisites for the various
+To use CDAP-plugins, you must have CDAP version 3.2.0 or later. Prerequisites for the various
 sources and sinks are included in their individual README files.
   
 Build
