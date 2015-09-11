@@ -19,6 +19,7 @@ package co.cask.plugin.etl.batch.sink;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.data.batch.OutputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
@@ -41,6 +42,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,29 +68,7 @@ public class BatchCassandraSink extends BatchSink<StructuredRecord, Map<String, 
 
   @Override
   public void prepareRun(BatchSinkContext context) {
-    Job job = context.getHadoopJob();
-    Configuration conf = job.getConfiguration();
-
-    ConfigHelper.setOutputColumnFamily(conf, config.keyspace, config.columnFamily);
-    ConfigHelper.setOutputInitialAddress(conf, config.initialAddress);
-    ConfigHelper.setOutputPartitioner(conf, config.partitioner);
-    ConfigHelper.setOutputRpcPort(conf, config.port);
-
-    // The query needs to include the non-primary key columns. Creating the query
-    // For example, the query might be "UPDATE keyspace.columnFamily SET column1 = ?, column2 = ? "
-    // The primary keys are then added by Cassandra
-    String query = String.format("UPDATE %s.%s SET ", config.keyspace, config.columnFamily);
-    for (String column : config.columns.split(",")) {
-      if (!Arrays.asList(config.primaryKey.split(",")).contains(column)) {
-        query += column + " = ?, ";
-      }
-    }
-    query = query.substring(0, query.lastIndexOf(",")) + " "; //to remove the last comma
-    CqlConfigHelper.setOutputCql(job.getConfiguration(), query);
-
-    // ideally, we will use CqlBulkOutputFormat once Cassandra implements the patch
-    // to make the Hadoop-CQL package compatible with Hadoop
-    job.setOutputFormatClass(CqlOutputFormat.class);
+    context.addOutput(config.columnFamily, new CassandraOutputFormatProvider(config));
   }
 
   @Override
@@ -192,6 +172,45 @@ public class BatchCassandraSink extends BatchSink<StructuredRecord, Map<String, 
       this.keyspace = keyspace;
       this.columns = columns;
       this.primaryKey = primaryKey;
+    }
+  }
+
+  private static class CassandraOutputFormatProvider implements OutputFormatProvider {
+    private final Map<String, String> conf;
+
+    public CassandraOutputFormatProvider(CassandraBatchConfig config) {
+      this.conf = new HashMap<>();
+
+      conf.put("cassandra.output.thrift.port", config.port);
+      conf.put("cassandra.output.thrift.address", config.initialAddress);
+      conf.put("cassandra.output.keyspace", config.keyspace);
+      conf.put("mapreduce.output.basename", config.columnFamily);
+      conf.put("cassandra.output.partitioner.class", config.partitioner);
+
+      // The query needs to include the non-primary key columns. Creating the query
+      // For example, the query might be "UPDATE keyspace.columnFamily SET column1 = ?, column2 = ? "
+      // The primary keys are then added by Cassandra
+      String query = String.format("UPDATE %s.%s SET ", config.keyspace, config.columnFamily);
+      for (String column : config.columns.split(",")) {
+        if (!Arrays.asList(config.primaryKey.split(",")).contains(column)) {
+          query += column + " = ?, ";
+        }
+      }
+      query = query.substring(0, query.lastIndexOf(",")) + " "; //to remove the last comma
+      conf.put("cassandra.output.cql", query);
+
+    }
+
+    @Override
+    public String getOutputFormatClassName() {
+      // ideally, we will use CqlBulkOutputFormat once Cassandra implements the patch
+      // to make the Hadoop-CQL package compatible with Hadoop
+      return CqlOutputFormat.class.getName();
+    }
+
+    @Override
+    public Map<String, String> getOutputFormatConfiguration() {
+      return conf;
     }
   }
 

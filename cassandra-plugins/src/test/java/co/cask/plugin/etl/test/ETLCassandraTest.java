@@ -53,6 +53,7 @@ import co.cask.plugin.etl.batch.sink.BatchCassandraSink;
 import co.cask.plugin.etl.batch.source.CassandraBatchSource;
 import co.cask.plugin.etl.testclasses.StreamBatchSource;
 import co.cask.plugin.etl.realtime.RealtimeCassandraSink;
+import com.datastax.driver.core.CloseFuture;
 import com.google.common.collect.ImmutableMap;
 import org.apache.cassandra.hadoop.ColumnFamilySplit;
 import org.apache.cassandra.hadoop.ConfigHelper;
@@ -181,6 +182,7 @@ public class ETLCassandraTest extends TestBase {
 
   @Test
   public void testCassandra() throws Exception {
+    testCassandraRealtimeSink();
     testCassandraSink();
     testCassandraSource();
   }
@@ -295,8 +297,7 @@ public class ETLCassandraTest extends TestBase {
     Assert.assertEquals(212.36, row2.getDouble("price"), 0.000001);
   }
 
-  @Test
-  public void testCassandraRealtimeSink() throws Exception {
+  private void testCassandraRealtimeSink() throws Exception {
     ETLStage source = new ETLStage("DataGenerator", ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE,
                                                                     DataGeneratorSource.TABLE_TYPE));
     ETLStage sink = new ETLStage("Cassandra",
