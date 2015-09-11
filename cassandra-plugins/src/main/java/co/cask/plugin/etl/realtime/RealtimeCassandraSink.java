@@ -54,7 +54,7 @@ import javax.annotation.Nullable;
  * and writes it to the Cassandra server.
  * </p>
  */
-@Plugin(type = "sink")
+@Plugin(type = "realtimesink")
 @Name("Cassandra")
 @Description("CDAP Cassandra Realtime Sink takes the structured record from the input source and converts it " +
   "to a CQL query, then inserts it in Cassandra using the keyspace and column family specified by the user. " +

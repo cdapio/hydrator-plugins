@@ -25,6 +25,7 @@ import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.templates.plugins.PluginConfig;
 import co.cask.cdap.etl.common.RecordWritableConverter;
 import co.cask.cdap.template.etl.api.Emitter;
+import co.cask.cdap.template.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.template.etl.api.batch.BatchSource;
 import co.cask.cdap.template.etl.api.batch.BatchSourceContext;
 import com.google.common.base.Strings;
@@ -44,7 +45,7 @@ import java.io.IOException;
  * </p>
  * An exception will be thrown if the type of any of the fields do not match the type specified by the user.
  */
-@Plugin(type = "source")
+@Plugin(type = "batchsource")
 @Name("Elasticsearch")
 @Description("CDAP Elasticsearch Batch Source pulls documents from Elasticsearch " +
   "according to the query specified by the user and converts each document to a structured record " +
@@ -71,7 +72,7 @@ public class ElasticsearchSource extends BatchSource<Text, MapWritable, Structur
   }
 
   @Override
-  public void initialize(BatchSourceContext context) {
+  public void initialize(BatchRuntimeContext context) {
     schema = parseSchema();
   }
 

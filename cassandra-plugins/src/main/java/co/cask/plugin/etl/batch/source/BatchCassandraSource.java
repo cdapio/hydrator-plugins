@@ -57,7 +57,7 @@ import javax.annotation.Nullable;
   "and convert each row to a {@link StructuredRecord} using the schema specified by the user. " +
   "The Cassandra server should be running prior to creating the adapter, " +
   "and the keyspace and column family should be created.")
-public class CassandraBatchSource extends BatchSource<Long, Row, StructuredRecord> {
+public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecord> {
   private static final Map<Schema.Type, Class<?>> TYPE_CLASS_MAP = new ImmutableMap.Builder<Schema.Type, Class<?>>()
                                                                     .put(Schema.Type.BOOLEAN, boolean.class)
                                                                     .put(Schema.Type.BYTES, ByteBuffer.class)
@@ -69,7 +69,7 @@ public class CassandraBatchSource extends BatchSource<Long, Row, StructuredRecor
                                                                     .build();
   private final CassandraSourceConfig config;
 
-  public CassandraBatchSource(CassandraSourceConfig config) {
+  public BatchCassandraSource(CassandraSourceConfig config) {
     this.config = config;
   }
 
