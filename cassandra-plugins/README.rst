@@ -19,16 +19,16 @@ and store the data in an HBase table.
 
 Properties
 ----------
-**partitioner**: The partitioner for the keyspace.
+**partitioner:** The partitioner for the keyspace.
 
-**port**: The rpc port for Cassandra.
+**port:** The rpc port for Cassandra.
 Check the configuration to make sure that start_rpc is true in cassandra.yaml
 
-**columnFamily**: The column family or table to select data from.
+**columnFamily:** The column family or table to select data from.
 
-**keyspace**: The keyspace to select data from.
+**keyspace:** The keyspace to select data from.
 
-**initialAddress**: The initial address to connect to.
+**initialAddress:** The initial address to connect to.
 
 **username:** The username for the keyspace (if one exists).
 If this is not empty, then you must supply a password.
@@ -85,18 +85,18 @@ which you can achieve with a stream batch source and Cassandra as a sink.
 
 Properties
 ----------
-**partitioner**: The partitioner for the keyspace.
+**partitioner:** The partitioner for the keyspace.
 
-**port**: The rpc port for Cassandra.
+**port:** The rpc port for Cassandra.
 Check the configuration to make sure that start_rpc is true in cassandra.yaml
 
-**columnFamily**: The column family or table to inject data into.
+**columnFamily:** The column family or table to inject data into.
 Create the column family before starting the adapter.
 
-**keyspace**: The keyspace to inject data into.
+**keyspace:** The keyspace to inject data into.
 Create the keyspace before starting the adapter.
 
-**initialAddress**: The initial address to connect to.
+**initialAddress:** The initial address to connect to.
 
 **columns:** A comma-separated list of columns in the column family.
 The columns should be listed in the same order as they are stored in the column family.
@@ -144,13 +144,13 @@ and store them in Cassandra for later access.
 Properties
 ----------
 
-**columnFamily**: The column family or table to inject data into.
+**columnFamily:** The column family or table to inject data into.
 Create the column family before starting the adapter.
 
-**keyspace**: The keyspace to inject data into.
+**keyspace:** The keyspace to inject data into.
 Create the keyspace before starting the adapter.
 
-**addresses**: A comma-separated list of address(es) to connect to.
+**addresses:** A comma-separated list of address(es) to connect to.
 
 **username:** The username for the keyspace (if one exists).
 If this is not empty, then you must also supply a password.
