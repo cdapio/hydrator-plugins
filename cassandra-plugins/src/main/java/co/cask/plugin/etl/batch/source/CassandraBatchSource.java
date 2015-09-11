@@ -167,11 +167,11 @@ public class CassandraBatchSource extends BatchSource<Long, Row, StructuredRecor
     private String port;
 
     @Name(Cassandra.COLUMN_FAMILY)
-    @Description("The column family to inject data into. Create the column family before starting the adapter.")
+    @Description("The column family to select data from.")
     private String columnFamily;
 
     @Name(Cassandra.KEYSPACE)
-    @Description("The keyspace to inject data into. Create the keyspace before starting the adapter.")
+    @Description("The keyspace to select data from.")
     private String keyspace;
 
     @Name(Cassandra.INITIAL_ADDRESS)
