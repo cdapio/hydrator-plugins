@@ -22,13 +22,12 @@ import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
-import co.cask.cdap.api.templates.plugins.PluginConfig;
+import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.common.RecordWritableConverter;
 import co.cask.cdap.template.etl.api.Emitter;
 import co.cask.cdap.template.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.template.etl.api.batch.BatchSource;
 import co.cask.cdap.template.etl.api.batch.BatchSourceContext;
-import com.google.common.base.Strings;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.io.Text;
@@ -96,7 +95,7 @@ public class ElasticsearchSource extends BatchSource<Text, MapWritable, Structur
 
   private Schema parseSchema() {
     try {
-      return Strings.isNullOrEmpty(config.schema) ? null : Schema.parseJson(config.schema);
+      return Schema.parseJson(config.schema);
     } catch (IOException e) {
       throw new IllegalArgumentException("Invalid schema: " + e.getMessage());
     }

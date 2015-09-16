@@ -22,7 +22,7 @@ import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
-import co.cask.cdap.api.templates.plugins.PluginConfig;
+import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.template.etl.api.Emitter;
 import co.cask.cdap.template.etl.api.batch.BatchSource;
 import co.cask.cdap.template.etl.api.batch.BatchSourceContext;
@@ -104,7 +104,7 @@ public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecor
   public void transform(KeyValue<Long, Row> input, Emitter<StructuredRecord> emitter) throws Exception {
     Schema schema;
     try {
-      schema = Strings.isNullOrEmpty(config.schema) ? null : Schema.parseJson(config.schema);
+      schema = Schema.parseJson(config.schema);
     } catch (IOException e) {
       throw new IllegalArgumentException("Invalid schema: " + e.getMessage());
     }
