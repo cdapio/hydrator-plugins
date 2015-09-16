@@ -23,7 +23,7 @@ import co.cask.cdap.api.data.batch.OutputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
-import co.cask.cdap.api.templates.plugins.PluginConfig;
+import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.common.StructuredRecordStringConverter;
 import co.cask.cdap.template.etl.api.Emitter;
 import co.cask.cdap.template.etl.api.batch.BatchSink;
@@ -31,8 +31,6 @@ import co.cask.cdap.template.etl.api.batch.BatchSinkContext;
 import com.google.common.base.Preconditions;
 import org.apache.cassandra.hadoop.cql3.CqlOutputFormat;
 import org.apache.cassandra.utils.ByteBufferUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -55,7 +53,6 @@ import java.util.Map;
   "The Cassandra server should be running prior to creating the adapter, " +
   "and the keyspace and column family should be created.")
 public class BatchCassandraSink extends BatchSink<StructuredRecord, Map<String, ByteBuffer>, List<ByteBuffer>> {
-  private static final Logger LOG = LoggerFactory.getLogger(BatchCassandraSink.class);
   private final CassandraBatchConfig config;
 
   public BatchCassandraSink(CassandraBatchConfig config) {
