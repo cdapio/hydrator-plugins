@@ -51,7 +51,7 @@ import javax.annotation.Nullable;
  * https://www.elastic.co/guide/en/elasticsearch/guide/current/_index_settings.html.
  * </p>
  */
-@Plugin(type = "batchsink")
+@Plugin(type = "realtimesink")
 @Name("Elasticsearch")
 @Description("CDAP Elasticsearch Realtime Sink takes the structured record from the input source and converts it " +
   "to a JSON string, then indexes it in Elasticsearch using the index, type, and id specified by the user. " +
