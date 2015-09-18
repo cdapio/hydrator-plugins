@@ -23,9 +23,9 @@ import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.plugin.PluginConfig;
-import co.cask.cdap.template.etl.api.Emitter;
-import co.cask.cdap.template.etl.api.realtime.RealtimeSource;
-import co.cask.cdap.template.etl.api.realtime.SourceState;
+import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.realtime.RealtimeSource;
+import co.cask.cdap.etl.api.realtime.SourceState;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
@@ -42,7 +42,7 @@ import javax.annotation.Nullable;
 @Name("DataGenerator")
 @Description("Source that can generate test data for Real-time Stream and Table Sinks.")
 public class DataGeneratorSource extends RealtimeSource<StructuredRecord> {
-  private static final Logger LOG = LoggerFactory.getLogger(co.cask.cdap.template.etl.realtime.source.DataGeneratorSource.class);
+  private static final Logger LOG = LoggerFactory.getLogger(DataGeneratorSource.class);
   private static final String COUNT = "count";
   private static final String TYPE_DESCRIPTION = "The type of data to be generated. Currently, only two types " +
     "('stream' and 'table') are supported. By default, it generates a structured record containing one field " +
@@ -141,7 +141,7 @@ public class DataGeneratorSource extends RealtimeSource<StructuredRecord> {
   }
 
   /**
-   * {@link PluginConfig} class for {@link co.cask.cdap.template.etl.realtime.source.DataGeneratorSource}
+   * {@link PluginConfig} class for {@link co.cask.cdap.etl.realtime.source.DataGeneratorSource}
    */
   public static class DataGeneratorConfig extends PluginConfig {
     @Description(TYPE_DESCRIPTION)
