@@ -50,8 +50,8 @@ Prerequisites
 To use CDAP-plugins, you must have CDAP version 3.2.0 or later. Prerequisites for the various
 sources and sinks are included in their individual README files.
   
-Build
------
+Build Plugins
+-------------
 
 You can get started with CDAP-plugins by building directly from the latest source code::
 
@@ -62,11 +62,19 @@ You can get started with CDAP-plugins by building directly from the latest sourc
 After the build completes, you will have a jar for each plugin under the
 ``<plugin-name>/target/`` directory.
 
-Take the ``<plugin-name>-<version>-<batch/realtime>.jar`` file and copy it into the
-``artifacts`` directory in CDAP. Then move ``<plugin-name>/<plugin-name>.json``
-to ``cdap/cdap-ui/templates/common/``.
+Deploy Plugins
+--------------
 
-After installing the plugins, you will need to restart CDAP.
+You can deploy plugins using CDAP CLI::
+
+  > load artifact <target/plugin-jar> config-file <resources/plugin-config>
+
+Example for loading Cassandra Plugin (from cassandra-plugins directory)::
+
+  > load artifact target/cassandra-plugins-1.0-SNAPSHOT-batch.jar \
+         config-file resources/cassandra-plugin-batch.json
+  > load artifact target/cassandra-plugins-1.0-SNAPSHOT-realtime.jar \
+         config-file resources/cassandra-plugin-realtime.json
 
 You can build without running tests: ``mvn clean install -DskipTests``
 
