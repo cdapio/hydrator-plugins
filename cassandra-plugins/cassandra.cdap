@@ -1,0 +1,2 @@
+load artifact target/cassandra-plugins-1.0-SNAPSHOT-batch.jar config-file resources/cassandra-plugin-batch.json
+load artifact target/cassandra-plugins-1.0-SNAPSHOT-realtime.jar config-file resources/cassandra-plugin-realtime.json
