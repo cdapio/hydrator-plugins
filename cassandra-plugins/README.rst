@@ -189,6 +189,15 @@ Example
 This example connects to Apache Cassandra, which is running locally, and writes the data to
 the specified keyspace (*megacorp*) and column family (*purchases*).
 
+Integrating with the CDAP UI
+============================
+This plugin also contains a config file for the CDAP UI in the *resources* directory - **Cassandra.json**.
+This configuration file greatly improves the experience of configuring Cassandra plugins using the CDAP UI.
+It chooses appropriate widgets for the various configuration parameters described above. It also enforces a more
+natural ordering for these configuration parameters. To use this file, please copy it over to the
+*<SDK_DIR>/ui/templates/common* directory in the CDAP SDK or the *<CDAP_INSTALL_DIR>/ui/templates/common* directory
+on your CDAP cluster and restart the CDAP UI.
+
 License and Trademarks
 ======================
 
