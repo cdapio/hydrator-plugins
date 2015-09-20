@@ -151,6 +151,15 @@ This example connects to Elasticsearch, which is running locally, and writes the
 the specified index (*logs*) and type (*cdap*). The data is indexed using the timestamp (*ts*) field
 in the record.
 
+Integrating with the CDAP UI
+============================
+This plugin also contains a config file for the CDAP UI in the *resources* directory - **Elasticsearch.json**.
+This configuration file greatly improves the experience of configuring Elasticsearch plugins using the CDAP UI.
+It chooses appropriate widgets for the various configuration parameters described above. It also enforces a more
+natural ordering for these configuration parameters. To use this file, please copy it over to the
+*<SDK_DIR>/ui/templates/common* directory in the CDAP SDK or the *<CDAP_INSTALL_DIR>/ui/templates/common* directory
+on your CDAP cluster and restart the CDAP UI.
+
 License and Trademarks
 ======================
 
