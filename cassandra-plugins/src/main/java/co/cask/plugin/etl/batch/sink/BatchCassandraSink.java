@@ -120,7 +120,7 @@ public class BatchCassandraSink extends BatchSink<StructuredRecord, Map<String, 
           return object == null ? ByteBufferUtil.EMPTY_BYTE_BUFFER : encodeObject(object, schema.getNonNullable());
         }
     }
-    throw new IOException("Unsupported field type - only simple types are supported: " + schema);
+    throw new IOException("Unsupported field type; only simple types are supported: " + schema);
   }
 
   /**
@@ -134,7 +134,7 @@ public class BatchCassandraSink extends BatchSink<StructuredRecord, Map<String, 
     @Name(Cassandra.PORT)
     @Nullable
     @Description("The RPC port for Cassandra. For example, 9160. " +
-      "Please also check the configuration to make sure that start_rpc is true in cassandra.yaml")
+      "Please also check the configuration to make sure that start_rpc is true in cassandra.yaml.")
     private Integer port;
 
     @Name(Cassandra.COLUMN_FAMILY)
@@ -155,7 +155,7 @@ public class BatchCassandraSink extends BatchSink<StructuredRecord, Map<String, 
     private String columns;
 
     @Name(Cassandra.PRIMARY_KEY)
-    @Description("A comma-separated list of primary keys. For example: \"key1,key2\"")
+    @Description("A comma-separated list of primary keys. For example: \"key1,key2\".")
     private String primaryKey;
 
     public CassandraBatchConfig(String partitioner, @Nullable Integer port, String columnFamily, String keyspace,
