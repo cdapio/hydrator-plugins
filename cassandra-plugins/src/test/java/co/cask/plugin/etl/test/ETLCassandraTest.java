@@ -186,6 +186,31 @@ public class ETLCassandraTest extends TestBase {
     testCassandraSource();
   }
 
+  @Test
+  public void testInvalidRealtimeCassandraSink() throws Exception {
+    ETLStage source = new ETLStage("DataGenerator", ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE,
+                                                                    DataGeneratorSource.TABLE_TYPE));
+    ETLStage sink = new ETLStage("Cassandra",
+                                 new ImmutableMap.Builder<String, String>()
+                                   .put(RealtimeCassandraSink.Cassandra.ADDRESSES, "localhost:9042,invalid:abcd")
+                                   .put(RealtimeCassandraSink.Cassandra.KEYSPACE, "testkeyspace")
+                                   .put(RealtimeCassandraSink.Cassandra.COLUMN_FAMILY, "testtablerealtime")
+                                   .put(RealtimeCassandraSink.Cassandra.COLUMNS, "name,graduated,id,score,time")
+                                   .put(RealtimeCassandraSink.Cassandra.COMPRESSION, "NONE")
+                                   .put(RealtimeCassandraSink.Cassandra.CONSISTENCY_LEVEL, "QUORUM")
+                                   .build());
+    List<ETLStage> transforms = new ArrayList<>();
+    ETLRealtimeConfig etlConfig = new ETLRealtimeConfig(source, sink, transforms);
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testESSink");
+    AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(REALTIME_APP_ARTIFACT, etlConfig);
+    try {
+      deployApplication(appId, appRequest);
+      Assert.fail();
+    } catch (IllegalStateException e) {
+      // expected
+    }
+  }
+
   public void testCassandraSink() throws Exception {
     StreamManager streamManager = getStreamManager(STREAM_NAME);
     streamManager.createStream();
@@ -249,7 +274,6 @@ public class ETLCassandraTest extends TestBase {
     ETLStage source = new ETLStage("Cassandra",
                                    new ImmutableMap.Builder<String, String>()
                                      .put(BatchCassandraSource.Cassandra.INITIAL_ADDRESS, "localhost")
-                                     .put(BatchCassandraSource.Cassandra.PORT, Integer.toString(rpcPort))
                                      .put(BatchCassandraSource.Cassandra.PARTITIONER,
                                           "org.apache.cassandra.dht.Murmur3Partitioner")
                                      .put(BatchCassandraSource.Cassandra.KEYSPACE, "testkeyspace")

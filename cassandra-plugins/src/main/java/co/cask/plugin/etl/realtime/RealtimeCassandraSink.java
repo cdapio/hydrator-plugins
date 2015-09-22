@@ -34,6 +34,8 @@ import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -55,6 +57,9 @@ import javax.annotation.Nullable;
   "to a CQL query, then inserts it in Cassandra using the keyspace and column family specified by the user. " +
   "The Cassandra server should be running prior to creating the adapter.")
 public class RealtimeCassandraSink extends RealtimeSink<StructuredRecord> {
+  private static final Logger LOG = LoggerFactory.getLogger(RealtimeCassandraSink.class);
+  private static final String ADDRESSES_DESCRIPTION =
+    "A comma-separated list of address(es) to connect to. For example, \"host1:9042,host2:9042\".";
   private final RealtimeCassandraSinkConfig config;
 
   private Cluster cluster;
@@ -66,12 +71,7 @@ public class RealtimeCassandraSink extends RealtimeSink<StructuredRecord> {
 
   @Override
   public void initialize(RealtimeContext context) {
-    Collection<InetSocketAddress> addresses = new ArrayList<>();
-
-    for (String address : config.addresses.split(",")) {
-      addresses.add(new InetSocketAddress(address.split(":")[0],
-                                          Integer.valueOf(address.split(":")[1])));
-    }
+    Collection<InetSocketAddress> addresses = parseAddresses(config.addresses);
     Cluster.Builder builder = new Cluster.Builder().addContactPointsWithPorts(addresses);
     if (!Strings.isNullOrEmpty(config.username)) {
       builder.withCredentials(config.username, config.password);
@@ -89,6 +89,17 @@ public class RealtimeCassandraSink extends RealtimeSink<StructuredRecord> {
                                 "You must either set both username and password or neither username or password. " +
                                   "Currently, they are username: " + config.username +
                                   " and password: " + config.password);
+    Preconditions.checkArgument(!parseAddresses(config.addresses).isEmpty(),
+                                "At least one pair of ip and port should be provided.",
+                                config.addresses, ADDRESSES_DESCRIPTION);
+  }
+
+  private List<InetSocketAddress> parseAddresses(String addressString) {
+    List<InetSocketAddress> addresses = new ArrayList<>();
+    for (String address : addressString.split(",")) {
+      addresses.add(new InetSocketAddress(address.split(":")[0], Integer.valueOf(address.split(":")[1])));
+    }
+    return addresses;
   }
 
   @Override
@@ -131,7 +142,7 @@ public class RealtimeCassandraSink extends RealtimeSink<StructuredRecord> {
     private String keyspace;
 
     @Name(Cassandra.ADDRESSES)
-    @Description("A comma-separated list of address(es) to connect to. For example, \"host1:9042,host2:9042\".")
+    @Description(ADDRESSES_DESCRIPTION)
     private String addresses;
 
     @Name(Cassandra.USERNAME)

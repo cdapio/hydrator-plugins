@@ -81,7 +81,7 @@ public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecor
     ConfigHelper.setInputColumnFamily(conf, config.keyspace, config.columnFamily);
     ConfigHelper.setInputInitialAddress(conf, config.initialAddress);
     ConfigHelper.setInputPartitioner(conf, config.partitioner);
-    ConfigHelper.setInputRpcPort(conf, config.port);
+    ConfigHelper.setInputRpcPort(conf, (config.port == null) ? "9160" : Integer.toString(config.port));
     Preconditions.checkArgument(!(Strings.isNullOrEmpty(config.username) ^ Strings.isNullOrEmpty(config.password)),
                                 "You must either set both username and password or neither username nor password. " +
                                   "Currently, they are username: " + config.username +
@@ -162,9 +162,10 @@ public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecor
     private String partitioner;
 
     @Name(Cassandra.PORT)
-    @Description("The rpc port for Cassandra; for example, 9160. " +
+    @Nullable
+    @Description("The rpc port for Cassandra; for example, 9160 (default value). " +
       "Check the configuration to make sure that start_rpc is true in cassandra.yaml")
-    private String port;
+    private Integer port;
 
     @Name(Cassandra.COLUMN_FAMILY)
     @Description("The column family to select data from.")
@@ -175,7 +176,7 @@ public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecor
     private String keyspace;
 
     @Name(Cassandra.INITIAL_ADDRESS)
-    @Description("The initial address to connect to. For example, \"localhost\".")
+    @Description("The initial address to connect to. For example, \"10.11.12.13\".")
     private String initialAddress;
 
     @Name(Cassandra.USERNAME)
@@ -196,7 +197,20 @@ public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecor
     private String query;
 
     @Name(Cassandra.SCHEMA)
-    @Description("The schema for the data as it will be formatted in CDAP")
+    @Description("The schema for the data as it will be formatted in CDAP. Sample schema : {\n" +
+      "    \"type\": \"record\",\n" +
+      "    \"name\": \"schemaBody\",\n" +
+      "    \"fields\": [\n" +
+      "        {\n" +
+      "            \"name\": \"name\",\n" +
+      "            \"type\": \"string\"\n" +
+      "        },\n" +
+      "        {\n" +
+      "            \"name\": \"age\",\n" +
+      "            \"type\": \"int\"\n" +
+      "        }" +
+      "    ]\n" +
+      "}")
     private String schema;
 
     @Name(Cassandra.PROPERTIES)
@@ -206,7 +220,7 @@ public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecor
     @Nullable
     private String properties;
 
-    public CassandraSourceConfig(String partitioner, String port, String columnFamily, String schema,
+    public CassandraSourceConfig(String partitioner, Integer port, String columnFamily, String schema,
                                  String keyspace, String initialAddress, String query, @Nullable String properties,
                                  @Nullable String username, @Nullable String password) {
       this.partitioner = partitioner;
