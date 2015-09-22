@@ -55,7 +55,7 @@ import javax.annotation.Nullable;
 @Name("Cassandra")
 @Description("CDAP Cassandra Batch Source will select the rows returned by the user's query " +
   "and convert each row to a {@link StructuredRecord} using the schema specified by the user. " +
-  "The Cassandra server should be running prior to creating the adapter, " +
+  "The Cassandra server should be running prior to creating the application, " +
   "and the keyspace and column family should be created.")
 public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecord> {
   private static final Map<Schema.Type, Class<?>> TYPE_CLASS_MAP = new ImmutableMap.Builder<Schema.Type, Class<?>>()
@@ -163,8 +163,8 @@ public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecor
 
     @Name(Cassandra.PORT)
     @Nullable
-    @Description("The rpc port for Cassandra; for example, 9160 (default value). " +
-      "Check the configuration to make sure that start_rpc is true in cassandra.yaml")
+    @Description("The RPC port for Cassandra; for example: 9160 (default value). " +
+      "Check the configuration to make sure that start_rpc is true in cassandra.yaml.")
     private Integer port;
 
     @Name(Cassandra.COLUMN_FAMILY)
@@ -176,18 +176,18 @@ public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecor
     private String keyspace;
 
     @Name(Cassandra.INITIAL_ADDRESS)
-    @Description("The initial address to connect to. For example, \"10.11.12.13\".")
+    @Description("The initial address to connect to. For example: \"10.11.12.13\".")
     private String initialAddress;
 
     @Name(Cassandra.USERNAME)
     @Description("The username for the keyspace (if one exists). " +
-      "If this is not empty, then you must supply a password")
+      "If this is not empty, then you must supply a password.")
     @Nullable
     private String username;
 
     @Name(Cassandra.PASSWORD)
     @Description("The password for the keyspace (if one exists). " +
-      "If this is not empty, then you must supply a username")
+      "If this is not empty, then you must supply a username.")
     @Nullable
     private String password;
 
@@ -197,7 +197,7 @@ public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecor
     private String query;
 
     @Name(Cassandra.SCHEMA)
-    @Description("The schema for the data as it will be formatted in CDAP. Sample schema : {\n" +
+    @Description("The schema for the data as it will be formatted in CDAP. Sample schema: {\n" +
       "    \"type\": \"record\",\n" +
       "    \"name\": \"schemaBody\",\n" +
       "    \"fields\": [\n" +
