@@ -33,13 +33,17 @@ import com.datastax.driver.core.ProtocolOptions;
 import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -52,9 +56,12 @@ import javax.annotation.Nullable;
 @Plugin(type = "realtimesink")
 @Name("Cassandra")
 @Description("CDAP Cassandra Realtime Sink takes the structured record from the input source and converts it " +
-  "to a CQL query, then inserts it in Cassandra using the keyspace and column family specified by the user. " +
-  "The Cassandra server should be running prior to creating the adapter.")
+  "to a CQL query, then inserts it into Cassandra using the keyspace and column family specified by the user. " +
+  "The Cassandra server should be running prior to creating the application.")
 public class RealtimeCassandraSink extends RealtimeSink<StructuredRecord> {
+  private static final Logger LOG = LoggerFactory.getLogger(RealtimeCassandraSink.class);
+  private static final String ADDRESSES_DESCRIPTION =
+    "A comma-separated list of address(es) to connect to. For example, \"host1:9042,host2:9042\".";
   private final RealtimeCassandraSinkConfig config;
 
   private Cluster cluster;
@@ -66,12 +73,7 @@ public class RealtimeCassandraSink extends RealtimeSink<StructuredRecord> {
 
   @Override
   public void initialize(RealtimeContext context) {
-    Collection<InetSocketAddress> addresses = new ArrayList<>();
-
-    for (String address : config.addresses.split(",")) {
-      addresses.add(new InetSocketAddress(address.split(":")[0],
-                                          Integer.valueOf(address.split(":")[1])));
-    }
+    Collection<InetSocketAddress> addresses = parseAddresses(config.addresses);
     Cluster.Builder builder = new Cluster.Builder().addContactPointsWithPorts(addresses);
     if (!Strings.isNullOrEmpty(config.username)) {
       builder.withCredentials(config.username, config.password);
@@ -89,6 +91,26 @@ public class RealtimeCassandraSink extends RealtimeSink<StructuredRecord> {
                                 "You must either set both username and password or neither username or password. " +
                                   "Currently, they are username: " + config.username +
                                   " and password: " + config.password);
+    Preconditions.checkArgument(!parseAddresses(config.addresses).isEmpty(),
+                                "At least one pair of IP and port should be provided.",
+                                config.addresses, ADDRESSES_DESCRIPTION);
+  }
+
+  private List<InetSocketAddress> parseAddresses(String addressString) {
+    List<InetSocketAddress> addresses = new ArrayList<>();
+    Map<String, String> ipPortMap = Splitter.on(",").omitEmptyStrings().trimResults()
+      .withKeyValueSeparator(":").split(addressString);
+
+    for (Map.Entry<String, String> ipPort : ipPortMap.entrySet()) {
+      int port;
+      try {
+        port = Integer.valueOf(ipPort.getValue());
+      } catch (NumberFormatException e) {
+        throw new IllegalArgumentException(String.format("Port should be an integer : %s", ipPort.getValue()), e);
+      }
+      addresses.add(new InetSocketAddress(ipPort.getKey(), port));
+    }
+    return addresses;
   }
 
   @Override
@@ -123,26 +145,26 @@ public class RealtimeCassandraSink extends RealtimeSink<StructuredRecord> {
    */
   public static class RealtimeCassandraSinkConfig extends PluginConfig {
     @Name(Cassandra.COLUMN_FAMILY)
-    @Description("The column family to inject data into. Create the column family before starting the adapter.")
+    @Description("The column family to inject data into. Create the column family before starting the application.")
     private String columnFamily;
 
     @Name(Cassandra.KEYSPACE)
-    @Description("The keyspace to inject data into. Create the keyspace before starting the adapter.")
+    @Description("The keyspace to inject data into. Create the keyspace before starting the application.")
     private String keyspace;
 
     @Name(Cassandra.ADDRESSES)
-    @Description("A comma-separated list of address(es) to connect to. For example, \"host1:9042,host2:9042\".")
+    @Description(ADDRESSES_DESCRIPTION)
     private String addresses;
 
     @Name(Cassandra.USERNAME)
     @Description("The username for the keyspace (if one exists). " +
-      "If this is nonempty, then you must also supply a password")
+      "If this is nonempty, then you must also supply a password.")
     @Nullable
     private String username;
 
     @Name(Cassandra.PASSWORD)
     @Description("The password for the keyspace (if one exists). " +
-      "If this is nonempty, then you must also supply a username")
+      "If this is nonempty, then you must also supply a username.")
     @Nullable
     private String password;
 
@@ -152,11 +174,11 @@ public class RealtimeCassandraSink extends RealtimeSink<StructuredRecord> {
     private String columns;
 
     @Name(Cassandra.CONSISTENCY_LEVEL)
-    @Description("The string representation of the consistency level for the query. For example: \"QUORUM\"")
+    @Description("The string representation of the consistency level for the query. For example: \"QUORUM\".")
     private String consistencyLevel;
 
     @Name(Cassandra.COMPRESSION)
-    @Description("The string representation of the compression for the query. For example: \"NONE\"")
+    @Description("The string representation of the compression for the query. For example: \"NONE\".")
     private String compression;
 
     public RealtimeCassandraSinkConfig(String columnFamily, String columns, String compression,
