@@ -28,6 +28,7 @@ import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.cdap.etl.common.RecordWritableConverter;
+import co.cask.plugin.etl.batch.ESProperties;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.io.Text;
@@ -105,23 +106,23 @@ public class ElasticsearchSource extends BatchSource<Text, MapWritable, Structur
    * Config class for Batch {@link ElasticsearchSource}.
    */
   public static class ESConfig extends PluginConfig {
-    @Name(Elasticsearch.HOST)
+    @Name(ESProperties.HOST)
     @Description(HOST_DESCRIPTION)
     private String hostname;
 
-    @Name(Elasticsearch.INDEX_NAME)
+    @Name(ESProperties.INDEX_NAME)
     @Description(INDEX_DESCRIPTION)
     private String index;
 
-    @Name(Elasticsearch.TYPE_NAME)
+    @Name(ESProperties.TYPE_NAME)
     @Description(TYPE_DESCRIPTION)
     private String type;
 
-    @Name(Elasticsearch.QUERY)
+    @Name(ESProperties.QUERY)
     @Description(QUERY_DESCRIPTION)
     private String query;
 
-    @Name(Elasticsearch.SCHEMA)
+    @Name(ESProperties.SCHEMA)
     @Description(SCHEMA_DESCRIPTION)
     private String schema;
 
@@ -133,16 +134,4 @@ public class ElasticsearchSource extends BatchSource<Text, MapWritable, Structur
       this.query = query;
     }
   }
-
-  /**
-   * Properties for elasticsearch
-   */
-  public static class Elasticsearch {
-    public static final String INDEX_NAME = "es.index";
-    public static final String TYPE_NAME = "es.type";
-    public static final String HOST = "es.host";
-    public static final String QUERY = "query";
-    public static final String SCHEMA = "schema";
-  }
-
 }

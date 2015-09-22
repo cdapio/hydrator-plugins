@@ -27,6 +27,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.cdap.etl.common.StructuredRecordStringConverter;
+import co.cask.plugin.etl.batch.ESProperties;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.Job;
@@ -84,19 +85,19 @@ public class BatchElasticsearchSink extends BatchSink<StructuredRecord, Writable
    * Config class for BatchElasticsearchSink.java
    */
   public static class ESConfig extends PluginConfig {
-    @Name(Elasticsearch.HOST)
+    @Name(ESProperties.HOST)
     @Description(HOST_DESCRIPTION)
     private String hostname;
 
-    @Name(Elasticsearch.INDEX_NAME)
+    @Name(ESProperties.INDEX_NAME)
     @Description(INDEX_DESCRIPTION)
     private String index;
 
-    @Name(Elasticsearch.TYPE_NAME)
+    @Name(ESProperties.TYPE_NAME)
     @Description(TYPE_DESCRIPTION)
     private String type;
 
-    @Name(Elasticsearch.ID_FIELD)
+    @Name(ESProperties.ID_FIELD)
     @Description(ID_DESCRIPTION)
     private String idField;
 
@@ -129,15 +130,5 @@ public class BatchElasticsearchSink extends BatchSink<StructuredRecord, Writable
     public Map<String, String> getOutputFormatConfiguration() {
       return conf;
     }
-  }
-
-  /**
-   * Properties for elasticsearch
-   */
-  public static class Elasticsearch {
-    public static final String INDEX_NAME = "es.index";
-    public static final String TYPE_NAME = "es.type";
-    public static final String HOST = "es.host";
-    public static final String ID_FIELD = "es.idField";
   }
 }
