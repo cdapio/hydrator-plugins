@@ -50,6 +50,7 @@ import co.cask.cdap.test.StreamManager;
 import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkerManager;
+import co.cask.plugin.etl.batch.ESProperties;
 import co.cask.plugin.etl.batch.sink.BatchElasticsearchSink;
 import co.cask.plugin.etl.batch.source.ElasticsearchSource;
 import co.cask.plugin.etl.testclasses.StreamBatchSource;
@@ -203,11 +204,11 @@ public class ETLESTest extends TestBase {
       .build());
 
     ETLStage sink = new ETLStage("Elasticsearch",
-                                 ImmutableMap.of(Properties.Elasticsearch.HOST,
+                                 ImmutableMap.of(ESProperties.HOST,
                                    InetAddress.getLocalHost().getHostName() + ":" + httpPort,
-                                   Properties.Elasticsearch.INDEX_NAME, "batch",
-                                   Properties.Elasticsearch.TYPE_NAME, "testing",
-                                   Properties.Elasticsearch.ID_FIELD, "ticker"
+                                   ESProperties.INDEX_NAME, "batch",
+                                   ESProperties.TYPE_NAME, "testing",
+                                   ESProperties.ID_FIELD, "ticker"
                                  ));
     List<ETLStage> transforms = new ArrayList<>();
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, transforms);
@@ -237,12 +238,12 @@ public class ETLESTest extends TestBase {
   @SuppressWarnings("ConstantConditions")
   private void testESSource() throws Exception {
     ETLStage source = new ETLStage("Elasticsearch",
-                                   ImmutableMap.of(Properties.Elasticsearch.HOST,
+                                   ImmutableMap.of(ESProperties.HOST,
                                                    InetAddress.getLocalHost().getHostName() + ":" + httpPort,
-                                                   Properties.Elasticsearch.INDEX_NAME, "batch",
-                                                   Properties.Elasticsearch.TYPE_NAME, "testing",
-                                                   Properties.Elasticsearch.QUERY, "?q=*",
-                                                   Properties.Elasticsearch.SCHEMA, BODY_SCHEMA.toString()));
+                                                   ESProperties.INDEX_NAME, "batch",
+                                                   ESProperties.TYPE_NAME, "testing",
+                                                   ESProperties.QUERY, "?q=*",
+                                                   ESProperties.SCHEMA, BODY_SCHEMA.toString()));
     ETLStage sink = new ETLStage("Table",
                                  ImmutableMap.of("name", TABLE_NAME,
                                                  Properties.Table.PROPERTY_SCHEMA, BODY_SCHEMA.toString(),
@@ -279,12 +280,12 @@ public class ETLESTest extends TestBase {
                                                                     DataGeneratorSource.TABLE_TYPE));
     try {
       ETLStage sink = new ETLStage("Elasticsearch",
-                                   ImmutableMap.of(RealtimeElasticsearchSink.Elasticsearch.TRANSPORT_ADDRESSES,
+                                   ImmutableMap.of(ESProperties.TRANSPORT_ADDRESSES,
                                                    InetAddress.getLocalHost().getHostName() + ":" + transportPort,
-                                                   RealtimeElasticsearchSink.Elasticsearch.CLUSTER, "testcluster",
-                                                   RealtimeElasticsearchSink.Elasticsearch.INDEX_NAME, "realtime",
-                                                   RealtimeElasticsearchSink.Elasticsearch.TYPE_NAME, "testing",
-                                                   RealtimeElasticsearchSink.Elasticsearch.ID_FIELD, "name"
+                                                   ESProperties.CLUSTER, "testcluster",
+                                                   ESProperties.INDEX_NAME, "realtime",
+                                                   ESProperties.TYPE_NAME, "testing",
+                                                   ESProperties.ID_FIELD, "name"
                                    ));
       List<ETLStage> transforms = new ArrayList<>();
       ETLRealtimeConfig etlConfig = new ETLRealtimeConfig(source, sink, transforms);
