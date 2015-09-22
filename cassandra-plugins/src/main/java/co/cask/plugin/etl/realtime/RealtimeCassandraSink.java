@@ -33,6 +33,7 @@ import com.datastax.driver.core.ProtocolOptions;
 import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -96,8 +98,17 @@ public class RealtimeCassandraSink extends RealtimeSink<StructuredRecord> {
 
   private List<InetSocketAddress> parseAddresses(String addressString) {
     List<InetSocketAddress> addresses = new ArrayList<>();
-    for (String address : addressString.split(",")) {
-      addresses.add(new InetSocketAddress(address.split(":")[0], Integer.valueOf(address.split(":")[1])));
+    Map<String, String> ipPortMap = Splitter.on(",").omitEmptyStrings().trimResults()
+      .withKeyValueSeparator(":").split(addressString);
+
+    for (Map.Entry<String, String> ipPort : ipPortMap.entrySet()) {
+      int port;
+      try {
+        port = Integer.valueOf(ipPort.getValue());
+      } catch (NumberFormatException e) {
+        throw new IllegalArgumentException(String.format("Port should be an integer : %s", ipPort.getValue()), e);
+      }
+      addresses.add(new InetSocketAddress(ipPort.getKey(), port));
     }
     return addresses;
   }
