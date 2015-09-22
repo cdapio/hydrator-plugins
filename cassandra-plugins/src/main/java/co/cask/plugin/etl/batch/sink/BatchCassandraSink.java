@@ -24,10 +24,10 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.plugin.PluginConfig;
+import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.batch.BatchSink;
+import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.cdap.etl.common.StructuredRecordStringConverter;
-import co.cask.cdap.template.etl.api.Emitter;
-import co.cask.cdap.template.etl.api.batch.BatchSink;
-import co.cask.cdap.template.etl.api.batch.BatchSinkContext;
 import com.google.common.base.Preconditions;
 import org.apache.cassandra.hadoop.cql3.CqlOutputFormat;
 import org.apache.cassandra.utils.ByteBufferUtil;
@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * A {@link BatchSink} that writes data to Cassandra.
@@ -50,7 +51,7 @@ import java.util.Map;
 @Name("Cassandra")
 @Description("CDAP Cassandra Batch Sink takes the structured record from the input source " +
   "and converts each field to a byte buffer, then puts it in the keyspace and column family specified by the user. " +
-  "The Cassandra server should be running prior to creating the adapter, " +
+  "The Cassandra server should be running prior to creating the application, " +
   "and the keyspace and column family should be created.")
 public class BatchCassandraSink extends BatchSink<StructuredRecord, Map<String, ByteBuffer>, List<ByteBuffer>> {
   private final CassandraBatchConfig config;
@@ -119,7 +120,7 @@ public class BatchCassandraSink extends BatchSink<StructuredRecord, Map<String, 
           return object == null ? ByteBufferUtil.EMPTY_BYTE_BUFFER : encodeObject(object, schema.getNonNullable());
         }
     }
-    throw new IOException("Unsupported field type - only simple types are supported: " + schema);
+    throw new IOException("Unsupported field type; only simple types are supported: " + schema);
   }
 
   /**
@@ -131,20 +132,21 @@ public class BatchCassandraSink extends BatchSink<StructuredRecord, Map<String, 
     private String partitioner;
 
     @Name(Cassandra.PORT)
-    @Description("The rpc port for Cassandra. For example, 9160. " +
-      "Please also check the configuration to make sure that start_rpc is true in cassandra.yaml")
-    private String port;
+    @Nullable
+    @Description("The RPC port for Cassandra. For example, 9160. " +
+      "Please also check the configuration to make sure that start_rpc is true in cassandra.yaml.")
+    private Integer port;
 
     @Name(Cassandra.COLUMN_FAMILY)
-    @Description("The column family to inject data into. Create the column family before starting the adapter.")
+    @Description("The column family to inject data into. Create the column family before starting the application.")
     private String columnFamily;
 
     @Name(Cassandra.KEYSPACE)
-    @Description("The keyspace to inject data into. Create the keyspace before starting the adapter.")
+    @Description("The keyspace to inject data into. Create the keyspace before starting the application.")
     private String keyspace;
 
     @Name(Cassandra.INITIAL_ADDRESS)
-    @Description("The initial address to connect to. For example, \"localhost\".")
+    @Description("The initial address to connect to. For example: \"10.11.12.13\".")
     private String initialAddress;
 
     @Name(Cassandra.COLUMNS)
@@ -153,10 +155,10 @@ public class BatchCassandraSink extends BatchSink<StructuredRecord, Map<String, 
     private String columns;
 
     @Name(Cassandra.PRIMARY_KEY)
-    @Description("A comma-separated list of primary keys. For example, \"key1,key2\"")
+    @Description("A comma-separated list of primary keys. For example: \"key1,key2\".")
     private String primaryKey;
 
-    public CassandraBatchConfig(String partitioner, String port, String columnFamily, String keyspace,
+    public CassandraBatchConfig(String partitioner, @Nullable Integer port, String columnFamily, String keyspace,
                                 String initialAddress, String columns, String primaryKey) {
       this.partitioner = partitioner;
       this.initialAddress = initialAddress;
@@ -174,7 +176,7 @@ public class BatchCassandraSink extends BatchSink<StructuredRecord, Map<String, 
     public CassandraOutputFormatProvider(CassandraBatchConfig config) {
       this.conf = new HashMap<>();
 
-      conf.put("cassandra.output.thrift.port", config.port);
+      conf.put("cassandra.output.thrift.port", config.port == null ? "9160" : Integer.toString(config.port));
       conf.put("cassandra.output.thrift.address", config.initialAddress);
       conf.put("cassandra.output.keyspace", config.keyspace);
       conf.put("mapreduce.output.basename", config.columnFamily);

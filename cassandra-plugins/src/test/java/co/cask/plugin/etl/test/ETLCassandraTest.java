@@ -22,26 +22,26 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.app.etl.batch.ETLBatchApplication;
-import co.cask.cdap.app.etl.batch.ETLMapReduce;
-import co.cask.cdap.app.etl.realtime.ETLRealtimeApplication;
-import co.cask.cdap.app.etl.realtime.ETLWorker;
-import co.cask.cdap.app.etl.realtime.config.ETLRealtimeConfig;
 import co.cask.cdap.common.utils.Tasks;
+import co.cask.cdap.etl.api.PipelineConfigurable;
+import co.cask.cdap.etl.api.batch.BatchSource;
+import co.cask.cdap.etl.api.realtime.RealtimeSource;
+import co.cask.cdap.etl.batch.ETLBatchApplication;
+import co.cask.cdap.etl.batch.ETLMapReduce;
+import co.cask.cdap.etl.batch.config.ETLBatchConfig;
+import co.cask.cdap.etl.batch.sink.TableSink;
+import co.cask.cdap.etl.common.ETLStage;
+import co.cask.cdap.etl.common.Properties;
+import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
+import co.cask.cdap.etl.realtime.ETLWorker;
+import co.cask.cdap.etl.realtime.config.ETLRealtimeConfig;
+import co.cask.cdap.etl.transform.ProjectionTransform;
+import co.cask.cdap.etl.transform.ScriptFilterTransform;
+import co.cask.cdap.etl.transform.StructuredRecordToGenericRecordTransform;
 import co.cask.cdap.proto.Id;
-import co.cask.cdap.app.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactRange;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
-import co.cask.cdap.template.etl.api.PipelineConfigurable;
-import co.cask.cdap.template.etl.api.batch.BatchSource;
-import co.cask.cdap.template.etl.api.realtime.RealtimeSource;
-import co.cask.cdap.template.etl.batch.sink.TableSink;
-import co.cask.cdap.template.etl.common.ETLStage;
-import co.cask.cdap.template.etl.common.Properties;
-import co.cask.cdap.template.etl.transform.ProjectionTransform;
-import co.cask.cdap.template.etl.transform.ScriptFilterTransform;
-import co.cask.cdap.template.etl.transform.StructuredRecordToGenericRecordTransform;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
@@ -186,6 +186,31 @@ public class ETLCassandraTest extends TestBase {
     testCassandraSource();
   }
 
+  @Test
+  public void testInvalidRealtimeCassandraSink() throws Exception {
+    ETLStage source = new ETLStage("DataGenerator", ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE,
+                                                                    DataGeneratorSource.TABLE_TYPE));
+    ETLStage sink = new ETLStage("Cassandra",
+                                 new ImmutableMap.Builder<String, String>()
+                                   .put(RealtimeCassandraSink.Cassandra.ADDRESSES, "localhost:9042,invalid:abcd")
+                                   .put(RealtimeCassandraSink.Cassandra.KEYSPACE, "testkeyspace")
+                                   .put(RealtimeCassandraSink.Cassandra.COLUMN_FAMILY, "testtablerealtime")
+                                   .put(RealtimeCassandraSink.Cassandra.COLUMNS, "name,graduated,id,score,time")
+                                   .put(RealtimeCassandraSink.Cassandra.COMPRESSION, "NONE")
+                                   .put(RealtimeCassandraSink.Cassandra.CONSISTENCY_LEVEL, "QUORUM")
+                                   .build());
+    List<ETLStage> transforms = new ArrayList<>();
+    ETLRealtimeConfig etlConfig = new ETLRealtimeConfig(source, sink, transforms);
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testESSink");
+    AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(REALTIME_APP_ARTIFACT, etlConfig);
+    try {
+      deployApplication(appId, appRequest);
+      Assert.fail();
+    } catch (IllegalStateException e) {
+      // expected
+    }
+  }
+
   public void testCassandraSink() throws Exception {
     StreamManager streamManager = getStreamManager(STREAM_NAME);
     streamManager.createStream();
@@ -249,7 +274,6 @@ public class ETLCassandraTest extends TestBase {
     ETLStage source = new ETLStage("Cassandra",
                                    new ImmutableMap.Builder<String, String>()
                                      .put(BatchCassandraSource.Cassandra.INITIAL_ADDRESS, "localhost")
-                                     .put(BatchCassandraSource.Cassandra.PORT, Integer.toString(rpcPort))
                                      .put(BatchCassandraSource.Cassandra.PARTITIONER,
                                           "org.apache.cassandra.dht.Murmur3Partitioner")
                                      .put(BatchCassandraSource.Cassandra.KEYSPACE, "testkeyspace")

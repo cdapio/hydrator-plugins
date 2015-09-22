@@ -23,9 +23,9 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.plugin.PluginConfig;
-import co.cask.cdap.template.etl.api.Emitter;
-import co.cask.cdap.template.etl.api.batch.BatchSource;
-import co.cask.cdap.template.etl.api.batch.BatchSourceContext;
+import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.batch.BatchSource;
+import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import com.datastax.driver.core.Row;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -55,7 +55,7 @@ import javax.annotation.Nullable;
 @Name("Cassandra")
 @Description("CDAP Cassandra Batch Source will select the rows returned by the user's query " +
   "and convert each row to a {@link StructuredRecord} using the schema specified by the user. " +
-  "The Cassandra server should be running prior to creating the adapter, " +
+  "The Cassandra server should be running prior to creating the application, " +
   "and the keyspace and column family should be created.")
 public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecord> {
   private static final Map<Schema.Type, Class<?>> TYPE_CLASS_MAP = new ImmutableMap.Builder<Schema.Type, Class<?>>()
@@ -81,7 +81,7 @@ public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecor
     ConfigHelper.setInputColumnFamily(conf, config.keyspace, config.columnFamily);
     ConfigHelper.setInputInitialAddress(conf, config.initialAddress);
     ConfigHelper.setInputPartitioner(conf, config.partitioner);
-    ConfigHelper.setInputRpcPort(conf, config.port);
+    ConfigHelper.setInputRpcPort(conf, (config.port == null) ? "9160" : Integer.toString(config.port));
     Preconditions.checkArgument(!(Strings.isNullOrEmpty(config.username) ^ Strings.isNullOrEmpty(config.password)),
                                 "You must either set both username and password or neither username nor password. " +
                                   "Currently, they are username: " + config.username +
@@ -162,9 +162,10 @@ public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecor
     private String partitioner;
 
     @Name(Cassandra.PORT)
-    @Description("The rpc port for Cassandra; for example, 9160. " +
-      "Check the configuration to make sure that start_rpc is true in cassandra.yaml")
-    private String port;
+    @Nullable
+    @Description("The RPC port for Cassandra; for example: 9160 (default value). " +
+      "Check the configuration to make sure that start_rpc is true in cassandra.yaml.")
+    private Integer port;
 
     @Name(Cassandra.COLUMN_FAMILY)
     @Description("The column family to select data from.")
@@ -175,18 +176,18 @@ public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecor
     private String keyspace;
 
     @Name(Cassandra.INITIAL_ADDRESS)
-    @Description("The initial address to connect to. For example, \"localhost\".")
+    @Description("The initial address to connect to. For example: \"10.11.12.13\".")
     private String initialAddress;
 
     @Name(Cassandra.USERNAME)
     @Description("The username for the keyspace (if one exists). " +
-      "If this is not empty, then you must supply a password")
+      "If this is not empty, then you must supply a password.")
     @Nullable
     private String username;
 
     @Name(Cassandra.PASSWORD)
     @Description("The password for the keyspace (if one exists). " +
-      "If this is not empty, then you must supply a username")
+      "If this is not empty, then you must supply a username.")
     @Nullable
     private String password;
 
@@ -196,7 +197,20 @@ public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecor
     private String query;
 
     @Name(Cassandra.SCHEMA)
-    @Description("The schema for the data as it will be formatted in CDAP")
+    @Description("The schema for the data as it will be formatted in CDAP. Sample schema: {\n" +
+      "    \"type\": \"record\",\n" +
+      "    \"name\": \"schemaBody\",\n" +
+      "    \"fields\": [\n" +
+      "        {\n" +
+      "            \"name\": \"name\",\n" +
+      "            \"type\": \"string\"\n" +
+      "        },\n" +
+      "        {\n" +
+      "            \"name\": \"age\",\n" +
+      "            \"type\": \"int\"\n" +
+      "        }" +
+      "    ]\n" +
+      "}")
     private String schema;
 
     @Name(Cassandra.PROPERTIES)
@@ -206,7 +220,7 @@ public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecor
     @Nullable
     private String properties;
 
-    public CassandraSourceConfig(String partitioner, String port, String columnFamily, String schema,
+    public CassandraSourceConfig(String partitioner, Integer port, String columnFamily, String schema,
                                  String keyspace, String initialAddress, String query, @Nullable String properties,
                                  @Nullable String username, @Nullable String password) {
       this.partitioner = partitioner;

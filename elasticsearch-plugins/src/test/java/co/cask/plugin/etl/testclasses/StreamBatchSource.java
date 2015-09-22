@@ -28,11 +28,11 @@ import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.flow.flowlet.StreamEvent;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.api.stream.GenericStreamEventData;
+import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.PipelineConfigurer;
+import co.cask.cdap.etl.api.batch.BatchSource;
+import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.cdap.etl.common.ETLUtils;
-import co.cask.cdap.template.etl.api.Emitter;
-import co.cask.cdap.template.etl.api.PipelineConfigurer;
-import co.cask.cdap.template.etl.api.batch.BatchSource;
-import co.cask.cdap.template.etl.api.batch.BatchSourceContext;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -57,7 +57,7 @@ import javax.annotation.Nullable;
 @Description("Batch source for a stream.")
 public class StreamBatchSource extends BatchSource<LongWritable, Object, StructuredRecord> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(co.cask.cdap.template.etl.batch.source.StreamBatchSource.class);
+  private static final Logger LOG = LoggerFactory.getLogger(StreamBatchSource.class);
   private static final String FORMAT_SETTING_PREFIX = "format.setting.";
   private static final Schema DEFAULT_SCHEMA = Schema.recordOf(
     "event",
@@ -160,7 +160,7 @@ public class StreamBatchSource extends BatchSource<LongWritable, Object, Structu
   }
 
   /**
-   * {@link PluginConfig} class for {@link co.cask.cdap.template.etl.batch.source.StreamBatchSource}
+   * {@link PluginConfig} class for {@link co.cask.cdap.etl.batch.source.StreamBatchSource}
    */
   public static class StreamBatchConfig extends PluginConfig {
 
