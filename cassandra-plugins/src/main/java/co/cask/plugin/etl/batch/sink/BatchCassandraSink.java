@@ -28,6 +28,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.cdap.etl.common.StructuredRecordStringConverter;
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import org.apache.cassandra.hadoop.cql3.CqlOutputFormat;
 import org.apache.cassandra.utils.ByteBufferUtil;
@@ -69,7 +70,7 @@ public class BatchCassandraSink extends BatchSink<StructuredRecord, Map<String, 
   public void transform(StructuredRecord record,
                         Emitter<KeyValue<Map<String, ByteBuffer>, List<ByteBuffer>>> emitter) throws Exception {
     Map<String, ByteBuffer> keys = new LinkedHashMap<>();
-    for (String key : config.primaryKey.split(",")) {
+    for (String key : CharMatcher.WHITESPACE.removeFrom(config.primaryKey).split(",")) {
       Preconditions.checkNotNull(record.get(key), String.format("Primary key %s is not present in this record: %s",
                                                                 key, StructuredRecordStringConverter
                                                                        .toDelimitedString(record, ";")));
@@ -80,8 +81,8 @@ public class BatchCassandraSink extends BatchSink<StructuredRecord, Map<String, 
 
   private List<ByteBuffer> getColumns(StructuredRecord record) throws Exception {
     List<ByteBuffer> columns = new ArrayList<>();
-    List<String> primaryKeys = Arrays.asList(config.primaryKey.split(","));
-    for (String columnName : config.columns.split(",")) {
+    List<String> primaryKeys = Arrays.asList(CharMatcher.WHITESPACE.removeFrom(config.primaryKey).split(","));
+    for (String columnName : CharMatcher.WHITESPACE.removeFrom(config.columns).split(",")) {
 
       //Cassandra allows multiple primary keys, so splitting that list on a comma
       // and checking that the current column isn't a primary key
