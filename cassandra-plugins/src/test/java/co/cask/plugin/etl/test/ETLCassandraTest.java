@@ -232,7 +232,7 @@ public class ETLCassandraTest extends TestBase {
       .put(BatchCassandraSink.Cassandra.PARTITIONER, "org.apache.cassandra.dht.Murmur3Partitioner")
       .put(BatchCassandraSink.Cassandra.KEYSPACE, "testkeyspace")
       .put(BatchCassandraSink.Cassandra.COLUMN_FAMILY, "testtablebatch")
-      .put(BatchCassandraSink.Cassandra.COLUMNS, "ticker,num,price")
+      .put(BatchCassandraSink.Cassandra.COLUMNS, "ticker, num, price")
       .put(BatchCassandraSink.Cassandra.PRIMARY_KEY, "ticker")
       .build());
 
@@ -328,7 +328,7 @@ public class ETLCassandraTest extends TestBase {
                                    .put(RealtimeCassandraSink.Cassandra.ADDRESSES, "localhost:9042")
                                    .put(RealtimeCassandraSink.Cassandra.KEYSPACE, "testkeyspace")
                                    .put(RealtimeCassandraSink.Cassandra.COLUMN_FAMILY, "testtablerealtime")
-                                   .put(RealtimeCassandraSink.Cassandra.COLUMNS, "name,graduated,id,score,time")
+                                   .put(RealtimeCassandraSink.Cassandra.COLUMNS, "name, graduated, id, score, time")
                                    .put(RealtimeCassandraSink.Cassandra.COMPRESSION, "NONE")
                                    .put(RealtimeCassandraSink.Cassandra.CONSISTENCY_LEVEL, "QUORUM")
                                    .build());

@@ -27,6 +27,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import com.datastax.driver.core.Row;
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
@@ -92,7 +93,9 @@ public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecor
 
     if (!Strings.isNullOrEmpty(config.properties)) {
       for (String pair : config.properties.split(",")) {
-        conf.set(pair.split(":")[0], pair.split(":")[1]);
+        // the key and value of properties might have spaces so remove only leading and trailing ones
+        conf.set(CharMatcher.WHITESPACE.trimFrom(pair.split(":")[0]),
+                 CharMatcher.WHITESPACE.trimFrom(pair.split(":")[1]));
       }
     }
     CqlConfigHelper.setInputCql(conf, config.query);

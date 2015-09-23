@@ -32,6 +32,7 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ProtocolOptions;
 import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.Session;
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
@@ -115,18 +116,19 @@ public class RealtimeCassandraSink extends RealtimeSink<StructuredRecord> {
 
   @Override
   public int write(Iterable<StructuredRecord> structuredRecords, DataWriter dataWriter) throws Exception {
-    List<String> columns = Arrays.asList(config.columns.split(","));
+    String columns = CharMatcher.WHITESPACE.removeFrom(config.columns);
+    List<String> columnsList = Arrays.asList(columns.split(","));
     PreparedStatement statement = session.prepare(String.format("INSERT INTO %s (%s) VALUES (%s)",
                                                                 config.columnFamily,
-                                                                config.columns.replaceAll(",", ", "),
-                                                                config.columns.replaceAll("[^,]+", "?")
+                                                                columns.replaceAll(",", ", "),
+                                                                columns.replaceAll("[^,]+", "?")
                                                                   .replaceAll(",", ", ")));
     BatchStatement batch = new BatchStatement();
     int count = 0;
     for (StructuredRecord record : structuredRecords) {
-      Object[] toBind = new Object[columns.size()];
-      for (int i = 0; i < columns.size(); i++) {
-        toBind[i] = record.get(columns.get(i));
+      Object[] toBind = new Object[columnsList.size()];
+      for (int i = 0; i < columnsList.size(); i++) {
+        toBind[i] = record.get(columnsList.get(i));
       }
       batch.add(statement.bind(toBind));
       count++;
