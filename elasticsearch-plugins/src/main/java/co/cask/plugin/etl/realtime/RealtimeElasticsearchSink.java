@@ -25,6 +25,7 @@ import co.cask.cdap.etl.api.realtime.DataWriter;
 import co.cask.cdap.etl.api.realtime.RealtimeContext;
 import co.cask.cdap.etl.api.realtime.RealtimeSink;
 import co.cask.cdap.etl.common.StructuredRecordStringConverter;
+import co.cask.plugin.etl.batch.ESProperties;
 import com.google.common.base.Strings;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
@@ -137,24 +138,24 @@ public class RealtimeElasticsearchSink extends RealtimeSink<StructuredRecord> {
    */
   public static class RealtimeESSinkConfig extends PluginConfig {
 
-    @Name(Elasticsearch.INDEX_NAME)
+    @Name(ESProperties.INDEX_NAME)
     @Description(INDEX_DESCRIPTION)
     private String index;
 
-    @Name(Elasticsearch.TYPE_NAME)
+    @Name(ESProperties.TYPE_NAME)
     @Description(TYPE_DESCRIPTION)
     private String type;
 
-    @Name(Elasticsearch.ID_FIELD)
+    @Name(ESProperties.ID_FIELD)
     @Description(ID_DESCRIPTION)
     @Nullable
     private String idField;
 
-    @Name(Elasticsearch.TRANSPORT_ADDRESSES)
+    @Name(ESProperties.TRANSPORT_ADDRESSES)
     @Description(TRANSPORT_ADDRESS_DESCRIPTION)
     private String transportAddresses;
 
-    @Name(Elasticsearch.CLUSTER)
+    @Name(ESProperties.CLUSTER)
     @Description(CLUSTER_DESCRIPTION)
     @Nullable
     private String cluster;
@@ -167,15 +168,5 @@ public class RealtimeElasticsearchSink extends RealtimeSink<StructuredRecord> {
       this.transportAddresses = transportAddresses;
       this.cluster = cluster;
     }
-  }
-  /**
-   * Properties for elasticsearch
-   */
-  public static class Elasticsearch {
-    public static final String INDEX_NAME = "es.index";
-    public static final String TYPE_NAME = "es.type";
-    public static final String ID_FIELD = "es.idField";
-    public static final String TRANSPORT_ADDRESSES = "es.transportAddresses";
-    public static final String CLUSTER = "es.cluster";
   }
 }
