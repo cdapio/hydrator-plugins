@@ -65,7 +65,7 @@ After the build completes, you will have a jar for each plugin under the
 Deploy Plugins
 --------------
 
-You can deploy plugins using CDAP CLI::
+You can deploy plugins using the CDAP CLI::
 
   > load artifact <target/plugin-jar> config-file <resources/plugin-config>
 
