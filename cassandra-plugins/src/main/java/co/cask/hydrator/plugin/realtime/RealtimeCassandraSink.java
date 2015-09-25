@@ -65,6 +65,8 @@ public class RealtimeCassandraSink extends RealtimeSink<StructuredRecord> {
 
   private Cluster cluster;
   private Session session;
+  private List<String> columns;
+  private PreparedStatement statement;
 
   public RealtimeCassandraSink(RealtimeCassandraSinkConfig config) {
     this.config = config;
@@ -81,6 +83,12 @@ public class RealtimeCassandraSink extends RealtimeSink<StructuredRecord> {
     builder.withCompression(ProtocolOptions.Compression.valueOf(config.compression));
     cluster = builder.build();
     session = cluster.connect(config.keyspace);
+    columns = Arrays.asList(CharMatcher.WHITESPACE.removeFrom(config.columns).split(","));
+    statement = session.prepare(String.format("INSERT INTO %s (%s) VALUES (%s)",
+                                              config.columnFamily,
+                                              config.columns.replaceAll(",", ", "),
+                                              config.columns.replaceAll("[^,]+", "?")
+                                                .replaceAll(",", ", ")));
   }
 
   @Override
@@ -114,19 +122,12 @@ public class RealtimeCassandraSink extends RealtimeSink<StructuredRecord> {
 
   @Override
   public int write(Iterable<StructuredRecord> structuredRecords, DataWriter dataWriter) throws Exception {
-    String columns = CharMatcher.WHITESPACE.removeFrom(config.columns);
-    List<String> columnsList = Arrays.asList(columns.split(","));
-    PreparedStatement statement = session.prepare(String.format("INSERT INTO %s (%s) VALUES (%s)",
-                                                                config.columnFamily,
-                                                                columns.replaceAll(",", ", "),
-                                                                columns.replaceAll("[^,]+", "?")
-                                                                  .replaceAll(",", ", ")));
     BatchStatement batch = new BatchStatement();
     int count = 0;
     for (StructuredRecord record : structuredRecords) {
-      Object[] toBind = new Object[columnsList.size()];
-      for (int i = 0; i < columnsList.size(); i++) {
-        toBind[i] = record.get(columnsList.get(i));
+      Object[] toBind = new Object[columns.size()];
+      for (int i = 0; i < columns.size(); i++) {
+        toBind[i] = record.get(columns.get(i));
       }
       batch.add(statement.bind(toBind));
       count++;
