@@ -43,7 +43,7 @@ import javax.annotation.Nullable;
  */
 @Plugin(type = "batchsink")
 @Name("MongoDB")
-@Description("CDAP MongoDB Batch Sink converts {@link StructuredRecord} to {@link BSONWritable} and writes to MongoDB")
+@Description("MongoDB Batch Sink converts a StructuredRecord to a BSONWritable and writes it to MongoDB.")
 public class MongoDBBatchSink extends BatchSink<StructuredRecord, NullWritable, BSONWritable> {
 
   private final MongoDBSinkConfig config;
@@ -87,13 +87,13 @@ public class MongoDBBatchSink extends BatchSink<StructuredRecord, NullWritable, 
 
   public static class MongoDBSinkConfig extends PluginConfig {
     @Name(Properties.CONNECTION_STRING)
-    @Description("MongoDB Connection String (http://docs.mongodb.org/manual/reference/connection-string);" +
-      "Example : mongodb://10.23.123.43:27017/analytics.users")
+    @Description("MongoDB Connection String (see http://docs.mongodb.org/manual/reference/connection-string); " +
+      "Example: 'mongodb://localhost:27017/analytics.users'.")
     private String connectionString;
 
     @Name(Properties.ID_FIELD)
     @Nullable
-    @Description("Optionally make one of the incoming fields as the id field")
+    @Description("Optionally specifies one of the incoming fields as the id field.")
     private String idField;
   }
 
