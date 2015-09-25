@@ -37,8 +37,8 @@ import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.StreamManager;
 import co.cask.cdap.test.TestBase;
-import co.cask.plugin.etl.batch.sink.MongoDBSink;
-import co.cask.plugin.etl.batch.source.MongoDBSource;
+import co.cask.plugin.etl.batch.sink.MongoDBBatchSink;
+import co.cask.plugin.etl.batch.source.MongoDBBatchSource;
 import co.cask.plugin.etl.testclasses.StreamBatchSource;
 import co.cask.plugin.etl.testclasses.TableSink;
 import com.google.common.collect.ImmutableMap;
@@ -52,6 +52,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.hadoop.MongoInputFormat;
 import com.mongodb.hadoop.input.MongoInputSplit;
 import com.mongodb.hadoop.splitter.MongoSplitter;
+import com.mongodb.hadoop.splitter.StandaloneMongoSplitter;
 import de.flapdoodle.embed.mongo.distribution.Version;
 import de.flapdoodle.embed.mongo.tests.MongodForTestsFactory;
 import org.bson.Document;
@@ -66,7 +67,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- *
+ * Unit Tests for {@link MongoDBBatchSource} and {@link MongoDBBatchSink}.
  */
 public class MongoDBTest extends TestBase {
   private static final ArtifactVersion CURRENT_VERSION = new ArtifactVersion("3.2.0");
@@ -94,9 +95,9 @@ public class MongoDBTest extends TestBase {
                    PipelineConfigurable.class.getPackage().getName());
 
     addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "batch-plugins", "1.0.0"), BATCH_APP_ARTIFACT_ID,
-                      MongoDBSource.class, MongoInputFormat.class, MongoSplitter.class, MongoInputSplit.class,
+                      MongoDBBatchSource.class, MongoInputFormat.class, MongoSplitter.class, MongoInputSplit.class,
                       TableSink.class,
-                      MongoDBSink.class, StreamBatchSource.class);
+                      MongoDBBatchSink.class, StreamBatchSource.class);
   }
 
   @Before
@@ -138,7 +139,7 @@ public class MongoDBTest extends TestBase {
       .build());
 
     ETLStage sink = new ETLStage("MongoDB", new ImmutableMap.Builder<String, String>()
-                                            .put(MongoDBSink.Properties.CONNECTION_STRING,
+                                            .put(MongoDBBatchSink.Properties.CONNECTION_STRING,
                                                  String.format("mongodb://localhost:%d/%s.%s",
                                                                mongoPort, MONGO_DB, MONGO_SINK_COLLECTIONS)).build());
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, new ArrayList<ETLStage>());
@@ -173,10 +174,12 @@ public class MongoDBTest extends TestBase {
   @Test
   public void testMongoDBSource() throws Exception {
     ETLStage source = new ETLStage("MongoDB", new ImmutableMap.Builder<String, String>()
-                                              .put(MongoDBSource.Properties.CONNECTION_STRING,
+                                              .put(MongoDBBatchSource.Properties.CONNECTION_STRING,
                                                    String.format("mongodb://localhost:%d/%s.%s",
                                                                  mongoPort, MONGO_DB, MONGO_SOURCE_COLLECTIONS))
-                                              .put(MongoDBSource.Properties.SCHEMA, BODY_SCHEMA.toString()).build());
+                                              .put(MongoDBBatchSource.Properties.SCHEMA, BODY_SCHEMA.toString())
+                                              .put(MongoDBBatchSource.Properties.SPLITTER_CLASS,
+                                                   StandaloneMongoSplitter.class.getSimpleName()).build());
     ETLStage sink = new ETLStage("Table", ImmutableMap.of(Properties.Table.NAME, TABLE_NAME,
                                                           Properties.Table.PROPERTY_SCHEMA, BODY_SCHEMA.toString(),
                                                           Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ticker"));

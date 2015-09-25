@@ -16,6 +16,7 @@
 
 package co.cask.plugin.etl.batch.source;
 
+import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -28,6 +29,8 @@ import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.mongodb.hadoop.MongoInputFormat;
+import com.mongodb.hadoop.splitter.MongoSplitter;
+import com.mongodb.hadoop.splitter.StandaloneMongoSplitter;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.Job;
@@ -39,16 +42,19 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
- *
+ * A {@link BatchSource} that reads data from MongoDB.
  */
 @Plugin(type = "batchsource")
 @Name("MongoDB")
-public class MongoDBSource extends BatchSource<Object, BSONObject, StructuredRecord> {
+@Description("CDAP MongoDB Batch Source will read documents from MongoDB and convert each document" +
+  "into a {@link StructuredRecord} with the help of the given Schema. " +
+  "Optionally the users can specify input query, input fields, splitter class.")
+public class MongoDBBatchSource extends BatchSource<Object, BSONObject, StructuredRecord> {
 
   private static final Gson GSON = new Gson();
   private final MongoDBConfig config;
 
-  public MongoDBSource(MongoDBConfig config) {
+  public MongoDBBatchSource(MongoDBConfig config) {
     this.config = config;
   }
 
@@ -60,6 +66,19 @@ public class MongoDBSource extends BatchSource<Object, BSONObject, StructuredRec
     MongoConfigUtil.setInputURI(conf, config.connectionString);
     if (!Strings.isNullOrEmpty(config.inputQuery)) {
       MongoConfigUtil.setQuery(conf, config.inputQuery);
+    }
+    if (!Strings.isNullOrEmpty(config.authConnectionString)) {
+      MongoConfigUtil.setAuthURI(conf, config.authConnectionString);
+    }
+    if (!Strings.isNullOrEmpty(config.inputFields)) {
+      MongoConfigUtil.setFields(conf, config.inputFields);
+    }
+    if (!Strings.isNullOrEmpty(config.splitterClass)) {
+      String className = String.format("%s.%s", StandaloneMongoSplitter.class.getPackage().getName(),
+                                       config.splitterClass);
+      Class<? extends MongoSplitter> klass = getClass().getClassLoader().loadClass(
+        className).asSubclass(MongoSplitter.class);
+      MongoConfigUtil.setSplitterClass(conf, klass);
     }
     job.setInputFormatClass(MongoConfigUtil.getInputFormat(conf));
   }
@@ -112,19 +131,56 @@ public class MongoDBSource extends BatchSource<Object, BSONObject, StructuredRec
   public static class MongoDBConfig extends PluginConfig {
 
     @Name(Properties.CONNECTION_STRING)
+    @Description("MongoDB Connection String (http://docs.mongodb.org/manual/reference/connection-string);" +
+      "Example : mongodb://10.23.123.43:27017/analytics.users")
     private String connectionString;
 
+    @Name(Properties.AUTH_CONNECTION_STRING)
+    @Nullable
+    @Description("Auxiliary MongoDB connection string to authenticate against when constructing splits")
+    private String authConnectionString;
+
     @Name(Properties.SCHEMA)
+    @Description("The schema for the data as it will be formatted in CDAP. Sample schema: {\n" +
+      "    \"type\": \"record\",\n" +
+      "    \"name\": \"schemaBody\",\n" +
+      "    \"fields\": [\n" +
+      "        {\n" +
+      "            \"name\": \"name\",\n" +
+      "            \"type\": \"string\"\n" +
+      "        },\n" +
+      "        {\n" +
+      "            \"name\": \"age\",\n" +
+      "            \"type\": \"int\"\n" +
+      "        }" +
+      "    ]\n" +
+      "}")
     private String schema;
 
     @Name(Properties.INPUT_QUERY)
+    @Description("Optionally filter the input collection with a query. This query must be represented in JSON " +
+      "format, and use the MongoDB extended JSON format to represent non-native JSON data types ")
     @Nullable
     private String inputQuery;
+
+
+    @Name(Properties.INPUT_FIELDS)
+    @Nullable
+    @Description("A projection document limiting the fields that appear in each document.")
+    private String inputFields;
+
+    @Name(Properties.SPLITTER_CLASS)
+    @Nullable
+    @Description("The name of the Splitter class to use")
+    private String splitterClass;
   }
 
   public static class Properties {
+    public static final String AUTH_CONNECTION_STRING = "authConnectionString";
     public static final String CONNECTION_STRING = "connectionString";
     public static final String SCHEMA = "schema";
     public static final String INPUT_QUERY = "inputQuery";
+    public static final String INPUT_FIELDS = "inputFields";
+    public static final String SPLITTER_CLASS = "splitterClass";
   }
 }

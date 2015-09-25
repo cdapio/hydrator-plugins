@@ -16,6 +16,7 @@
 
 package co.cask.plugin.etl.batch.sink;
 
+import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.batch.OutputFormatProvider;
@@ -33,17 +34,21 @@ import org.apache.hadoop.io.NullWritable;
 
 import java.util.HashMap;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
- *
+ * A {@link BatchSink} that writes data to MongoDB.
+ * This {@link MongoDBBatchSink} takes a {@link StructuredRecord} in,
+ * converts it to {@link BSONWritable}, and writes it to MongoDB.
  */
 @Plugin(type = "batchsink")
 @Name("MongoDB")
-public class MongoDBSink extends BatchSink<StructuredRecord, NullWritable, BSONWritable> {
+@Description("CDAP MongoDB Batch Sink converts {@link StructuredRecord} to {@link BSONWritable} and writes to MongoDB")
+public class MongoDBBatchSink extends BatchSink<StructuredRecord, NullWritable, BSONWritable> {
 
   private final MongoDBSinkConfig config;
 
-  public MongoDBSink(MongoDBSinkConfig config) {
+  public MongoDBBatchSink(MongoDBSinkConfig config) {
     this.config = config;
   }
 
@@ -82,10 +87,18 @@ public class MongoDBSink extends BatchSink<StructuredRecord, NullWritable, BSONW
 
   public static class MongoDBSinkConfig extends PluginConfig {
     @Name(Properties.CONNECTION_STRING)
+    @Description("MongoDB Connection String (http://docs.mongodb.org/manual/reference/connection-string);" +
+      "Example : mongodb://10.23.123.43:27017/analytics.users")
     private String connectionString;
+
+    @Name(Properties.ID_FIELD)
+    @Nullable
+    @Description("Optionally make one of the incoming fields as the id field")
+    private String idField;
   }
 
   public static class Properties {
     public static final String CONNECTION_STRING = "connectionString";
+    public static final String ID_FIELD = "idField";
   }
 }
