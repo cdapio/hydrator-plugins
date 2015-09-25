@@ -90,15 +90,9 @@ public class MongoDBBatchSink extends BatchSink<StructuredRecord, NullWritable, 
     @Description("MongoDB Connection String (see http://docs.mongodb.org/manual/reference/connection-string); " +
       "Example: 'mongodb://localhost:27017/analytics.users'.")
     private String connectionString;
-
-    @Name(Properties.ID_FIELD)
-    @Nullable
-    @Description("Optionally specifies one of the incoming fields as the id field.")
-    private String idField;
   }
 
   public static class Properties {
     public static final String CONNECTION_STRING = "connectionString";
-    public static final String ID_FIELD = "idField";
   }
 }
