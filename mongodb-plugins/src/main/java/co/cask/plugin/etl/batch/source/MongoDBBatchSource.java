@@ -42,13 +42,14 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
- * A {@link BatchSource} that reads data from MongoDB.
+ * A {@link BatchSource} that reads data from MongoDB and converts each document into 
+ * a {@link StructuredRecord} with the help of the specified Schema.
  */
 @Plugin(type = "batchsource")
 @Name("MongoDB")
-@Description("CDAP MongoDB Batch Source will read documents from MongoDB and convert each document" +
-  "into a {@link StructuredRecord} with the help of the given Schema. " +
-  "Optionally the users can specify input query, input fields, splitter class.")
+@Description("MongoDB Batch Source will read documents from MongoDB and convert each document " +
+  "into a StructuredRecord with the help of the specified Schema. " +
+  "Optionally, the user can specify input query, input fields, and splitter class.")
 public class MongoDBBatchSource extends BatchSource<Object, BSONObject, StructuredRecord> {
 
   private static final Gson GSON = new Gson();
@@ -131,13 +132,13 @@ public class MongoDBBatchSource extends BatchSource<Object, BSONObject, Structur
   public static class MongoDBConfig extends PluginConfig {
 
     @Name(Properties.CONNECTION_STRING)
-    @Description("MongoDB Connection String (http://docs.mongodb.org/manual/reference/connection-string);" +
-      "Example : mongodb://10.23.123.43:27017/analytics.users")
+    @Description("MongoDB Connection String (see http://docs.mongodb.org/manual/reference/connection-string); " +
+      "Example: 'mongodb://localhost:27017/analytics.users'.")
     private String connectionString;
 
     @Name(Properties.AUTH_CONNECTION_STRING)
     @Nullable
-    @Description("Auxiliary MongoDB connection string to authenticate against when constructing splits")
+    @Description("Auxiliary MongoDB connection string to authenticate against when constructing splits.")
     private String authConnectionString;
 
     @Name(Properties.SCHEMA)
@@ -159,7 +160,7 @@ public class MongoDBBatchSource extends BatchSource<Object, BSONObject, Structur
 
     @Name(Properties.INPUT_QUERY)
     @Description("Optionally filter the input collection with a query. This query must be represented in JSON " +
-      "format, and use the MongoDB extended JSON format to represent non-native JSON data types ")
+      "format, and use the MongoDB extended JSON format to represent non-native JSON data types.")
     @Nullable
     private String inputQuery;
 
@@ -171,7 +172,7 @@ public class MongoDBBatchSource extends BatchSource<Object, BSONObject, Structur
 
     @Name(Properties.SPLITTER_CLASS)
     @Nullable
-    @Description("The name of the Splitter class to use")
+    @Description("The name of the Splitter class to use.")
     private String splitterClass;
   }
 
