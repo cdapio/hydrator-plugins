@@ -17,6 +17,7 @@
 package co.cask.plugin.etl.test;
 
 import co.cask.cdap.api.artifact.ArtifactVersion;
+import co.cask.cdap.api.data.format.Formats;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Scanner;
@@ -34,8 +35,11 @@ import co.cask.cdap.proto.artifact.ArtifactSummary;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
+import co.cask.cdap.test.StreamManager;
 import co.cask.cdap.test.TestBase;
+import co.cask.plugin.etl.batch.sink.MongoDBSink;
 import co.cask.plugin.etl.batch.source.MongoDBSource;
+import co.cask.plugin.etl.testclasses.StreamBatchSource;
 import co.cask.plugin.etl.testclasses.TableSink;
 import com.google.common.collect.ImmutableMap;
 import com.mongodb.BasicDBObject;
@@ -43,12 +47,14 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
 import com.mongodb.ServerAddress;
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.hadoop.MongoInputFormat;
 import com.mongodb.hadoop.input.MongoInputSplit;
 import com.mongodb.hadoop.splitter.MongoSplitter;
 import de.flapdoodle.embed.mongo.distribution.Version;
 import de.flapdoodle.embed.mongo.tests.MongodForTestsFactory;
+import org.bson.Document;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -68,7 +74,9 @@ public class MongoDBTest extends TestBase {
                                                                             "etlbatch", CURRENT_VERSION);
   private static final ArtifactSummary ETLBATCH_ARTIFACT = ArtifactSummary.from(BATCH_APP_ARTIFACT_ID);
   private static final String MONGO_DB = "cdap";
-  private static final String MONGO_COLLECTIONS = "stocks";
+  private static final String MONGO_SOURCE_COLLECTIONS = "stocks";
+  private static final String MONGO_SINK_COLLECTIONS = "copy";
+  private static final String STREAM_NAME = "myStream";
   private static final String TABLE_NAME = "outputTable";
 
   private static final Schema BODY_SCHEMA = Schema.recordOf(
@@ -87,7 +95,8 @@ public class MongoDBTest extends TestBase {
 
     addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "batch-plugins", "1.0.0"), BATCH_APP_ARTIFACT_ID,
                       MongoDBSource.class, MongoInputFormat.class, MongoSplitter.class, MongoInputSplit.class,
-                      TableSink.class);
+                      TableSink.class,
+                      MongoDBSink.class, StreamBatchSource.class);
   }
 
   @Before
@@ -98,9 +107,9 @@ public class MongoDBTest extends TestBase {
     List<ServerAddress> serverAddressList = mongoClient.getAllAddress();
     mongoPort = serverAddressList.get(0).getPort();
     MongoDatabase mongoDatabase = mongoClient.getDatabase(MONGO_DB);
-    mongoDatabase.createCollection(MONGO_COLLECTIONS);
+    mongoDatabase.createCollection(MONGO_SOURCE_COLLECTIONS);
     DB db = mongoClient.getDB(MONGO_DB);
-    DBCollection dbCollection = db.getCollection(MONGO_COLLECTIONS);
+    DBCollection dbCollection = db.getCollection(MONGO_SOURCE_COLLECTIONS);
     dbCollection.insert(new BasicDBObject(ImmutableMap.of("ticker", "AAPL", "num", 10, "price", 23.23)));
     dbCollection.insert(new BasicDBObject(ImmutableMap.of("ticker", "ORCL", "num", 12, "price", 10.10)));
   }
@@ -112,13 +121,61 @@ public class MongoDBTest extends TestBase {
     }
   }
 
+  @Test
+  public void testMongoDBSink() throws Exception {
+    StreamManager streamManager = getStreamManager(STREAM_NAME);
+    streamManager.createStream();
+    streamManager.send(ImmutableMap.of("header1", "bar"), "AAPL|10|500.32");
+    streamManager.send(ImmutableMap.of("header1", "bar"), "CDAP|13|212.36");
+
+    ETLStage source = new ETLStage("Stream", ImmutableMap.<String, String>builder()
+      .put(Properties.Stream.NAME, STREAM_NAME)
+      .put(Properties.Stream.DURATION, "10m")
+      .put(Properties.Stream.DELAY, "0d")
+      .put(Properties.Stream.FORMAT, Formats.CSV)
+      .put(Properties.Stream.SCHEMA, BODY_SCHEMA.toString())
+      .put("format.setting.delimiter", "|")
+      .build());
+
+    ETLStage sink = new ETLStage("MongoDB", new ImmutableMap.Builder<String, String>()
+                                            .put(MongoDBSink.Properties.CONNECTION_STRING,
+                                                 String.format("mongodb://localhost:%d/%s.%s",
+                                                               mongoPort, MONGO_DB, MONGO_SINK_COLLECTIONS)).build());
+    ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, new ArrayList<ETLStage>());
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "MongoSourceTest");
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+
+    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
+    mrManager.start();
+    mrManager.waitForFinish(5, TimeUnit.MINUTES);
+
+    MongoClient mongoClient = factory.newMongo();
+    MongoDatabase mongoDatabase = mongoClient.getDatabase(MONGO_DB);
+    MongoCollection<Document> documents = mongoDatabase.getCollection(MONGO_SINK_COLLECTIONS);
+    Assert.assertEquals(2, documents.count());
+    Iterable<Document> docs = documents.find(new BasicDBObject("ticker", "AAPL"));
+    Assert.assertTrue(docs.iterator().hasNext());
+    for (Document document : docs) {
+      Assert.assertEquals(10, (int) document.getInteger("num"));
+      Assert.assertEquals(500.32, document.getDouble("price"), 0.0001);
+    }
+
+    docs = documents.find(new BasicDBObject("ticker", "CDAP"));
+    Assert.assertTrue(docs.iterator().hasNext());
+    for (Document document : docs) {
+      Assert.assertEquals(13, (int) document.getInteger("num"));
+      Assert.assertEquals(212.36, document.getDouble("price"), 0.0001);
+    }
+  }
+
   @SuppressWarnings("ConstantConditions")
   @Test
   public void testMongoDBSource() throws Exception {
     ETLStage source = new ETLStage("MongoDB", new ImmutableMap.Builder<String, String>()
                                               .put(MongoDBSource.Properties.CONNECTION_STRING,
                                                    String.format("mongodb://localhost:%d/%s.%s",
-                                                                 mongoPort, MONGO_DB, MONGO_COLLECTIONS))
+                                                                 mongoPort, MONGO_DB, MONGO_SOURCE_COLLECTIONS))
                                               .put(MongoDBSource.Properties.SCHEMA, BODY_SCHEMA.toString()).build());
     ETLStage sink = new ETLStage("Table", ImmutableMap.of(Properties.Table.NAME, TABLE_NAME,
                                                           Properties.Table.PROPERTY_SCHEMA, BODY_SCHEMA.toString(),
@@ -126,7 +183,7 @@ public class MongoDBTest extends TestBase {
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, new ArrayList<ETLStage>());
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "CassandraSourceTest");
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "MongoSourceTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
