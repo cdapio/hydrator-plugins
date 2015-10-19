@@ -56,7 +56,7 @@ import javax.annotation.Nullable;
  */
 @Plugin(type = "realtimesink")
 @Name("Cassandra")
-@Description("CDAP Cassandra Realtime Sink takes the structured record from the input source and converts it " +
+@Description("CDAP Cassandra Realtime Sink takes the structured record from the previous stage and converts it " +
   "to a CQL query, then inserts it into Cassandra using the keyspace and column family specified by the user. " +
   "The Cassandra server should be running prior to creating the application.")
 public class RealtimeCassandraSink extends RealtimeSink<StructuredRecord> {
