@@ -81,6 +81,7 @@ public class MongoDBBatchSource extends BatchSource<Object, BSONObject, Structur
         className).asSubclass(MongoSplitter.class);
       MongoConfigUtil.setSplitterClass(conf, klass);
     }
+    Schema.parseJson(config.schema);
     job.setInputFormatClass(MongoConfigUtil.getInputFormat(conf));
   }
 
@@ -121,12 +122,9 @@ public class MongoDBBatchSource extends BatchSource<Object, BSONObject, Structur
       case UNION:
         if (field.getSchema().isNullableSimple()) {
           return convertValue(input, Schema.Field.of(field.getName(), field.getSchema().getNonNullable()));
-        } else {
-          return null;
         }
     }
-    throw new IOException(String.format("Unsupported schema : %s for field '%s'",
-                                        field.getSchema(), field.getName()));
+    throw new IOException(String.format("Unsupported schema : %s for field '%s'", field.getSchema(), field.getName()));
   }
 
   public static class MongoDBConfig extends PluginConfig {
@@ -167,12 +165,14 @@ public class MongoDBBatchSource extends BatchSource<Object, BSONObject, Structur
 
     @Name(Properties.INPUT_FIELDS)
     @Nullable
-    @Description("A projection document limiting the fields that appear in each document.")
+    @Description("A projection document limiting the fields that appear in each document. " +
+      "If no projection document is provided, all fields will be read.")
     private String inputFields;
 
     @Name(Properties.SPLITTER_CLASS)
     @Nullable
-    @Description("The name of the Splitter class to use.")
+    @Description("The name of the Splitter class to use. If left empty, the MongoDB Hadoop Connector will attempt " +
+      "to make a best guess as to what Splitter to use.")
     private String splitterClass;
   }
 

@@ -65,7 +65,7 @@ public class MongoDBRealtimeSink extends RealtimeSink<StructuredRecord> {
     for (StructuredRecord record : iterable) {
       Document document = new Document();
       for (Schema.Field field : record.getSchema().getFields()) {
-       document.append(field.getName(), record.get(field.getName()));
+        document.append(field.getName(), record.get(field.getName()));
       }
       documentList.add(document);
       recordCount++;
