@@ -30,6 +30,7 @@
     <module>transform-plugins</module>
     <module>kafka-plugins</module>
     <module>hive-plugins</module>
+    <module>python-evaluator-transform</module>
   </modules>
   <packaging>pom</packaging>
 
@@ -130,7 +131,6 @@
         <groupId>co.cask.cdap</groupId>
         <artifactId>cdap-etl-lib</artifactId>
         <version>${cdap.version}</version>
-        <scope>test</scope>
         <exclusions>
           <exclusion>
             <groupId>org.antlr</groupId>
