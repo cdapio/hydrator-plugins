@@ -24,6 +24,7 @@
   <modules>
     <module>cassandra-plugins</module>
     <module>elasticsearch-plugins</module>
+    <module>teradata-plugins</module>
   </modules>
   <packaging>pom</packaging>
 
