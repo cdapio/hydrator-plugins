@@ -23,6 +23,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.db.DBConfiguration;
 import org.apache.hadoop.mapreduce.lib.db.DBOutputFormat;
 import org.apache.hadoop.mapreduce.lib.db.DBWritable;
+import org.apache.hadoop.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,14 +62,45 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
       Connection connection = getConnection(conf);
       PreparedStatement statement = connection.prepareStatement(constructQuery(tableName, fieldNames));
       return new DBRecordWriter(connection, statement) {
+
+        private boolean emptyData = true;
+
         @Override
         public void close(TaskAttemptContext context) throws IOException {
-          super.close(context);
+          try {
+            if (!emptyData) {
+              getStatement().executeBatch();
+              getConnection().commit();
+            }
+          } catch (SQLException e) {
+            try {
+              getConnection().rollback();
+            }
+            catch (SQLException ex) {
+              LOG.warn(StringUtils.stringifyException(ex));
+            }
+            throw new IOException(e.getMessage());
+          } finally {
+            try {
+              getStatement().close();
+              getConnection().close();
+            }
+            catch (SQLException ex) {
+              throw new IOException(ex.getMessage());
+            }
+          }
+
           try {
             DriverManager.deregisterDriver(driverShim);
           } catch (SQLException e) {
             throw new IOException(e);
           }
+        }
+
+        @Override
+        public void write(K key, V value) throws IOException {
+          super.write(key, value);
+          emptyData = false;
         }
       };
     } catch (Exception ex) {
