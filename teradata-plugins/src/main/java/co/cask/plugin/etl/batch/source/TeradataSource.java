@@ -27,11 +27,12 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
-import co.cask.plugin.etl.batch.TeradataConfig;
 import co.cask.plugin.etl.batch.DBManager;
 import co.cask.plugin.etl.batch.DBRecord;
 import co.cask.plugin.etl.batch.DBUtils;
 import co.cask.plugin.etl.batch.ETLDBInputFormat;
+import co.cask.plugin.etl.batch.TeradataConfig;
+import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.Job;
@@ -52,13 +53,12 @@ public class TeradataSource extends BatchSource<LongWritable, DBRecord, Structur
   private static final Logger LOG = LoggerFactory.getLogger(TeradataSource.class);
 
   private static final String IMPORT_QUERY_DESCRIPTION = "The SELECT query to use to import data from the specified " +
-    "table. You can specify an arbitrary number of columns to import, or import all columns using *. " +
-    "You can also specify a number of WHERE clauses or ORDER BY clauses. However, LIMIT and OFFSET clauses " +
-    "should not be used in this query.";
-  private static final String COUNT_QUERY_DESCRIPTION = "The SELECT query to use to get the count of records to " +
-    "import from the specified table. Examples: SELECT COUNT(*) from <my_table> where <my_column> 1, " +
-    "SELECT COUNT(my_column) from my_table. NOTE: Please include the same WHERE clauses in this query as the ones " +
-    "used in the import query to reflect an accurate number of records to import.";
+    "table. You can specify an arbitrary number of columns to import, or import all columns using *. The Query should" +
+    "contain the '$CONDITIONS' string. For example, 'SELECT * FROM table WHERE $CONDITIONS'. The '$CONDITIONS' string" +
+    "will be replaced by 'splitBy' field limits specified by the bounding query.";
+  private static final String BOUNDING_QUERY_DESCRIPTION = "Bounding Query should return the min and max of the values" +
+    "of the 'splitBy' field. For example, 'SELECT MIN(id),MAX(id) FROM table'";
+  private static final String SPLIT_FIELD_DESCRIPTION = "Field Name which will be used to generate splits.";
 
   private final TeradataSourceConfig sourceConfig;
   private final DBManager dbManager;
@@ -72,14 +72,16 @@ public class TeradataSource extends BatchSource<LongWritable, DBRecord, Structur
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId());
+    Preconditions.checkArgument(sourceConfig.importQuery.contains("$CONDITIONS"), "Import Query %s must contain the " +
+      "string '$CONDITIONS'.", sourceConfig.importQuery);
   }
 
   @Override
   public void prepareRun(BatchSourceContext context) {
     LOG.debug("pluginType = {}; pluginName = {}; connectionString = {}; importQuery = {}; " +
-                "countQuery = {}",
+                "boundingQuery = {}",
               sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName,
-              sourceConfig.connectionString, sourceConfig.importQuery, sourceConfig.countQuery);
+              sourceConfig.connectionString, sourceConfig.importQuery, sourceConfig.boundingQuery);
 
     Job job = context.getHadoopJob();
     Configuration hConf = job.getConfiguration();
@@ -91,7 +93,8 @@ public class TeradataSource extends BatchSource<LongWritable, DBRecord, Structur
       DBConfiguration.configureDB(hConf, driverClass.getName(), sourceConfig.connectionString,
                                   sourceConfig.user, sourceConfig.password);
     }
-    ETLDBInputFormat.setInput(job, DBRecord.class, sourceConfig.importQuery, sourceConfig.countQuery);
+    ETLDBInputFormat.setInput(job, DBRecord.class, sourceConfig.importQuery, sourceConfig.boundingQuery);
+    job.getConfiguration().set(DBConfiguration.INPUT_ORDER_BY_PROPERTY, sourceConfig.splitBy);
     job.setInputFormatClass(ETLDBInputFormat.class);
   }
 
@@ -123,7 +126,10 @@ public class TeradataSource extends BatchSource<LongWritable, DBRecord, Structur
     @Description(IMPORT_QUERY_DESCRIPTION)
     String importQuery;
 
-    @Description(COUNT_QUERY_DESCRIPTION)
-    String countQuery;
+    @Description(BOUNDING_QUERY_DESCRIPTION)
+    String boundingQuery;
+
+    @Description(SPLIT_FIELD_DESCRIPTION)
+    String splitBy;
   }
 }

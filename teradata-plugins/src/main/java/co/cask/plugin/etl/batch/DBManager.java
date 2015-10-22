@@ -19,6 +19,7 @@ package co.cask.plugin.etl.batch;
 import co.cask.cdap.api.plugin.PluginProperties;
 import co.cask.cdap.etl.api.Destroyable;
 import co.cask.cdap.etl.api.PipelineConfigurer;
+import co.cask.plugin.etl.batch.sink.TeradataSink;
 import co.cask.plugin.etl.batch.source.TeradataSource;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
