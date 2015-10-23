@@ -44,8 +44,6 @@ public class HBaseSink extends BatchSink<StructuredRecord, NullWritable, Mutatio
     Job job = context.getHadoopJob();
     Configuration conf = job.getConfiguration();
     context.addOutput(config.columnFamily, new HBaseOutputFormatProvider(config, conf));
-    job.setMapOutputKeyClass(NullWritable.class);
-    job.setMapOutputValueClass(Mutation.class);
     HBaseConfiguration.addHbaseResources(conf);
   }
 
@@ -99,8 +97,6 @@ public class HBaseSink extends BatchSink<StructuredRecord, NullWritable, Mutatio
   }
 
   public static class HBaseSinkConfig extends HBaseConfig {
-    private String rowField;
-
     private String zkNodeParent;
   }
 }

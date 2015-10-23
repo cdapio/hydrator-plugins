@@ -16,4 +16,6 @@ public class HBaseConfig extends PluginConfig {
   public String zkQuorum;
 
   public String zkClientPort;
+
+  public String rowField;
 }

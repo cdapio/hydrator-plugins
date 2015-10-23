@@ -1,6 +1,7 @@
 package co.cask.plugin.etl.test;
 
 import co.cask.cdap.api.artifact.ArtifactVersion;
+import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.Formats;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Row;
@@ -24,16 +25,22 @@ import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.plugin.etl.batch.sink.HBaseSink;
 import co.cask.plugin.etl.batch.source.HBaseSource;
+import co.cask.plugin.etl.testclasses.StreamBatchSource;
 import co.cask.plugin.etl.testclasses.TableSink;
 import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.hbase.HBaseTestingUtility;
+import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
+import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -64,8 +71,8 @@ public class HBaseTest extends TestBase {
   private static final Schema BODY_SCHEMA = Schema.recordOf(
     "event",
     Schema.Field.of("ticker", Schema.of(Schema.Type.STRING)),
-    Schema.Field.of("col1", Schema.of(Schema.Type.INT)),
-    Schema.Field.of("col2", Schema.of(Schema.Type.DOUBLE)));
+    Schema.Field.of("col1", Schema.of(Schema.Type.STRING)),
+    Schema.Field.of("col2", Schema.of(Schema.Type.STRING)));
 
   @ClassRule
   public static TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -92,7 +99,10 @@ public class HBaseTest extends TestBase {
 
     // add artifact for batch sources and sinks
     addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "batch-plugins", "1.0.0"), BATCH_APP_ARTIFACT_ID,
-                      HBaseSource.class, HBaseSink.class, TableSink.class);
+                      HBaseSource.class, HBaseSink.class, TableSink.class, StreamBatchSource.class,
+                      TableInputFormat.class, TableOutputFormat.class,
+                      Result.class, ImmutableBytesWritable.class,
+                      Put.class, Mutation.class);
   }
 
   @Before
@@ -103,12 +113,8 @@ public class HBaseTest extends TestBase {
     hBaseAdmin = testUtil.getHBaseAdmin();
     htable = testUtil.createTable(HBASE_TABLE_NAME.getBytes(), HBASE_FAMILY_COLUMN.getBytes());
     htable.put(new Put(ROW1.getBytes()).add(HBASE_FAMILY_COLUMN.getBytes(), COL1.getBytes(), VAL1.getBytes()));
-    htable.put(new Put(ROW1.getBytes()).add(HBASE_FAMILY_COLUMN.getBytes(), COL1.getBytes(), VAL2.getBytes()));
-    htable.put(new Put(ROW1.getBytes()).add(HBASE_FAMILY_COLUMN.getBytes(), COL2.getBytes(), VAL1.getBytes()));
     htable.put(new Put(ROW1.getBytes()).add(HBASE_FAMILY_COLUMN.getBytes(), COL2.getBytes(), VAL2.getBytes()));
     htable.put(new Put(ROW2.getBytes()).add(HBASE_FAMILY_COLUMN.getBytes(), COL1.getBytes(), VAL1.getBytes()));
-    htable.put(new Put(ROW2.getBytes()).add(HBASE_FAMILY_COLUMN.getBytes(), COL1.getBytes(), VAL2.getBytes()));
-    htable.put(new Put(ROW2.getBytes()).add(HBASE_FAMILY_COLUMN.getBytes(), COL2.getBytes(), VAL1.getBytes()));
     htable.put(new Put(ROW2.getBytes()).add(HBASE_FAMILY_COLUMN.getBytes(), COL2.getBytes(), VAL2.getBytes()));
   }
 
@@ -149,7 +155,7 @@ public class HBaseTest extends TestBase {
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, transforms);
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "esSinkTest");
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "HBaseSinkTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
@@ -158,20 +164,31 @@ public class HBaseTest extends TestBase {
 
     ResultScanner resultScanner = htable.getScanner(HBASE_FAMILY_COLUMN.getBytes());
     Result result;
-    while ((result = resultScanner.next()) != null) {
-      System.out.println(Bytes.toString(result.getRow()));
+    int rowCount = 0;
+    while (resultScanner.next() != null) {
+      rowCount++;
     }
+    resultScanner.close();
+    Assert.assertEquals(4, rowCount);
+    result = htable.get(new Get("ORCL".getBytes()));
+    Assert.assertNotNull(result);
+    Map<byte[], byte[]> orclData = result.getFamilyMap(HBASE_FAMILY_COLUMN.getBytes());
+    Assert.assertEquals(2, orclData.size());
+    Assert.assertEquals("13", Bytes.toString(orclData.get("col1".getBytes())));
+    Assert.assertEquals("212.36", Bytes.toString(orclData.get("col2".getBytes())));
   }
-
 
   @Test
   public void testHBaseSource() throws Exception {
-    ETLStage source = new ETLStage("HBase", ImmutableMap.of("tableName", HBASE_TABLE_NAME,
-                                                            "columnFamily", HBASE_FAMILY_COLUMN,
-                                                            "zkQuorum", "localhost",
-                                                            "zkClientPort",
-                                                            Integer.toString(testUtil.getZkCluster().getClientPort()),
-                                                            "schema", BODY_SCHEMA.toString()));
+    Map<String, String> hBaseProps = new HashMap<>();
+    hBaseProps.put("tableName", HBASE_TABLE_NAME);
+    hBaseProps.put("columnFamily", HBASE_FAMILY_COLUMN);
+    hBaseProps.put("zkQuorum", "localhost");
+    hBaseProps.put("zkClientPort", Integer.toString(testUtil.getZkCluster().getClientPort()));
+    hBaseProps.put("schema", BODY_SCHEMA.toString());
+    hBaseProps.put("rowField", "ticker");
+
+    ETLStage source = new ETLStage("HBase", hBaseProps);
     ETLStage sink = new ETLStage("Table", ImmutableMap.of("name", TABLE_NAME,
                                                           Table.PROPERTY_SCHEMA, BODY_SCHEMA.toString(),
                                                           Table.PROPERTY_SCHEMA_ROW_FIELD, "ticker"));
@@ -192,7 +209,16 @@ public class HBaseTest extends TestBase {
 
     // Scanner to verify number of rows
     Scanner scanner = outputTable.scan(null, null);
-    Row row1 = scanner.next();
+    int countRows = 0;
+    while (scanner.next() != null) {
+      countRows++;
+    }
+    Assert.assertEquals(2, countRows);
+    scanner.close();
+    Row row = outputTable.get(ROW1.getBytes());
+    Assert.assertNotNull(row);
+    Assert.assertEquals(VAL1, Bytes.toString(row.get(COL1)));
+    Assert.assertEquals(VAL2, Bytes.toString(row.get(COL2)));
     scanner.close();
     // Verify data
   }

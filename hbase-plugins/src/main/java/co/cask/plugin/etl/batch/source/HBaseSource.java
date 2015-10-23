@@ -3,10 +3,12 @@ package co.cask.plugin.etl.batch.source;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
+import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.plugin.etl.batch.HBaseConfig;
@@ -27,7 +29,7 @@ import org.apache.hadoop.mapreduce.Job;
 @Name("HBase")
 @Description("Read from an HBase table in batch")
 public class HBaseSource extends BatchSource<ImmutableBytesWritable, Result, StructuredRecord> {
-
+  private RowRecordTransformer rowRecordTransformer;
   private HBaseConfig config;
 
   @Override
@@ -46,9 +48,18 @@ public class HBaseSource extends BatchSource<ImmutableBytesWritable, Result, Str
   }
 
   @Override
+  public void initialize(BatchRuntimeContext context) throws Exception {
+    super.initialize(context);
+    Schema schema = Schema.parseJson(config.schema);
+    rowRecordTransformer = new RowRecordTransformer(schema, config.rowField);
+  }
+
+  @Override
   public void transform(KeyValue<ImmutableBytesWritable, Result> input, Emitter<StructuredRecord> emitter)
     throws Exception {
-    System.out.println(Bytes.toString(input.getKey().get()));
-    // Use RowRecord Transformer to convert it to Structured Record
+    Row cdapRow = new co.cask.cdap.api.dataset.table.Result(
+      input.getValue().getRow(), input.getValue().getFamilyMap(config.columnFamily.getBytes()));
+    StructuredRecord record = rowRecordTransformer.toRecord(cdapRow);
+    emitter.emit(record);
   }
 }

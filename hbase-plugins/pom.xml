@@ -73,7 +73,16 @@
       <groupId>org.apache.hbase</groupId>
       <artifactId>hbase-server</artifactId>
       <version>0.98.6.1-hadoop2</version>
-      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hbase</groupId>
+      <artifactId>hbase-common</artifactId>
+      <version>0.98.6.1-hadoop2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hbase</groupId>
+      <artifactId>hbase-client</artifactId>
+      <version>0.98.6.1-hadoop2</version>
     </dependency>
     <dependency>
       <groupId>org.apache.hbase</groupId>
@@ -116,8 +125,9 @@
               <classifier>batch</classifier>
               <instructions>
                 <!-- build bundle jar for batch -->
-                <Export-Package>co.cask.plugin.etl.batch.*;
-                  org.apache.commons.lang;org.apache.commons.logging.*;
+                <Export-Package>co.cask.plugin.etl.batch;org.apache.hadoop.hbase.mapreduce;
+                  org.apache.hadoop.hbase.client;org.apache.hadoop.hbase.io;
+                  org.apache.commons.lang;org.apache.commons.logging;
                   org.codehaus.jackson.*</Export-Package>
                 <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
                 <Embed-Transitive>true</Embed-Transitive>
