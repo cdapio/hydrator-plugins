@@ -13,7 +13,6 @@ import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.plugin.etl.batch.HBaseConfig;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.KeyValueSerialization;
@@ -44,7 +43,6 @@ public class HBaseSource extends BatchSource<ImmutableBytesWritable, Result, Str
     conf.setStrings("io.serializations", conf.get("io.serializations"),
                     MutationSerialization.class.getName(), ResultSerialization.class.getName(),
                     KeyValueSerialization.class.getName());
-    HBaseConfiguration.addHbaseResources(conf);
   }
 
   @Override
