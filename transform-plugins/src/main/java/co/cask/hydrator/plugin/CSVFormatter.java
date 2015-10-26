@@ -201,7 +201,6 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
     }
   }
 
-
   /**
    * Configuration for the plugin.
    */
