@@ -170,7 +170,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
     }
     return builder.build();
   }
-  
+
   /**
    * Configuration for the plugin.
    */
