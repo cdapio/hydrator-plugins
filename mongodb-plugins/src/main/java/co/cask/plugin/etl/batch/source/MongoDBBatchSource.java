@@ -24,10 +24,12 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.PipelineConfigurer;
+import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
+import co.cask.cdap.etl.common.BSONConverter;
 import com.google.common.base.Strings;
-import com.google.gson.Gson;
 import com.mongodb.hadoop.MongoInputFormat;
 import com.mongodb.hadoop.splitter.MongoSplitter;
 import com.mongodb.hadoop.splitter.StandaloneMongoSplitter;
@@ -37,8 +39,6 @@ import org.apache.hadoop.mapreduce.Job;
 import org.bson.BSONObject;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -52,11 +52,21 @@ import javax.annotation.Nullable;
   "Optionally, the user can specify input query, input fields, and splitter class.")
 public class MongoDBBatchSource extends BatchSource<Object, BSONObject, StructuredRecord> {
 
-  private static final Gson GSON = new Gson();
   private final MongoDBConfig config;
+  private BSONConverter bsonConverter;
 
   public MongoDBBatchSource(MongoDBConfig config) {
     this.config = config;
+  }
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
+    try {
+      Schema.parseJson(config.schema);
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Invalid schema", e);
+    }
   }
 
   @Override
@@ -81,50 +91,19 @@ public class MongoDBBatchSource extends BatchSource<Object, BSONObject, Structur
         className).asSubclass(MongoSplitter.class);
       MongoConfigUtil.setSplitterClass(conf, klass);
     }
-    Schema.parseJson(config.schema);
     job.setInputFormatClass(MongoConfigUtil.getInputFormat(conf));
+  }
+
+  @Override
+  public void initialize(BatchRuntimeContext context) throws Exception {
+    super.initialize(context);
+    bsonConverter = new BSONConverter(config.schema);
   }
 
   @Override
   public void transform(KeyValue<Object, BSONObject> input, Emitter<StructuredRecord> emitter) throws Exception {
     BSONObject bsonObject = input.getValue();
-    Schema schema = Schema.parseJson(config.schema);
-    StructuredRecord.Builder builder = StructuredRecord.builder(schema);
-    for (Schema.Field field : schema.getFields()) {
-      builder.set(field.getName(), convertValue(bsonObject.get(field.getName()).toString(), field));
-    }
-    emitter.emit(builder.build());
-  }
-
-  private Object convertValue(String input, Schema.Field field) throws IOException {
-    switch (field.getSchema().getType()) {
-      case NULL:
-        return null;
-      case BOOLEAN:
-        return Boolean.valueOf(input);
-      case INT:
-        return Integer.valueOf(input);
-      case LONG:
-        return Long.valueOf(input);
-      case FLOAT:
-        return Float.valueOf(input);
-      case DOUBLE:
-        return Double.valueOf(input);
-      case BYTES:
-        return input.getBytes();
-      case STRING:
-      case ENUM:
-        return input;
-      case ARRAY:
-        return GSON.fromJson(input, List.class);
-      case MAP:
-        return GSON.fromJson(input, Map.class);
-      case UNION:
-        if (field.getSchema().isNullableSimple()) {
-          return convertValue(input, Schema.Field.of(field.getName(), field.getSchema().getNonNullable()));
-        }
-    }
-    throw new IOException(String.format("Unsupported schema : %s for field '%s'", field.getSchema(), field.getName()));
+    emitter.emit(bsonConverter.transform(bsonObject));
   }
 
   public static class MongoDBConfig extends PluginConfig {
