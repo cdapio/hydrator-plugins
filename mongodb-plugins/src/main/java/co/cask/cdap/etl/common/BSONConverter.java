@@ -23,7 +23,7 @@ import org.bson.BSONObject;
 import java.io.IOException;
 
 /**
- *
+ * Converts {@link BSONObject} to {@link StructuredRecord}.
  */
 public class BSONConverter extends RecordConverter<BSONObject, StructuredRecord> {
   private final Schema schema;
