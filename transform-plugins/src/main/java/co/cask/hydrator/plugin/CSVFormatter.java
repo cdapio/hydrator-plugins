@@ -56,7 +56,7 @@ import java.util.Map;
  */
 @Plugin(type = "transform")
 @Name("CSVFormatter")
-@Description("Formats a Structure Record to CSV")
+@Description("Formats a Structured Record to CSV")
 public final class CSVFormatter extends Transform<StructuredRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(CSVFormatter.class);
 
