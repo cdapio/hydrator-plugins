@@ -6,7 +6,7 @@
       "display": "Configuration",
       "position": [
         "path",
-        "suffix"
+        "timeSuffix"
       ],
       "fields": {
         "path": {
