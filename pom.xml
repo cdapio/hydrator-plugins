@@ -18,20 +18,36 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>co.cask.plugin.etl</groupId>
-  <artifactId>etl-plugins</artifactId>
+  <groupId>co.cask.hydrator</groupId>
+  <artifactId>hydrator-plugins</artifactId>
   <version>1.1.0-SNAPSHOT</version>
   <modules>
     <module>cassandra-plugins</module>
     <module>elasticsearch-plugins</module>
+    <module>transform-plugins</module>
   </modules>
   <packaging>pom</packaging>
 
-  <name>ETL Plugins</name>
+  <name>Hydrator Plugin Collection</name>
+  
+  <url>http://docs.cdap.io/cdap/current/en/included-applications/index.html</url>
+
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+      <comments>A business-friendly OSS license</comments>
+    </license>
+  </licenses>
+
+  <issueManagement>
+    <url>https://issues.cask.co/browse/CDAP</url>
+  </issueManagement>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <cdap.version>3.2.0-SNAPSHOT</cdap.version>
+    <cdap.version>3.2.1</cdap.version>
     <es.version>1.6.0</es.version>
     <es-hadoop.version>2.1.0</es-hadoop.version>
     <fastutil.version>6.6.1</fastutil.version>
@@ -43,6 +59,9 @@
     <datastax.version>2.0.5</datastax.version>
     <es-hadoop.version>2.1.0</es-hadoop.version>
     <commons-httpclient.version>3.1</commons-httpclient.version>
+    <apache-commons.version>1.2</apache-commons.version>
+    <commons-codec.version>1.10</commons-codec.version>
+    <snappy.version>1.1.2</snappy.version>
   </properties>
 
 
@@ -257,6 +276,11 @@
         <version>${cassandra.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.xerial.snappy</groupId>
+        <artifactId>snappy-java</artifactId>
+        <version>${snappy.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.cassandraunit</groupId>
         <artifactId>cassandra-unit</artifactId>
         <version>${cassandraunit.version}</version>
@@ -366,7 +390,7 @@
               <classifier>batch</classifier>
               <instructions>
                 <!-- build bundle jar for batch. excluding realtime-->
-                <Export-Package>co.cask.plugin.etl.batch.*;org.apache.cassandra.hadoop.*;
+                <Export-Package>co.cask.hydrator.plugin.batch.*;org.apache.cassandra.hadoop.*;
                   org.apache.commons.lang</Export-Package>
                 <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
                 <Embed-Transitive>true</Embed-Transitive>
@@ -384,7 +408,7 @@
               <classifier>realtime</classifier>
               <instructions>
                 <!-- build bundle jar for realtime. excluding batch-->
-                <Export-Package>co.cask.plugin.etl.realtime.*</Export-Package>
+                <Export-Package>co.cask.hydrator.plugin.realtime.*</Export-Package>
                 <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
                 <Embed-Transitive>true</Embed-Transitive>
                 <Embed-Directory>lib</Embed-Directory>
