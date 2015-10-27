@@ -138,3 +138,4 @@ public class CSVParserTest {
                           .set("body", ",stringA,3,4.32,true").build(), emitter);
   }
 }
+
