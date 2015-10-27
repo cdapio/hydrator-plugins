@@ -112,11 +112,11 @@ public class HDFSSink extends BatchSink<StructuredRecord, Text, NullWritable> {
   public static class HDFSSinkConfig extends PluginConfig {
 
     @Name("path")
-    @Description("HDFS Destination Path Prefix. By default it is empty")
+    @Description("HDFS Destination Path Prefix. For example, 'hdfs://mycluster.net:8020/output")
     private String path;
 
     @Name("suffix")
-    @Description("Time Suffix used for destination directory for each run. For example, 'YYYY-MM-DD-HH-MM'. " +
+    @Description("Time Suffix used for destination directory for each run. For example, 'YYYY-MM-dd-HH-mm'. " +
       "By default, no time suffix is used.")
     @Nullable
     private String timeSufix;
