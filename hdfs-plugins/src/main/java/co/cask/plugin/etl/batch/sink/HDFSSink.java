@@ -30,8 +30,8 @@ import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
+import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
@@ -48,7 +48,7 @@ import javax.annotation.Nullable;
 @Plugin(type = "batchsink")
 @Name("HDFS")
 @Description("Batch HDFS Sink")
-public class HDFSSink extends BatchSink<StructuredRecord, Text, Text> {
+public class HDFSSink extends BatchSink<StructuredRecord, Text, NullWritable> {
   private HDFSSinkConfig config;
 
   public HDFSSink(HDFSSinkConfig config) {
@@ -70,12 +70,12 @@ public class HDFSSink extends BatchSink<StructuredRecord, Text, Text> {
   }
 
   @Override
-  public void transform(StructuredRecord input, Emitter<KeyValue<Text, Text>> emitter) throws Exception {
+  public void transform(StructuredRecord input, Emitter<KeyValue<Text, NullWritable>> emitter) throws Exception {
     List<String> dataArray = new ArrayList<>();
     for (Schema.Field field : input.getSchema().getFields()) {
       dataArray.add(input.get(field.getName()).toString());
     }
-    emitter.emit(new KeyValue<>(new Text(Joiner.on(",").join(dataArray)), new Text()));
+    emitter.emit(new KeyValue<>(new Text(Joiner.on(",").join(dataArray)), NullWritable.get()));
   }
 
   public static class SinkOutputFormatProvider implements OutputFormatProvider {
@@ -88,8 +88,6 @@ public class HDFSSink extends BatchSink<StructuredRecord, Text, Text> {
       String timeSuffix = !Strings.isNullOrEmpty(config.timeSufix) ?
         new SimpleDateFormat(config.timeSufix).format(context.getLogicalStartTime()) : "";
       conf.put(FileOutputFormat.OUTDIR, String.format("%s/%s", config.path, timeSuffix));
-      conf.put(JobContext.MAP_OUTPUT_KEY_CLASS, Text.class.getName());
-      conf.put(JobContext.MAP_OUTPUT_VALUE_CLASS, Text.class.getName());
     }
 
     @Override
