@@ -96,7 +96,7 @@
               <classifier>batch</classifier>
               <instructions>
                 <!-- build bundle jar for batch. excluding realtime-->
-                <Export-Package>co.cask.hydrator.plugin.batch.*;org.apache.cassandra.hadoop.*;
+                <Export-Package>co.cask.hydrator.plugin.*;org.apache.cassandra.hadoop.*;
                   org.apache.commons.lang</Export-Package>
                 <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
                 <Embed-Transitive>true</Embed-Transitive>
@@ -114,7 +114,7 @@
               <classifier>realtime</classifier>
               <instructions>
                 <!-- build bundle jar for realtime. excluding batch-->
-                <Export-Package>co.cask.hydrator.plugin.realtime.*</Export-Package>
+                <Export-Package>co.cask.hydrator.plugin.*</Export-Package>
                 <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
                 <Embed-Transitive>true</Embed-Transitive>
                 <Embed-Directory>lib</Embed-Directory>
