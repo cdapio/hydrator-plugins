@@ -72,3 +72,4 @@ public class CSVFormatterTest {
     Assert.assertEquals("6|7|8|9|10\r\n", emitter.getEmitted().get(0).get("body"));
   }
 }
+
