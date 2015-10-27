@@ -45,7 +45,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- *
+ * Sink to write to HBase tables.
  */
 @Plugin(type = "batchsink")
 @Name("HBase")
