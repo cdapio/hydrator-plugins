@@ -24,6 +24,7 @@
   <modules>
     <module>cassandra-plugins</module>
     <module>elasticsearch-plugins</module>
+    <module>hdfs-plugins</module>
     <module>transform-plugins</module>
   </modules>
   <packaging>pom</packaging>
@@ -155,6 +156,12 @@
         <groupId>co.cask.cdap</groupId>
         <artifactId>cdap-etl-common</artifactId>
         <version>${cdap.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-minicluster</artifactId>
+        <version>${hadoop.version}</version>
+        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>
