@@ -159,7 +159,6 @@ public class HBaseTest extends TestBase {
     Map<String, String> hBaseProps = new HashMap<>();
     hBaseProps.put("tableName", HBASE_TABLE_NAME);
     hBaseProps.put("columnFamily", HBASE_FAMILY_COLUMN);
-    hBaseProps.put("zkQuorum", "localhost");
     hBaseProps.put("zkClientPort", Integer.toString(testUtil.getZkCluster().getClientPort()));
     hBaseProps.put("schema", BODY_SCHEMA.toString());
     hBaseProps.put("zkNodeParent", testUtil.getConfiguration().get("zookeeper.znode.parent"));
@@ -197,7 +196,6 @@ public class HBaseTest extends TestBase {
     Map<String, String> hBaseProps = new HashMap<>();
     hBaseProps.put("tableName", HBASE_TABLE_NAME);
     hBaseProps.put("columnFamily", HBASE_FAMILY_COLUMN);
-    hBaseProps.put("zkQuorum", "localhost");
     hBaseProps.put("zkClientPort", Integer.toString(testUtil.getZkCluster().getClientPort()));
     hBaseProps.put("schema", BODY_SCHEMA.toString());
     hBaseProps.put("rowField", "ticker");

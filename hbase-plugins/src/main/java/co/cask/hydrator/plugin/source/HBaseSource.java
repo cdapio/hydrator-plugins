@@ -29,6 +29,7 @@ import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.cdap.etl.common.RowRecordTransformer;
 import co.cask.hydrator.plugin.HBaseConfig;
+import com.google.common.base.Strings;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
@@ -55,8 +56,10 @@ public class HBaseSource extends BatchSource<ImmutableBytesWritable, Result, Str
     job.setInputFormatClass(TableInputFormat.class);
     conf.set(TableInputFormat.INPUT_TABLE, config.tableName);
     conf.set(TableInputFormat.SCAN_COLUMN_FAMILY, config.columnFamily);
-    conf.set("hbase.zookeeper.quorum", config.zkQuorum);
-    conf.set("hbase.zookeeper.property.clientPort", config.zkClientPort);
+    String zkQuorum = !Strings.isNullOrEmpty(config.zkQuorum) ? config.zkQuorum : "localhost";
+    String zkClientPort = !Strings.isNullOrEmpty(config.zkClientPort) ? config.zkClientPort : "2181";
+    conf.set("hbase.zookeeper.quorum", zkQuorum);
+    conf.set("hbase.zookeeper.property.clientPort", zkClientPort);
     conf.setStrings("io.serializations", conf.get("io.serializations"),
                     MutationSerialization.class.getName(), ResultSerialization.class.getName(),
                     KeyValueSerialization.class.getName());

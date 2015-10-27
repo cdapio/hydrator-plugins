@@ -30,6 +30,7 @@ import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.cdap.etl.common.RecordPutTransformer;
 import co.cask.hydrator.plugin.HBaseConfig;
+import com.google.common.base.Strings;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Mutation;
@@ -43,6 +44,7 @@ import org.apache.hadoop.util.StringUtils;
 
 import java.util.HashMap;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * Sink to write to HBase tables.
@@ -70,8 +72,10 @@ public class HBaseSink extends BatchSink<StructuredRecord, NullWritable, Mutatio
     public HBaseOutputFormatProvider(HBaseSinkConfig config, Configuration configuration) {
       this.conf = new HashMap<>();
       conf.put(TableOutputFormat.OUTPUT_TABLE, config.tableName);
-      conf.put(TableOutputFormat.QUORUM_ADDRESS, String.format("%s:%s:%s", config.zkQuorum, config.zkClientPort,
-                                                               config.zkNodeParent));
+      String zkQuorum = !Strings.isNullOrEmpty(config.zkQuorum) ? config.zkQuorum : "localhost";
+      String zkClientPort = !Strings.isNullOrEmpty(config.zkClientPort) ? config.zkClientPort : "2181";
+      String zkNodeParent = !Strings.isNullOrEmpty(config.zkNodeParent) ? config.zkNodeParent : "/hbase";
+      conf.put(TableOutputFormat.QUORUM_ADDRESS, String.format("%s:%s:%s", zkQuorum, zkClientPort, zkNodeParent));
       String[] serializationClasses = {
         configuration.get("io.serializations"),
         MutationSerialization.class.getName(),
@@ -113,6 +117,8 @@ public class HBaseSink extends BatchSink<StructuredRecord, NullWritable, Mutatio
   }
 
   public static class HBaseSinkConfig extends HBaseConfig {
+    @Description("Parent Node of HBase in Zookeeper. Defaults to '/hbase'")
+    @Nullable
     private String zkNodeParent;
   }
 }
