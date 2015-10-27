@@ -4,7 +4,7 @@
     "position": [ "group1" ],
     "group1": {
       "display" : "HBase Configuration",
-      "position" : [ "tableName", "columnFamily", "schema", "zkQuorum", "zkClientPort", "rowField", "zkNodeParent" ],
+      "position" : [ "tableName", "columnFamily", "zkQuorum", "zkClientPort", "rowField", "zkNodeParent" ],
       "fields" : {
         "tableName": {
           "widget": "textbox",
@@ -47,14 +47,15 @@
           "properties": {
             "width": "large"
           }
-        },
-        "schema" : {
-          "widget": "schema",
-          "label": "Schema",
-          "schema-types" : [ "boolean", "int", "long", "float", "double", "bytes", "string" ],
-          "schema-default-type" : "string"
         }
       }
+    }
+  },
+  "outputschema": {
+    "schema" : {
+      "widget": "schema",
+      "schema-types" : [ "boolean", "int", "long", "float", "double", "bytes", "string", "map<string, string>" ],
+      "schema-default-type" : "string"
     }
   }
 }
