@@ -27,7 +27,6 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
-import co.cask.cdap.etl.common.RowRecordTransformer;
 import co.cask.hydrator.plugin.HBaseConfig;
 import com.google.common.base.Strings;
 import org.apache.hadoop.conf.Configuration;

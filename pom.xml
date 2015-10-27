@@ -49,7 +49,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <cdap.version>3.3.0-SNAPSHOT</cdap.version>
+    <cdap.version>3.2.1</cdap.version>
     <es.version>1.6.0</es.version>
     <es-hadoop.version>2.1.0</es-hadoop.version>
     <fastutil.version>6.6.1</fastutil.version>
