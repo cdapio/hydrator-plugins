@@ -1,0 +1,19 @@
+{
+  "id": "JSONFormatter",
+  "groups": {
+    "position": [ "group1" ],
+    "group1": {
+      "display": "JSON Formatter",
+      "position": [ "schema" ],
+      "fields": {
+        "schema" : {
+          "widget": "schema",
+          "label": "Schema",
+          "description" : "Output Schema",
+          "schema-types" : [ "string" ],
+          "schema-default-type" : "string"
+        }
+      }
+    }
+  }
+}

@@ -18,8 +18,8 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
-    <artifactId>etl-plugins</artifactId>
-    <groupId>co.cask.plugin.etl</groupId>
+    <artifactId>hydrator-plugins</artifactId>
+    <groupId>co.cask.hydrator</groupId>
     <version>1.1.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -62,7 +62,6 @@
     <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-etl-common</artifactId>
-      <version>${cdap.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
@@ -157,7 +156,7 @@
               <classifier>batch</classifier>
               <instructions>
                 <!-- build bundle jar for batch -->
-                <Export-Package>co.cask.plugin.etl.batch.*;org.apache.commons.lang;org.apache.hadoop.hbase.mapreduce.*;
+                <Export-Package>co.cask.hydrator.plugin.*;org.apache.commons.lang;org.apache.hadoop.hbase.mapreduce.*;
                   org.apache.hadoop.hbase.client.*;org.apache.hadoop.hbase.io.*;
                 </Export-Package>
                 <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
