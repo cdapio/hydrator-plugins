@@ -27,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Indentity Transform copies the source data into the destination without any change.
+ * Identity Transform copies the source data into the destination without any change.
  */
 @Plugin(type = "transform")
 @Name("Identity")
