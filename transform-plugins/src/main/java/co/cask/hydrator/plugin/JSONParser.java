@@ -38,7 +38,7 @@ import java.util.List;
 @Plugin(type = "transform")
 @Name("JSONParser")
 @Description("Parses JSON Object into a Structured Record.")
-public class JSONParser extends Transform<StructuredRecord, StructuredRecord> {
+public final class JSONParser extends Transform<StructuredRecord, StructuredRecord> {
   private final Config config;
   
   // Output Schema that specifies the fileds of JSON object. 
