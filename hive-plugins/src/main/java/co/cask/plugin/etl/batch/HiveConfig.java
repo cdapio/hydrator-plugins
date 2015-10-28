@@ -11,4 +11,5 @@ public class HiveConfig extends PluginConfig {
 
   public String tableName;
 
+  public String metaStoreURI;
 }
