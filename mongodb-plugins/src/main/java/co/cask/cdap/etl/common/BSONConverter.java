@@ -17,15 +17,20 @@
 package co.cask.cdap.etl.common;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.format.UnexpectedFormatException;
 import co.cask.cdap.api.data.schema.Schema;
+import com.google.common.collect.Lists;
 import org.bson.BSONObject;
+import org.bson.types.BasicBSONList;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Converts {@link BSONObject} to {@link StructuredRecord}.
  */
 public class BSONConverter {
+
   private final Schema schema;
 
   public BSONConverter(String schemaString) throws IOException {
@@ -35,19 +40,37 @@ public class BSONConverter {
   public StructuredRecord transform(BSONObject bsonObject) throws IOException {
     StructuredRecord.Builder builder = StructuredRecord.builder(schema);
     for (Schema.Field field : schema.getFields()) {
-      builder.set(field.getName(), extractValue(bsonObject.get(field.getName()), field));
+      builder.set(field.getName(), extractValue(bsonObject.get(field.getName()), field.getSchema()));
     }
     return builder.build();
   }
 
-  private Object extractValue(Object object, Schema.Field field) throws IOException {
-    switch (field.getSchema().getType()) {
+  private Object extractValue(Object object, Schema schema) {
+    Schema.Type fieldType = schema.getType();
+    switch (fieldType) {
+      case ARRAY:
+        return convertArray(object, schema.getComponentSchema());
+      case BYTES:
+      case INT:
+      case LONG:
+      case FLOAT:
+      case DOUBLE:
+      case BOOLEAN:
+      case STRING:
+        return object;
       case NULL:
         return null;
-      case BOOLEAN:
-        return Boolean.valueOf(object.toString());
       default:
-      return null;
+        throw new UnexpectedFormatException("field type " + fieldType + " is not supported.");
     }
+  }
+
+  private Object convertArray(Object object, Schema schema) {
+    BasicBSONList bsonList = (BasicBSONList) object;
+    List<Object> values = Lists.newArrayListWithCapacity(bsonList.size());
+    for (Object obj : bsonList) {
+      values.add(extractValue(obj, schema));
+    }
+    return values;
   }
 }

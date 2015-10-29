@@ -50,6 +50,7 @@ import co.cask.plugin.etl.realtime.sink.MongoDBRealtimeSink;
 import co.cask.plugin.etl.testclasses.StreamBatchSource;
 import co.cask.plugin.etl.testclasses.TableSink;
 import com.google.common.collect.ImmutableMap;
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -57,6 +58,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.MongoIterable;
 import com.mongodb.hadoop.MongoInputFormat;
 import com.mongodb.hadoop.input.MongoInputSplit;
 import com.mongodb.hadoop.splitter.MongoSplitter;
@@ -138,14 +140,20 @@ public class MongoDBTest extends TestBase {
     MongoClient mongoClient = factory.newMongo();
     List<ServerAddress> serverAddressList = mongoClient.getAllAddress();
     mongoPort = serverAddressList.get(0).getPort();
+    mongoClient.dropDatabase(MONGO_DB);
     MongoDatabase mongoDatabase = mongoClient.getDatabase(MONGO_DB);
+    MongoIterable<String> collections = mongoDatabase.listCollectionNames();
+    Assert.assertFalse(collections.iterator().hasNext());
     mongoDatabase.createCollection(MONGO_SOURCE_COLLECTIONS);
     DB db = mongoClient.getDB(MONGO_DB);
     DBCollection dbCollection = db.getCollection(MONGO_SOURCE_COLLECTIONS);
-    dbCollection.insert(new BasicDBObject(ImmutableMap.of("ticker", "AAPL", "num", 10, "price", 213.23,
-                                                          "agents", "[ 'a1', 'b1' ]")));
-    dbCollection.insert(new BasicDBObject(ImmutableMap.of("ticker", "ORCL", "num", 12, "price", 133.23,
-                                                          "agents", "[ 'a2', 'b2' ]")));
+    BasicDBList basicDBList = new BasicDBList();
+    basicDBList.put(1, "a1");
+    basicDBList.put(2, "a2");
+    dbCollection.insert(new BasicDBObject(ImmutableMap.of("ticker", "AAPL", "num", 10, "price", 23.23,
+                                                          "agents", basicDBList)));
+    dbCollection.insert(new BasicDBObject(ImmutableMap.of("ticker", "ORCL", "num", 12, "price", 10.10,
+                                                          "agents", basicDBList)));
   }
 
   @After
