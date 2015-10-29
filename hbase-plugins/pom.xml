@@ -14,31 +14,34 @@
   ~ License for the specific language governing permissions and limitations under
   ~ the License.
   -->
-
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
-    <groupId>co.cask.hydrator</groupId>
     <artifactId>hydrator-plugins</artifactId>
+    <groupId>co.cask.hydrator</groupId>
     <version>1.1.0-SNAPSHOT</version>
   </parent>
-
-  <artifactId>cassandra-plugins</artifactId>
   <modelVersion>4.0.0</modelVersion>
 
+  <artifactId>hbase-plugins</artifactId>
   <dependencies>
-    <dependency>
-      <groupId>javax.annotation</groupId>
-      <artifactId>jsr250-api</artifactId>
-    </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-etl-api</artifactId>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
-      <artifactId>cdap-etl-batch</artifactId>
+      <artifactId>cdap-etl-lib</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>co.cask.cdap</groupId>
+      <artifactId>cdap-etl-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>co.cask.cdap</groupId>
+      <artifactId>cdap-proto</artifactId>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
@@ -46,40 +49,86 @@
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
-      <artifactId>cdap-etl-lib</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-unit-test</artifactId>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
-      <artifactId>cdap-etl-common</artifactId>
+      <artifactId>cdap-etl-batch</artifactId>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-etl-realtime</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-common</artifactId>
+      <groupId>co.cask.cdap</groupId>
+      <artifactId>cdap-etl-common</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-mapreduce-client-core</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.cassandra</groupId>
-      <artifactId>cassandra-all</artifactId>
+      <groupId>org.apache.hbase</groupId>
+      <artifactId>hbase-server</artifactId>
+      <version>0.98.6.1-hadoop2</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.hbase</groupId>
+          <artifactId>hbase-hadoop-compat</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.hbase</groupId>
+          <artifactId>hbase-hadoop2-compat</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.hadoop</groupId>
+          <artifactId>hadoop-common</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.hadoop</groupId>
+          <artifactId>hadoop-auth</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.hadoop</groupId>
+          <artifactId>hadoop-client</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.hadoop</groupId>
+          <artifactId>hadoop-mapreduce-client-core</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.hadoop</groupId>
+          <artifactId>hadoop-hdfs</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.hadoop</groupId>
+          <artifactId>hadoop-annotations</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.hadoop</groupId>
+          <artifactId>hadoop-minicluster</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.hadoop</groupId>
+          <artifactId>hadoop-core</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.cassandraunit</groupId>
-      <artifactId>cassandra-unit</artifactId>
+      <groupId>org.apache.hbase</groupId>
+      <artifactId>hbase-testing-util</artifactId>
+      <version>0.98.6.1-hadoop2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.datastax.cassandra</groupId>
-      <artifactId>cassandra-driver-core</artifactId>
+      <!-- change to hadoop-aws when hadoop dependency is updated to 2.6 -->
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
     </dependency>
   </dependencies>
 
@@ -106,26 +155,10 @@
             <configuration>
               <classifier>batch</classifier>
               <instructions>
-                <!-- build bundle jar for batch. excluding realtime-->
-                <Export-Package>co.cask.hydrator.plugin.batch.*;org.apache.cassandra.hadoop.*;
-                  org.apache.commons.lang</Export-Package>
-                <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
-                <Embed-Transitive>true</Embed-Transitive>
-                <Embed-Directory>lib</Embed-Directory>
-              </instructions>
-            </configuration>
-            <goals>
-              <goal>bundle</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>realtime-bundle</id>
-            <phase>prepare-package</phase>
-            <configuration>
-              <classifier>realtime</classifier>
-              <instructions>
-                <!-- build bundle jar for realtime. excluding batch-->
-                <Export-Package>co.cask.hydrator.plugin.realtime.*</Export-Package>
+                <!-- build bundle jar for batch -->
+                <Export-Package>co.cask.hydrator.plugin.*;org.apache.commons.lang;org.apache.hadoop.hbase.mapreduce.*;
+                  org.apache.hadoop.hbase.client.*;org.apache.hadoop.hbase.io.*;
+                </Export-Package>
                 <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
                 <Embed-Transitive>true</Embed-Transitive>
                 <Embed-Directory>lib</Embed-Directory>

@@ -1,6 +1,6 @@
-============
-CDAP-Plugins
-============
+============================
+Hydrator Plugins Repository
+============================
 
 Introduction
 ============
@@ -55,8 +55,8 @@ Build Plugins
 
 You can get started with CDAP-plugins by building directly from the latest source code::
 
-  git clone https://github.com/caskdata/cdap-plugins.git
-  cd cdap-plugins
+  git clone https://github.com/caskdata/hydrator-plugins.git
+  cd hydrator-plugins
   mvn clean package
 
 After the build completes, you will have a jar for each plugin under the
@@ -65,7 +65,7 @@ After the build completes, you will have a jar for each plugin under the
 Deploy Plugins
 --------------
 
-You can deploy plugins using CDAP CLI::
+You can deploy plugins using the CDAP CLI::
 
   > load artifact <target/plugin-jar> config-file <resources/plugin-config>
 
