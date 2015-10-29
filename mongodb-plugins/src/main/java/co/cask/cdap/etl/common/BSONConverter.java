@@ -25,21 +25,29 @@ import java.io.IOException;
 /**
  * Converts {@link BSONObject} to {@link StructuredRecord}.
  */
-public class BSONConverter extends RecordConverter<BSONObject, StructuredRecord> {
+public class BSONConverter {
   private final Schema schema;
-  private final org.apache.avro.Schema avroSchema;
 
   public BSONConverter(String schemaString) throws IOException {
     this.schema = Schema.parseJson(schemaString);
-    this.avroSchema = org.apache.avro.Schema.parse(schemaString);
   }
 
-  @Override
   public StructuredRecord transform(BSONObject bsonObject) throws IOException {
     StructuredRecord.Builder builder = StructuredRecord.builder(schema);
-    for (org.apache.avro.Schema.Field field : avroSchema.getFields()) {
-      builder.set(field.name(), convertField(bsonObject.get(field.name()), field.schema()));
+    for (Schema.Field field : schema.getFields()) {
+      builder.set(field.getName(), extractValue(bsonObject.get(field.getName()), field));
     }
     return builder.build();
+  }
+
+  private Object extractValue(Object object, Schema.Field field) throws IOException {
+    switch (field.getSchema().getType()) {
+      case NULL:
+        return null;
+      case BOOLEAN:
+        return Boolean.valueOf(object.toString());
+      default:
+      return null;
+    }
   }
 }
