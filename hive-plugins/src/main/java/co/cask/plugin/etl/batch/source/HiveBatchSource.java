@@ -19,22 +19,23 @@ package co.cask.plugin.etl.batch.source;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
+import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.plugin.etl.batch.HiveConfig;
-import com.google.common.collect.Lists;
+import com.google.common.base.Joiner;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
-import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
 import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.VersionInfo;
 import org.apache.hive.hcatalog.data.HCatRecord;
@@ -44,7 +45,6 @@ import org.apache.hive.hcatalog.mapreduce.HCatInputFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
 import java.util.List;
 
 /**
@@ -57,10 +57,18 @@ public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord,
 
   private static final Logger LOG = LoggerFactory.getLogger(HiveBatchSource.class);
   private static final Gson GSON = new Gson();
+  public static final String HIVE_TABLE_SCHEMA_STORE = "hiveTableSchemaStore";
 
   private HiveConfig config;
   private HCatSchema hiveSchema;
   private Schema schema;
+  private KeyValueTable table;
+  private HCatRecordTransformer hCatRecordTransformer;
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    pipelineConfigurer.createDataset(HIVE_TABLE_SCHEMA_STORE, KeyValueTable.class, DatasetProperties.EMPTY);
+  }
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
@@ -78,78 +86,25 @@ public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord,
     }
     HCatSchema hiveSchema = HCatInputFormat.getTableSchema(configuration);
     List<HCatFieldSchema> fields = hiveSchema.getFields();
-    LOG.info("In prepareRun the fields are {}", fields);
-    configuration.set("source.hive.schema", GSON.toJson(fields));
+    table = context.getDataset(HIVE_TABLE_SCHEMA_STORE);
+    table.write(Joiner.on(":").join(config.dbName, config.tableName), GSON.toJson(fields));
   }
 
-    @Override
+  @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    Configuration hConf = new Configuration();
-//    HCatSchema hiveSchema = HCatInputFormat.getTableSchema(hConf);
-    List<HCatFieldSchema> fields;
-    try (FileInputStream fis = new FileInputStream("job.xml")) {
-      hConf.addResource(fis);
-
-      fields = GSON.fromJson(hConf.get("source.hive.schema"), new TypeToken<List<HCatFieldSchema>>() {
-      }.getType());
-    }
-    System.out.println("########################### fields = " + GSON.toJson(fields));
-//    hiveSchema = new HCatSchema(fields);
-//    schema = convertSchema(hiveSchema);
+    table = context.getDataset(HIVE_TABLE_SCHEMA_STORE);
+    String hiveSchema = Bytes.toString(table.read(Joiner.on(":").join(config.dbName, config.tableName)));
+    List<HCatFieldSchema> fields = GSON.fromJson(hiveSchema, new TypeToken<List<HCatFieldSchema>>() {
+    }.getType());
+    HCatSchema hCatSchema = new HCatSchema(fields);
+    hCatRecordTransformer = new HCatRecordTransformer(hCatSchema);
   }
 
 
   @Override
   public void transform(KeyValue<WritableComparable, HCatRecord> input, Emitter<StructuredRecord> emitter) throws Exception {
-    LOG.info("The HCatRedord is: {}", input.getValue().toString());
-//    LOG.info("The Hive Schema is: {}", hiveSchema.toString());
-//    LOG.info("The CDAP Schema is: {}", schema.toString());
-  }
-
-  private static Schema convertSchema(HCatSchema hiveSchema) {
-    List<Schema.Field> fields = Lists.newArrayList();
-    for (HCatFieldSchema field : hiveSchema.getFields()) {
-      String name = field.getName();
-      if (field.isComplex()) {
-        throw new IllegalArgumentException(String.format(
-          "Table schema contains field '%s' with complex type %s. Only primitive types are supported.",
-          name, field.getTypeString()));
-      }
-      PrimitiveTypeInfo typeInfo = field.getTypeInfo();
-      fields.add(Schema.Field.of(name, Schema.of(getType(name, typeInfo.getPrimitiveCategory()))));
-    }
-    return Schema.recordOf("record", fields);
-  }
-
-  private static Schema.Type getType(String name, PrimitiveObjectInspector.PrimitiveCategory category) {
-    switch (category) {
-      case BOOLEAN:
-        return Schema.Type.BOOLEAN;
-      case BYTE:
-      case CHAR:
-      case SHORT:
-      case INT:
-        return Schema.Type.INT;
-      case LONG:
-        return Schema.Type.LONG;
-      case FLOAT:
-        return Schema.Type.FLOAT;
-      case DOUBLE:
-        return Schema.Type.DOUBLE;
-      case STRING:
-      case VARCHAR:
-        return Schema.Type.STRING;
-      case BINARY:
-        return Schema.Type.BYTES;
-      case VOID:
-      case DATE:
-      case TIMESTAMP:
-      case DECIMAL:
-      case UNKNOWN:
-      default:
-        throw new IllegalArgumentException(String.format(
-          "Table schema contains field '%s' with unsupported type %s", name, category.name()));
-    }
+    StructuredRecord record = hCatRecordTransformer.toRecord(input.getValue());
+    emitter.emit(record);
   }
 }
