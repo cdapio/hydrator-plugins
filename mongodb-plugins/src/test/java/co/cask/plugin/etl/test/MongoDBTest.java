@@ -94,11 +94,18 @@ public class MongoDBTest extends TestBase {
   private static final String STREAM_NAME = "myStream";
   private static final String TABLE_NAME = "outputTable";
 
-  private static final Schema BODY_SCHEMA = Schema.recordOf(
+  private static final Schema SINK_BODY_SCHEMA = Schema.recordOf(
     "event",
     Schema.Field.of("ticker", Schema.of(Schema.Type.STRING)),
     Schema.Field.of("num", Schema.of(Schema.Type.INT)),
     Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
+
+  private static final Schema SOURCE_BODY_SCHEMA = Schema.recordOf(
+    "event",
+    Schema.Field.of("ticker", Schema.of(Schema.Type.STRING)),
+    Schema.Field.of("num", Schema.of(Schema.Type.INT)),
+    Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)),
+    Schema.Field.of("agents", Schema.arrayOf(Schema.of(Schema.Type.STRING))));
 
   private MongodForTestsFactory factory = null;
   private int mongoPort;
@@ -135,8 +142,10 @@ public class MongoDBTest extends TestBase {
     mongoDatabase.createCollection(MONGO_SOURCE_COLLECTIONS);
     DB db = mongoClient.getDB(MONGO_DB);
     DBCollection dbCollection = db.getCollection(MONGO_SOURCE_COLLECTIONS);
-    dbCollection.insert(new BasicDBObject(ImmutableMap.of("ticker", "AAPL", "num", 10, "price", 23.23)));
-    dbCollection.insert(new BasicDBObject(ImmutableMap.of("ticker", "ORCL", "num", 12, "price", 10.10)));
+    dbCollection.insert(new BasicDBObject(ImmutableMap.of("ticker", "AAPL", "num", 10, "price", 213.23,
+                                                          "agents", "[ 'a1', 'b1' ]")));
+    dbCollection.insert(new BasicDBObject(ImmutableMap.of("ticker", "ORCL", "num", 12, "price", 133.23,
+                                                          "agents", "[ 'a2', 'b2' ]")));
   }
 
   @After
@@ -185,7 +194,7 @@ public class MongoDBTest extends TestBase {
       .put(Properties.Stream.DURATION, "10m")
       .put(Properties.Stream.DELAY, "0d")
       .put(Properties.Stream.FORMAT, Formats.CSV)
-      .put(Properties.Stream.SCHEMA, BODY_SCHEMA.toString())
+      .put(Properties.Stream.SCHEMA, SINK_BODY_SCHEMA.toString())
       .put("format.setting.delimiter", "|")
       .build());
 
@@ -228,11 +237,11 @@ public class MongoDBTest extends TestBase {
                                               .put(MongoDBBatchSource.Properties.CONNECTION_STRING,
                                                    String.format("mongodb://localhost:%d/%s.%s",
                                                                  mongoPort, MONGO_DB, MONGO_SOURCE_COLLECTIONS))
-                                              .put(MongoDBBatchSource.Properties.SCHEMA, BODY_SCHEMA.toString())
+                                              .put(MongoDBBatchSource.Properties.SCHEMA, SOURCE_BODY_SCHEMA.toString())
                                               .put(MongoDBBatchSource.Properties.SPLITTER_CLASS,
                                                    StandaloneMongoSplitter.class.getSimpleName()).build());
     ETLStage sink = new ETLStage("Table", ImmutableMap.of(Properties.Table.NAME, TABLE_NAME,
-                                                          Properties.Table.PROPERTY_SCHEMA, BODY_SCHEMA.toString(),
+                                                          Properties.Table.PROPERTY_SCHEMA, SINK_BODY_SCHEMA.toString(),
                                                           Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ticker"));
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, new ArrayList<ETLStage>());
 
