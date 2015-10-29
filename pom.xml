@@ -45,7 +45,7 @@
     <datastax.version>2.0.5</datastax.version>
     <es-hadoop.version>2.1.0</es-hadoop.version>
     <commons-httpclient.version>3.1</commons-httpclient.version>
-    <hive.version>0.13.1-cdh5.2.0</hive.version>
+    <hive.version>1.1.0-cdh5.4.5</hive.version>
   </properties>
 
 

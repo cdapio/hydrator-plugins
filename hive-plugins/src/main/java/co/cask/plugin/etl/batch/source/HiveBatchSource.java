@@ -21,7 +21,6 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
@@ -47,6 +46,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
+
 /**
  * Batch source for Hive.
  */
@@ -60,8 +60,6 @@ public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord,
   public static final String HIVE_TABLE_SCHEMA_STORE = "hiveTableSchemaStore";
 
   private HiveConfig config;
-  private HCatSchema hiveSchema;
-  private Schema schema;
   private KeyValueTable table;
   private HCatRecordTransformer hCatRecordTransformer;
 
