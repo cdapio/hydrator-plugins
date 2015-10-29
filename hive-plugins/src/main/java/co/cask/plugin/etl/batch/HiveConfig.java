@@ -7,9 +7,9 @@ import co.cask.cdap.api.plugin.PluginConfig;
  */
 public class HiveConfig extends PluginConfig {
 
+  public String metaStoreURI;
+
   public String dbName;
 
   public String tableName;
-
-  public String metaStoreURI;
 }
