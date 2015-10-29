@@ -7,6 +7,8 @@ import co.cask.cdap.api.plugin.PluginConfig;
  */
 public class HiveConfig extends PluginConfig {
 
+  public static final String HIVE_TABLE_SCHEMA_STORE = "hiveTableSchemaStore";
+
   public String dbName;
 
   public String tableName;

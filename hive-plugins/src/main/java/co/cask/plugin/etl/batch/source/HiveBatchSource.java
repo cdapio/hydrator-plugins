@@ -57,7 +57,7 @@ public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord,
 
   private static final Logger LOG = LoggerFactory.getLogger(HiveBatchSource.class);
   private static final Gson GSON = new Gson();
-  public static final String HIVE_TABLE_SCHEMA_STORE = "hiveTableSchemaStore";
+
 
   private HiveConfig config;
   private KeyValueTable table;
@@ -65,7 +65,7 @@ public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord,
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    pipelineConfigurer.createDataset(HIVE_TABLE_SCHEMA_STORE, KeyValueTable.class, DatasetProperties.EMPTY);
+    pipelineConfigurer.createDataset(HiveConfig.HIVE_TABLE_SCHEMA_STORE, KeyValueTable.class, DatasetProperties.EMPTY);
   }
 
   @Override
@@ -84,14 +84,14 @@ public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord,
     }
     HCatSchema hiveSchema = HCatInputFormat.getTableSchema(configuration);
     List<HCatFieldSchema> fields = hiveSchema.getFields();
-    table = context.getDataset(HIVE_TABLE_SCHEMA_STORE);
+    table = context.getDataset(HiveConfig.HIVE_TABLE_SCHEMA_STORE);
     table.write(Joiner.on(":").join(config.dbName, config.tableName), GSON.toJson(fields));
   }
 
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    table = context.getDataset(HIVE_TABLE_SCHEMA_STORE);
+    table = context.getDataset(HiveConfig.HIVE_TABLE_SCHEMA_STORE);
     String hiveSchema = Bytes.toString(table.read(Joiner.on(":").join(config.dbName, config.tableName)));
     List<HCatFieldSchema> fields = GSON.fromJson(hiveSchema, new TypeToken<List<HCatFieldSchema>>() {
     }.getType());
