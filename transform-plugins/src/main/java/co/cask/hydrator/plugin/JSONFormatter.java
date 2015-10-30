@@ -123,5 +123,3 @@ public final class JSONFormatter extends Transform<StructuredRecord, StructuredR
 
   }
 }
-
-

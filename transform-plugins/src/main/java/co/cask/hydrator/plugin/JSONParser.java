@@ -94,4 +94,3 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
   }
 }
 
-
