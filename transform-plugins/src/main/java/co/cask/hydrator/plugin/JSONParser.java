@@ -27,7 +27,6 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
 import co.cask.cdap.etl.common.StructuredRecordStringConverter;
-import com.google.gson.Gson;
 
 import java.io.IOException;
 import java.util.List;
@@ -38,7 +37,7 @@ import java.util.List;
 @Plugin(type = "transform")
 @Name("JSONParser")
 @Description("Parses JSON Object into a Structured Record.")
-public class JSONParser extends Transform<StructuredRecord, StructuredRecord> {
+public final class JSONParser extends Transform<StructuredRecord, StructuredRecord> {
   private final Config config;
   
   // Output Schema that specifies the fileds of JSON object. 
@@ -94,5 +93,4 @@ public class JSONParser extends Transform<StructuredRecord, StructuredRecord> {
 
   }
 }
-
 

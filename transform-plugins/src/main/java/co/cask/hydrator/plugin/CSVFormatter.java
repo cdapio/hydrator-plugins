@@ -224,7 +224,5 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
       this.schema = schema;
     }
   }
-
-
 }
 

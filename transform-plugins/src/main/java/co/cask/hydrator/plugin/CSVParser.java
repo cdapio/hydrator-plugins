@@ -194,7 +194,4 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
       this.schema = schema;
     }
   }
-
-
 }
-
