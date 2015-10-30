@@ -27,7 +27,6 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
 import co.cask.cdap.etl.common.StructuredRecordStringConverter;
-import com.google.gson.Gson;
 
 import java.io.IOException;
 import java.util.List;
@@ -94,5 +93,4 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
 
   }
 }
-
 

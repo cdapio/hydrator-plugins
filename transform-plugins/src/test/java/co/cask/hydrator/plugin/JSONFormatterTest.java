@@ -51,7 +51,8 @@ public class JSONFormatterTest {
                           .set("c", "3")
                           .set("d", "4")
                           .set("e", "5").build(), emitter);
-    Assert.assertEquals("body", emitter.getEmitted().get(0).get("{\"a\":\"1\",\"b\":\"2\",\"c\":\"3\",\"d\":\"4\"," +
-                                                                  "\"e\":\"5\"}"));
+
+    Assert.assertEquals("{\"a\":\"1\",\"b\":\"2\",\"c\":\"3\",\"d\":\"4\",\"e\":\"5\"}",
+                        emitter.getEmitted().get(0).get("body"));
   }
 }

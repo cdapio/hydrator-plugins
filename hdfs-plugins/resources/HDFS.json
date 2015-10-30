@@ -1,0 +1,29 @@
+{
+  "id": "HDFS",
+  "groups" : {
+    "position": [ "group1" ],
+    "group1": {
+      "display": "Configuration",
+      "position": [
+        "path",
+        "timeSuffix"
+      ],
+      "fields": {
+        "path": {
+          "widget": "textbox",
+          "label": "HDFS Path",
+          "properties": {
+            "width": "large"
+          }
+        },
+        "timeSuffix": {
+          "widget": "textbox",
+          "label": "Time Suffix Format",
+          "properties": {
+            "width": "large"
+          }
+        }
+      }
+    }
+  }
+}

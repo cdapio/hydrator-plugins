@@ -13,7 +13,6 @@ that are currently available:
 - JSON Parser,
 - JSON Parser,
 - Clone Record,
-- Identity,
 - Stream Formatter
 
 Getting Started
