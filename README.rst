@@ -74,15 +74,9 @@ CDAP User Group and Development Discussions:
 - `cdap-user@googlegroups.com <https://groups.google.com/d/forum/cdap-user>`__
 
 The *cdap-user* mailing list is primarily for users using the product to develop
-applications. You can expect questions from users, release announcements, and any other
-discussions that we think will be helpful to the users.
-
-- `cdap-dev@googlegroups.com <https://groups.google.com/d/forum/cdap-dev>`__
-
-The *cdap-dev* mailing list is essentially for developers actively working
-on the product, and should be used for all our design, architecture and technical
-discussions moving forward. This mailing list will also receive all JIRA and GitHub
-notifications.
+applications or building plugins for appplications. You can expect questions from 
+users, release announcements, and any other discussions that we think will be helpful 
+to the users.
 
 IRC Channel
 -----------
