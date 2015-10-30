@@ -66,7 +66,7 @@ import com.mongodb.hadoop.splitter.StandaloneMongoSplitter;
 import de.flapdoodle.embed.mongo.distribution.Version;
 import de.flapdoodle.embed.mongo.tests.MongodForTestsFactory;
 import org.bson.Document;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -109,7 +109,7 @@ public class MongoDBTest extends TestBase {
     Schema.Field.of("price", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
     Schema.Field.of("agents", Schema.nullableOf(Schema.arrayOf(Schema.of(Schema.Type.STRING)))));
 
-  private static MongodForTestsFactory factory = null;
+  private MongodForTestsFactory factory = null;
   private int mongoPort;
 
   @BeforeClass
@@ -131,12 +131,12 @@ public class MongoDBTest extends TestBase {
                       DataGeneratorSource.class);
     addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "realtime-sinks", "1.0.0"), REALTIME_APP_ARTIFACT_ID,
                       MongoDBRealtimeSink.class);
-    // Start an embedded mongodb server
-    factory = MongodForTestsFactory.with(Version.Main.V3_1);
   }
 
   @Before
   public void beforeTest() throws Exception {
+    // Start an embedded mongodb server
+    factory = MongodForTestsFactory.with(Version.Main.V3_1);
     MongoClient mongoClient = factory.newMongo();
     List<ServerAddress> serverAddressList = mongoClient.getAllAddress();
     mongoPort = serverAddressList.get(0).getPort();
@@ -156,8 +156,8 @@ public class MongoDBTest extends TestBase {
                                                           "agents", basicDBList)));
   }
 
-  @AfterClass
-  public static void tearDown() throws Exception {
+  @After
+  public void afterTest() throws Exception {
     if (factory != null) {
       factory.shutdown();
     }
