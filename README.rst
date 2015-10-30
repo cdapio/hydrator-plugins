@@ -22,8 +22,8 @@ essential capabilities:
 
 CDAP exposes developer APIs (Application Programming Interfaces) for creating applications
 and accessing core CDAP services. CDAP defines and implements a diverse collection of
-services that implement, deploy, run, and manage applications and data on existing Hadoop
-infrastructure such as HBase, HDFS, YARN, MapReduce, Hive, and Spark.
+services that support applications and data on existing Hadoop infrastructure such as
+HBase, HDFS, YARN, MapReduce, Hive, and Spark.
 
 You can run applications ranging from simple MapReduce Jobs through complete ETL (extract,
 transform, and load) pipelines all the way up to complex, enterprise-scale data-intensive
