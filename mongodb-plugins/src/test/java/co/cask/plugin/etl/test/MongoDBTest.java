@@ -107,7 +107,7 @@ public class MongoDBTest extends TestBase {
     Schema.Field.of("ticker", Schema.of(Schema.Type.STRING)),
     Schema.Field.of("num", Schema.of(Schema.Type.INT)),
     Schema.Field.of("price", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
-    Schema.Field.of("agents", Schema.arrayOf(Schema.of(Schema.Type.STRING))));
+    Schema.Field.of("agents", Schema.nullableOf(Schema.arrayOf(Schema.of(Schema.Type.STRING)))));
 
   private static MongodForTestsFactory factory = null;
   private int mongoPort;

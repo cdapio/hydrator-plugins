@@ -44,11 +44,7 @@ public class BSONConverter {
   public StructuredRecord transform(BSONObject bsonObject) throws IOException {
     StructuredRecord.Builder builder = StructuredRecord.builder(schema);
     for (Schema.Field field : schema.getFields()) {
-      Schema fieldSchema = field.getSchema();
-      if (fieldSchema.isNullable()) {
-        fieldSchema = fieldSchema.getNonNullable();
-      }
-      builder.set(field.getName(), extractValue(bsonObject.get(field.getName()), fieldSchema));
+      builder.set(field.getName(), extractValue(bsonObject.get(field.getName()), field.getSchema()));
     }
     return builder.build();
   }
@@ -67,6 +63,12 @@ public class BSONConverter {
   }
 
   private Object extractValue(Object object, Schema schema) {
+    if (schema.isNullable()) {
+      if (object == null) {
+        return null;
+      }
+      schema = schema.getNonNullable();
+    }
     Schema.Type fieldType = schema.getType();
     switch (fieldType) {
       case ARRAY:
