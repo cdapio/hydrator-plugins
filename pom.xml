@@ -27,6 +27,7 @@
     <module>hbase-plugins</module>
     <module>hdfs-plugins</module>
     <module>transform-plugins</module>
+    <module>hive-plugins</module>
   </modules>
   <packaging>pom</packaging>
 
@@ -64,6 +65,7 @@
     <apache-commons.version>1.2</apache-commons.version>
     <commons-codec.version>1.10</commons-codec.version>
     <snappy.version>1.1.2</snappy.version>
+    <hive.version>1.1.0-cdh5.4.5</hive.version>
   </properties>
 
 
@@ -385,49 +387,6 @@
           <target>1.7</target>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <version>2.5.4</version>
-        <extensions>true</extensions>
-        <executions>
-          <execution>
-            <id>batch-bundle</id>
-            <phase>prepare-package</phase>
-            <configuration>
-              <classifier>batch</classifier>
-              <instructions>
-                <!-- build bundle jar for batch. excluding realtime-->
-                <Export-Package>co.cask.hydrator.plugin.batch.*;org.apache.cassandra.hadoop.*;
-                  org.apache.commons.lang</Export-Package>
-                <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
-                <Embed-Transitive>true</Embed-Transitive>
-                <Embed-Directory>lib</Embed-Directory>
-              </instructions>
-            </configuration>
-            <goals>
-              <goal>bundle</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>realtime-bundle</id>
-            <phase>prepare-package</phase>
-            <configuration>
-              <classifier>realtime</classifier>
-              <instructions>
-                <!-- build bundle jar for realtime. excluding batch-->
-                <Export-Package>co.cask.hydrator.plugin.realtime.*</Export-Package>
-                <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
-                <Embed-Transitive>true</Embed-Transitive>
-                <Embed-Directory>lib</Embed-Directory>
-              </instructions>
-            </configuration>
-            <goals>
-              <goal>bundle</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
 
@@ -437,6 +396,7 @@
       <modules>
         <module>cassandra-plugins</module>
         <module>elasticsearch-plugins</module>
+        <module>hive-plugins</module>
       </modules>
     </profile>
   </profiles>
