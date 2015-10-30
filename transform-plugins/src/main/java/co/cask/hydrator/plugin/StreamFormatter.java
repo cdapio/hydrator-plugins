@@ -230,5 +230,3 @@ public final class StreamFormatter extends Transform<StructuredRecord, Structure
     }
   }
 }
-
-
