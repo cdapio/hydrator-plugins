@@ -12,8 +12,7 @@ that are currently available:
 - CSV Formatter,
 - JSON Parser,
 - JSON Parser,
-- Clone Record,
-- Identity
+- Clone Record
 
 Getting Started
 ===============
