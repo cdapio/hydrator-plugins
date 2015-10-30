@@ -66,7 +66,7 @@ import com.mongodb.hadoop.splitter.StandaloneMongoSplitter;
 import de.flapdoodle.embed.mongo.distribution.Version;
 import de.flapdoodle.embed.mongo.tests.MongodForTestsFactory;
 import org.bson.Document;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -106,14 +106,14 @@ public class MongoDBTest extends TestBase {
     "event",
     Schema.Field.of("ticker", Schema.of(Schema.Type.STRING)),
     Schema.Field.of("num", Schema.of(Schema.Type.INT)),
-    Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)),
+    Schema.Field.of("price", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
     Schema.Field.of("agents", Schema.arrayOf(Schema.of(Schema.Type.STRING))));
 
-  private MongodForTestsFactory factory = null;
+  private static MongodForTestsFactory factory = null;
   private int mongoPort;
 
   @BeforeClass
-  public static void setupTest() throws Exception {
+  public static void setup() throws Exception {
     addAppArtifact(BATCH_APP_ARTIFACT_ID, ETLBatchApplication.class, BatchSource.class.getPackage().getName(),
                    BatchSink.class.getPackage().getName(), PipelineConfigurable.class.getPackage().getName());
 
@@ -131,12 +131,12 @@ public class MongoDBTest extends TestBase {
                       DataGeneratorSource.class);
     addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "realtime-sinks", "1.0.0"), REALTIME_APP_ARTIFACT_ID,
                       MongoDBRealtimeSink.class);
+    // Start an embedded mongodb server
+    factory = MongodForTestsFactory.with(Version.Main.V3_1);
   }
 
   @Before
   public void beforeTest() throws Exception {
-    // Start an embedded mongodb server
-    factory = MongodForTestsFactory.with(Version.Main.V3_1);
     MongoClient mongoClient = factory.newMongo();
     List<ServerAddress> serverAddressList = mongoClient.getAllAddress();
     mongoPort = serverAddressList.get(0).getPort();
@@ -156,8 +156,8 @@ public class MongoDBTest extends TestBase {
                                                           "agents", basicDBList)));
   }
 
-  @After
-  public void afterTest() throws Exception {
+  @AfterClass
+  public static void tearDown() throws Exception {
     if (factory != null) {
       factory.shutdown();
     }
@@ -212,7 +212,7 @@ public class MongoDBTest extends TestBase {
                                                                mongoPort, MONGO_DB, MONGO_SINK_COLLECTIONS)).build());
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, new ArrayList<ETLStage>());
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "MongoSourceTest");
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "MongoSinkTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
@@ -238,6 +238,51 @@ public class MongoDBTest extends TestBase {
     }
   }
 
+  @Test
+  public void testMongoToMongo() throws Exception {
+    ETLStage source = new ETLStage("MongoDB", new ImmutableMap.Builder<String, String>()
+      .put(MongoDBBatchSource.Properties.CONNECTION_STRING,
+           String.format("mongodb://localhost:%d/%s.%s",
+                         mongoPort, MONGO_DB, MONGO_SOURCE_COLLECTIONS))
+      .put(MongoDBBatchSource.Properties.SCHEMA, SOURCE_BODY_SCHEMA.toString())
+      .put(MongoDBBatchSource.Properties.SPLITTER_CLASS,
+           StandaloneMongoSplitter.class.getSimpleName()).build());
+
+    ETLStage sink = new ETLStage("MongoDB", new ImmutableMap.Builder<String, String>()
+      .put(MongoDBBatchSink.Properties.CONNECTION_STRING,
+           String.format("mongodb://localhost:%d/%s.%s",
+                         mongoPort, MONGO_DB, MONGO_SINK_COLLECTIONS)).build());
+    ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, new ArrayList<ETLStage>());
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "MongoToMongoTest");
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+
+    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
+    mrManager.start();
+    mrManager.waitForFinish(5, TimeUnit.MINUTES);
+
+    MongoClient mongoClient = factory.newMongo();
+    MongoDatabase mongoDatabase = mongoClient.getDatabase(MONGO_DB);
+    MongoCollection<Document> documents = mongoDatabase.getCollection(MONGO_SINK_COLLECTIONS);
+    Assert.assertEquals(2, documents.count());
+    Iterable<Document> docs = documents.find(new BasicDBObject("ticker", "AAPL"));
+    Assert.assertTrue(docs.iterator().hasNext());
+    for (Document document : docs) {
+      Assert.assertEquals(10, (int) document.getInteger("num"));
+      Assert.assertEquals(23.23, document.getDouble("price"), 0.0001);
+      Assert.assertNotNull(document.get("agents"));
+    }
+
+    docs = documents.find(new BasicDBObject("ticker", "ORCL"));
+    Assert.assertTrue(docs.iterator().hasNext());
+    for (Document document : docs) {
+      Assert.assertEquals(12, (int) document.getInteger("num"));
+      Assert.assertEquals(10.10, document.getDouble("price"), 0.0001);
+      Assert.assertNotNull(document.get("agents"));
+    }
+  }
+
   @SuppressWarnings("ConstantConditions")
   @Test
   public void testMongoDBSource() throws Exception {
@@ -249,7 +294,8 @@ public class MongoDBTest extends TestBase {
                                               .put(MongoDBBatchSource.Properties.SPLITTER_CLASS,
                                                    StandaloneMongoSplitter.class.getSimpleName()).build());
     ETLStage sink = new ETLStage("Table", ImmutableMap.of(Properties.Table.NAME, TABLE_NAME,
-                                                          Properties.Table.PROPERTY_SCHEMA, SINK_BODY_SCHEMA.toString(),
+                                                          Properties.Table.PROPERTY_SCHEMA,
+                                                          SINK_BODY_SCHEMA.toString(),
                                                           Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ticker"));
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, new ArrayList<ETLStage>());
 

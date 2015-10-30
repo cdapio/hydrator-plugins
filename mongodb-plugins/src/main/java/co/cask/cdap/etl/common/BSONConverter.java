@@ -44,14 +44,22 @@ public class BSONConverter {
   public StructuredRecord transform(BSONObject bsonObject) throws IOException {
     StructuredRecord.Builder builder = StructuredRecord.builder(schema);
     for (Schema.Field field : schema.getFields()) {
-      builder.set(field.getName(), extractValue(bsonObject.get(field.getName()), field.getSchema()));
+      Schema fieldSchema = field.getSchema();
+      if (fieldSchema.isNullable()) {
+        fieldSchema = fieldSchema.getNonNullable();
+      }
+      builder.set(field.getName(), extractValue(bsonObject.get(field.getName()), fieldSchema));
     }
     return builder.build();
   }
 
   public static void validateSchema(Schema schema) {
     for (Schema.Field field : schema.getFields()) {
-      if (!VALID_TYPES.contains(field.getSchema().getType())) {
+      Schema.Type type = field.getSchema().getType();
+      if (field.getSchema().isNullable()) {
+        type = field.getSchema().getNonNullable().getType();
+      }
+      if (!VALID_TYPES.contains(type)) {
         throw new IllegalArgumentException(String.format("Unsupported Type : Field Name : %s; Type : %s",
                                                          field.getName(), field.getSchema().getType()));
       }
