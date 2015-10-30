@@ -63,7 +63,7 @@ public class MongoDBBatchSource extends BatchSource<Object, BSONObject, Structur
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
     try {
-      Schema.parseJson(config.schema);
+      BSONConverter.validateSchema(Schema.parseJson(config.schema));
     } catch (IOException e) {
       throw new IllegalArgumentException("Invalid schema", e);
     }
@@ -97,7 +97,7 @@ public class MongoDBBatchSource extends BatchSource<Object, BSONObject, Structur
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    bsonConverter = new BSONConverter(config.schema);
+    bsonConverter = new BSONConverter(Schema.parseJson(config.schema));
   }
 
   @Override

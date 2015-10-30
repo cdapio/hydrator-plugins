@@ -30,11 +30,15 @@ import java.util.List;
  * Converts {@link BSONObject} to {@link StructuredRecord}.
  */
 public class BSONConverter {
-
+  private static final List<Schema.Type> VALID_TYPES = Lists.newArrayList(Schema.Type.ARRAY, Schema.Type.BOOLEAN,
+                                                                          Schema.Type.BYTES, Schema.Type.STRING,
+                                                                          Schema.Type.DOUBLE,
+                                                                          Schema.Type.FLOAT, Schema.Type.INT,
+                                                                          Schema.Type.LONG, Schema.Type.NULL);
   private final Schema schema;
 
-  public BSONConverter(String schemaString) throws IOException {
-    this.schema = Schema.parseJson(schemaString);
+  public BSONConverter(Schema schema) throws IOException {
+    this.schema = schema;
   }
 
   public StructuredRecord transform(BSONObject bsonObject) throws IOException {
@@ -43,6 +47,15 @@ public class BSONConverter {
       builder.set(field.getName(), extractValue(bsonObject.get(field.getName()), field.getSchema()));
     }
     return builder.build();
+  }
+
+  public static void validateSchema(Schema schema) {
+    for (Schema.Field field : schema.getFields()) {
+      if (!VALID_TYPES.contains(field.getSchema().getType())) {
+        throw new IllegalArgumentException(String.format("Unsupported Type : Field Name : %s; Type : %s",
+                                                         field.getName(), field.getSchema().getType()));
+      }
+    }
   }
 
   private Object extractValue(Object object, Schema schema) {
