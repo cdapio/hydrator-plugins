@@ -4,7 +4,6 @@ CDAP-Plugins
 
 Introduction
 ============
-
 The Cask™ Data Application Platform (CDAP) is an integrated, open source application
 development platform for the Hadoop ecosystem that provides developers with data and
 application abstractions to simplify and accelerate application development, address a
@@ -23,8 +22,8 @@ essential capabilities:
 
 CDAP exposes developer APIs (Application Programming Interfaces) for creating applications
 and accessing core CDAP services. CDAP defines and implements a diverse collection of
-services that land applications and data on existing Hadoop infrastructure such as HBase,
-HDFS, YARN, MapReduce, Hive, and Spark.
+services that implement, deploy, run, and manage applications and data on existing Hadoop
+infrastructure such as HBase, HDFS, YARN, MapReduce, Hive, and Spark.
 
 You can run applications ranging from simple MapReduce Jobs through complete ETL (extract,
 transform, and load) pipelines all the way up to complex, enterprise-scale data-intensive
@@ -34,49 +33,53 @@ Developers can build and test their applications end-to-end in a full-stack, sin
 installation. CDAP can be run either standalone, deployed within the Enterprise or hosted
 in the Cloud.
 
-The CDAP-plugins repository is a related repository that includes source and sink plugins
-meant to be used with CDAP. For more information about CDAP, head to the `CDAP repository
-<http://github.com/caskdata/cdap>`__.
 
-For questions about CDAP-plugins, please use any of the communication channels listed
-at the CDAP repository.
+Plugins Repository
+==================
+The CDAP plugins repository is a related repository that includes source, sink, and
+transform plugins intended to be used with CDAP. For information on CDAP plugins, see the
+CDAP documentation's section on `CDAP Applications
+<http://docs.cdap.io/cdap/current/en/included-applications/etl/index.html>`__.
+
+For questions about CDAP-plugins, please use any of the communication channels listed at
+the `CDAP repository <http://github.com/caskdata/cdap>`__. For more information about
+CDAP, head to the `CDAP repository <http://github.com/caskdata/cdap>`__.
+
 
 Getting Started
 ===============
 
 Prerequisites
 -------------
-
-To use CDAP-plugins, you must have CDAP version 3.2.0 or later. Prerequisites for the various
-sources and sinks are included in their individual README files.
+To use CDAP plugins, you must have CDAP version 3.2.0 or later. Prerequisites for the different
+sources, sinks, and transforms are included in their individual README files.
   
-Build Plugins
--------------
-
-You can get started with CDAP-plugins by building directly from the latest source code::
+Building the Plugins
+--------------------
+You begin with CDAP plugins by building directly from the latest source code::
 
   git clone https://github.com/caskdata/cdap-plugins.git
   cd cdap-plugins
   mvn clean package
 
-After the build completes, you will have a jar for each plugin under the
+After the build completes, you will have a JAR for each plugin under each
 ``<plugin-name>/target/`` directory.
+
+**Note:** You can build without running tests using: ``mvn clean install -DskipTests``
 
 Deploy Plugins
 --------------
-
-You can deploy plugins using CDAP CLI::
+You then deploy plugins using the CDAP CLI::
 
   > load artifact <target/plugin-jar> config-file <resources/plugin-config>
 
-Example for loading Cassandra Plugin (from cassandra-plugins directory)::
+Example of loading the Cassandra Plugin (from the cassandra-plugins directory)::
 
   > load artifact target/cassandra-plugins-1.0.0-batch.jar \
          config-file resources/cassandra-plugins-1.0.0-batch.json
   > load artifact target/cassandra-plugins-1.0.0-realtime.jar \
          config-file resources/cassandra-plugins-1.0.0-realtime.json
-
-You can build without running tests: ``mvn clean install -DskipTests``
+         
 
 License and Trademarks
 ======================
