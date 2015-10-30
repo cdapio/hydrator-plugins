@@ -5,15 +5,10 @@ Algorithmia Transform Plugin Collection
 Introduction
 ============
 
-This project is a collection of useful ML transformations of data. Following is list of plugins
+This project is a collection of useful ML transformations from algorithmia. Following is list of plugins
 that are currently available:
 
-- CSV Parser,
-- CSV Formatter,
-- JSON Parser,
-- JSON Parser,
-- Clone Record,
-- Stream Formatter
+- Tagging
 
 Getting Started
 ===============
