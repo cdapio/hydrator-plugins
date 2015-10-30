@@ -7,39 +7,23 @@ Introduction
 
 The Cask™ Data Application Platform (CDAP) is an integrated, open source application
 development platform for the Hadoop ecosystem that provides developers with data and
-application abstractions to simplify and accelerate application development, address a
-broader range of real-time and batch use cases, and deploy applications into production
-while satisfying enterprise requirements.
+application abstractions to simplify and accelerate application development.
 
-CDAP is a layer of software running on top of Apache Hadoop® platforms such as the
-Cloudera Enterprise Data Hub or the Hortonworks® Data Platform. CDAP provides these
-essential capabilities:
+Cask Hydrator is one such application built by the team at Cask for solving data ingestion 
+problems. It's a CDAP Native application that runs at scale on Hadoop. Hydrator exposes 
+APIs that allows one to build, extend and integrate with Hadoop Native and Non-Hadoop systems. 
 
-- Abstraction of data in the Hadoop environment through logical representations of underlying data;
-- Portability of applications through decoupling underlying infrastructures;
-- Services and tools that enable faster application creation in development;
-- Integration of the components of the Hadoop ecosystem into a single platform; and
-- Higher degrees of operational control in production through enterprise best practices.
+This repository is a collection of hydrator plugins that are built by team at Cask and as well as 
+people in the community. If you are interested in building and contributing a plugins you are more 
+than welcome to do so. If you are interested in getting started with building some plugins here 
+are some useful links for you to get started
 
-CDAP exposes developer APIs (Application Programming Interfaces) for creating applications
-and accessing core CDAP services. CDAP defines and implements a diverse collection of
-services that land applications and data on existing Hadoop infrastructure such as HBase,
-HDFS, YARN, MapReduce, Hive, and Spark.
+- `Overview of Hydrator <http://docs.cask.co/cdap/3.2.1/en/included-applications/etl/index.html>`__
+- `How to build custom Hydrator plugins <http://docs.cask.co/cdap/3.2.1/en/included-applications/etl/custom.html>`__
+- `How to test plugin <http://docs.cask.co/cdap/3.2.1/en/included-applications/etl/custom.html#test-framework-for-plugins>`__
+- `How to package and deploy <http://docs.cask.co/cdap/3.2.1/en/included-applications/etl/custom.html#plugin-packaging-and-deployment>`__
+- `How to include third-party JARs <http://docs.cask.co/cdap/3.2.1/en/included-applications/etl/plugins/third-party.html>`__
 
-You can run applications ranging from simple MapReduce Jobs through complete ETL (extract,
-transform, and load) pipelines all the way up to complex, enterprise-scale data-intensive
-applications.
-
-Developers can build and test their applications end-to-end in a full-stack, single-node
-installation. CDAP can be run either standalone, deployed within the Enterprise or hosted
-in the Cloud.
-
-The CDAP-plugins repository is a related repository that includes source and sink plugins
-meant to be used with CDAP. For more information about CDAP, head to the `CDAP repository
-<http://github.com/caskdata/cdap>`__.
-
-For questions about CDAP-plugins, please use any of the communication channels listed
-at the CDAP repository.
 
 Getting Started
 ===============
@@ -76,7 +60,33 @@ Example for loading Cassandra Plugin (from cassandra-plugins directory)::
   > load artifact target/cassandra-plugins-1.0-SNAPSHOT-realtime.jar \
          config-file resources/cassandra-plugin-realtime.json
 
+Then copy the UI configuration into UI templates directory::
+
+  $ cp resources/Cassandra.json $CDAP_HOME/ui/templates/common
+
 You can build without running tests: ``mvn clean install -DskipTests``
+
+Mailing Lists
+-------------
+
+CDAP User Group and Development Discussions:
+
+- `cdap-user@googlegroups.com <https://groups.google.com/d/forum/cdap-user>`__
+
+The *cdap-user* mailing list is primarily for users using the product to develop
+applications. You can expect questions from users, release announcements, and any other
+discussions that we think will be helpful to the users.
+
+- `cdap-dev@googlegroups.com <https://groups.google.com/d/forum/cdap-dev>`__
+
+The *cdap-dev* mailing list is essentially for developers actively working
+on the product, and should be used for all our design, architecture and technical
+discussions moving forward. This mailing list will also receive all JIRA and GitHub
+notifications.
+
+IRC Channel
+-----------
+CDAP IRC Channel: #cdap on irc.freenode.net
 
 License and Trademarks
 ======================
