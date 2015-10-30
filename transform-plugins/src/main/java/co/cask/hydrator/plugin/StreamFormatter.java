@@ -96,17 +96,24 @@ public final class StreamFormatter extends Transform<StructuredRecord, Structure
 
       // We have to make sure that output schema includes two fields and only two fields. 
       // One of type MAP and other of type STRING. 
-      if(fields.get(0).getSchema().getType() != Schema.Type.MAP &&
-        fields.get(0).getSchema().getType() != Schema.Type.STRING) {
-        throw new IllegalArgumentException("Field '" + fields.get(0).getName() + "' is not of type String or " +
-                                             "Map<String, String>.");
+      Schema.Type type1 = fields.get(0).getSchema().getType();
+      Schema.Type type2 = fields.get(1).getSchema().getType();
+      
+      if (type1.equals(type2)) {
+        throw new IllegalArgumentException("Fields specified are of same type. Header should be of type " +
+                                             "Map<String, String> and Body should be of type String.");    
+      }
+      
+      if (type1 != Schema.Type.MAP && type1 != Schema.Type.STRING) {
+        throw new IllegalArgumentException("Field '" + fields.get(1).getName() + "' is not of type String or " +
+                                             "Map<String, String>.");        
       }
 
-      if(fields.get(1).getSchema().getType() != Schema.Type.MAP &&
-        fields.get(1).getSchema().getType() != Schema.Type.STRING) {
+      if (type2 != Schema.Type.MAP && type2 != Schema.Type.STRING) {
         throw new IllegalArgumentException("Field '" + fields.get(1).getName() + "' is not of type String or " +
                                              "Map<String, String>.");
       }
+
     } catch (IOException e) {
       throw new IllegalArgumentException("Output Schema specified is not a valid JSON. Please check the schema JSON");
     }
