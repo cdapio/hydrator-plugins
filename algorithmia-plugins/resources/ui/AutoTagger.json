@@ -1,0 +1,35 @@
+{
+  "id": "AutoTagger",
+  "groups": {
+    "position": [ "group1" ],
+    "group1": {
+      "display": "Clone Rows",
+      "position": [ "apiKey", "field", "schema", "outfieldtag", "outfieldweight" ],
+      "fields": {
+        "apiKey": {
+          "widget": "text",
+          "label": "Algorithmia API Key"
+        },
+        "field": {
+          "widget": "text",
+          "label": "Input Field"
+        },
+        "outfieldtag": {
+          "widget": "text",
+          "label": "Output Field Name for Tag"
+        },
+        "outfieldweight": {
+          "widget": "text",
+          "label": "Output Field Name for Weight"
+        },
+        "schema" : {
+          "widget": "schema",
+          "label": "Schema",
+          "description" : "Output Schema",
+          "schema-types" : [ "string", "double" ],
+          "schema-default-type" : "string"
+        }
+      }
+    }
+  }
+}
