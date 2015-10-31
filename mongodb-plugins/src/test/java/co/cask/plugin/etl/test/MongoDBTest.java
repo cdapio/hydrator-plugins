@@ -136,7 +136,7 @@ public class MongoDBTest extends TestBase {
   @Before
   public void beforeTest() throws Exception {
     // Start an embedded mongodb server
-    factory = MongodForTestsFactory.with(Version.Main.V3_1);
+    factory = MongodForTestsFactory.with(Version.Main.V3_0);
     MongoClient mongoClient = factory.newMongo();
     List<ServerAddress> serverAddressList = mongoClient.getAllAddress();
     mongoPort = serverAddressList.get(0).getPort();
@@ -172,7 +172,7 @@ public class MongoDBTest extends TestBase {
                                                             MongoDBRealtimeSink.Properties.DB_NAME, "cdap",
                                                             MongoDBRealtimeSink.Properties.COLLECTION_NAME, "real"));
     ETLRealtimeConfig etlConfig = new ETLRealtimeConfig(source, sink, new ArrayList<ETLStage>());
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testMongoDBRealtimeSink");
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "MongoDBRealtimeSinkTest");
     AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(ETLREALTIME_ARTIFACT, etlConfig);
     ApplicationManager appManager = deployApplication(appId, appRequest);
     WorkerManager workerManager = appManager.getWorkerManager(ETLWorker.class.getSimpleName());
