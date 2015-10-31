@@ -58,10 +58,10 @@ Kafka Producer
   can also be configured to operate in sync or async mode.
 :Configuration:
   **brokers:** Specifies a list of brokers to connect to,
-  **isasync:** Specifies whether writing the events to broker is Asynchronous or Synchronous. 
-  **paritionfield:** Specifies the input fields that need to be used to determine partition id. The field type should int or long. 
-  **key:** Specifies the input field that should be used as key for event published into Kafka. 
-  **topics:** Specifies a list of topic to which the event should be published to.
+  **isasync:** Specifies whether writing the events to broker is Asynchronous or Synchronous, 
+  **paritionfield:** Specifies the input fields that need to be used to determine partition id. The field type should int or long, 
+  **key:** Specifies the input field that should be used as key for event published into Kafka, 
+  **topics:** Specifies a list of topic to which the event should be published to and
   **format:** Specifies the format of event published to kafka. 
   
 License and Trademarks
