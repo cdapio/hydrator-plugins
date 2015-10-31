@@ -131,7 +131,7 @@ Clone Record
   Batch and
   Realtime
 :Description:
-  Clones every input record received 'n' times.
+  Makes copy of every input record received configured number of times on the output. This transform does not change any record fields or types. It's identity. 
 :Configuration:
   **copies:** Specifies numbers of copies of input record that has be emitted. 
 
