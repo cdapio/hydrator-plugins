@@ -68,9 +68,9 @@ CSV Parser
   into multiple structured records. Different formats of CSV record can be parsed using this plugin. 
   Following are different CSV record types that are supported by this plugin: DEFAULT, EXCEL, MYSQL, RFC4180 and TDF.
 :Configuration:
-  **Format:** Specifies the format of CSV Record the input should be parsed as, 
-  **Field:** Specifies the input field that should be parsed as CSV Record and
-  **Schema:** Specifies the output schema of CSV Record.
+  **format:** Specifies the format of CSV Record the input should be parsed as, 
+  **field:** Specifies the input field that should be parsed as CSV Record and
+  **schema:** Specifies the output schema of CSV Record.
   
 CSV Formatter
 -------------
@@ -85,9 +85,9 @@ CSV Formatter
 :Description:
   Formats a structured record as a CSV Record. CSV Record formats supported are DELIMITED, EXCEL, MYSQL, RFC4180 and TDF. When the format is DELIMITED one can specify different delimiters that a CSV record should use for separting fields. 
 :Configuration:
-  **Format:** Specifies the format of the CSV record to be generated,
-  **Delimiter:** Specifies the delimiter to be used to generate a CSV Record. This option is available when format is specified as DELIMITED and 
-  **Schema:** Specifies the output schema. Output Schema should have only field of type String. 
+  **format:** Specifies the format of the CSV record to be generated,
+  **delimiter:** Specifies the delimiter to be used to generate a CSV Record. This option is available when format is specified as DELIMITED and 
+  **schema:** Specifies the output schema. Output Schema should have only field of type String. 
 
 JSON Parser
 -------------
@@ -102,8 +102,8 @@ JSON Parser
 :Description:
   Parses an input field value as a JSON Object. Each record in the input is parsed as a JSON Object and converted into a Structured Record. The structured record can specify only the fields it's interested in. Meaning projections are possible. 
 :Configuration:
-  **Field:** Specifies the input field that should be parsed as CSV Record and
-  **Schema:** Specifies the output schema for JSON Record.
+  **field:** Specifies the input field that should be parsed as CSV Record and
+  **schema:** Specifies the output schema for JSON Record.
 
 JSON Formatter
 -------------
@@ -118,7 +118,7 @@ JSON Formatter
 :Description:
   Formats a structured record as JSON Object. Plugin will convert the structured record to JSON object and write to output record. The output record should have only one field of type STRING or BYTE array.
 :Configuration:
-  **Schema:** Specifies the output schema that includes only one of type STRING or BYTE array. 
+  **schema:** Specifies the output schema that includes only one of type STRING or BYTE array. 
 
 Clone Record
 -------------
