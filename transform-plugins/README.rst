@@ -31,7 +31,7 @@ You can get started with CDAP-plugins by building directly from the latest sourc
 
   git clone https://github.com/caskdata/hydrator-plugins.git
   cd hydrator-plugins
-  mvn clean package
+  mvn clean package -pl transform-plugins
 
 After the build completes, you will have a jar for each plugin under the
 ``<plugin-name>/target/`` directory.
@@ -48,7 +48,7 @@ You can deploy transform plugins using the CDAP CLI::
 
 Copy the UI configuration to CDAP installation::
 
-  > cp transform-plugins/*.json $CDAP_HOME/ui/templates/common/
+  > cp transform-plugins/resources/ui/*.json $CDAP_HOME/ui/templates/common/
 
 Plugin Descriptions
 ===================
@@ -68,9 +68,9 @@ CSV Parser
   into multiple structured records. Different formats of CSV record can be parsed using this plugin. 
   Following are different CSV record types that are supported by this plugin: DEFAULT, EXCEL, MYSQL, RFC4180 and TDF.
 :Configuration:
-  **Format:** Specifies the format of CSV Record to be generated, 
+  **Format:** Specifies the format of CSV Record the input should be parsed as, 
   **Field:** Specifies the input field that should be parsed as CSV Record and
-  **Schema:** Specifies the output schema of CSV Record. 
+  **Schema:** Specifies the output schema of CSV Record.
   
 CSV Formatter
 -------------
@@ -80,9 +80,14 @@ CSV Formatter
 :Type:
   Transform
 :Mode:
-  Batch
+  Batch and
   Realtime
 :Description:
+  Formats a structured record as a CSV Record. CSV Record formats supported are DELIMITED, EXCEL, MYSQL, RFC4180 and TDF. When the format is DELIMITED one can specify different delimiters that a CSV record should use for separting fields. 
+:Configuration:
+  **Format:** Specifies the format of the CSV record to be generated,
+  **Delimiter:** Specifies the delimiter to be used to generate a CSV Record. This option is available when format is specified as DELIMITED and 
+  **Schema:** Specifies the output schema. Output Schema should have only field of type String. 
 
 JSON Parser
 -------------
