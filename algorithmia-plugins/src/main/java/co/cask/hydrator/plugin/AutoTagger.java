@@ -76,10 +76,6 @@ public final class AutoTagger extends Transform<StructuredRecord, StructuredReco
     // Iterate through output schema and find out which one is header and which is body.
     tagFiledName = config.outFieldTag;
     weightFieldName = config.outFieldWeight;
-    URL url = getClass().getClassLoader().getResource("org/apache/http/message/BasicLineFormatter.class");
-    System.out.println("line formatter class: " + url + " " + getClass().getClassLoader());
-    Class<?> cls = getClass().getClassLoader().loadClass("org.apache.http.message.BasicLineFormatter");
-    System.out.println("line formatter loaded by: " + cls.getClassLoader());
     algorithm = Algorithmia.client(config.apiKey).algo("nlp/sentimentbyterm");
   }
 
