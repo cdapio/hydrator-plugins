@@ -10,19 +10,19 @@ Collection of Kafka Hydrator Plugins that allow to read and write data from and 
 Kafka Producer
 --------------
 
-:Type:
-   Sink
-:Mode:
-   Realtime
 :Id:
-   KafkaProducer
+  KafkaProducer
+:Type:
+  Sink
+:Mode:
+  Realtime
 :Description:   
-   Kafka producer plugins allows you to convert structured record into CSV or JSON. 
-   Plugin has the capability to push the data to one or more Kafka topics. It can 
-   use one of the field value from input to partition the data on topic. The producer
-   can also be configured to operate in sync or async mode.
+  Kafka producer plugins allows you to convert structured record into CSV or JSON.
+  Plugin has the capability to push the data to one or more Kafka topics. It can
+  use one of the field value from input to partition the data on topic. The producer
+  can also be configured to operate in sync or async mode.
 :UI Configuration:
-   Yes
+  Yes
 
 Getting Started
 ===============
