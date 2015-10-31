@@ -57,7 +57,7 @@ CSV Parser
 ----------
 
 :Id:
-  CSVParser
+  **CSVParser**
 :Type:
   Transform
 :Mode:
@@ -76,7 +76,7 @@ CSV Formatter
 -------------
 
 :Id:
-  CSVFormatter
+  **CSVFormatter**
 :Type:
   Transform
 :Mode:
