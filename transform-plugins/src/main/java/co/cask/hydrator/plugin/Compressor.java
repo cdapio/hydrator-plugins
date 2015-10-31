@@ -27,16 +27,13 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xerial.snappy.Snappy;
 
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPOutputStream;
@@ -162,7 +159,6 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
     // in the fields that need to be encoded, if it's not then write 
     // to output as it is. 
     for(Field field : inFields) {
-      LOG.info("Looking at field '" + field.getName() + "'");
       String name = field.getName();
       
       // Check if output schema also have the same field name. If it's not 
@@ -171,7 +167,7 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
         continue;
       }
       
-      Schema.Type outFieldType = outSchemaMap.get(name);
+      Schema.Type outFieldType = outSchemaMap. get(name);
       
       // Check if the input field name is configured to be encoded. If the field is not 
       // present or is defined as none, then pass through the field as is. 
@@ -202,27 +198,60 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
         // Depending on the output field type, either convert it to 
         // Bytes or to String. 
         if(outFieldType == Schema.Type.BYTES) {
-          builder.set(name, outValue);
+          if(outValue != null) {
+            builder.set(name, outValue);
+          }
         }
       }
     }
     emitter.emit(builder.build());
   }
 
-  private static byte[] compressGZIP(byte[] input) throws IOException {
+  private static byte[] compressGZIP(byte[] input) {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
-    GZIPOutputStream gzip = new GZIPOutputStream(out);
-    gzip.write(input, 0, input.length);
-    gzip.close();
+    GZIPOutputStream gzip = null;
+    try {
+      gzip = new GZIPOutputStream(out);
+      gzip.write(input, 0, input.length);
+    } catch (IOException e) {
+      // These are all in memory operations, so this should not happen. 
+      // But, if it happens then we just return null. Logging anything 
+      // here can be noise.
+      return null;
+    } finally {
+      if (gzip != null) {
+        try {
+          gzip.close();
+        } catch (IOException e) {
+          return null;
+        }
+      }
+    }
+    
     return out.toByteArray();
   }
 
-  private byte[] compressZIP(byte[] input) throws IOException {
+  private byte[] compressZIP(byte[] input) {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     ZipOutputStream zos = new ZipOutputStream(out);
-    zos.putNextEntry(new ZipEntry("c"));
-    zos.write(input,0, input.length);
-    zos.close();
+    try {
+      zos.putNextEntry(new ZipEntry("c"));
+      zos.write(input, 0, input.length);
+    } catch (IOException e) {
+      // These are all in memory operations, so this should not happen. 
+      // But, if it happens then we just return null. Logging anything 
+      // here can be noise. 
+      return null;
+    } finally {
+      try {
+        if(zos != null) {
+          zos.close();
+        }
+      } catch (IOException e) {
+        return null;
+      }
+    }
+    
     return out.toByteArray();
   }
 
