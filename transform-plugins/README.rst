@@ -93,13 +93,17 @@ JSON Parser
 -------------
 
 :Id:
-  JSONParser
+  **JSONParser**
 :Type:
   Transform
 :Mode:
-  Batch
+  Batch and
   Realtime
 :Description:
+  Parses an input field value as a JSON Object. Each record in the input is parsed as a JSON Object and converted into a Structured Record. The structured record can specify only the fields it's interested in. Meaning projections are possible. 
+:Configuration:
+  **Field:** Specifies the input field that should be parsed as CSV Record and
+  **Schema:** Specifies the output schema for JSON Record.
 
 JSON Parser
 -------------
