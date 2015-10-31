@@ -62,9 +62,9 @@ CSV Parser
   Batch and
   Realtime
 :Description:
-  Parses an input field into a CSV Record. Support multi-line parsing into CSV Record.
-  Different formats of CSV record can be generated using this plugin. Following are different
-  CSV record types that are supported by this plugin: DEFAULT, EXCEL, MYSQL, RFC4180 and TDF.
+  Parses an input field as CSV Record into a Structured Record. Support multi-line CSV record parsing 
+  into multiple structured records. Different formats of CSV record can be parsed using this plugin. 
+  Following are different CSV record types that are supported by this plugin: DEFAULT, EXCEL, MYSQL, RFC4180 and TDF.
 :Configuration:
   **Format:** Specifies the format of CSV Record to be generated, 
   **Field:** Specifies the input field that should be parsed as CSV Record and
