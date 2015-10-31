@@ -25,7 +25,7 @@ import org.junit.Test;
 /**
  * Tests {@link SentimentDetector}.
  */
-public class AutoTaggerTest {
+public class SentimentDetectorTest {
   private static final Schema INPUT = Schema.recordOf("input",
                                                       Schema.Field.of("id", Schema.of(Schema.Type.INT)),
                                                       Schema.Field.of("text", Schema.of(Schema.Type.STRING)));

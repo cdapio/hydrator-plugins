@@ -34,7 +34,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -42,21 +41,24 @@ import java.util.Map;
  */
 @Plugin(type = "transform")
 @Name("SentimentDetector")
-@Description("Extract Keywords using a variation of LDA.")
-public final class AutoTagger extends Transform<StructuredRecord, StructuredRecord> {
-  private static final Logger LOG = LoggerFactory.getLogger(AutoTagger.class);
+@Description("Detects sentiment")
+public final class SentimentDetector extends Transform<StructuredRecord, StructuredRecord> {
+  private static final Logger LOG = LoggerFactory.getLogger(SentimentDetector.class);
   private final Config config;
 
   // Output Schema Field name that is considered as Stream Event Header.
-  private String wordsFiledName;
+  private String tagFiledName;
 
-  //
+  // Output Schema Field name that is considered as Stream Event Body.
+  private String weightFieldName;
+  
+  // 
   private Schema outSchema;
-
+  
   private Algorithm algorithm;
 
   // Required only for testing.
-  public AutoTagger(Config config) {
+  public SentimentDetector(Config config) {
     this.config = config;
   }
 
@@ -71,7 +73,7 @@ public final class AutoTagger extends Transform<StructuredRecord, StructuredReco
     // Iterate through output schema and find out which one is header and which is body.
     tagFiledName = config.outFieldTag;
     weightFieldName = config.outFieldWeight;
-    algorithm = Algorithmia.client(config.apiKey).algo("algo://nlp/AutoTag/0.1.3");
+    algorithm = Algorithmia.client(config.apiKey).algo("nlp/sentimentbyterm");
   }
 
   @Override
@@ -94,8 +96,8 @@ public final class AutoTagger extends Transform<StructuredRecord, StructuredReco
       return;
     }
     
-    List<String> words = algorithm.pipe(text).as(new TypeToken<List<String>>(){});
-
+    Map<String, Double> sentiments = algorithm.pipe(text).as(new TypeToken<Map<String, Double>>(){});
+    Iterator it = sentiments.entrySet().iterator();
     while(it.hasNext()) {
       Map.Entry pair = (Map.Entry)it.next();
       StructuredRecord.Builder builder = StructuredRecord.builder(outSchema);
