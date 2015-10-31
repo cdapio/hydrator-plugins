@@ -37,7 +37,7 @@ public class AutoTaggerTest {
   
   @Test
   public void testAutoTagger() throws Exception {
-    AutoTagger.Config config = new AutoTagger.Config("simbg3LUqDE+YxNTdzdQPH+Mhuk1", 
+    AutoTagger.Config config = new AutoTagger.Config("XYZ",
                                                      "text", "tag", "weight", OUTPUT.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new AutoTagger(config);
     transform.initialize(null);
