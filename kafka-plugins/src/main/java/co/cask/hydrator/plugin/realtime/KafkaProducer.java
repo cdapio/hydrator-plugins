@@ -93,8 +93,8 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
 
-    isAsync = Boolean.parseBoolean(producerConfig.isAsync);
-    if(!producerConfig.isAsync.equalsIgnoreCase("true") && !producerConfig.isAsync.equalsIgnoreCase("false")) {
+    isAsync = Boolean.parseBoolean(producerConfig.async);
+    if (!producerConfig.async.equalsIgnoreCase("true") && !producerConfig.async.equalsIgnoreCase("false")) {
       throw new IllegalArgumentException("Async flag has to be either TRUE or FALSE.");
     }
     
@@ -114,7 +114,7 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
     props.put(KEY_SERIALIZER, "org.apache.kafka.common.serialization.StringSerializer");
     props.put(VAL_SERIALIZER, "org.apache.kafka.common.serialization.StringSerializer");
     props.put(CLIENT_ID, "kafka-producer-" + context.getInstanceId());
-    if (producerConfig.isAsync.equalsIgnoreCase("TRUE")) {
+    if (producerConfig.async.equalsIgnoreCase("TRUE")) {
       props.put(ACKS_REQUIRED, "1");
       isAsync = true;
     }
@@ -142,7 +142,7 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
       } else {
         // Extract all values from the structured record
         List<Object> objs = Lists.newArrayList();
-        for(Schema.Field field : fields) {
+        for (Schema.Field field : fields) {
           objs.add(object.get(field.getName()));
         }
 
@@ -192,7 +192,7 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
       // Integer then we use it as-is else
       int partitionKey = 0;
       if (producerConfig.partitionField != null) {
-        if(object.get(producerConfig.partitionField) != null) {
+        if (object.get(producerConfig.partitionField) != null) {
           partitionKey = object.get(producerConfig.partitionField).hashCode();
         }
       }
@@ -244,10 +244,10 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
       "determine the leader for each topic")
     private String brokers;
     
-    @Name("isasync")
+    @Name("async")
     @Description("Specifies whether an acknowledgment is required from broker that message was received. " +
       "Default is FALSE")
-    private String isAsync;
+    private String async;
     
     @Name("partitionfield")
     @Description("Specify field that should be used as partition ID. Should be a int or long")
@@ -265,10 +265,10 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
     @Description("Format a structured record should be converted to")
     private String format;
     
-    public Config(String brokers, String isAsync, String partitionField, String key, String topics,
+    public Config(String brokers, String async, String partitionField, String key, String topics,
                   String format) {
       this.brokers = brokers;
-      this.isAsync = isAsync;
+      this.async = async;
       this.partitionField = partitionField;
       this.key = key;
       this.topics = topics;

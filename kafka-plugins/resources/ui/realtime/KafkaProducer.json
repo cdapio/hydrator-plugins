@@ -4,7 +4,7 @@
     "position": [ "group1", "group2" ],
     "group1": {
       "display": "Kafka Producer and Topic Config",
-      "position": [ "brokers", "topics", "isasync" ],
+      "position": [ "brokers", "topics", "async" ],
       "fields": {
         "brokers": {
           "widget": "csv",
@@ -20,7 +20,7 @@
             "delimiter": ","
           }
         },
-        "iasync": {
+        "async": {
           "widget": "select",
           "label": "Is Async ?",
           "properties": {
