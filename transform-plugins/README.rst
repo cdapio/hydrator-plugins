@@ -166,7 +166,7 @@ Compressor
 :Description:
   Compresses configured fields. Multiple fields can be specified to be compressed using different compression algorithms. Currently plugin supports SNAPPY, ZIP and GZIP types of compression of fields. 
 :Configuration:
-  **compressor:** Specifies the configuration for compressing fields. Following is how this can be specified in JSON configuration <field>:<compressor>[,<field>:<compressor>]* 
+  **compressor:** Specifies the configuration for compressing fields. Following is how this can be specified in JSON configuration <field>:<compressor>[,<field>:<compressor>]*,
   **schema:** Specifies the output schema. The fields that are compressed will have the same field name, but they will be of type BYTE array. 
 
 License and Trademarks
