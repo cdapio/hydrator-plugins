@@ -65,6 +65,10 @@ CSV Parser
   Parses an input field into a CSV Record. Support multi-line parsing into CSV Record.
   Different formats of CSV record can be generated using this plugin. Following are different
   CSV record types that are supported by this plugin: DEFAULT, EXCEL, MYSQL, RFC4180 and TDF.
+:Configuration:
+  **Format** Specifies the format of CSV Record to be generated.
+  **Field** Specifies the input field that should be parsed as CSV Record
+  **Schema** Specifies the output schema of CSV Record. 
   
 CSV Formatter
 -------------
@@ -95,6 +99,42 @@ JSON Parser
 
 :Id:
   JSONParser
+:Type:
+  Transform
+:Mode:
+  Batch
+  Realtime
+:Description:
+
+Clone Record
+-------------
+
+:Id:
+  CloneRecord
+:Type:
+  Transform
+:Mode:
+  Batch
+  Realtime
+:Description:
+
+Stream Formatter
+-------------
+
+:Id:
+  StreamFormatter
+:Type:
+  Transform
+:Mode:
+  Batch
+  Realtime
+:Description:
+
+Compressor
+-------------
+
+:Id:
+  Compressor
 :Type:
   Transform
 :Mode:
