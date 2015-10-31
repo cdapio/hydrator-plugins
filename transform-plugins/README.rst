@@ -105,17 +105,20 @@ JSON Parser
   **Field:** Specifies the input field that should be parsed as CSV Record and
   **Schema:** Specifies the output schema for JSON Record.
 
-JSON Parser
+JSON Formatter
 -------------
 
 :Id:
-  JSONParser
+  JSONFormatter
 :Type:
   Transform
 :Mode:
-  Batch
+  Batch and 
   Realtime
 :Description:
+  Formats a structured record as JSON Object. Plugin will convert the structured record to JSON object and write to output record. The output record should have only one field of type STRING or BYTE array.
+:Configuration:
+  **Schema:** Specifies the output schema that includes only one of type STRING or BYTE array. 
 
 Clone Record
 -------------
@@ -125,9 +128,12 @@ Clone Record
 :Type:
   Transform
 :Mode:
-  Batch
+  Batch and
   Realtime
 :Description:
+  Clones every input record received 'n' times.
+:Configuration:
+  **copies:** Specifies numbers of copies of input record that has be emitted. 
 
 Stream Formatter
 -------------
@@ -137,9 +143,15 @@ Stream Formatter
 :Type:
   Transform
 :Mode:
-  Batch
+  Batch and
   Realtime
 :Description:
+  Formats a structured record as Stream format. Plugin will convert the structured record to Stream format. It will include header configuration and body configuration. The body of Stream event can be of any of the two types : CSV or JSON.
+:Configuration:
+  **body:** Specifies the fields from input structured record that should be included in the body of Stream event. 
+  **header:** Specifies the fields from input structured record that should be included in the header of Stream event. 
+  **format:** Specifies the format of the body. Currently supported formats are JSON, CSV, TSV and PSV.
+  **schema:** Specifies the output schema. The output schema can have only two fields. One of type STRING and the other of type MAP<STRING, STRING>.
 
 Compressor
 -------------
