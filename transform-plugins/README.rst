@@ -16,25 +16,6 @@ that are currently available:
 - Stream Formatter and
 - Compressor
 
-Plugin Descriptions
-===================
-
-CSV Parser
-----------
-
-:Id
-  CSVParser
-:Type
-  Transform
-:Mode
-  Batch
-  Realtime
-:Description
-  Parses an input field into a CSV Record. Support multi-line parsing into CSV Record.
-  Different formats of CSV record can be generated using this plugin. Following are different
-  CSV record types that are supported by this plugin: DEFAULT, EXCEL, MYSQL, RFC4180 and TDF.
-  
-
 Getting Started
 ===============
 
@@ -66,6 +47,60 @@ You can deploy transform plugins using the CDAP CLI::
 Copy the UI configuration to CDAP installation::
 
   > cp transform-plugins/*.json $CDAP_HOME/ui/templates/common/
+
+Plugin Descriptions
+===================
+
+CSV Parser
+----------
+
+:Id:
+  CSVParser
+:Type:
+  Transform
+:Mode:
+  Batch
+  Realtime
+:Description:
+  Parses an input field into a CSV Record. Support multi-line parsing into CSV Record.
+  Different formats of CSV record can be generated using this plugin. Following are different
+  CSV record types that are supported by this plugin: DEFAULT, EXCEL, MYSQL, RFC4180 and TDF.
+  
+CSV Formatter
+-------------
+
+:Id:
+  CSVFormatter
+:Type:
+  Transform
+:Mode:
+  Batch
+  Realtime
+:Description:
+
+JSON Parser
+-------------
+
+:Id:
+  JSONParser
+:Type:
+  Transform
+:Mode:
+  Batch
+  Realtime
+:Description:
+
+JSON Parser
+-------------
+
+:Id:
+  JSONParser
+:Type:
+  Transform
+:Mode:
+  Batch
+  Realtime
+:Description:
 
 License and Trademarks
 ======================
