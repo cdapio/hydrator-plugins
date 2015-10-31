@@ -27,6 +27,7 @@
     <module>hbase-plugins</module>
     <module>hdfs-plugins</module>
     <module>transform-plugins</module>
+    <module>kafka-plugins</module>
   </modules>
   <packaging>pom</packaging>
 
