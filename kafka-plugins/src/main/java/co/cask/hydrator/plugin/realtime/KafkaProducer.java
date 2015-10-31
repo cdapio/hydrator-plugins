@@ -56,7 +56,7 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(KafkaProducer.class);
 
   // Configuration for the plugin.
-  private final Config sconfig;
+  private final Config producerConfig;
   
   // Static constants for configuring Kafka producer. 
   private static final String BROKER_LIST = "bootstrap.servers";
@@ -69,7 +69,7 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
   private final Properties props = new Properties();
   
   // Kafka producer configuration
-  private ProducerConfig config;
+  private ProducerConfig kafkaConfig;
   
   // Kafka producer handle
   private org.apache.kafka.clients.producer.KafkaProducer<String, String> producer;
@@ -77,26 +77,24 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
   // Plugin context
   private RealtimeContext context;
   
-  // Optimization to collect fields extracted. This is required because the schema
-  // is not available during initialization and configuration phase.
-  private boolean fieldsExtracted = false;
-  
   // If Async mode
   private boolean isAsync = false;
   
   // List of Kafka topics.
   private String[] topics;
+
   
   // required for testing.
-  public KafkaProducer(Config config) {
-    this.sconfig = config;
+  public KafkaProducer(Config kafkaConfig) {
+    this.producerConfig = kafkaConfig;
   }
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
-    
-    if(!sconfig.isAsync.equalsIgnoreCase("true") && !sconfig.isAsync.equalsIgnoreCase("false")) {
+
+    isAsync = Boolean.parseBoolean(producerConfig.isAsync);
+    if(!producerConfig.isAsync.equalsIgnoreCase("true") && !producerConfig.isAsync.equalsIgnoreCase("false")) {
       throw new IllegalArgumentException("Async flag has to be either TRUE or FALSE.");
     }
     
@@ -109,14 +107,14 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
     this.context = context;
 
     // Extract the topics
-    topics = sconfig.topics.split(",");
+    topics = producerConfig.topics.split(",");
     
     // Configure the properties for kafka.
-    props.put(BROKER_LIST, sconfig.brokers);
+    props.put(BROKER_LIST, producerConfig.brokers);
     props.put(KEY_SERIALIZER, "org.apache.kafka.common.serialization.StringSerializer");
     props.put(VAL_SERIALIZER, "org.apache.kafka.common.serialization.StringSerializer");
     props.put(CLIENT_ID, "kafka-producer-" + context.getInstanceId());
-    if (sconfig.isAsync.equalsIgnoreCase("TRUE")) {
+    if (producerConfig.isAsync.equalsIgnoreCase("TRUE")) {
       props.put(ACKS_REQUIRED, "1");
       isAsync = true;
     }
@@ -130,22 +128,16 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
   public int write(Iterable<StructuredRecord> objects, final DataWriter dataWriter) throws Exception {
     int count = 0;
 
-    List<Schema.Field> fields = Lists.newArrayList();
+    List<Schema.Field> fields;
     
     // For each object
     for (StructuredRecord object : objects) {
-      
-      // Extract the field names from the object passed in. This is required
-      // because this information is not available in initialize or configuration phase.
-      if(!fieldsExtracted) {
-        fields = object.getSchema().getFields();
-        fieldsExtracted = true;
-      }
-      
+      fields = object.getSchema().getFields();
+
       // Depending on the configuration create a body that needs to be 
       // built and pushed to Kafka. 
       String body = "";
-      if (sconfig.format.equalsIgnoreCase("JSON")) {
+      if (producerConfig.format.equalsIgnoreCase("JSON")) {
         body = StructuredRecordStringConverter.toJsonString(object);
       } else {
         // Extract all values from the structured record
@@ -157,7 +149,7 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
         StringWriter writer = new StringWriter();
         CSVPrinter printer = null;
         CSVFormat csvFileFormat;
-        switch(sconfig.format.toLowerCase()) {
+        switch(producerConfig.format.toLowerCase()) {
           case "csv":
             csvFileFormat = CSVFormat.Predefined.Default.getFormat();
             printer = new CSVPrinter(writer, csvFileFormat);
@@ -192,23 +184,21 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
       
       // Message key.
       String key = "no_key";
-      if(sconfig.key != null) {
-        key = object.get(sconfig.key);    
+      if (producerConfig.key != null) {
+        key = object.get(producerConfig.key);
       }
       
       // Extract the partition key from the record. If the partition key is 
       // Integer then we use it as-is else
-      Integer partitionKey = 0;
-      if(sconfig.partitionField != null) {
-        if(object.get(sconfig.partitionField).getClass().isInstance(Integer.class)) {
-          partitionKey = object.get(sconfig.partitionField);  
-        } else {
-          partitionKey = object.get(sconfig.partitionField).hashCode();
+      int partitionKey = 0;
+      if (producerConfig.partitionField != null) {
+        if(object.get(producerConfig.partitionField) != null) {
+          partitionKey = object.get(producerConfig.partitionField).hashCode();
         }
       }
 
       // Write to all the configured topics
-      for(String topic : topics) {
+      for (String topic : topics) {
         partitionKey = partitionKey % producer.partitionsFor(topic).size();
         if (isAsync) {
           producer.send(new ProducerRecord<String, String>(topic, partitionKey, key, body), new Callback() {
@@ -235,8 +225,13 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
   
   @Override
   public void destroy() {
-    super.destroy();
-    producer.close();
+    try {
+      super.destroy();
+    } finally {
+      if (producer != null) {
+        producer.close();
+      }
+    }
   }
 
   /**
