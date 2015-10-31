@@ -136,7 +136,7 @@ public class MongoDBTest extends TestBase {
   @Before
   public void beforeTest() throws Exception {
     // Start an embedded mongodb server
-    factory = MongodForTestsFactory.with(Version.Main.V3_0);
+    factory = MongodForTestsFactory.with(Version.Main.V3_1);
     MongoClient mongoClient = factory.newMongo();
     List<ServerAddress> serverAddressList = mongoClient.getAllAddress();
     mongoPort = serverAddressList.get(0).getPort();

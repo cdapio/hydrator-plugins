@@ -35,7 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *
+ * MongoDB Realtime Sink.
  */
 @Plugin(type = "realtimesink")
 @Name("MongoDB")
