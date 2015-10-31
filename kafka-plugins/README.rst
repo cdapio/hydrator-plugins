@@ -7,23 +7,6 @@ Introduction
 
 Collection of Kafka Hydrator Plugins that allow to read and write data from and to Kafka respectively.
 
-Kafka Producer
---------------
-
-:Id:
-  KafkaProducer
-:Type:
-  Sink
-:Mode:
-  Realtime
-:Description:   
-  Kafka producer plugins allows you to convert structured record into CSV or JSON.
-  Plugin has the capability to push the data to one or more Kafka topics. It can
-  use one of the field value from input to partition the data on topic. The producer
-  can also be configured to operate in sync or async mode.
-:UI Configuration:
-  Yes
-
 Getting Started
 ===============
 
@@ -56,6 +39,31 @@ Copy the UI configuration to CDAP installation::
 
   > cp kafka-plugins/resources/realtime/ui/*.json $CDAP_HOME/ui/templates/cdap-etl-realtime/
 
+Plugin description
+==================
+
+Kafka Producer
+--------------
+
+:Id:
+  KafkaProducer
+:Type:
+  Sink
+:Mode:
+  Realtime
+:Description:   
+  Kafka producer plugins allows you to convert structured record into CSV or JSON.
+  Plugin has the capability to push the data to one or more Kafka topics. It can
+  use one of the field value from input to partition the data on topic. The producer
+  can also be configured to operate in sync or async mode.
+:Configuration:
+  **brokers:** Specifies a list of brokers to connect to,
+  **isasync:** Specifies whether writing the events to broker is Asynchronous or Synchronous, 
+  **paritionfield:** Specifies the input fields that need to be used to determine partition id. The field type should int or long, 
+  **key:** Specifies the input field that should be used as key for event published into Kafka, 
+  **topics:** Specifies a list of topic to which the event should be published to and
+  **format:** Specifies the format of event published to kafka. 
+  
 License and Trademarks
 ======================
 
