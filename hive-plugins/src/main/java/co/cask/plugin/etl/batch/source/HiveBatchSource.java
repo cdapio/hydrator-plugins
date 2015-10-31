@@ -58,8 +58,8 @@ public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord,
 
   private static final Logger LOG = LoggerFactory.getLogger(HiveBatchSource.class);
   private static final Gson GSON = new Gson();
-  private static final String HIVE_TABLE_SCHEMA_STORE = "hiveTableSchemaStore";
-  private static final String DEFAULT_HIVE_DATABASE = "default";
+  public static final String HIVE_TABLE_SCHEMA_STORE = "hiveTableSchemaStore";
+  public static final String DEFAULT_HIVE_DATABASE = "default";
 
   private HiveConfig config;
   private KeyValueTable hiveTableSchemaStore;
