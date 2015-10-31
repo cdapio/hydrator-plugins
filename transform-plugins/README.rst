@@ -11,7 +11,9 @@ that are currently available:
 - CSV Parser,
 - CSV Formatter,
 - JSON Parser,
-- JSON Parser
+- JSON Parser,
+- Clone Record,
+- Stream Formatter
 
 Getting Started
 ===============

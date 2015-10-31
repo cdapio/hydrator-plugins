@@ -1,0 +1,50 @@
+{
+  "id": "StreamFormatter",
+  "groups": {
+    "position": [ "group2", "group1" ],
+    "group1": {
+      "position": [ "body", "header" ],
+      "fields": {
+        "body" : {
+          "widget" : "csv",
+          "label" : "Body Fields",
+          "description" : "Comma separated list of input fields that need to be in the body.",
+          "properties": {
+            "delimiter": ","
+          }
+        },
+        "header" : {
+          "widget" : "csv",
+          "label" : "Header Fields",
+          "description" : "Comma separated list of input fields that need to be in the header.",
+          "properties": {
+            "delimiter": ","
+          }
+        }
+      }
+    },
+    "group2": {
+      "position": [ "format", "schema" ],
+      "fields": {
+        "format" : {
+          "widget" : "select",
+          "label" : "Format of the body",
+          "properties" : {
+            "values" : [ "CSV", "TSV", "JSON", "PSV"],
+            "default" : "CSV"
+          },
+          "description" : "Select the type of output format to be used to write to Stream."
+        },
+        "schema" : {
+          "widget": "schema",
+          "label": "Schema",
+          "description": "Schema of output JSON",
+          "schema-types": [
+            "string"
+          ],
+          "schema-default-type": "string"
+        }
+      }
+    }
+  }
+}

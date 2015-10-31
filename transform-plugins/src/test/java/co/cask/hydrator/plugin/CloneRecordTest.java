@@ -23,52 +23,36 @@ import org.junit.Assert;
 import org.junit.Test;
 
 /**
- * Tests the {@link CSVFormatter}.
+ * Tests {@link CloneRecord}.
  */
-public class CSVFormatterTest {
+public class CloneRecordTest {
+  private static final Schema INPUT = Schema.recordOf("input",
+                                                      Schema.Field.of("a", Schema.of(Schema.Type.STRING)),
+                                                      Schema.Field.of("b", Schema.of(Schema.Type.STRING)),
+                                                      Schema.Field.of("c", Schema.of(Schema.Type.STRING)),
+                                                      Schema.Field.of("d", Schema.of(Schema.Type.STRING)),
+                                                      Schema.Field.of("e", Schema.of(Schema.Type.STRING)));
 
   private static final Schema OUTPUT = Schema.recordOf("output",
-                                                       Schema.Field.of("body", Schema.of(Schema.Type.STRING)));
-
-
-  private static final Schema INPUT1 = Schema.recordOf("input1",
                                                        Schema.Field.of("a", Schema.of(Schema.Type.STRING)),
                                                        Schema.Field.of("b", Schema.of(Schema.Type.STRING)),
                                                        Schema.Field.of("c", Schema.of(Schema.Type.STRING)),
                                                        Schema.Field.of("d", Schema.of(Schema.Type.STRING)),
                                                        Schema.Field.of("e", Schema.of(Schema.Type.STRING)));
 
-  private static final Schema INPUT2 = Schema.recordOf("input2",
-                                                       Schema.Field.of("a", Schema.of(Schema.Type.LONG)),
-                                                       Schema.Field.of("b", Schema.of(Schema.Type.STRING)),
-                                                       Schema.Field.of("c", Schema.of(Schema.Type.INT)),
-                                                       Schema.Field.of("d", Schema.of(Schema.Type.DOUBLE)),
-                                                       Schema.Field.of("e", Schema.of(Schema.Type.BOOLEAN)));
-
   @Test
-  public void testDefaultCSVFormatter() throws Exception {
-    CSVFormatter.Config config = new CSVFormatter.Config("DELIMITED", "VBAR", OUTPUT.toString());
-    Transform<StructuredRecord, StructuredRecord> transform = new CSVFormatter(config);
+  public void testCloneRecord() throws Exception {
+    CloneRecord.Config config = new CloneRecord.Config(5);
+    Transform<StructuredRecord, StructuredRecord> transform = new CloneRecord(config);
     transform.initialize(null);
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
-
-    // Test missing field.
-    emitter.clear();
-    transform.transform(StructuredRecord.builder(INPUT1)
+    transform.transform(StructuredRecord.builder(INPUT)
                           .set("a", "1")
                           .set("b", "2")
                           .set("c", "3")
                           .set("d", "4")
                           .set("e", "5").build(), emitter);
-    Assert.assertEquals("1|2|3|4|5\r\n", emitter.getEmitted().get(0).get("body"));
-    emitter.clear();
-    transform.transform(StructuredRecord.builder(INPUT1)
-                          .set("a", "6")
-                          .set("b", "7")
-                          .set("c", "8")
-                          .set("d", "9")
-                          .set("e", "10").build(), emitter);
-    Assert.assertEquals("6|7|8|9|10\r\n", emitter.getEmitted().get(0).get("body"));
+    Assert.assertEquals(5, emitter.getEmitted().size());
   }
 }
