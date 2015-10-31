@@ -41,8 +41,10 @@ Deploy Plugins
 
 You can deploy transform plugins using the CDAP CLI::
 
-  > load artifact target/transform-plugins-1.0-SNAPSHOT-batch.jar \
-         config-file resources/transform-plugins.json
+  > load artifact target/transform-plugins-<version>-batch.jar \
+         config-file resources/transform-plugins-batch.json
+  > load artifact target/transform-plugins-<version>-realtime.jar \
+         config-file resources/transform-plugins-realtime.json
 
 Copy the UI configuration to CDAP installation::
 
