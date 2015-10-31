@@ -30,8 +30,11 @@ import com.algorithmia.Algorithmia;
 import com.algorithmia.AlgorithmiaClient;
 import com.algorithmia.TypeToken;
 import com.algorithmia.algo.Algorithm;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +46,7 @@ import java.util.Map;
 @Name("AutoTagger")
 @Description("Extracts keywords using a variation of LDA.")
 public final class AutoTagger extends Transform<StructuredRecord, StructuredRecord> {
+  private static final Logger LOG = LoggerFactory.getLogger(AutoTagger.class);
   private final Config config;
 
   // Output Schema Field name that is considered as Stream Event Header.
@@ -72,6 +76,10 @@ public final class AutoTagger extends Transform<StructuredRecord, StructuredReco
     // Iterate through output schema and find out which one is header and which is body.
     tagFiledName = config.outFieldTag;
     weightFieldName = config.outFieldWeight;
+    URL url = getClass().getClassLoader().getResource("org/apache/http/message/BasicLineFormatter.class");
+    System.out.println("line formatter class: " + url + " " + getClass().getClassLoader());
+    Class<?> cls = getClass().getClassLoader().loadClass("org.apache.http.message.BasicLineFormatter");
+    System.out.println("line formatter loaded by: " + cls.getClassLoader());
     algorithm = Algorithmia.client(config.apiKey).algo("nlp/sentimentbyterm");
   }
 
@@ -101,11 +109,14 @@ public final class AutoTagger extends Transform<StructuredRecord, StructuredReco
       Map.Entry pair = (Map.Entry)it.next();
       StructuredRecord.Builder builder = StructuredRecord.builder(outSchema);
       
-      for(Schema.Field field : in.getSchema().getFields()) {
-        builder.set(field.getName(), in.get(field.getName()));
+      for(Schema.Field field : outSchema.getFields()) {
+        if(in.get(field.getName()) != null) {
+          LOG.info("Field " + field.getName());
+          builder.set(field.getName(), in.get(field.getName()));
+        }
       }
       
-      StructuredRecord record= builder.set(tagFiledName, pair.getKey())
+      StructuredRecord record = builder.set(tagFiledName, pair.getKey())
         .set(weightFieldName, pair.getValue()).build();
       emitter.emit(record);
     }

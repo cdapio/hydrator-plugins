@@ -27,9 +27,11 @@ import org.junit.Test;
  */
 public class AutoTaggerTest {
   private static final Schema INPUT = Schema.recordOf("input",
+                                                      Schema.Field.of("id", Schema.of(Schema.Type.INT)),
                                                       Schema.Field.of("text", Schema.of(Schema.Type.STRING)));
 
   private static final Schema OUTPUT = Schema.recordOf("output",
+                                                       Schema.Field.of("id", Schema.of(Schema.Type.INT)),
                                                        Schema.Field.of("tag", Schema.of(Schema.Type.STRING)),
                                                        Schema.Field.of("weight", Schema.of(Schema.Type.DOUBLE)));
   
@@ -42,8 +44,9 @@ public class AutoTaggerTest {
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(StructuredRecord.builder(INPUT)
+                          .set("id", 1)
                           .set("text", "I love Alice. I hate Bob.")
-                            .build(), emitter);
+                          .build(), emitter);
     Assert.assertEquals(2, emitter.getEmitted().size());
   }
 }
