@@ -26,17 +26,6 @@
   <artifactId>kafka-plugins</artifactId>
   <modelVersion>4.0.0</modelVersion>
 
-  <repositories>
-    <repository>
-      <id>sonatype</id>
-      <url>https://oss.sonatype.org/content/groups/public</url>
-    </repository>
-    <repository>
-      <id>sonatype-snapshots</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    </repository>
-  </repositories>
-
   <dependencies>
     <dependency>
       <groupId>co.cask.cdap</groupId>
@@ -137,25 +126,6 @@
         <version>2.5.4</version>
         <extensions>true</extensions>
         <executions>
-          <execution>
-            <id>batch-bundle</id>
-            <phase>prepare-package</phase>
-            <configuration>
-              <classifier>batch</classifier>
-              <instructions>
-                <!-- build bundle jar for batch. excluding realtime-->
-                <Export-Package>co.cask.hydrator.plugin.batch.*;org.elasticsearch.hadoop.mr.*;
-                  org.apache.commons.lang;org.apache.commons.logging.*;
-                  org.codehaus.jackson.*</Export-Package>
-                <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
-                <Embed-Transitive>true</Embed-Transitive>
-                <Embed-Directory>lib</Embed-Directory>
-              </instructions>
-            </configuration>
-            <goals>
-              <goal>bundle</goal>
-            </goals>
-          </execution>
           <execution>
             <id>realtime-bundle</id>
             <phase>prepare-package</phase>

@@ -397,9 +397,9 @@ public class KafkaProducerTest {
   @AfterClass
   public static void afterClass() {
     kafkaServer.stopAndWait();
-    zkServer.stopAndWait();
     kafkaClient.stopAndWait();
     zkClient.stopAndWait();
+    zkServer.stopAndWait();
   }
 
   private String getBroker() {
