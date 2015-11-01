@@ -45,7 +45,7 @@ public final class CloneRecord extends Transform<StructuredRecord, StructuredRec
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-    if(config.copies == 0 || config.copies > Integer.MAX_VALUE) {
+    if (config.copies == 0 || config.copies > Integer.MAX_VALUE) {
       throw new IllegalArgumentException("Number of copies specified '" + config.copies + "' is incorrect. Specify " +
                                        "proper integer range");
     }
@@ -54,9 +54,9 @@ public final class CloneRecord extends Transform<StructuredRecord, StructuredRec
   @Override
   public void transform(StructuredRecord in, Emitter<StructuredRecord> emitter) throws Exception {
     List<Schema.Field> fields = in.getSchema().getFields();
-    for(int i = 0; i < config.copies; ++i) {
+    for (int i = 0; i < config.copies; ++i) {
       StructuredRecord.Builder builder = StructuredRecord.builder(in.getSchema());
-      for(Schema.Field field : fields) {
+      for (Schema.Field field : fields) {
         String name = field.getName();
         builder.set(name, in.get(name));
       }

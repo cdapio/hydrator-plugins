@@ -76,13 +76,13 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
     super.configurePipeline(pipelineConfigurer);
 
     // Check if the format specified is valid.
-    if(config.format == null || config.format.isEmpty()) {
+    if (config.format == null || config.format.isEmpty()) {
       throw new IllegalArgumentException("Format is not specified. Allowed values are DEFAULT, EXCEL, MYSQL," +
                                            " RFC4180 & TDF");
     }
 
     // Check if format is one of the allowed types.
-    if(!config.format.equalsIgnoreCase("DEFAULT") && !config.format.equalsIgnoreCase("EXCEL") &&
+    if (!config.format.equalsIgnoreCase("DEFAULT") && !config.format.equalsIgnoreCase("EXCEL") &&
       !config.format.equalsIgnoreCase("MYSQL") && !config.format.equalsIgnoreCase("RFC4180") &&
       !config.format.equalsIgnoreCase("TDF")) {
       throw new IllegalArgumentException("Format specified is not one of the allowed values. Allowed values are " +
@@ -103,7 +103,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
     super.initialize(context);
 
     String csvFormatString = config.format.toLowerCase();
-    switch(csvFormatString) {
+    switch (csvFormatString) {
       case "default":
         csvFormat = CSVFormat.DEFAULT;
         break;
@@ -146,8 +146,8 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
     try {
       org.apache.commons.csv.CSVParser parser = org.apache.commons.csv.CSVParser.parse(body, csvFormat);
       List<CSVRecord> records = parser.getRecords();
-      for(CSVRecord record : records ) {
-        if(fields.size() == record.size()) {
+      for (CSVRecord record : records) {
+        if (fields.size() == record.size()) {
           StructuredRecord sRecord = createStructuredRecord(record);
           emitter.emit(sRecord);
         } else {
@@ -164,7 +164,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
   private StructuredRecord createStructuredRecord(CSVRecord record) {
     StructuredRecord.Builder builder = StructuredRecord.builder(outSchema);
     int i = 0;
-    for(Field field : fields) {
+    for (Field field : fields) {
       builder.set(field.getName(), TypeConvertor.get(record.get(i), field.getSchema().getType()));
       ++i;
     }

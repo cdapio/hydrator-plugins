@@ -16,6 +16,7 @@
 
 package co.cask.hydrator.plugin;
 
+import co.cask.StreamBatchSource;
 import co.cask.cdap.api.artifact.ArtifactVersion;
 import co.cask.cdap.api.data.format.Formats;
 import co.cask.cdap.api.data.schema.Schema;
@@ -34,7 +35,6 @@ import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.StreamManager;
 import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
-import co.cask.StreamBatchSource;
 import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
