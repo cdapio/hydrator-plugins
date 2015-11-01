@@ -24,6 +24,7 @@
     <version>1.1.0-SNAPSHOT</version>
   </parent>
 
+  <name>Cassandra Plugins</name>
   <artifactId>cassandra-plugins</artifactId>
   <modelVersion>4.0.0</modelVersion>
 

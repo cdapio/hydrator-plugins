@@ -78,6 +78,9 @@ public class HDFSSink extends BatchSink<StructuredRecord, Text, NullWritable> {
     emitter.emit(new KeyValue<>(new Text(Joiner.on(",").join(dataArray)), NullWritable.get()));
   }
 
+  /**
+   * HDFS Sink Output Provider.
+   */
   public static class SinkOutputFormatProvider implements OutputFormatProvider {
     private final Map<String, String> conf;
     private final HDFSSinkConfig config;

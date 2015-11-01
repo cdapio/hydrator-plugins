@@ -116,6 +116,9 @@ public class HBaseSink extends BatchSink<StructuredRecord, NullWritable, Mutatio
     emitter.emit(new KeyValue<NullWritable, Mutation>(NullWritable.get(), hbasePut));
   }
 
+  /**
+   * HBaseSink plugin.
+   */
   public static class HBaseSinkConfig extends HBaseConfig {
     @Description("Parent Node of HBase in Zookeeper. Defaults to '/hbase'")
     @Nullable

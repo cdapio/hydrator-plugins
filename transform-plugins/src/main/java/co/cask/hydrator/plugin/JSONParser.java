@@ -74,9 +74,12 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
   
   @Override
   public void transform(StructuredRecord input, Emitter<StructuredRecord> emitter) throws Exception {
-    emitter.emit(StructuredRecordStringConverter.fromJsonString((String)input.get(config.field), outSchema));
+    emitter.emit(StructuredRecordStringConverter.fromJsonString((String) input.get(config.field), outSchema));
   }
 
+  /**
+   * JSONParser Plugin Config.
+   */
   public static class Config extends PluginConfig {
     @Name("field")
     @Description("Input Field")
