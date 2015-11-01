@@ -124,7 +124,7 @@ public class CSVParserTest {
     Assert.assertEquals(true, emitter.getEmitted().get(0).get("e"));
   }
 
-  @Test(expected=RuntimeException.class)
+  @Test(expected = RuntimeException.class)
   public void testDoubleException() throws Exception {
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     CSVParser.Config config = new CSVParser.Config("DEFAULT", "body", OUTPUT2.toString());
@@ -134,7 +134,7 @@ public class CSVParserTest {
                           .set("body", "10,stringA,3,,true").build(), emitter);
   }
 
-  @Test(expected=RuntimeException.class)
+  @Test(expected = RuntimeException.class)
   public void testIntException() throws Exception {
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     CSVParser.Config config = new CSVParser.Config("DEFAULT", "body", OUTPUT2.toString());
@@ -144,7 +144,7 @@ public class CSVParserTest {
                           .set("body", "10,stringA,,4.32,true").build(), emitter);
   }
 
-  @Test(expected=RuntimeException.class)
+  @Test(expected = RuntimeException.class)
   public void testLongException() throws Exception {
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     CSVParser.Config config = new CSVParser.Config("DEFAULT", "body", OUTPUT2.toString());

@@ -30,7 +30,7 @@ You can get started with CDAP-plugins by building directly from the latest sourc
 
   git clone https://github.com/caskdata/hydrator-plugins.git
   cd hydrator-plugins
-  mvn clean package
+  mvn clean package -pl transform-plugins
 
 After the build completes, you will have a jar for each plugin under the
 ``<plugin-name>/target/`` directory.
@@ -41,11 +41,11 @@ Deploy Plugins
 You can deploy transform plugins using the CDAP CLI::
 
   > load artifact target/transform-plugins-1.0-SNAPSHOT-batch.jar \
-         config-file resources/transform-plugins.json
+         config-file resources/plugin/transform-plugins.json
 
 Copy the UI configuration to CDAP installation::
 
-  > cp transform-plugins/*.json $CDAP_HOME/ui/templates/common/
+  > cp transform-plugins/resources/ui/*.json $CDAP_HOME/ui/templates/common/
 
 License and Trademarks
 ======================
