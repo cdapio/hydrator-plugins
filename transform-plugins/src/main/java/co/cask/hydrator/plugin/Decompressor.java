@@ -39,7 +39,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.Inflater;
+import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 /**
@@ -215,6 +215,9 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
     emitter.emit(builder.build());
   }
 
+  /**
+   * Decompresses using GZIP Algorithm. 
+   */
   private byte[] ungzip(byte[] body) {
     ByteArrayInputStream bytein = new ByteArrayInputStream(body);
     GZIPInputStream gzin = null;
@@ -238,28 +241,39 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
     } 
   }
 
+  /**
+   * Decompresses using ZIP Algorithm.
+   */
   private byte[] unzip(byte[] body)  {
     ByteArrayInputStream bytein = new ByteArrayInputStream(body);
-    ZipInputStream gzin = new ZipInputStream(bytein);
-    ByteArrayOutputStream byteout = new ByteArrayOutputStream();
+    ZipInputStream zis = new ZipInputStream(bytein);
+    ByteArrayOutputStream bao = new ByteArrayOutputStream();
+
+    ZipEntry ze;
+    byte buf[] = new byte[1024];
     try {
-      int res = 0;
-      byte buf[] = new byte[1024];
-      while (res >= 0) {
-        res = gzin.read(buf, 0, buf.length);
-        if (res > 0) {
-          byteout.write(buf, 0, res);
+      while((ze = zis.getNextEntry()) != null) {
+        int l = 0;
+        while ((l = zis.read(buf)) > 0) {
+          bao.write(buf, 0, l);
         }
       }
-      byte uncompressed[] = byteout.toByteArray();
-      return uncompressed;
-    } catch (IOException e){
+    } catch (IOException e) {
       // Most of operations here are in memory. So, we shouldn't get here.
       // Logging here is not an option.
-      return null;
+      return null;       
+    } finally {
+      if (zis != null) {
+        try {
+          zis.close();
+        } catch (IOException e) {
+          return null;
+        }
+      }
     }
+    return bao.toByteArray();
   }
-
+  
   /**
    * Enum specifying the decompressor type.
    */

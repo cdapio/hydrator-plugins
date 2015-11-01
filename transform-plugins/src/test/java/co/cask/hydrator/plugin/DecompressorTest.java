@@ -50,15 +50,6 @@ public class DecompressorTest {
     Assert.assertEquals(2, emitter.getEmitted().get(0).getSchema().getFields().size());
     Assert.assertEquals(decompressTester, actual);
   }
-  
-  @Test
-  public void testZipUnZip() throws Exception {
-    String expected = "This is a test to check if compress and decompress with zip works or not";
-    byte[] compress = compressGZIP(expected.getBytes());
-    byte[] decompress = unzip(compress);
-    String actual = new String(decompress);
-    Assert.assertEquals(actual, expected);
-  }
 
   @Test
   public void testZipCompress() throws Exception {
@@ -68,7 +59,7 @@ public class DecompressorTest {
     transform.initialize(null);
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
-    byte[] compressed = compressZIP(decompressTester.getBytes());
+    byte[] compressed = zip(decompressTester.getBytes());
     transform.transform(StructuredRecord.builder(INPUT)
                           .set("a", compressed)
                           .set("b", "2")
@@ -82,13 +73,13 @@ public class DecompressorTest {
 
   @Test
   public void testGZipCompress() throws Exception {
-    String decompressTester = "This is a test for testing zip compression";
+    String decompressTester = "This is a test for testing gzip compression";
     Transform<StructuredRecord, StructuredRecord> transform =
       new Decompressor(new Decompressor.Config("a:GZIP", OUTPUT.toString()));
     transform.initialize(null);
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
-    byte[] compressed = compressGZIP(decompressTester.getBytes());
+    byte[] compressed = gzip(decompressTester.getBytes());
     transform.transform(StructuredRecord.builder(INPUT)
                           .set("a", compressed)
                           .set("b", "2")
@@ -101,7 +92,7 @@ public class DecompressorTest {
   }
 
 
-  private static byte[] compressGZIP(byte[] input) throws IOException {
+  private static byte[] gzip(byte[] input) throws IOException {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     GZIPOutputStream gzip = new GZIPOutputStream(out);
     gzip.write(input, 0, input.length);
@@ -110,7 +101,7 @@ public class DecompressorTest {
     return out.toByteArray();
   }
 
-  private byte[] compressZIP(byte[] input) throws IOException {
+  private byte[] zip(byte[] input) throws IOException {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     ZipOutputStream zos = new ZipOutputStream(out);
     zos.setLevel(9);  
@@ -120,21 +111,4 @@ public class DecompressorTest {
     zos.close();
     return out.toByteArray();
   }
-
-  private byte[] unzip(byte[] body) throws IOException  {
-    ByteArrayInputStream bytein = new ByteArrayInputStream(body);
-    ZipInputStream zis = new ZipInputStream(bytein);
-    ByteArrayOutputStream bao = new ByteArrayOutputStream();
-    
-    ZipEntry ze;
-    byte buf[] = new byte[1024];
-    while((ze = zis.getNextEntry()) != null) {
-      int l = 0;
-      while ((l = zis.read(buf)) > 0) {
-        bao.write(buf, 0, l);
-      }
-    }
-    
-    return bao.toByteArray();
-  }  
 }

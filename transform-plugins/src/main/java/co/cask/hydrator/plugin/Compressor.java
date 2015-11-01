@@ -180,7 +180,7 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
         if (field.getSchema().getType() == Schema.Type.BYTES) {
           obj = in.get(name);
         } else if (field.getSchema().getType() == Schema.Type.STRING) {
-          obj = ((String) in.get(name)).getBytes();
+          obj = ((String) in.get(name)).getBytes("UTF-8");
         }
         
         // Now, based on the compressor type configured for the field - compress the byte[] of the
@@ -190,9 +190,9 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
         if (type == CompressorType.SNAPPY) {
           outValue = Snappy.compress(obj);
         } else if (type == CompressorType.ZIP) {
-          outValue = compressZIP(obj);
+          outValue = zip(obj);
         } else if (type == CompressorType.GZIP) {
-          outValue = compressGZIP(obj);
+          outValue = gzip(obj);
         }
         
         // Depending on the output field type, either convert it to 
@@ -210,7 +210,7 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
     emitter.emit(builder.build());
   }
 
-  private static byte[] compressGZIP(byte[] input) {
+  private static byte[] gzip(byte[] input) {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     GZIPOutputStream gzip = null;
     try {
@@ -233,13 +233,15 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
     
     return out.toByteArray();
   }
-
-  private byte[] compressZIP(byte[] input) {
+  
+  private byte[] zip(byte[] input) {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     ZipOutputStream zos = new ZipOutputStream(out);
     try {
+      zos.setLevel(9);
       zos.putNextEntry(new ZipEntry("c"));
       zos.write(input, 0, input.length);
+      zos.finish();
     } catch (IOException e) {
       // These are all in memory operations, so this should not happen. 
       // But, if it happens then we just return null. Logging anything 
