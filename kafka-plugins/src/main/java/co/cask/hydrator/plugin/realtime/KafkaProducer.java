@@ -148,37 +148,45 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
 
         StringWriter writer = new StringWriter();
         CSVPrinter printer = null;
-        CSVFormat csvFileFormat;
-        switch(producerConfig.format.toLowerCase()) {
-          case "csv":
-            csvFileFormat = CSVFormat.Predefined.Default.getFormat();
-            printer = new CSVPrinter(writer, csvFileFormat);
-            break;
-          
-          case "excel":
-            csvFileFormat = CSVFormat.Predefined.Excel.getFormat();
-            printer = new CSVPrinter(writer, csvFileFormat);
-            break;
-          
-          case "mysql":
-            csvFileFormat = CSVFormat.Predefined.MySQL.getFormat();
-            printer = new CSVPrinter(writer, csvFileFormat);
-            break;
-          
-          case "tdf":
-            csvFileFormat = CSVFormat.Predefined.TDF.getFormat();
-            printer = new CSVPrinter(writer, csvFileFormat);
-            break;
-          
-          case "rfc4180":
-            csvFileFormat = CSVFormat.Predefined.TDF.getFormat();
-            printer = new CSVPrinter(writer, csvFileFormat);
-            break;
-        }
         
-        if (printer != null) {
-          printer.printRecord(objs);
-          body = writer.toString();
+        try {
+          CSVFormat csvFileFormat;
+          switch(producerConfig.format.toLowerCase()) {
+            case "csv":
+              csvFileFormat = CSVFormat.Predefined.Default.getFormat();
+              printer = new CSVPrinter(writer, csvFileFormat);
+              break;
+
+            case "excel":
+              csvFileFormat = CSVFormat.Predefined.Excel.getFormat();
+              printer = new CSVPrinter(writer, csvFileFormat);
+              break;
+
+            case "mysql":
+              csvFileFormat = CSVFormat.Predefined.MySQL.getFormat();
+              printer = new CSVPrinter(writer, csvFileFormat);
+              break;
+
+            case "tdf":
+              csvFileFormat = CSVFormat.Predefined.TDF.getFormat();
+              printer = new CSVPrinter(writer, csvFileFormat);
+              break;
+
+            case "rfc4180":
+              csvFileFormat = CSVFormat.Predefined.TDF.getFormat();
+              printer = new CSVPrinter(writer, csvFileFormat);
+              break;
+          }
+          
+          if (printer != null) {
+            printer.printRecord(objs);
+            body = writer.toString();
+          }      
+          
+        } finally {
+          if (printer != null) {
+            printer.close();
+          }
         }
       }
       
