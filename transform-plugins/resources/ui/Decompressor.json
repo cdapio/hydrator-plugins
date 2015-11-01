@@ -1,0 +1,24 @@
+{
+  "id": "Decompressor",
+  "groups": {
+    "position": [ "group1" ],
+    "group1": {
+      "display": "Decompressor",
+      "position": [ "decompressor", "schema" ],
+      "fields": {
+        "compressor" : {
+          "widget" : "textbox",
+          "label" : "Decompress Fields",
+          "description" : "Decompress fields <field>:<decompressor-type>[, <field>:<decompressor-type]*"
+        },
+        "schema" : {
+          "widget": "schema",
+          "label": "Schema",
+          "description" : "Schema of output JSON",
+          "schema-types" : [ "bytes", "string" ],
+          "schema-default-type" : "bytes"
+        }
+      }
+    }
+  }
+}
