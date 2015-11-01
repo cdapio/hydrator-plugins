@@ -119,7 +119,7 @@ public class CompressorTest {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     ZipOutputStream zos = new ZipOutputStream(out);
     zos.putNextEntry(new ZipEntry("c"));
-    zos.write(input,0, input.length);
+    zos.write(input, 0, input.length);
     zos.close();
     return out.toByteArray();
   }
