@@ -43,10 +43,8 @@ Deploy Plugins
 
 You can deploy transform plugins using the CDAP CLI::
 
-  > load artifact target/transform-plugins-<version>-batch.jar \
-         config-file resources/transform-plugins-batch.json
-  > load artifact target/transform-plugins-<version>-realtime.jar \
-         config-file resources/transform-plugins-realtime.json
+  > load artifact target/transform-plugins-1.0-SNAPSHOT-batch.jar \
+         config-file resources/plugin/transform-plugins.json
 
 Copy the UI configuration to CDAP installation::
 
@@ -190,4 +188,3 @@ Cask is a trademark of Cask Data, Inc. All rights reserved.
 
 Apache, Apache HBase, and HBase are trademarks of The Apache Software Foundation. Used with
 permission. No endorsement by The Apache Software Foundation is implied by the use of these marks.
-
