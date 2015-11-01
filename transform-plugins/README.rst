@@ -182,7 +182,7 @@ Decompressor
     Realtime
 :Description:
     Decompresses configured fields. Multiple fields can be specified to be decompressed using different decompression algorithms. Currently plugin supports SNAPPY, ZIP and GZIP types of decompression of fields.
-  :Configuration:
+:Configuration:
     **decompressor:** Specifies the configuration for decompressing fields. Following is how this can be specified in JSON configuration <field>:<decompressor>[,<field>:<decompressor>]*,
   **schema:** Specifies the output schema. The fields that are decompressed will have the same field name, but they will be of type BYTE array or STRING.
 
