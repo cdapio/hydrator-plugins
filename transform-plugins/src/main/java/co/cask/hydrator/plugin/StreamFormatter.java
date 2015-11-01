@@ -77,7 +77,7 @@ public final class StreamFormatter extends Transform<StructuredRecord, Structure
     super.configurePipeline(pipelineConfigurer);
 
     // If the format specified is not of one of the allowed types, then throw an exception.
-    if(!config.format.equalsIgnoreCase("CSV") && !config.format.equalsIgnoreCase("TSV")
+    if (!config.format.equalsIgnoreCase("CSV") && !config.format.equalsIgnoreCase("TSV")
       && !config.format.equalsIgnoreCase("JSON") && !config.format.equalsIgnoreCase("PSV")) {
       throw new IllegalArgumentException("Invalid format '" + config.format + "', specified. Allowed values are " +
                                            "CSV, TSV, PSV or JSON.");
@@ -129,12 +129,12 @@ public final class StreamFormatter extends Transform<StructuredRecord, Structure
     }
     
     headerFields = config.header.split(",");
-    if(config.body != null) {
+    if (config.body != null) {
       bodyFields = config.body.split(",");
     }
     
     // Iterate through output schema and find out which one is header and which is body.
-    for(Schema.Field field : outSchema.getFields()) {
+    for (Schema.Field field : outSchema.getFields()) {
       if (field.getSchema().getType() == Schema.Type.STRING) {
         bodyFieldName = field.getName();
       } else if (field.getSchema().getType() == Schema.Type.MAP) {
@@ -149,7 +149,7 @@ public final class StreamFormatter extends Transform<StructuredRecord, Structure
     // Construct the header map based on the header fields specified 
     // as the input.
     Map<String, String> headers = Maps.newHashMap();
-    for(String field : headerFields) {
+    for (String field : headerFields) {
       Object o = in.get(field);
       if (o != null) {
         headers.put(field, o.toString());
@@ -166,8 +166,8 @@ public final class StreamFormatter extends Transform<StructuredRecord, Structure
       // Iterate through input and when you find a field that's
       // also in bodyField, then that is written to Structured
       // record. 
-      for(Schema.Field field : in.getSchema().getFields()) {
-        for(String bodyField : bodyFields) {
+      for (Schema.Field field : in.getSchema().getFields()) {
+        for (String bodyField : bodyFields) {
           if (field.getName().equalsIgnoreCase(bodyField)) {
             f.add(field);
           }
@@ -178,20 +178,20 @@ public final class StreamFormatter extends Transform<StructuredRecord, Structure
 
     // Create a new structured record using the schema. 
     StructuredRecord.Builder oBuilder = StructuredRecord.builder(schema);
-    for(Schema.Field field : schema.getFields()) {
+    for (Schema.Field field : schema.getFields()) {
       oBuilder.set(field.getName(), in.get(field.getName()));
     }
     StructuredRecord record = oBuilder.build();
 
     // Convert the structured record to the format specified in the configuration.
     String finalBody = "";
-    if(config.format.equalsIgnoreCase("CSV")) {
+    if (config.format.equalsIgnoreCase("CSV")) {
       finalBody = StructuredRecordStringConverter.toDelimitedString(record, ",");
-    } else if(config.format.equalsIgnoreCase("TSV")) {
+    } else if (config.format.equalsIgnoreCase("TSV")) {
       finalBody = StructuredRecordStringConverter.toDelimitedString(record, "\t");
-    } else if(config.format.equalsIgnoreCase("PSV")) {
+    } else if (config.format.equalsIgnoreCase("PSV")) {
       finalBody = StructuredRecordStringConverter.toDelimitedString(record, "|");
-    } else if(config.format.equalsIgnoreCase("JSON")) {
+    } else if (config.format.equalsIgnoreCase("JSON")) {
       finalBody = StructuredRecordStringConverter.toJsonString(record);
     }
     
@@ -202,6 +202,9 @@ public final class StreamFormatter extends Transform<StructuredRecord, Structure
     emitter.emit(builder.build());
   }
 
+  /**
+   * StreamFormatter Plugin Configuration.
+   */
   public static class Config extends PluginConfig {
     
     @Name("body")

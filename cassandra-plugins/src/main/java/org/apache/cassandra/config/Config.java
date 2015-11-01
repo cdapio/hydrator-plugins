@@ -18,8 +18,6 @@ package org.apache.cassandra.config;
 
 import org.apache.cassandra.config.EncryptionOptions.ClientEncryptionOptions;
 import org.apache.cassandra.config.EncryptionOptions.ServerEncryptionOptions;
-import org.apache.cassandra.config.RequestSchedulerOptions;
-import org.apache.cassandra.config.SeedProviderDef;
 import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.cassandra.io.util.NativeAllocator;
 import org.supercsv.io.CsvListReader;
@@ -41,8 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * Properties declared as volatile can be mutated via JMX.
  */
-public class Config
-{
+public class Config  {
   /*
    * Prefix for Java properties for internal Cassandra configuration options
    */
@@ -230,7 +227,8 @@ public class Config
   public volatile Long index_summary_capacity_in_mb;
   public volatile int index_summary_resize_interval_in_minutes = 60;
 
-  private static final CsvPreference STANDARD_SURROUNDING_SPACES_NEED_QUOTES = new CsvPreference.Builder(CsvPreference.STANDARD_PREFERENCE)
+  private static final CsvPreference STANDARD_SURROUNDING_SPACES_NEED_QUOTES = 
+    new CsvPreference.Builder(CsvPreference.STANDARD_PREFERENCE)
     .surroundingSpacesNeedQuotes(true).build();
 
   /*
@@ -249,86 +247,71 @@ public class Config
   public static final int otc_coalescing_window_us_default = 200;
   public int otc_coalescing_window_us = otc_coalescing_window_us_default;
 
-  public static boolean getOutboundBindAny()
-  {
+  public static boolean getOutboundBindAny() {
     return outboundBindAny;
   }
 
-  public static void setOutboundBindAny(boolean value)
-  {
+  public static void setOutboundBindAny(boolean value) {
     outboundBindAny = value;
   }
 
-  public static boolean isClientMode()
-  {
+  public static boolean isClientMode() {
     return isClientMode;
   }
 
-  public static void setClientMode(boolean clientMode)
-  {
+  public static void setClientMode(boolean clientMode) {
     isClientMode = clientMode;
   }
 
-  public void configHintedHandoff() throws ConfigurationException
-  {
-    if (hinted_handoff_enabled != null && !hinted_handoff_enabled.isEmpty())
-    {
-      if (hinted_handoff_enabled.equalsIgnoreCase("true"))
-      {
+  public void configHintedHandoff() throws ConfigurationException {
+    if (hinted_handoff_enabled != null && !hinted_handoff_enabled.isEmpty()) {
+      if (hinted_handoff_enabled.equalsIgnoreCase("true")) {
         hinted_handoff_enabled_global = true;
       }
-      else if (hinted_handoff_enabled.equalsIgnoreCase("false"))
-      {
+      else if (hinted_handoff_enabled.equalsIgnoreCase("false")) {
         hinted_handoff_enabled_global = false;
       }
-      else
-      {
-        try
-        {
+      else {
+        try {
           hinted_handoff_enabled_by_dc.addAll(parseHintedHandoffEnabledDCs(hinted_handoff_enabled));
         }
-        catch (IOException e)
-        {
+        catch (IOException e) {
           throw new ConfigurationException("Invalid hinted_handoff_enabled parameter " + hinted_handoff_enabled, e);
         }
       }
     }
   }
 
-  public static List<String> parseHintedHandoffEnabledDCs(final String dcNames) throws IOException
-  {
-    final CsvListReader csvListReader = new CsvListReader(new StringReader(dcNames), STANDARD_SURROUNDING_SPACES_NEED_QUOTES);
+  public static List<String> parseHintedHandoffEnabledDCs(final String dcNames) throws IOException {
+    final CsvListReader csvListReader = new CsvListReader(new StringReader(dcNames), 
+                                                          STANDARD_SURROUNDING_SPACES_NEED_QUOTES);
     return csvListReader.read();
   }
 
-  public static enum CommitLogSync
-  {
+  public static enum CommitLogSync {
     periodic,
     batch
   }
-  public static enum InternodeCompression
-  {
+  
+  public static enum InternodeCompression {
     all, none, dc
   }
 
-  public static enum DiskAccessMode
-  {
+  public static enum DiskAccessMode {
     auto,
     mmap,
     mmap_index_only,
     standard,
   }
 
-  public static enum MemtableAllocationType
-  {
+  public static enum MemtableAllocationType {
     unslabbed_heap_buffers,
     heap_buffers,
     offheap_buffers,
     offheap_objects
   }
 
-  public static enum DiskFailurePolicy
-  {
+  public static enum DiskFailurePolicy {
     best_effort,
     stop,
     ignore,
@@ -336,16 +319,14 @@ public class Config
     die
   }
 
-  public static enum CommitFailurePolicy
-  {
+  public static enum CommitFailurePolicy {
     stop,
     stop_commit,
     ignore,
     die,
   }
 
-  public static enum RequestSchedulerId
-  {
+  public static enum RequestSchedulerId {
     keyspace
   }
 }
