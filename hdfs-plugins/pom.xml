@@ -14,7 +14,6 @@
   ~ License for the specific language governing permissions and limitations under
   ~ the License.
   -->
-
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -24,9 +23,9 @@
     <version>1.1.0-SNAPSHOT</version>
   </parent>
 
-  <name>Elasticsearch Plugins</name>
-  <artifactId>elasticsearch-plugins</artifactId>
-  <modelVersion>4.0.0</modelVersion>
+  <name>HDFS Plugins</name>
+  <artifactId>hdfs-plugins</artifactId>
+  <modelVersion>4.0.0</modelVersion>  
 
   <dependencies>
     <dependency>
@@ -67,35 +66,17 @@
       <version>${cdap.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-mapreduce-client-core</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-common</artifactId>
-    </dependency>
-    <dependency>
       <!-- change to hadoop-aws when hadoop dependency is updated to 2.6 -->
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-common</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-minicluster</artifactId>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.elasticsearch</groupId>
-      <artifactId>elasticsearch</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.elasticsearch</groupId>
-      <artifactId>elasticsearch-hadoop-mr</artifactId>
-    </dependency>
-    <!-- elasticsearch-hadoop-mr includes a class, StringUtils, which requires commons-httpclient-->
-    <dependency>
-      <groupId>commons-httpclient</groupId>
-      <artifactId>commons-httpclient</artifactId>
     </dependency>
   </dependencies>
 
@@ -122,27 +103,10 @@
             <configuration>
               <classifier>batch</classifier>
               <instructions>
-                <!-- build bundle jar for batch. excluding realtime-->
-                <Export-Package>co.cask.hydrator.plugin.batch.*;org.elasticsearch.hadoop.mr.*;
+                <!-- build bundle jar for batch -->
+                <Export-Package>co.cask.hydrator.plugin.*;
                   org.apache.commons.lang;org.apache.commons.logging.*;
                   org.codehaus.jackson.*</Export-Package>
-                <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
-                <Embed-Transitive>true</Embed-Transitive>
-                <Embed-Directory>lib</Embed-Directory>
-              </instructions>
-            </configuration>
-            <goals>
-              <goal>bundle</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>realtime-bundle</id>
-            <phase>prepare-package</phase>
-            <configuration>
-              <classifier>realtime</classifier>
-              <instructions>
-                <!-- build bundle jar for realtime. excluding batch-->
-                <Export-Package>co.cask.hydrator.plugin.realtime.*</Export-Package>
                 <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
                 <Embed-Transitive>true</Embed-Transitive>
                 <Embed-Directory>lib</Embed-Directory>
@@ -157,5 +121,5 @@
     </plugins>
   </build>
 
-
 </project>
+
