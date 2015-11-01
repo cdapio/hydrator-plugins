@@ -5,6 +5,10 @@ Hydrator Plugins Repository
 .. image:: https://travis-ci.org/caskdata/hydrator-plugins.svg?branch=develop
     :target: https://travis-ci.org/caskdata/hydrator-plugins
     
+.. image:: https://badges.ondemand.coverity.com/jobs/8d69p0vo7d1trbee3a10674s8k
+    :target: https://ondemand.coverity.com/jobs/8d69p0vo7d1trbee3a10674s8k/results
+
+
 Introduction
 ============
 
