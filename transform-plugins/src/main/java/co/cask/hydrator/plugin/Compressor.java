@@ -96,7 +96,7 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
           break;
         
         default:
-          throw new IllegalArgumentException("Unknown encoder type " + type + " found in mapping " + mapping);
+          throw new IllegalArgumentException("Unknown compressor type " + type + " found in mapping " + mapping);
       }
       if(compMap.containsKey(field)) {
         throw new IllegalArgumentException("Field " + field + " already has compressor set. Check the mapping.");
@@ -156,7 +156,7 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
     List<Field> inFields = inSchema.getFields();
     
     // Iterate through input fields. Check if field name is present 
-    // in the fields that need to be encoded, if it's not then write 
+    // in the fields that need to be compressed, if it's not then write
     // to output as it is. 
     for(Field field : inFields) {
       String name = field.getName();
@@ -169,7 +169,7 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
       
       Schema.Type outFieldType = outSchemaMap. get(name);
       
-      // Check if the input field name is configured to be encoded. If the field is not 
+      // Check if the input field name is configured to be compressed. If the field is not
       // present or is defined as none, then pass through the field as is. 
       if(!compMap.containsKey(name) || compMap.get(name) == CompressorType.NONE) {
         builder.set(name, in.get(name));          
@@ -183,7 +183,7 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
           obj = ((String)in.get(name)).getBytes();
         }
         
-        // Now, based on the encode type configured for the field - encode the byte[] of the 
+        // Now, based on the compressor type configured for the field - compress the byte[] of the
         // value.
         byte[] outValue = new byte[0];
         CompressorType type = compMap.get(name);
@@ -201,6 +201,9 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
           if(outValue != null) {
             builder.set(name, outValue);
           }
+        } else {
+          LOG.warn("Output field '" + name + "' is not of BYTES. In order to emit compressed data, you should set " +
+            "it to type BYTES.");
         }
       }
     }
