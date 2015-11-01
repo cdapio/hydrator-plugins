@@ -31,6 +31,9 @@ import co.cask.cdap.etl.common.StructuredRecordStringConverter;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * JSON Formatter formats {@link StructuredRecord} into JSON Object.
+ */
 @Plugin(type = "transform")
 @Name("JSONFormatter")
 @Description("Writes JSON Object formatted records from the Structured record.")
@@ -82,7 +85,7 @@ public final class JSONFormatter extends Transform<StructuredRecord, StructuredR
       
       // Check to make sure the field type specified in the output is only of type
       // STRING or BYTES.
-      if(fields.get(0).getSchema().getType() != Schema.Type.STRING &&
+      if (fields.get(0).getSchema().getType() != Schema.Type.STRING &&
         fields.get(0).getSchema().getType() != Schema.Type.BYTES) {
         throw new IllegalArgumentException("Output field name should be of type String. Please change type to " +
                                              "String or Bytes");

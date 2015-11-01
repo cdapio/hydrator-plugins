@@ -17,6 +17,9 @@ package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.data.schema.Schema;
 
+/**
+ * Converts a type from String to it's specified record type.
+ */
 public final class TypeConvertor {
 
   public static Object get(String value, Schema.Type type) {

@@ -500,7 +500,6 @@
                 <!-- This file should be not be there, but I am excluding it for now -->
                 <exclude>*.rst</exclude>
                 <exclude>*.md</exclude>
-                <exclude>**/org/apache/**</exclude>
                 <exclude>**/*.cdap</exclude>
                 <exclude>**/*.yaml</exclude>
                 <exclude>**/*.md</exclude>
@@ -537,6 +536,7 @@
               <consoleOutput>true</consoleOutput>
               <failsOnError>true</failsOnError>
               <includeTestSourceDirectory>true</includeTestSourceDirectory>
+              <excludes>**/org/apache/cassandra/**</excludes>
             </configuration>
             <goals>
               <goal>check</goal>

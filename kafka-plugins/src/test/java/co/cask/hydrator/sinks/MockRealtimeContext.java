@@ -1,5 +1,3 @@
-
-
 /*
  * Copyright © 2015 Cask Data, Inc.
  *
@@ -18,12 +16,12 @@
 
 package co.cask.hydrator.sinks;
 
-  import co.cask.cdap.api.metrics.Metrics;
-  import co.cask.cdap.api.plugin.PluginProperties;
-  import co.cask.cdap.etl.api.realtime.RealtimeContext;
-  import com.google.common.collect.Maps;
+import co.cask.cdap.api.metrics.Metrics;
+import co.cask.cdap.api.plugin.PluginProperties;
+import co.cask.cdap.etl.api.realtime.RealtimeContext;
+import com.google.common.collect.Maps;
 
-  import java.util.Map;
+import java.util.Map;
 
 /**
  * Mock RealtimeContext for tests.
