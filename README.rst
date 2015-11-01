@@ -2,6 +2,9 @@
 Hydrator Plugins Repository
 ============================
 
+.. image:: https://travis-ci.org/caskdata/hydrator-plugins.svg?branch=develop
+    :target: https://travis-ci.org/caskdata/hydrator-plugins
+    
 Introduction
 ============
 
