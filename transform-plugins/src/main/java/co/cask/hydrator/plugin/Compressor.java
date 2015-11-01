@@ -65,11 +65,11 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
   
   private void parseConfiguration(String config) throws IllegalArgumentException {
     String[] mappings = config.split(",");
-    for(String mapping : mappings) {
+    for (String mapping : mappings) {
       String[] params = mapping.split(":");
       
       // If format is not right, then we throw an exception.
-      if(params.length < 2) {
+      if (params.length < 2) {
         throw new IllegalArgumentException("Configuration " + mapping + " is in-correctly formed. " +
                                              "Format should be <fieldname>:<compressor-type>");
       }
@@ -78,7 +78,7 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
       String type = params[1].toUpperCase();
       CompressorType cType = CompressorType.NONE;
 
-      switch(type) {
+      switch (type) {
         case "SNAPPY":
           cType = CompressorType.SNAPPY;
           break;
@@ -98,7 +98,7 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
         default:
           throw new IllegalArgumentException("Unknown compressor type " + type + " found in mapping " + mapping);
       }
-      if(compMap.containsKey(field)) {
+      if (compMap.containsKey(field)) {
         throw new IllegalArgumentException("Field " + field + " already has compressor set. Check the mapping.");
       } else {
         compMap.put(field, cType);
@@ -113,12 +113,12 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
     try {
       outSchema = Schema.parseJson(config.schema);
       List<Field> outFields = outSchema.getFields();
-      for(Field field : outFields) {
+      for (Field field : outFields) {
         outSchemaMap.put(field.getName(), field.getSchema().getType());  
       }
       
-      for(String field : compMap.keySet()) {
-        if(compMap.containsKey(field)) {
+      for (String field : compMap.keySet()) {
+        if (compMap.containsKey(field)) {
           Schema.Type type = outSchemaMap.get(field);
           if (type != Schema.Type.BYTES) {
             throw new IllegalArgumentException("Field '" + field + "' is not of type BYTES. It's currently" +
@@ -139,7 +139,7 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
     try {
       Schema outputSchema = Schema.parseJson(config.schema);
       List<Field> outFields = outputSchema.getFields();
-      for(Field field : outFields) {
+      for (Field field : outFields) {
         outSchemaMap.put(field.getName(), field.getSchema().getType());
       }
     } catch (IOException e) {
@@ -158,36 +158,36 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
     // Iterate through input fields. Check if field name is present 
     // in the fields that need to be compressed, if it's not then write
     // to output as it is. 
-    for(Field field : inFields) {
+    for (Field field : inFields) {
       String name = field.getName();
       
       // Check if output schema also have the same field name. If it's not 
       // then continue.
-      if(!outSchemaMap.containsKey(name)) {
+      if (!outSchemaMap.containsKey(name)) {
         continue;
       }
       
-      Schema.Type outFieldType = outSchemaMap. get(name);
+      Schema.Type outFieldType = outSchemaMap.get(name);
       
       // Check if the input field name is configured to be compressed. If the field is not
       // present or is defined as none, then pass through the field as is. 
-      if(!compMap.containsKey(name) || compMap.get(name) == CompressorType.NONE) {
+      if (!compMap.containsKey(name) || compMap.get(name) == CompressorType.NONE) {
         builder.set(name, in.get(name));          
       } else {
         // Now, the input field could be of type String or byte[], so transform everything
         // to byte[] 
         byte[] obj = new byte[0];
-        if (field.getSchema().getType() == Schema.Type.BYTES){
+        if (field.getSchema().getType() == Schema.Type.BYTES) {
           obj = in.get(name);
         } else if (field.getSchema().getType() == Schema.Type.STRING) {
-          obj = ((String)in.get(name)).getBytes();
+          obj = ((String) in.get(name)).getBytes();
         }
         
         // Now, based on the compressor type configured for the field - compress the byte[] of the
         // value.
         byte[] outValue = new byte[0];
         CompressorType type = compMap.get(name);
-        if(type == CompressorType.SNAPPY) {
+        if (type == CompressorType.SNAPPY) {
           outValue = Snappy.compress(obj);
         } else if (type == CompressorType.ZIP) {
           outValue = compressZIP(obj);
@@ -197,8 +197,8 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
         
         // Depending on the output field type, either convert it to 
         // Bytes or to String. 
-        if(outFieldType == Schema.Type.BYTES) {
-          if(outValue != null) {
+        if (outFieldType == Schema.Type.BYTES) {
+          if (outValue != null) {
             builder.set(name, outValue);
           }
         } else {
@@ -247,7 +247,7 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
       return null;
     } finally {
       try {
-        if(zos != null) {
+        if (zos != null) {
           zos.close();
         }
       } catch (IOException e) {
