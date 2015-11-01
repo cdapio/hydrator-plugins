@@ -149,16 +149,6 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
       for (Field field : outFields) {
         outSchemaMap.put(field.getName(), field.getSchema().getType());
       }
-
-      for (String field : deCompMap.keySet()) {
-        if (deCompMap.containsKey(field)) {
-          Schema.Type type = outSchemaMap.get(field);
-          if (type != Schema.Type.BYTES) {
-            throw new IllegalArgumentException("Field '" + field + "' is not of type BYTES. It's currently" +
-                                                 "of type '" + type.toString() + "'.");
-          }
-        }
-      }
     } catch (IOException e) {
       throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
     }
