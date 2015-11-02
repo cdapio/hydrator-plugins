@@ -153,5 +153,4 @@ public class EncoderTest {
     Assert.assertEquals(2, emitter.getEmitted().get(0).getSchema().getFields().size());
     Assert.assertArrayEquals(expected, actual);
   }
-
 }

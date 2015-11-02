@@ -176,8 +176,8 @@ public final class Encoder extends Transform<StructuredRecord, StructuredRecord>
         // to byte[] 
         byte[] obj = new byte[0];
         if (field.getSchema().getType() == Schema.Type.STRING) {
-          obj = ((String)in.get(name)).getBytes();
-        } else if (field.getSchema().getType() == Schema.Type.BYTES){
+          obj = ((String) in.get(name)).getBytes();
+        } else if (field.getSchema().getType() == Schema.Type.BYTES) {
           obj = in.get(name);
         }
 
