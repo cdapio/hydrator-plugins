@@ -1,4 +1,6 @@
-|(Hydrator)|
+===========================
+Hydrator Plugins Collection
+===========================
 
 .. image:: https://travis-ci.org/caskdata/hydrator-plugins.svg?branch=develop
     :target: https://travis-ci.org/caskdata/hydrator-plugins
@@ -6,13 +8,14 @@
 .. image:: https://badges.ondemand.coverity.com/jobs/8d69p0vo7d1trbee3a10674s8k
     :target: https://ondemand.coverity.com/jobs/8d69p0vo7d1trbee3a10674s8k/results
 
-
 Introduction
 ============
 
 The Cask™ Data Application Platform (CDAP) is an integrated, open source application
 development platform for the Hadoop ecosystem that provides developers with data and
 application abstractions to simplify and accelerate application development.
+
+|(Hydrator)| 
 
 Cask Hydrator is one such application built by the team at Cask for solving data ingestion 
 problems. It's a CDAP Native application that runs at scale on Hadoop. Hydrator exposes 
