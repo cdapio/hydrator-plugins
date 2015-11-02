@@ -14,8 +14,9 @@ that are currently available:
 - JSON Parser,
 - Clone Record,
 - Stream Formatter,
-- Compressor and 
-- Decompressor
+- Compressor, 
+- Decompressor and 
+- Encoder
 
 Getting Started
 ===============
@@ -184,6 +185,22 @@ Decompressor
     Decompresses configured fields. Multiple fields can be specified to be decompressed using different decompression algorithms. Currently plugin supports SNAPPY, ZIP and GZIP types of decompression of fields.
 :Configuration:
     **decompressor:** Specifies the configuration for decompressing fields. Following is how this can be specified in JSON configuration <field>:<decompressor>[,<field>:<decompressor>]*,
+    **schema:** Specifies the output schema. The fields that are decompressed will have the same field name, but they will be of type BYTE array or STRING.
+
+Encoder
+-------
+
+:Id:
+      Encoder
+:Type:
+      Transform
+:Mode:
+      Batch and
+      Realtime
+:Description:
+      Encodes configured fields. Multiple fields can be specified to be encoded using different encoding methods.
+:Configuration:
+    **encode:** Specifies the configuration for encode fields. Following is how this can be specified in JSON configuration <field>:<encoder>[,<field>:<encoder>]*,
     **schema:** Specifies the output schema. The fields that are decompressed will have the same field name, but they will be of type BYTE array or STRING.
 
 
