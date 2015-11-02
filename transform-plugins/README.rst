@@ -207,7 +207,7 @@ Encoder
   **encode:** Specifies the configuration for encode fields. Following is how this can be specified in JSON configuration <field>:<encoder>[,<field>:<encoder>]*,
   **schema:** Specifies the output schema. The fields that are encoded will have the same field name, but they will be of type BYTE array or STRING.
 
-Encoder
+Decoder
 -------
 
 :Id:
