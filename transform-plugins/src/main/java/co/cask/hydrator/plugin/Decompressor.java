@@ -218,8 +218,8 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
     } catch (IOException e) {
       // Most of operations here are in memory. So, we shouldn't get here.
       // Logging here is not an option.
-      return null;
     }
+    return null;
   }
 
   /**
@@ -228,8 +228,8 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
   private byte[] unzip(byte[] body)  {
     ZipEntry ze;
     byte buf[] = new byte[1024];
-    ByteArrayOutputStream bao = new ByteArrayOutputStream();
-    try (ByteArrayInputStream bytein = new ByteArrayInputStream(body); 
+    try (ByteArrayOutputStream bao = new ByteArrayOutputStream();
+         ByteArrayInputStream bytein = new ByteArrayInputStream(body); 
          ZipInputStream zis = new ZipInputStream(bytein)) {
       while((ze = zis.getNextEntry()) != null) {
         int l = 0;
@@ -237,12 +237,12 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
           bao.write(buf, 0, l);
         }
       }
+      return bao.toByteArray();
     } catch (IOException e) {
       // Most of operations here are in memory. So, we shouldn't get here.
-      // Logging here is not an option.
-      return null;       
-    } 
-    return bao.toByteArray();
+      // Logging here is not an option.       
+    }
+    return null;
   }
   
   /**
