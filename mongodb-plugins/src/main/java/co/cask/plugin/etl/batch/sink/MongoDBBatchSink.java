@@ -58,7 +58,8 @@ public class MongoDBBatchSink extends BatchSink<StructuredRecord, NullWritable, 
   }
 
   @Override
-  public void transform(StructuredRecord input, Emitter<KeyValue<NullWritable, BSONWritable>> emitter) throws Exception {
+  public void transform(StructuredRecord input, Emitter<KeyValue<NullWritable, BSONWritable>> emitter)
+    throws Exception {
     BasicDBObjectBuilder bsonBuilder = BasicDBObjectBuilder.start();
     for (Schema.Field field : input.getSchema().getFields()) {
       bsonBuilder.add(field.getName(), input.get(field.getName()));
@@ -85,6 +86,9 @@ public class MongoDBBatchSink extends BatchSink<StructuredRecord, NullWritable, 
     }
   }
 
+  /**
+   * Config class for {@link MongoDBBatchSink}
+   */
   public static class MongoDBSinkConfig extends PluginConfig {
     @Name(Properties.CONNECTION_STRING)
     @Description("MongoDB Connection String (see http://docs.mongodb.org/manual/reference/connection-string); " +
@@ -92,6 +96,9 @@ public class MongoDBBatchSink extends BatchSink<StructuredRecord, NullWritable, 
     private String connectionString;
   }
 
+  /**
+   * Property names for config
+   */
   public static class Properties {
     public static final String CONNECTION_STRING = "connectionString";
   }

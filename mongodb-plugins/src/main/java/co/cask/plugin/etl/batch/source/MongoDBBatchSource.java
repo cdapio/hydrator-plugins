@@ -106,6 +106,9 @@ public class MongoDBBatchSource extends BatchSource<Object, BSONObject, Structur
     emitter.emit(bsonConverter.transform(bsonObject));
   }
 
+  /**
+   * Config class for {@link MongoDBBatchSource}.
+   */
   public static class MongoDBConfig extends PluginConfig {
 
     @Name(Properties.CONNECTION_STRING)
@@ -155,6 +158,9 @@ public class MongoDBBatchSource extends BatchSource<Object, BSONObject, Structur
     private String splitterClass;
   }
 
+  /**
+   * Property names for the config.
+   */
   public static class Properties {
     public static final String AUTH_CONNECTION_STRING = "authConnectionString";
     public static final String CONNECTION_STRING = "connectionString";

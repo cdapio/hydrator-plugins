@@ -39,8 +39,8 @@ import java.util.List;
  */
 @Plugin(type = "realtimesink")
 @Name("MongoDB")
-@Description("CDAP MongoDB Realtime Sink takes StructuredRecord from the previous stage and converts it to BSONDocument" +
-  "and then writes to MongoDB")
+@Description("CDAP MongoDB Realtime Sink takes StructuredRecord from the previous stage and converts it to " +
+  "BSONDocument and then writes to MongoDB")
 public class MongoDBRealtimeSink extends RealtimeSink<StructuredRecord> {
   private final MongoDBConfig config;
   private MongoClient mongoClient;
@@ -74,6 +74,9 @@ public class MongoDBRealtimeSink extends RealtimeSink<StructuredRecord> {
     return recordCount;
   }
 
+  /**
+   * Config class for {@link MongoDBRealtimeSink}.
+   */
   public static class MongoDBConfig extends PluginConfig {
     @Name(Properties.CONNECTION_STRING)
     @Description("MongoDB Connection String (see http://docs.mongodb.org/manual/reference/connection-string); " +
@@ -89,6 +92,9 @@ public class MongoDBRealtimeSink extends RealtimeSink<StructuredRecord> {
     private String collectionName;
   }
 
+  /**
+   * Property names for the config.
+   */
   public static class Properties {
     public static final String CONNECTION_STRING = "connectionString";
     public static final String DB_NAME = "dbName";
