@@ -174,7 +174,7 @@ public final class Encoder extends Transform<StructuredRecord, StructuredRecord>
         if (outFieldType == Schema.Type.BYTES) {
           builder.set(name, outValue);
         } else if (outFieldType == Schema.Type.STRING) {
-          builder.set(name, new String(outValue));
+          builder.set(name, new String(outValue, "UTF-8"));
         }
       }
     }
