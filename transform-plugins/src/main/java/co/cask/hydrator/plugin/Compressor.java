@@ -77,28 +77,8 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
       
       String field = params[0];
       String type = params[1].toUpperCase();
-      CompressorType cType = CompressorType.NONE;
+      CompressorType cType = CompressorType.valueOf(type);
 
-      switch (type) {
-        case "SNAPPY":
-          cType = CompressorType.SNAPPY;
-          break;
-        
-        case "GZIP":
-          cType = CompressorType.GZIP;
-          break;
-        
-        case "ZIP":
-          cType = CompressorType.ZIP;
-          break;
-
-        case "NONE":
-          cType = CompressorType.NONE;
-          break;
-        
-        default:
-          throw new IllegalArgumentException("Unknown compressor type " + type + " found in mapping " + mapping);
-      }
       if (compMap.containsKey(field)) {
         throw new IllegalArgumentException("Field " + field + " already has compressor set. Check the mapping.");
       } else {

@@ -1,0 +1,24 @@
+{
+  "id": "Encoder",
+  "groups": {
+    "position": [ "group1" ],
+    "group1": {
+      "display": "Encode",
+      "position": [ "encode", "schema" ],
+      "fields": {
+        "encode" : {
+          "widget" : "textbox",
+          "label" : "Encode Fields",
+          "description" : "Encode fields <field>:<encode-type>[, <field>:<encode-type>]*"
+        },
+        "schema" : {
+          "widget": "schema",
+          "label": "Schema",
+          "description" : "Schema of output JSON",
+          "schema-types" : [ "string" ],
+          "schema-default-type" : "string"
+        }
+      }
+    }
+  }
+}
