@@ -19,7 +19,6 @@ package co.cask.hydrator.plugin;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.data.schema.Schema.Field;
@@ -28,7 +27,6 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
-import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xerial.snappy.Snappy;
@@ -36,8 +34,10 @@ import org.xerial.snappy.Snappy;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -56,10 +56,10 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
   private Schema outSchema;
 
   // Output Field name to type map
-  private Map<String, Schema.Type> outSchemaMap = Maps.newHashMap();
+  private Map<String, Schema.Type> outSchemaMap = new HashMap<>();
 
   // Map of field to decompressor type.
-  private final Map<String, DecompressorType> deCompMap = Maps.newTreeMap();
+  private final Map<String, DecompressorType> deCompMap = new TreeMap<>();
 
   // This is used only for tests, otherwise this is being injected by the ingestion framework.
   public Decompressor(Config config) {
@@ -79,28 +79,8 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
 
       String field = params[0];
       String type = params[1].toUpperCase();
-      DecompressorType cType = DecompressorType.NONE;
+      DecompressorType cType = DecompressorType.valueOf(type);
 
-      switch(type) {
-        case "SNAPPY":
-          cType = DecompressorType.SNAPPY;
-          break;
-
-        case "GZIP":
-          cType = DecompressorType.GZIP;
-          break;
-
-        case "ZIP":
-          cType = DecompressorType.ZIP;
-          break;
-
-        case "NONE":
-          cType = DecompressorType.NONE;
-          break;
-
-        default:
-          throw new IllegalArgumentException("Unknown decompressor type " + type + " found in mapping " + mapping);
-      }
       if (deCompMap.containsKey(field)) {
         throw new IllegalArgumentException("Field " + field + " already has decompressor set. Check the mapping.");
       } else {
@@ -122,7 +102,8 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
         outSchemaMap.put(field.getName(), field.getSchema().getType());
       }
     } catch (IOException e) {
-      throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
+      throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format. " +
+        e.getMessage());
     }
     
     for (Map.Entry<String, DecompressorType> entry : deCompMap.entrySet()) {
@@ -150,7 +131,8 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
         outSchemaMap.put(field.getName(), field.getSchema().getType());
       }
     } catch (IOException e) {
-      throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
+      throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format." +
+          e.getMessage());
     }
   }
 
@@ -208,7 +190,7 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
           if (outFieldType == Schema.Type.BYTES) {
             builder.set(name, outValue);
           } else if (outFieldType == Schema.Type.STRING) {
-            builder.set(name, Bytes.toString(outValue));
+            builder.set(name, new String(outValue, "UTF-8"));
           }
         }
       }
@@ -221,10 +203,8 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
    */
   private byte[] ungzip(byte[] body) {
     ByteArrayInputStream bytein = new ByteArrayInputStream(body);
-    GZIPInputStream gzin = null;
-    try {
-      gzin = new GZIPInputStream(bytein);
-      ByteArrayOutputStream byteout = new ByteArrayOutputStream();
+    try (GZIPInputStream gzin = new GZIPInputStream(bytein); 
+         ByteArrayOutputStream byteout = new ByteArrayOutputStream()) {
       int res = 0;
       byte buf[] = new byte[1024];
       while (res >= 0) {
@@ -236,23 +216,21 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
       byte uncompressed[] = byteout.toByteArray();
       return uncompressed;
     } catch (IOException e) {
-      // Most of operations here are in memory. So, we shouldn't get here. 
-      // Logging here is not an option. 
+      // Most of operations here are in memory. So, we shouldn't get here.
+      // Logging here is not an option.
       return null;
-    } 
+    }
   }
 
   /**
    * Decompresses using ZIP Algorithm.
    */
   private byte[] unzip(byte[] body)  {
-    ByteArrayInputStream bytein = new ByteArrayInputStream(body);
-    ZipInputStream zis = new ZipInputStream(bytein);
-    ByteArrayOutputStream bao = new ByteArrayOutputStream();
-
     ZipEntry ze;
     byte buf[] = new byte[1024];
-    try {
+    ByteArrayOutputStream bao = new ByteArrayOutputStream();
+    try (ByteArrayInputStream bytein = new ByteArrayInputStream(body); 
+         ZipInputStream zis = new ZipInputStream(bytein)) {
       while((ze = zis.getNextEntry()) != null) {
         int l = 0;
         while ((l = zis.read(buf)) > 0) {
@@ -263,15 +241,7 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
       // Most of operations here are in memory. So, we shouldn't get here.
       // Logging here is not an option.
       return null;       
-    } finally {
-      if (zis != null) {
-        try {
-          zis.close();
-        } catch (IOException e) {
-          return null;
-        }
-      }
-    }
+    } 
     return bao.toByteArray();
   }
   
