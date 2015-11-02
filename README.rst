@@ -29,7 +29,7 @@ than welcome to do so. If you would like to build plugins, here are links to get
 - `How to build custom Hydrator plugins <http://docs.cask.co/cdap/current/en/included-applications/etl/custom.html>`__
 - `How to test plugin <http://docs.cask.co/cdap/current/en/included-applications/etl/custom.html#test-framework-for-plugins>`__
 - `How to package and deploy <http://docs.cask.co/cdap/current/en/included-applications/etl/custom.html#plugin-packaging-and-deployment>`__
-- `How to include third-party JARs <http://docs.cask.co/cdapcurrent/en/included-applications/etl/plugins/third-party.html>`__
+- `How to include third-party JARs <http://docs.cask.co/cdap/current/en/included-applications/etl/plugins/third-party.html>`__
 
 
 Getting Started
