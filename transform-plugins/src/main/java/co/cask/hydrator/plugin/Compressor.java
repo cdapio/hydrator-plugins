@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.data.schema.Schema.Field;
@@ -180,7 +181,7 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
         if (field.getSchema().getType() == Schema.Type.BYTES) {
           obj = in.get(name);
         } else if (field.getSchema().getType() == Schema.Type.STRING) {
-          obj = ((String) in.get(name)).getBytes("UTF-8");
+          obj = Bytes.toBytes((String) in.get(name));
         }
         
         // Now, based on the compressor type configured for the field - compress the byte[] of the

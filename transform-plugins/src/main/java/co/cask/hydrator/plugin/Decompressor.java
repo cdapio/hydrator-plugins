@@ -173,7 +173,7 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
         continue;
       }
 
-      Schema.Type outFieldType = outSchemaMap. get(name);
+      Schema.Type outFieldType = outSchemaMap.get(name);
 
       // Check if the input field name is configured to be encoded. If the field is not
       // present or is defined as none, then pass through the field as is.
@@ -187,6 +187,7 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
         } else {
           LOG.error("Input field '" + name + "' should be of type BYTES to decompress. It's currently of type" +
                       "'" + field.getSchema().getType().toString());
+          break;
         }
 
         // Now, based on the encode type configured for the field - encode the byte[] of the
