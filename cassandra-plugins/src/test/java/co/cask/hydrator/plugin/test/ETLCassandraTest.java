@@ -51,8 +51,8 @@ import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkerManager;
 import co.cask.hydrator.plugin.batch.sink.BatchCassandraSink;
 import co.cask.hydrator.plugin.batch.source.BatchCassandraSource;
-import co.cask.hydrator.plugin.testclasses.StreamBatchSource;
 import co.cask.hydrator.plugin.realtime.RealtimeCassandraSink;
+import co.cask.hydrator.plugin.testclasses.StreamBatchSource;
 import com.google.common.collect.ImmutableMap;
 import org.apache.cassandra.hadoop.ColumnFamilySplit;
 import org.apache.cassandra.hadoop.ConfigHelper;
@@ -156,7 +156,7 @@ public class ETLCassandraTest extends TestBase {
   @Before
   public void beforeTest() throws Exception {
     rpcPort = 9160;
-    EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra210.yaml", 30*1000);
+    EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra210.yaml", 30 * 1000);
 
     client = ConfigHelper.createConnection(new Configuration(), "localhost", rpcPort);
     client.execute_cql3_query(

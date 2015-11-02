@@ -107,12 +107,12 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
     }
 
     // Check if the format specified is valid.
-    if(config.format == null || config.format.isEmpty()) {
+    if (config.format == null || config.format.isEmpty()) {
       throw new IllegalArgumentException("Format is not specified. Allowed values are DELIMITED, EXCEL, MYSQL," +
                                            " RFC4180 & TDF");
     }
 
-    if(!config.format.equalsIgnoreCase("DELIMITED") && !config.format.equalsIgnoreCase("EXCEL") &&
+    if (!config.format.equalsIgnoreCase("DELIMITED") && !config.format.equalsIgnoreCase("EXCEL") &&
       !config.format.equalsIgnoreCase("MYSQL") && !config.format.equalsIgnoreCase("RFC4180") &&
       !config.format.equalsIgnoreCase("TDF")) {
       throw new IllegalArgumentException("Format specified is not one of the allowed values. Allowed values are " +
@@ -126,7 +126,7 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
       if (fields.size() > 1) {
         throw new IllegalArgumentException("Output schema should have only one field of type String");
       }
-      if(fields.get(0).getSchema().getType() != Schema.Type.STRING) {
+      if (fields.get(0).getSchema().getType() != Schema.Type.STRING) {
         throw new IllegalArgumentException("Output field type should be String");
       }
     } catch (IOException e) {
@@ -149,14 +149,14 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
     // Based on the delimiter name specified pick the delimiter to be used for the record.
     // This is only applicable when the format type is choosen as DELIMITER
     char delim = ',';
-    if(delimMap.containsKey(config.delimiter)) {
+    if (delimMap.containsKey(config.delimiter)) {
       delim = delimMap.get(config.delimiter).charAt(0);
     } else {
       throw new IllegalArgumentException("Unknown delimiter '" + config.delimiter + "' specified. ");
     }
 
     // Create CSVFileFormat based on the format specified.
-    switch(config.format.toLowerCase()) {
+    switch (config.format.toLowerCase()) {
       case "delimited":
         csvFileFormat = CSVFormat.newFormat(delim).withQuote('"')
           .withRecordSeparator("\r\n").withIgnoreEmptyLines();
@@ -187,12 +187,12 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
   @Override
   public void transform(StructuredRecord record, Emitter<StructuredRecord> emitter) throws Exception {
     List<Object> values = Lists.newArrayList();
-    for(Schema.Field field : record.getSchema().getFields()) {
+    for (Schema.Field field : record.getSchema().getFields()) {
       values.add(record.get(field.getName()));
     }
 
     CSVPrinter printer = new CSVPrinter(new StringWriter(), csvFileFormat);
-    if(printer != null) {
+    if (printer != null) {
       printer.printRecord(values);
       emitter.emit(StructuredRecord.builder(outSchema)
                      .set(outSchema.getFields().get(0).getName(), printer.getOut().toString())

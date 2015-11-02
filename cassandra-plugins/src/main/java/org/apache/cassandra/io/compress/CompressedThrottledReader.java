@@ -17,8 +17,6 @@
 package org.apache.cassandra.io.compress;
 
 import com.google.common.util.concurrent.RateLimiter;
-import org.apache.cassandra.io.compress.CompressedRandomAccessReader;
-import org.apache.cassandra.io.compress.CompressionMetadata;
 
 import java.io.FileNotFoundException;
 
@@ -26,30 +24,26 @@ import java.io.FileNotFoundException;
  * TODO: remove once guava removed from cdap-api
  * Copied from Cassandra to avoid guava conflicts from method signature change to RateLimiter.acquire(int x).
  */
-public class CompressedThrottledReader extends CompressedRandomAccessReader
-{
+public class CompressedThrottledReader extends CompressedRandomAccessReader {
   private final RateLimiter limiter;
 
-  public CompressedThrottledReader(String file, CompressionMetadata metadata, RateLimiter limiter) throws FileNotFoundException
-  {
+  public CompressedThrottledReader(String file, CompressionMetadata metadata, RateLimiter limiter) 
+    throws FileNotFoundException {
     super(file, metadata, null);
     this.limiter = limiter;
   }
 
-  protected void reBuffer()
-  {
+  protected void reBuffer() {
     limiter.acquire(buffer.length);
     super.reBuffer();
   }
 
-  public static org.apache.cassandra.io.compress.CompressedThrottledReader open(String file, CompressionMetadata metadata, RateLimiter limiter)
-  {
-    try
-    {
+  public static org.apache.cassandra.io.compress.CompressedThrottledReader open(String file, 
+                                                                                CompressionMetadata metadata, 
+                                                                                RateLimiter limiter) {
+    try {
       return new org.apache.cassandra.io.compress.CompressedThrottledReader(file, metadata, limiter);
-    }
-    catch (FileNotFoundException e)
-    {
+    } catch (FileNotFoundException e) {
       throw new RuntimeException(e);
     }
   }
