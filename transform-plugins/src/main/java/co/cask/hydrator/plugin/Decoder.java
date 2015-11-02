@@ -161,9 +161,9 @@ public final class Decoder extends Transform<StructuredRecord, StructuredRecord>
         // value.
         byte[] outValue = new byte[0];
         DecoderType type = decodeMap.get(name);
-        if (type == DecoderType.STRING_BASE32 || type == DecoderType.BASE32 ) {
+        if (type == DecoderType.STRING_BASE32 || type == DecoderType.BASE32) {
           outValue = base32Decoder.decode(obj);
-        } else if (type == DecoderType.STRING_BASE64 || type == DecoderType.BASE64 ) {
+        } else if (type == DecoderType.STRING_BASE64 || type == DecoderType.BASE64) {
           outValue = base64Decoder.decode(obj);
         } else if (type == DecoderType.HEX) {
           outValue = hexDecoder.decode(obj);

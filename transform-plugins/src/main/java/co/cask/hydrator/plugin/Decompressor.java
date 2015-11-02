@@ -164,7 +164,7 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
       } else {
         // Now, the input field should be of type byte[]
         byte[] obj = new byte[0];
-        if (field.getSchema().getType() == Schema.Type.BYTES){
+        if (field.getSchema().getType() == Schema.Type.BYTES) {
           obj = in.get(name);
         } else {
           LOG.error("Input field '" + name + "' should be of type BYTES to decompress. It's currently of type" +
@@ -231,7 +231,7 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
     try (ByteArrayOutputStream bao = new ByteArrayOutputStream();
          ByteArrayInputStream bytein = new ByteArrayInputStream(body); 
          ZipInputStream zis = new ZipInputStream(bytein)) {
-      while((ze = zis.getNextEntry()) != null) {
+      while ((ze = zis.getNextEntry()) != null) {
         int l = 0;
         while ((l = zis.read(buf)) > 0) {
           bao.write(buf, 0, l);
