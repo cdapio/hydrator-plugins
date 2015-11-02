@@ -9,7 +9,7 @@
         "encode" : {
           "widget" : "textbox",
           "label" : "Encode Fields",
-          "description" : "Encode fields <field>:<encode-type>[, <field>:<encode-type]*"
+          "description" : "Encode fields <field>:<encode-type>[, <field>:<encode-type>]*"
         },
         "schema" : {
           "widget": "schema",

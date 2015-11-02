@@ -27,7 +27,6 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
-import com.google.common.collect.Maps;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
@@ -35,8 +34,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Encodes the input fields as BASE64, BASE32 or HEX.
@@ -52,7 +53,7 @@ public final class Encoder extends Transform<StructuredRecord, StructuredRecord>
   private Schema outSchema;
 
   // Mapping of input field to encoder type. 
-  private final Map<String, EncodeType> encodeMap = Maps.newTreeMap();
+  private final Map<String, EncodeType> encodeMap = new TreeMap<>();
 
   // Encoder handlers.
   private final Base64 base64Encoder = new Base64();
@@ -60,7 +61,7 @@ public final class Encoder extends Transform<StructuredRecord, StructuredRecord>
   private final Hex hexEncoder = new Hex();
 
   // Output Field name to type map
-  private Map<String, Schema.Type> outSchemaMap = Maps.newHashMap();
+  private final Map<String, Schema.Type> outSchemaMap = new HashMap<>();
 
   // This is used only for tests, otherwise this is being injected by the ingestion framework.
   public Encoder(Config config) {
@@ -80,36 +81,7 @@ public final class Encoder extends Transform<StructuredRecord, StructuredRecord>
 
       String field = params[0];
       String type = params[1].toUpperCase();
-      EncodeType eType;
-
-      switch (type) {
-        case "STRING_BASE64":
-          eType = EncodeType.STRING_BASE64;
-          break;
-
-        case "STRING_BASE32":
-          eType = EncodeType.STRING_BASE32;
-          break;
-
-        case "BASE64":
-          eType = EncodeType.BASE64;
-          break;
-
-        case "BASE32":
-          eType = EncodeType.BASE32;
-          break;
-
-        case "HEX":
-          eType = EncodeType.HEX;
-          break;
-
-        case "NONE":
-          eType = EncodeType.NONE;
-          break;
-
-        default:
-          throw new IllegalArgumentException("Unknown encoder type " + type + " found in mapping " + mapping);
-      }
+      EncodeType eType = EncodeType.valueOf(type);
 
       if (encodeMap.containsKey(field)) {
         throw new IllegalArgumentException("Field " + field + " already has encoder set. Check the mapping.");
