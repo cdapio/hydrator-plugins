@@ -43,9 +43,6 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
   // Output Schema that specifies the fileds of JSON object. 
   private Schema outSchema;
   
-  // Fields of Schema. 
-  private List<Schema.Field> fields;
-  
   // Mainly used for testing.
   public JSONParser(Config config) {
     this.config = config;
@@ -66,7 +63,6 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
     super.initialize(context);
     try {
       outSchema = Schema.parseJson(config.schema);
-      fields = outSchema.getFields();
     } catch (IOException e) {
       throw new IllegalArgumentException("Output Schema specified is not a valid JSON. Please check the Schema JSON");
     }
