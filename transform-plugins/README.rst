@@ -129,7 +129,8 @@ Clone Record
 
 Stream Formatter
 -------------
-:Plugin ID: **StreamFormatter**
+:ID:
+  **StreamFormatter**
 :Type:
   Transform
 :Mode:
