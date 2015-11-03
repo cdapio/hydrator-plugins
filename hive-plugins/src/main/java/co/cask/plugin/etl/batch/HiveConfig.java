@@ -28,7 +28,8 @@ import javax.annotation.Nullable;
 public class HiveConfig extends PluginConfig {
 
   @Name(Hive.METASTORE_URI)
-  @Description("The URI of Hive metastore.")
+  @Description("The URI of Hive metastore in the following format: thrift://<hostname>:<port>. " +
+    "Example: thrift://somehost.net:9083")
   public String metaStoreURI;
 
   @Name(Hive.DB_NAME)
