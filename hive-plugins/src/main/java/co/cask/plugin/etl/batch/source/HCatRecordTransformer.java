@@ -18,13 +18,8 @@ package co.cask.plugin.etl.batch.source;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import com.google.common.collect.Lists;
-import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hive.hcatalog.data.HCatRecord;
-import org.apache.hive.hcatalog.data.schema.HCatFieldSchema;
 import org.apache.hive.hcatalog.data.schema.HCatSchema;
-
-import java.util.List;
 
 /**
  * A transform to convert a {@link HCatRecord} from hive to {@link StructuredRecord}.

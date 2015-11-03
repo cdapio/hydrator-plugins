@@ -29,7 +29,6 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
-import co.cask.plugin.etl.batch.HiveConfig;
 import co.cask.plugin.etl.batch.commons.HiveSchemaConverter;
 import co.cask.plugin.etl.batch.commons.HiveSchemaStore;
 import com.google.common.base.Objects;
@@ -62,7 +61,8 @@ public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord,
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     //TODO: remove this way of storing Hive schema once we can share info between prepareRun and initialize stage.
-    pipelineConfigurer.createDataset(HiveSchemaStore.HIVE_TABLE_SCHEMA_STORE, KeyValueTable.class, DatasetProperties.EMPTY);
+    pipelineConfigurer.createDataset(HiveSchemaStore.HIVE_TABLE_SCHEMA_STORE, KeyValueTable.class,
+                                     DatasetProperties.EMPTY);
   }
 
   @Override
@@ -91,13 +91,16 @@ public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord,
       hCatSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(config.schema));
       HCatInputFormat.setOutputSchema(job, hCatSchema);
     }
-    HiveSchemaStore.storeHiveSchema(context, Objects.firstNonNull(config.dbName, DEFAULT_HIVE_DATABASE), config.tableName, hCatSchema);
+    HiveSchemaStore.storeHiveSchema(context, Objects.firstNonNull(config.dbName, DEFAULT_HIVE_DATABASE),
+                                    config.tableName, hCatSchema);
   }
 
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    HCatSchema hCatSchema = HiveSchemaStore.readHiveSchema(context, Objects.firstNonNull(config.dbName, DEFAULT_HIVE_DATABASE), config.tableName);
+    HCatSchema hCatSchema = HiveSchemaStore.readHiveSchema(context, Objects.firstNonNull(config.dbName,
+                                                                                         DEFAULT_HIVE_DATABASE),
+                                                           config.tableName);
     Schema schema;
     if (config.schema == null) {
       // if the user did not provide a schema then convert the hive table's schema to cdap schema
@@ -109,7 +112,8 @@ public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord,
   }
 
   @Override
-  public void transform(KeyValue<WritableComparable, HCatRecord> input, Emitter<StructuredRecord> emitter) throws Exception {
+  public void transform(KeyValue<WritableComparable, HCatRecord> input,
+                        Emitter<StructuredRecord> emitter) throws Exception {
     StructuredRecord record = hCatRecordTransformer.toRecord(input.getValue());
     emitter.emit(record);
   }

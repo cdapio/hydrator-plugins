@@ -1,27 +1,33 @@
+/*
+ * Copyright © 2015 Cask Data, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package co.cask.plugin.etl.batch.sink;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
-import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
-import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoFactory;
 import org.apache.hive.hcatalog.common.HCatException;
 import org.apache.hive.hcatalog.data.DefaultHCatRecord;
 import org.apache.hive.hcatalog.data.HCatRecord;
-import org.apache.hive.hcatalog.data.schema.HCatFieldSchema;
 import org.apache.hive.hcatalog.data.schema.HCatSchema;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 /**
- * Created by rsinha on 10/28/15.
+ * A transform to convert a {@link StructuredRecord} to Hive's {@link HCatRecord}.
  */
 public class RecordToHCatRecordTransformer {
-
-  private static final Logger LOG = LoggerFactory.getLogger(RecordToHCatRecordTransformer.class);
 
   private final HCatSchema hCatSchema;
   private final Schema schema;
@@ -31,22 +37,20 @@ public class RecordToHCatRecordTransformer {
     this.schema = schema;
   }
 
-  public HCatSchema gethCatSchema() {
-    return hCatSchema;
-  }
-
-
-
+  /**
+   * Converts a {@link StructuredRecord} to {@link HCatRecord} using the {@link #hCatSchema}.
+   *
+   * @param record {@link StructuredRecord} to be converted
+   * @return {@link HCatRecord} for the given {@link StructuredRecord}
+   * @throws HCatException if failed to set the field in {@link HCatRecord}
+   */
   public HCatRecord toHCatRecord(StructuredRecord record) throws HCatException {
-
-    //TODO: Support writing dropped field schema
-    Preconditions.checkArgument(schema.equals(record.getSchema()), "The schema of StructuredRecord being written does not match table's schema.");
 
     HCatRecord hCatRecord = new DefaultHCatRecord(record.getSchema().getFields().size());
 
-    LOG.info("###the schema field size is {} ", record.getSchema().getFields().size());
-
-    for (Schema.Field field : record.getSchema().getFields()) {
+    for (Schema.Field field : schema.getFields()) {
+      Preconditions.checkNotNull(record.getSchema().getField(field.getName()), "Missing schema field '%s' in record " +
+        "to be written.", field.getName());
       hCatRecord.set(field.getName(), hCatSchema, record.get(field.getName()));
     }
 

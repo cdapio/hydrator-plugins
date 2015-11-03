@@ -1,3 +1,19 @@
+/*
+ * Copyright © 2015 Cask Data, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package co.cask.plugin.etl.batch.sink;
 
 import co.cask.cdap.api.annotation.Description;
@@ -14,7 +30,6 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
-import co.cask.plugin.etl.batch.HiveConfig;
 import co.cask.plugin.etl.batch.commons.HiveSchemaConverter;
 import co.cask.plugin.etl.batch.commons.HiveSchemaStore;
 import com.google.common.base.Objects;
@@ -45,7 +60,8 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
 
   private static final String DEFAULT_HIVE_DATABASE = "default";
   private static final Gson GSON = new Gson();
-  private static final Type STRING_MAP_TYPE = new TypeToken<Map<String, String>>() { }.getType();
+  private static final Type STRING_MAP_TYPE = new TypeToken<Map<String, String>>() {
+  }.getType();
 
   private HiveSinkConfig config;
   private RecordToHCatRecordTransformer recordToHCatRecordTransformer;
@@ -53,7 +69,8 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     //TODO: remove this way of storing Hive schema once we can share info between prepareRun and initialize stage.
-    pipelineConfigurer.createDataset(HiveSchemaStore.HIVE_TABLE_SCHEMA_STORE, KeyValueTable.class, DatasetProperties.EMPTY);
+    pipelineConfigurer.createDataset(HiveSchemaStore.HIVE_TABLE_SCHEMA_STORE, KeyValueTable.class,
+                                     DatasetProperties.EMPTY);
   }
 
   @Override
@@ -73,13 +90,16 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
       hiveSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(config.schema));
     }
     HCatOutputFormat.setSchema(configuration, hiveSchema);
-    HiveSchemaStore.storeHiveSchema(context, Objects.firstNonNull(config.dbName, DEFAULT_HIVE_DATABASE), config.tableName, hiveSchema);
+    HiveSchemaStore.storeHiveSchema(context, Objects.firstNonNull(config.dbName, DEFAULT_HIVE_DATABASE),
+                                    config.tableName, hiveSchema);
     context.addOutput(config.tableName, new SinkOutputFormatProvider());
   }
 
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    HCatSchema hCatSchema = HiveSchemaStore.readHiveSchema(context, Objects.firstNonNull(config.dbName, DEFAULT_HIVE_DATABASE), config.tableName);
+    HCatSchema hCatSchema = HiveSchemaStore.readHiveSchema(context, Objects.firstNonNull(config.dbName,
+                                                                                         DEFAULT_HIVE_DATABASE),
+                                                           config.tableName);
     Schema schema;
     // if the user did not provide a source schema then get the schema from the hive's schema
     if (config.schema == null) {
