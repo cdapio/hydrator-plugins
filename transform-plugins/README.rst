@@ -19,12 +19,12 @@ This project is a collection of useful transformations of data. These plugins ar
 
 Getting Started
 ===============
-Follow these instructions to build and deploy Hydrator transform plugins. 
+Follow these instructions to build and deploy Hydrator transform plugins.
 
 Prerequisites
 -------------
 To use plugins, you must have CDAP version 3.2.0 or later. You can download CDAP Standalone that includes Hydrator `here <http://cask.co/downloads>`__.
-  
+ 
 Build Plugins
 -------------
 You can get started with CDAP-plugins by building directly from the latest source code::
@@ -52,33 +52,33 @@ Plugin Descriptions
 
 CSV Parser
 ----------
-:ID: 
+:ID:
   **CSVParser**
-:Type: 
+:Type:
   Transform
-:Mode: 
-  Batch and 
+:Mode:
+  Batch and
   Realtime
 :Description:
-  Parses an input field as a CSV Record into a Structured Record. Supports multi-line CSV Record parsing 
-  into multiple Structured Records. Different formats of CSV Record can be parsed using this plugin. 
+  Parses an input field as a CSV Record into a Structured Record. Supports multi-line CSV Record parsing
+  into multiple Structured Records. Different formats of CSV Record can be parsed using this plugin.
   Supports these CSV Record types: DEFAULT, EXCEL, MYSQL, RFC4180, and TDF.
 :Configuration:
   - **format:** Specifies the format of CSV Record the input should be parsed as.
   - **field:** Specifies the input field that should be parsed as CSV Record.
   - **schema:** Specifies the output schema of CSV Record.
-  
+ 
 CSV Formatter
 -------------
 :ID:
   **CSVFormatter**
 :Type:
   Transform
-:Mode: 
-  Batch and 
+:Mode:
+  Batch and
   Realtime
 :Description:
-  Formats a Structured Record as a CSV Record. Supported CSV Record formats are DELIMITED, EXCEL, MYSQL, RFC4180, and TDF. When the format is DELIMITED, one can specify different delimiters that a CSV Record should use for separating fields. 
+  Formats a Structured Record as a CSV Record. Supported CSV Record formats are DELIMITED, EXCEL, MYSQL, RFC4180, and TDF. When the format is DELIMITED, one can specify different delimiters that a CSV Record should use for separating fields.
 :Configuration:
   - **format:** Specifies the format of the CSV Record to be generated.
   - **delimiter:** Specifies the delimiter to be used to generate a CSV Record. This option is available when the format is specified as DELIMITED.
@@ -86,27 +86,27 @@ CSV Formatter
 
 JSON Parser
 -------------
-:ID: 
+:ID:
   **JSONParser**
 :Type:
   Transform
-:Mode: 
-  Batch and 
+:Mode:
+  Batch and
   Realtime
 :Description:
-  Parses an input field value as a JSON Object. Each record in the input is parsed as a JSON Object and converted into a Structured Record. The Structured Record can specify particular fields that it's interested in, making projections possible. 
+  Parses an input field value as a JSON Object. Each record in the input is parsed as a JSON Object and converted into a Structured Record. The Structured Record can specify particular fields that it's interested in, making projections possible.
 :Configuration:
   - **field:** Specifies the input field that should be parsed as CSV Record.
   - **schema:** Specifies the output schema for JSON Record.
 
 JSON Formatter
 -------------
-:ID: 
+:ID:
   **JSONFormatter**
 :Type:
   Transform
-:Mode: 
-  Batch and 
+:Mode:
+  Batch and
   Realtime
 :Description:
   Formats a Structured Record as JSON Object. Plugin will convert the Structured Record to a JSON object and write to the output record. The output record schema is a single field, either type STRING or type BYTE array.
@@ -115,28 +115,28 @@ JSON Formatter
 
 Clone Record
 -------------
-:ID: 
+:ID:
   **CloneRecord**
-:Type: 
+:Type:
   Transform
-:Mode: 
-  Batch and 
+:Mode:
+  Batch and
   Realtime
 :Description:
-  Makes a copy of every input record received for a configured number of times on the output. This transform does not change any record fields or types. It's an identity transform. 
+  Makes a copy of every input record received for a configured number of times on the output. This transform does not change any record fields or types. It's an identity transform.
 :Configuration:
   **copies:** Specifies the numbers of copies of the input record that are to be emitted.
 
 Stream Formatter
 -------------
 :Plugin ID: **StreamFormatter**
-:Type: 
+:Type:
   Transform
-:Mode: 
-  Batch and 
+:Mode:
+  Batch and
   Realtime
 :Description:
-  Formats a Structured Record as Stream format. Plugin will convert the Structured Record to Stream format. 
+  Formats a Structured Record as Stream format. Plugin will convert the Structured Record to Stream format.
   It will include a header and body configurations. The body of the Stream event can be either type CSV or JSON.
 :Configuration:
   - **body:** Specifies the input Structured Record fields that should be included in the body of the Stream event.
@@ -146,31 +146,31 @@ Stream Formatter
 
 Compressor
 -------------
-:ID: 
+:ID:
   **Compressor**
-:Type: 
+:Type:
   Transform
-:Mode: 
-  Batch and 
+:Mode:
+  Batch and
   Realtime
 :Description:
-  Compresses configured fields. Multiple fields can be specified to be compressed using different compression algorithms. 
-  Plugin supports SNAPPY, ZIP, and GZIP types of compression of fields. 
+  Compresses configured fields. Multiple fields can be specified to be compressed using different compression algorithms.
+  Plugin supports SNAPPY, ZIP, and GZIP types of compression of fields.
 :Configuration:
   - **compressor:** Specifies the configuration for compressing fields. In JSON configuration, this is specified as ``<field>:<compressor>[,<field>:<compressor>]*``.
   - **schema:** Specifies the output schema. The fields that are compressed will have the same field name but they will be of type BYTE array.
 
 Decompressor
 -------------
-:ID: 
+:ID:
   **Decompressor**
-:Type: 
+:Type:
   Transform
-:Mode: 
-  Batch and 
+:Mode:
+  Batch and
   Realtime
 :Description:
-    Decompresses configured fields. Multiple fields can be specified to be decompressed using different decompression algorithms. 
+    Decompresses configured fields. Multiple fields can be specified to be decompressed using different decompression algorithms.
     Plugin supports SNAPPY, ZIP, and GZIP types of decompression of fields.
 :Configuration:
   - **decompressor:** Specifies the configuration for decompressing fields. In JSON configuration, this is specified as ``<field>:<decompressor>[,<field>:<decompressor>]*``.
@@ -178,12 +178,12 @@ Decompressor
 
 Encoder
 -------
-:ID: 
+:ID:
   **Encoder**
-:Type: 
+:Type:
   Transform
-:Mode: 
-  Batch and 
+:Mode:
+  Batch and
   Realtime
 :Description:
   Encodes configured fields. Multiple fields can be specified to be encoded using different encoding methods.
@@ -194,15 +194,15 @@ Encoder
 
 Decoder
 -------
-:ID: 
+:ID:
   **Decoder**
-:Type: 
+:Type:
   Transform
-:Mode: 
-  Batch and 
+:Mode:
+  Batch and
   Realtime
 :Description:
-  Decodes configured fields. Multiple fields can be specified to be decoded using different decoding methods. 
+  Decodes configured fields. Multiple fields can be specified to be decoded using different decoding methods.
   Available decoding methods are STRING_BASE64, BASE64, BASE32, STRING_BASE32, and HEX.
 :Configuration:
   - **decode:** Specifies the configuration for decode fields. In JSON configuration, this is specified as ``<field>:<decoder>[,<field>:<decoder>]*``.
@@ -218,9 +218,9 @@ in compliance with the License. You may obtain a copy of the License at
 
 http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software distributed under the 
-License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
-either express or implied. See the License for the specific language governing permissions 
+Unless required by applicable law or agreed to in writing, software distributed under the
+License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+either express or implied. See the License for the specific language governing permissions
 and limitations under the License.
 
 Cask is a trademark of Cask Data, Inc. All rights reserved.
