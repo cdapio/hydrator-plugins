@@ -40,15 +40,11 @@ public class HiveConfig extends PluginConfig {
   @Description("The name of the table.")
   public String tableName;
 
-  @Name(Hive.FILTER)
-  @Description("Hive expression filter for scan or write.")
-  @Nullable
-  public String filter;
-
   public static class Hive {
     public static final String METASTORE_URI = "metastoreURI";
     public static final String DB_NAME = "databaseName";
     public static final String TABLE_NAME = "tableName";
     public static final String FILTER = "filter";
+    public static final String SCHEMA = "schema";
   }
 }

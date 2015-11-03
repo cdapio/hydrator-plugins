@@ -33,69 +33,9 @@ public class HCatRecordTransformer {
   private final HCatSchema hCatSchema;
   private final Schema schema;
 
-  public HCatRecordTransformer(HCatSchema hCatSchema) {
+  public HCatRecordTransformer(HCatSchema hCatSchema, Schema schema) {
     this.hCatSchema = hCatSchema;
-    this.schema = convertSchema(hCatSchema);
-  }
-
-  /**
-   * <p>Converts a {@link HCatSchema} from hive to {@link Schema} for CDAP.</p>
-   * <p><b>Note:</b> This conversion does not support complex types and might change the primitive type.
-   * See {@link #getType(String, PrimitiveObjectInspector.PrimitiveCategory)} for details.</p>
-   *
-   * @param hiveSchema the {@link HCatSchema} of the hive table
-   * @return {@link Schema} for the given {@link HCatSchema}
-   */
-  private static Schema convertSchema(HCatSchema hiveSchema) {
-    List<Schema.Field> fields = Lists.newArrayList();
-    for (HCatFieldSchema field : hiveSchema.getFields()) {
-      String name = field.getName();
-      if (field.isComplex()) {
-        throw new IllegalArgumentException(String.format(
-          "Table schema contains field '%s' with complex type %s. Only primitive types are supported.",
-          name, field.getTypeString()));
-      }
-      fields.add(Schema.Field.of(name, Schema.of(getType(name, field.getTypeInfo().getPrimitiveCategory()))));
-    }
-    return Schema.recordOf("record", fields);
-  }
-
-  /**
-   * Returns the {@link Schema.Type} compatible for this field from hive.
-   *
-   * @param name name of the field
-   * @param category the field's {@link PrimitiveObjectInspector.PrimitiveCategory}
-   * @return the {@link Schema.Type} for this field
-   */
-  private static Schema.Type getType(String name, PrimitiveObjectInspector.PrimitiveCategory category) {
-    switch (category) {
-      case BOOLEAN:
-        return Schema.Type.BOOLEAN;
-      case BYTE:
-      case CHAR:
-      case SHORT:
-      case INT:
-        return Schema.Type.INT;
-      case LONG:
-        return Schema.Type.LONG;
-      case FLOAT:
-        return Schema.Type.FLOAT;
-      case DOUBLE:
-        return Schema.Type.DOUBLE;
-      case STRING:
-      case VARCHAR:
-        return Schema.Type.STRING;
-      case BINARY:
-        return Schema.Type.BYTES;
-      case VOID:
-      case DATE:
-      case TIMESTAMP:
-      case DECIMAL:
-      case UNKNOWN:
-      default:
-        throw new IllegalArgumentException(String.format("Table schema contains field '%s' with unsupported type %s",
-                                                         name, category.name()));
-    }
+    this.schema = schema;
   }
 
   /**

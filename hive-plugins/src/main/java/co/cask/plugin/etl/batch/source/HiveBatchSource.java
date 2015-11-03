@@ -19,8 +19,8 @@ package co.cask.plugin.etl.batch.source;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
@@ -30,22 +30,18 @@ import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.plugin.etl.batch.HiveConfig;
-import com.google.common.base.Joiner;
+import co.cask.plugin.etl.batch.commons.HiveSchemaConverter;
+import co.cask.plugin.etl.batch.commons.HiveSchemaStore;
 import com.google.common.base.Objects;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.VersionInfo;
 import org.apache.hive.hcatalog.data.HCatRecord;
-import org.apache.hive.hcatalog.data.schema.HCatFieldSchema;
 import org.apache.hive.hcatalog.data.schema.HCatSchema;
 import org.apache.hive.hcatalog.mapreduce.HCatInputFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 
 /**
@@ -53,23 +49,20 @@ import java.util.List;
  */
 @Plugin(type = "batchsource")
 @Name("Hive")
-@Description("Reads from an Hive table in batch")
+@Description("Batch source to read from external Hive table")
 public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord, StructuredRecord> {
 
   private static final Logger LOG = LoggerFactory.getLogger(HiveBatchSource.class);
-  private static final Gson GSON = new Gson();
-  private static final String HIVE_TABLE_SCHEMA_STORE = "hiveTableSchemaStore";
+
   private static final String DEFAULT_HIVE_DATABASE = "default";
 
-  private HiveConfig config;
-  private KeyValueTable hiveTableSchemaStore;
+  private HiveSourceConfig config;
   private HCatRecordTransformer hCatRecordTransformer;
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    // TODO: This table is used to store the hive table schema obtained in prepareRun stage and access it back it in
-    // initialize stage. Remove this once we are able to access information of prepareRun in initialize.
-    pipelineConfigurer.createDataset(HIVE_TABLE_SCHEMA_STORE, KeyValueTable.class, DatasetProperties.EMPTY);
+    //TODO: remove this way of storing Hive schema once we can share info between prepareRun and initialize stage.
+    pipelineConfigurer.createDataset(HiveSchemaStore.HIVE_TABLE_SCHEMA_STORE, KeyValueTable.class, DatasetProperties.EMPTY);
   }
 
   @Override
@@ -89,23 +82,31 @@ public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord,
     } finally {
       Thread.currentThread().setContextClassLoader(classLoader);
     }
-    HCatSchema hiveSchema = HCatInputFormat.getTableSchema(configuration);
-    List<HCatFieldSchema> fields = hiveSchema.getFields();
-    hiveTableSchemaStore = context.getDataset(HIVE_TABLE_SCHEMA_STORE);
-    hiveTableSchemaStore.write(Joiner.on(":").join(Objects.firstNonNull(config.dbName, DEFAULT_HIVE_DATABASE),
-                                                   config.tableName), GSON.toJson(fields));
+
+    HCatSchema hCatSchema;
+    if (config.schema == null) {
+      // if the user did not provide any schema then use hive table's schema
+      hCatSchema = HCatInputFormat.getTableSchema(configuration);
+    } else {
+      hCatSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(config.schema));
+      HCatInputFormat.setOutputSchema(job, hCatSchema);
+    }
+    HiveSchemaStore.storeHiveSchema(context, Objects.firstNonNull(config.dbName, DEFAULT_HIVE_DATABASE), config.tableName, hCatSchema);
   }
 
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    hiveTableSchemaStore = context.getDataset(HIVE_TABLE_SCHEMA_STORE);
-    String hiveSchema = Bytes.toString(hiveTableSchemaStore.read(Joiner.on(":").join(
-      Objects.firstNonNull(config.dbName, DEFAULT_HIVE_DATABASE), config.tableName)));
-    List<HCatFieldSchema> fields = GSON.fromJson(hiveSchema, new TypeToken<List<HCatFieldSchema>>() { }.getType());
-    hCatRecordTransformer = new HCatRecordTransformer(new HCatSchema(fields));
+    HCatSchema hCatSchema = HiveSchemaStore.readHiveSchema(context, Objects.firstNonNull(config.dbName, DEFAULT_HIVE_DATABASE), config.tableName);
+    Schema schema;
+    if (config.schema == null) {
+      // if the user did not provide a schema then convert the hive table's schema to cdap schema
+      schema = HiveSchemaConverter.toSchema(hCatSchema);
+    } else {
+      schema = Schema.parseJson(config.schema);
+    }
+    hCatRecordTransformer = new HCatRecordTransformer(hCatSchema, schema);
   }
-
 
   @Override
   public void transform(KeyValue<WritableComparable, HCatRecord> input, Emitter<StructuredRecord> emitter) throws Exception {

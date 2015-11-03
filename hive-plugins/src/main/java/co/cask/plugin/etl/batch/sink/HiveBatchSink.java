@@ -1,0 +1,124 @@
+package co.cask.plugin.etl.batch.sink;
+
+import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Name;
+import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.data.batch.OutputFormatProvider;
+import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.DatasetProperties;
+import co.cask.cdap.api.dataset.lib.KeyValue;
+import co.cask.cdap.api.dataset.lib.KeyValueTable;
+import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.PipelineConfigurer;
+import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
+import co.cask.cdap.etl.api.batch.BatchSink;
+import co.cask.cdap.etl.api.batch.BatchSinkContext;
+import co.cask.plugin.etl.batch.HiveConfig;
+import co.cask.plugin.etl.batch.commons.HiveSchemaConverter;
+import co.cask.plugin.etl.batch.commons.HiveSchemaStore;
+import com.google.common.base.Objects;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.WritableComparable;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hive.hcatalog.data.DefaultHCatRecord;
+import org.apache.hive.hcatalog.data.HCatRecord;
+import org.apache.hive.hcatalog.data.schema.HCatSchema;
+import org.apache.hive.hcatalog.mapreduce.HCatOutputFormat;
+import org.apache.hive.hcatalog.mapreduce.OutputJobInfo;
+
+import java.lang.reflect.Type;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Hive Batch Sink
+ */
+
+@Plugin(type = "batchsink")
+@Name("Hive")
+@Description("Batch Sink to write to external Hive tables.")
+public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCatRecord> {
+
+  private static final String DEFAULT_HIVE_DATABASE = "default";
+  private static final Gson GSON = new Gson();
+  private static final Type STRING_MAP_TYPE = new TypeToken<Map<String, String>>() { }.getType();
+
+  private HiveSinkConfig config;
+  private RecordToHCatRecordTransformer recordToHCatRecordTransformer;
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    //TODO: remove this way of storing Hive schema once we can share info between prepareRun and initialize stage.
+    pipelineConfigurer.createDataset(HiveSchemaStore.HIVE_TABLE_SCHEMA_STORE, KeyValueTable.class, DatasetProperties.EMPTY);
+  }
+
+  @Override
+  public void prepareRun(BatchSinkContext context) throws Exception {
+    Job job = context.getHadoopJob();
+    job.setOutputKeyClass(WritableComparable.class);
+    job.setOutputValueClass(DefaultHCatRecord.class);
+    Configuration configuration = job.getConfiguration();
+    configuration.set("hive.metastore.uris", config.metaStoreURI);
+    HCatOutputFormat.setOutput(configuration, job.getCredentials(), OutputJobInfo.create(Objects.firstNonNull(
+      config.dbName, DEFAULT_HIVE_DATABASE), config.tableName, getPartitions()));
+    HCatSchema hiveSchema;
+    if (config.schema == null) {
+      // if the user did not provide a source schema to use the use the table's hive schema.
+      hiveSchema = HCatOutputFormat.getTableSchema(configuration);
+    } else {
+      hiveSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(config.schema));
+    }
+    HCatOutputFormat.setSchema(configuration, hiveSchema);
+    HiveSchemaStore.storeHiveSchema(context, Objects.firstNonNull(config.dbName, DEFAULT_HIVE_DATABASE), config.tableName, hiveSchema);
+    context.addOutput(config.tableName, new SinkOutputFormatProvider());
+  }
+
+  public void initialize(BatchRuntimeContext context) throws Exception {
+    super.initialize(context);
+    HCatSchema hCatSchema = HiveSchemaStore.readHiveSchema(context, Objects.firstNonNull(config.dbName, DEFAULT_HIVE_DATABASE), config.tableName);
+    Schema schema;
+    // if the user did not provide a source schema then get the schema from the hive's schema
+    if (config.schema == null) {
+      schema = HiveSchemaConverter.toSchema(hCatSchema);
+    } else {
+      schema = Schema.parseJson(config.schema);
+    }
+    recordToHCatRecordTransformer = new RecordToHCatRecordTransformer(hCatSchema, schema);
+  }
+
+  private Map<String, String> getPartitions() {
+    Map<String, String> partitionValues = null;
+    if (config.filter != null) {
+      partitionValues = GSON.fromJson(config.filter, STRING_MAP_TYPE);
+    }
+    return partitionValues;
+  }
+
+  @Override
+  public void transform(StructuredRecord input, Emitter<KeyValue<NullWritable, HCatRecord>> emitter) throws Exception {
+    HCatRecord hCatRecord = recordToHCatRecordTransformer.toHCatRecord(input);
+    emitter.emit(new KeyValue<>(NullWritable.get(), hCatRecord));
+  }
+
+  public static class SinkOutputFormatProvider implements OutputFormatProvider {
+    private final Map<String, String> conf;
+
+    public SinkOutputFormatProvider() {
+      this.conf = new HashMap<>();
+    }
+
+    @Override
+    public String getOutputFormatClassName() {
+      return HCatOutputFormat.class.getName();
+    }
+
+    @Override
+    public Map<String, String> getOutputFormatConfiguration() {
+      return conf;
+    }
+  }
+}

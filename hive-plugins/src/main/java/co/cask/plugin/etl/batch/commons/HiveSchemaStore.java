@@ -1,0 +1,40 @@
+package co.cask.plugin.etl.batch.commons;
+
+import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.api.dataset.DatasetProperties;
+import co.cask.cdap.api.dataset.lib.KeyValueTable;
+import co.cask.cdap.etl.api.PipelineConfigurer;
+import co.cask.cdap.etl.api.batch.BatchContext;
+import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
+import co.cask.plugin.etl.batch.HiveConfig;
+import com.google.common.base.Joiner;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import org.apache.hive.hcatalog.data.schema.HCatFieldSchema;
+import org.apache.hive.hcatalog.data.schema.HCatSchema;
+
+import java.util.List;
+
+/**
+ * A class to read/write Hive table schema so that it can be used through various stage of ETL Pipeline.
+ * TODO: This class should be removed once we are able to access information of prepareRun in initialize.
+ */
+public class HiveSchemaStore {
+
+  public static final String HIVE_TABLE_SCHEMA_STORE = "hiveTableSchemaStore";
+  private static final Gson GSON = new Gson();
+
+  public static void storeHiveSchema(BatchContext context, String hiveDBName, String tableName, HCatSchema hiveSchema) {
+    KeyValueTable table = context.getDataset(HIVE_TABLE_SCHEMA_STORE);
+    List<HCatFieldSchema> fields = hiveSchema.getFields();
+    table.write(Joiner.on(":").join(hiveDBName, tableName), GSON.toJson(fields));
+  }
+
+  public static HCatSchema readHiveSchema(BatchRuntimeContext context, String hiveDBName, String tableName) {
+    KeyValueTable table = context.getDataset(HIVE_TABLE_SCHEMA_STORE);
+    String hiveSchema = Bytes.toString(table.read(Joiner.on(":").join(hiveDBName, tableName)));
+    List<HCatFieldSchema> fields = GSON.fromJson(hiveSchema, new TypeToken<List<HCatFieldSchema>>() {
+    }.getType());
+    return new HCatSchema(fields);
+  }
+}
