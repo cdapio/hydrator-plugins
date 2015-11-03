@@ -43,6 +43,7 @@ import co.cask.hydrator.plugin.sink.HBaseSink;
 import co.cask.hydrator.plugin.source.HBaseSource;
 import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.hbase.HBaseTestingUtility;
+import org.apache.hadoop.hbase.MiniHBaseCluster;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
@@ -68,7 +69,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- *
+ * Unit Tests for {@link HBaseSource} and {@link HBaseSink}
  */
 public class HBaseTest extends TestBase {
   private static final String STREAM_NAME = "someStream";
@@ -123,7 +124,8 @@ public class HBaseTest extends TestBase {
   public void beforeTest() throws Exception {
     // Start HBase cluster
     testUtil = new HBaseTestingUtility();
-    testUtil.startMiniCluster();
+    MiniHBaseCluster hBaseCluster = testUtil.startMiniCluster();
+    hBaseCluster.waitForActiveAndReadyMaster();
     hBaseAdmin = testUtil.getHBaseAdmin();
     htable = testUtil.createTable(HBASE_TABLE_NAME.getBytes(), HBASE_FAMILY_COLUMN.getBytes());
     htable.put(new Put(ROW1.getBytes()).add(HBASE_FAMILY_COLUMN.getBytes(), COL1.getBytes(), VAL1.getBytes()));
@@ -135,9 +137,19 @@ public class HBaseTest extends TestBase {
   @After
   public void afterTest() throws Exception {
     // Shutdown HBase
-    htable.close();
-    hBaseAdmin.close();
-    testUtil.shutdownMiniCluster();
+    if (htable != null) {
+      htable.close();
+    }
+
+    if (hBaseAdmin != null) {
+      hBaseAdmin.disableTable(HBASE_TABLE_NAME);
+      hBaseAdmin.deleteTable(HBASE_TABLE_NAME);
+      hBaseAdmin.close();
+    }
+
+    if (testUtil != null) {
+      testUtil.shutdownMiniCluster();
+    }
   }
 
   @Test
