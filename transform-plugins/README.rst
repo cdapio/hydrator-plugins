@@ -52,10 +52,13 @@ Plugin Descriptions
 
 CSV Parser
 ----------
-
-:ID: **CSVParser**
-:Type: Transform
-:Mode: Batch and Realtime
+:ID: 
+  **CSVParser**
+:Type: 
+  Transform
+:Mode: 
+  Batch and 
+  Realtime
 :Description:
   Parses an input field as a CSV Record into a Structured Record. Supports multi-line CSV Record parsing 
   into multiple Structured Records. Different formats of CSV Record can be parsed using this plugin. 
@@ -67,9 +70,13 @@ CSV Parser
   
 CSV Formatter
 -------------
-:Plugin ID: **CSVFormatter**
-:Type: Transform
-:Mode: Batch and Realtime
+:ID:
+  **CSVFormatter**
+:Type:
+  Transform
+:Mode: 
+  Batch and 
+  Realtime
 :Description:
   Formats a Structured Record as a CSV Record. Supported CSV Record formats are DELIMITED, EXCEL, MYSQL, RFC4180, and TDF. When the format is DELIMITED, one can specify different delimiters that a CSV Record should use for separating fields. 
 :Configuration:
@@ -79,9 +86,13 @@ CSV Formatter
 
 JSON Parser
 -------------
-:Plugin ID: **JSONParser**
-:Type: Transform
-:Mode: Batch and Realtime
+:ID: 
+  **JSONParser**
+:Type:
+  Transform
+:Mode: 
+  Batch and 
+  Realtime
 :Description:
   Parses an input field value as a JSON Object. Each record in the input is parsed as a JSON Object and converted into a Structured Record. The Structured Record can specify particular fields that it's interested in, making projections possible. 
 :Configuration:
@@ -90,9 +101,13 @@ JSON Parser
 
 JSON Formatter
 -------------
-:Plugin ID: **JSONFormatter**
-:Type: Transform
-:Mode: Batch and Realtime
+:ID: 
+  **JSONFormatter**
+:Type:
+  Transform
+:Mode: 
+  Batch and 
+  Realtime
 :Description:
   Formats a Structured Record as JSON Object. Plugin will convert the Structured Record to a JSON object and write to the output record. The output record schema is a single field, either type STRING or type BYTE array.
 :Configuration:
@@ -100,9 +115,13 @@ JSON Formatter
 
 Clone Record
 -------------
-:Plugin ID: **CloneRecord**
-:Type: Transform
-:Mode: Batch and Realtime
+:ID: 
+  **CloneRecord**
+:Type: 
+  Transform
+:Mode: 
+  Batch and 
+  Realtime
 :Description:
   Makes a copy of every input record received for a configured number of times on the output. This transform does not change any record fields or types. It's an identity transform. 
 :Configuration:
@@ -111,8 +130,11 @@ Clone Record
 Stream Formatter
 -------------
 :Plugin ID: **StreamFormatter**
-:Type: Transform
-:Mode: Batch and Realtime
+:Type: 
+  Transform
+:Mode: 
+  Batch and 
+  Realtime
 :Description:
   Formats a Structured Record as Stream format. Plugin will convert the Structured Record to Stream format. 
   It will include a header and body configurations. The body of the Stream event can be either type CSV or JSON.
@@ -124,9 +146,13 @@ Stream Formatter
 
 Compressor
 -------------
-:Plugin ID: **Compressor**
-:Type: Transform
-:Mode: Batch and Realtime
+:ID: 
+  **Compressor**
+:Type: 
+  Transform
+:Mode: 
+  Batch and 
+  Realtime
 :Description:
   Compresses configured fields. Multiple fields can be specified to be compressed using different compression algorithms. 
   Plugin supports SNAPPY, ZIP, and GZIP types of compression of fields. 
@@ -136,9 +162,13 @@ Compressor
 
 Decompressor
 -------------
-:Plugin ID: **Decompressor**
-:Type: Transform
-:Mode: Batch and Realtime
+:ID: 
+  **Decompressor**
+:Type: 
+  Transform
+:Mode: 
+  Batch and 
+  Realtime
 :Description:
     Decompresses configured fields. Multiple fields can be specified to be decompressed using different decompression algorithms. 
     Plugin supports SNAPPY, ZIP, and GZIP types of decompression of fields.
@@ -148,9 +178,13 @@ Decompressor
 
 Encoder
 -------
-:Plugin ID: **Encoder**
-:Type: Transform
-:Mode: Batch and Realtime
+:ID: 
+  **Encoder**
+:Type: 
+  Transform
+:Mode: 
+  Batch and 
+  Realtime
 :Description:
   Encodes configured fields. Multiple fields can be specified to be encoded using different encoding methods.
   Available encoding methods are STRING_BASE64, BASE64, BASE32, STRING_BASE32, and HEX.
@@ -160,9 +194,13 @@ Encoder
 
 Decoder
 -------
-:Plugin ID: **Decoder**
-:Type: Transform
-:Mode: Batch and Realtime
+:ID: 
+  **Decoder**
+:Type: 
+  Transform
+:Mode: 
+  Batch and 
+  Realtime
 :Description:
   Decodes configured fields. Multiple fields can be specified to be decoded using different decoding methods. 
   Available decoding methods are STRING_BASE64, BASE64, BASE32, STRING_BASE32, and HEX.
