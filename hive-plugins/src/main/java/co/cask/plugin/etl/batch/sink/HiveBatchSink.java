@@ -52,7 +52,6 @@ import java.util.Map;
 /**
  * Hive Batch Sink
  */
-
 @Plugin(type = "batchsink")
 @Name("Hive")
 @Description("Batch Sink to write to external Hive tables.")
