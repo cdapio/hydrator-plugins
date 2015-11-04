@@ -4,7 +4,7 @@
     "position": [ "group1" ],
     "group1": {
       "display" : "Hive Configuration",
-      "position" : [ "metastoreURI", "databaseName", "tableName", "filter"],
+      "position" : [ "metastoreURI", "databaseName", "tableName", "partitions"],
       "fields" : {
         "metastoreURI": {
           "widget": "textbox",
@@ -27,7 +27,7 @@
             "width": "medium"
           }
         },
-        "filter" : {
+        "partitions" : {
           "widget": "textbox",
           "label": "Hive Partition Filter",
           "properties": {

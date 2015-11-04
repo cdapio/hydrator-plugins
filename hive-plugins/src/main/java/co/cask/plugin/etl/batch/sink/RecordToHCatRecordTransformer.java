@@ -18,6 +18,7 @@ package co.cask.plugin.etl.batch.sink;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.plugin.etl.batch.commons.HiveSchemaConverter;
 import com.google.common.base.Preconditions;
 import org.apache.hive.hcatalog.common.HCatException;
 import org.apache.hive.hcatalog.data.DefaultHCatRecord;
@@ -32,6 +33,11 @@ public class RecordToHCatRecordTransformer {
   private final HCatSchema hCatSchema;
   private final Schema schema;
 
+  /**
+   * A transform to convert a {@link StructuredRecord} to Hive's {@link HCatRecord}. The given {@link Schema} and
+   * {@link HCatSchema} must be compatible. To convert one schema to another and supported types
+   * see {@link HiveSchemaConverter}
+   */
   public RecordToHCatRecordTransformer(HCatSchema hCatSchema, Schema schema) {
     this.hCatSchema = hCatSchema;
     this.schema = schema;

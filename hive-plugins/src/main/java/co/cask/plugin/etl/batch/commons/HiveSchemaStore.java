@@ -30,7 +30,7 @@ import java.util.List;
 
 /**
  * A class to read/write Hive table schema so that it can be used through various stage of ETL Pipeline.
- * TODO: This class should be removed once we are able to access information of prepareRun in initialize.
+ * TODO CDAP-4132: This class should be removed once we are able to access information of prepareRun in initialize.
  */
 public class HiveSchemaStore {
 

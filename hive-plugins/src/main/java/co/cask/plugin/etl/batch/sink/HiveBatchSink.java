@@ -67,7 +67,8 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    //TODO: remove this way of storing Hive schema once we can share info between prepareRun and initialize stage.
+    //TODO CDAP-4132: remove this way of storing Hive schema once we can share info between prepareRun and initialize
+    // stage.
     pipelineConfigurer.createDataset(HiveSchemaStore.HIVE_TABLE_SCHEMA_STORE, KeyValueTable.class,
                                      DatasetProperties.EMPTY);
   }
@@ -79,8 +80,9 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
     job.setOutputValueClass(DefaultHCatRecord.class);
     Configuration configuration = job.getConfiguration();
     configuration.set("hive.metastore.uris", config.metaStoreURI);
-    HCatOutputFormat.setOutput(configuration, job.getCredentials(), OutputJobInfo.create(Objects.firstNonNull(
-      config.dbName, DEFAULT_HIVE_DATABASE), config.tableName, getPartitions()));
+    HCatOutputFormat.setOutput(configuration, job.getCredentials(), OutputJobInfo.create(config.dbName,
+                                                                                         config.tableName,
+                                                                                         getPartitions()));
 
     HCatSchema hiveSchema = HCatOutputFormat.getTableSchema(configuration);
     if (config.schema != null) {
@@ -88,16 +90,13 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
       hiveSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(config.schema), hiveSchema);
     }
     HCatOutputFormat.setSchema(configuration, hiveSchema);
-    HiveSchemaStore.storeHiveSchema(context, Objects.firstNonNull(config.dbName, DEFAULT_HIVE_DATABASE),
-                                    config.tableName, hiveSchema);
+    HiveSchemaStore.storeHiveSchema(context, config.dbName, config.tableName, hiveSchema);
     context.addOutput(config.tableName, new SinkOutputFormatProvider());
   }
 
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    HCatSchema hCatSchema = HiveSchemaStore.readHiveSchema(context, Objects.firstNonNull(config.dbName,
-                                                                                         DEFAULT_HIVE_DATABASE),
-                                                           config.tableName);
+    HCatSchema hCatSchema = HiveSchemaStore.readHiveSchema(context, config.dbName, config.tableName);
     Schema schema;
     // if the user did not provide a source schema then get the schema from the hive's schema
     if (config.schema == null) {
@@ -110,8 +109,8 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
 
   private Map<String, String> getPartitions() {
     Map<String, String> partitionValues = null;
-    if (config.filter != null) {
-      partitionValues = GSON.fromJson(config.filter, STRING_MAP_TYPE);
+    if (config.partitions != null) {
+      partitionValues = GSON.fromJson(config.partitions, STRING_MAP_TYPE);
     }
     return partitionValues;
   }

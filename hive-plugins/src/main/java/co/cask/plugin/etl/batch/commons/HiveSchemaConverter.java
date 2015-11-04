@@ -40,10 +40,12 @@ public class HiveSchemaConverter {
 
   /**
    * Converts a CDAP's {@link Schema} to Hive's {@link HCatSchema} while verifying the fields in the given
-   * {@link Schema} to exists in the table.
+   * {@link Schema} to exists in the table. The valid types for {@link Schema} which can be converted into
+   * {@link HCatSchema} are boolean, int, long, float, double, string and bytes.
    *
    * @param schema the {@link Schema}
    * @return {@link HCatSchema} for the given {@link Schema}
+   * @throws NullPointerException if a field in the given {@link Schema} is not found in table's {@link HCatSchema}
    */
   public static HCatSchema toHiveSchema(Schema schema, HCatSchema tableSchema) {
     List<HCatFieldSchema> fields = Lists.newArrayList();
@@ -95,6 +97,8 @@ public class HiveSchemaConverter {
    * <p><b>Note:</b> This conversion does not support non-primitive types and the conversion will fail.
    * The conversion might also change the primitive type.
    * See {@link #getType(String, PrimitiveObjectInspector.PrimitiveCategory)} for details.</p>
+   * The valid types of {@link HCatFieldSchema} which can be converted into {@link Schema} are boolean, byte, char,
+   * short, int, long, float, double, string, varchar, binary
    *
    * @param hiveSchema the {@link HCatSchema} of the hive table
    * @return {@link Schema} for the given {@link HCatSchema}

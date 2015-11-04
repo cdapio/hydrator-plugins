@@ -26,7 +26,7 @@ Build Plugins
 You can get started with CDAP-plugins by building directly from the latest source code::
 
   git clone https://github.com/caskdata/hydrator-plugins.git
-  cd hive-plugins
+  cd hydrator-plugins
   mvn clean package -pl hive-plugins
 
 After the build completes, you will have a jar for each plugin under the
@@ -63,13 +63,13 @@ Hive Batch Source
     **metastoreURI:** The URI of Hive metastore in the following format: thrift://<hostname>:<port>.
     Example: thrift://somehost.net:9083
 
-    **tableName:** The name of the hive table.
+    **tableName:** The name of the hive table. This table must exist.
 
     **Optional Fields**
 
     **databaseName:** The name of the database. Defaults to 'default'.
 
-    **filter:** Hive expression filter for scan. This filter must reference only partition columns.
+    **partitions:** Hive expression filter for scan. This filter must reference only partition columns.
     Values from other columns will cause the pipeline to fail.
 
     **schema:** Optional schema to use while reading from Hive table. If no schema is provided then the schema of the
@@ -91,13 +91,13 @@ Hive Batch Sink
     **metastoreURI:** The URI of Hive metastore in the following format: thrift://<hostname>:<port>.
     Example: thrift://somehost.net:9083
 
-    **tableName:** The name of the hive table.
+    **tableName:** The name of the hive table. This table must exist.
 
     **Optional Fields**
 
     **databaseName:** The name of the database. Defaults to 'default'
 
-    **filter:** Hive expression filter for write provided as a JSON Map of key value pairs that describe all of the
+    **partitions:** Hive expression filter for write provided as a JSON Map of key value pairs that describe all of the
     partition keys and values for that partition. For example if the partition column is 'type' then this property
     should specified as {"type": "typeOne"}
     To write multiple partitions simultaneously you can leave this empty, but all of the partitioning columns must

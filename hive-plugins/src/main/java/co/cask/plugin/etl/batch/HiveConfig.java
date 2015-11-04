@@ -38,14 +38,18 @@ public class HiveConfig extends PluginConfig {
   public String dbName;
 
   @Name(Hive.TABLE_NAME)
-  @Description("The name of the table.")
+  @Description("The name of the table. This table must exist.")
   public String tableName;
+
+  public HiveConfig() {
+    dbName = "default";
+  }
 
   public static class Hive {
     public static final String METASTORE_URI = "metastoreURI";
     public static final String DB_NAME = "databaseName";
     public static final String TABLE_NAME = "tableName";
-    public static final String FILTER = "filter";
+    public static final String PARTITIONS = "partitions";
     public static final String SCHEMA = "schema";
   }
 }

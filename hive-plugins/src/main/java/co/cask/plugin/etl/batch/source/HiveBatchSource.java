@@ -60,7 +60,8 @@ public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord,
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    //TODO: remove this way of storing Hive schema once we can share info between prepareRun and initialize stage.
+    //TODO CDAP-4132: remove this way of storing Hive schema once we can share info between prepareRun and initialize
+    // stage.
     pipelineConfigurer.createDataset(HiveSchemaStore.HIVE_TABLE_SCHEMA_STORE, KeyValueTable.class,
                                      DatasetProperties.EMPTY);
   }
@@ -77,8 +78,7 @@ public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord,
     ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
     try {
       Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
-      HCatInputFormat.setInput(job, Objects.firstNonNull(config.dbName, DEFAULT_HIVE_DATABASE), config.tableName,
-                               config.filter);
+      HCatInputFormat.setInput(job, config.dbName, config.tableName, config.partitions);
     } finally {
       Thread.currentThread().setContextClassLoader(classLoader);
     }
@@ -90,16 +90,13 @@ public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord,
       hCatSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(config.schema), hCatSchema);
       HCatInputFormat.setOutputSchema(job, hCatSchema);
     }
-    HiveSchemaStore.storeHiveSchema(context, Objects.firstNonNull(config.dbName, DEFAULT_HIVE_DATABASE),
-                                    config.tableName, hCatSchema);
+    HiveSchemaStore.storeHiveSchema(context, config.dbName, config.tableName, hCatSchema);
   }
 
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    HCatSchema hCatSchema = HiveSchemaStore.readHiveSchema(context, Objects.firstNonNull(config.dbName,
-                                                                                         DEFAULT_HIVE_DATABASE),
-                                                           config.tableName);
+    HCatSchema hCatSchema = HiveSchemaStore.readHiveSchema(context, config.dbName, config.tableName);
     Schema schema;
     if (config.schema == null) {
       // if the user did not provide a schema then convert the hive table's schema to cdap schema

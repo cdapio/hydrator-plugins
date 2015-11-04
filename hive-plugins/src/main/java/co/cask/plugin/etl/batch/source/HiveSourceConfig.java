@@ -26,11 +26,12 @@ import javax.annotation.Nullable;
  * Configurations for Hive batch source
  */
 public class HiveSourceConfig extends HiveConfig {
-  @Name(Hive.FILTER)
-  @Description("Hive expression filter for scan. This filter must reference only partition columns. " +
-    "Values from other columns will cause the pipeline to fail.")
+  @Name(Hive.PARTITIONS)
+  @Description("Hive expression filter for scan defining partitions to read. For example if your table is partitioned " +
+    "on 'type' and you want to read 'type1' partition: 'type = \"type1\"'" +
+    "This filter must reference only partition columns. Values from other columns will cause the pipeline to fail.")
   @Nullable
-  public String filter;
+  public String partitions;
 
   @Name(Hive.SCHEMA)
   @Description("Optional schema to use while reading from Hive table. If no schema is provided then the " +
