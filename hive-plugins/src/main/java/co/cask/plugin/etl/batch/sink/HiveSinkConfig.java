@@ -38,7 +38,7 @@ public class HiveSinkConfig extends HiveConfig {
 
   @Name(Hive.SCHEMA)
   @Description("Optional schema to use while writing to Hive table. If no schema is provided then the " +
-    "schema of the source table will be used and it should match the schema of the data being written.")
+    "schema of the table will be used and it should match the schema of the data being written.")
   @Nullable
   public String schema;
 }
