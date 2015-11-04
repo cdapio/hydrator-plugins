@@ -121,6 +121,9 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
     emitter.emit(new KeyValue<>(NullWritable.get(), hCatRecord));
   }
 
+  /**
+   * Output format provider for Hive Sink
+   */
   public static class SinkOutputFormatProvider implements OutputFormatProvider {
     private final Map<String, String> conf;
 

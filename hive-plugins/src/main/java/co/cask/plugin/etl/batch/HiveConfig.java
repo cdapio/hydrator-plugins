@@ -45,6 +45,9 @@ public class HiveConfig extends PluginConfig {
     dbName = "default";
   }
 
+  /**
+   * Hive config variables
+   */
   public static class Hive {
     public static final String METASTORE_URI = "metastoreURI";
     public static final String DB_NAME = "databaseName";

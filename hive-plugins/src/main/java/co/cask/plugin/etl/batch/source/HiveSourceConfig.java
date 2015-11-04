@@ -27,8 +27,8 @@ import javax.annotation.Nullable;
  */
 public class HiveSourceConfig extends HiveConfig {
   @Name(Hive.PARTITIONS)
-  @Description("Hive expression filter for scan defining partitions to read. For example if your table is partitioned " +
-    "on 'type' and you want to read 'type1' partition: 'type = \"type1\"'" +
+  @Description("Hive expression filter for scan defining partitions to read. For example if your table is " +
+    "partitioned on 'type' and you want to read 'type1' partition: 'type = \"type1\"'" +
     "This filter must reference only partition columns. Values from other columns will cause the pipeline to fail.")
   @Nullable
   public String partitions;
