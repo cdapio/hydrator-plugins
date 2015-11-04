@@ -19,6 +19,13 @@ language: java
 jdk:
   - oraclejdk7
 
+# memory values same as surefire plugin config
+before_install: echo "MAVEN_OPTS='-Xmx5000m -XX:MaxPermSize=1024m'" > ~/.mavenrc
+
+script: mvn test
+
+install: mvn install -DskipTests=true -q
+
 branches:
   only:
     - develop
