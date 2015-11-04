@@ -81,12 +81,11 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
     configuration.set("hive.metastore.uris", config.metaStoreURI);
     HCatOutputFormat.setOutput(configuration, job.getCredentials(), OutputJobInfo.create(Objects.firstNonNull(
       config.dbName, DEFAULT_HIVE_DATABASE), config.tableName, getPartitions()));
-    HCatSchema hiveSchema;
-    if (config.schema == null) {
-      // if the user did not provide a source schema to use the use the table's hive schema.
-      hiveSchema = HCatOutputFormat.getTableSchema(configuration);
-    } else {
-      hiveSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(config.schema));
+
+    HCatSchema hiveSchema = HCatOutputFormat.getTableSchema(configuration);
+    if (config.schema != null) {
+      // if the user did provide a sink schema to use then use that one
+      hiveSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(config.schema), hiveSchema);
     }
     HCatOutputFormat.setSchema(configuration, hiveSchema);
     HiveSchemaStore.storeHiveSchema(context, Objects.firstNonNull(config.dbName, DEFAULT_HIVE_DATABASE),

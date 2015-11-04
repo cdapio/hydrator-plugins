@@ -17,6 +17,7 @@
 package co.cask.plugin.etl.batch.commons;
 
 import co.cask.cdap.api.data.schema.Schema;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
@@ -37,18 +38,20 @@ public class HiveSchemaConverter {
 
   private static final Logger LOG = LoggerFactory.getLogger(HiveSchemaConverter.class);
 
-
   /**
-   * Converts a CDAP's {@link Schema} to Hive's {@link HCatSchema}.
+   * Converts a CDAP's {@link Schema} to Hive's {@link HCatSchema} while verifying the fields in the given
+   * {@link Schema} to exists in the table.
    *
    * @param schema the {@link Schema}
    * @return {@link HCatSchema} for the given {@link Schema}
    */
-  public static HCatSchema toHiveSchema(Schema schema) {
+  public static HCatSchema toHiveSchema(Schema schema, HCatSchema tableSchema) {
     List<HCatFieldSchema> fields = Lists.newArrayList();
     for (Schema.Field field : schema.getFields()) {
       String name = field.getName();
       try {
+        // this field of the schema must exist in the table
+        Preconditions.checkNotNull(tableSchema.get(name), "Missing field %s in table schema", name);
         fields.add(new HCatFieldSchema(name, getType(name, field.getSchema().getType()), ""));
       } catch (HCatException e) {
         LOG.error("Failed to create HCatFieldSchema field {} of type {} from schema", name,

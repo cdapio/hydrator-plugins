@@ -83,12 +83,11 @@ public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord,
       Thread.currentThread().setContextClassLoader(classLoader);
     }
 
-    HCatSchema hCatSchema;
-    if (config.schema == null) {
-      // if the user did not provide any schema then use hive table's schema
-      hCatSchema = HCatInputFormat.getTableSchema(configuration);
-    } else {
-      hCatSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(config.schema));
+    HCatSchema hCatSchema = HCatInputFormat.getTableSchema(configuration);
+    if (config.schema != null) {
+      // if the user provided a schema then we should use that schema to read the table. This will allow user to
+      // drop non-primitive types and read the table.
+      hCatSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(config.schema), hCatSchema);
       HCatInputFormat.setOutputSchema(job, hCatSchema);
     }
     HiveSchemaStore.storeHiveSchema(context, Objects.firstNonNull(config.dbName, DEFAULT_HIVE_DATABASE),
