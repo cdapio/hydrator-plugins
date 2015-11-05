@@ -47,7 +47,7 @@ import java.util.TreeMap;
  */
 @Plugin(type = "transform")
 @Name("Decoder")
-@Description("Decodes the input field(s) using Base64, Base32 or Hex")
+@Description("Decodes the input field(s) using Base64, Base32, or Hex")
 public final class Decoder extends Transform<StructuredRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(Decoder.class);
   private final Config config;
@@ -78,7 +78,7 @@ public final class Decoder extends Transform<StructuredRecord, StructuredRecord>
 
       // If format is not right, then we throw an exception.
       if (params.length < 2) {
-        throw new IllegalArgumentException("Configuration " + mapping + " is in-correctly formed. " +
+        throw new IllegalArgumentException("Configuration '" + mapping + "' is incorrectly formed. " +
                                              "Format should be <fieldname>:<decoder-type>");
       }
 
