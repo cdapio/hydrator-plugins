@@ -49,6 +49,8 @@ public class HiveSchemaConverter {
    */
   public static HCatSchema toHiveSchema(Schema schema, HCatSchema tableSchema) {
     List<HCatFieldSchema> fields = Lists.newArrayList();
+    //TODO: Finalize a consistent way to whether do projecttion on source or not while reading and if needed
+    // do type check here
     for (Schema.Field field : schema.getFields()) {
       String name = field.getName();
       try {

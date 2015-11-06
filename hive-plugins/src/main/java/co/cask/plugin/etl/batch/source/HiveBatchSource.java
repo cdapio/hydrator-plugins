@@ -75,6 +75,9 @@ public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord,
     Configuration configuration = job.getConfiguration();
     job.setInputFormatClass(HCatInputFormat.class);
     configuration.set("hive.metastore.uris", config.metaStoreURI);
+    // Use the current thread's classloader to ensure that when setInput is called it can access VersionInfo class
+    // loaded above. This is needed to support CDAP 3.2 where we were just exposing classes to plugin jars and not
+    // resources.
     ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
     try {
       Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
