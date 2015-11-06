@@ -33,6 +33,8 @@ import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.plugin.etl.batch.commons.HiveSchemaConverter;
 import co.cask.plugin.etl.batch.commons.HiveSchemaStore;
 import com.google.common.base.Objects;
+import com.google.common.collect.MapDifference;
+import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.hadoop.conf.Configuration;
@@ -45,6 +47,7 @@ import org.apache.hive.hcatalog.data.schema.HCatSchema;
 import org.apache.hive.hcatalog.mapreduce.HCatOutputFormat;
 import org.apache.hive.hcatalog.mapreduce.OutputJobInfo;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
@@ -76,22 +79,7 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
   @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
     Job job = context.getHadoopJob();
-    job.setOutputKeyClass(WritableComparable.class);
-    job.setOutputValueClass(DefaultHCatRecord.class);
-    Configuration configuration = job.getConfiguration();
-    configuration.set("hive.metastore.uris", config.metaStoreURI);
-    HCatOutputFormat.setOutput(configuration, job.getCredentials(), OutputJobInfo.create(config.dbName,
-                                                                                         config.tableName,
-                                                                                         getPartitions()));
-
-    HCatSchema hiveSchema = HCatOutputFormat.getTableSchema(configuration);
-    if (config.schema != null) {
-      // if the user did provide a sink schema to use then use that one
-      hiveSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(config.schema), hiveSchema);
-    }
-    HCatOutputFormat.setSchema(configuration, hiveSchema);
-    HiveSchemaStore.storeHiveSchema(context, config.dbName, config.tableName, hiveSchema);
-    context.addOutput(config.tableName, new SinkOutputFormatProvider());
+    context.addOutput(config.tableName, new SinkOutputFormatProvider(context, job, config));
   }
 
   public void initialize(BatchRuntimeContext context) throws Exception {
@@ -127,8 +115,56 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
   public static class SinkOutputFormatProvider implements OutputFormatProvider {
     private final Map<String, String> conf;
 
-    public SinkOutputFormatProvider() {
-      this.conf = new HashMap<>();
+    public SinkOutputFormatProvider(BatchSinkContext context, Job job, HiveSinkConfig config) throws IOException {
+      job.setOutputKeyClass(WritableComparable.class);
+      job.setOutputValueClass(DefaultHCatRecord.class);
+      Configuration originalConf = job.getConfiguration();
+      Configuration modifiedConf = new Configuration(originalConf);
+      modifiedConf.set("hive.metastore.uris", config.metaStoreURI);
+      HCatOutputFormat.setOutput(modifiedConf, job.getCredentials(), OutputJobInfo.create(config.dbName,
+                                                                                           config.tableName,
+                                                                                           getPartitions(config)));
+
+      HCatSchema hiveSchema = HCatOutputFormat.getTableSchema(modifiedConf);
+      if (config.schema != null) {
+        // if the user did provide a sink schema to use then use that one
+        hiveSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(config.schema), hiveSchema);
+      }
+      HCatOutputFormat.setSchema(modifiedConf, hiveSchema);
+      conf = getConfigurationDiff(originalConf, modifiedConf);
+      HiveSchemaStore.storeHiveSchema(context, config.dbName, config.tableName, hiveSchema);
+    }
+
+    private Map<String, String> getConfigurationDiff(Configuration originalConf, Configuration modifiedConf) {
+      MapDifference<String, String> mapDifference = Maps.difference(getConfigurationAsMap(originalConf),
+                                                                    getConfigurationAsMap(modifiedConf));
+      // new keys in the modified configurations
+      Map<String, String> stringStringMap = mapDifference.entriesOnlyOnRight();
+      // keys whose values got changed in the modified config
+      Map<String, MapDifference.ValueDifference<String>> stringValueDifferenceMap = mapDifference.entriesDiffering();
+      Map<String, String> result = new HashMap<>();
+      for (Map.Entry<String, MapDifference.ValueDifference<String>> stringValueDifferenceEntry :
+        stringValueDifferenceMap.entrySet()) {
+        result.put(stringValueDifferenceEntry.getKey(), stringValueDifferenceEntry.getValue().rightValue());
+      }
+      result.putAll(stringStringMap);
+      return result;
+    }
+
+    private Map<String, String> getPartitions(HiveSinkConfig config) {
+      Map<String, String> partitionValues = null;
+      if (config.partitions != null) {
+        partitionValues = GSON.fromJson(config.partitions, STRING_MAP_TYPE);
+      }
+      return partitionValues;
+    }
+
+    private Map<String, String> getConfigurationAsMap (Configuration conf) {
+      Map<String, String> map = new HashMap<>();
+      for (Map.Entry<String, String> entry : conf) {
+        map.put(entry.getKey(), entry.getValue());
+      }
+      return map;
     }
 
     @Override
