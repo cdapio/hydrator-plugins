@@ -9,7 +9,6 @@ This project is a collection of useful transformations of data. These plugins ar
 - CSV Parser
 - CSV Formatter
 - JSON Parser
-- JSON Parser
 - Clone Record
 - Stream Formatter
 - Compressor

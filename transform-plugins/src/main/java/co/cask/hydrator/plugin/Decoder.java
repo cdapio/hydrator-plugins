@@ -134,8 +134,8 @@ public final class Decoder extends Transform<StructuredRecord, StructuredRecord>
     for (Field field : inFields) {
       String name = field.getName();
 
-      // Check if output schema also have the same field name. If it's not 
-      // then throw an exception. 
+      // Check if the output schema has the field, if it's not there
+      // then skip and move to processing the next field. 
       if (!outSchemaMap.containsKey(name)) {
         continue;
       }
