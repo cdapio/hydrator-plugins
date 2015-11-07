@@ -51,7 +51,8 @@ public class HCatRecordTransformer {
 
     for (Schema.Field field : schema.getFields()) {
       String fieldName = field.getName();
-      switch (field.getSchema().getType()) {
+      Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
+      switch (type) {
         case BOOLEAN:
         case INT:
         case LONG:

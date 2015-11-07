@@ -49,14 +49,14 @@ public class HiveSchemaConverter {
    */
   public static HCatSchema toHiveSchema(Schema schema, HCatSchema tableSchema) {
     List<HCatFieldSchema> fields = Lists.newArrayList();
-    //TODO: Finalize a consistent way to whether do projecttion on source or not while reading and if needed
+    //TODO: Finalize a consistent way to whether do projection on source or not while reading and if needed
     // do type check here
     for (Schema.Field field : schema.getFields()) {
       String name = field.getName();
       try {
         // this field of the schema must exist in the table
         Preconditions.checkNotNull(tableSchema.get(name), "Missing field %s in table schema", name);
-        fields.add(new HCatFieldSchema(name, getType(name, field.getSchema().getType()), ""));
+        fields.add(new HCatFieldSchema(name, getType(name, field.getSchema()), ""));
       } catch (HCatException e) {
         LOG.error("Failed to create HCatFieldSchema field {} of type {} from schema", name,
                   field.getSchema().getType());
@@ -69,11 +69,12 @@ public class HiveSchemaConverter {
    * Returns the {@link PrimitiveTypeInfo} for the {@link Schema.Type}
    *
    * @param name name of the field
-   * @param category {@link Schema.Type} of the field
+   * @param schema {@link Schema} of the field
    * @return {@link PrimitiveTypeInfo} for the given {@link Schema.Type} which is compatible with Hive.
    */
-  private static PrimitiveTypeInfo getType(String name, Schema.Type category) {
-    switch (category) {
+  private static PrimitiveTypeInfo getType(String name, Schema schema) {
+    Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
+    switch (type) {
       case BOOLEAN:
         return TypeInfoFactory.booleanTypeInfo;
       case INT:
@@ -90,7 +91,7 @@ public class HiveSchemaConverter {
         return TypeInfoFactory.binaryTypeInfo;
       default:
         throw new IllegalArgumentException(String.format(
-          "Schema contains field '%s' with unsupported type %s", name, category.name()));
+          "Schema contains field '%s' with unsupported type %s", name, type));
     }
   }
 
@@ -129,24 +130,25 @@ public class HiveSchemaConverter {
   private static Schema.Type getType(String name, PrimitiveObjectInspector.PrimitiveCategory category) {
     switch (category) {
       case BOOLEAN:
-        return Schema.Type.BOOLEAN;
+        return Schema.nullableOf(Schema.of(Schema.Type.BOOLEAN)).getType();
       case BYTE:
       case CHAR:
       case SHORT:
       case INT:
-        return Schema.Type.INT;
+        return Schema.nullableOf(Schema.of(Schema.Type.INT)).getType();
       case LONG:
-        return Schema.Type.LONG;
+        return Schema.nullableOf(Schema.of(Schema.Type.LONG)).getType();
       case FLOAT:
-        return Schema.Type.FLOAT;
+        return Schema.nullableOf(Schema.of(Schema.Type.FLOAT)).getType();
       case DOUBLE:
-        return Schema.Type.DOUBLE;
+        return Schema.nullableOf(Schema.of(Schema.Type.DOUBLE)).getType();
       case STRING:
       case VARCHAR:
-        return Schema.Type.STRING;
+        return Schema.nullableOf(Schema.of(Schema.Type.STRING)).getType();
       case BINARY:
-        return Schema.Type.BYTES;
+        return Schema.nullableOf(Schema.of(Schema.Type.BYTES)).getType();
       case VOID:
+        return Schema.Type.NULL;
       case DATE:
       case TIMESTAMP:
       case DECIMAL:

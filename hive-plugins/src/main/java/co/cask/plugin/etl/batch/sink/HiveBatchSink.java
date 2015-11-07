@@ -32,7 +32,6 @@ import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.plugin.etl.batch.commons.HiveSchemaConverter;
 import co.cask.plugin.etl.batch.commons.HiveSchemaStore;
-import com.google.common.base.Objects;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
@@ -60,7 +59,6 @@ import java.util.Map;
 @Description("Batch Sink to write to external Hive tables.")
 public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCatRecord> {
 
-  private static final String DEFAULT_HIVE_DATABASE = "default";
   private static final Gson GSON = new Gson();
   private static final Type STRING_MAP_TYPE = new TypeToken<Map<String, String>>() {
   }.getType();
