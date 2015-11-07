@@ -1,0 +1,24 @@
+{
+  "id": "Decoder",
+  "groups": {
+    "position": [ "group1" ],
+    "group1": {
+      "display": "Decoder",
+      "position": [ "decode", "schema" ],
+      "fields": {
+        "decode" : {
+          "widget" : "textbox",
+          "label" : "Decode Fields",
+          "description" : "Encode fields <field>:<decode-type>[, <field>:<decode-type>]*"
+        },
+        "schema" : {
+          "widget": "schema",
+          "label": "Schema",
+          "description" : "Schema of output JSON",
+          "schema-types" : [ "string", "byte" ],
+          "schema-default-type" : "string"
+        }
+      }
+    }
+  }
+}

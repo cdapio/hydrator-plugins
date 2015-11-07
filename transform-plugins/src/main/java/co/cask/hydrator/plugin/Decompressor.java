@@ -167,8 +167,8 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
         if (field.getSchema().getType() == Schema.Type.BYTES) {
           obj = in.get(name);
         } else {
-          LOG.error("Input field '" + name + "' should be of type BYTES to decompress. It's currently of type" +
-                      "'" + field.getSchema().getType().toString());
+          LOG.error("Input field '" + name + "' should be of type BYTES to decompress. It is currently of type " +
+                      "'" + field.getSchema().getType().toString() + "'");
           break;
         }
 

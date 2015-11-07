@@ -4,61 +4,54 @@ Hydrator Transform Plugin Collection
 
 Introduction
 ============
+This project is a collection of useful transformations of data. These plugins are currently available:
 
-This project is a collection of useful transformations of data. Following is list of plugins
-that are currently available:
-
-- CSV Parser,
-- CSV Formatter,
-- JSON Parser,
-- JSON Parser,
-- Clone Record,
-- Stream Formatter,
-- Compressor, 
-- Decompressor and 
+- CSV Parser
+- CSV Formatter
+- JSON Parser
+- Clone Record
+- Stream Formatter
+- Compressor
+- Decompressor
 - Encoder
+- Decoder
 
 Getting Started
 ===============
-
-Following are instructions to build and deploy hydrator transform plugins. 
+Follow these instructions to build and deploy Hydrator transform plugins.
 
 Prerequisites
 -------------
-
-To use plugins, you must have CDAP version 3.2.0 or later. You can download CDAP Standalone that includes Hydrator `here <http://cask.co/downloads>`__
-  
+To use plugins, you must have CDAP version 3.2.0 or later. You can download CDAP Standalone that includes Hydrator `here <http://cask.co/downloads>`__.
+ 
 Build Plugins
 -------------
-
 You can get started with CDAP-plugins by building directly from the latest source code::
 
   git clone https://github.com/caskdata/hydrator-plugins.git
   cd hydrator-plugins
   mvn clean package -pl transform-plugins
 
-After the build completes, you will have a jar for each plugin under the
+After the build completes, you will have a JAR for each plugin under each
 ``<plugin-name>/target/`` directory.
 
 Deploy Plugins
 --------------
+You can deploy a transform plugin using the CDAP CLI::
 
-You can deploy transform plugins using the CDAP CLI::
-
-  > load artifact target/transform-plugins-1.0-SNAPSHOT-batch.jar \
+  cdap > load artifact target/transform-plugins-1.0-SNAPSHOT-batch.jar \
          config-file resources/plugin/transform-plugins.json
 
-Copy the UI configuration to CDAP installation::
+Copy the UI configuration to the CDAP installation::
 
-  > cp transform-plugins/resources/ui/*.json $CDAP_HOME/ui/templates/common/
+  $ cp transform-plugins/resources/ui/*.json $CDAP_HOME/ui/templates/common/
 
 Plugin Descriptions
 ===================
 
 CSV Parser
 ----------
-
-:Id:
+:ID:
   **CSVParser**
 :Type:
   Transform
@@ -66,18 +59,17 @@ CSV Parser
   Batch and
   Realtime
 :Description:
-  Parses an input field as CSV Record into a Structured Record. Support multi-line CSV record parsing 
-  into multiple structured records. Different formats of CSV record can be parsed using this plugin. 
-  Following are different CSV record types that are supported by this plugin: DEFAULT, EXCEL, MYSQL, RFC4180 and TDF.
+  Parses an input field as a CSV Record into a Structured Record. Supports multi-line CSV Record parsing
+  into multiple Structured Records. Different formats of CSV Record can be parsed using this plugin.
+  Supports these CSV Record types: DEFAULT, EXCEL, MYSQL, RFC4180, and TDF.
 :Configuration:
-    **format:** Specifies the format of CSV Record the input should be parsed as, 
-    **field:** Specifies the input field that should be parsed as CSV Record and
-    **schema:** Specifies the output schema of CSV Record.
-  
+  - **format:** Specifies the format of CSV Record the input should be parsed as.
+  - **field:** Specifies the input field that should be parsed as CSV Record.
+  - **schema:** Specifies the output schema of CSV Record.
+ 
 CSV Formatter
 -------------
-
-:Id:
+:ID:
   **CSVFormatter**
 :Type:
   Transform
@@ -85,16 +77,15 @@ CSV Formatter
   Batch and
   Realtime
 :Description:
-  Formats a structured record as a CSV Record. CSV Record formats supported are DELIMITED, EXCEL, MYSQL, RFC4180 and TDF. When the format is DELIMITED one can specify different delimiters that a CSV record should use for separting fields. 
+  Formats a Structured Record as a CSV Record. Supported CSV Record formats are DELIMITED, EXCEL, MYSQL, RFC4180, and TDF. When the format is DELIMITED, one can specify different delimiters that a CSV Record should use for separating fields.
 :Configuration:
-    **format:** Specifies the format of the CSV record to be generated,
-    **delimiter:** Specifies the delimiter to be used to generate a CSV Record. This option is available when format is specified as DELIMITED and 
-    **schema:** Specifies the output schema. Output Schema should have only field of type String. 
+  - **format:** Specifies the format of the CSV Record to be generated.
+  - **delimiter:** Specifies the delimiter to be used to generate a CSV Record. This option is available when the format is specified as DELIMITED.
+  - **schema:** Specifies the output schema. Output schema should only have fields of type String.
 
 JSON Parser
 -------------
-
-:Id:
+:ID:
   **JSONParser**
 :Type:
   Transform
@@ -102,111 +93,124 @@ JSON Parser
   Batch and
   Realtime
 :Description:
-  Parses an input field value as a JSON Object. Each record in the input is parsed as a JSON Object and converted into a Structured Record. The structured record can specify only the fields it's interested in. Meaning projections are possible. 
+  Parses an input field value as a JSON Object. Each record in the input is parsed as a JSON Object and converted into a Structured Record. The Structured Record can specify particular fields that it's interested in, making projections possible.
 :Configuration:
-    **field:** Specifies the input field that should be parsed as CSV Record and
-    **schema:** Specifies the output schema for JSON Record.
+  - **field:** Specifies the input field that should be parsed as CSV Record.
+  - **schema:** Specifies the output schema for JSON Record.
 
 JSON Formatter
 -------------
-
-:Id:
-  JSONFormatter
+:ID:
+  **JSONFormatter**
 :Type:
   Transform
 :Mode:
-  Batch and 
+  Batch and
   Realtime
 :Description:
-  Formats a structured record as JSON Object. Plugin will convert the structured record to JSON object and write to output record. The output record should have only one field of type STRING or BYTE array.
+  Formats a Structured Record as JSON Object. Plugin will convert the Structured Record to a JSON object and write to the output record. The output record schema is a single field, either type STRING or type BYTE array.
 :Configuration:
-    **schema:** Specifies the output schema that includes only one of type STRING or BYTE array. 
+  **schema:** Specifies the output schema, a single field either type STRING or type BYTE array.
 
 Clone Record
 -------------
-
-:Id:
-  CloneRecord
+:ID:
+  **CloneRecord**
 :Type:
   Transform
 :Mode:
   Batch and
   Realtime
 :Description:
-  Makes copy of every input record received configured number of times on the output. This transform does not change any record fields or types. It's identity. 
+  Makes a copy of every input record received for a configured number of times on the output. This transform does not change any record fields or types. It's an identity transform.
 :Configuration:
-    **copies:** Specifies numbers of copies of input record that has be emitted. 
+  **copies:** Specifies the numbers of copies of the input record that are to be emitted.
 
 Stream Formatter
 -------------
-
-:Id:
-  StreamFormatter
+:ID:
+  **StreamFormatter**
 :Type:
   Transform
 :Mode:
   Batch and
   Realtime
 :Description:
-  Formats a structured record as Stream format. Plugin will convert the structured record to Stream format. It will include header configuration and body configuration. The body of Stream event can be of any of the two types : CSV or JSON.
+  Formats a Structured Record as Stream format. Plugin will convert the Structured Record to Stream format.
+  It will include a header and body configurations. The body of the Stream event can be either type CSV or JSON.
 :Configuration:
-    **body:** Specifies the fields from input structured record that should be included in the body of Stream event. 
-    **header:** Specifies the fields from input structured record that should be included in the header of Stream event. 
-    **format:** Specifies the format of the body. Currently supported formats are JSON, CSV, TSV and PSV.
-    **schema:** Specifies the output schema. The output schema can have only two fields. One of type STRING and the other of type MAP<STRING, STRING>.
+  - **body:** Specifies the input Structured Record fields that should be included in the body of the Stream event.
+  - **header:** Specifies the input Structured Record fields that should be included in the header of the Stream event.
+  - **format:** Specifies the format of the body. Currently supported formats are JSON, CSV, TSV, and PSV.
+  - **schema:** Specifies the output schema. The output schema can have only two fields: one of type STRING and the other of type MAP<STRING, STRING>.
 
 Compressor
 -------------
-
-:Id:
-  Compressor
+:ID:
+  **Compressor**
 :Type:
   Transform
 :Mode:
-  Batch and 
+  Batch and
   Realtime
 :Description:
-  Compresses configured fields. Multiple fields can be specified to be compressed using different compression algorithms. Currently plugin supports SNAPPY, ZIP and GZIP types of compression of fields. 
+  Compresses configured fields. Multiple fields can be specified to be compressed using different compression algorithms.
+  Plugin supports SNAPPY, ZIP, and GZIP types of compression of fields.
 :Configuration:
-    **compressor:** Specifies the configuration for compressing fields. Following is how this can be specified in JSON configuration <field>:<compressor>[,<field>:<compressor>]*,
-    **schema:** Specifies the output schema. The fields that are compressed will have the same field name, but they will be of type BYTE array. 
+  - **compressor:** Specifies the configuration for compressing fields. In JSON configuration, this is specified as ``<field>:<compressor>[,<field>:<compressor>]*``.
+  - **schema:** Specifies the output schema. The fields that are compressed will have the same field name but they will be of type BYTE array.
 
 Decompressor
 -------------
-
-:Id:
-    Decompressor
+:ID:
+  **Decompressor**
 :Type:
-    Transform
+  Transform
 :Mode:
-    Batch and 
-    Realtime
+  Batch and
+  Realtime
 :Description:
-    Decompresses configured fields. Multiple fields can be specified to be decompressed using different decompression algorithms. Currently plugin supports SNAPPY, ZIP and GZIP types of decompression of fields.
+    Decompresses configured fields. Multiple fields can be specified to be decompressed using different decompression algorithms.
+    Plugin supports SNAPPY, ZIP, and GZIP types of decompression of fields.
 :Configuration:
-    **decompressor:** Specifies the configuration for decompressing fields. Following is how this can be specified in JSON configuration <field>:<decompressor>[,<field>:<decompressor>]*,
-    **schema:** Specifies the output schema. The fields that are decompressed will have the same field name, but they will be of type BYTE array or STRING.
+  - **decompressor:** Specifies the configuration for decompressing fields. In JSON configuration, this is specified as ``<field>:<decompressor>[,<field>:<decompressor>]*``.
+  - **schema:** Specifies the output schema. The fields that are decompressed will have the same field name but they will be of type BYTE array or STRING.
 
 Encoder
 -------
-
-:Id:
-      Encoder
+:ID:
+  **Encoder**
 :Type:
-      Transform
+  Transform
 :Mode:
-      Batch and
-      Realtime
+  Batch and
+  Realtime
 :Description:
-      Encodes configured fields. Multiple fields can be specified to be encoded using different encoding methods.
+  Encodes configured fields. Multiple fields can be specified to be encoded using different encoding methods.
+  Available encoding methods are STRING_BASE64, BASE64, BASE32, STRING_BASE32, and HEX.
 :Configuration:
-    **encode:** Specifies the configuration for encode fields. Following is how this can be specified in JSON configuration <field>:<encoder>[,<field>:<encoder>]*,
-    **schema:** Specifies the output schema. The fields that are decompressed will have the same field name, but they will be of type BYTE array or STRING.
+  - **encode:** Specifies the configuration for encode fields. In JSON configuration, this is specified as ``<field>:<encoder>[,<field>:<encoder>]*``.
+  - **schema:** Specifies the output schema. The fields that are encoded will have the same field name but they will be of type BYTE array or STRING.
+
+Decoder
+-------
+:ID:
+  **Decoder**
+:Type:
+  Transform
+:Mode:
+  Batch and
+  Realtime
+:Description:
+  Decodes configured fields. Multiple fields can be specified to be decoded using different decoding methods.
+  Available decoding methods are STRING_BASE64, BASE64, BASE32, STRING_BASE32, and HEX.
+:Configuration:
+  - **decode:** Specifies the configuration for decode fields. In JSON configuration, this is specified as ``<field>:<decoder>[,<field>:<decoder>]*``.
+  - **schema:** Specifies the output schema. The fields that are decoded will have the same field name but they will be of type BYTE array or STRING.
 
 
 License and Trademarks
 ======================
-
 Copyright © 2015 Cask Data, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -214,9 +218,9 @@ in compliance with the License. You may obtain a copy of the License at
 
 http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software distributed under the 
-License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
-either express or implied. See the License for the specific language governing permissions 
+Unless required by applicable law or agreed to in writing, software distributed under the
+License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+either express or implied. See the License for the specific language governing permissions
 and limitations under the License.
 
 Cask is a trademark of Cask Data, Inc. All rights reserved.
