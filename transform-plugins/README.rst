@@ -26,7 +26,7 @@ To use plugins, you must have CDAP version 3.2.0 or later. You can download CDAP
  
 Build Plugins
 -------------
-You can get started with CDAP-plugins by building directly from the latest source code::
+You can get started with Hydrator plugins by building directly from the latest source code::
 
   git clone https://github.com/caskdata/hydrator-plugins.git
   cd hydrator-plugins

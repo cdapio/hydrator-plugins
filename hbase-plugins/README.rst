@@ -1,11 +1,11 @@
 =============
-Kafka Plugins
+HBase Plugins
 =============
 
 Introduction
 ============
 
-Collection of Kafka Hydrator Plugins that allow to read and write data from and to Kafka respectively.
+Collection of HBase Hydrator Plugins that allow to read and write data from and to external HBase tables respectively.
 
 Getting Started
 ===============
@@ -22,7 +22,7 @@ You can get started with Hydrator plugins by building directly from the latest s
 
   git clone https://github.com/caskdata/hydrator-plugins.git
   cd hydrator-plugins
-  mvn clean package -pl kafka-plugins
+  mvn clean package -pl hbase-plugins
 
 After the build completes, you will have a jar for each plugin under the
 ``<plugin-name>/target/`` directory.
@@ -30,40 +30,41 @@ After the build completes, you will have a jar for each plugin under the
 Deploy Plugins
 --------------
 
-You can deploy kafka realtime plugins using the CDAP CLI::
+You can deploy HBase plugins using the CDAP CLI::
 
-  > load artifact target/kafka-plugins-<version>-realtime.jar \
-         config-file resources/plugin/kafka-plugins-realtime.json
+  > load artifact target/hbase-plugins-<version>-batch.jar \
+         config-file resources/plugin/hbase-plugins-batch.json
 
 Copy the UI configuration to CDAP installation::
 
-  > cp kafka-plugins/resources/realtime/ui/*.json $CDAP_HOME/ui/templates/cdap-etl-realtime/
+  > cp hbase-plugins/resources/ui/HBase.json $CDAP_HOME/ui/templates/common/
 
 Plugin description
 ==================
 
-Kafka Producer
+HBase Source
 --------------
 
 :Id:
-  KafkaProducer
+  HBase
 :Type:
-  Sink
+  Sink and Source
 :Mode:
-  Realtime
+  Batch
 :Description:   
   Kafka producer plugins allows you to convert structured record into CSV or JSON.
   Plugin has the capability to push the data to one or more Kafka topics. It can
   use one of the field value from input to partition the data on topic. The producer
   can also be configured to operate in sync or async mode.
 :Configuration:
-  **brokers:** Specifies a list of brokers to connect to,
-  **async:** Specifies whether writing the events to broker is Asynchronous or Synchronous, 
-  **paritionfield:** Specifies the input fields that need to be used to determine partition id. The field type should int or long, 
-  **key:** Specifies the input field that should be used as key for event published into Kafka, 
-  **topics:** Specifies a list of topic to which the event should be published to and
-  **format:** Specifies the format of event published to kafka. 
-  
+  - **tableName:** Specifies the name of the table.
+  - **zkQuorum:** Specifies the Zookeeper Quorum in the format <hostname>[<:port>][,<hostname>[:<port>]]*
+  - **zkClientPort** Specifies the Zookeeper port. If zero then default port 2181 is used.
+  - **zkNodeParent** Specifies the Zookeeper path where HBase master maintains .META.
+  - **columnFamily** Column family to read or write from. 
+  - **rowField** Specifies the name field to be considered as row during read and as well as for writing
+
+
 License and Trademarks
 ======================
 

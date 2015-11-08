@@ -39,7 +39,7 @@ import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.mapreduce.Job;
 
 /**
- *
+ * Source to read from HBase tables.
  */
 @Plugin(type = "batchsource")
 @Name("HBase")
@@ -47,6 +47,11 @@ import org.apache.hadoop.mapreduce.Job;
 public class HBaseSource extends BatchSource<ImmutableBytesWritable, Result, StructuredRecord> {
   private RowRecordTransformer rowRecordTransformer;
   private HBaseConfig config;
+  
+  // This is used only for tests.
+  public HBaseSource(HBaseConfig config) {
+    this.config = config;
+  }
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {

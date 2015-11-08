@@ -30,7 +30,7 @@ You can download the CDAP Standalone SDK that includes Hydrator `here <http://ca
 
 Build Plugin
 ------------
-You can get started with the CDAP-plugin by building directly from the latest source code::
+You can get started with the Hydrator plugin by building directly from the latest source code::
 
   git clone https://github.com/caskdata/hydrator-plugins.git
   cd hydrator-plugins

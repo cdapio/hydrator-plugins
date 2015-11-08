@@ -57,6 +57,11 @@ public class HBaseSink extends BatchSink<StructuredRecord, NullWritable, Mutatio
   private HBaseSinkConfig config;
   private RecordPutTransformer recordPutTransformer;
 
+  // This is used for tests only.
+  public HBaseSink(HBaseSinkConfig config) {
+    this.config = config;
+  }
+  
   @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
     Job job = context.getHadoopJob();
