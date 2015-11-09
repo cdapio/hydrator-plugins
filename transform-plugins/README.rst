@@ -15,6 +15,7 @@ This project is a collection of useful transformations of data. These plugins ar
 - Decompressor
 - Encoder
 - Decoder
+- Hasher
 
 Getting Started
 ===============
@@ -207,6 +208,21 @@ Decoder
 :Configuration:
   - **decode:** Specifies the configuration for decode fields. In JSON configuration, this is specified as ``<field>:<decoder>[,<field>:<decoder>]*``.
   - **schema:** Specifies the output schema. The fields that are decoded will have the same field name but they will be of type BYTE array or STRING.
+
+Hasher
+-------
+:ID:
+  **Hasher**
+:Type:
+    Transform
+:Mode:
+    Batch and
+    Realtime
+:Description:
+    Hashes fields using one of the digest algorithms like MD2, MD5, SHA1, SHA256, SHA384 and SHA512.
+:Configuration:
+  - **fields:** Specifies the fields to be hashed.
+  - **hash:** Specifies the hashing algorithm.
 
 
 License and Trademarks
