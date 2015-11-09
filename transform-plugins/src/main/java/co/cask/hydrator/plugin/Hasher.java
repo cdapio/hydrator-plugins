@@ -28,9 +28,9 @@ import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
 import org.apache.commons.codec.digest.DigestUtils;
 
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
@@ -42,7 +42,7 @@ import javax.annotation.Nullable;
   "SHA384 and SHA512 are the supported message digest algorithms.")
 public final class Hasher extends Transform<StructuredRecord, StructuredRecord> {
   private final Config config;
-  private Map<String, Boolean> fieldsMap = new HashMap<>();  
+  private Set<String> fieldsMap = new HashSet<>();
 
 
   // For testing purpose only.
@@ -56,7 +56,7 @@ public final class Hasher extends Transform<StructuredRecord, StructuredRecord> 
     // Split the fields to be hashed.
     String[] fields = config.fields.split(",");
     for (String field : fields) {
-      fieldsMap.put(field, true);
+      fieldsMap.add(field);
     }
   }
 
@@ -80,7 +80,7 @@ public final class Hasher extends Transform<StructuredRecord, StructuredRecord> 
     List<Schema.Field> fields = in.getSchema().getFields();
     for (Schema.Field field : fields) {
       String name = field.getName();
-      if (fieldsMap.containsKey(name) && field.getSchema().getType() == Schema.Type.STRING) {
+      if (fieldsMap.contains(name) && field.getSchema().getType() == Schema.Type.STRING) {
         String value = in.get(name);
         String digest = value;
         switch(config.hash.toLowerCase()) {
