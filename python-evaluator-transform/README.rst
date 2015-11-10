@@ -120,6 +120,11 @@ The transform takes records that have a ``'subtotal'`` field, calculates ``'tax'
 containing those three fields.
 
 
+Known Issues
+============
+The PythonEvaluator transform has a memory leak which affects CDAP SDK. Running it multiple times from within same JVM in CDAP SDK will result in a OutOfMemoryError: PermGen Space - https://issues.cask.co/browse/CDAP-4222
+
+
 License and Trademarks
 ======================
 
