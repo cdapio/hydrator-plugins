@@ -38,9 +38,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hive.hcatalog.data.DefaultHCatRecord;
 import org.apache.hive.hcatalog.data.HCatRecord;
 import org.apache.hive.hcatalog.data.schema.HCatSchema;
 import org.apache.hive.hcatalog.mapreduce.HCatOutputFormat;
@@ -114,14 +112,12 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
     private final Map<String, String> conf;
 
     public SinkOutputFormatProvider(BatchSinkContext context, Job job, HiveSinkConfig config) throws IOException {
-      job.setOutputKeyClass(WritableComparable.class);
-      job.setOutputValueClass(DefaultHCatRecord.class);
       Configuration originalConf = job.getConfiguration();
       Configuration modifiedConf = new Configuration(originalConf);
       modifiedConf.set("hive.metastore.uris", config.metaStoreURI);
       HCatOutputFormat.setOutput(modifiedConf, job.getCredentials(), OutputJobInfo.create(config.dbName,
-                                                                                           config.tableName,
-                                                                                           getPartitions(config)));
+                                                                                          config.tableName,
+                                                                                          getPartitions(config)));
 
       HCatSchema hiveSchema = HCatOutputFormat.getTableSchema(modifiedConf);
       if (config.schema != null) {
@@ -137,7 +133,7 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
       MapDifference<String, String> mapDifference = Maps.difference(getConfigurationAsMap(originalConf),
                                                                     getConfigurationAsMap(modifiedConf));
       // new keys in the modified configurations
-      Map<String, String> stringStringMap = mapDifference.entriesOnlyOnRight();
+      Map<String, String> newEntries = mapDifference.entriesOnlyOnRight();
       // keys whose values got changed in the modified config
       Map<String, MapDifference.ValueDifference<String>> stringValueDifferenceMap = mapDifference.entriesDiffering();
       Map<String, String> result = new HashMap<>();
@@ -145,7 +141,7 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
         stringValueDifferenceMap.entrySet()) {
         result.put(stringValueDifferenceEntry.getKey(), stringValueDifferenceEntry.getValue().rightValue());
       }
-      result.putAll(stringStringMap);
+      result.putAll(newEntries);
       return result;
     }
 
@@ -157,7 +153,7 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
       return partitionValues;
     }
 
-    private Map<String, String> getConfigurationAsMap (Configuration conf) {
+    private Map<String, String> getConfigurationAsMap(Configuration conf) {
       Map<String, String> map = new HashMap<>();
       for (Map.Entry<String, String> entry : conf) {
         map.put(entry.getKey(), entry.getValue());

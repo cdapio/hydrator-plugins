@@ -49,14 +49,20 @@ public class HiveSchemaConverter {
    */
   public static HCatSchema toHiveSchema(Schema schema, HCatSchema tableSchema) {
     List<HCatFieldSchema> fields = Lists.newArrayList();
-    //TODO: Finalize a consistent way to whether do projection on source or not while reading and if needed
-    // do type check here
     for (Schema.Field field : schema.getFields()) {
       String name = field.getName();
       try {
-        // this field of the schema must exist in the table
-        Preconditions.checkNotNull(tableSchema.get(name), "Missing field %s in table schema", name);
-        fields.add(new HCatFieldSchema(name, getType(name, field.getSchema()), ""));
+        // this field of the schema must exist in the table and should be of the same type
+        HCatFieldSchema hCatFieldSchema = tableSchema.get(name);
+        Preconditions.checkNotNull(hCatFieldSchema, "Missing field %s in table schema", name);
+        PrimitiveTypeInfo hiveType = hCatFieldSchema.getTypeInfo();
+        PrimitiveTypeInfo type = getType(name, field.getSchema());
+        if (hiveType != type) {
+          LOG.warn("The given schema {} for the field {} does not match the schema {} from the table. " +
+                     "The schema {} for field {} be used.", type, name, hiveType, hiveType, name);
+          type = hiveType;
+        }
+        fields.add(new HCatFieldSchema(name, type, ""));
       } catch (HCatException e) {
         LOG.error("Failed to create HCatFieldSchema field {} of type {} from schema", name,
                   field.getSchema().getType());
@@ -91,7 +97,8 @@ public class HiveSchemaConverter {
         return TypeInfoFactory.binaryTypeInfo;
       default:
         throw new IllegalArgumentException(String.format(
-          "Schema contains field '%s' with unsupported type %s", name, type));
+          "Schema contains field '%s' with unsupported type %s. " +
+            "You should provide an schema with this field dropped to work with this table.", name, type));
     }
   }
 
