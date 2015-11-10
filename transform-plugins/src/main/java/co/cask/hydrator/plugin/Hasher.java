@@ -42,7 +42,7 @@ import javax.annotation.Nullable;
   "SHA384 and SHA512 are the supported message digest algorithms.")
 public final class Hasher extends Transform<StructuredRecord, StructuredRecord> {
   private final Config config;
-  private Set<String> fieldsMap = new HashSet<>();
+  private Set<String> fieldSet = new HashSet<>();
 
 
   // For testing purpose only.
@@ -56,7 +56,7 @@ public final class Hasher extends Transform<StructuredRecord, StructuredRecord> 
     // Split the fields to be hashed.
     String[] fields = config.fields.split(",");
     for (String field : fields) {
-      fieldsMap.add(field);
+      fieldSet.add(field);
     }
   }
 
@@ -80,7 +80,7 @@ public final class Hasher extends Transform<StructuredRecord, StructuredRecord> 
     List<Schema.Field> fields = in.getSchema().getFields();
     for (Schema.Field field : fields) {
       String name = field.getName();
-      if (fieldsMap.contains(name) && field.getSchema().getType() == Schema.Type.STRING) {
+      if (fieldSet.contains(name) && field.getSchema().getType() == Schema.Type.STRING) {
         String value = in.get(name);
         String digest = value;
         switch(config.hash.toLowerCase()) {
