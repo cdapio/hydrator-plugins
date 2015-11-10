@@ -1,0 +1,27 @@
+{
+  "id": "Hasher",
+  "groups": {
+    "position": [ "group1" ],
+    "group1": {
+      "display": "Hasher Configuration",
+      "position": [ "hash", "fields" ],
+      "fields": {
+        "hash": {
+          "widget": "select",
+          "label": "Hasher",
+          "properties": {
+            "values" : [ "MD2", "MD5", "SHA1", "SHA256", "SHA384", "SHA512" ],
+            "default" : "MD5"
+          }
+        },
+        "fields": {
+          "widget": "csv",
+          "label": "Fields",
+          "properties": {
+            "delimiter": ","
+          }
+        }
+      }
+    }
+  }
+}
