@@ -60,9 +60,8 @@ public class HiveSchemaConverter {
         if (hiveType != type) {
           LOG.warn("The given schema {} for the field {} does not match the schema {} from the table. " +
                      "The schema {} for field {} be used.", type, name, hiveType, hiveType, name);
-          type = hiveType;
         }
-        fields.add(new HCatFieldSchema(name, type, ""));
+        fields.add(hCatFieldSchema);
       } catch (HCatException e) {
         LOG.error("Failed to create HCatFieldSchema field {} of type {} from schema", name,
                   field.getSchema().getType());

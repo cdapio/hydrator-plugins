@@ -75,7 +75,10 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
   @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
     Job job = context.getHadoopJob();
-    context.addOutput(config.tableName, new SinkOutputFormatProvider(context, job, config));
+    HiveSinkOutputFormatProvider sinkOutputFormatProvider = new HiveSinkOutputFormatProvider(job, config);
+    HCatSchema hiveSchema = sinkOutputFormatProvider.getHiveSchema();
+    HiveSchemaStore.storeHiveSchema(context, config.dbName, config.tableName, hiveSchema);
+    context.addOutput(config.tableName, sinkOutputFormatProvider);
   }
 
   public void initialize(BatchRuntimeContext context) throws Exception {
@@ -108,10 +111,11 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
   /**
    * Output format provider for Hive Sink
    */
-  public static class SinkOutputFormatProvider implements OutputFormatProvider {
+  public static class HiveSinkOutputFormatProvider implements OutputFormatProvider {
     private final Map<String, String> conf;
+    private HCatSchema hiveSchema;
 
-    public SinkOutputFormatProvider(BatchSinkContext context, Job job, HiveSinkConfig config) throws IOException {
+    public HiveSinkOutputFormatProvider(Job job, HiveSinkConfig config) throws IOException {
       Configuration originalConf = job.getConfiguration();
       Configuration modifiedConf = new Configuration(originalConf);
       modifiedConf.set("hive.metastore.uris", config.metaStoreURI);
@@ -119,14 +123,13 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
                                                                                           config.tableName,
                                                                                           getPartitions(config)));
 
-      HCatSchema hiveSchema = HCatOutputFormat.getTableSchema(modifiedConf);
+      hiveSchema = HCatOutputFormat.getTableSchema(modifiedConf);
       if (config.schema != null) {
         // if the user did provide a sink schema to use then use that one
         hiveSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(config.schema), hiveSchema);
       }
       HCatOutputFormat.setSchema(modifiedConf, hiveSchema);
       conf = getConfigurationDiff(originalConf, modifiedConf);
-      HiveSchemaStore.storeHiveSchema(context, config.dbName, config.tableName, hiveSchema);
     }
 
     private Map<String, String> getConfigurationDiff(Configuration originalConf, Configuration modifiedConf) {
@@ -159,6 +162,13 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
         map.put(entry.getKey(), entry.getValue());
       }
       return map;
+    }
+
+    /**
+     * @return the {@link HCatSchema} for the Hive table for this {@link HiveSinkOutputFormatProvider}
+     */
+    public HCatSchema getHiveSchema() {
+      return hiveSchema;
     }
 
     @Override
