@@ -19,6 +19,8 @@ package co.cask.plugin.etl.batch.source;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.plugin.etl.batch.commons.HiveSchemaConverter;
+import org.apache.hadoop.hive.common.type.HiveChar;
+import org.apache.hadoop.hive.common.type.HiveVarchar;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hive.hcatalog.common.HCatException;
 import org.apache.hive.hcatalog.data.HCatRecord;
@@ -69,12 +71,12 @@ public class HCatRecordTransformer {
             break;
           } catch (Throwable t) {
             throw new RuntimeException(String.format("Error converting field '%s' of type %s",
-                                                     fieldName, field.getSchema().getType()), t);
+                                                     fieldName, type), t);
           }
         }
         default: {
           throw new IllegalStateException(String.format("Output schema contains field '%s' with unsupported type %s.",
-                                                        fieldName, field.getSchema().getType().name()));
+                                                        fieldName, type));
         }
       }
     }
@@ -99,9 +101,11 @@ public class HCatRecordTransformer {
       case BOOLEAN:
         return hCatRecord.getBoolean(fieldName, hCatSchema);
       case BYTE:
-        return (int) hCatRecord.getByte(fieldName, hCatSchema);
+        Byte byteValue = hCatRecord.getByte(fieldName, hCatSchema);
+        return byteValue == null ? null : (int) byteValue;
       case SHORT:
-        return (int) hCatRecord.getShort(fieldName, hCatSchema);
+        Short shortValue = hCatRecord.getShort(fieldName, hCatSchema);
+        return shortValue == null ? null : (int) shortValue;
       case INT:
         return hCatRecord.getInteger(fieldName, hCatSchema);
       case LONG:
@@ -111,11 +115,13 @@ public class HCatRecordTransformer {
       case DOUBLE:
         return hCatRecord.getDouble(fieldName, hCatSchema);
       case CHAR:
-        return hCatRecord.getChar(fieldName, hCatSchema).toString();
+        HiveChar charValue = hCatRecord.getChar(fieldName, hCatSchema);
+        return charValue == null ? null : charValue.toString();
       case STRING:
         return hCatRecord.getString(fieldName, hCatSchema);
       case VARCHAR:
-        return hCatRecord.getVarchar(fieldName, hCatSchema).toString();
+        HiveVarchar varcharValue = hCatRecord.getVarchar(fieldName, hCatSchema);
+        return varcharValue == null ? null : varcharValue.toString();
       case BINARY:
         return hCatRecord.getByteArray(fieldName, hCatSchema);
       // We can support VOID by having Schema type as null but HCatRecord does not support VOID and since we read
