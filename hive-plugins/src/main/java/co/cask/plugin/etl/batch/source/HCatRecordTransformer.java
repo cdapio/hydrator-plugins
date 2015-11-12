@@ -19,7 +19,10 @@ package co.cask.plugin.etl.batch.source;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.plugin.etl.batch.commons.HiveSchemaConverter;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
+import org.apache.hive.hcatalog.common.HCatException;
 import org.apache.hive.hcatalog.data.HCatRecord;
+import org.apache.hive.hcatalog.data.schema.HCatFieldSchema;
 import org.apache.hive.hcatalog.data.schema.HCatSchema;
 
 /**
@@ -62,7 +65,7 @@ public class HCatRecordTransformer {
         case STRING:
         case BYTES: {
           try {
-            builder.set(fieldName, hCatRecord.get(fieldName, hCatSchema));
+            builder.set(fieldName, getSchemaCompatibleValue(hCatRecord, fieldName));
             break;
           } catch (Throwable t) {
             throw new RuntimeException(String.format("Error converting field '%s' of type %s",
@@ -76,5 +79,56 @@ public class HCatRecordTransformer {
       }
     }
     return builder.build();
+  }
+
+  /**
+   * Converts the value for a field from {@link HCatRecord} to the compatible {@link Schema} type to be represented in
+   * {@link StructuredRecord}. For schema conversion details and supported type see {@link HiveSchemaConverter}.
+   * @param hCatRecord the record being converted to {@link StructuredRecord}
+   * @param fieldName name of the field
+   * @return the value for the given field which is of type compatible with {@link Schema}.
+   * @throws HCatException if failed to get {@link HCatFieldSchema} for the given field
+   */
+  private Object getSchemaCompatibleValue(HCatRecord hCatRecord, String fieldName) throws HCatException {
+    PrimitiveObjectInspector.PrimitiveCategory category = hCatSchema.get(fieldName)
+      .getTypeInfo().getPrimitiveCategory();
+    switch (category) {
+      // Its not required to check that the schema has the same type because if the user provided  the Schema then
+      // the HCatSchema was obtained through the convertor and if the user didn't the Schema was obtained through the
+      // and hence the types will be same.
+      case BOOLEAN:
+        return hCatRecord.getBoolean(fieldName, hCatSchema);
+      case BYTE:
+        return (int) hCatRecord.getByte(fieldName, hCatSchema);
+      case SHORT:
+        return (int) hCatRecord.getShort(fieldName, hCatSchema);
+      case INT:
+        return hCatRecord.getInteger(fieldName, hCatSchema);
+      case LONG:
+        return hCatRecord.getLong(fieldName, hCatSchema);
+      case FLOAT:
+        return hCatRecord.getFloat(fieldName, hCatSchema);
+      case DOUBLE:
+        return hCatRecord.getDouble(fieldName, hCatSchema);
+      case CHAR:
+        return hCatRecord.getChar(fieldName, hCatSchema).toString();
+      case STRING:
+        return hCatRecord.getString(fieldName, hCatSchema);
+      case VARCHAR:
+        return hCatRecord.getVarchar(fieldName, hCatSchema).toString();
+      case BINARY:
+        return hCatRecord.getByteArray(fieldName, hCatSchema);
+      // We can support VOID by having Schema type as null but HCatRecord does not support VOID and since we read
+      // write through HCatSchema and HCatRecord we are not supporting VOID too for consistent behavior.
+      case VOID:
+      case DATE:
+      case TIMESTAMP:
+      case DECIMAL:
+      case UNKNOWN:
+      default:
+        throw new IllegalArgumentException(String.format("Table schema contains field '%s' with unsupported type %s. " +
+                                                           "To read this table you should provide input schema in " +
+                                                           "which this field is dropped.", fieldName, category.name()));
+    }
   }
 }
