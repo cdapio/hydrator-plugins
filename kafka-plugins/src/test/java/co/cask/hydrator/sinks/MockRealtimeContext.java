@@ -18,6 +18,8 @@ package co.cask.hydrator.sinks;
 
 import co.cask.cdap.api.metrics.Metrics;
 import co.cask.cdap.api.plugin.PluginProperties;
+import co.cask.cdap.etl.api.Lookup;
+import co.cask.cdap.etl.api.StageMetrics;
 import co.cask.cdap.etl.api.realtime.RealtimeContext;
 import com.google.common.collect.Maps;
 
@@ -43,13 +45,13 @@ public class MockRealtimeContext implements RealtimeContext {
   }
 
   @Override
-  public Metrics getMetrics() {
+  public StageMetrics getMetrics() {
     return NoopMetrics.INSTANCE;
   }
 
   @Override
-  public int getStageId() {
-    return 0;
+  public String getStageName() {
+    return null;
   }
 
   @Override
@@ -74,6 +76,11 @@ public class MockRealtimeContext implements RealtimeContext {
 
   @Override
   public <T> T newPluginInstance(String pluginId) throws InstantiationException {
+    return null;
+  }
+
+  @Override
+  public <T> Lookup<T> provide(String s, Map<String, String> map) {
     return null;
   }
 }

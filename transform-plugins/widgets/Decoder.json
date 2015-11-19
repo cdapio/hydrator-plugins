@@ -4,21 +4,22 @@
     "position": [ "group1" ],
     "group1": {
       "display": "Decoder",
-      "position": [ "decode", "schema" ],
+      "position": [ "decode" ],
       "fields": {
         "decode" : {
           "widget" : "textbox",
           "label" : "Decode Fields",
           "description" : "Encode fields <field>:<decode-type>[, <field>:<decode-type>]*"
-        },
-        "schema" : {
-          "widget": "schema",
-          "label": "Schema",
-          "description" : "Schema of output JSON",
-          "schema-types" : [ "string", "byte" ],
-          "schema-default-type" : "string"
         }
       }
+    }
+  },
+  "outputschema": {
+    "schema" : {
+      "widget": "schema",
+      "schema-types" : [ "string", "bytes" ],
+      "schema-default-type" : "string",
+      "property-watch": "format"
     }
   }
 }

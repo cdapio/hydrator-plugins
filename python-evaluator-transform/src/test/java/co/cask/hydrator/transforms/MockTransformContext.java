@@ -16,10 +16,10 @@
 
 package co.cask.hydrator.transforms;
 
-import co.cask.cdap.api.metrics.Metrics;
 import co.cask.cdap.api.plugin.PluginProperties;
+import co.cask.cdap.etl.api.Lookup;
+import co.cask.cdap.etl.api.StageMetrics;
 import co.cask.cdap.etl.api.TransformContext;
-import co.cask.cdap.etl.common.MockMetrics;
 import com.google.common.collect.Maps;
 
 import java.util.Map;
@@ -30,19 +30,19 @@ import java.util.Map;
  */
 public class MockTransformContext implements TransformContext {
   private final PluginProperties pluginProperties;
-  private final Metrics metrics;
+  private final StageMetrics metrics;
 
-  public MockTransformContext(Map<String, String> args) {
-    this(args, new MockMetrics());
+  public MockTransformContext(String stageName, Map<String, String> args) {
+    this(stageName, args, new MockStageMetrics(stageName));
   }
 
-  public MockTransformContext(Map<String, String> args, Metrics metrics) {
+  public MockTransformContext(String stangeName, Map<String, String> args, StageMetrics metrics) {
     this.pluginProperties = PluginProperties.builder().addAll(args).build();
     this.metrics = metrics;
   }
 
-  public MockTransformContext() {
-    this(Maps.<String, String>newHashMap());
+  public MockTransformContext(String stageName) {
+    this(stageName, Maps.<String, String>newHashMap());
   }
 
   @Override
@@ -56,13 +56,13 @@ public class MockTransformContext implements TransformContext {
   }
 
   @Override
-  public Metrics getMetrics() {
+  public StageMetrics getMetrics() {
     return metrics;
   }
 
   @Override
-  public int getStageId() {
-    return 1;
+  public String getStageName() {
+    return null;
   }
 
   @Override
@@ -72,6 +72,11 @@ public class MockTransformContext implements TransformContext {
 
   @Override
   public <T> Class<T> loadPluginClass(String pluginId) {
+    return null;
+  }
+
+  @Override
+  public <T> Lookup<T> provide(String s, Map<String, String> map) {
     return null;
   }
 }

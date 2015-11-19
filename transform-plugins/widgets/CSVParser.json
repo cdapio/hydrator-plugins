@@ -4,7 +4,7 @@
     "position": [ "group1" ],
     "group1": {
       "display": "CSV Parser",
-      "position": [ "field", "format", "schema" ],
+      "position": [ "field", "format" ],
       "fields": {
         "field": {
           "widget": "textbox",
@@ -20,15 +20,16 @@
             "values" : [ "DEFAULT", "EXCEL", "MYSQL", "RFC4180", "TDF" ],
             "default": "DEFAULT"
           }
-        },
-        "schema" : {
-          "widget": "schema",
-          "label": "Schema",
-          "description" : "Schema for parsed CSV Record",
-          "schema-types" : [ "boolean", "int", "long", "float", "double", "bytes", "string" ],
-          "schema-default-type" : "string"
         }
       }
+    }
+  },
+  "outputschema": {
+    "schema" : {
+      "widget": "schema",
+      "schema-types" : [ "boolean", "int", "long", "float", "double", "bytes", "string" ],
+      "schema-default-type" : "string",
+      "property-watch": "format"
     }
   }
 }

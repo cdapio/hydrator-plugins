@@ -112,37 +112,17 @@
         <artifactId>maven-bundle-plugin</artifactId>
         <version>2.5.4</version>
         <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Export-Package>co.cask.plugin.etl.batch.*;com.mongodb.hadoop.*;co.cask.plugin.etl.realtime.*</Export-Package>
+            <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
+            <Embed-Transitive>true</Embed-Transitive>
+            <Embed-Directory>lib</Embed-Directory>
+          </instructions>
+        </configuration>
         <executions>
           <execution>
-            <id>batch-bundle</id>
-            <phase>prepare-package</phase>
-            <configuration>
-              <classifier>batch</classifier>
-              <instructions>
-                <!-- build bundle jar for batch. excluding realtime-->
-                <Export-Package>co.cask.plugin.etl.batch.*;com.mongodb.hadoop.*;</Export-Package>
-                <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
-                <Embed-Transitive>true</Embed-Transitive>
-                <Embed-Directory>lib</Embed-Directory>
-              </instructions>
-            </configuration>
-            <goals>
-              <goal>bundle</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>realtime-bundle</id>
-            <phase>prepare-package</phase>
-            <configuration>
-              <classifier>realtime</classifier>
-              <instructions>
-                <!-- build bundle jar for realtime. excluding batch-->
-                <Export-Package>co.cask.plugin.etl.realtime.*</Export-Package>
-                <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
-                <Embed-Transitive>true</Embed-Transitive>
-                <Embed-Directory>lib</Embed-Directory>
-              </instructions>
-            </configuration>
+            <phase>package</phase>
             <goals>
               <goal>bundle</goal>
             </goals>

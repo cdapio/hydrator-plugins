@@ -87,7 +87,7 @@ public class PythonEvaluatorTest {
       "  emitter.emit(x)",
       null);
     Transform<StructuredRecord, StructuredRecord> transform = new PythonEvaluator(config);
-    transform.initialize(new MockTransformContext());
+    transform.initialize(new MockTransformContext("transform"));
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(RECORD1, emitter);
@@ -141,7 +141,7 @@ public class PythonEvaluatorTest {
         "  emitter.emitError({\"errorCode\":31, \"errorMsg\":\"error!\", \"invalidRecord\": x})",
       null);
     Transform<StructuredRecord, StructuredRecord> transform = new PythonEvaluator(config);
-    transform.initialize(new MockTransformContext());
+    transform.initialize(new MockTransformContext("transform"));
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(RECORD1, emitter);
@@ -161,7 +161,7 @@ public class PythonEvaluatorTest {
       "def transform(input, emitter, context): emitter.emit({ 'x':input['intField'], 'y':input['longField'] })",
       outputSchema.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new PythonEvaluator(config);
-    transform.initialize(new MockTransformContext());
+    transform.initialize(new MockTransformContext("transform"));
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(RECORD1, emitter);
@@ -241,8 +241,8 @@ public class PythonEvaluatorTest {
         "",
       outputSchema.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new PythonEvaluator(config);
-    MockMetrics mockMetrics = new MockMetrics();
-    transform.initialize(new MockTransformContext(new HashMap<String, String>(), mockMetrics));
+    MockStageMetrics mockMetrics = new MockStageMetrics("transform");
+    transform.initialize(new MockTransformContext("transform", new HashMap<String, String>(), mockMetrics));
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(input, emitter);

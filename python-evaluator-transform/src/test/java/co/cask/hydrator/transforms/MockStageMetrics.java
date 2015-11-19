@@ -14,33 +14,56 @@
  * the License.
  */
 
-package co.cask.hydrator.sinks;
+package co.cask.hydrator.transforms;
 
 import co.cask.cdap.etl.api.StageMetrics;
+import co.cask.cdap.etl.common.MockMetrics;
 
 /**
- * No op metrics implementation for tests.
+ * Mock StageMetrics for unit tests
  */
-public class NoopMetrics implements StageMetrics {
-  public static final StageMetrics INSTANCE = new NoopMetrics();
+public class MockStageMetrics implements StageMetrics {
+  private final String stageName;
+  private final MockMetrics mockMetrics;
+
+  public MockStageMetrics(String stageName) {
+    this.stageName = stageName;
+    this.mockMetrics = new MockMetrics();
+  }
 
   @Override
   public void count(String s, int i) {
-    // no-op
+    mockMetrics.count(stageName + "." + s, i);
   }
 
   @Override
   public void gauge(String s, long l) {
-    // no-op
+    mockMetrics.gauge(stageName + "." + s, l);
   }
 
   @Override
   public void pipelineCount(String s, int i) {
-    // no-op
+    mockMetrics.count(s, i);
   }
 
   @Override
   public void pipelineGauge(String s, long l) {
-    // no-op
+    mockMetrics.gauge(s, l);
+  }
+
+  public int getPipelineCount(String s) {
+    return mockMetrics.getCount(s);
+  }
+
+  public long getPipelineGauge(String s) {
+    return mockMetrics.getGauge(s);
+  }
+
+  public int getCount(String s) {
+    return mockMetrics.getCount(stageName + "." + s);
+  }
+
+  public long getGauge(String s) {
+    return mockMetrics.getGauge(stageName + "." + s);
   }
 }

@@ -1,3 +1,0 @@
-{
-  "parents" : [ "cdap-etl-realtime[0,100]" ]
-}

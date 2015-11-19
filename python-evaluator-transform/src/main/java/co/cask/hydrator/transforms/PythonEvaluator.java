@@ -25,8 +25,12 @@ import co.cask.cdap.api.metrics.Metrics;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.InvalidEntry;
+import co.cask.cdap.etl.api.Lookup;
+import co.cask.cdap.etl.api.LookupProvider;
+import co.cask.cdap.etl.api.StageMetrics;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
+import co.cask.cdap.etl.transform.JavaTypeConverters;
 import co.cask.cdap.etl.transform.ScriptContext;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -58,7 +62,7 @@ public class PythonEvaluator extends Transform<StructuredRecord, StructuredRecor
   private static final String CONTEXT_NAME = "dont_name_your_context_this";
   private Schema schema;
   private final Config config;
-  private Metrics metrics;
+  private StageMetrics metrics;
   private Logger logger;
   private PythonInterpreter interpreter;
   private PyCode compiledScript;
@@ -103,7 +107,7 @@ public class PythonEvaluator extends Transform<StructuredRecord, StructuredRecor
   @Override
   public void initialize(TransformContext context) {
     metrics = context.getMetrics();
-    logger = LoggerFactory.getLogger(PythonEvaluator.class.getName() + " - Stage:" + context.getStageId());
+    logger = LoggerFactory.getLogger(PythonEvaluator.class.getName() + " - Stage:" + context.getStageName());
     init();
   }
 
@@ -331,7 +335,21 @@ public class PythonEvaluator extends Transform<StructuredRecord, StructuredRecor
 
   private void init() {
     interpreter = new PythonInterpreter();
-    interpreter.set(CONTEXT_NAME, new ScriptContext(logger, metrics));
+    interpreter.set(CONTEXT_NAME, new ScriptContext(
+      logger, metrics,
+      new LookupProvider() {
+        @Override
+        public <T> Lookup<T> provide(String s, Map<String, String> map) {
+          throw new UnsupportedOperationException("lookup is currently not supported.");
+        }
+      },
+      null,
+      new JavaTypeConverters() {
+        @Override
+        public Object mapToJSObject(Map<?, ?> map) {
+          return null;
+        }
+      }));
 
     // this is pretty ugly, but doing this so that we can pass the 'input' record into the transform function.
     // that is, we want people to implement
