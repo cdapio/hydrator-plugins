@@ -29,6 +29,7 @@ import co.cask.cdap.etl.batch.ETLBatchApplication;
 import co.cask.cdap.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.common.ETLStage;
+import co.cask.cdap.etl.common.Plugin;
 import co.cask.cdap.etl.common.Properties;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
@@ -159,14 +160,16 @@ public class HBaseTest extends TestBase {
     streamManager.send("AAPL|10|500.32");
     streamManager.send("ORCL|13|212.36");
 
-    ETLStage source = new ETLStage("Stream", ImmutableMap.<String, String>builder()
-      .put(Properties.Stream.NAME, STREAM_NAME)
-      .put(Properties.Stream.DURATION, "10m")
-      .put(Properties.Stream.DELAY, "0d")
-      .put(Properties.Stream.FORMAT, Formats.CSV)
-      .put(Properties.Stream.SCHEMA, BODY_SCHEMA.toString())
-      .put("format.setting.delimiter", "|")
-      .build());
+    ETLStage source = new ETLStage("Stream", new Plugin(
+      "Stream",
+      ImmutableMap.<String, String>builder()
+        .put(Properties.Stream.NAME, STREAM_NAME)
+        .put(Properties.Stream.DURATION, "10m")
+        .put(Properties.Stream.DELAY, "0d")
+        .put(Properties.Stream.FORMAT, Formats.CSV)
+        .put(Properties.Stream.SCHEMA, BODY_SCHEMA.toString())
+        .put("format.setting.delimiter", "|")
+        .build()));
 
     Map<String, String> hBaseProps = new HashMap<>();
     hBaseProps.put("tableName", HBASE_TABLE_NAME);
@@ -175,7 +178,7 @@ public class HBaseTest extends TestBase {
     hBaseProps.put("schema", BODY_SCHEMA.toString());
     hBaseProps.put("zkNodeParent", testUtil.getConfiguration().get("zookeeper.znode.parent"));
     hBaseProps.put("rowField", "ticker");
-    ETLStage sink = new ETLStage("HBase", hBaseProps);
+    ETLStage sink = new ETLStage("HBase", new Plugin("HBase", hBaseProps));
     List<ETLStage> transforms = new ArrayList<>();
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, transforms);
 
@@ -212,10 +215,12 @@ public class HBaseTest extends TestBase {
     hBaseProps.put("schema", BODY_SCHEMA.toString());
     hBaseProps.put("rowField", "ticker");
 
-    ETLStage source = new ETLStage("HBase", hBaseProps);
-    ETLStage sink = new ETLStage("Table", ImmutableMap.of("name", TABLE_NAME,
-                                                          Table.PROPERTY_SCHEMA, BODY_SCHEMA.toString(),
-                                                          Table.PROPERTY_SCHEMA_ROW_FIELD, "ticker"));
+    ETLStage source = new ETLStage("HBase", new Plugin("HBase", hBaseProps));
+    ETLStage sink = new ETLStage("Table", new Plugin(
+      "Table",
+      ImmutableMap.of("name", TABLE_NAME,
+                      Table.PROPERTY_SCHEMA, BODY_SCHEMA.toString(),
+                      Table.PROPERTY_SCHEMA_ROW_FIELD, "ticker")));
 
     List<ETLStage> transforms = new ArrayList<>();
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, transforms);
