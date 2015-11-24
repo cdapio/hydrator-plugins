@@ -4,21 +4,22 @@
     "position": [ "group1" ],
     "group1": {
       "display": "Decompressor",
-      "position": [ "decompressor", "schema" ],
+      "position": [ "decompressor" ],
       "fields": {
         "compressor" : {
           "widget" : "textbox",
           "label" : "Decompress Fields",
           "description" : "Decompress fields <field>:<decompressor-type>[, <field>:<decompressor-type]*"
-        },
-        "schema" : {
-          "widget": "schema",
-          "label": "Schema",
-          "description" : "Schema of output JSON",
-          "schema-types" : [ "bytes", "string" ],
-          "schema-default-type" : "bytes"
         }
       }
+    }
+  },
+  "outputschema": {
+    "schema" : {
+      "widget": "schema",
+      "schema-types" : [ "bytes", "string" ],
+      "schema-default-type" : "bytes",
+      "property-watch": "format"
     }
   }
 }

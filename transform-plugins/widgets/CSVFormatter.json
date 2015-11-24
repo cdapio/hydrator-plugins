@@ -4,7 +4,7 @@
     "position": [ "group1" ],
     "group1": {
       "display": "CSV Formatter Configuration",
-      "position": [ "format", "delimiter", "schema" ],
+      "position": [ "format", "delimiter" ],
       "fields": {
         "delimiter": {
           "widget": "select",
@@ -22,15 +22,16 @@
             "values" : [ "DELIMITED", "EXCEL", "MYSQL", "RFC4180", "TDF" ],
             "default": "DELIMITED"
           }
-        },
-        "schema" : {
-          "widget": "schema",
-          "label": "Schema",
-          "description" : "Output Schema",
-          "schema-types" : [ "string" ],
-          "schema-default-type" : "string"
         }
       }
+    }
+  },
+  "outputschema": {
+    "schema" : {
+      "widget": "schema",
+      "schema-types" : [ "string" ],
+      "schema-default-type" : "string",
+      "property-watch": "format"
     }
   }
 }

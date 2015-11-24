@@ -24,7 +24,7 @@
       }
     },
     "group2": {
-      "position": [ "format", "schema" ],
+      "position": [ "format" ],
       "fields": {
         "format" : {
           "widget" : "select",
@@ -34,17 +34,16 @@
             "default" : "CSV"
           },
           "description" : "Select the type of output format to be used to write to Stream."
-        },
-        "schema" : {
-          "widget": "schema",
-          "label": "Schema",
-          "description": "Schema of output JSON",
-          "schema-types": [
-            "string"
-          ],
-          "schema-default-type": "string"
         }
       }
+    }
+  },
+  "outputschema": {
+    "schema" : {
+      "widget": "schema",
+      "schema-types" : [ "string" ],
+      "schema-default-type" : "string",
+      "property-watch": "format"
     }
   }
 }

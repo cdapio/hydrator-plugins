@@ -119,22 +119,19 @@
         <artifactId>maven-bundle-plugin</artifactId>
         <version>2.5.4</version>
         <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <_exportcontents>co.cask.plugin.etl.batch.*;org.apache.commons.lang;org.apache.hive.hcatalog.*;
+              org.apache.hadoop.hive.metastore.*;
+            </_exportcontents>
+            <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
+            <Embed-Transitive>true</Embed-Transitive>
+            <Embed-Directory>lib</Embed-Directory>
+          </instructions>
+        </configuration>
         <executions>
           <execution>
-            <id>batch-bundle</id>
-            <phase>prepare-package</phase>
-            <configuration>
-              <classifier>batch</classifier>
-              <instructions>
-                <!-- build bundle jar for batch -->
-                <_exportcontents>co.cask.plugin.etl.batch.*;org.apache.commons.lang;org.apache.hive.hcatalog.*;
-                  org.apache.hadoop.hive.metastore.*;
-                </_exportcontents>
-                <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
-                <Embed-Transitive>true</Embed-Transitive>
-                <Embed-Directory>lib</Embed-Directory>
-              </instructions>
-            </configuration>
+            <phase>package</phase>
             <goals>
               <goal>bundle</goal>
             </goals>

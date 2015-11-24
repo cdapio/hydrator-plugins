@@ -4,21 +4,22 @@
     "position": [ "group1" ],
     "group1": {
       "display": "Encode",
-      "position": [ "encode", "schema" ],
+      "position": [ "encode" ],
       "fields": {
         "encode" : {
           "widget" : "textbox",
           "label" : "Encode Fields",
           "description" : "Encode fields <field>:<encode-type>[, <field>:<encode-type>]*"
-        },
-        "schema" : {
-          "widget": "schema",
-          "label": "Schema",
-          "description" : "Schema of output JSON",
-          "schema-types" : [ "string" ],
-          "schema-default-type" : "string"
         }
       }
+    }
+  },
+  "outputschema": {
+    "schema" : {
+      "widget": "schema",
+      "schema-types" : [ "string" ],
+      "schema-default-type" : "string",
+      "property-watch": "format"
     }
   }
 }
