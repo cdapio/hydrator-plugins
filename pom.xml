@@ -527,8 +527,9 @@
                   importClass(java.nio.file.Files);
                   importClass(java.nio.charset.StandardCharsets);
 
-                  // for some reason, project.basedir evaluates to null,
-                  // so main.basedir is set to project.basedir and then used here
+                  // for some reason, project.basedir evaluates to null if we just get the property here.
+                  // so we set main.basedir to project.basedir in the pom properties, then main.basedir is used here
+                  // where it evaluates correctly for whatever reason
                   var baseDir = project.getProperty("main.basedir");
                   var targetDir = project.getProperty("project.build.directory");
                   var artifactId = project.getProperty("project.artifactId");
@@ -573,12 +574,9 @@
                       if (docFile.isFile()) {
                         var contents = new java.lang.String(Files.readAllBytes(docFile.toPath()), StandardCharsets.UTF_8);
                         var propertyName = "doc." + docFile.getName();
-                        // if the filename ends with .md or .html, strip the extension
+                        // if the filename ends with .md, strip the extension
                         if (propertyName.indexOf(".md", propertyName.length - 3) !== -1) {
                           propertyName = propertyName.slice(0, -3);
-                        }
-                        if (propertyName.indexOf(".html", propertyName.length - 5) !== -1) {
-                          propertyName = propertyName.slice(0, -5);
                         }
                         config.properties[propertyName] = contentsAsJson;
                       }
