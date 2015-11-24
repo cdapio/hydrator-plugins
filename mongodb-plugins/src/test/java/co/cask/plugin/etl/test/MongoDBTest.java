@@ -31,6 +31,7 @@ import co.cask.cdap.etl.batch.ETLBatchApplication;
 import co.cask.cdap.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.common.ETLStage;
+import co.cask.cdap.etl.common.Plugin;
 import co.cask.cdap.etl.common.Properties;
 import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
 import co.cask.cdap.etl.realtime.ETLWorker;
@@ -165,12 +166,16 @@ public class MongoDBTest extends TestBase {
 
   @Test
   public void testMongoDBRealtimeSink() throws Exception {
-    ETLStage source = new ETLStage("DataGenerator", ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE,
-                                                                    DataGeneratorSource.TABLE_TYPE));
-    ETLStage sink = new ETLStage("MongoDB", ImmutableMap.of(MongoDBRealtimeSink.Properties.CONNECTION_STRING,
-                                                            String.format("mongodb://localhost:%d", mongoPort),
-                                                            MongoDBRealtimeSink.Properties.DB_NAME, "cdap",
-                                                            MongoDBRealtimeSink.Properties.COLLECTION_NAME, "real"));
+    ETLStage source = new ETLStage("DataGenerator", new Plugin(
+      "DataGenerator",
+      ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE,
+                      DataGeneratorSource.TABLE_TYPE)));
+    ETLStage sink = new ETLStage("MongoDB", new Plugin(
+      "MongoDB",
+      ImmutableMap.of(MongoDBRealtimeSink.Properties.CONNECTION_STRING,
+                      String.format("mongodb://localhost:%d", mongoPort),
+                      MongoDBRealtimeSink.Properties.DB_NAME, "cdap",
+                      MongoDBRealtimeSink.Properties.COLLECTION_NAME, "real")));
     ETLRealtimeConfig etlConfig = new ETLRealtimeConfig(source, sink, new ArrayList<ETLStage>());
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "MongoDBRealtimeSinkTest");
     AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(ETLREALTIME_ARTIFACT, etlConfig);
@@ -197,19 +202,23 @@ public class MongoDBTest extends TestBase {
     streamManager.send(ImmutableMap.of("header1", "bar"), "AAPL|10|500.32");
     streamManager.send(ImmutableMap.of("header1", "bar"), "CDAP|13|212.36");
 
-    ETLStage source = new ETLStage("Stream", ImmutableMap.<String, String>builder()
-      .put(Properties.Stream.NAME, STREAM_NAME)
-      .put(Properties.Stream.DURATION, "10m")
-      .put(Properties.Stream.DELAY, "0d")
-      .put(Properties.Stream.FORMAT, Formats.CSV)
-      .put(Properties.Stream.SCHEMA, SINK_BODY_SCHEMA.toString())
-      .put("format.setting.delimiter", "|")
-      .build());
+    ETLStage source = new ETLStage("Stream", new Plugin(
+      "Stream",
+      ImmutableMap.<String, String>builder()
+        .put(Properties.Stream.NAME, STREAM_NAME)
+        .put(Properties.Stream.DURATION, "10m")
+        .put(Properties.Stream.DELAY, "0d")
+        .put(Properties.Stream.FORMAT, Formats.CSV)
+        .put(Properties.Stream.SCHEMA, SINK_BODY_SCHEMA.toString())
+        .put("format.setting.delimiter", "|")
+        .build()));
 
-    ETLStage sink = new ETLStage("MongoDB", new ImmutableMap.Builder<String, String>()
-                                            .put(MongoDBBatchSink.Properties.CONNECTION_STRING,
-                                                 String.format("mongodb://localhost:%d/%s.%s",
-                                                               mongoPort, MONGO_DB, MONGO_SINK_COLLECTIONS)).build());
+    ETLStage sink = new ETLStage("MongoDB", new Plugin(
+      "MongoDB",
+      new ImmutableMap.Builder<String, String>()
+        .put(MongoDBBatchSink.Properties.CONNECTION_STRING,
+             String.format("mongodb://localhost:%d/%s.%s",
+                           mongoPort, MONGO_DB, MONGO_SINK_COLLECTIONS)).build()));
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, new ArrayList<ETLStage>());
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "MongoSinkTest");
@@ -240,18 +249,18 @@ public class MongoDBTest extends TestBase {
 
   @Test
   public void testMongoToMongo() throws Exception {
-    ETLStage source = new ETLStage("MongoDB", new ImmutableMap.Builder<String, String>()
+    ETLStage source = new ETLStage("MongoDB", new Plugin("MongoDB", new ImmutableMap.Builder<String, String>()
       .put(MongoDBBatchSource.Properties.CONNECTION_STRING,
            String.format("mongodb://localhost:%d/%s.%s",
                          mongoPort, MONGO_DB, MONGO_SOURCE_COLLECTIONS))
       .put(MongoDBBatchSource.Properties.SCHEMA, SOURCE_BODY_SCHEMA.toString())
       .put(MongoDBBatchSource.Properties.SPLITTER_CLASS,
-           StandaloneMongoSplitter.class.getSimpleName()).build());
+           StandaloneMongoSplitter.class.getSimpleName()).build()));
 
-    ETLStage sink = new ETLStage("MongoDB", new ImmutableMap.Builder<String, String>()
+    ETLStage sink = new ETLStage("MongoDB", new Plugin("MongoDB", new ImmutableMap.Builder<String, String>()
       .put(MongoDBBatchSink.Properties.CONNECTION_STRING,
            String.format("mongodb://localhost:%d/%s.%s",
-                         mongoPort, MONGO_DB, MONGO_SINK_COLLECTIONS)).build());
+                         mongoPort, MONGO_DB, MONGO_SINK_COLLECTIONS)).build()));
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, new ArrayList<ETLStage>());
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
@@ -286,17 +295,17 @@ public class MongoDBTest extends TestBase {
   @SuppressWarnings("ConstantConditions")
   @Test
   public void testMongoDBSource() throws Exception {
-    ETLStage source = new ETLStage("MongoDB", new ImmutableMap.Builder<String, String>()
+    ETLStage source = new ETLStage("MongoDB", new Plugin("MongoDB", new ImmutableMap.Builder<String, String>()
                                               .put(MongoDBBatchSource.Properties.CONNECTION_STRING,
                                                    String.format("mongodb://localhost:%d/%s.%s",
                                                                  mongoPort, MONGO_DB, MONGO_SOURCE_COLLECTIONS))
                                               .put(MongoDBBatchSource.Properties.SCHEMA, SOURCE_BODY_SCHEMA.toString())
                                               .put(MongoDBBatchSource.Properties.SPLITTER_CLASS,
-                                                   StandaloneMongoSplitter.class.getSimpleName()).build());
-    ETLStage sink = new ETLStage("Table", ImmutableMap.of(Properties.Table.NAME, TABLE_NAME,
+                                                   StandaloneMongoSplitter.class.getSimpleName()).build()));
+    ETLStage sink = new ETLStage("Table", new Plugin("MongoDB", ImmutableMap.of(Properties.Table.NAME, TABLE_NAME,
                                                           Properties.Table.PROPERTY_SCHEMA,
                                                           SINK_BODY_SCHEMA.toString(),
-                                                          Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ticker"));
+                                                          Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ticker")));
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, new ArrayList<ETLStage>());
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);

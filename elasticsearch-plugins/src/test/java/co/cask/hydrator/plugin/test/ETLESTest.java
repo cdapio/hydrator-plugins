@@ -32,6 +32,7 @@ import co.cask.cdap.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.batch.sink.TableSink;
 import co.cask.cdap.etl.common.ETLStage;
+import co.cask.cdap.etl.common.Plugin;
 import co.cask.cdap.etl.common.Properties;
 import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
 import co.cask.cdap.etl.realtime.ETLWorker;
@@ -194,22 +195,25 @@ public class ETLESTest extends TestBase {
     streamManager.send(ImmutableMap.of("header1", "bar"), "AAPL|10|500.32");
     streamManager.send(ImmutableMap.of("header1", "bar"), "CDAP|13|212.36");
 
-    ETLStage source = new ETLStage("Stream", ImmutableMap.<String, String>builder()
-      .put(Properties.Stream.NAME, STREAM_NAME)
-      .put(Properties.Stream.DURATION, "10m")
-      .put(Properties.Stream.DELAY, "0d")
-      .put(Properties.Stream.FORMAT, Formats.CSV)
-      .put(Properties.Stream.SCHEMA, BODY_SCHEMA.toString())
-      .put("format.setting.delimiter", "|")
-      .build());
+    ETLStage source = new ETLStage("Stream", new Plugin(
+      "Stream",
+      ImmutableMap.<String, String>builder()
+        .put(Properties.Stream.NAME, STREAM_NAME)
+        .put(Properties.Stream.DURATION, "10m")
+        .put(Properties.Stream.DELAY, "0d")
+        .put(Properties.Stream.FORMAT, Formats.CSV)
+        .put(Properties.Stream.SCHEMA, BODY_SCHEMA.toString())
+        .put("format.setting.delimiter", "|")
+        .build()));
 
-    ETLStage sink = new ETLStage("Elasticsearch",
-                                 ImmutableMap.of(ESProperties.HOST,
-                                   InetAddress.getLocalHost().getHostName() + ":" + httpPort,
-                                   ESProperties.INDEX_NAME, "batch",
-                                   ESProperties.TYPE_NAME, "testing",
-                                   ESProperties.ID_FIELD, "ticker"
-                                 ));
+    ETLStage sink = new ETLStage("Elasticsearch", new Plugin(
+      "Elasticsearch",
+      ImmutableMap.of(ESProperties.HOST,
+                      InetAddress.getLocalHost().getHostName() + ":" + httpPort,
+                      ESProperties.INDEX_NAME, "batch",
+                      ESProperties.TYPE_NAME, "testing",
+                      ESProperties.ID_FIELD, "ticker"
+      )));
     List<ETLStage> transforms = new ArrayList<>();
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, transforms);
 
@@ -237,17 +241,19 @@ public class ETLESTest extends TestBase {
 
   @SuppressWarnings("ConstantConditions")
   private void testESSource() throws Exception {
-    ETLStage source = new ETLStage("Elasticsearch",
-                                   ImmutableMap.of(ESProperties.HOST,
-                                                   InetAddress.getLocalHost().getHostName() + ":" + httpPort,
-                                                   ESProperties.INDEX_NAME, "batch",
-                                                   ESProperties.TYPE_NAME, "testing",
-                                                   ESProperties.QUERY, "?q=*",
-                                                   ESProperties.SCHEMA, BODY_SCHEMA.toString()));
-    ETLStage sink = new ETLStage("Table",
-                                 ImmutableMap.of("name", TABLE_NAME,
-                                                 Properties.Table.PROPERTY_SCHEMA, BODY_SCHEMA.toString(),
-                                                 Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ticker"));
+    ETLStage source = new ETLStage("Elasticsearch", new Plugin(
+      "Elasticsearch",
+      ImmutableMap.of(ESProperties.HOST,
+                      InetAddress.getLocalHost().getHostName() + ":" + httpPort,
+                      ESProperties.INDEX_NAME, "batch",
+                      ESProperties.TYPE_NAME, "testing",
+                      ESProperties.QUERY, "?q=*",
+                      ESProperties.SCHEMA, BODY_SCHEMA.toString())));
+    ETLStage sink = new ETLStage("Table", new Plugin(
+      "Table",
+      ImmutableMap.of("name", TABLE_NAME,
+                      Properties.Table.PROPERTY_SCHEMA, BODY_SCHEMA.toString(),
+                      Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ticker")));
 
     List<ETLStage> transforms = new ArrayList<>();
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, transforms);
@@ -276,17 +282,18 @@ public class ETLESTest extends TestBase {
   }
 
   private void testRealtimeESSink() throws Exception {
-    ETLStage source = new ETLStage("DataGenerator", ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE,
-                                                                    DataGeneratorSource.TABLE_TYPE));
+    ETLStage source = new ETLStage("DataGenerator", new Plugin(
+      "DataGenerator", ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE, DataGeneratorSource.TABLE_TYPE)));
     try {
-      ETLStage sink = new ETLStage("Elasticsearch",
-                                   ImmutableMap.of(ESProperties.TRANSPORT_ADDRESSES,
-                                                   InetAddress.getLocalHost().getHostName() + ":" + transportPort,
-                                                   ESProperties.CLUSTER, "testcluster",
-                                                   ESProperties.INDEX_NAME, "realtime",
-                                                   ESProperties.TYPE_NAME, "testing",
-                                                   ESProperties.ID_FIELD, "name"
-                                   ));
+      ETLStage sink = new ETLStage("Elasticsearch", new Plugin(
+        "Elasticsearch",
+        ImmutableMap.of(ESProperties.TRANSPORT_ADDRESSES,
+                        InetAddress.getLocalHost().getHostName() + ":" + transportPort,
+                        ESProperties.CLUSTER, "testcluster",
+                        ESProperties.INDEX_NAME, "realtime",
+                        ESProperties.TYPE_NAME, "testing",
+                        ESProperties.ID_FIELD, "name"
+        )));
       List<ETLStage> transforms = new ArrayList<>();
       ETLRealtimeConfig etlConfig = new ETLRealtimeConfig(source, sink, transforms);
 
