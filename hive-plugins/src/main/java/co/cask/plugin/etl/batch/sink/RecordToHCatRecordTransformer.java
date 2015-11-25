@@ -52,7 +52,7 @@ public class RecordToHCatRecordTransformer {
    */
   public HCatRecord toHCatRecord(StructuredRecord record) throws HCatException {
 
-    HCatRecord hCatRecord = new DefaultHCatRecord(record.getSchema().getFields().size());
+    HCatRecord hCatRecord = new DefaultHCatRecord(schema.getFields().size());
 
     for (Schema.Field field : schema.getFields()) {
       Preconditions.checkNotNull(record.getSchema().getField(field.getName()), "Missing schema field '%s' in record " +

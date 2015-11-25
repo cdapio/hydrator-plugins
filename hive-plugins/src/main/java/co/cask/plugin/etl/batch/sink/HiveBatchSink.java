@@ -32,19 +32,19 @@ import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.plugin.etl.batch.commons.HiveSchemaConverter;
 import co.cask.plugin.etl.batch.commons.HiveSchemaStore;
-import com.google.common.base.Objects;
+import com.google.common.collect.MapDifference;
+import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hive.hcatalog.data.DefaultHCatRecord;
 import org.apache.hive.hcatalog.data.HCatRecord;
 import org.apache.hive.hcatalog.data.schema.HCatSchema;
 import org.apache.hive.hcatalog.mapreduce.HCatOutputFormat;
 import org.apache.hive.hcatalog.mapreduce.OutputJobInfo;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
@@ -57,7 +57,6 @@ import java.util.Map;
 @Description("Batch Sink to write to external Hive tables.")
 public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCatRecord> {
 
-  private static final String DEFAULT_HIVE_DATABASE = "default";
   private static final Gson GSON = new Gson();
   private static final Type STRING_MAP_TYPE = new TypeToken<Map<String, String>>() {
   }.getType();
@@ -76,22 +75,10 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
   @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
     Job job = context.getHadoopJob();
-    job.setOutputKeyClass(WritableComparable.class);
-    job.setOutputValueClass(DefaultHCatRecord.class);
-    Configuration configuration = job.getConfiguration();
-    configuration.set("hive.metastore.uris", config.metaStoreURI);
-    HCatOutputFormat.setOutput(configuration, job.getCredentials(), OutputJobInfo.create(config.dbName,
-                                                                                         config.tableName,
-                                                                                         getPartitions()));
-
-    HCatSchema hiveSchema = HCatOutputFormat.getTableSchema(configuration);
-    if (config.schema != null) {
-      // if the user did provide a sink schema to use then use that one
-      hiveSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(config.schema), hiveSchema);
-    }
-    HCatOutputFormat.setSchema(configuration, hiveSchema);
+    HiveSinkOutputFormatProvider sinkOutputFormatProvider = new HiveSinkOutputFormatProvider(job, config);
+    HCatSchema hiveSchema = sinkOutputFormatProvider.getHiveSchema();
     HiveSchemaStore.storeHiveSchema(context, config.dbName, config.tableName, hiveSchema);
-    context.addOutput(config.tableName, new SinkOutputFormatProvider());
+    context.addOutput(config.tableName, sinkOutputFormatProvider);
   }
 
   public void initialize(BatchRuntimeContext context) throws Exception {
@@ -124,11 +111,64 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
   /**
    * Output format provider for Hive Sink
    */
-  public static class SinkOutputFormatProvider implements OutputFormatProvider {
+  public static class HiveSinkOutputFormatProvider implements OutputFormatProvider {
     private final Map<String, String> conf;
+    private HCatSchema hiveSchema;
 
-    public SinkOutputFormatProvider() {
-      this.conf = new HashMap<>();
+    public HiveSinkOutputFormatProvider(Job job, HiveSinkConfig config) throws IOException {
+      Configuration originalConf = job.getConfiguration();
+      Configuration modifiedConf = new Configuration(originalConf);
+      modifiedConf.set("hive.metastore.uris", config.metaStoreURI);
+      HCatOutputFormat.setOutput(modifiedConf, job.getCredentials(), OutputJobInfo.create(config.dbName,
+                                                                                          config.tableName,
+                                                                                          getPartitions(config)));
+
+      hiveSchema = HCatOutputFormat.getTableSchema(modifiedConf);
+      if (config.schema != null) {
+        // if the user did provide a sink schema to use then use that one
+        hiveSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(config.schema), hiveSchema);
+      }
+      HCatOutputFormat.setSchema(modifiedConf, hiveSchema);
+      conf = getConfigurationDiff(originalConf, modifiedConf);
+    }
+
+    private Map<String, String> getConfigurationDiff(Configuration originalConf, Configuration modifiedConf) {
+      MapDifference<String, String> mapDifference = Maps.difference(getConfigurationAsMap(originalConf),
+                                                                    getConfigurationAsMap(modifiedConf));
+      // new keys in the modified configurations
+      Map<String, String> newEntries = mapDifference.entriesOnlyOnRight();
+      // keys whose values got changed in the modified config
+      Map<String, MapDifference.ValueDifference<String>> stringValueDifferenceMap = mapDifference.entriesDiffering();
+      Map<String, String> result = new HashMap<>();
+      for (Map.Entry<String, MapDifference.ValueDifference<String>> stringValueDifferenceEntry :
+        stringValueDifferenceMap.entrySet()) {
+        result.put(stringValueDifferenceEntry.getKey(), stringValueDifferenceEntry.getValue().rightValue());
+      }
+      result.putAll(newEntries);
+      return result;
+    }
+
+    private Map<String, String> getPartitions(HiveSinkConfig config) {
+      Map<String, String> partitionValues = null;
+      if (config.partitions != null) {
+        partitionValues = GSON.fromJson(config.partitions, STRING_MAP_TYPE);
+      }
+      return partitionValues;
+    }
+
+    private Map<String, String> getConfigurationAsMap(Configuration conf) {
+      Map<String, String> map = new HashMap<>();
+      for (Map.Entry<String, String> entry : conf) {
+        map.put(entry.getKey(), entry.getValue());
+      }
+      return map;
+    }
+
+    /**
+     * @return the {@link HCatSchema} for the Hive table for this {@link HiveSinkOutputFormatProvider}
+     */
+    public HCatSchema getHiveSchema() {
+      return hiveSchema;
     }
 
     @Override

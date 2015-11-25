@@ -31,7 +31,6 @@ import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.plugin.etl.batch.commons.HiveSchemaConverter;
 import co.cask.plugin.etl.batch.commons.HiveSchemaStore;
-import com.google.common.base.Objects;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Job;
@@ -52,9 +51,6 @@ import org.slf4j.LoggerFactory;
 public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord, StructuredRecord> {
 
   private static final Logger LOG = LoggerFactory.getLogger(HiveBatchSource.class);
-
-  private static final String DEFAULT_HIVE_DATABASE = "default";
-
   private HiveSourceConfig config;
   private HCatRecordTransformer hCatRecordTransformer;
 
@@ -75,6 +71,9 @@ public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord,
     Configuration configuration = job.getConfiguration();
     job.setInputFormatClass(HCatInputFormat.class);
     configuration.set("hive.metastore.uris", config.metaStoreURI);
+    // Use the current thread's classloader to ensure that when setInput is called it can access VersionInfo class
+    // loaded above. This is needed to support CDAP 3.2 where we were just exposing classes to plugin jars and not
+    // resources.
     ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
     try {
       Thread.currentThread().setContextClassLoader(getClass().getClassLoader());

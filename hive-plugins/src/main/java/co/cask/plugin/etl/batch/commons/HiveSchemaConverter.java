@@ -52,9 +52,16 @@ public class HiveSchemaConverter {
     for (Schema.Field field : schema.getFields()) {
       String name = field.getName();
       try {
-        // this field of the schema must exist in the table
-        Preconditions.checkNotNull(tableSchema.get(name), "Missing field %s in table schema", name);
-        fields.add(new HCatFieldSchema(name, getType(name, field.getSchema().getType()), ""));
+        // this field of the schema must exist in the table and should be of the same type
+        HCatFieldSchema hCatFieldSchema = tableSchema.get(name);
+        Preconditions.checkNotNull(hCatFieldSchema, "Missing field %s in table schema", name);
+        PrimitiveTypeInfo hiveType = hCatFieldSchema.getTypeInfo();
+        PrimitiveTypeInfo type = getType(name, field.getSchema());
+        if (hiveType != type) {
+          LOG.warn("The given schema {} for the field {} does not match the schema {} from the table. " +
+                     "The schema {} for field {} be used.", type, name, hiveType, hiveType, name);
+        }
+        fields.add(hCatFieldSchema);
       } catch (HCatException e) {
         LOG.error("Failed to create HCatFieldSchema field {} of type {} from schema", name,
                   field.getSchema().getType());
@@ -67,11 +74,12 @@ public class HiveSchemaConverter {
    * Returns the {@link PrimitiveTypeInfo} for the {@link Schema.Type}
    *
    * @param name name of the field
-   * @param category {@link Schema.Type} of the field
+   * @param schema {@link Schema} of the field
    * @return {@link PrimitiveTypeInfo} for the given {@link Schema.Type} which is compatible with Hive.
    */
-  private static PrimitiveTypeInfo getType(String name, Schema.Type category) {
-    switch (category) {
+  private static PrimitiveTypeInfo getType(String name, Schema schema) {
+    Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
+    switch (type) {
       case BOOLEAN:
         return TypeInfoFactory.booleanTypeInfo;
       case INT:
@@ -88,7 +96,8 @@ public class HiveSchemaConverter {
         return TypeInfoFactory.binaryTypeInfo;
       default:
         throw new IllegalArgumentException(String.format(
-          "Schema contains field '%s' with unsupported type %s", name, category.name()));
+          "Schema contains field '%s' with unsupported type %s. " +
+            "You should provide an schema with this field dropped to work with this table.", name, type));
     }
   }
 
@@ -112,7 +121,7 @@ public class HiveSchemaConverter {
           "Table schema contains field '%s' with complex type %s. Only primitive types are supported.",
           name, field.getTypeString()));
       }
-      fields.add(Schema.Field.of(name, Schema.of(getType(name, field.getTypeInfo().getPrimitiveCategory()))));
+      fields.add(Schema.Field.of(name, getType(name, field.getTypeInfo().getPrimitiveCategory())));
     }
     return Schema.recordOf("record", fields);
   }
@@ -124,26 +133,29 @@ public class HiveSchemaConverter {
    * @param category the field's {@link PrimitiveObjectInspector.PrimitiveCategory}
    * @return the {@link Schema.Type} for this field
    */
-  private static Schema.Type getType(String name, PrimitiveObjectInspector.PrimitiveCategory category) {
+  private static Schema getType(String name, PrimitiveObjectInspector.PrimitiveCategory category) {
+    System.out.println("### primitive cat " + category);
     switch (category) {
       case BOOLEAN:
-        return Schema.Type.BOOLEAN;
+        return Schema.nullableOf(Schema.of(Schema.Type.BOOLEAN));
       case BYTE:
-      case CHAR:
       case SHORT:
       case INT:
-        return Schema.Type.INT;
+        return Schema.nullableOf(Schema.of(Schema.Type.INT));
       case LONG:
-        return Schema.Type.LONG;
+        return Schema.nullableOf(Schema.of(Schema.Type.LONG));
       case FLOAT:
-        return Schema.Type.FLOAT;
+        return Schema.nullableOf(Schema.of(Schema.Type.FLOAT));
       case DOUBLE:
-        return Schema.Type.DOUBLE;
+        return Schema.nullableOf(Schema.of(Schema.Type.DOUBLE));
+      case CHAR:
       case STRING:
       case VARCHAR:
-        return Schema.Type.STRING;
+        return Schema.nullableOf(Schema.of(Schema.Type.STRING));
       case BINARY:
-        return Schema.Type.BYTES;
+        return Schema.nullableOf(Schema.of(Schema.Type.BYTES));
+      // We can support VOID by having Schema type as null but HCatRecord does not support VOID and since we read
+      // write through HCatSchema and HCatRecord we are not supporting VOID too for consistent behavior.
       case VOID:
       case DATE:
       case TIMESTAMP:
