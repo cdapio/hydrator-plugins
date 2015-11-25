@@ -249,7 +249,7 @@ public class MongoDBTest extends TestBase {
 
   @Test
   public void testMongoToMongo() throws Exception {
-    ETLStage source = new ETLStage("MongoDB", new Plugin("MongoDB", new ImmutableMap.Builder<String, String>()
+    ETLStage source = new ETLStage("MongoDBSource", new Plugin("MongoDB", new ImmutableMap.Builder<String, String>()
       .put(MongoDBBatchSource.Properties.CONNECTION_STRING,
            String.format("mongodb://localhost:%d/%s.%s",
                          mongoPort, MONGO_DB, MONGO_SOURCE_COLLECTIONS))
@@ -257,7 +257,7 @@ public class MongoDBTest extends TestBase {
       .put(MongoDBBatchSource.Properties.SPLITTER_CLASS,
            StandaloneMongoSplitter.class.getSimpleName()).build()));
 
-    ETLStage sink = new ETLStage("MongoDB", new Plugin("MongoDB", new ImmutableMap.Builder<String, String>()
+    ETLStage sink = new ETLStage("MongoDBSink", new Plugin("MongoDB", new ImmutableMap.Builder<String, String>()
       .put(MongoDBBatchSink.Properties.CONNECTION_STRING,
            String.format("mongodb://localhost:%d/%s.%s",
                          mongoPort, MONGO_DB, MONGO_SINK_COLLECTIONS)).build()));
@@ -302,7 +302,7 @@ public class MongoDBTest extends TestBase {
                                               .put(MongoDBBatchSource.Properties.SCHEMA, SOURCE_BODY_SCHEMA.toString())
                                               .put(MongoDBBatchSource.Properties.SPLITTER_CLASS,
                                                    StandaloneMongoSplitter.class.getSimpleName()).build()));
-    ETLStage sink = new ETLStage("Table", new Plugin("MongoDB", ImmutableMap.of(Properties.Table.NAME, TABLE_NAME,
+    ETLStage sink = new ETLStage("Table", new Plugin("Table", ImmutableMap.of(Properties.Table.NAME, TABLE_NAME,
                                                           Properties.Table.PROPERTY_SCHEMA,
                                                           SINK_BODY_SCHEMA.toString(),
                                                           Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ticker")));
