@@ -101,8 +101,8 @@ MongoDB Realtime Sink
     Takes a StructuredRecord from a previous node, converts it into a BSONDocument and writes it to a MongoDB collection.
 :Configuration:
     - **connectionString:** MongoDB connection string
-    - **dbName:** MongoDB database Name
-    - **collectionName:** MongoDB collection Name
+    - **dbName:** MongoDB database name
+    - **collectionName:** MongoDB collection name
 
 License and Trademarks
 ======================
