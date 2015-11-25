@@ -27,7 +27,7 @@ To use plugins, you must have CDAP version 3.2.0 or later. You can download CDAP
  
 Build Plugins
 -------------
-You can get started with CDAP-plugins by building directly from the latest source code::
+You get started with Hydrator plugins by building directly from the latest source code::
 
   git clone https://github.com/caskdata/hydrator-plugins.git
   cd hydrator-plugins
@@ -38,7 +38,7 @@ After the build completes, you will have a JAR for each plugin under each
 
 Deploy Plugins
 --------------
-You can deploy a transform plugin using the CDAP CLI::
+You can deploy the transform plugin using the CDAP CLI::
 
   cdap > load artifact target/transform-plugins-1.0-SNAPSHOT-batch.jar \
          config-file resources/plugin/transform-plugins.json
@@ -64,9 +64,9 @@ CSV Parser
   into multiple Structured Records. Different formats of CSV Record can be parsed using this plugin.
   Supports these CSV Record types: DEFAULT, EXCEL, MYSQL, RFC4180, and TDF.
 :Configuration:
-  - **format:** Specifies the format of CSV Record the input should be parsed as.
-  - **field:** Specifies the input field that should be parsed as CSV Record.
-  - **schema:** Specifies the output schema of CSV Record.
+  - **format:** Specifies the format of CSV Record the input should be parsed as
+  - **field:** Specifies the input field that should be parsed as CSV Record
+  - **schema:** Specifies the output schema of CSV Record
  
 CSV Formatter
 -------------
@@ -80,9 +80,9 @@ CSV Formatter
 :Description:
   Formats a Structured Record as a CSV Record. Supported CSV Record formats are DELIMITED, EXCEL, MYSQL, RFC4180, and TDF. When the format is DELIMITED, one can specify different delimiters that a CSV Record should use for separating fields.
 :Configuration:
-  - **format:** Specifies the format of the CSV Record to be generated.
-  - **delimiter:** Specifies the delimiter to be used to generate a CSV Record. This option is available when the format is specified as DELIMITED.
-  - **schema:** Specifies the output schema. Output schema should only have fields of type String.
+  - **format:** Specifies the format of the CSV Record to be generated
+  - **delimiter:** Specifies the delimiter to be used to generate a CSV Record; this option is available when the format is specified as ``DELIMITED``
+  - **schema:** Specifies the output schema. Output schema should only have fields of type ``String``
 
 JSON Parser
 -------------
@@ -96,8 +96,8 @@ JSON Parser
 :Description:
   Parses an input field value as a JSON Object. Each record in the input is parsed as a JSON Object and converted into a Structured Record. The Structured Record can specify particular fields that it's interested in, making projections possible.
 :Configuration:
-  - **field:** Specifies the input field that should be parsed as CSV Record.
-  - **schema:** Specifies the output schema for JSON Record.
+  - **field:** Specifies the input field that should be parsed as a CSV Record
+  - **schema:** Specifies the output schema for the JSON Record
 
 JSON Formatter
 -------------
@@ -111,7 +111,7 @@ JSON Formatter
 :Description:
   Formats a Structured Record as JSON Object. Plugin will convert the Structured Record to a JSON object and write to the output record. The output record schema is a single field, either type STRING or type BYTE array.
 :Configuration:
-  **schema:** Specifies the output schema, a single field either type STRING or type BYTE array.
+  **schema:** Specifies the output schema, a single field either type ``STRING`` or type ``BYTE`` array
 
 Clone Record
 -------------
@@ -125,7 +125,7 @@ Clone Record
 :Description:
   Makes a copy of every input record received for a configured number of times on the output. This transform does not change any record fields or types. It's an identity transform.
 :Configuration:
-  **copies:** Specifies the numbers of copies of the input record that are to be emitted.
+  **copies:** Specifies the numbers of copies of the input record that are to be emitted
 
 Stream Formatter
 -------------
@@ -140,10 +140,10 @@ Stream Formatter
   Formats a Structured Record as Stream format. Plugin will convert the Structured Record to Stream format.
   It will include a header and body configurations. The body of the Stream event can be either type CSV or JSON.
 :Configuration:
-  - **body:** Specifies the input Structured Record fields that should be included in the body of the Stream event.
-  - **header:** Specifies the input Structured Record fields that should be included in the header of the Stream event.
-  - **format:** Specifies the format of the body. Currently supported formats are JSON, CSV, TSV, and PSV.
-  - **schema:** Specifies the output schema. The output schema can have only two fields: one of type STRING and the other of type MAP<STRING, STRING>.
+  - **body:** Specifies the input Structured Record fields that should be included in the body of the Stream event
+  - **header:** Specifies the input Structured Record fields that should be included in the header of the Stream event
+  - **format:** Specifies the format of the body. Currently supported formats are JSON, CSV, TSV, and PSV
+  - **schema:** Specifies the output schema; the output schema can have only two fields: one of type ``STRING`` and the other of type ``MAP<STRING, STRING>``
 
 Compressor
 -------------
@@ -158,8 +158,8 @@ Compressor
   Compresses configured fields. Multiple fields can be specified to be compressed using different compression algorithms.
   Plugin supports SNAPPY, ZIP, and GZIP types of compression of fields.
 :Configuration:
-  - **compressor:** Specifies the configuration for compressing fields. In JSON configuration, this is specified as ``<field>:<compressor>[,<field>:<compressor>]*``.
-  - **schema:** Specifies the output schema. The fields that are compressed will have the same field name but they will be of type BYTE array.
+  - **compressor:** Specifies the configuration for compressing fields; in JSON configuration, this is specified as ``<field>:<compressor>[,<field>:<compressor>]*``
+  - **schema:** Specifies the output schema; the fields that are compressed will have the same field name but they will be of type ``BYTE`` array
 
 Decompressor
 -------------
@@ -174,8 +174,8 @@ Decompressor
     Decompresses configured fields. Multiple fields can be specified to be decompressed using different decompression algorithms.
     Plugin supports SNAPPY, ZIP, and GZIP types of decompression of fields.
 :Configuration:
-  - **decompressor:** Specifies the configuration for decompressing fields. In JSON configuration, this is specified as ``<field>:<decompressor>[,<field>:<decompressor>]*``.
-  - **schema:** Specifies the output schema. The fields that are decompressed will have the same field name but they will be of type BYTE array or STRING.
+  - **decompressor:** Specifies the configuration for decompressing fields; in JSON configuration, this is specified as ``<field>:<decompressor>[,<field>:<decompressor>]*``
+  - **schema:** Specifies the output schema; the fields that are decompressed will have the same field name but they will be of type ``BYTE`` array or ``STRING``
 
 Encoder
 -------
@@ -190,8 +190,8 @@ Encoder
   Encodes configured fields. Multiple fields can be specified to be encoded using different encoding methods.
   Available encoding methods are STRING_BASE64, BASE64, BASE32, STRING_BASE32, and HEX.
 :Configuration:
-  - **encode:** Specifies the configuration for encode fields. In JSON configuration, this is specified as ``<field>:<encoder>[,<field>:<encoder>]*``.
-  - **schema:** Specifies the output schema. The fields that are encoded will have the same field name but they will be of type BYTE array or STRING.
+  - **encode:** Specifies the configuration for encode fields; in JSON configuration, this is specified as ``<field>:<encoder>[,<field>:<encoder>]*``
+  - **schema:** Specifies the output schema; the fields that are encoded will have the same field name but they will be of type ``BYTE`` array or ``STRING``
 
 Decoder
 -------
@@ -206,8 +206,8 @@ Decoder
   Decodes configured fields. Multiple fields can be specified to be decoded using different decoding methods.
   Available decoding methods are STRING_BASE64, BASE64, BASE32, STRING_BASE32, and HEX.
 :Configuration:
-  - **decode:** Specifies the configuration for decode fields. In JSON configuration, this is specified as ``<field>:<decoder>[,<field>:<decoder>]*``.
-  - **schema:** Specifies the output schema. The fields that are decoded will have the same field name but they will be of type BYTE array or STRING.
+  - **decode:** Specifies the configuration for decode fields; in JSON configuration, this is specified as ``<field>:<decoder>[,<field>:<decoder>]*``
+  - **schema:** Specifies the output schema; the fields that are decoded will have the same field name but they will be of type ``BYTE`` array or STRING``
 
 Hasher
 -------
@@ -219,10 +219,10 @@ Hasher
     Batch and
     Realtime
 :Description:
-    Hashes fields using one of the digest algorithms like MD2, MD5, SHA1, SHA256, SHA384 and SHA512.
+    Hashes fields using a digest algorithm such as MD2, MD5, SHA1, SHA256, SHA384, or SHA512.
 :Configuration:
-  - **fields:** Specifies the fields to be hashed.
-  - **hash:** Specifies the hashing algorithm.
+  - **fields:** Specifies the fields to be hashed
+  - **hash:** Specifies the hashing algorithm
 
 
 License and Trademarks
