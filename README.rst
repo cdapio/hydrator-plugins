@@ -37,12 +37,12 @@ Getting Started
 
 Prerequisites
 -------------
-To use CDAP-plugins, you must have CDAP version 3.2.0 or later. Prerequisites for the various
+To use Hydrator plugins, you must have CDAP version 3.2.0 or later. Prerequisites for the various
 sources, sinks, and transforms are included in their individual README files.
   
 Building Plugins
 ----------------
-You can get started with CDAP-plugins by building directly from the latest source code::
+You get started with Hydrator plugins by building directly from the latest source code::
 
   git clone https://github.com/caskdata/hydrator-plugins.git
   cd hydrator-plugins
@@ -64,7 +64,7 @@ Example for loading the Cassandra Plugin (from the cassandra-plugins directory):
   > load artifact target/cassandra-plugins-1.0-SNAPSHOT-realtime.jar \
          config-file resources/cassandra-plugin-realtime.json
 
-Then, copy the UI configuration into the UI templates directory::
+Then, copy the UI configuration into the CDAP UI templates directory::
 
   $ cp resources/Cassandra.json $CDAP_HOME/ui/templates/common
 
