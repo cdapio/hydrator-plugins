@@ -5,26 +5,26 @@ MongoDB Source and Sink Plugin Collection
 Introduction
 ============
 
-This project is a collection of MongoDB source and sink plugins. Following is list of plugins that are currently available:
+This project is a collection of MongoDB source and sink plugins. These plugins are currently available:
 
-- MongoDB Batch Source,
-- MongoDB Batch Sink,
-- MongoDB RealtimeSink
+- MongoDB Batch Source
+- MongoDB Batch Sink
+- MongoDB Realtime Sink
 
 Getting Started
 ===============
 
-Following are instructions to build and deploy hydrator MongoDB plugins.
+Following are instructions to build and deploy the Hydrator MongoDB plugins.
 
 Prerequisites
 -------------
 
-To use plugins, you must have CDAP version 3.2.0 or later. You can download CDAP Standalone that includes Hydrator `here <http://cask.co/downloads>`__
+To use the plugins, you must have CDAP version 3.2.0 or later. You can download CDAP Standalone that includes Hydrator `here <http://cask.co/downloads>`__
 
 Build Plugins
 -------------
 
-You can get started with CDAP-plugins by building directly from the latest source code::
+You get started with Hydrator plugins by building directly from the latest source code::
 
   git clone https://github.com/caskdata/hydrator-plugins.git
   cd hydrator-plugins
@@ -36,7 +36,7 @@ After the build completes, you will have a jar for each plugin under the
 Deploy Plugins
 --------------
 
-You can deploy transform plugins using the CDAP CLI::
+You can deploy the plugins using the CDAP CLI::
 
   > load artifact target/mongodb-plugins-1.1.0-SNAPSHOT-batch.jar \
          config-file resources/plugin/mongodb-batch-plugins.json
@@ -44,7 +44,7 @@ You can deploy transform plugins using the CDAP CLI::
   > load artifact target/mongodb-plugins-1.1.0-SNAPSHOT-realtime.jar \
          config-file resources/plugin/mongodb-realtime-plugins.json
 
-Copy the UI configuration to CDAP installation::
+Copy the UI configuration to the CDAP installation::
 
   > cp mongodb-plugins/resources/ui/*.json $CDAP_HOME/ui/templates/common/
 
@@ -61,18 +61,18 @@ MongoDB Batch Source
 :Mode:
     Batch
 :Description:
-    Reads documents from MongoDB collection and converts each document into a StructuredRecord with the help
-    of the specified schema. The user can optionally provide input query, input fields, and splitter class.
+    Reads documents from a MongoDB collection and converts each document into a StructuredRecord with the help
+    of the specified schema. The user can optionally provide input query, input fields, and splitter classes.
 :Configuration:
-    **connectionString:** MongoDB Connection String
-    **schema:** Specifies the schema of document.
+    - **connectionString:** MongoDB connection string
+    - **schema:** Specifies the schema of document
 
     **Optional Fields**
 
-    **authConnectionString:** Auxiliary MongoDB connection string
-    **inputQuery:** Filter the input collection with a query
-    **inputFields:** Projection document that can limit the fields that appear in each document
-    **splitterClass:** Name of the Splitter Class to use
+    - **authConnectionString:** Auxiliary MongoDB connection string
+    - **inputQuery:** Filter the input collection with a query
+    - **inputFields:** Projection document that can limit the fields that appear in each document
+    - **splitterClass:** Name of the splitter class to use
 
 MongoDB Batch Sink
 ------------------
@@ -84,9 +84,9 @@ MongoDB Batch Sink
 :Mode:
     Batch
 :Description:
-    Converts a StructuredRecord to a BSONWritable and then writes it to a MongoDB collection.
+    Converts a StructuredRecord into a BSONWritable and then writes it to a MongoDB collection.
 :Configuration:
-    **connectionString:** MongoDB Connection string.
+    - **connectionString:** MongoDB connection string
 
 MongoDB Realtime Sink
 ---------------------
@@ -98,11 +98,11 @@ MongoDB Realtime Sink
 :Mode:
     Realtime
 :Description:
-    Takes a StructuredRecord from the previous stage, converts it to a BSONDocument and writes to MongoDB
+    Takes a StructuredRecord from a previous node, converts it into a BSONDocument and writes it to a MongoDB collection.
 :Configuration:
-    **connectionString:** MongoDB Connection string.
-    **dbName:** Mongo DB Database Name
-    **collectionName:** Mongo DB Collection Name
+    - **connectionString:** MongoDB connection string
+    - **dbName:** MongoDB database Name
+    - **collectionName:** MongoDB collection Name
 
 License and Trademarks
 ======================
