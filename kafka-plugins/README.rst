@@ -5,7 +5,7 @@ Kafka Plugins
 Introduction
 ============
 
-Collection of Kafka Hydrator Plugins that allow reading and writing data from and to Kafka.
+A Kafka Hydrator Plugin that allows the writing of data to Kafka.
 
 Getting Started
 ===============
@@ -13,7 +13,7 @@ Getting Started
 Prerequisites
 -------------
 
-To use these plugins, you must have CDAP version 3.2.0 or later.
+To use this plugin, you must have CDAP version 3.2.0 or later.
 
 Build Plugins
 -------------
@@ -30,7 +30,7 @@ After the build completes, you will have a jar for each plugin under the
 Deploy Plugins
 --------------
 
-You can deploy the Kafka Real-time plugins using the CDAP CLI::
+You can deploy the Kafka Real-time plugin using the CDAP CLI::
 
   > load artifact target/kafka-plugins-<version>-realtime.jar \
          config-file resources/plugin/kafka-plugins-realtime.json
@@ -57,12 +57,12 @@ Kafka Producer
   use one of the field values from input to partition the data on topic. The producer
   can also be configured to operate in either sync or async mode.
 :Configuration:
-  **brokers:** Specifies a list of brokers to connect to
-  **async:** Specifies whether writing the events to broker is *Asynchronous* or *Synchronous*
-  **paritionfield:** Specifies the input fields that need to be used to determine the partition id; the field type should be int or long
-  **key:** Specifies the input field that should be used as the key for the event published into Kafka
-  **topics:** Specifies a list of topics to which the event should be published to
-  **format:** Specifies the format of the event published to Kafka
+  - **brokers:** Specifies a list of brokers to connect to
+  - **async:** Specifies whether writing the events to broker is *Asynchronous* or *Synchronous*
+  - **paritionfield:** Specifies the input fields that need to be used to determine the partition id; the field type should be int or long
+  - **key:** Specifies the input field that should be used as the key for the event published into Kafka
+  - **topics:** Specifies a list of topics to which the event should be published to
+  - **format:** Specifies the format of the event published to Kafka
   
 License and Trademarks
 ======================
