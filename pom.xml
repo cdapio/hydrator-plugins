@@ -31,6 +31,7 @@
     <module>kafka-plugins</module>
     <module>hive-plugins</module>
     <module>python-evaluator-transform</module>
+    <module>vertica-plugins</module>
   </modules>
   <packaging>pom</packaging>
 
