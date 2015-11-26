@@ -43,7 +43,7 @@ public class TPFSVerticaBulkLoadBatchSink extends TimePartitionedFileSetSink<Nul
 
   private final VerticaBulkLoadConfig config;
 
-  protected TPFSVerticaBulkLoadBatchSink(VerticaBulkLoadConfig config) {
+  public TPFSVerticaBulkLoadBatchSink(VerticaBulkLoadConfig config) {
     super(config);
     this.config = config;
   }

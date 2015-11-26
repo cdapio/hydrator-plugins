@@ -16,10 +16,12 @@
 
 package co.cask.hydrator.plugin.sink.output;
 
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.OutputFormat;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.OutputCommitter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 import java.io.IOException;
@@ -34,39 +36,72 @@ import java.io.IOException;
 public class BulkOutputFormat<K, V> extends TextOutputFormat<K, V> {
   @Override
   public synchronized OutputCommitter getOutputCommitter(TaskAttemptContext context) throws IOException {
-    final OutputCommitter delegateCommitter = super.getOutputCommitter(context);
-    return new OutputCommitter() {
-      @Override
-      public void commitJob(JobContext jobContext) throws IOException {
-        delegateCommitter.commitJob(jobContext);
+    final FileOutputCommitter delegateCommitter = (FileOutputCommitter) super.getOutputCommitter(context);
+//    return new OutputCommitter() {
+//      @Override
+//      public void commitJob(JobContext jobContext) throws IOException {
+//        delegateCommitter.commitJob(jobContext);
+//
+//        // TODO: Write to vertica
+//      }
+//
+//      @Override
+//      public void setupJob(JobContext jobContext) throws IOException {
+//        delegateCommitter.setupJob(jobContext);
+//      }
+//
+//      @Override
+//      public void setupTask(TaskAttemptContext taskContext) throws IOException {
+//        delegateCommitter.setupTask(taskContext);
+//      }
+//
+//      @Override
+//      public boolean needsTaskCommit(TaskAttemptContext taskContext) throws IOException {
+//        return delegateCommitter.needsTaskCommit(taskContext);
+//      }
+//
+//      @Override
+//      public void commitTask(TaskAttemptContext taskContext) throws IOException {
+//        delegateCommitter.commitTask(taskContext);
+//      }
+//
+//      @Override
+//      public void abortTask(TaskAttemptContext taskContext) throws IOException {
+//        delegateCommitter.abortTask(taskContext);
+//      }
+//    };
 
-        // TODO: Write to vertica
-      }
+    return new FileOutputCommitter(delegateCommitter.getWorkPath(), delegateCommitter.)
+  }
 
-      @Override
-      public void setupJob(JobContext jobContext) throws IOException {
-        delegateCommitter.setupJob(jobContext);
-      }
+  /**
+   * Get the default path and filename for the output format.
+   *
+   * @param context the task context
+   * @param extension an extension to add to the filename
+   * @return a full path $output/_temporary/$taskid/part-[mr]-$id
+   * @throws IOException
+   */
+  @Override
+  public Path getDefaultWorkFile(TaskAttemptContext context, String extension) throws IOException {
+    FileOutputCommitter committer =
+      (FileOutputCommitter) getOutputCommitter(context);
+    return new Path(committer.getWorkPath(), getUniqueFile(context,
+                                                           getOutputName(context), extension));
+  }
 
-      @Override
-      public void setupTask(TaskAttemptContext taskContext) throws IOException {
-        delegateCommitter.setupTask(taskContext);
-      }
+  public static class BulkOutputCommitter extends FileOutputCommitter {
 
-      @Override
-      public boolean needsTaskCommit(TaskAttemptContext taskContext) throws IOException {
-        return delegateCommitter.needsTaskCommit(taskContext);
-      }
-
-      @Override
-      public void commitTask(TaskAttemptContext taskContext) throws IOException {
-        delegateCommitter.commitTask(taskContext);
-      }
-
-      @Override
-      public void abortTask(TaskAttemptContext taskContext) throws IOException {
-        delegateCommitter.abortTask(taskContext);
-      }
-    };
+    /**
+     * Create a file output committer
+     *
+     * @param outputPath the job's output path, or null if you want the output
+     * committer to act as a noop.
+     * @param context the task's context
+     * @throws IOException
+     */
+    public BulkOutputCommitter(Path outputPath, JobContext context) throws IOException {
+      super(outputPath, context);
+    }
   }
 }
