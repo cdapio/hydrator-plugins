@@ -27,7 +27,7 @@ You get started with Hydrator plugins by building directly from the latest sourc
   cd hydrator-plugins
   mvn clean package -pl elasticsearch-plugins
 
-After the build completes, you will have a jar for each plugin under the
+After the build completes, you will have a JAR under the
 ``elasticsearch-plugins/target/`` directory.
 
 Deploy Plugins
@@ -35,25 +35,22 @@ Deploy Plugins
 
 You can deploy the plugins using the CDAP CLI::
 
-  > load artifact target/elasticsearch-plugins-1.1.0-SNAPSHOT-batch.jar \
-         config-file resources/plugin/elasticsearch-batch-plugins.json
-
-  > load artifact target/elasticsearch-plugins-1.1.0-SNAPSHOT-realtime.jar \
-         config-file resources/plugin/elasticsearch-realtime-plugins.json
+  > load artifact target/elasticsearch-plugins-1.1.0-SNAPSHOT.jar \
+         config-file target/elasticsearch-plugins-1.1.0-SNAPSHOT.json
 
 Copy the UI configuration to the CDAP installation::
 
-  > cp elasticsearch-plugins/resources/ui/*.json $CDAP_HOME/ui/templates/common/
+  > cp elasticsearch-plugins/widgets/*  $CDAP_HOME/ui/templates/common/
 
 Plugin Descriptions
 ===================
 
 Elasticsearch Batch Source
 --------------------------
-:Id:
+:Name:
     **Elasticsearch**
 :Type:
-    batchsource
+    Source
 :Mode:
     Batch
 :Description:
@@ -98,7 +95,7 @@ Elasticsearch Batch Sink
 :Id:
     **Elasticsearch**
 :Type:
-    batchsink
+    Sink
 :Mode:
     Batch
 :Description:
@@ -136,10 +133,10 @@ Elasticsearch Batch Sink
 
 Elasticsearch Real-time Sink
 ----------------------------
-:Id:
+:Name:
     **Elasticsearch**
 :Type:
-    realtimesink
+    Sink
 :Mode:
     Real-time
 :Description:
@@ -177,7 +174,7 @@ Elasticsearch Real-time Sink
 
 Integrating with the CDAP UI
 ============================
-This plugin contains a config file for the CDAP UI in the *resources* directory: ``Elasticsearch.json``.
+This plugin contains a config file for the CDAP UI in the *widgets* directory: ``Elasticsearch.json``.
 This configuration file greatly improves the experience of configuring Elasticsearch plugins using the CDAP UI.
 It chooses appropriate widgets for the various configuration parameters described above. It also enforces a more
 natural ordering for these configuration parameters. To use this file, please copy it over to the
