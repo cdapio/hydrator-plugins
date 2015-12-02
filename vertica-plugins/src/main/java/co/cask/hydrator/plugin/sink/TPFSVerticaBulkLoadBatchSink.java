@@ -72,10 +72,13 @@ public class TPFSVerticaBulkLoadBatchSink extends TimePartitionedFileSetSink<Nul
     // set properties in the configuration which will be used by the BulkOutputCommitter while performing bulk
     // load to Vertica
     conf.set(BulkOutputFormat.VERTICA_USER_KEY, config.user);
-    conf.set(BulkOutputFormat.VERTICA_PASSOWORD_KEY, config.password);
+    conf.set(BulkOutputFormat.VERTICA_PASSOWORD_KEY, config.password ==  null ? "" : config.password);
     conf.set(BulkOutputFormat.VERTICA_HOST_KEY, config.dbConnectionURL);
     conf.set(BulkOutputFormat.VERTICA_TABLE_NAME, config.tableName);
     conf.set(BulkOutputFormat.VERTICA_TEXT_DELIMITER, config.delimiter);
+    conf.set(BulkOutputFormat.HDFS_NAMENODE_ADDR, config.hdfsNamenode == null ? "" : config.hdfsNamenode);
+    conf.set(BulkOutputFormat.HDFS_NAMENODE_WEBHDFS_PORT, config.webhdfsPort == null ? "" : config.webhdfsPort);
+    conf.set(BulkOutputFormat.HDFS_USER, config.hdfsUser == null ? "" : config.hdfsUser);
     conf.set(BulkOutputFormat.VERTICA_DIRECT_MODE, config.directMode == null ? Boolean.toString(true) :
       Boolean.toString(false));
   }

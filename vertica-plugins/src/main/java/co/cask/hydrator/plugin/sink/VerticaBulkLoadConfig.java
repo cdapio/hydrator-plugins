@@ -59,6 +59,24 @@ public class VerticaBulkLoadConfig extends TPFSSinkConfig {
   @Nullable
   public Boolean directMode;
 
+  @Name(Vertica.HDFS_NAMENODE)
+  @Description("Namenode of the HDFS. Required while running the plugin in distributed mode. In local mode this field" +
+    " should be left empty.")
+  @Nullable
+  public String hdfsNamenode;
+
+  @Name(Vertica.WEB_HDFS_PORT)
+  @Description("Port number of the web HDFS. Required while running the plugin in distributed mode. In local mode " +
+    "this field should be left empty.")
+  @Nullable
+  public String webhdfsPort;
+
+  @Name(Vertica.HDFS_USER)
+  @Description("Required while running the plugin in distributed mode. In local mode this field can be left empty." +
+    "This HDFS user must have permission to access the TPFS file generated.")
+  @Nullable
+  public String hdfsUser;
+
   public VerticaBulkLoadConfig(String name, @Nullable String basePath, @Nullable String filePathFormat,
                                @Nullable String timeZone) {
     super(name, basePath, filePathFormat, timeZone);
@@ -91,5 +109,8 @@ public class VerticaBulkLoadConfig extends TPFSSinkConfig {
     public static final String TABLE_NAME = "tableName";
     public static final String DELIMITER = "delimiter";
     public static final String DIRECT_MODE = "directMode";
+    public static final String HDFS_NAMENODE = "hdfsNamenode";
+    public static final String WEB_HDFS_PORT = "webhdfsPort";
+    public static final String HDFS_USER = "hdfsUser";
   }
 }

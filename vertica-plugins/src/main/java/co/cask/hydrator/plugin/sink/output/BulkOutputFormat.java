@@ -16,12 +16,16 @@
 
 package co.cask.hydrator.plugin.sink.output;
 
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RemoteIterator;
+import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.mapred.OutputFormat;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.OutputCommitter;
@@ -37,6 +41,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
+import javax.annotation.Nullable;
 
 /**
  * An {@link OutputFormat} which extends {@link TextOutputFormat} and overrides
@@ -58,6 +63,9 @@ public class BulkOutputFormat<K, V> extends TextOutputFormat<K, V> {
   public static final String VERTICA_TABLE_NAME = "verticaTable";
   public static final String VERTICA_TEXT_DELIMITER = "verticaDelimiter";
   public static final String VERTICA_DIRECT_MODE = "verticaDirect";
+  public static final String HDFS_NAMENODE_ADDR = "webhdfsAddress";
+  public static final String HDFS_USER = "hdfsUser";
+  public static final String HDFS_NAMENODE_WEBHDFS_PORT = "webhdfsPort";
   private static final String BLANKSPACE = " ";
 
 
@@ -76,6 +84,7 @@ public class BulkOutputFormat<K, V> extends TextOutputFormat<K, V> {
 
     public static final String VERTICA_JDBC_DRIVER_CLASS = "com.vertica.jdbc.Driver";
     private Statement connStatement;
+    private Boolean isLocalFS = null;
 
     final FileOutputCommitter delegateCommitter;
 
@@ -126,6 +135,7 @@ public class BulkOutputFormat<K, V> extends TextOutputFormat<K, V> {
       Path outputPath = getOutputPath(jobContext);
       Configuration conf = jobContext.getConfiguration();
       FileSystem fs = outputPath.getFileSystem(conf);
+      detectFileSystem(fs);
       RemoteIterator<LocatedFileStatus> locatedFileStatusRemoteIterator = fs.listFiles(outputPath, false);
 
       // bulk load every file to Vertical table
@@ -135,22 +145,46 @@ public class BulkOutputFormat<K, V> extends TextOutputFormat<K, V> {
 
         // only bulk load files containing data others like _SUCCESS should be skipped
         if (path.getName().contains("part")) {
+          String copyStatement = null;
           try {
-            String copyStatement = getCopyStatement(conf.get(VERTICA_TABLE_NAME),
-                                                    path.toUri().getPath(), conf.get(VERTICA_TEXT_DELIMITER),
-                                                    Boolean.parseBoolean(conf.get(VERTICA_DIRECT_MODE)));
+            copyStatement = getCopyStatement(conf.get(VERTICA_TABLE_NAME),
+                                             path, conf.get(HDFS_USER),
+                                             conf.get(VERTICA_TEXT_DELIMITER),
+                                             Boolean.parseBoolean(conf.get(VERTICA_DIRECT_MODE)), conf);
             LOG.info("Executing bulk load with statement {}", copyStatement);
             getConnStatement(conf.get(VERTICA_HOST_KEY), conf.get(VERTICA_USER_KEY),
                              conf.get(VERTICA_PASSOWORD_KEY)).execute(copyStatement);
           } catch (SQLException e) {
-            LOG.info("Failed to execute to Vertica bulk load statement", e);
+            LOG.info("Failed to execute to Vertica bulk load statement: {}", copyStatement, e);
             Throwables.propagate(e);
           }
         }
       }
     }
 
-    private String getCopyStatement(String tableName, String filePath, String delimiter, boolean directMode) {
+    private String getCopyStatement(String tableName, Path path, @Nullable String hdfsUser, String delimiter,
+                                    boolean directMode, Configuration conf) throws IOException {
+      if (isLocalFS) {
+        return getLocalCopyStatement(tableName, path.toUri().getPath(), delimiter, directMode);
+      } else {
+        return getHDFSCopyStatement(tableName, getWebHDFSURL(path, conf), hdfsUser, delimiter, directMode);
+      }
+    }
+
+    private void detectFileSystem(FileSystem fs) {
+      if (isLocalFS == null) {
+        if (fs instanceof DistributedFileSystem) {
+          isLocalFS = false;
+        } else if (fs instanceof LocalFileSystem) {
+          isLocalFS = true;
+        } else {
+          throw new RuntimeException("Unknown filesystem " + fs.getUri());
+        }
+      }
+    }
+
+    private String getLocalCopyStatement(String tableName, String filePath, String delimiter,
+                                         boolean directMode) {
       StringBuilder copyCommandBuilder = new StringBuilder("COPY");
       copyCommandBuilder.append(BLANKSPACE);
       copyCommandBuilder.append(tableName);
@@ -167,6 +201,39 @@ public class BulkOutputFormat<K, V> extends TextOutputFormat<K, V> {
         copyCommandBuilder.append("DIRECT");
       }
       return copyCommandBuilder.toString();
+    }
+
+    private String getHDFSCopyStatement(String tableName, String filePath, String hdfsUser, String delimiter,
+                                        boolean directMode) {
+      Preconditions.checkArgument(!Strings.isNullOrEmpty(hdfsUser), "A HDFS user must be provided while running in " +
+        "Distributed mode.");
+      StringBuilder copyCommandBuilder = new StringBuilder("COPY");
+      copyCommandBuilder.append(BLANKSPACE);
+      copyCommandBuilder.append(tableName);
+      copyCommandBuilder.append(BLANKSPACE);
+      copyCommandBuilder.append("SOURCE");
+      copyCommandBuilder.append(BLANKSPACE);
+      copyCommandBuilder.append("Hdfs(");
+      copyCommandBuilder.append("url=").append("'").append(filePath).append("'").append(", ");
+      copyCommandBuilder.append("username=").append("'").append(hdfsUser).append("'").append(")");
+      copyCommandBuilder.append(BLANKSPACE);
+      copyCommandBuilder.append("DELIMITER");
+      copyCommandBuilder.append(BLANKSPACE);
+      copyCommandBuilder.append("'").append(delimiter).append("'");
+      if (directMode) {
+        copyCommandBuilder.append(BLANKSPACE);
+        copyCommandBuilder.append("DIRECT");
+      }
+      return copyCommandBuilder.toString();
+    }
+
+    private String getWebHDFSURL(Path path, Configuration conf) throws IOException {
+      Preconditions.checkArgument(!Strings.isNullOrEmpty(conf.get(HDFS_NAMENODE_ADDR)), "A HDFS Namenode must be " +
+        "provided while running in Distributed mode.");
+      Preconditions.checkArgument(!Strings.isNullOrEmpty(conf.get(HDFS_NAMENODE_WEBHDFS_PORT)), "A HDFS Namenode Port" +
+        " must be provided while running in Distributed mode.");
+      return String.format("http://%s:%s/webhdfs/v1%s", conf.get(HDFS_NAMENODE_ADDR),
+                           conf.get(HDFS_NAMENODE_WEBHDFS_PORT), path.toUri().getPath());
     }
 
     /**
@@ -188,7 +255,7 @@ public class BulkOutputFormat<K, V> extends TextOutputFormat<K, V> {
       if (connStatement == null) {
         Properties myProp = new Properties();
         myProp.put("user", username);
-        myProp.put("password", password);
+        myProp.put("password", password == null ? "" : password);
         Connection connection = DriverManager.getConnection(dbHost, myProp);
         connStatement = connection.createStatement();
       }
