@@ -77,6 +77,12 @@ public class VerticaBulkLoadConfig extends TPFSSinkConfig {
   @Nullable
   public String hdfsUser;
 
+  @Name(Vertica.SCHEMA)
+  @Description("The schema of the text input coming into this Sink. This schema will be used to enable Explore on " +
+    "the TPFS. If no schema is provided then the TPFS will not be explorable.")
+  @Nullable
+  public String schema;
+
   public VerticaBulkLoadConfig(String name, @Nullable String basePath, @Nullable String filePathFormat,
                                @Nullable String timeZone) {
     super(name, basePath, filePathFormat, timeZone);
@@ -112,5 +118,6 @@ public class VerticaBulkLoadConfig extends TPFSSinkConfig {
     public static final String HDFS_NAMENODE = "hdfsNamenode";
     public static final String WEB_HDFS_PORT = "webhdfsPort";
     public static final String HDFS_USER = "hdfsUser";
+    public static final String SCHEMA = "schema";
   }
 }

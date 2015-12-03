@@ -19,8 +19,10 @@ package co.cask.hydrator.plugin.sink;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.data.schema.UnsupportedTypeException;
+import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
@@ -28,20 +30,24 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.cdap.etl.batch.sink.TimePartitionedFileSetSink;
+import co.cask.cdap.etl.common.SchemaConverter;
 import co.cask.cdap.etl.common.StructuredRecordStringConverter;
 import co.cask.hydrator.plugin.sink.output.BulkOutputFormat;
+import com.google.common.base.Strings;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 
+import java.io.IOException;
+
 /**
  * A sink which extends {@link TimePartitionedFileSetSink} to write to a {@link TimePartitionedFileSet} and also
  * bulk load the file to the Vertica table through copy command.
  */
 @Plugin(type = "batchsink")
-@Name("Vertica")
+@Name("VerticaBulkLoad")
 @Description("Batch Sink which writes to TPFS and bulk loads to a Vertica table.")
 public class TPFSVerticaBulkLoadBatchSink extends TimePartitionedFileSetSink<NullWritable, Text> {
 
@@ -55,13 +61,33 @@ public class TPFSVerticaBulkLoadBatchSink extends TimePartitionedFileSetSink<Nul
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
+    pipelineConfigurer.createDataset(config.getName(), TimePartitionedFileSet.class.getName(),
+                                     filesetPropertiesBuilder());
+  }
+
+  private DatasetProperties filesetPropertiesBuilder() {
     String tpfsName = config.getName();
     String basePath = config.getBasePath() == null ? tpfsName : config.getBasePath();
-    pipelineConfigurer.createDataset(tpfsName, TimePartitionedFileSet.class.getName(), FileSetProperties.builder()
-      .setBasePath(basePath)
-      .setInputFormat(TextInputFormat.class)
-      .setOutputFormat(BulkOutputFormat.class)
-      .build());
+
+    FileSetProperties.Builder builder = FileSetProperties.builder();
+    builder.setBasePath(basePath);
+    builder.setInputFormat(TextInputFormat.class);
+    builder.setOutputFormat(BulkOutputFormat.class);
+
+    // enable explore if a schema is provided
+    if (!Strings.isNullOrEmpty(config.schema)) {
+      String hiveSchema;
+      try {
+        hiveSchema = SchemaConverter.toHiveSchema(Schema.parseJson(config.schema.toLowerCase()));
+      } catch (UnsupportedTypeException | IOException e) {
+        throw new RuntimeException("Error: Schema is not valid ", e);
+      }
+      builder.setEnableExploreOnCreate(true)
+        .setExploreFormat("text")
+        .setExploreFormatProperty("delimiter", config.delimiter)
+        .setExploreSchema(hiveSchema.substring(1, hiveSchema.length() - 1));
+    }
+    return builder.build();
   }
 
   @Override
