@@ -1,0 +1,134 @@
+{
+  "id": "VerticaBulkLoad",
+  "groups": {
+    "position": [
+      "group1"
+    ],
+    "group1": {
+      "display": "Vertica Bulk Load Configuration",
+      "position": [
+        "name",
+        "basePath",
+        "filePathFormat",
+        "timeZone",
+        "dbConnectionURL",
+        "user",
+        "password",
+        "tableName",
+        "delimiter",
+        "directMode",
+        "hdfsNamenode",
+        "webhdfsPort",
+        "hdfsUser"
+      ],
+      "fields": {
+        "name": {
+          "widget": "textbox",
+          "label": "TPFS name",
+          "properties": {
+            "width": "large"
+          }
+        },
+        "basePath": {
+          "widget": "textbox",
+          "label": "TPFS basepath",
+          "properties": {
+            "width": "large"
+          }
+        },
+        "filePathFormat": {
+          "widget": "textbox",
+          "label": "TPFS filepath format",
+          "properties": {
+            "width": "medium"
+          }
+        },
+        "timeZone": {
+          "widget": "textbox",
+          "label": "TPFS timezone",
+          "properties": {
+            "width": "large"
+          }
+        },
+        "dbConnectionURL": {
+          "widget": "textbox",
+          "label": "Vertica database JDBC URL",
+          "properties": {
+            "width": "large"
+          }
+        },
+        "user": {
+          "widget": "textbox",
+          "label": "Vertica database username",
+          "properties": {
+            "width": "large"
+          }
+        },
+        "password": {
+          "widget": "textbox",
+          "label": "Vertica database password",
+          "properties": {
+            "width": "large"
+          }
+        },
+        "tableName": {
+          "widget": "textbox",
+          "label": "Vertica table name",
+          "properties": {
+            "width": "large"
+          }
+        },
+        "delimiter": {
+          "widget": "textbox",
+          "label": "Input text delimiter",
+          "properties": {
+            "width": "large"
+          }
+        },
+        "directMode": {
+          "widget": "textbox",
+          "label": "Vertica directmode",
+          "properties": {
+            "width": "large"
+          }
+        },
+        "hdfsNamenode": {
+          "widget": "textbox",
+          "label": "HDFS namenode hostname",
+          "properties": {
+            "width": "large"
+          }
+        },
+        "webhdfsPort": {
+          "widget": "textbox",
+          "label": "Web HDFS port",
+          "properties": {
+            "width": "large"
+          }
+        },
+        "hdfsUser": {
+          "widget": "textbox",
+          "label": "HDFS username",
+          "properties": {
+            "width": "large"
+          }
+        }
+      }
+    }
+  },
+  "outputschema": {
+    "schema": {
+      "widget": "schema",
+      "schema-types": [
+        "boolean",
+        "int",
+        "long",
+        "float",
+        "double",
+        "bytes",
+        "string"
+      ],
+      "schema-default-type": "string"
+    }
+  }
+}
