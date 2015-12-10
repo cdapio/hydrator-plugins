@@ -41,7 +41,7 @@
     </layout>
   </appender>
 
-  <logger name="co.cask.cdap" level="INFO" />
+  <logger name="co.cask.hydrator" level="INFO" />
 
   <root level="WARN">
     <appender-ref ref="CLOG"/>
