@@ -32,12 +32,12 @@ import co.cask.cdap.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.common.ETLStage;
 import co.cask.cdap.etl.common.Plugin;
-import co.cask.cdap.etl.common.Properties;
 import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
 import co.cask.cdap.etl.realtime.ETLWorker;
 import co.cask.cdap.etl.realtime.config.ETLRealtimeConfig;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
+import co.cask.cdap.proto.artifact.ArtifactRange;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
@@ -45,12 +45,14 @@ import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.StreamManager;
 import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.WorkerManager;
+import co.cask.hydrator.plugin.common.Properties;
 import co.cask.plugin.etl.batch.sink.MongoDBBatchSink;
 import co.cask.plugin.etl.batch.source.MongoDBBatchSource;
 import co.cask.plugin.etl.realtime.sink.MongoDBRealtimeSink;
 import co.cask.plugin.etl.testclasses.StreamBatchSource;
 import co.cask.plugin.etl.testclasses.TableSink;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
@@ -75,6 +77,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -90,6 +93,12 @@ public class MongoDBTest extends TestBase {
 
   private static final ArtifactSummary ETLBATCH_ARTIFACT = ArtifactSummary.from(BATCH_APP_ARTIFACT_ID);
   private static final ArtifactSummary ETLREALTIME_ARTIFACT = ArtifactSummary.from(REALTIME_APP_ARTIFACT_ID);
+  private static final ArtifactRange REALTIME_ARTIFACT_RANGE = new ArtifactRange(Id.Namespace.DEFAULT, "etlrealtime",
+                                                                                 CURRENT_VERSION, true,
+                                                                                 CURRENT_VERSION, true);
+  private static final ArtifactRange BATCH_ARTIFACT_RANGE = new ArtifactRange(Id.Namespace.DEFAULT, "etlbatch",
+                                                                              CURRENT_VERSION, true,
+                                                                              CURRENT_VERSION, true);
 
   private static final String MONGO_DB = "cdap";
   private static final String MONGO_SOURCE_COLLECTIONS = "stocks";
@@ -123,15 +132,15 @@ public class MongoDBTest extends TestBase {
                    RealtimeSink.class.getPackage().getName(),
                    PipelineConfigurable.class.getPackage().getName());
 
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "batch-plugins", "1.0.0"), BATCH_APP_ARTIFACT_ID,
-                      MongoDBBatchSource.class, MongoInputFormat.class, MongoSplitter.class, MongoInputSplit.class,
-                      TableSink.class,
-                      MongoDBBatchSink.class, StreamBatchSource.class);
+    Set<ArtifactRange> parents = ImmutableSet.of(REALTIME_ARTIFACT_RANGE, BATCH_ARTIFACT_RANGE);
 
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "realtime-sources", "1.0.0"), REALTIME_APP_ARTIFACT_ID,
-                      DataGeneratorSource.class);
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "realtime-sinks", "1.0.0"), REALTIME_APP_ARTIFACT_ID,
+    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "batch-plugins", "1.0.0"), parents,
+                      MongoDBBatchSource.class, MongoInputFormat.class, MongoSplitter.class, MongoInputSplit.class,
+                      MongoDBBatchSink.class,
                       MongoDBRealtimeSink.class);
+
+    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "realtime-sources", "1.0.0"), parents,
+                      DataGeneratorSource.class, StreamBatchSource.class, TableSink.class);
   }
 
   @Before

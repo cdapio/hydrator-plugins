@@ -33,8 +33,10 @@
       <artifactId>cdap-etl-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>co.cask.cdap</groupId>
-      <artifactId>cdap-etl-lib</artifactId>
+      <groupId>co.cask.hydrator</groupId>
+      <artifactId>core-plugins</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
@@ -55,10 +57,6 @@
     <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-etl-batch</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>co.cask.cdap</groupId>
-      <artifactId>cdap-etl-realtime</artifactId>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>

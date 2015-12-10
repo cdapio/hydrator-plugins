@@ -30,16 +30,11 @@ import co.cask.cdap.etl.api.realtime.RealtimeSource;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
 import co.cask.cdap.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
-import co.cask.cdap.etl.batch.sink.TableSink;
 import co.cask.cdap.etl.common.ETLStage;
 import co.cask.cdap.etl.common.Plugin;
-import co.cask.cdap.etl.common.Properties;
 import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
 import co.cask.cdap.etl.realtime.ETLWorker;
 import co.cask.cdap.etl.realtime.config.ETLRealtimeConfig;
-import co.cask.cdap.etl.transform.ProjectionTransform;
-import co.cask.cdap.etl.transform.ScriptFilterTransform;
-import co.cask.cdap.etl.transform.StructuredRecordToGenericRecordTransform;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactRange;
@@ -54,9 +49,12 @@ import co.cask.cdap.test.WorkerManager;
 import co.cask.hydrator.plugin.batch.ESProperties;
 import co.cask.hydrator.plugin.batch.sink.BatchElasticsearchSink;
 import co.cask.hydrator.plugin.batch.source.ElasticsearchSource;
+import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.realtime.RealtimeElasticsearchSink;
 import co.cask.hydrator.plugin.testclasses.StreamBatchSource;
+import co.cask.hydrator.plugin.testclasses.TableSink;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.action.delete.DeleteResponse;
@@ -75,7 +73,6 @@ import org.junit.rules.TemporaryFolder;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -132,29 +129,20 @@ public class ETLESTest extends TestBase {
                    BatchSource.class.getPackage().getName(),
                    PipelineConfigurable.class.getPackage().getName());
 
-    // add artifact for batch sources and sinks
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "batch-plugins", "1.0.0"), BATCH_APP_ARTIFACT_ID,
-                      BatchElasticsearchSink.class, ElasticsearchSource.class,
-                      StreamBatchSource.class, TableSink.class);
-
     //add the artifact for the etl realtime app
     addAppArtifact(REALTIME_APP_ARTIFACT_ID, ETLRealtimeApplication.class,
                    RealtimeSource.class.getPackage().getName(),
                    PipelineConfigurable.class.getPackage().getName());
 
-    // add artifact for realtime sources and sinks
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "realtime-sources", "1.0.0"), REALTIME_APP_ARTIFACT_ID,
-                      DataGeneratorSource.class);
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "realtime-sinks", "1.0.0"), REALTIME_APP_ARTIFACT_ID,
-                      RealtimeElasticsearchSink.class);
+    Set<ArtifactRange> parents = ImmutableSet.of(REALTIME_ARTIFACT_RANGE, BATCH_ARTIFACT_RANGE);
 
-    // add artifact for transforms
-    Set<ArtifactRange> artifactRanges = new HashSet<>();
-    artifactRanges.add(REALTIME_ARTIFACT_RANGE);
-    artifactRanges.add(BATCH_ARTIFACT_RANGE);
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "transforms", "1.0.0"), artifactRanges,
-                      ProjectionTransform.class, ScriptFilterTransform.class,
-                      StructuredRecordToGenericRecordTransform.class);
+    // add artifact for batch sources and sinks
+    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "batch-plugins", "1.0.0"), parents,
+                      BatchElasticsearchSink.class, ElasticsearchSource.class, RealtimeElasticsearchSink.class);
+
+    // add artifact for realtime sources and sinks
+    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "test-plugins", "1.0.0"), parents,
+                      DataGeneratorSource.class, StreamBatchSource.class, TableSink.class);
   }
 
   @Before
