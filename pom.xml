@@ -521,11 +521,6 @@
             <configuration>
               <target>
                 <script language="javascript"> <![CDATA[
-                  importClass(java.io.File);
-                  importClass(java.io.FileWriter);
-                  importClass(java.io.BufferedWriter);
-                  importClass(java.nio.file.Files);
-                  importClass(java.nio.charset.StandardCharsets);
 
                   // for some reason, project.basedir evaluates to null if we just get the property here.
                   // so we set main.basedir to project.basedir in the pom properties, then main.basedir is used here
@@ -535,7 +530,7 @@
                   var artifactId = project.getProperty("project.artifactId");
                   var version = project.getProperty("project.version");
 
-                  var cfgFile = new File(targetDir, artifactId + "-" + version + ".json");
+                  var cfgFile = new java.io.File(targetDir, artifactId + "-" + version + ".json");
                   if (!cfgFile.exists()) {
                     cfgFile.createNewFile();
                   }
@@ -547,13 +542,13 @@
                   }
 
                   // look in widgets directory for widget config for each plugin
-                  var widgetsDir = new File(baseDir, project.getProperty("widgets.dir"));
+                  var widgetsDir = new java.io.File(baseDir, project.getProperty("widgets.dir"));
                   if (widgetsDir.isDirectory()) {
                     var widgetsFiles = widgetsDir.listFiles();
                     for (i = 0; i < widgetsFiles.length; i++) {
                       var widgetsFile = widgetsFiles[i];
                       if (widgetsFile.isFile()) {
-                        var contents = new java.lang.String(Files.readAllBytes(widgetsFile.toPath()), StandardCharsets.UTF_8);
+                        var contents = new java.lang.String(java.nio.file.Files.readAllBytes(widgetsFile.toPath()), java.nio.charset.StandardCharsets.UTF_8);
                         var contentsAsJson = JSON.parse(contents);
                         var propertyName = "widgets." + widgetsFile.getName();
                         // if the filename ends with .json, strip the .json
@@ -566,13 +561,13 @@
                   }
 
                   // look in the docs directory for docs for each plugin
-                  var docsDir = new File(baseDir, project.getProperty("docs.dir"));
+                  var docsDir = new java.io.File(baseDir, project.getProperty("docs.dir"));
                   if (docsDir.isDirectory()) {
                     var docFiles = docsDir.listFiles();
                     for (i = 0; i < docFiles.length; i++) {
                       var docFile = docFiles[i];
                       if (docFile.isFile()) {
-                        var contents = new java.lang.String(Files.readAllBytes(docFile.toPath()), StandardCharsets.UTF_8);
+                        var contents = new java.lang.String(java.nio.file.Files.readAllBytes(docFile.toPath()), java.nio.charset.StandardCharsets.UTF_8);
                         var propertyName = "doc." + docFile.getName();
                         // if the filename ends with .md, strip the extension
                         if (propertyName.indexOf(".md", propertyName.length - 3) !== -1) {
@@ -583,7 +578,7 @@
                     }
                   }
 
-                  var fw = new BufferedWriter(FileWriter(cfgFile.getAbsoluteFile()));
+                  var fw = new java.io.BufferedWriter(new java.io.FileWriter(cfgFile.getAbsoluteFile()));
                   fw.write(JSON.stringify(config, null, 2));
                   fw.close();
                 ]]></script>
