@@ -23,14 +23,15 @@
   <version>1.2.0-SNAPSHOT</version>
   <modules>
     <module>cassandra-plugins</module>
+    <module>core-plugins</module>
     <module>elasticsearch-plugins</module>
-    <module>mongodb-plugins</module>
     <module>hbase-plugins</module>
     <module>hdfs-plugins</module>
-    <module>transform-plugins</module>
-    <module>kafka-plugins</module>
     <module>hive-plugins</module>
+    <module>kafka-plugins</module>
+    <module>mongodb-plugins</module>
     <module>python-evaluator-transform</module>
+    <module>transform-plugins</module>
   </modules>
   <packaging>pom</packaging>
 
@@ -52,24 +53,30 @@
   </issueManagement>
 
   <properties>
+    <surefire.redirectTestOutputToFile>true</surefire.redirectTestOutputToFile>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!-- version properties -->
+    <apache-commons.version>1.2</apache-commons.version>
+    <asm.version>5.0.3</asm.version>
+    <avro.version>1.7.7</avro.version>
+    <cassandra.version>2.1.0</cassandra.version>
+    <cassandraunit.version>2.0.2.2</cassandraunit.version>
+    <commons-codec.version>1.10</commons-codec.version>
+    <commons-httpclient.version>3.1</commons-httpclient.version>
     <cdap.version>3.3.0-SNAPSHOT</cdap.version>
+    <datastax.version>2.0.5</datastax.version>
     <es.version>1.6.0</es.version>
     <es-hadoop.version>2.1.0</es-hadoop.version>
     <fastutil.version>6.6.1</fastutil.version>
-    <junit.version>4.11</junit.version>
-    <commons-httpclient.version>3.1</commons-httpclient.version>
+    <geronimo-jms.version>1.1.1</geronimo-jms.version>
     <hadoop.version>2.3.0</hadoop.version>
-    <cassandraunit.version>2.0.2.2</cassandraunit.version>
-    <cassandra.version>2.1.0</cassandra.version>
-    <datastax.version>2.0.5</datastax.version>
-    <es-hadoop.version>2.1.0</es-hadoop.version>
-    <commons-httpclient.version>3.1</commons-httpclient.version>
-    <apache-commons.version>1.2</apache-commons.version>
-    <commons-codec.version>1.10</commons-codec.version>
-    <snappy.version>1.1.2</snappy.version>
     <hive.version>1.1.0-cdh5.4.5</hive.version>
-    <surefire.redirectTestOutputToFile>true</surefire.redirectTestOutputToFile>
+    <junit.version>4.11</junit.version>
+    <kafka.version>0.8.2.2</kafka.version>
+    <snappy.version>1.1.2</snappy.version>
+    <twill.version>0.6.0-incubating</twill.version>
+    <twitter4j.version>4.0.3</twitter4j.version>
+    <zookeeper.version>3.4.5</zookeeper.version>
     <!-- properties for script build step that creates the config files for the artifacts -->
     <widgets.dir>widgets</widgets.dir>
     <docs.dir>docs</docs.dir>
@@ -107,6 +114,12 @@
       <dependency>
         <groupId>co.cask.cdap</groupId>
         <artifactId>cdap-proto</artifactId>
+        <version>${cdap.version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>co.cask.cdap</groupId>
+        <artifactId>cdap-formats</artifactId>
         <version>${cdap.version}</version>
         <scope>provided</scope>
       </dependency>
@@ -312,6 +325,16 @@
         <version>${datastax.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.twitter4j</groupId>
+        <artifactId>twitter4j-core</artifactId>
+        <version>${twitter4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.twitter4j</groupId>
+        <artifactId>twitter4j-stream</artifactId>
+        <version>${twitter4j.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.elasticsearch</groupId>
         <artifactId>elasticsearch</artifactId>
         <version>${es.version}</version>
@@ -382,6 +405,103 @@
             <artifactId>commons-logging</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.avro</groupId>
+        <artifactId>avro</artifactId>
+        <version>${avro.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.avro</groupId>
+        <artifactId>avro-mapred</artifactId>
+        <classifier>hadoop2</classifier>
+        <version>${avro.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.mortbay.jetty</groupId>
+            <artifactId>jetty</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.geronimo.specs</groupId>
+        <artifactId>geronimo-jms_1.1_spec</artifactId>
+        <version>${geronimo-jms.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.zookeeper</groupId>
+        <artifactId>zookeeper</artifactId>
+        <version>${zookeeper.version}</version>
+        <scope>provided</scope>
+        <exclusions>
+          <exclusion>
+            <artifactId>slf4j-api</artifactId>
+            <groupId>org.slf4j</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>slf4j-log4j12</artifactId>
+            <groupId>org.slf4j</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>log4j</artifactId>
+            <groupId>log4j</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>junit</artifactId>
+            <groupId>junit</groupId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.jboss.netty</groupId>
+            <artifactId>netty</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>jline</groupId>
+            <artifactId>jline</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.twill</groupId>
+        <artifactId>twill-core</artifactId>
+        <version>${twill.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-compiler</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.kafka</groupId>
+        <artifactId>kafka_2.10</artifactId>
+        <version>${kafka.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.sun.jdmk</groupId>
+            <artifactId>jmxtools</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.sun.jmx</groupId>
+            <artifactId>jmxri</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-compiler</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-all</artifactId>
+        <version>${asm.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

@@ -22,9 +22,9 @@ jdk:
 # memory values same as surefire plugin config
 before_install: echo "MAVEN_OPTS='-Xmx5000m -XX:MaxPermSize=1024m'" > ~/.mavenrc
 
-script: mvn test
+script: mvn -U clean test
 
-install: mvn install -DskipTests=true -q
+install: mvn -U install -DskipTests=true -q
 
 branches:
   only:
