@@ -34,13 +34,6 @@ public class HasherTest {
                                                       Schema.Field.of("d", Schema.of(Schema.Type.INT)),
                                                       Schema.Field.of("e", Schema.of(Schema.Type.STRING)));
 
-  private static final Schema OUTPUT = Schema.recordOf("output",
-                                                      Schema.Field.of("a", Schema.of(Schema.Type.STRING)),
-                                                      Schema.Field.of("b", Schema.of(Schema.Type.STRING)),
-                                                      Schema.Field.of("c", Schema.of(Schema.Type.STRING)),
-                                                      Schema.Field.of("d", Schema.of(Schema.Type.INT)),
-                                                      Schema.Field.of("e", Schema.of(Schema.Type.STRING)));
-
   @Test
   public void testHasherMD2() throws Exception {
     Transform<StructuredRecord, StructuredRecord> transform =
@@ -177,5 +170,14 @@ public class HasherTest {
     Assert.assertEquals("Field C", emitter.getEmitted().get(0).get("c"));
     Assert.assertEquals(4, emitter.getEmitted().get(0).get("d"));
     Assert.assertEquals(DigestUtils.sha512Hex("Field E"), emitter.getEmitted().get(0).get("e"));
+  }
+
+  @Test
+  public void testSchemaValidation() throws Exception {
+    Transform<StructuredRecord, StructuredRecord> transform =
+      new Hasher(new Hasher.Config("SHA512", "a,b,e"));
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT);
+    transform.configurePipeline(mockPipelineConfigurer);
+    Assert.assertEquals(INPUT, mockPipelineConfigurer.getOutputSchema());
   }
 }

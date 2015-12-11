@@ -26,6 +26,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.InvalidEntry;
 import co.cask.cdap.etl.api.Lookup;
 import co.cask.cdap.etl.api.LookupProvider;
+import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.StageMetrics;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
@@ -147,6 +148,20 @@ public class PythonEvaluator extends Transform<StructuredRecord, StructuredRecor
 
     private StructuredRecord decode(Map nativeObject) {
       return decodeRecord(nativeObject, schema);
+    }
+  }
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
+    super.configurePipeline(pipelineConfigurer);
+    if (config.schema != null) {
+      try {
+        pipelineConfigurer.getStageConfigurer().setOutputSchema(Schema.parseJson(config.schema));
+      } catch (IOException e) {
+        throw new IllegalArgumentException("Unable to parse schema: " + e.getMessage(), e);
+      }
+    } else {
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(pipelineConfigurer.getStageConfigurer().getInputSchema());
     }
   }
 

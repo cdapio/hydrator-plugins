@@ -129,6 +129,7 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
       if (fields.get(0).getSchema().getType() != Schema.Type.STRING) {
         throw new IllegalArgumentException("Output field type should be String");
       }
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(schema);
     } catch (IOException e) {
       throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
     }

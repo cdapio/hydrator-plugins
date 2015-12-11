@@ -127,4 +127,13 @@ public class DecompressorTest {
     zos.close();
     return out.toByteArray();
   }
+
+  @Test
+  public void testSchemaValidation() throws Exception {
+    Transform<StructuredRecord, StructuredRecord> transform =
+      new Decompressor(new Decompressor.Config("a:ZIP", OUTPUT.toString()));
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT);
+    transform.configurePipeline(mockPipelineConfigurer);
+    Assert.assertEquals(OUTPUT, mockPipelineConfigurer.getOutputSchema());
+  }
 }

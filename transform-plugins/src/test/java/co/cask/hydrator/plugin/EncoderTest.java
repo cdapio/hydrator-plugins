@@ -153,4 +153,13 @@ public class EncoderTest {
     Assert.assertEquals(2, emitter.getEmitted().get(0).getSchema().getFields().size());
     Assert.assertArrayEquals(expected, actual);
   }
+
+  @Test
+  public void testSchemaValidation() throws Exception {
+    Transform<StructuredRecord, StructuredRecord> transform =
+      new Encoder(new Encoder.Config("a:BASE32", OUTPUTSTR.toString()));
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT);
+    transform.configurePipeline(mockPipelineConfigurer);
+    Assert.assertEquals(OUTPUTSTR, mockPipelineConfigurer.getOutputSchema());
+  }
 }

@@ -49,6 +49,7 @@ public final class CloneRecord extends Transform<StructuredRecord, StructuredRec
       throw new IllegalArgumentException("Number of copies specified '" + config.copies + "' is incorrect. Specify " +
                                        "proper integer range");
     }
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(pipelineConfigurer.getStageConfigurer().getInputSchema());
   }
 
   @Override

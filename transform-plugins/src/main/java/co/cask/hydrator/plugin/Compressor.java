@@ -123,6 +123,7 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
       for (Field field : outFields) {
         outSchemaMap.put(field.getName(), field.getSchema().getType());
       }
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
     } catch (IOException e) {
       throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
     }

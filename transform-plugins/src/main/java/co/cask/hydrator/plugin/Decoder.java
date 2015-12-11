@@ -100,7 +100,8 @@ public final class Decoder extends Transform<StructuredRecord, StructuredRecord>
     parseConfiguration(config.decode);
     // Check if schema specified is a valid schema or no. 
     try {
-      Schema.parseJson(config.schema);
+      Schema outputSchema = Schema.parseJson(config.schema);
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
     } catch (IOException e) {
       throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
     }

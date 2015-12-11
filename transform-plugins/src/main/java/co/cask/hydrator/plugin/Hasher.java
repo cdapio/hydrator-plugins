@@ -71,6 +71,7 @@ public final class Hasher extends Transform<StructuredRecord, StructuredRecord> 
       throw new IllegalArgumentException("Invalid hasher '" + config.hash + "' specified. Allowed hashers are md2, " +
                                            "md5, sha1, sha256, sha384 and sha512");  
     }
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(pipelineConfigurer.getStageConfigurer().getInputSchema());
   }
 
   @Override

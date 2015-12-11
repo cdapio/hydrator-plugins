@@ -28,14 +28,15 @@ import org.junit.Test;
 /**
  */
 public class ProjectionTransformTest {
-  private static final Schema SIMPLE_TYPES_SCHEMA = Schema.recordOf("record",
-    Schema.Field.of("booleanField", Schema.of(Schema.Type.BOOLEAN)),
-    Schema.Field.of("intField", Schema.of(Schema.Type.INT)),
-    Schema.Field.of("longField", Schema.of(Schema.Type.LONG)),
-    Schema.Field.of("floatField", Schema.of(Schema.Type.FLOAT)),
-    Schema.Field.of("doubleField", Schema.of(Schema.Type.DOUBLE)),
-    Schema.Field.of("bytesField", Schema.of(Schema.Type.BYTES)),
-    Schema.Field.of("stringField", Schema.of(Schema.Type.STRING)));
+  private static final Schema SIMPLE_TYPES_SCHEMA =
+    Schema.recordOf("record",
+                    Schema.Field.of("booleanField", Schema.of(Schema.Type.BOOLEAN)),
+                    Schema.Field.of("intField", Schema.of(Schema.Type.INT)),
+                    Schema.Field.of("longField", Schema.of(Schema.Type.LONG)),
+                    Schema.Field.of("floatField", Schema.of(Schema.Type.FLOAT)),
+                    Schema.Field.of("doubleField", Schema.of(Schema.Type.DOUBLE)),
+                    Schema.Field.of("bytesField", Schema.of(Schema.Type.BYTES)),
+                    Schema.Field.of("stringField", Schema.of(Schema.Type.STRING)));
   private static final StructuredRecord SIMPLE_TYPES_RECORD = StructuredRecord.builder(SIMPLE_TYPES_SCHEMA)
     .set("booleanField", true)
     .set("intField", 28)
@@ -45,6 +46,48 @@ public class ProjectionTransformTest {
     .set("bytesField", Bytes.toBytes("foo"))
     .set("stringField", "bar")
     .build();
+
+  @Test
+  public void testConfigurePipelineSchemaValidation() throws Exception {
+    Schema schema = Schema.recordOf("three",
+                                    Schema.Field.of("x", Schema.of(Schema.Type.INT)),
+                                    Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
+                                    Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
+
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema);
+
+    // test drop
+    ProjectionTransform.ProjectionTransformConfig config =
+      new ProjectionTransform.ProjectionTransformConfig("y, z", null, null);
+
+    new ProjectionTransform(config).configurePipeline(mockConfigurer);
+    Schema expectedSchema = Schema.recordOf("three.projected", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
+    Assert.assertEquals(expectedSchema, mockConfigurer.getOutputSchema());
+
+    // test rename
+    config = new ProjectionTransform.ProjectionTransformConfig(null, "x:a, y:b", null);
+
+    new ProjectionTransform(config).configurePipeline(mockConfigurer);
+    expectedSchema = Schema.recordOf("three.projected", Schema.Field.of("a", Schema.of(Schema.Type.INT)),
+                                     Schema.Field.of("b", Schema.of(Schema.Type.DOUBLE)),
+                                     Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
+    Assert.assertEquals(expectedSchema, mockConfigurer.getOutputSchema());
+
+    // test convert
+    config = new ProjectionTransform
+      .ProjectionTransformConfig(null, null, "x:string,y:string");
+
+    new ProjectionTransform(config).configurePipeline(mockConfigurer);
+    expectedSchema = Schema.recordOf("three.projected", Schema.Field.of("x", Schema.of(Schema.Type.STRING)),
+                                     Schema.Field.of("y", Schema.of(Schema.Type.STRING)),
+                                     Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
+    Assert.assertEquals(expectedSchema, mockConfigurer.getOutputSchema());
+
+    // null input schema
+    mockConfigurer = new MockPipelineConfigurer(null);
+    new ProjectionTransform(config).configurePipeline(mockConfigurer);
+    Assert.assertNull(mockConfigurer.getOutputSchema());
+  }
 
   @Test(expected = IllegalArgumentException.class)
   public void testSameFieldMultipleConverts() throws Exception {
@@ -99,9 +142,9 @@ public class ProjectionTransformTest {
   @Test
   public void testDropFields() throws Exception {
     Schema schema = Schema.recordOf("three",
-      Schema.Field.of("x", Schema.of(Schema.Type.INT)),
-      Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
-      Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
+                                    Schema.Field.of("x", Schema.of(Schema.Type.INT)),
+                                    Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
+                                    Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
     StructuredRecord input = StructuredRecord.builder(schema)
       .set("x", 1)
       .set("y", 3.14)
@@ -125,9 +168,9 @@ public class ProjectionTransformTest {
   @Test
   public void testRenameFields() throws Exception {
     Schema schema = Schema.recordOf("three",
-      Schema.Field.of("x", Schema.of(Schema.Type.INT)),
-      Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
-      Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
+                                    Schema.Field.of("x", Schema.of(Schema.Type.INT)),
+                                    Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
+                                    Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
     StructuredRecord input = StructuredRecord.builder(schema)
       .set("x", 1)
       .set("y", 3.14)
@@ -144,9 +187,9 @@ public class ProjectionTransformTest {
     StructuredRecord output = emitter.getEmitted().get(0);
 
     Schema expectedSchema = Schema.recordOf("three",
-      Schema.Field.of("y", Schema.of(Schema.Type.INT)),
-      Schema.Field.of("z", Schema.of(Schema.Type.DOUBLE)),
-      Schema.Field.of("x", Schema.arrayOf(Schema.of(Schema.Type.INT))));
+                                            Schema.Field.of("y", Schema.of(Schema.Type.INT)),
+                                            Schema.Field.of("z", Schema.of(Schema.Type.DOUBLE)),
+                                            Schema.Field.of("x", Schema.arrayOf(Schema.of(Schema.Type.INT))));
     Assert.assertEquals(expectedSchema, output.getSchema());
     Assert.assertEquals(1, output.get("y"));
     Assert.assertTrue(Math.abs(3.14 - (Double) output.get("z")) < 0.000001);
@@ -156,8 +199,8 @@ public class ProjectionTransformTest {
   @Test
   public void testDropRenameConvert() throws Exception {
     Schema schema = Schema.recordOf("record",
-      Schema.Field.of("x", Schema.of(Schema.Type.INT)),
-      Schema.Field.of("y", Schema.nullableOf(Schema.of(Schema.Type.INT))));
+                                    Schema.Field.of("x", Schema.of(Schema.Type.INT)),
+                                    Schema.Field.of("y", Schema.nullableOf(Schema.of(Schema.Type.INT))));
     StructuredRecord input = StructuredRecord.builder(schema)
       .set("x", 5)
       .set("y", 10)
@@ -174,7 +217,7 @@ public class ProjectionTransformTest {
     StructuredRecord output = emitter.getEmitted().get(0);
 
     Schema expectedSchema = Schema.recordOf("record.projected",
-      Schema.Field.of("x", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
+                                            Schema.Field.of("x", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
     Assert.assertEquals(expectedSchema, output.getSchema());
     Assert.assertEquals("10", output.get("x"));
   }
@@ -193,13 +236,13 @@ public class ProjectionTransformTest {
     StructuredRecord output = emitter.getEmitted().get(0);
 
     Schema expectedSchema = Schema.recordOf("record",
-      Schema.Field.of("booleanField", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("intField", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("longField", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("floatField", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("doubleField", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("bytesField", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("stringField", Schema.of(Schema.Type.STRING)));
+                                            Schema.Field.of("booleanField", Schema.of(Schema.Type.STRING)),
+                                            Schema.Field.of("intField", Schema.of(Schema.Type.STRING)),
+                                            Schema.Field.of("longField", Schema.of(Schema.Type.STRING)),
+                                            Schema.Field.of("floatField", Schema.of(Schema.Type.STRING)),
+                                            Schema.Field.of("doubleField", Schema.of(Schema.Type.STRING)),
+                                            Schema.Field.of("bytesField", Schema.of(Schema.Type.STRING)),
+                                            Schema.Field.of("stringField", Schema.of(Schema.Type.STRING)));
     Assert.assertEquals(expectedSchema, output.getSchema());
     Assert.assertEquals("true", output.get("booleanField"));
     Assert.assertEquals("28", output.get("intField"));
@@ -213,13 +256,13 @@ public class ProjectionTransformTest {
   @Test
   public void testConvertFromString() throws Exception {
     Schema schema = Schema.recordOf("record",
-      Schema.Field.of("booleanField", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("intField", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("longField", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("floatField", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("doubleField", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("bytesField", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("stringField", Schema.of(Schema.Type.STRING)));
+                                    Schema.Field.of("booleanField", Schema.of(Schema.Type.STRING)),
+                                    Schema.Field.of("intField", Schema.of(Schema.Type.STRING)),
+                                    Schema.Field.of("longField", Schema.of(Schema.Type.STRING)),
+                                    Schema.Field.of("floatField", Schema.of(Schema.Type.STRING)),
+                                    Schema.Field.of("doubleField", Schema.of(Schema.Type.STRING)),
+                                    Schema.Field.of("bytesField", Schema.of(Schema.Type.STRING)),
+                                    Schema.Field.of("stringField", Schema.of(Schema.Type.STRING)));
     ProjectionTransform.ProjectionTransformConfig config = new ProjectionTransform
       .ProjectionTransformConfig(null, null, "booleanField:boolean,intField:int,longField:long,floatField:float," +
       "doubleField:double,bytesField:bytes,stringField:string");
@@ -265,13 +308,13 @@ public class ProjectionTransformTest {
     StructuredRecord output = emitter.getEmitted().get(0);
 
     Schema expectedSchema = Schema.recordOf("record",
-      Schema.Field.of("booleanField", Schema.of(Schema.Type.BYTES)),
-      Schema.Field.of("intField", Schema.of(Schema.Type.BYTES)),
-      Schema.Field.of("longField", Schema.of(Schema.Type.BYTES)),
-      Schema.Field.of("floatField", Schema.of(Schema.Type.BYTES)),
-      Schema.Field.of("doubleField", Schema.of(Schema.Type.BYTES)),
-      Schema.Field.of("bytesField", Schema.of(Schema.Type.BYTES)),
-      Schema.Field.of("stringField", Schema.of(Schema.Type.BYTES)));
+                                            Schema.Field.of("booleanField", Schema.of(Schema.Type.BYTES)),
+                                            Schema.Field.of("intField", Schema.of(Schema.Type.BYTES)),
+                                            Schema.Field.of("longField", Schema.of(Schema.Type.BYTES)),
+                                            Schema.Field.of("floatField", Schema.of(Schema.Type.BYTES)),
+                                            Schema.Field.of("doubleField", Schema.of(Schema.Type.BYTES)),
+                                            Schema.Field.of("bytesField", Schema.of(Schema.Type.BYTES)),
+                                            Schema.Field.of("stringField", Schema.of(Schema.Type.BYTES)));
     Assert.assertEquals(expectedSchema, output.getSchema());
     Assert.assertArrayEquals(Bytes.toBytes(true), (byte[]) output.get("booleanField"));
     Assert.assertArrayEquals(Bytes.toBytes(28), (byte[]) output.get("intField"));
@@ -285,13 +328,13 @@ public class ProjectionTransformTest {
   @Test
   public void testConvertFromBytes() throws Exception {
     Schema schema = Schema.recordOf("record",
-      Schema.Field.of("booleanField", Schema.of(Schema.Type.BYTES)),
-      Schema.Field.of("intField", Schema.of(Schema.Type.BYTES)),
-      Schema.Field.of("longField", Schema.of(Schema.Type.BYTES)),
-      Schema.Field.of("floatField", Schema.of(Schema.Type.BYTES)),
-      Schema.Field.of("doubleField", Schema.of(Schema.Type.BYTES)),
-      Schema.Field.of("bytesField", Schema.of(Schema.Type.BYTES)),
-      Schema.Field.of("stringField", Schema.of(Schema.Type.BYTES)));
+                                    Schema.Field.of("booleanField", Schema.of(Schema.Type.BYTES)),
+                                    Schema.Field.of("intField", Schema.of(Schema.Type.BYTES)),
+                                    Schema.Field.of("longField", Schema.of(Schema.Type.BYTES)),
+                                    Schema.Field.of("floatField", Schema.of(Schema.Type.BYTES)),
+                                    Schema.Field.of("doubleField", Schema.of(Schema.Type.BYTES)),
+                                    Schema.Field.of("bytesField", Schema.of(Schema.Type.BYTES)),
+                                    Schema.Field.of("stringField", Schema.of(Schema.Type.BYTES)));
     StructuredRecord input = StructuredRecord.builder(schema)
       .set("booleanField", Bytes.toBytes(true))
       .set("intField", Bytes.toBytes(28))
@@ -336,13 +379,13 @@ public class ProjectionTransformTest {
     StructuredRecord output = emitter.getEmitted().get(0);
 
     Schema expectedSchema = Schema.recordOf("record.projected",
-      Schema.Field.of("booleanField", Schema.of(Schema.Type.BOOLEAN)),
-      Schema.Field.of("intField", Schema.of(Schema.Type.LONG)),
-      Schema.Field.of("longField", Schema.of(Schema.Type.LONG)),
-      Schema.Field.of("floatField", Schema.of(Schema.Type.FLOAT)),
-      Schema.Field.of("doubleField", Schema.of(Schema.Type.DOUBLE)),
-      Schema.Field.of("bytesField", Schema.of(Schema.Type.BYTES)),
-      Schema.Field.of("stringField", Schema.of(Schema.Type.STRING)));
+                                            Schema.Field.of("booleanField", Schema.of(Schema.Type.BOOLEAN)),
+                                            Schema.Field.of("intField", Schema.of(Schema.Type.LONG)),
+                                            Schema.Field.of("longField", Schema.of(Schema.Type.LONG)),
+                                            Schema.Field.of("floatField", Schema.of(Schema.Type.FLOAT)),
+                                            Schema.Field.of("doubleField", Schema.of(Schema.Type.DOUBLE)),
+                                            Schema.Field.of("bytesField", Schema.of(Schema.Type.BYTES)),
+                                            Schema.Field.of("stringField", Schema.of(Schema.Type.STRING)));
 
     Assert.assertEquals(expectedSchema, output.getSchema());
     Assert.assertTrue((Boolean) output.get("booleanField"));
@@ -367,13 +410,13 @@ public class ProjectionTransformTest {
     StructuredRecord output = emitter.getEmitted().get(0);
 
     Schema expectedSchema = Schema.recordOf("record.projected",
-      Schema.Field.of("booleanField", Schema.of(Schema.Type.BOOLEAN)),
-      Schema.Field.of("intField", Schema.of(Schema.Type.FLOAT)),
-      Schema.Field.of("longField", Schema.of(Schema.Type.FLOAT)),
-      Schema.Field.of("floatField", Schema.of(Schema.Type.FLOAT)),
-      Schema.Field.of("doubleField", Schema.of(Schema.Type.DOUBLE)),
-      Schema.Field.of("bytesField", Schema.of(Schema.Type.BYTES)),
-      Schema.Field.of("stringField", Schema.of(Schema.Type.STRING)));
+                                            Schema.Field.of("booleanField", Schema.of(Schema.Type.BOOLEAN)),
+                                            Schema.Field.of("intField", Schema.of(Schema.Type.FLOAT)),
+                                            Schema.Field.of("longField", Schema.of(Schema.Type.FLOAT)),
+                                            Schema.Field.of("floatField", Schema.of(Schema.Type.FLOAT)),
+                                            Schema.Field.of("doubleField", Schema.of(Schema.Type.DOUBLE)),
+                                            Schema.Field.of("bytesField", Schema.of(Schema.Type.BYTES)),
+                                            Schema.Field.of("stringField", Schema.of(Schema.Type.STRING)));
 
     Assert.assertEquals(expectedSchema, output.getSchema());
     Assert.assertTrue((Boolean) output.get("booleanField"));
@@ -398,13 +441,13 @@ public class ProjectionTransformTest {
     StructuredRecord output = emitter.getEmitted().get(0);
 
     Schema expectedSchema = Schema.recordOf("record.projected",
-      Schema.Field.of("booleanField", Schema.of(Schema.Type.BOOLEAN)),
-      Schema.Field.of("intField", Schema.of(Schema.Type.DOUBLE)),
-      Schema.Field.of("longField", Schema.of(Schema.Type.DOUBLE)),
-      Schema.Field.of("floatField", Schema.of(Schema.Type.DOUBLE)),
-      Schema.Field.of("doubleField", Schema.of(Schema.Type.DOUBLE)),
-      Schema.Field.of("bytesField", Schema.of(Schema.Type.BYTES)),
-      Schema.Field.of("stringField", Schema.of(Schema.Type.STRING)));
+                                            Schema.Field.of("booleanField", Schema.of(Schema.Type.BOOLEAN)),
+                                            Schema.Field.of("intField", Schema.of(Schema.Type.DOUBLE)),
+                                            Schema.Field.of("longField", Schema.of(Schema.Type.DOUBLE)),
+                                            Schema.Field.of("floatField", Schema.of(Schema.Type.DOUBLE)),
+                                            Schema.Field.of("doubleField", Schema.of(Schema.Type.DOUBLE)),
+                                            Schema.Field.of("bytesField", Schema.of(Schema.Type.BYTES)),
+                                            Schema.Field.of("stringField", Schema.of(Schema.Type.STRING)));
 
     Assert.assertEquals(expectedSchema, output.getSchema());
     Assert.assertTrue((Boolean) output.get("booleanField"));
@@ -425,7 +468,7 @@ public class ProjectionTransformTest {
     transform.initialize(transformContext);
 
     Schema inputSchema = Schema.recordOf("record",
-      Schema.Field.of("x", Schema.nullableOf(Schema.of(Schema.Type.INT))));
+                                         Schema.Field.of("x", Schema.nullableOf(Schema.of(Schema.Type.INT))));
     StructuredRecord input = StructuredRecord.builder(inputSchema).build();
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
@@ -433,7 +476,7 @@ public class ProjectionTransformTest {
     StructuredRecord output = emitter.getEmitted().get(0);
 
     Schema expectedSchema = Schema.recordOf("record.projected",
-      Schema.Field.of("x", Schema.nullableOf(Schema.of(Schema.Type.LONG))));
+                                            Schema.Field.of("x", Schema.nullableOf(Schema.of(Schema.Type.LONG))));
 
     Assert.assertEquals(expectedSchema, output.getSchema());
     Assert.assertNull(output.get("x"));
