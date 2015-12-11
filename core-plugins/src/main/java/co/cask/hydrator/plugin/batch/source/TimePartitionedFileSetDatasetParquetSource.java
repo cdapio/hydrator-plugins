@@ -26,7 +26,7 @@ import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchSource;
-import co.cask.cdap.etl.common.HiveSchemaConverter;
+import co.cask.hydrator.common.HiveSchemaConverter;
 import co.cask.hydrator.plugin.common.AvroToStructuredTransformer;
 import com.google.common.base.Throwables;
 import org.apache.avro.Schema;

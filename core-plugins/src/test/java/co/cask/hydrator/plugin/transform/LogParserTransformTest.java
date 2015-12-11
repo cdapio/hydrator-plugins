@@ -20,7 +20,7 @@ import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Transform;
-import co.cask.hydrator.plugin.common.MockEmitter;
+import co.cask.hydrator.common.mock.MockEmitter;
 import org.junit.Assert;
 import org.junit.Test;
 

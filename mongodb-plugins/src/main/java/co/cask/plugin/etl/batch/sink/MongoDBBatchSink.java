@@ -34,7 +34,6 @@ import org.apache.hadoop.io.NullWritable;
 
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.Nullable;
 
 /**
  * A {@link BatchSink} that writes data to MongoDB.

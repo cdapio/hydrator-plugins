@@ -17,9 +17,9 @@
 package co.cask.hydrator.plugin.common;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.etl.common.RecordConverter;
+import co.cask.cdap.api.data.schema.Schema;
+import co.cask.hydrator.common.RecordConverter;
 import com.google.common.collect.Maps;
-import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 
 import java.io.IOException;
@@ -30,11 +30,11 @@ import java.util.Map;
  */
 public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, StructuredRecord> {
 
-  private final Map<Integer, co.cask.cdap.api.data.schema.Schema> schemaCache = Maps.newHashMap();
+  private final Map<Integer, Schema> schemaCache = Maps.newHashMap();
 
   @Override
   public StructuredRecord transform(GenericRecord genericRecord) throws IOException {
-    Schema genericRecordSchema = genericRecord.getSchema();
+    org.apache.avro.Schema genericRecordSchema = genericRecord.getSchema();
 
     int hashCode = genericRecordSchema.hashCode();
     co.cask.cdap.api.data.schema.Schema structuredSchema;
@@ -47,9 +47,9 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
     }
 
     StructuredRecord.Builder builder = StructuredRecord.builder(structuredSchema);
-    for (Schema.Field field : genericRecordSchema.getFields()) {
-      String fieldName = field.name();
-      builder.set(fieldName, convertField(genericRecord.get(fieldName), field.schema()));
+    for (Schema.Field field : structuredSchema.getFields()) {
+      String fieldName = field.getName();
+      builder.set(fieldName, convertField(genericRecord.get(fieldName), field.getSchema()));
     }
 
     return builder.build();

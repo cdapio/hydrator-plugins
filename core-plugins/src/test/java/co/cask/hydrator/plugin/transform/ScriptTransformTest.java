@@ -23,13 +23,12 @@ import co.cask.cdap.etl.api.Lookup;
 import co.cask.cdap.etl.api.LookupConfig;
 import co.cask.cdap.etl.api.LookupTableConfig;
 import co.cask.cdap.etl.api.Transform;
-import co.cask.cdap.etl.common.MockMetrics;
-import co.cask.hydrator.plugin.common.MockEmitter;
-import co.cask.hydrator.plugin.common.MockLookupProvider;
+import co.cask.hydrator.common.mock.MockEmitter;
+import co.cask.hydrator.common.mock.MockLookupProvider;
+import co.cask.hydrator.common.mock.MockTransformContext;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import org.junit.Assert;
 import org.junit.Test;
@@ -211,8 +210,9 @@ public class ScriptTransformTest {
           "purchases", new LookupTableConfig(LookupTableConfig.TableType.DATASET))
       ));
     Transform<StructuredRecord, StructuredRecord> transform = new ScriptTransform(config);
-    transform.initialize(new MockTransformContext(
-      Maps.<String, String>newHashMap(), new MockMetrics(), "", new MockLookupProvider(TEST_LOOKUP)));
+    transform.initialize(new MockTransformContext("somestage",
+                                                  new HashMap<String, String>(),
+                                                  new MockLookupProvider(TEST_LOOKUP)));
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(STRING_RECORD, emitter);
@@ -315,15 +315,15 @@ public class ScriptTransformTest {
         "}",
       outputSchema.toString(), null);
     Transform<StructuredRecord, StructuredRecord> transform = new ScriptTransform(config);
-    MockMetrics mockMetrics = new MockMetrics();
-    transform.initialize(new MockTransformContext(new HashMap<String, String>(), mockMetrics, "transform.1."));
+    MockTransformContext mockContext = new MockTransformContext("transform.1");
+    transform.initialize(mockContext);
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(input, emitter);
     StructuredRecord output = emitter.getEmitted().get(0);
     Assert.assertEquals(outputSchema, output.getSchema());
     Assert.assertTrue(Math.abs(2.71 * 2.71 + 3.14 * 3.14 * 3.14 - (Double) output.get("x")) < 0.000001);
-    Assert.assertEquals(1, mockMetrics.getCount("script.transform.count"));
-    Assert.assertEquals(1, mockMetrics.getCount("transform.1.script.transform.count"));
+    Assert.assertEquals(1, mockContext.getMockMetrics().getCount("script.transform.count"));
+    Assert.assertEquals(1, mockContext.getMockMetrics().getPipelineCount("transform.1.script.transform.count"));
   }
 }

@@ -24,7 +24,7 @@ import co.cask.cdap.api.data.schema.UnsupportedTypeException;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
-import co.cask.cdap.etl.common.HiveSchemaConverter;
+import co.cask.hydrator.common.HiveSchemaConverter;
 import co.cask.hydrator.plugin.common.AvroToStructuredTransformer;
 import co.cask.hydrator.plugin.common.SnapshotFileSetConfig;
 import org.apache.avro.generic.GenericRecord;

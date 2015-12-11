@@ -26,7 +26,7 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.realtime.DataWriter;
 import co.cask.cdap.etl.api.realtime.RealtimeContext;
 import co.cask.cdap.etl.api.realtime.RealtimeSink;
-import co.cask.cdap.etl.common.StructuredRecordStringConverter;
+import co.cask.cdap.format.StructuredRecordStringConverter;
 import com.google.common.collect.Lists;
 import kafka.producer.ProducerConfig;
 import org.apache.commons.csv.CSVFormat;

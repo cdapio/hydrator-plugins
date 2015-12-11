@@ -18,7 +18,7 @@
 package co.cask.hydrator.plugin.common;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.etl.common.RecordConverter;
+import co.cask.hydrator.common.RecordConverter;
 import com.google.common.collect.Maps;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
@@ -43,22 +43,27 @@ public class StructuredToAvroTransformer extends RecordConverter<StructuredRecor
   public GenericRecord transform(StructuredRecord structuredRecord) throws IOException {
     co.cask.cdap.api.data.schema.Schema structuredRecordSchema = structuredRecord.getSchema();
 
-    int hashCode = structuredRecordSchema.hashCode();
     Schema avroSchema;
-
     if (outputAvroSchema != null) {
       avroSchema = outputAvroSchema;
-    } else if (schemaCache.containsKey(hashCode)) {
-      avroSchema = schemaCache.get(hashCode);
     } else {
-      avroSchema = new Schema.Parser().parse(structuredRecordSchema.toString());
-      schemaCache.put(hashCode, avroSchema);
+      int hashCode = structuredRecordSchema.hashCode();
+      if (schemaCache.containsKey(hashCode)) {
+        avroSchema = schemaCache.get(hashCode);
+      } else {
+        avroSchema = new Schema.Parser().parse(structuredRecordSchema.toString());
+        schemaCache.put(hashCode, avroSchema);
+      }
     }
 
     GenericRecordBuilder recordBuilder = new GenericRecordBuilder(avroSchema);
     for (Schema.Field field : avroSchema.getFields()) {
       String fieldName = field.name();
-      recordBuilder.set(fieldName, convertField(structuredRecord.get(fieldName), field.schema()));
+      co.cask.cdap.api.data.schema.Schema.Field schemaField = structuredRecordSchema.getField(fieldName);
+      if (schemaField == null) {
+        throw new IllegalArgumentException("Input record does not contain the " + fieldName + " field.");
+      }
+      recordBuilder.set(fieldName, convertField(structuredRecord.get(fieldName), schemaField.getSchema()));
     }
     return recordBuilder.build();
   }

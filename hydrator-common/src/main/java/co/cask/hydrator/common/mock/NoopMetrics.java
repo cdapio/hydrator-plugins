@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.sinks;
+package co.cask.hydrator.common.mock;
 
 import co.cask.cdap.etl.api.StageMetrics;
 
@@ -22,6 +22,7 @@ import co.cask.cdap.etl.api.StageMetrics;
  * No op metrics implementation for tests.
  */
 public class NoopMetrics implements StageMetrics {
+
   public static final StageMetrics INSTANCE = new NoopMetrics();
 
   @Override
@@ -35,12 +36,12 @@ public class NoopMetrics implements StageMetrics {
   }
 
   @Override
-  public void pipelineCount(String s, int i) {
+  public void pipelineCount(String metricName, int delta) {
     // no-op
   }
 
   @Override
-  public void pipelineGauge(String s, long l) {
+  public void pipelineGauge(String metricName, long value) {
     // no-op
   }
 }

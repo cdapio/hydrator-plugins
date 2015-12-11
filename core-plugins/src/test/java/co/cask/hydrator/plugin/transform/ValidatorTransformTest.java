@@ -19,14 +19,12 @@ package co.cask.hydrator.plugin.transform;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Validator;
-import co.cask.cdap.etl.common.MockMetrics;
-import co.cask.hydrator.plugin.common.MockEmitter;
+import co.cask.hydrator.common.mock.MockEmitter;
+import co.cask.hydrator.common.mock.MockTransformContext;
 import co.cask.hydrator.plugin.validator.CoreValidator;
 import com.google.common.collect.ImmutableList;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.HashMap;
 
 /**
  * Validator transformation testing
@@ -63,9 +61,8 @@ public class ValidatorTransformTest {
     config.validators = "core";
 
     ValidatorTransform transform = new ValidatorTransform(config);
-    MockMetrics metrics = new MockMetrics();
-    transform.setUpInitialScript(new MockTransformContext(new HashMap<String, String>(), metrics, "validator.1."),
-                                 ImmutableList.<Validator>of(new CoreValidator()));
+    MockTransformContext mockContext = new MockTransformContext("validator.1");
+    transform.setUpInitialScript(mockContext, ImmutableList.<Validator>of(new CoreValidator()));
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
 
     StructuredRecord validRecord = StructuredRecord.builder(SCHEMA)
@@ -99,8 +96,8 @@ public class ValidatorTransformTest {
 
     Assert.assertEquals(1, emitter.getEmitted().size());
     Assert.assertEquals(3, emitter.getErrors().size());
-    Assert.assertEquals(4, metrics.getCount("total.processed"));
-    Assert.assertEquals(4, metrics.getCount("validator.1.total.processed"));
+    Assert.assertEquals(4, mockContext.getMockMetrics().getCount("total.processed"));
+    Assert.assertEquals(4, mockContext.getMockMetrics().getPipelineCount("validator.1.total.processed"));
   }
 
   @Test

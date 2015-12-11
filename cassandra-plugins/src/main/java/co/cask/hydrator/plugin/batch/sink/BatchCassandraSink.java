@@ -27,7 +27,7 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
-import co.cask.cdap.etl.common.StructuredRecordStringConverter;
+import co.cask.cdap.format.StructuredRecordStringConverter;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import org.apache.cassandra.hadoop.cql3.CqlOutputFormat;
