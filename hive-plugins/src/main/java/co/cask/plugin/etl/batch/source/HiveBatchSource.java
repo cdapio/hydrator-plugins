@@ -32,12 +32,15 @@ import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.plugin.etl.batch.commons.HiveSchemaConverter;
 import co.cask.plugin.etl.batch.commons.HiveSchemaStore;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.VersionInfo;
 import org.apache.hive.hcatalog.data.HCatRecord;
 import org.apache.hive.hcatalog.data.schema.HCatSchema;
 import org.apache.hive.hcatalog.mapreduce.HCatInputFormat;
+import org.apache.hive.service.auth.HiveAuthFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +73,11 @@ public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord,
     Job job = context.getHadoopJob();
     Configuration configuration = job.getConfiguration();
     job.setInputFormatClass(HCatInputFormat.class);
-    configuration.set("hive.metastore.uris", config.metaStoreURI);
+    configuration.set(HiveConf.ConfVars.METASTOREURIS.varname, config.metaStoreURI);
+    if (UserGroupInformation.isSecurityEnabled()) {
+      configuration.set(HiveConf.ConfVars.METASTORE_USE_THRIFT_SASL.varname, "true");
+      configuration.set("hive.metastore.token.signature", HiveAuthFactory.HS2_CLIENT_TOKEN);
+    }
     // Use the current thread's classloader to ensure that when setInput is called it can access VersionInfo class
     // loaded above. This is needed to support CDAP 3.2 where we were just exposing classes to plugin jars and not
     // resources.
