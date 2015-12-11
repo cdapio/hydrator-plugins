@@ -28,6 +28,7 @@
     <module>hbase-plugins</module>
     <module>hdfs-plugins</module>
     <module>hive-plugins</module>
+    <module>hydrator-common</module>
     <module>kafka-plugins</module>
     <module>mongodb-plugins</module>
     <module>python-evaluator-transform</module>
