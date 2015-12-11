@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.cdap.etl.common;
+package co.cask.hydrator.common;
 
 import co.cask.cdap.api.metrics.Metrics;
 import com.google.common.collect.Maps;
