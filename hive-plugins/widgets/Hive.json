@@ -1,47 +1,66 @@
 {
-  "id": "Hive",
-  "groups" : {
-    "position": [ "group1" ],
-    "group1": {
-      "display" : "Hive Configuration",
-      "position" : [ "metastoreURI", "databaseName", "tableName", "partitions"],
-      "fields" : {
-        "metastoreURI": {
-          "widget": "textbox",
+  "metadata": {
+    "spec-version": "1.0",
+    "artifact-version": "3.3.0-SNAPSHOT",
+    "name": "Hive",
+    "type": ""
+  },
+  "configuration-groups": [
+    {
+      "label": "Hive Configuration",
+      "properties": [
+        {
+          "widget-type": "textbox",
           "label": "Hive Metastore URI",
-          "properties": {
+          "name": "metastoreURI",
+          "widget-attributes": {
             "width": "large"
           }
         },
-        "databaseName": {
-          "widget": "textbox",
+        {
+          "widget-type": "textbox",
           "label": "Hive Database Name",
-          "properties": {
+          "name": "databaseName",
+          "widget-attributes": {
             "width": "large"
           }
         },
-        "tableName": {
-          "widget": "textbox",
+        {
+          "widget-type": "textbox",
           "label": "Hive Table Name",
-          "properties": {
+          "name": "tableName",
+          "widget-attributes": {
             "width": "medium"
           }
         },
-        "partitions" : {
-          "widget": "textbox",
+        {
+          "widget-type": "textbox",
           "label": "Hive Partition Filter",
-          "properties": {
+          "name": "partitions",
+          "widget-attributes": {
             "width": "large"
           }
         }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "label": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "boolean",
+          "int",
+          "long",
+          "float",
+          "double",
+          "bytes",
+          "string"
+        ],
+        "schema-default-type": "string"
       }
     }
-  },
-  "outputschema": {
-    "schema" : {
-      "widget": "schema",
-      "schema-types" : [ "boolean", "int", "long", "float", "double", "bytes", "string"],
-      "schema-default-type" : "string"
-    }
-  }
+  ]
 }

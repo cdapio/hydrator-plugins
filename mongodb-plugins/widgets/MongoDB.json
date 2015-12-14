@@ -1,55 +1,75 @@
 {
-  "id": "MongoDB",
-  "groups" : {
-    "position": [ "group1" ],
-    "group1": {
-      "display" : "MongoDB Configuration",
-      "position" : [ "connectionString", "authConnectionString", "schema", "inputQuery", "inputFields", "splitterClass" ],
-      "fields" : {
-        "connectionString": {
-          "widget": "textbox",
+  "metadata": {
+    "spec-version": "1.0",
+    "artifact-version": "3.3.0-SNAPSHOT",
+    "name": "MongoDB",
+    "type": ""
+  },
+  "configuration-groups": [
+    {
+      "label": "MongoDB Configuration",
+      "properties": [
+        {
+          "widget-type": "textbox",
           "label": "Connection String",
-          "properties": {
+          "name": "connectionString",
+          "widget-attributes": {
             "width": "large"
           }
         },
-        "authConnectionString": {
-          "widget": "textbox",
+        {
+          "widget-type": "textbox",
           "label": "Authentication Connection String",
-          "properties": {
+          "name": "authConnectionString",
+          "widget-attributes": {
             "width": "large"
           }
         },
-        "inputQuery" : {
-          "widget": "textbox",
+        {
+          "widget-type": "textbox",
           "label": "Query",
-          "properties": {
-            "width":"large"
+          "name": "inputQuery",
+          "widget-attributes": {
+            "width": "large"
           }
         },
-        "inputFields": {
-          "widget": "textbox",
+        {
+          "widget-type": "textbox",
           "label": "Index",
-          "properties": {
+          "name": "inputFields",
+          "widget-attributes": {
             "width": "medium"
           }
         },
-        "splitterClass": {
-          "widget": "textbox",
+        {
+          "widget-type": "textbox",
           "label": "Splitter Class",
-          "properties": {
+          "name": "splitterClass",
+          "widget-attributes": {
             "width": "medium"
           }
         }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "label": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "boolean",
+          "int",
+          "long",
+          "float",
+          "double",
+          "bytes",
+          "string"
+        ],
+        "schema-default-type": "string",
+        "property-watch": "format"
       }
     }
-  },
-  "outputschema": {
-    "schema" : {
-      "widget": "schema",
-      "schema-types" : [ "boolean", "int", "long", "float", "double", "bytes", "string" ],
-      "schema-default-type" : "string",
-      "property-watch": "format"
-    }
-  }
+  ]
 }

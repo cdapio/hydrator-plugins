@@ -1,29 +1,32 @@
 {
-  "id": "HDFS",
-  "groups" : {
-    "position": [ "group1" ],
-    "group1": {
-      "display": "Configuration",
-      "position": [
-        "path",
-        "timeSuffix"
-      ],
-      "fields": {
-        "path": {
-          "widget": "textbox",
+  "metadata": {
+    "spec-version": "1.0",
+    "artifact-version": "3.3.0-SNAPSHOT",
+    "name": "HDFS",
+    "type": ""
+  },
+  "configuration-groups": [
+    {
+      "label": "Configuration",
+      "properties": [
+        {
+          "widget-type": "textbox",
           "label": "HDFS Path",
-          "properties": {
+          "name": "path",
+          "widget-attributes": {
             "width": "large"
           }
         },
-        "timeSuffix": {
-          "widget": "textbox",
+        {
+          "widget-type": "textbox",
           "label": "Time Suffix Format",
-          "properties": {
+          "name": "timeSuffix",
+          "widget-attributes": {
             "width": "large"
           }
         }
-      }
+      ]
     }
-  }
+  ],
+  "outputs": []
 }

@@ -1,25 +1,35 @@
 {
-  "id": "Decoder",
-  "groups": {
-    "position": [ "group1" ],
-    "group1": {
-      "display": "Decoder",
-      "position": [ "decode" ],
-      "fields": {
-        "decode" : {
-          "widget" : "textbox",
-          "label" : "Decode Fields",
-          "description" : "Encode fields <field>:<decode-type>[, <field>:<decode-type>]*"
+  "metadata": {
+    "spec-version": "1.0",
+    "artifact-version": "3.3.0-SNAPSHOT",
+    "name": "Decoder",
+    "type": ""
+  },
+  "configuration-groups": [
+    {
+      "label": "Decoder",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Decode Fields",
+          "name": "decode"
         }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "label": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "string",
+          "bytes"
+        ],
+        "schema-default-type": "string",
+        "property-watch": "format"
       }
     }
-  },
-  "outputschema": {
-    "schema" : {
-      "widget": "schema",
-      "schema-types" : [ "string", "bytes" ],
-      "schema-default-type" : "string",
-      "property-watch": "format"
-    }
-  }
+  ]
 }

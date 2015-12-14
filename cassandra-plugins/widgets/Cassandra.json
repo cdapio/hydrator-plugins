@@ -1,110 +1,127 @@
 {
-  "id": "Cassandra",
-  "groups": {
-    "position": [ "group1", "group2" ],
-    "group1": {
-      "display": "Cassandra Configuration",
-      "position": [ "initialAddress", "addresses", "port", "consistencyLevel", "compression", "username", "password", "properties" ],
-      "fields": {
-        "initialAddress": {
-          "widget": "textbox",
+  "metadata": {
+    "spec-version": "1.0",
+    "artifact-version": "3.3.0-SNAPSHOT",
+    "name": "Cassandra",
+    "type": ""
+  },
+  "configuration-groups": [
+    {
+      "label": "Cassandra Configuration",
+      "properties": [
+        {
+          "widget-type": "textbox",
           "label": "Initial Address",
-          "properties": {
+          "name": "initialAddress",
+          "widget-attributes": {
             "width": "large"
           }
         },
-        "addresses": {
-          "widget": "csv",
+        {
+          "widget-type": "csv",
           "label": "Addresses",
-          "properties": {
+          "name": "addresses",
+          "widget-attributes": {
             "delimiter": ","
           }
         },
-        "port": {
-          "widget": "textbox",
+        {
+          "widget-type": "textbox",
           "label": "Port",
-          "properties": {
+          "name": "port",
+          "widget-attributes": {
             "width": "medium"
           }
         },
-        "consistencyLevel": {
-          "widget": "textbox",
+        {
+          "widget-type": "textbox",
           "label": "Consistency Level",
-          "properties": {
+          "name": "consistencyLevel",
+          "widget-attributes": {
             "width": "medium"
           }
         },
-        "compression": {
-          "widget": "textbox",
+        {
+          "widget-type": "textbox",
           "label": "Compression",
-          "properties": {
+          "name": "compression",
+          "widget-attributes": {
             "width": "medium"
           }
         },
-        "username": {
-          "widget": "textbox",
+        {
+          "widget-type": "textbox",
           "label": "Username",
-          "properties": {
+          "name": "username",
+          "widget-attributes": {
             "width": "medium"
           }
         },
-        "password": {
-          "widget": "password",
-          "label": "Password"
+        {
+          "widget-type": "password",
+          "label": "Password",
+          "name": "password"
         },
-        "properties": {
-          "widget": "keyvalue",
+        {
+          "widget-type": "keyvalue",
           "label": "Other Properties",
-          "properties": {
+          "name": "properties",
+          "widget-attributes": {
             "showDelimiter": "false"
           }
         }
-      }
+      ]
     },
-    "group2": {
-      "display": "Keyspace and Column Family",
-      "position": [ "keyspace", "partitioner", "columnFamily", "primaryKey", "columns", "query" ],
-      "fields": {
-        "keyspace": {
-          "widget": "textbox",
+    {
+      "label": "Keyspace and Column Family",
+      "properties": [
+        {
+          "widget-type": "textbox",
           "label": "Keyspace",
-          "properties": {
+          "name": "keyspace",
+          "widget-attributes": {
             "width": "medium"
           }
         },
-        "partitioner": {
-          "widget": "textbox",
+        {
+          "widget-type": "textbox",
           "label": "Partitioner",
-          "properties": {
+          "name": "partitioner",
+          "widget-attributes": {
             "width": "large"
           }
         },
-        "columnFamily": {
-          "widget": "textbox",
+        {
+          "widget-type": "textbox",
           "label": "Column Family",
-          "properties": {
+          "name": "columnFamily",
+          "widget-attributes": {
             "width": "medium"
           }
         },
-        "primaryKey": {
-          "widget": "csv",
+        {
+          "widget-type": "csv",
           "label": "Primary Key",
-          "properties": {
+          "name": "primaryKey",
+          "widget-attributes": {
             "delimiter": ","
           }
         },
-        "columns": {
-          "widget": "csv",
+        {
+          "widget-type": "csv",
           "label": "Columns",
-          "properties": {
+          "name": "columns",
+          "widget-attributes": {
             "delimiter": ","
           }
         },
-        "query": {
-          "widget": "textbox",
-          "label": "CQL Query"
+        {
+          "widget-type": "textbox",
+          "label": "CQL Query",
+          "name": "query"
         }
-      }
+      ]
     }
-  }
+  ],
+  "outputs": []
 }

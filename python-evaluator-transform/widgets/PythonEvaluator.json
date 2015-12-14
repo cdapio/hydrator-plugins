@@ -1,25 +1,43 @@
 {
-  "id": "PythonEvaluator",
-  "groups" : {
-    "position": [ "group1" ],
-    "group1": {
-       "position" : ["script"],
-       "fields" : {
-          "script" : {
-             "widget": "python-editor",
-             "properties" : {
-                "default" : "def transform(record, emitter, context):\n    emitter.emit(record)\n"
-             }
-          }
-       }
-    }
+  "metadata": {
+    "spec-version": "1.0",
+    "artifact-version": "3.3.0-SNAPSHOT",
+    "name": "PythonEvaluator",
+    "type": ""
   },
-  "outputschema": {
-    "schema" : {
-      "widget": "schema",
-      "schema-types" : [ "boolean", "int", "long", "float", "double", "bytes", "string", "map<string, string>" ],
-      "schema-default-type" : "string",
-      "property-watch": "format"
+  "configuration-groups": [
+    {
+      "properties": [
+        {
+          "widget-type": "python-editor",
+          "label": "script",
+          "name": "script",
+          "widget-attributes": {
+            "default": "def transform(record, emitter, context):\n    emitter.emit(record)\n"
+          }
+        }
+      ]
     }
-  }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "label": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "boolean",
+          "int",
+          "long",
+          "float",
+          "double",
+          "bytes",
+          "string",
+          "map<string, string>"
+        ],
+        "schema-default-type": "string",
+        "property-watch": "format"
+      }
+    }
+  ]
 }

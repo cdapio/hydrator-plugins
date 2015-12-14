@@ -1,56 +1,75 @@
 {
-  "id": "KafkaProducer",
-  "groups": {
-    "position": [ "group1", "group2" ],
-    "group1": {
-      "display": "Kafka Producer and Topic Config",
-      "position": [ "brokers", "topics", "async" ],
-      "fields": {
-        "brokers": {
-          "widget": "csv",
+  "metadata": {
+    "spec-version": "1.0",
+    "artifact-version": "3.3.0-SNAPSHOT",
+    "name": "KafkaProducer",
+    "type": ""
+  },
+  "configuration-groups": [
+    {
+      "label": "Kafka Producer and Topic Config",
+      "properties": [
+        {
+          "widget-type": "csv",
           "label": "Zookeeper Qourum",
-          "properties": {
+          "name": "brokers",
+          "widget-attributes": {
             "delimiter": ","
           }
         },
-        "topics": {
-          "widget": "csv",
+        {
+          "widget-type": "csv",
           "label": "Kafka Topics",
-          "properties": {
+          "name": "topics",
+          "widget-attributes": {
             "delimiter": ","
           }
         },
-        "async": {
-          "widget": "select",
+        {
+          "widget-type": "select",
           "label": "Is Async ?",
-          "properties": {
-            "values" : [ "TRUE", "FALSE" ],
+          "name": "async",
+          "widget-attributes": {
+            "values": [
+              "TRUE",
+              "FALSE"
+            ],
             "default": "FALSE"
           }
         }
-      }
+      ]
     },
-    "group2" : {
-      "display": "Message Configuration",
-      "position": [ "format", "partitionfield", "key" ],
-      "fields": {
-        "format": {
-          "widget": "select",
+    {
+      "label": "Message Configuration",
+      "properties": [
+        {
+          "widget-type": "select",
           "label": "Message Format",
-          "properties": {
-            "values": [ "JSON", "CSV", "EXCEL", "MYSQL", "TDF", "RFC4180" ],
-            "default" : "CSV"
+          "name": "format",
+          "widget-attributes": {
+            "values": [
+              "JSON",
+              "CSV",
+              "EXCEL",
+              "MYSQL",
+              "TDF",
+              "RFC4180"
+            ],
+            "default": "CSV"
           }
         },
-        "partitionfield": {
-          "widget": "textbox",
-          "label": "Partition Field (Partition Based)"
+        {
+          "widget-type": "textbox",
+          "label": "Partition Field (Partition Based)",
+          "name": "partitionfield"
         },
-        "key": {
-          "widget": "textbox",
-          "label": "Message Key field"
+        {
+          "widget-type": "textbox",
+          "label": "Message Key field",
+          "name": "key"
         }
-      }
+      ]
     }
-  }
+  ],
+  "outputs": []
 }

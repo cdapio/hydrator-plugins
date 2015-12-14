@@ -1,61 +1,83 @@
 {
-  "id": "HBase",
-  "groups" : {
-    "position": [ "group1" ],
-    "group1": {
-      "display" : "HBase Configuration",
-      "position" : [ "tableName", "columnFamily", "zkQuorum", "zkClientPort", "rowField", "zkNodeParent" ],
-      "fields" : {
-        "tableName": {
-          "widget": "textbox",
+  "metadata": {
+    "spec-version": "1.0",
+    "artifact-version": "3.3.0-SNAPSHOT",
+    "name": "HBase",
+    "type": ""
+  },
+  "configuration-groups": [
+    {
+      "label": "HBase Configuration",
+      "properties": [
+        {
+          "widget-type": "textbox",
           "label": "HBase Table Name",
-          "properties": {
+          "name": "tableName",
+          "widget-attributes": {
             "width": "large"
           }
         },
-        "columnFamily": {
-          "widget": "textbox",
+        {
+          "widget-type": "textbox",
           "label": "HBase Column Family",
-          "properties": {
+          "name": "columnFamily",
+          "widget-attributes": {
             "width": "large"
           }
         },
-        "zkQuorum": {
-          "widget": "textbox",
+        {
+          "widget-type": "textbox",
           "label": "Zookeeper Quorum String",
-          "properties": {
+          "name": "zkQuorum",
+          "widget-attributes": {
             "width": "large"
           }
         },
-        "zkClientPort": {
-          "widget": "textbox",
+        {
+          "widget-type": "textbox",
           "label": "Zookeeper Client Port",
-          "properties": {
+          "name": "zkClientPort",
+          "widget-attributes": {
             "width": "medium"
           }
         },
-        "rowField": {
-          "widget": "textbox",
+        {
+          "widget-type": "textbox",
           "label": "Row Field Name",
-          "properties": {
+          "name": "rowField",
+          "widget-attributes": {
             "width": "medium"
           }
         },
-        "zkNodeParent" : {
-          "widget": "textbox",
+        {
+          "widget-type": "textbox",
           "label": "Parent Node of HBase in Zookeeper",
-          "properties": {
+          "name": "zkNodeParent",
+          "widget-attributes": {
             "width": "large"
           }
         }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "label": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "boolean",
+          "int",
+          "long",
+          "float",
+          "double",
+          "bytes",
+          "string",
+          "map<string, string>"
+        ],
+        "schema-default-type": "string"
       }
     }
-  },
-  "outputschema": {
-    "schema" : {
-      "widget": "schema",
-      "schema-types" : [ "boolean", "int", "long", "float", "double", "bytes", "string", "map<string, string>" ],
-      "schema-default-type" : "string"
-    }
-  }
+  ]
 }

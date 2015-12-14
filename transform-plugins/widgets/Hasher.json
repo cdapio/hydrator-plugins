@@ -1,27 +1,40 @@
 {
-  "id": "Hasher",
-  "groups": {
-    "position": [ "group1" ],
-    "group1": {
-      "display": "Hasher Configuration",
-      "position": [ "hash", "fields" ],
-      "fields": {
-        "hash": {
-          "widget": "select",
+  "metadata": {
+    "spec-version": "1.0",
+    "artifact-version": "3.3.0-SNAPSHOT",
+    "name": "Hasher",
+    "type": ""
+  },
+  "configuration-groups": [
+    {
+      "label": "Hasher Configuration",
+      "properties": [
+        {
+          "widget-type": "select",
           "label": "Hasher",
-          "properties": {
-            "values" : [ "MD2", "MD5", "SHA1", "SHA256", "SHA384", "SHA512" ],
-            "default" : "MD5"
+          "name": "hash",
+          "widget-attributes": {
+            "values": [
+              "MD2",
+              "MD5",
+              "SHA1",
+              "SHA256",
+              "SHA384",
+              "SHA512"
+            ],
+            "default": "MD5"
           }
         },
-        "fields": {
-          "widget": "csv",
+        {
+          "widget-type": "csv",
           "label": "Fields",
-          "properties": {
+          "name": "fields",
+          "widget-attributes": {
             "delimiter": ","
           }
         }
-      }
+      ]
     }
-  }
+  ],
+  "outputs": []
 }

@@ -1,25 +1,34 @@
 {
-  "id": "Encoder",
-  "groups": {
-    "position": [ "group1" ],
-    "group1": {
-      "display": "Encode",
-      "position": [ "encode" ],
-      "fields": {
-        "encode" : {
-          "widget" : "textbox",
-          "label" : "Encode Fields",
-          "description" : "Encode fields <field>:<encode-type>[, <field>:<encode-type>]*"
+  "metadata": {
+    "spec-version": "1.0",
+    "artifact-version": "3.3.0-SNAPSHOT",
+    "name": "Encoder",
+    "type": ""
+  },
+  "configuration-groups": [
+    {
+      "label": "Encode",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Encode Fields",
+          "name": "encode"
         }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "label": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "string"
+        ],
+        "schema-default-type": "string",
+        "property-watch": "format"
       }
     }
-  },
-  "outputschema": {
-    "schema" : {
-      "widget": "schema",
-      "schema-types" : [ "string" ],
-      "schema-default-type" : "string",
-      "property-watch": "format"
-    }
-  }
+  ]
 }

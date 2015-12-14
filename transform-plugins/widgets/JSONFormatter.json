@@ -1,11 +1,23 @@
 {
-  "id": "JSONFormatter",
-  "outputschema": {
-    "schema" : {
-      "widget": "schema",
-      "schema-types" : [ "string" ],
-      "schema-default-type" : "string",
-      "property-watch": "format"
+  "metadata": {
+    "spec-version": "1.0",
+    "artifact-version": "3.3.0-SNAPSHOT",
+    "name": "JSONFormatter",
+    "type": ""
+  },
+  "configuration-groups": [],
+  "outputs": [
+    {
+      "name": "schema",
+      "label": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "string"
+        ],
+        "schema-default-type": "string",
+        "property-watch": "format"
+      }
     }
-  }
+  ]
 }

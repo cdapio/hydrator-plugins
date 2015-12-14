@@ -1,27 +1,43 @@
 {
-  "id": "JSONParser",
-  "groups": {
-    "position": [ "group1" ],
-    "group1": {
-      "display": "JSON Parser",
-      "position": [ "field" ],
-      "fields": {
-        "field": {
-          "widget": "textbox",
+  "metadata": {
+    "spec-version": "1.0",
+    "artifact-version": "3.3.0-SNAPSHOT",
+    "name": "JSONParser",
+    "type": ""
+  },
+  "configuration-groups": [
+    {
+      "label": "JSON Parser",
+      "properties": [
+        {
+          "widget-type": "textbox",
           "label": "Input field.",
-          "properties": {
+          "name": "field",
+          "widget-attributes": {
             "width": "large"
           }
         }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "label": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "boolean",
+          "int",
+          "long",
+          "float",
+          "double",
+          "bytes",
+          "string"
+        ],
+        "schema-default-type": "string",
+        "property-watch": "format"
       }
     }
-  },
-  "outputschema": {
-    "schema" : {
-      "widget": "schema",
-      "schema-types" : [ "boolean", "int", "long", "float", "double", "bytes", "string" ],
-      "schema-default-type" : "string",
-      "property-watch": "format"
-    }
-  }
+  ]
 }

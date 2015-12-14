@@ -1,35 +1,58 @@
 {
-  "id": "CSVParser",
-  "groups": {
-    "position": [ "group1" ],
-    "group1": {
-      "display": "CSV Parser",
-      "position": [ "field", "format" ],
-      "fields": {
-        "field": {
-          "widget": "textbox",
+  "metadata": {
+    "spec-version": "1.0",
+    "artifact-version": "3.3.0-SNAPSHOT",
+    "name": "CSVParser",
+    "type": ""
+  },
+  "configuration-groups": [
+    {
+      "label": "CSV Parser",
+      "properties": [
+        {
+          "widget-type": "textbox",
           "label": "Input field to Parse",
-          "properties": {
+          "name": "field",
+          "widget-attributes": {
             "width": "large"
           }
         },
-        "format": {
-          "widget": "select",
+        {
+          "widget-type": "select",
           "label": "Formats",
-          "properties": {
-            "values" : [ "DEFAULT", "EXCEL", "MYSQL", "RFC4180", "TDF" ],
+          "name": "format",
+          "widget-attributes": {
+            "values": [
+              "DEFAULT",
+              "EXCEL",
+              "MYSQL",
+              "RFC4180",
+              "TDF"
+            ],
             "default": "DEFAULT"
           }
         }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "label": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "boolean",
+          "int",
+          "long",
+          "float",
+          "double",
+          "bytes",
+          "string"
+        ],
+        "schema-default-type": "string",
+        "property-watch": "format"
       }
     }
-  },
-  "outputschema": {
-    "schema" : {
-      "widget": "schema",
-      "schema-types" : [ "boolean", "int", "long", "float", "double", "bytes", "string" ],
-      "schema-default-type" : "string",
-      "property-watch": "format"
-    }
-  }
+  ]
 }
