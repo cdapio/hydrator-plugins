@@ -466,6 +466,7 @@
                 <exclude>**/limits.d/**</exclude>
                 <exclude>**/*.json</exclude>
                 <exclude>**/*.json.template</exclude>
+                <exclude>experimental-plugins/**</exclude>
                 <exclude>**/MANIFEST.MF</exclude>
               </excludes>
             </configuration>
