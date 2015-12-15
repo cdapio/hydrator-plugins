@@ -206,6 +206,7 @@
               <instructions>
                 <!-- build bundle jar for batch -->
                 <Export-Package>co.cask.hydrator.plugin.sink.*;
+                  co.cask.hydrator.plugin.sink.format.*;
                   org.apache.commons.lang;org.apache.commons.logging.*;
                   org.codehaus.jackson.*</Export-Package>
                 <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
