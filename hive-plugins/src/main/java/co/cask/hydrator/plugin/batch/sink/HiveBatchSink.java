@@ -146,6 +146,8 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
     private void addSecureHiveProperties(Configuration modifiedConf) throws IOException {
       modifiedConf.set(HiveConf.ConfVars.METASTORE_USE_THRIFT_SASL.varname, "true");
 
+      // HCatalogOutputFormat reads Hive delegation token with empty service name
+      // because Oozie passes the Hive delegation with empty service name.
       UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
       TokenSelector<? extends TokenIdentifier> hiveTokenSelector = new DelegationTokenSelector();
       Token<? extends TokenIdentifier> hiveToken = hiveTokenSelector.selectToken(
