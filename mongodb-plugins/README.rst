@@ -38,71 +38,8 @@ Deploy Plugins
 
 You can deploy the plugins using the CDAP CLI::
 
-  > load artifact target/mongodb-plugins-1.1.0-SNAPSHOT-batch.jar \
-         config-file resources/plugin/mongodb-batch-plugins.json
-
-  > load artifact target/mongodb-plugins-1.1.0-SNAPSHOT-realtime.jar \
-         config-file resources/plugin/mongodb-realtime-plugins.json
-
-Copy the UI configuration to the CDAP installation::
-
-  > cp mongodb-plugins/resources/ui/*.json $CDAP_HOME/ui/templates/common/
-
-Plugin Descriptions
-===================
-
-MongoDB Batch Source
---------------------
-
-:Id:
-    **MongoDB**
-:Type:
-    batchsource
-:Mode:
-    Batch
-:Description:
-    Reads documents from a MongoDB collection and converts each document into a StructuredRecord with the help
-    of the specified schema. The user can optionally provide input query, input fields, and splitter classes.
-:Configuration:
-    - **connectionString:** MongoDB connection string
-    - **schema:** Specifies the schema of document
-
-    **Optional Fields**
-
-    - **authConnectionString:** Auxiliary MongoDB connection string
-    - **inputQuery:** Filter the input collection with a query
-    - **inputFields:** Projection document that can limit the fields that appear in each document
-    - **splitterClass:** Name of the splitter class to use
-
-MongoDB Batch Sink
-------------------
-
-:Id:
-    **MongoDB**
-:Type:
-    batchsink
-:Mode:
-    Batch
-:Description:
-    Converts a StructuredRecord into a BSONWritable and then writes it to a MongoDB collection.
-:Configuration:
-    - **connectionString:** MongoDB connection string
-
-MongoDB Realtime Sink
----------------------
-
-:Id:
-    **MongoDB**
-:Type:
-    realtimesink
-:Mode:
-    Realtime
-:Description:
-    Takes a StructuredRecord from a previous node, converts it into a BSONDocument and writes it to a MongoDB collection.
-:Configuration:
-    - **connectionString:** MongoDB connection string
-    - **dbName:** MongoDB database name
-    - **collectionName:** MongoDB collection name
+  > load artifact target/mongodb-plugins-<version>.jar \
+         config-file target/mongodb-plugins-<version>.json
 
 License and Trademarks
 ======================
