@@ -26,7 +26,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
-import co.cask.cdap.etl.common.StructuredRecordStringConverter;
+import co.cask.cdap.format.StructuredRecordStringConverter;
 
 import java.io.IOException;
 import java.util.List;

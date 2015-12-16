@@ -14,16 +14,13 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.transform;
+package co.cask.hydrator.common.test;
 
-import co.cask.cdap.api.metrics.Metrics;
 import co.cask.cdap.api.plugin.PluginProperties;
 import co.cask.cdap.etl.api.Lookup;
 import co.cask.cdap.etl.api.LookupProvider;
 import co.cask.cdap.etl.api.StageMetrics;
 import co.cask.cdap.etl.api.TransformContext;
-import co.cask.hydrator.plugin.common.MockLookupProvider;
-import co.cask.hydrator.plugin.common.NoopMetrics;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,47 +30,27 @@ import java.util.Map;
  */
 public class MockTransformContext implements TransformContext {
   private final PluginProperties pluginProperties;
-  private final StageMetrics metrics;
+  private final MockStageMetrics metrics;
   private final LookupProvider lookup;
+  private final String stageName;
 
   public MockTransformContext() {
-    this(new HashMap<String, String>());
+    this("someStage");
   }
 
-  public MockTransformContext(Map<String, String> args) {
-    this(args, NoopMetrics.INSTANCE, "", new MockLookupProvider(null));
+  public MockTransformContext(String stageName) {
+    this(stageName, new HashMap<String, String>());
   }
 
-  public MockTransformContext(Map<String, String> args, final Metrics metrics, final String stageMetricPrefix) {
-    this(args, metrics, stageMetricPrefix, new MockLookupProvider(null));
+  public MockTransformContext(String stageName, Map<String, String> args) {
+    this(stageName, args, new MockLookupProvider(null));
   }
 
-  public MockTransformContext(Map<String, String> args, final Metrics metrics, final String stageMetricPrefix,
-                              LookupProvider lookup) {
+  public MockTransformContext(String stageName, Map<String, String> args, LookupProvider lookup) {
     this.pluginProperties = PluginProperties.builder().addAll(args).build();
     this.lookup = lookup;
-    // TODO:
-    this.metrics = new StageMetrics() {
-      @Override
-      public void count(String metricName, int delta) {
-        metrics.count(stageMetricPrefix + metricName, delta);
-      }
-
-      @Override
-      public void gauge(String metricName, long value) {
-        metrics.gauge(stageMetricPrefix + metricName, value);
-      }
-
-      @Override
-      public void pipelineCount(String metricName, int delta) {
-        metrics.count(metricName, delta);
-      }
-
-      @Override
-      public void pipelineGauge(String metricName, long value) {
-        metrics.gauge(metricName, value);
-      }
-    };
+    this.metrics = new MockStageMetrics(stageName);
+    this.stageName = stageName;
   }
 
   @Override
@@ -91,9 +68,13 @@ public class MockTransformContext implements TransformContext {
     return metrics;
   }
 
+  public MockStageMetrics getMockMetrics() {
+    return metrics;
+  }
+
   @Override
   public String getStageName() {
-    return "singleStage";
+    return stageName;
   }
 
   @Override

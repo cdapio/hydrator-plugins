@@ -24,7 +24,7 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.realtime.DataWriter;
 import co.cask.cdap.etl.api.realtime.RealtimeContext;
 import co.cask.cdap.etl.api.realtime.RealtimeSink;
-import co.cask.cdap.etl.common.StructuredRecordStringConverter;
+import co.cask.cdap.format.StructuredRecordStringConverter;
 import co.cask.hydrator.plugin.batch.ESProperties;
 import com.google.common.base.Strings;
 import org.elasticsearch.action.bulk.BulkItemResponse;

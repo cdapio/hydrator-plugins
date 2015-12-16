@@ -14,9 +14,8 @@
  * the License.
  */
 
-package co.cask.hydrator.sinks;
+package co.cask.hydrator.common.test;
 
-import co.cask.cdap.api.metrics.Metrics;
 import co.cask.cdap.api.plugin.PluginProperties;
 import co.cask.cdap.etl.api.Lookup;
 import co.cask.cdap.etl.api.StageMetrics;
@@ -51,7 +50,7 @@ public class MockRealtimeContext implements RealtimeContext {
 
   @Override
   public String getStageName() {
-    return null;
+    return "singleStage";
   }
 
   @Override
@@ -80,7 +79,7 @@ public class MockRealtimeContext implements RealtimeContext {
   }
 
   @Override
-  public <T> Lookup<T> provide(String s, Map<String, String> map) {
+  public <T> Lookup<T> provide(String table, Map<String, String> arguments) {
     return null;
   }
 }

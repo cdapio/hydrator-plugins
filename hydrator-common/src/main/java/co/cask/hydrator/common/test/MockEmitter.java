@@ -14,17 +14,22 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin;
+package co.cask.hydrator.common.test;
 
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.InvalidEntry;
-import com.google.common.collect.Lists;
 
+import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Mock implementation of {@link Emitter} for unit tests.
+ *
+ * @param <T> type of object to emit
+ */
 public class MockEmitter<T> implements Emitter<T> {
-  private final List<T> emitted = Lists.newArrayList();
-  private final List<InvalidEntry<T>> errors = Lists.newArrayList();
+  private final List<T> emitted = new ArrayList<>();
+  private final List<InvalidEntry<T>> errors = new ArrayList<>();
 
   @Override
   public void emit(T value) {
@@ -39,6 +44,7 @@ public class MockEmitter<T> implements Emitter<T> {
   public List<T> getEmitted() {
     return emitted;
   }
+
   public List<InvalidEntry<T>> getErrors() {
     return errors;
   }

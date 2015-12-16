@@ -43,8 +43,9 @@
       <artifactId>cdap-etl-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>co.cask.cdap</groupId>
-      <artifactId>cdap-etl-common</artifactId>
+      <groupId>co.cask.hydrator</groupId>
+      <artifactId>hydrator-common</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>co.cask.hydrator</groupId>

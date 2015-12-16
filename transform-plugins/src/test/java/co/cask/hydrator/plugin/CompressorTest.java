@@ -19,12 +19,11 @@ package co.cask.hydrator.plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Transform;
-import org.apache.hadoop.hbase.util.Bytes;
+import co.cask.hydrator.common.test.MockEmitter;
 import org.junit.Assert;
 import org.junit.Test;
 import org.xerial.snappy.Snappy;
 
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.zip.GZIPOutputStream;

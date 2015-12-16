@@ -150,25 +150,6 @@
       </dependency>
       <dependency>
         <groupId>co.cask.cdap</groupId>
-        <artifactId>cdap-etl-lib</artifactId>
-        <version>${cdap.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.antlr</groupId>
-            <artifactId>antlr</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.elasticsearch</groupId>
-            <artifactId>elasticsearch</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>co.cask.cdap</groupId>
         <artifactId>cdap-unit-test</artifactId>
         <version>${cdap.version}</version>
         <scope>test</scope>
@@ -178,11 +159,6 @@
             <artifactId>asm</artifactId>
           </exclusion>
         </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>co.cask.cdap</groupId>
-        <artifactId>cdap-etl-common</artifactId>
-        <version>${cdap.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>
