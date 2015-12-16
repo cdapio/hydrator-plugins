@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.batch.source;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
@@ -64,6 +65,13 @@ public class S3BatchSource extends FileBatchSource {
     providedProperties.put("fs.s3n.awsAccessKeyId", accessID);
     providedProperties.put("fs.s3n.awsSecretAccessKey", accessKey);
     return GSON.toJson(providedProperties);
+  }
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
+
+    // TODO: validation
   }
 
   /**

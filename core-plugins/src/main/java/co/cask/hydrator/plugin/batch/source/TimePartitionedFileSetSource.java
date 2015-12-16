@@ -85,6 +85,8 @@ public abstract class TimePartitionedFileSetSource<KEY, VALUE> extends BatchSour
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
+
     config.validate();
     String tpfsName = config.name;
     FileSetProperties.Builder properties = FileSetProperties.builder();
