@@ -1,24 +1,30 @@
 {
-  "id": "Compressor",
-  "groups": {
-    "position": [ "group1" ],
-    "group1": {
-      "display": "Compressor",
-      "position": [ "compressor" ],
-      "fields": {
-        "compressor" : {
-          "widget" : "textbox",
-          "label" : "Compress Fields",
-          "description" : "Encode fields <field>:<compressor-type>[, <field>:<compressor-type]*"
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Compressor",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Compress Fields",
+          "name": "compressor"
         }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "label": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "bytes"
+        ],
+        "schema-default-type": "bytes"
       }
     }
-  },
-  "outputschema": {
-    "schema" : {
-      "widget": "schema",
-      "schema-types" : [ "bytes" ],
-      "schema-default-type" : "string"
-    }
-  }
+  ]
 }

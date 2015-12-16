@@ -1,0 +1,63 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Hive Configuration",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Hive Metastore URI",
+          "name": "metastoreURI",
+          "widget-attributes": {
+            "width": "large"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Hive Database Name",
+          "name": "databaseName",
+          "widget-attributes": {
+            "width": "large"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Hive Table Name",
+          "name": "tableName",
+          "widget-attributes": {
+            "width": "medium"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Hive Partition Filter",
+          "name": "partitions",
+          "widget-attributes": {
+            "width": "large"
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "label": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "boolean",
+          "int",
+          "long",
+          "float",
+          "double",
+          "bytes",
+          "string"
+        ],
+        "schema-default-type": "string"
+      }
+    }
+  ]
+}

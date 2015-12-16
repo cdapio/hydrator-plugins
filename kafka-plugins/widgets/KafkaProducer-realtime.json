@@ -1,0 +1,72 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Kafka Producer and Topic Config",
+      "properties": [
+        {
+          "widget-type": "csv",
+          "label": "Zookeeper Qourum",
+          "name": "brokers",
+          "widget-attributes": {
+            "delimiter": ","
+          }
+        },
+        {
+          "widget-type": "csv",
+          "label": "Kafka Topics",
+          "name": "topics",
+          "widget-attributes": {
+            "delimiter": ","
+          }
+        },
+        {
+          "widget-type": "select",
+          "label": "Is Async ?",
+          "name": "async",
+          "widget-attributes": {
+            "values": [
+              "TRUE",
+              "FALSE"
+            ],
+            "default": "FALSE"
+          }
+        }
+      ]
+    },
+    {
+      "label": "Message Configuration",
+      "properties": [
+        {
+          "widget-type": "select",
+          "label": "Message Format",
+          "name": "format",
+          "widget-attributes": {
+            "values": [
+              "JSON",
+              "CSV",
+              "EXCEL",
+              "MYSQL",
+              "TDF",
+              "RFC4180"
+            ],
+            "default": "CSV"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Partition Field (Partition Based)",
+          "name": "partitionfield"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Message Key field",
+          "name": "key"
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}

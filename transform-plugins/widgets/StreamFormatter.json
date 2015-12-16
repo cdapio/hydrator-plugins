@@ -1,49 +1,59 @@
 {
-  "id": "StreamFormatter",
-  "groups": {
-    "position": [ "group2", "group1" ],
-    "group1": {
-      "position": [ "body", "header" ],
-      "fields": {
-        "body" : {
-          "widget" : "csv",
-          "label" : "Body Fields",
-          "description" : "Comma separated list of input fields that need to be in the body.",
-          "properties": {
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "properties": [
+        {
+          "widget-type": "select",
+          "label": "Format of the body",
+          "name": "format",
+          "widget-attributes": {
+            "values": [
+              "CSV",
+              "TSV",
+              "JSON",
+              "PSV"
+            ],
+            "default": "CSV"
+          }
+        }
+      ]
+    },
+    {
+      "properties": [
+        {
+          "widget-type": "csv",
+          "label": "Body Fields",
+          "name": "body",
+          "widget-attributes": {
             "delimiter": ","
           }
         },
-        "header" : {
-          "widget" : "csv",
-          "label" : "Header Fields",
-          "description" : "Comma separated list of input fields that need to be in the header.",
-          "properties": {
+        {
+          "widget-type": "csv",
+          "label": "Header Fields",
+          "name": "header",
+          "widget-attributes": {
             "delimiter": ","
           }
         }
-      }
-    },
-    "group2": {
-      "position": [ "format" ],
-      "fields": {
-        "format" : {
-          "widget" : "select",
-          "label" : "Format of the body",
-          "properties" : {
-            "values" : [ "CSV", "TSV", "JSON", "PSV"],
-            "default" : "CSV"
-          },
-          "description" : "Select the type of output format to be used to write to Stream."
-        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "label": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "string"
+        ],
+        "schema-default-type": "string",
+        "property-watch": "format"
       }
     }
-  },
-  "outputschema": {
-    "schema" : {
-      "widget": "schema",
-      "schema-types" : [ "string" ],
-      "schema-default-type" : "string",
-      "property-watch": "format"
-    }
-  }
+  ]
 }

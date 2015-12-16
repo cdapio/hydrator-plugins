@@ -1,22 +1,22 @@
 {
-  "id": "CloneRecord",
-  "groups": {
-    "position": [ "group1" ],
-    "group1": {
-      "display": "Clone Rows",
-      "position": [ "copies" ],
-      "fields": {
-        "copies": {
-          "widget": "number",
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Clone Rows",
+      "properties": [
+        {
+          "widget-type": "number",
           "label": "Copies of record",
-          "properties": {
+          "name": "copies",
+          "widget-attributes": {
             "width": "large",
             "default": 1
-          },
-          "max": 99999,
-          "min": 1
+          }
         }
-      }
+      ]
     }
-  }
+  ],
+  "outputs": []
 }
