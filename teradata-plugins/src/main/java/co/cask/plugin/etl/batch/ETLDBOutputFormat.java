@@ -75,8 +75,7 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
           } catch (SQLException e) {
             try {
               getConnection().rollback();
-            }
-            catch (SQLException ex) {
+            } catch (SQLException ex) {
               LOG.warn(StringUtils.stringifyException(ex));
             }
             throw new IOException(e.getMessage());
@@ -84,8 +83,7 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
             try {
               getStatement().close();
               getConnection().close();
-            }
-            catch (SQLException ex) {
+            } catch (SQLException ex) {
               throw new IOException(ex.getMessage());
             }
           }

@@ -80,7 +80,8 @@ public class DBManager implements Destroyable {
       if (teradataConfig.user == null) {
         connection = DriverManager.getConnection(teradataConfig.connectionString);
       } else {
-        connection = DriverManager.getConnection(teradataConfig.connectionString, teradataConfig.user, teradataConfig.password);
+        connection = DriverManager.getConnection(teradataConfig.connectionString, teradataConfig.user,
+                                                 teradataConfig.password);
       }
 
       try {

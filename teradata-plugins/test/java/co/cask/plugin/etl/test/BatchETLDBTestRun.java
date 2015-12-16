@@ -32,7 +32,6 @@ import co.cask.cdap.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.common.ETLStage;
 import co.cask.cdap.etl.common.Plugin;
-import co.cask.cdap.etl.common.Properties;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.RunRecord;
@@ -43,6 +42,7 @@ import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
+import co.cask.hydrator.plugin.common.Properties;
 import co.cask.plugin.etl.batch.ETLDBInputFormat;
 import co.cask.plugin.etl.batch.ETLDBOutputFormat;
 import co.cask.plugin.etl.batch.sink.TeradataSink;
@@ -69,6 +69,7 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Time;
@@ -563,24 +564,21 @@ public class BatchETLDBTestRun extends TestBase {
       "non-existent sink database.");
   }
 
-  // Test is ignored - Currently DBOutputFormat does a statement.executeBatch which seems to fail in HSQLDB.
-  // Need to investigate alternatives to HSQLDB.
-  //@Ignore
   @Test
   public void testDBSink() throws Exception {
     String cols = "ID, NAME, SCORE, GRADUATED, TINY, SMALL, BIG, FLOAT_COL, REAL_COL, NUMERIC_COL, DECIMAL_COL, " +
       "BIT_COL, DATE_COL, TIME_COL, TIMESTAMP_COL, BINARY_COL, BLOB_COL, CLOB_COL";
     Plugin sourceConfig = new Plugin("Table",
-                                   ImmutableMap.of(
-                                     Properties.BatchReadableWritable.NAME, "DBInputTable",
-                                     Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ID",
-                                     Properties.Table.PROPERTY_SCHEMA, schema.toString()));
+                                     ImmutableMap.of(
+                                       Properties.BatchReadableWritable.NAME, "DBInputTable",
+                                       Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ID",
+                                       Properties.Table.PROPERTY_SCHEMA, schema.toString()));
     Plugin sinkConfig = new Plugin("Teradata",
-                                 ImmutableMap.of(Properties.DB.CONNECTION_STRING, hsqlDBServer.getConnectionUrl(),
-                                                 Properties.DB.TABLE_NAME, "MY_DEST_TABLE",
-                                                 Properties.DB.COLUMNS, cols,
-                                                 Properties.DB.JDBC_PLUGIN_NAME, "hypersql"
-                                 ));
+                                   ImmutableMap.of(Properties.DB.CONNECTION_STRING, hsqlDBServer.getConnectionUrl(),
+                                                   Properties.DB.TABLE_NAME, "MY_DEST_TABLE",
+                                                   Properties.DB.COLUMNS, cols,
+                                                   Properties.DB.JDBC_PLUGIN_NAME, "hypersql"
+                                   ));
     List<ETLStage> transforms = Lists.newArrayList();
     ETLStage source = new ETLStage("source", sourceConfig);
     ETLStage sink = new ETLStage("sink", sinkConfig);
@@ -597,6 +595,17 @@ public class BatchETLDBTestRun extends TestBase {
     mrManager.waitForFinish(5, TimeUnit.MINUTES);
     List<RunRecord> runRecords = mrManager.getHistory();
     Assert.assertEquals(ProgramRunStatus.COMPLETED, runRecords.get(0).getStatus());
+
+    Connection conn = hsqlDBServer.getConnection();
+    Statement stmt = conn.createStatement();
+    stmt.execute("SELECT * FROM \"MY_DEST_TABLE\"");
+    ResultSet resultSet = stmt.getResultSet();
+    Assert.assertTrue(resultSet.next());
+    Assert.assertEquals("user1", resultSet.getString("NAME"));
+    Assert.assertTrue(resultSet.next());
+    Assert.assertEquals("user2", resultSet.getString("NAME"));
+    Assert.assertFalse(resultSet.next());
+    resultSet.close();
   }
 
   private void createInputData() throws Exception {
