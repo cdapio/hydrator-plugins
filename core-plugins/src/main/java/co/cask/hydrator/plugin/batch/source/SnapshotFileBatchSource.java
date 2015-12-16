@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSetProperties;
@@ -26,6 +27,7 @@ import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.plugin.batch.sink.SnapshotFileBatchSink;
 import co.cask.hydrator.plugin.common.SnapshotFileSetConfig;
 import co.cask.hydrator.plugin.dataset.SnapshotFileSet;
+import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -51,10 +53,16 @@ public abstract class SnapshotFileBatchSource<KEY, VALUE> extends BatchSource<KE
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
+
     PartitionedFileSetProperties.Builder fileProperties = SnapshotFileSet.getBaseProperties(config);
     addFileProperties(fileProperties);
 
     pipelineConfigurer.createDataset(config.getName(), PartitionedFileSet.class, fileProperties.build());
+
+    Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(inputSchema);
+    // TODO: validate schema
   }
 
   @Override

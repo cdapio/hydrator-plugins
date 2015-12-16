@@ -24,6 +24,7 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import com.datastax.driver.core.Row;
@@ -116,6 +117,15 @@ public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecor
       builder.set(field.getName(), extractValue(input.getValue(), field));
     }
     emitter.emit(builder.build());
+  }
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
+
+    Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(inputSchema);
+    // TODO: validate schema
   }
 
   private Object extractValue(Row row, Schema.Field field) throws Exception {

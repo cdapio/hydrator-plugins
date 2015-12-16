@@ -96,6 +96,9 @@ public class KafkaSource extends RealtimeSource<StructuredRecord> {
     if (!Strings.isNullOrEmpty(config.schema)) {
       config.parseSchema();
     }
+
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(
+      pipelineConfigurer.getStageConfigurer().getInputSchema());
   }
 
   @Override

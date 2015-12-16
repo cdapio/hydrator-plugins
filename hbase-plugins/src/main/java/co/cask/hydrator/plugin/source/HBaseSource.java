@@ -24,10 +24,12 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.plugin.HBaseConfig;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Result;
@@ -69,6 +71,15 @@ public class HBaseSource extends BatchSource<ImmutableBytesWritable, Result, Str
     super.initialize(context);
     Schema schema = Schema.parseJson(config.schema);
     rowRecordTransformer = new RowRecordTransformer(schema, config.rowField);
+  }
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
+
+    Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(inputSchema);
+    // TODO: validate schema
   }
 
   @Override

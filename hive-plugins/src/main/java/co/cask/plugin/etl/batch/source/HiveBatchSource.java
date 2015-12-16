@@ -31,6 +31,7 @@ import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.plugin.etl.batch.commons.HiveSchemaConverter;
 import co.cask.plugin.etl.batch.commons.HiveSchemaStore;
+import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Job;
@@ -56,10 +57,16 @@ public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord,
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
+
     //TODO CDAP-4132: remove this way of storing Hive schema once we can share info between prepareRun and initialize
     // stage.
     pipelineConfigurer.createDataset(HiveSchemaStore.HIVE_TABLE_SCHEMA_STORE, KeyValueTable.class,
                                      DatasetProperties.EMPTY);
+
+    Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(inputSchema);
+    // TODO: validate schema
   }
 
   @Override

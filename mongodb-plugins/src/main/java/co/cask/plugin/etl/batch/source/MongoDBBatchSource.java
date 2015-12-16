@@ -29,6 +29,7 @@ import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.cdap.etl.common.BSONConverter;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.mongodb.hadoop.MongoInputFormat;
 import com.mongodb.hadoop.splitter.MongoSplitter;
@@ -42,7 +43,7 @@ import java.io.IOException;
 import javax.annotation.Nullable;
 
 /**
- * A {@link BatchSource} that reads data from MongoDB and converts each document into 
+ * A {@link BatchSource} that reads data from MongoDB and converts each document into
  * a {@link StructuredRecord} with the help of the specified Schema.
  */
 @Plugin(type = "batchsource")
@@ -67,6 +68,10 @@ public class MongoDBBatchSource extends BatchSource<Object, BSONObject, Structur
     } catch (IOException e) {
       throw new IllegalArgumentException("Invalid schema", e);
     }
+
+    Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(inputSchema);
+    // TODO: validate schema
   }
 
   @Override
