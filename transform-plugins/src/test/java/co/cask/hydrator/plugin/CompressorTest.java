@@ -106,6 +106,14 @@ public class CompressorTest {
     Assert.assertArrayEquals(expected, actual);
   }
 
+  @Test
+  public void testSchemaValidation() throws Exception {
+    Transform<StructuredRecord, StructuredRecord> transform =
+      new Compressor(new Compressor.Config("a:GZIP", OUTPUT.toString()));
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT);
+    transform.configurePipeline(mockPipelineConfigurer);
+    Assert.assertEquals(OUTPUT, mockPipelineConfigurer.getOutputSchema());
+  }
 
   private static byte[] compressGZIP(byte[] input) throws IOException {
     ByteArrayOutputStream out = new ByteArrayOutputStream();

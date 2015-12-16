@@ -90,6 +90,7 @@ public final class JSONFormatter extends Transform<StructuredRecord, StructuredR
         throw new IllegalArgumentException("Output field name should be of type String. Please change type to " +
                                              "String or Bytes");
       }
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(out);
     } catch (IOException e) {
       throw new IllegalArgumentException("Output Schema specified is not a valid JSON. Please check the Schema JSON");
     }

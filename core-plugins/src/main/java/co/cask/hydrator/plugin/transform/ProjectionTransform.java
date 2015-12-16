@@ -106,6 +106,12 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
     super.configurePipeline(pipelineConfigurer);
     // call init so any invalid config is caught here to fail application creation
     init();
+    Schema outputSchema = null;
+    if (pipelineConfigurer.getStageConfigurer().getInputSchema() != null) {
+      //validate the input schema and get the output schema for it
+      outputSchema = getOutputSchema(pipelineConfigurer.getStageConfigurer().getInputSchema());
+    }
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
   }
 
   @Override

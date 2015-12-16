@@ -26,6 +26,7 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
+import com.google.common.base.Throwables;
 import net.sf.uadetector.ReadableUserAgent;
 import net.sf.uadetector.UserAgentStringParser;
 import net.sf.uadetector.service.UADetectorServiceFactory;
@@ -98,10 +99,26 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
     if (!S3_LOG.equals(config.logFormat) && !CLF_LOG.equals(config.logFormat) &&
-        !CLOUDFRONT_LOG.equals(config.logFormat)) {
+      !CLOUDFRONT_LOG.equals(config.logFormat)) {
       LOG.error("Log format not currently supported.");
       throw new IllegalStateException("Unsupported log format: " + config.logFormat);
     }
+    Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
+    if (inputSchema != null) {
+      if (!inputSchema.getType().equals(Schema.Type.RECORD)) {
+        throw new IllegalArgumentException("Only Input Schema of type Schema.Type.RECORD is supported");
+      }
+      Schema.Field inputNameSchema = inputSchema.getField(config.inputName);
+      try {
+        if (inputNameSchema != null && inputNameSchema.getSchema() != null) {
+          validateInputSchemaType(inputNameSchema.getSchema().getType());
+        }
+      } catch (IllegalArgumentException e) {
+        LOG.error(e.getMessage());
+        throw Throwables.propagate(e);
+      }
+    }
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(LOG_SCHEMA);
   }
 
   @Override
@@ -177,10 +194,10 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
     }
     Schema.Type inputType = inputSchema.getType();
 
-    if (!Schema.Type.STRING.equals(inputType) && !Schema.Type.BYTES.equals(inputType)) {
-      LOG.error("Unsupported inputType in schema, only Schema.Type.BYTES and Schema.Type.STRING are supported. " +
-                  "InputType: {}", inputType.toString());
-      return null;
+    try {
+      validateInputSchemaType(inputType);
+    } catch (Exception e) {
+      LOG.error(e.getMessage());
     }
 
     if (Schema.Type.STRING.equals(inputType)) {
@@ -195,6 +212,15 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
         LOG.debug("Not a byte type, type is {}", data.getClass().toString());
         return null;
       }
+    }
+  }
+
+  private void validateInputSchemaType(Schema.Type inputSchemaType) {
+    if (!Schema.Type.STRING.equals(inputSchemaType) && !Schema.Type.BYTES.equals(inputSchemaType)) {
+      throw new IllegalArgumentException(String.format(
+        "Unsupported inputType in schema, only Schema.Type.BYTES and Schema.Type.STRING are supported " +
+          "InputType: %s", inputSchemaType.toString()));
+
     }
   }
 

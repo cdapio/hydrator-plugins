@@ -193,4 +193,13 @@ public class DecoderTest {
     Assert.assertEquals(2, emitterDecoded.getEmitted().get(0).getSchema().getFields().size());
     Assert.assertEquals(test, emitterDecoded.getEmitted().get(0).get("a"));
   }
+
+  @Test
+  public void testSchemaValidation() throws Exception {
+    Transform<StructuredRecord, StructuredRecord> decoder =
+      new Decoder(new Decoder.Config("a:BASE64", OUTPUT.toString()));
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT);
+    decoder.configurePipeline(mockPipelineConfigurer);
+    Assert.assertEquals(OUTPUT, mockPipelineConfigurer.getOutputSchema());
+  }
 }

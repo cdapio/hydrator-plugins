@@ -22,6 +22,7 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.InvalidEntry;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.common.MockMetrics;
+import co.cask.hydrator.plugin.transform.ScriptTransform;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -78,7 +79,6 @@ public class PythonEvaluatorTest {
     .build();
 
   @Test
-  @Ignore // ignore, until StructuredRecord has equals method defined in CDAP repo
   public void testSimple() throws Exception {
     PythonEvaluator.Config config = new PythonEvaluator.Config(
       "def transform(x, emitter, context):\n" +
@@ -134,7 +134,43 @@ public class PythonEvaluatorTest {
   }
 
   @Test
-  @Ignore // ignore, until StructuredRecord has equals method defined in CDAP repo
+  public void testSchemaValidation() throws Exception {
+    Schema outputSchema = Schema.recordOf(
+      "smallerSchema",
+      Schema.Field.of("intField", Schema.of(Schema.Type.INT)),
+      Schema.Field.of("longField", Schema.of(Schema.Type.LONG)));
+
+    PythonEvaluator.Config config = new PythonEvaluator.Config(
+      "def transform(x, emitter, context):\n" +
+        " y = {}\n" +
+        "  y['intField'] *= 1024\n" +
+        "  y['longField'] *= 1024\n" +
+        "  emitter.emit(y)",
+      outputSchema.toString());
+
+    Schema inputSchema = Schema.recordOf(
+      "biggerSchema",
+      Schema.Field.of("intField", Schema.of(Schema.Type.INT)),
+      Schema.Field.of("longField", Schema.of(Schema.Type.LONG)),
+      Schema.Field.of("doubleField", Schema.of(Schema.Type.DOUBLE)));
+
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
+    new PythonEvaluator(config).configurePipeline(configurer);
+    Assert.assertEquals(outputSchema, configurer.getOutputSchema());
+
+    // check if schema is null, input schema is used.
+    config = new PythonEvaluator.Config(
+      "def transform(x, emitter, context):\n" +
+        " y = {}\n" +
+        "  y['intField'] *= 1024\n" +
+        "  y['longField'] *= 1024\n" +
+        "  emitter.emit(y)",
+      null);
+    new PythonEvaluator(config).configurePipeline(configurer);
+    Assert.assertEquals(inputSchema, configurer.getOutputSchema());
+  }
+
+  @Test
   public void testEmitError() throws Exception {
     PythonEvaluator.Config config = new PythonEvaluator.Config(
       "def transform(x, emitter, context):\n" +

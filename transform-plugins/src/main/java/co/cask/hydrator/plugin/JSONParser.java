@@ -52,7 +52,8 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
     try {
-      Schema.parseJson(config.schema);
+      Schema outputSchema = Schema.parseJson(config.schema);
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
     } catch (IOException e) {
       throw new IllegalArgumentException("Output Schema specified is not a valid JSON. Please check the Schema JSON");
     }

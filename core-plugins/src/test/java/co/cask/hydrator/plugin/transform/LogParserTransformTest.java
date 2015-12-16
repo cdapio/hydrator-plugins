@@ -47,6 +47,45 @@ public class LogParserTransformTest {
   private static final Transform<StructuredRecord, StructuredRecord> CLOUDFRONT_TRANSFORM =
     new LogParserTransform(CLOUDFRONT_CONFIG);
 
+  private static final Schema LOG_SCHEMA = Schema.recordOf(
+    "event",
+    Schema.Field.of("uri", Schema.of(Schema.Type.STRING)),
+    Schema.Field.of("ip", Schema.of(Schema.Type.STRING)),
+    Schema.Field.of("browser", Schema.of(Schema.Type.STRING)),
+    Schema.Field.of("device", Schema.of(Schema.Type.STRING)),
+    Schema.Field.of("httpStatus", Schema.of(Schema.Type.INT)),
+    Schema.Field.of("ts", Schema.of(Schema.Type.LONG)));
+
+  @Test
+  public void testConfigurePipelineSchemaValidation() throws Exception {
+    Schema inputSchemaString = Schema.recordOf(
+      "event",
+      Schema.Field.of("CLF", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("body", Schema.of(Schema.Type.STRING)));
+
+
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(inputSchemaString);
+    S3_TRANSFORM.configurePipeline(mockConfigurer);
+    Assert.assertEquals(LOG_SCHEMA, mockConfigurer.getOutputSchema());
+
+    Schema inputSchemaBytes = Schema.recordOf(
+      "event",
+      Schema.Field.of("CLF", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("body", Schema.of(Schema.Type.BYTES)));
+
+
+    mockConfigurer = new MockPipelineConfigurer(inputSchemaBytes);
+    CLF_TRANSFORM.configurePipeline(mockConfigurer);
+    Assert.assertEquals(LOG_SCHEMA, mockConfigurer.getOutputSchema());
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testConfigurePipelineSchemaValidationError() throws Exception {
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(Schema.of(Schema.Type.BYTES));
+    S3_TRANSFORM.configurePipeline(mockConfigurer);
+    Assert.assertEquals(LOG_SCHEMA, mockConfigurer.getOutputSchema());
+  }
+
   @Test
   public void testS3LogTransform() throws Exception {
     StructuredRecord botRecord = StructuredRecord.builder(STRING_SCHEMA)

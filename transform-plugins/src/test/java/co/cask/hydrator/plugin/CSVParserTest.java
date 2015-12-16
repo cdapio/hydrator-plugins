@@ -153,4 +153,15 @@ public class CSVParserTest {
     transform.transform(StructuredRecord.builder(INPUT1)
                           .set("body", ",stringA,3,4.32,true").build(), emitter);
   }
+
+  @Test
+  public void testSchemaValidation() throws Exception {
+    CSVParser.Config config = new CSVParser.Config("DEFAULT", "body", OUTPUT1.toString());
+    Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
+
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT1);
+    transform.configurePipeline(mockPipelineConfigurer);
+    Assert.assertEquals(OUTPUT1, mockPipelineConfigurer.getOutputSchema());
+  }
+
 }

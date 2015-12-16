@@ -114,6 +114,7 @@ public final class StreamFormatter extends Transform<StructuredRecord, Structure
                                              "Map<String, String>.");
       }
 
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(out);
     } catch (IOException e) {
       throw new IllegalArgumentException("Output Schema specified is not a valid JSON. Please check the schema JSON");
     }

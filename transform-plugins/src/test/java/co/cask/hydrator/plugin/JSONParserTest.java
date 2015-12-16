@@ -68,4 +68,14 @@ public class JSONParserTest {
     Assert.assertEquals("2", emitter.getEmitted().get(0).get("b"));
     Assert.assertEquals("5", emitter.getEmitted().get(0).get("e"));
   }
+
+  @Test
+  public void testSchemaValidation() throws Exception {
+    JSONParser.Config config = new JSONParser.Config("body", OUTPUT2.toString());
+    Transform<StructuredRecord, StructuredRecord> transform = new JSONParser(config);
+
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT1);
+    transform.configurePipeline(mockPipelineConfigurer);
+    Assert.assertEquals(OUTPUT2, mockPipelineConfigurer.getOutputSchema());
+  }
 }

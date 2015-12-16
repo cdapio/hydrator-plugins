@@ -56,4 +56,12 @@ public class StructuredRecordToGenericRecordTransformTest {
     Assert.assertEquals(2, value.get("field2"));
     Assert.assertEquals(3.0, value.get("field3"));
   }
+
+  @Test
+  public void testSchemaValidation() throws Exception {
+    StructuredRecordToGenericRecordTransform transformer = new StructuredRecordToGenericRecordTransform();
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(eventSchema);
+    transformer.configurePipeline(mockPipelineConfigurer);
+    Assert.assertEquals(eventSchema, mockPipelineConfigurer.getOutputSchema());
+  }
 }

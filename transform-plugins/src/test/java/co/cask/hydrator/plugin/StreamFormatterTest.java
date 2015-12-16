@@ -59,4 +59,15 @@ public class StreamFormatterTest {
     Assert.assertEquals("2", header.get("b"));
     Assert.assertEquals("3", header.get("c"));
   }
+
+
+  @Test
+  public void testSchemaValidation() throws Exception {
+    StreamFormatter.Config config = new StreamFormatter.Config("b,c", null, "CSV", OUTPUT.toString());
+    Transform<StructuredRecord, StructuredRecord> transform = new StreamFormatter(config);
+
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT);
+    transform.configurePipeline(mockPipelineConfigurer);
+    Assert.assertEquals(OUTPUT, mockPipelineConfigurer.getOutputSchema());
+  }
 }

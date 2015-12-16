@@ -157,4 +157,16 @@ public class ScriptFilterTransformTest {
     transform.transform(input, emitter);
     Assert.assertEquals(input, emitter.getEmitted().iterator().next());
   }
+
+  @Test
+  public void testSchemaValidation() throws Exception {
+    ScriptFilterTransform.ScriptFilterConfig config = new ScriptFilterTransform.ScriptFilterConfig();
+    config.script = "function shouldFilter(inputRecord) { return inputRecord.x * 1024 < 2048; }";
+    Schema schema = Schema.recordOf("number", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
+    ScriptFilterTransform transform = new ScriptFilterTransform(config);
+    MockPipelineConfigurer pipelineConfigurer = new MockPipelineConfigurer(schema);
+    transform.configurePipeline(pipelineConfigurer);
+    Assert.assertEquals(schema, pipelineConfigurer.getOutputSchema());
+  }
+
 }

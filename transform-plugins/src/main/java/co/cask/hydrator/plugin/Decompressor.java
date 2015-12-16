@@ -101,6 +101,7 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
       for (Field field : outFields) {
         outSchemaMap.put(field.getName(), field.getSchema().getType());
       }
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
     } catch (IOException e) {
       throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format. " +
         e.getMessage());

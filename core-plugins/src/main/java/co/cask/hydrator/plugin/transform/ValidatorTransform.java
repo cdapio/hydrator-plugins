@@ -129,6 +129,7 @@ public class ValidatorTransform extends Transform<StructuredRecord, StructuredRe
     } catch (ScriptException e) {
       throw new IllegalArgumentException("Invalid validation script: " + e.getMessage(), e);
     }
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(pipelineConfigurer.getStageConfigurer().getInputSchema());
   }
 
   @Override
