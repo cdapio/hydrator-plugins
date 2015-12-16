@@ -40,12 +40,8 @@ Deploy Plugins
 --------------
 You can deploy the transform plugin using the CDAP CLI::
 
-  cdap > load artifact target/transform-plugins-1.0-SNAPSHOT-batch.jar \
-         config-file resources/plugin/transform-plugins.json
-
-Copy the UI configuration to the CDAP installation::
-
-  $ cp transform-plugins/resources/ui/*.json $CDAP_HOME/ui/templates/common/
+  cdap > load artifact target/transform-plugins-<version>.jar \
+         config-file target/transform-plugins-<version>.json
 
 Plugin Descriptions
 ===================
@@ -67,7 +63,7 @@ CSV Parser
   - **format:** Specifies the format of CSV Record the input should be parsed as
   - **field:** Specifies the input field that should be parsed as CSV Record
   - **schema:** Specifies the output schema of CSV Record
- 
+
 CSV Formatter
 -------------
 :ID:

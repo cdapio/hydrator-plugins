@@ -32,37 +32,8 @@ Deploy Plugins
 
 You can deploy the Kafka Real-time plugin using the CDAP CLI::
 
-  > load artifact target/kafka-plugins-<version>-realtime.jar \
-         config-file resources/plugin/kafka-plugins-realtime.json
-
-Copy the UI configuration to the CDAP installation::
-
-  > cp kafka-plugins/resources/realtime/ui/*.json $CDAP_HOME/ui/templates/cdap-etl-realtime/
-
-Plugin Description
-==================
-
-Kafka Producer
---------------
-
-:Id:
-  KafkaProducer
-:Type:
-  Sink
-:Mode:
-  Realtime
-:Description:   
-  Kafka producer plugin that allows you to convert a Structured Record into CSV or JSON.
-  Plugin has the capability to push the data to one or more Kafka topics. It can
-  use one of the field values from input to partition the data on topic. The producer
-  can also be configured to operate in either sync or async mode.
-:Configuration:
-  - **brokers:** Specifies a list of brokers to connect to
-  - **async:** Specifies whether writing the events to broker is *Asynchronous* or *Synchronous*
-  - **paritionfield:** Specifies the input fields that need to be used to determine the partition id; the field type should be int or long
-  - **key:** Specifies the input field that should be used as the key for the event published into Kafka
-  - **topics:** Specifies a list of topics to which the event should be published to
-  - **format:** Specifies the format of the event published to Kafka
+  > load artifact target/kafka-plugins-<version>.jar \
+         config-file target/kafka-plugins-<version>.json
   
 License and Trademarks
 ======================

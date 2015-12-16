@@ -645,14 +645,15 @@
                     for (i = 0; i < widgetsFiles.length; i++) {
                       var widgetsFile = widgetsFiles[i];
                       if (widgetsFile.isFile()) {
-                        var contents = new java.lang.String(java.nio.file.Files.readAllBytes(widgetsFile.toPath()), java.nio.charset.StandardCharsets.UTF_8);
-                        var contentsAsJson = JSON.parse(contents);
                         var propertyName = "widgets." + widgetsFile.getName();
-                        // if the filename ends with .json, strip the .json
+                        // if the filename ends with .json
                         if (propertyName.indexOf(".json", propertyName.length - 5) !== -1) {
+                          // strip the .json
                           propertyName = propertyName.slice(0, -5);
+                          var contents = new java.lang.String(java.nio.file.Files.readAllBytes(widgetsFile.toPath()), java.nio.charset.StandardCharsets.UTF_8);
+                          var contentsAsJson = JSON.parse(contents);
+                          config.properties[propertyName] = JSON.stringify(contentsAsJson);
                         }
-                        config.properties[propertyName] = JSON.stringify(contentsAsJson);
                       }
                     }
                   }
@@ -664,13 +665,14 @@
                     for (i = 0; i < docFiles.length; i++) {
                       var docFile = docFiles[i];
                       if (docFile.isFile()) {
-                        var contents = new java.lang.String(java.nio.file.Files.readAllBytes(docFile.toPath()), java.nio.charset.StandardCharsets.UTF_8);
                         var propertyName = "doc." + docFile.getName();
-                        // if the filename ends with .md, strip the extension
+                        // if the filename ends with .md
                         if (propertyName.indexOf(".md", propertyName.length - 3) !== -1) {
+                          // strip the extension
                           propertyName = propertyName.slice(0, -3);
+                          var contents = new java.lang.String(java.nio.file.Files.readAllBytes(docFile.toPath()), java.nio.charset.StandardCharsets.UTF_8);
+                          config.properties[propertyName] = contents + "";
                         }
-                        config.properties[propertyName] = contentsAsJson;
                       }
                     }
                   }
