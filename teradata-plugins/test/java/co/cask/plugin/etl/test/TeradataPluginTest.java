@@ -87,7 +87,7 @@ import javax.sql.rowset.serial.SerialBlob;
 /**
  * Test for ETL using databases.
  */
-public class BatchETLDBTestRun extends TestBase {
+public class TeradataPluginTest extends TestBase {
   private static final long currentTs = System.currentTimeMillis();
   private static final String clobData = "this is a long string with line separators \n that can be used as \n a clob";
   private static HSQLDBServer hsqlDBServer;
