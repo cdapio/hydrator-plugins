@@ -6,7 +6,7 @@ Plugins to use Apache Cassandra as a source or sink.
 
 Prerequisites
 -------------
-Apache Cassandra v. 2.1.0 is the only version of Apache Cassandra that the CDAP-plugins support.
+Apache Cassandra v. 2.1.0 is the only version of Apache Cassandra that the Hydrator plugins support.
 
 Sources: Batch: Apache Cassandra
 ================================
@@ -191,7 +191,7 @@ the specified keyspace (*megacorp*) and column family (*purchases*).
 
 Integrating with the CDAP UI
 ============================
-This plugin also contains a config file for the CDAP UI in the *resources* directory - **Cassandra.json**.
+This plugin also contains a config file for the CDAP UI in the *resources* directory: **Cassandra.json**.
 This configuration file greatly improves the experience of configuring Cassandra plugins using the CDAP UI.
 It chooses appropriate widgets for the various configuration parameters described above. It also enforces a more
 natural ordering for these configuration parameters. To use this file, please copy it over to the
@@ -208,9 +208,9 @@ in compliance with the License. You may obtain a copy of the License at
 
 http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software distributed under the 
-License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
-either express or implied. See the License for the specific language governing permissions 
+Unless required by applicable law or agreed to in writing, software distributed under the
+License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+either express or implied. See the License for the specific language governing permissions
 and limitations under the License.
 
 Cask is a trademark of Cask Data, Inc. All rights reserved.

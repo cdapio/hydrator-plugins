@@ -56,8 +56,8 @@ public class TeradataSource extends BatchSource<LongWritable, DBRecord, Structur
     "table. You can specify an arbitrary number of columns to import, or import all columns using *. The Query should" +
     "contain the '$CONDITIONS' string. For example, 'SELECT * FROM table WHERE $CONDITIONS'. The '$CONDITIONS' string" +
     "will be replaced by 'splitBy' field limits specified by the bounding query.";
-  private static final String BOUNDING_QUERY_DESCRIPTION = "Bounding Query should return the min and max of the values" +
-    "of the 'splitBy' field. For example, 'SELECT MIN(id),MAX(id) FROM table'";
+  private static final String BOUNDING_QUERY_DESCRIPTION = "Bounding Query should return the min and max of the " +
+    "values of the 'splitBy' field. For example, 'SELECT MIN(id),MAX(id) FROM table'";
   private static final String SPLIT_FIELD_DESCRIPTION = "Field Name which will be used to generate splits.";
 
   private final TeradataSourceConfig sourceConfig;
@@ -123,12 +123,17 @@ public class TeradataSource extends BatchSource<LongWritable, DBRecord, Structur
    * {@link PluginConfig} for {@link TeradataSource}
    */
   public static class TeradataSourceConfig extends TeradataConfig {
+    public static final String BOUNDING_QUERY = "boundingQuery";
+    public static final String SPLIT_BY = "splitBy";
+
     @Description(IMPORT_QUERY_DESCRIPTION)
     String importQuery;
 
+    @Name(BOUNDING_QUERY)
     @Description(BOUNDING_QUERY_DESCRIPTION)
     String boundingQuery;
 
+    @Name(SPLIT_BY)
     @Description(SPLIT_FIELD_DESCRIPTION)
     String splitBy;
   }

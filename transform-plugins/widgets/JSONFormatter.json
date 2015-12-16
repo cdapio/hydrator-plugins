@@ -1,0 +1,11 @@
+{
+  "id": "JSONFormatter",
+  "outputschema": {
+    "schema" : {
+      "widget": "schema",
+      "schema-types" : [ "string" ],
+      "schema-default-type" : "string",
+      "property-watch": "format"
+    }
+  }
+}

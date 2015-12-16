@@ -23,10 +23,10 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.PipelineConfigurable;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
-import co.cask.cdap.etl.batch.ETLMapReduce;
 import co.cask.cdap.etl.batch.config.ETLBatchConfig;
+import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.common.ETLStage;
-import co.cask.cdap.etl.common.Properties;
+import co.cask.cdap.etl.common.Plugin;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
@@ -35,6 +35,7 @@ import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.StreamManager;
 import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
+import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -98,8 +99,10 @@ public class HDFSSinkTest extends TestBase {
 
     // add artifact for batch sources and sinks
     addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "batch-plugins", "1.0.0"), BATCH_APP_ARTIFACT_ID,
-                      HDFSSink.class, StreamBatchSource.class);
+                      HDFSSink.class);
 
+    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "test-plugins", "1.0.0"), BATCH_APP_ARTIFACT_ID,
+                      StreamBatchSource.class);
   }
 
   @Before
@@ -129,19 +132,23 @@ public class HDFSSinkTest extends TestBase {
     streamManager.send("AAPL|10|400.23");
     streamManager.send("CDAP|13|123.23");
 
-    ETLStage source = new ETLStage("Stream", ImmutableMap.<String, String>builder()
-      .put(Properties.Stream.NAME, STREAM_NAME)
-      .put(Properties.Stream.DURATION, "10m")
-      .put(Properties.Stream.DELAY, "0d")
-      .put(Properties.Stream.FORMAT, Formats.CSV)
-      .put(Properties.Stream.SCHEMA, BODY_SCHEMA.toString())
-      .put("format.setting.delimiter", "|")
-      .build());
+    ETLStage source = new ETLStage("Stream", new Plugin(
+      "Stream",
+      ImmutableMap.<String, String>builder()
+        .put(Properties.Stream.NAME, STREAM_NAME)
+        .put(Properties.Stream.DURATION, "10m")
+        .put(Properties.Stream.DELAY, "0d")
+        .put(Properties.Stream.FORMAT, Formats.CSV)
+        .put(Properties.Stream.SCHEMA, BODY_SCHEMA.toString())
+        .put("format.setting.delimiter", "|")
+        .build()));
 
     Path outputDir = dfsCluster.getFileSystem().getHomeDirectory();
-    ETLStage sink = new ETLStage("HDFS", ImmutableMap.<String, String>builder()
-      .put("path", outputDir.toUri().toString())
-      .build());
+    ETLStage sink = new ETLStage("HDFS", new Plugin(
+      "HDFS",
+      ImmutableMap.<String, String>builder()
+        .put("path", outputDir.toUri().toString())
+        .build()));
     List<ETLStage> transforms = new ArrayList<>();
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, transforms);
 

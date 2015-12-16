@@ -21,7 +21,7 @@
   <parent>
     <groupId>co.cask.hydrator</groupId>
     <artifactId>hydrator-plugins</artifactId>
-    <version>1.1.0-SNAPSHOT</version>
+    <version>1.2.0-SNAPSHOT</version>
   </parent>
 
   <name>Transform Plugins</name>
@@ -49,15 +49,7 @@
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
-      <artifactId>cdap-etl-batch</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-test</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>co.cask.cdap</groupId>
-      <artifactId>cdap-etl-lib</artifactId>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
@@ -66,10 +58,6 @@
     <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-etl-common</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>co.cask.cdap</groupId>
-      <artifactId>cdap-etl-realtime</artifactId>
     </dependency>
   </dependencies>
 
@@ -89,38 +77,17 @@
         <artifactId>maven-bundle-plugin</artifactId>
         <version>2.5.4</version>
         <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Export-Package>co.cask.hydrator.plugin.*;org.apache.commons.lang</Export-Package>
+            <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
+            <Embed-Transitive>true</Embed-Transitive>
+            <Embed-Directory>lib</Embed-Directory>
+          </instructions>
+        </configuration>
         <executions>
           <execution>
-            <id>batch-bundle</id>
-            <phase>prepare-package</phase>
-            <configuration>
-              <classifier>batch</classifier>
-              <instructions>
-                <!-- build bundle jar for batch. excluding realtime-->
-                <Export-Package>co.cask.hydrator.plugin.*;org.apache.cassandra.hadoop.*;
-                  org.apache.commons.lang</Export-Package>
-                <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
-                <Embed-Transitive>true</Embed-Transitive>
-                <Embed-Directory>lib</Embed-Directory>
-              </instructions>
-            </configuration>
-            <goals>
-              <goal>bundle</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>realtime-bundle</id>
-            <phase>prepare-package</phase>
-            <configuration>
-              <classifier>realtime</classifier>
-              <instructions>
-                <!-- build bundle jar for realtime. excluding batch-->
-                <Export-Package>co.cask.hydrator.plugin.*</Export-Package>
-                <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
-                <Embed-Transitive>true</Embed-Transitive>
-                <Embed-Directory>lib</Embed-Directory>
-              </instructions>
-            </configuration>
+            <phase>package</phase>
             <goals>
               <goal>bundle</goal>
             </goals>

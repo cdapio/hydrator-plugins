@@ -1,0 +1,24 @@
+{
+  "id": "Compressor",
+  "groups": {
+    "position": [ "group1" ],
+    "group1": {
+      "display": "Compressor",
+      "position": [ "compressor" ],
+      "fields": {
+        "compressor" : {
+          "widget" : "textbox",
+          "label" : "Compress Fields",
+          "description" : "Encode fields <field>:<compressor-type>[, <field>:<compressor-type]*"
+        }
+      }
+    }
+  },
+  "outputschema": {
+    "schema" : {
+      "widget": "schema",
+      "schema-types" : [ "bytes" ],
+      "schema-default-type" : "string"
+    }
+  }
+}

@@ -28,17 +28,13 @@ import co.cask.cdap.etl.api.PipelineConfigurable;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.realtime.RealtimeSource;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
-import co.cask.cdap.etl.batch.ETLMapReduce;
 import co.cask.cdap.etl.batch.config.ETLBatchConfig;
-import co.cask.cdap.etl.batch.sink.TableSink;
+import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.common.ETLStage;
-import co.cask.cdap.etl.common.Properties;
+import co.cask.cdap.etl.common.Plugin;
 import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
 import co.cask.cdap.etl.realtime.ETLWorker;
 import co.cask.cdap.etl.realtime.config.ETLRealtimeConfig;
-import co.cask.cdap.etl.transform.ProjectionTransform;
-import co.cask.cdap.etl.transform.ScriptFilterTransform;
-import co.cask.cdap.etl.transform.StructuredRecordToGenericRecordTransform;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactRange;
@@ -53,9 +49,12 @@ import co.cask.cdap.test.WorkerManager;
 import co.cask.hydrator.plugin.batch.ESProperties;
 import co.cask.hydrator.plugin.batch.sink.BatchElasticsearchSink;
 import co.cask.hydrator.plugin.batch.source.ElasticsearchSource;
+import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.realtime.RealtimeElasticsearchSink;
 import co.cask.hydrator.plugin.testclasses.StreamBatchSource;
+import co.cask.hydrator.plugin.testclasses.TableSink;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.action.delete.DeleteResponse;
@@ -74,7 +73,6 @@ import org.junit.rules.TemporaryFolder;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -131,29 +129,20 @@ public class ETLESTest extends TestBase {
                    BatchSource.class.getPackage().getName(),
                    PipelineConfigurable.class.getPackage().getName());
 
-    // add artifact for batch sources and sinks
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "batch-plugins", "1.0.0"), BATCH_APP_ARTIFACT_ID,
-                      BatchElasticsearchSink.class, ElasticsearchSource.class,
-                      StreamBatchSource.class, TableSink.class);
-
     //add the artifact for the etl realtime app
     addAppArtifact(REALTIME_APP_ARTIFACT_ID, ETLRealtimeApplication.class,
                    RealtimeSource.class.getPackage().getName(),
                    PipelineConfigurable.class.getPackage().getName());
 
-    // add artifact for realtime sources and sinks
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "realtime-sources", "1.0.0"), REALTIME_APP_ARTIFACT_ID,
-                      DataGeneratorSource.class);
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "realtime-sinks", "1.0.0"), REALTIME_APP_ARTIFACT_ID,
-                      RealtimeElasticsearchSink.class);
+    Set<ArtifactRange> parents = ImmutableSet.of(REALTIME_ARTIFACT_RANGE, BATCH_ARTIFACT_RANGE);
 
-    // add artifact for transforms
-    Set<ArtifactRange> artifactRanges = new HashSet<>();
-    artifactRanges.add(REALTIME_ARTIFACT_RANGE);
-    artifactRanges.add(BATCH_ARTIFACT_RANGE);
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "transforms", "1.0.0"), artifactRanges,
-                      ProjectionTransform.class, ScriptFilterTransform.class,
-                      StructuredRecordToGenericRecordTransform.class);
+    // add artifact for batch sources and sinks
+    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "batch-plugins", "1.0.0"), parents,
+                      BatchElasticsearchSink.class, ElasticsearchSource.class, RealtimeElasticsearchSink.class);
+
+    // add artifact for realtime sources and sinks
+    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "test-plugins", "1.0.0"), parents,
+                      DataGeneratorSource.class, StreamBatchSource.class, TableSink.class);
   }
 
   @Before
@@ -194,22 +183,25 @@ public class ETLESTest extends TestBase {
     streamManager.send(ImmutableMap.of("header1", "bar"), "AAPL|10|500.32");
     streamManager.send(ImmutableMap.of("header1", "bar"), "CDAP|13|212.36");
 
-    ETLStage source = new ETLStage("Stream", ImmutableMap.<String, String>builder()
-      .put(Properties.Stream.NAME, STREAM_NAME)
-      .put(Properties.Stream.DURATION, "10m")
-      .put(Properties.Stream.DELAY, "0d")
-      .put(Properties.Stream.FORMAT, Formats.CSV)
-      .put(Properties.Stream.SCHEMA, BODY_SCHEMA.toString())
-      .put("format.setting.delimiter", "|")
-      .build());
+    ETLStage source = new ETLStage("Stream", new Plugin(
+      "Stream",
+      ImmutableMap.<String, String>builder()
+        .put(Properties.Stream.NAME, STREAM_NAME)
+        .put(Properties.Stream.DURATION, "10m")
+        .put(Properties.Stream.DELAY, "0d")
+        .put(Properties.Stream.FORMAT, Formats.CSV)
+        .put(Properties.Stream.SCHEMA, BODY_SCHEMA.toString())
+        .put("format.setting.delimiter", "|")
+        .build()));
 
-    ETLStage sink = new ETLStage("Elasticsearch",
-                                 ImmutableMap.of(ESProperties.HOST,
-                                   InetAddress.getLocalHost().getHostName() + ":" + httpPort,
-                                   ESProperties.INDEX_NAME, "batch",
-                                   ESProperties.TYPE_NAME, "testing",
-                                   ESProperties.ID_FIELD, "ticker"
-                                 ));
+    ETLStage sink = new ETLStage("Elasticsearch", new Plugin(
+      "Elasticsearch",
+      ImmutableMap.of(ESProperties.HOST,
+                      InetAddress.getLocalHost().getHostName() + ":" + httpPort,
+                      ESProperties.INDEX_NAME, "batch",
+                      ESProperties.TYPE_NAME, "testing",
+                      ESProperties.ID_FIELD, "ticker"
+      )));
     List<ETLStage> transforms = new ArrayList<>();
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, transforms);
 
@@ -237,17 +229,19 @@ public class ETLESTest extends TestBase {
 
   @SuppressWarnings("ConstantConditions")
   private void testESSource() throws Exception {
-    ETLStage source = new ETLStage("Elasticsearch",
-                                   ImmutableMap.of(ESProperties.HOST,
-                                                   InetAddress.getLocalHost().getHostName() + ":" + httpPort,
-                                                   ESProperties.INDEX_NAME, "batch",
-                                                   ESProperties.TYPE_NAME, "testing",
-                                                   ESProperties.QUERY, "?q=*",
-                                                   ESProperties.SCHEMA, BODY_SCHEMA.toString()));
-    ETLStage sink = new ETLStage("Table",
-                                 ImmutableMap.of("name", TABLE_NAME,
-                                                 Properties.Table.PROPERTY_SCHEMA, BODY_SCHEMA.toString(),
-                                                 Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ticker"));
+    ETLStage source = new ETLStage("Elasticsearch", new Plugin(
+      "Elasticsearch",
+      ImmutableMap.of(ESProperties.HOST,
+                      InetAddress.getLocalHost().getHostName() + ":" + httpPort,
+                      ESProperties.INDEX_NAME, "batch",
+                      ESProperties.TYPE_NAME, "testing",
+                      ESProperties.QUERY, "?q=*",
+                      ESProperties.SCHEMA, BODY_SCHEMA.toString())));
+    ETLStage sink = new ETLStage("Table", new Plugin(
+      "Table",
+      ImmutableMap.of("name", TABLE_NAME,
+                      Properties.Table.PROPERTY_SCHEMA, BODY_SCHEMA.toString(),
+                      Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ticker")));
 
     List<ETLStage> transforms = new ArrayList<>();
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, transforms);
@@ -276,17 +270,18 @@ public class ETLESTest extends TestBase {
   }
 
   private void testRealtimeESSink() throws Exception {
-    ETLStage source = new ETLStage("DataGenerator", ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE,
-                                                                    DataGeneratorSource.TABLE_TYPE));
+    ETLStage source = new ETLStage("DataGenerator", new Plugin(
+      "DataGenerator", ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE, DataGeneratorSource.TABLE_TYPE)));
     try {
-      ETLStage sink = new ETLStage("Elasticsearch",
-                                   ImmutableMap.of(ESProperties.TRANSPORT_ADDRESSES,
-                                                   InetAddress.getLocalHost().getHostName() + ":" + transportPort,
-                                                   ESProperties.CLUSTER, "testcluster",
-                                                   ESProperties.INDEX_NAME, "realtime",
-                                                   ESProperties.TYPE_NAME, "testing",
-                                                   ESProperties.ID_FIELD, "name"
-                                   ));
+      ETLStage sink = new ETLStage("Elasticsearch", new Plugin(
+        "Elasticsearch",
+        ImmutableMap.of(ESProperties.TRANSPORT_ADDRESSES,
+                        InetAddress.getLocalHost().getHostName() + ":" + transportPort,
+                        ESProperties.CLUSTER, "testcluster",
+                        ESProperties.INDEX_NAME, "realtime",
+                        ESProperties.TYPE_NAME, "testing",
+                        ESProperties.ID_FIELD, "name"
+        )));
       List<ETLStage> transforms = new ArrayList<>();
       ETLRealtimeConfig etlConfig = new ETLRealtimeConfig(source, sink, transforms);
 

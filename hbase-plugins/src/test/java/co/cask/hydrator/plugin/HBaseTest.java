@@ -26,10 +26,10 @@ import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.etl.api.PipelineConfigurable;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
-import co.cask.cdap.etl.batch.ETLMapReduce;
 import co.cask.cdap.etl.batch.config.ETLBatchConfig;
+import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.common.ETLStage;
-import co.cask.cdap.etl.common.Properties;
+import co.cask.cdap.etl.common.Plugin;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
@@ -39,10 +39,12 @@ import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.StreamManager;
 import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
+import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.sink.HBaseSink;
 import co.cask.hydrator.plugin.source.HBaseSource;
 import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.hbase.HBaseTestingUtility;
+import org.apache.hadoop.hbase.MiniHBaseCluster;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
@@ -68,7 +70,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- *
+ * Unit Tests for {@link HBaseSource} and {@link HBaseSink}
  */
 public class HBaseTest extends TestBase {
   private static final String STREAM_NAME = "someStream";
@@ -113,17 +115,21 @@ public class HBaseTest extends TestBase {
 
     // add artifact for batch sources and sinks
     addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "batch-plugins", "1.0.0"), BATCH_APP_ARTIFACT_ID,
-                      HBaseSource.class, HBaseSink.class, TableSink.class, StreamBatchSource.class,
+                      HBaseSource.class, HBaseSink.class,
                       TableInputFormat.class, TableOutputFormat.class,
                       Result.class, ImmutableBytesWritable.class,
                       Put.class, Mutation.class);
+
+    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "test-plugins", "1.0.0"), BATCH_APP_ARTIFACT_ID,
+                      TableSink.class, StreamBatchSource.class);
   }
 
   @Before
   public void beforeTest() throws Exception {
     // Start HBase cluster
     testUtil = new HBaseTestingUtility();
-    testUtil.startMiniCluster();
+    MiniHBaseCluster hBaseCluster = testUtil.startMiniCluster();
+    hBaseCluster.waitForActiveAndReadyMaster();
     hBaseAdmin = testUtil.getHBaseAdmin();
     htable = testUtil.createTable(HBASE_TABLE_NAME.getBytes(), HBASE_FAMILY_COLUMN.getBytes());
     htable.put(new Put(ROW1.getBytes()).add(HBASE_FAMILY_COLUMN.getBytes(), COL1.getBytes(), VAL1.getBytes()));
@@ -135,9 +141,19 @@ public class HBaseTest extends TestBase {
   @After
   public void afterTest() throws Exception {
     // Shutdown HBase
-    htable.close();
-    hBaseAdmin.close();
-    testUtil.shutdownMiniCluster();
+    if (htable != null) {
+      htable.close();
+    }
+
+    if (hBaseAdmin != null) {
+      hBaseAdmin.disableTable(HBASE_TABLE_NAME);
+      hBaseAdmin.deleteTable(HBASE_TABLE_NAME);
+      hBaseAdmin.close();
+    }
+
+    if (testUtil != null) {
+      testUtil.shutdownMiniCluster();
+    }
   }
 
   @Test
@@ -147,14 +163,16 @@ public class HBaseTest extends TestBase {
     streamManager.send("AAPL|10|500.32");
     streamManager.send("ORCL|13|212.36");
 
-    ETLStage source = new ETLStage("Stream", ImmutableMap.<String, String>builder()
-      .put(Properties.Stream.NAME, STREAM_NAME)
-      .put(Properties.Stream.DURATION, "10m")
-      .put(Properties.Stream.DELAY, "0d")
-      .put(Properties.Stream.FORMAT, Formats.CSV)
-      .put(Properties.Stream.SCHEMA, BODY_SCHEMA.toString())
-      .put("format.setting.delimiter", "|")
-      .build());
+    ETLStage source = new ETLStage("Stream", new Plugin(
+      "Stream",
+      ImmutableMap.<String, String>builder()
+        .put(Properties.Stream.NAME, STREAM_NAME)
+        .put(Properties.Stream.DURATION, "10m")
+        .put(Properties.Stream.DELAY, "0d")
+        .put(Properties.Stream.FORMAT, Formats.CSV)
+        .put(Properties.Stream.SCHEMA, BODY_SCHEMA.toString())
+        .put("format.setting.delimiter", "|")
+        .build()));
 
     Map<String, String> hBaseProps = new HashMap<>();
     hBaseProps.put("tableName", HBASE_TABLE_NAME);
@@ -163,7 +181,7 @@ public class HBaseTest extends TestBase {
     hBaseProps.put("schema", BODY_SCHEMA.toString());
     hBaseProps.put("zkNodeParent", testUtil.getConfiguration().get("zookeeper.znode.parent"));
     hBaseProps.put("rowField", "ticker");
-    ETLStage sink = new ETLStage("HBase", hBaseProps);
+    ETLStage sink = new ETLStage("HBase", new Plugin("HBase", hBaseProps));
     List<ETLStage> transforms = new ArrayList<>();
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, transforms);
 
@@ -200,10 +218,12 @@ public class HBaseTest extends TestBase {
     hBaseProps.put("schema", BODY_SCHEMA.toString());
     hBaseProps.put("rowField", "ticker");
 
-    ETLStage source = new ETLStage("HBase", hBaseProps);
-    ETLStage sink = new ETLStage("Table", ImmutableMap.of("name", TABLE_NAME,
-                                                          Table.PROPERTY_SCHEMA, BODY_SCHEMA.toString(),
-                                                          Table.PROPERTY_SCHEMA_ROW_FIELD, "ticker"));
+    ETLStage source = new ETLStage("HBase", new Plugin("HBase", hBaseProps));
+    ETLStage sink = new ETLStage("Table", new Plugin(
+      "Table",
+      ImmutableMap.of("name", TABLE_NAME,
+                      Table.PROPERTY_SCHEMA, BODY_SCHEMA.toString(),
+                      Table.PROPERTY_SCHEMA_ROW_FIELD, "ticker")));
 
     List<ETLStage> transforms = new ArrayList<>();
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, transforms);

@@ -5,7 +5,7 @@ Kafka Plugins
 Introduction
 ============
 
-Collection of Kafka Hydrator Plugins that allow to read and write data from and to Kafka respectively.
+A Kafka Hydrator Plugin that allows the writing of data to Kafka.
 
 Getting Started
 ===============
@@ -13,12 +13,12 @@ Getting Started
 Prerequisites
 -------------
 
-To use plugins, you must have CDAP version 3.2.0 or later.
+To use this plugin, you must have CDAP version 3.2.0 or later.
 
 Build Plugins
 -------------
 
-You can get started with CDAP-plugins by building directly from the latest source code::
+You get started with Hydrator plugins by building directly from the latest source code::
 
   git clone https://github.com/caskdata/hydrator-plugins.git
   cd hydrator-plugins
@@ -30,16 +30,16 @@ After the build completes, you will have a jar for each plugin under the
 Deploy Plugins
 --------------
 
-You can deploy kafka realtime plugins using the CDAP CLI::
+You can deploy the Kafka Real-time plugin using the CDAP CLI::
 
   > load artifact target/kafka-plugins-<version>-realtime.jar \
          config-file resources/plugin/kafka-plugins-realtime.json
 
-Copy the UI configuration to CDAP installation::
+Copy the UI configuration to the CDAP installation::
 
   > cp kafka-plugins/resources/realtime/ui/*.json $CDAP_HOME/ui/templates/cdap-etl-realtime/
 
-Plugin description
+Plugin Description
 ==================
 
 Kafka Producer
@@ -52,17 +52,17 @@ Kafka Producer
 :Mode:
   Realtime
 :Description:   
-  Kafka producer plugins allows you to convert structured record into CSV or JSON.
+  Kafka producer plugin that allows you to convert a Structured Record into CSV or JSON.
   Plugin has the capability to push the data to one or more Kafka topics. It can
-  use one of the field value from input to partition the data on topic. The producer
-  can also be configured to operate in sync or async mode.
+  use one of the field values from input to partition the data on topic. The producer
+  can also be configured to operate in either sync or async mode.
 :Configuration:
-  **brokers:** Specifies a list of brokers to connect to,
-  **isasync:** Specifies whether writing the events to broker is Asynchronous or Synchronous, 
-  **paritionfield:** Specifies the input fields that need to be used to determine partition id. The field type should int or long, 
-  **key:** Specifies the input field that should be used as key for event published into Kafka, 
-  **topics:** Specifies a list of topic to which the event should be published to and
-  **format:** Specifies the format of event published to kafka. 
+  - **brokers:** Specifies a list of brokers to connect to
+  - **async:** Specifies whether writing the events to broker is *Asynchronous* or *Synchronous*
+  - **paritionfield:** Specifies the input fields that need to be used to determine the partition id; the field type should be int or long
+  - **key:** Specifies the input field that should be used as the key for the event published into Kafka
+  - **topics:** Specifies a list of topics to which the event should be published to
+  - **format:** Specifies the format of the event published to Kafka
   
 License and Trademarks
 ======================

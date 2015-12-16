@@ -159,7 +159,7 @@ public class TeradataSink extends BatchSink<StructuredRecord, DBRecord, NullWrit
       connection.close();
     }
 
-    columns = ImmutableList.copyOf(Splitter.on(",").split(sinkConfig.columns));
+    columns = ImmutableList.copyOf(Splitter.on(",").omitEmptyStrings().trimResults().split(sinkConfig.columns));
     columnTypes = new int[columns.size()];
     for (int i = 0; i < columnTypes.length; i++) {
       String name = columns.get(i);

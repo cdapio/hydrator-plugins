@@ -27,17 +27,13 @@ import co.cask.cdap.etl.api.PipelineConfigurable;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.realtime.RealtimeSource;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
-import co.cask.cdap.etl.batch.ETLMapReduce;
 import co.cask.cdap.etl.batch.config.ETLBatchConfig;
-import co.cask.cdap.etl.batch.sink.TableSink;
+import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.common.ETLStage;
-import co.cask.cdap.etl.common.Properties;
+import co.cask.cdap.etl.common.Plugin;
 import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
 import co.cask.cdap.etl.realtime.ETLWorker;
 import co.cask.cdap.etl.realtime.config.ETLRealtimeConfig;
-import co.cask.cdap.etl.transform.ProjectionTransform;
-import co.cask.cdap.etl.transform.ScriptFilterTransform;
-import co.cask.cdap.etl.transform.StructuredRecordToGenericRecordTransform;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactRange;
@@ -51,9 +47,12 @@ import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkerManager;
 import co.cask.hydrator.plugin.batch.sink.BatchCassandraSink;
 import co.cask.hydrator.plugin.batch.source.BatchCassandraSource;
+import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.realtime.RealtimeCassandraSink;
 import co.cask.hydrator.plugin.testclasses.StreamBatchSource;
+import co.cask.hydrator.plugin.testclasses.TableSink;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.apache.cassandra.hadoop.ColumnFamilySplit;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.hadoop.cql3.CqlInputFormat;
@@ -76,7 +75,6 @@ import org.junit.rules.TemporaryFolder;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -128,29 +126,22 @@ public class ETLCassandraTest extends TestBase {
                    BatchSource.class.getPackage().getName(),
                    PipelineConfigurable.class.getPackage().getName());
 
-    // add artifact for batch sources and sinks
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "batch-plugins", "1.0.0"), BATCH_APP_ARTIFACT_ID,
-                      BatchCassandraSink.class, BatchCassandraSource.class, StreamBatchSource.class, TableSink.class,
-                      CqlInputFormat.class, CqlOutputFormat.class, ColumnFamilySplit.class);
-
     //add the artifact for the etl realtime app
     addAppArtifact(REALTIME_APP_ARTIFACT_ID, ETLRealtimeApplication.class,
                    RealtimeSource.class.getPackage().getName(),
                    PipelineConfigurable.class.getPackage().getName());
 
-    // add artifact for realtime sources and sinks
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "realtime-sources", "1.0.0"), REALTIME_APP_ARTIFACT_ID,
-                      DataGeneratorSource.class);
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "realtime-sinks", "1.0.0"), REALTIME_APP_ARTIFACT_ID,
+    Set<ArtifactRange> parents = ImmutableSet.of(REALTIME_ARTIFACT_RANGE, BATCH_ARTIFACT_RANGE);
+
+    // add artifact for cassandra plugins
+    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "cassandra-plugins", "1.0.0"), parents,
+                      BatchCassandraSink.class, BatchCassandraSource.class,
+                      CqlInputFormat.class, CqlOutputFormat.class, ColumnFamilySplit.class,
                       RealtimeCassandraSink.class);
 
-    // add artifact for transforms
-    Set<ArtifactRange> artifactRanges = new HashSet<>();
-    artifactRanges.add(REALTIME_ARTIFACT_RANGE);
-    artifactRanges.add(BATCH_ARTIFACT_RANGE);
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "transforms", "1.0.0"), artifactRanges,
-                      ProjectionTransform.class, ScriptFilterTransform.class,
-                      StructuredRecordToGenericRecordTransform.class);
+    // add artifact for test plugins
+    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "test-sources", "1.0.0"), parents,
+                      StreamBatchSource.class, TableSink.class, DataGeneratorSource.class);
   }
 
   @Before
@@ -188,17 +179,20 @@ public class ETLCassandraTest extends TestBase {
 
   @Test
   public void testInvalidRealtimeCassandraSink() throws Exception {
-    ETLStage source = new ETLStage("DataGenerator", ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE,
-                                                                    DataGeneratorSource.TABLE_TYPE));
-    ETLStage sink = new ETLStage("Cassandra",
-                                 new ImmutableMap.Builder<String, String>()
-                                   .put(RealtimeCassandraSink.Cassandra.ADDRESSES, "localhost:9042,invalid:abcd")
-                                   .put(RealtimeCassandraSink.Cassandra.KEYSPACE, "testkeyspace")
-                                   .put(RealtimeCassandraSink.Cassandra.COLUMN_FAMILY, "testtablerealtime")
-                                   .put(RealtimeCassandraSink.Cassandra.COLUMNS, "name,graduated,id,score,time")
-                                   .put(RealtimeCassandraSink.Cassandra.COMPRESSION, "NONE")
-                                   .put(RealtimeCassandraSink.Cassandra.CONSISTENCY_LEVEL, "QUORUM")
-                                   .build());
+    ETLStage source = new ETLStage("DataGenerator", new Plugin(
+      "DataGenerator",
+      ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE,
+                      DataGeneratorSource.TABLE_TYPE)));
+    ETLStage sink = new ETLStage("Cassandra", new Plugin(
+      "Cassandra",
+      new ImmutableMap.Builder<String, String>()
+        .put(RealtimeCassandraSink.Cassandra.ADDRESSES, "localhost:9042,invalid:abcd")
+        .put(RealtimeCassandraSink.Cassandra.KEYSPACE, "testkeyspace")
+        .put(RealtimeCassandraSink.Cassandra.COLUMN_FAMILY, "testtablerealtime")
+        .put(RealtimeCassandraSink.Cassandra.COLUMNS, "name,graduated,id,score,time")
+        .put(RealtimeCassandraSink.Cassandra.COMPRESSION, "NONE")
+        .put(RealtimeCassandraSink.Cassandra.CONSISTENCY_LEVEL, "QUORUM")
+        .build()));
     List<ETLStage> transforms = new ArrayList<>();
     ETLRealtimeConfig etlConfig = new ETLRealtimeConfig(source, sink, transforms);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testESSink");
@@ -217,24 +211,28 @@ public class ETLCassandraTest extends TestBase {
     streamManager.send(ImmutableMap.of("header1", "bar"), "AAPL|10|500.32");
     streamManager.send(ImmutableMap.of("header1", "bar"), "CDAP|13|212.36");
 
-    ETLStage source = new ETLStage("Stream", ImmutableMap.<String, String>builder()
-      .put(Properties.Stream.NAME, STREAM_NAME)
-      .put(Properties.Stream.DURATION, "10m")
-      .put(Properties.Stream.DELAY, "0d")
-      .put(Properties.Stream.FORMAT, Formats.CSV)
-      .put(Properties.Stream.SCHEMA, BODY_SCHEMA.toString())
-      .put("format.setting.delimiter", "|")
-      .build());
+    ETLStage source = new ETLStage("Stream", new Plugin(
+      "Stream",
+      ImmutableMap.<String, String>builder()
+        .put(Properties.Stream.NAME, STREAM_NAME)
+        .put(Properties.Stream.DURATION, "10m")
+        .put(Properties.Stream.DELAY, "0d")
+        .put(Properties.Stream.FORMAT, Formats.CSV)
+        .put(Properties.Stream.SCHEMA, BODY_SCHEMA.toString())
+        .put("format.setting.delimiter", "|")
+        .build()));
 
-    ETLStage sink = new ETLStage("Cassandra", new ImmutableMap.Builder<String, String>()
-      .put(BatchCassandraSink.Cassandra.INITIAL_ADDRESS, "localhost")
-      .put(BatchCassandraSink.Cassandra.PORT, Integer.toString(rpcPort))
-      .put(BatchCassandraSink.Cassandra.PARTITIONER, "org.apache.cassandra.dht.Murmur3Partitioner")
-      .put(BatchCassandraSink.Cassandra.KEYSPACE, "testkeyspace")
-      .put(BatchCassandraSink.Cassandra.COLUMN_FAMILY, "testtablebatch")
-      .put(BatchCassandraSink.Cassandra.COLUMNS, "ticker, num, price")
-      .put(BatchCassandraSink.Cassandra.PRIMARY_KEY, "ticker")
-      .build());
+    ETLStage sink = new ETLStage("Cassandra", new Plugin(
+      "Cassandra",
+      new ImmutableMap.Builder<String, String>()
+        .put(BatchCassandraSink.Cassandra.INITIAL_ADDRESS, "localhost")
+        .put(BatchCassandraSink.Cassandra.PORT, Integer.toString(rpcPort))
+        .put(BatchCassandraSink.Cassandra.PARTITIONER, "org.apache.cassandra.dht.Murmur3Partitioner")
+        .put(BatchCassandraSink.Cassandra.KEYSPACE, "testkeyspace")
+        .put(BatchCassandraSink.Cassandra.COLUMN_FAMILY, "testtablebatch")
+        .put(BatchCassandraSink.Cassandra.COLUMNS, "ticker, num, price")
+        .put(BatchCassandraSink.Cassandra.PRIMARY_KEY, "ticker")
+        .build()));
 
     List<ETLStage> transforms = new ArrayList<>();
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, transforms);
@@ -271,22 +269,24 @@ public class ETLCassandraTest extends TestBase {
 
   @SuppressWarnings("ConstantConditions")
   private void testCassandraSource() throws Exception {
-    ETLStage source = new ETLStage("Cassandra",
-                                   new ImmutableMap.Builder<String, String>()
-                                     .put(BatchCassandraSource.Cassandra.INITIAL_ADDRESS, "localhost")
-                                     .put(BatchCassandraSource.Cassandra.PARTITIONER,
-                                          "org.apache.cassandra.dht.Murmur3Partitioner")
-                                     .put(BatchCassandraSource.Cassandra.KEYSPACE, "testkeyspace")
-                                     .put(BatchCassandraSource.Cassandra.COLUMN_FAMILY, "testtablebatch")
-                                     .put(BatchCassandraSource.Cassandra.QUERY, "SELECT * from testtablebatch " +
-                                                                                "where token(ticker) > ? " +
-                                                                                "and token(ticker) <= ?")
-                                     .put(BatchCassandraSource.Cassandra.SCHEMA, BODY_SCHEMA.toString())
-                                     .build());
-    ETLStage sink = new ETLStage("Table",
-                                 ImmutableMap.of(Properties.Table.NAME, TABLE_NAME,
-                                                 Properties.Table.PROPERTY_SCHEMA, BODY_SCHEMA.toString(),
-                                                 Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ticker"));
+    ETLStage source = new ETLStage("Cassandra", new Plugin(
+      "Cassandra",
+      new ImmutableMap.Builder<String, String>()
+        .put(BatchCassandraSource.Cassandra.INITIAL_ADDRESS, "localhost")
+        .put(BatchCassandraSource.Cassandra.PARTITIONER,
+             "org.apache.cassandra.dht.Murmur3Partitioner")
+        .put(BatchCassandraSource.Cassandra.KEYSPACE, "testkeyspace")
+        .put(BatchCassandraSource.Cassandra.COLUMN_FAMILY, "testtablebatch")
+        .put(BatchCassandraSource.Cassandra.QUERY, "SELECT * from testtablebatch " +
+          "where token(ticker) > ? " +
+          "and token(ticker) <= ?")
+        .put(BatchCassandraSource.Cassandra.SCHEMA, BODY_SCHEMA.toString())
+        .build()));
+    ETLStage sink = new ETLStage("Table", new Plugin(
+      "Table",
+      ImmutableMap.of(Properties.Table.NAME, TABLE_NAME,
+                      Properties.Table.PROPERTY_SCHEMA, BODY_SCHEMA.toString(),
+                      Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ticker")));
 
     List<ETLStage> transforms = new ArrayList<>();
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, transforms);
@@ -321,17 +321,19 @@ public class ETLCassandraTest extends TestBase {
   }
 
   private void testCassandraRealtimeSink() throws Exception {
-    ETLStage source = new ETLStage("DataGenerator", ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE,
-                                                                    DataGeneratorSource.TABLE_TYPE));
-    ETLStage sink = new ETLStage("Cassandra",
-                                 new ImmutableMap.Builder<String, String>()
-                                   .put(RealtimeCassandraSink.Cassandra.ADDRESSES, "localhost:9042")
-                                   .put(RealtimeCassandraSink.Cassandra.KEYSPACE, "testkeyspace")
-                                   .put(RealtimeCassandraSink.Cassandra.COLUMN_FAMILY, "testtablerealtime")
-                                   .put(RealtimeCassandraSink.Cassandra.COLUMNS, "name, graduated, id, score, time")
-                                   .put(RealtimeCassandraSink.Cassandra.COMPRESSION, "NONE")
-                                   .put(RealtimeCassandraSink.Cassandra.CONSISTENCY_LEVEL, "QUORUM")
-                                   .build());
+    ETLStage source = new ETLStage("DataGenerator", new Plugin(
+      "DataGenerator",
+      ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE, DataGeneratorSource.TABLE_TYPE)));
+    ETLStage sink = new ETLStage("Cassandra", new Plugin(
+      "Cassandra",
+      new ImmutableMap.Builder<String, String>()
+        .put(RealtimeCassandraSink.Cassandra.ADDRESSES, "localhost:9042")
+        .put(RealtimeCassandraSink.Cassandra.KEYSPACE, "testkeyspace")
+        .put(RealtimeCassandraSink.Cassandra.COLUMN_FAMILY, "testtablerealtime")
+        .put(RealtimeCassandraSink.Cassandra.COLUMNS, "name, graduated, id, score, time")
+        .put(RealtimeCassandraSink.Cassandra.COMPRESSION, "NONE")
+        .put(RealtimeCassandraSink.Cassandra.CONSISTENCY_LEVEL, "QUORUM")
+        .build()));
     List<ETLStage> transforms = new ArrayList<>();
     ETLRealtimeConfig etlConfig = new ETLRealtimeConfig(source, sink, transforms);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testESSink");
