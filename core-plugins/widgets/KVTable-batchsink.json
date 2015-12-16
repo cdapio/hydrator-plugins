@@ -13,13 +13,13 @@
         },
         {
           "widget-type": "textbox",
-          "label": "Key",
-          "name": "key"
+          "label": "Key Field",
+          "name": "key.field"
         },
         {
           "widget-type": "textbox",
-          "label": "Value",
-          "name": "value"
+          "label": "Value Field",
+          "name": "value.field"
         }
       ]
     }

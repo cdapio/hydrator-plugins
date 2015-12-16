@@ -8,14 +8,6 @@
       "properties": [
         {
           "widget-type": "textbox",
-          "label": "Elasticsearch Host",
-          "name": "es.host",
-          "widget-attributes": {
-            "width": "large"
-          }
-        },
-        {
-          "widget-type": "textbox",
           "label": "Index",
           "name": "es.index",
           "widget-attributes": {
@@ -32,8 +24,32 @@
         },
         {
           "widget-type": "textbox",
+          "label": "Query",
+          "name": "query",
+          "widget-attributes": {
+            "width": "large"
+          }
+        },
+        {
+          "widget-type": "textbox",
           "label": "ID Field",
           "name": "es.idField",
+          "widget-attributes": {
+            "width": "large"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Transport Addresses",
+          "name": "es.transportAddresses",
+          "widget-attributes": {
+            "width": "large"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Cluster Name",
+          "name": "es.cluster",
           "widget-attributes": {
             "width": "large"
           }
@@ -41,5 +57,5 @@
       ]
     }
   ],
-  "outputs": []
+  "outputs": [ ]
 }

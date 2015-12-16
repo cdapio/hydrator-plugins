@@ -15,33 +15,9 @@
           }
         },
         {
-          "widget-type": "csv",
-          "label": "Addresses",
-          "name": "addresses",
-          "widget-attributes": {
-            "delimiter": ","
-          }
-        },
-        {
           "widget-type": "textbox",
           "label": "Port",
           "name": "port",
-          "widget-attributes": {
-            "width": "medium"
-          }
-        },
-        {
-          "widget-type": "textbox",
-          "label": "Consistency Level",
-          "name": "consistencyLevel",
-          "widget-attributes": {
-            "width": "medium"
-          }
-        },
-        {
-          "widget-type": "textbox",
-          "label": "Compression",
-          "name": "compression",
           "widget-attributes": {
             "width": "medium"
           }
@@ -97,22 +73,6 @@
           }
         },
         {
-          "widget-type": "csv",
-          "label": "Primary Key",
-          "name": "primaryKey",
-          "widget-attributes": {
-            "delimiter": ","
-          }
-        },
-        {
-          "widget-type": "csv",
-          "label": "Columns",
-          "name": "columns",
-          "widget-attributes": {
-            "delimiter": ","
-          }
-        },
-        {
           "widget-type": "textbox",
           "label": "CQL Query",
           "name": "query"
@@ -120,5 +80,22 @@
       ]
     }
   ],
-  "outputs": []
+  "outputs": [
+    {
+      "name": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "boolean",
+          "int",
+          "long",
+          "float",
+          "double",
+          "bytes",
+          "string"
+        ],
+        "schema-default-type": "string"
+      }
+    }
+  ]
 }

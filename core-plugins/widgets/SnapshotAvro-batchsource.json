@@ -15,6 +15,11 @@
           "widget-type": "textbox",
           "label": "Snapshot Base Path",
           "name": "basePath"
+        },
+        {
+          "widget-type": "json-editor",
+          "label": "FileSet Properties",
+          "name": "fileProperties"
         }
       ]
     }

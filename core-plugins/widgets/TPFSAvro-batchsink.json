@@ -25,16 +25,6 @@
           "widget-type": "textbox",
           "label": "Time Zone",
           "name": "timeZone"
-        },
-        {
-          "widget-type": "textbox",
-          "label": "Duration",
-          "name": "duration"
-        },
-        {
-          "widget-type": "textbox",
-          "label": "Delay",
-          "name": "delay"
         }
       ]
     }

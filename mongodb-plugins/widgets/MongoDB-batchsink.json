@@ -13,60 +13,9 @@
           "widget-attributes": {
             "width": "large"
           }
-        },
-        {
-          "widget-type": "textbox",
-          "label": "Authentication Connection String",
-          "name": "authConnectionString",
-          "widget-attributes": {
-            "width": "large"
-          }
-        },
-        {
-          "widget-type": "textbox",
-          "label": "Query",
-          "name": "inputQuery",
-          "widget-attributes": {
-            "width": "large"
-          }
-        },
-        {
-          "widget-type": "textbox",
-          "label": "Index",
-          "name": "inputFields",
-          "widget-attributes": {
-            "width": "medium"
-          }
-        },
-        {
-          "widget-type": "textbox",
-          "label": "Splitter Class",
-          "name": "splitterClass",
-          "widget-attributes": {
-            "width": "medium"
-          }
         }
       ]
     }
   ],
-  "outputs": [
-    {
-      "name": "schema",
-      "label": "schema",
-      "widget-type": "schema",
-      "widget-attributes": {
-        "schema-types": [
-          "boolean",
-          "int",
-          "long",
-          "float",
-          "double",
-          "bytes",
-          "string"
-        ],
-        "schema-default-type": "string",
-        "property-watch": "format"
-      }
-    }
-  ]
+  "outputs": [ ]
 }

@@ -38,11 +38,6 @@
         },
         {
           "widget-type": "textbox",
-          "label": "Driver Class",
-          "name": "driverClass"
-        },
-        {
-          "widget-type": "textbox",
           "label": "Connection String",
           "name": "connectionString"
         }
@@ -72,14 +67,6 @@
               "No change"
             ],
             "default": "No change"
-          }
-        },
-        {
-          "widget-type": "csv",
-          "label": "Columns",
-          "name": "columns",
-          "widget-attributes": {
-            "delimiter": ","
           }
         }
       ]

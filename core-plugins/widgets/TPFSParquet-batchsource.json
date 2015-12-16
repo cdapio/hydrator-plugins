@@ -18,13 +18,13 @@
         },
         {
           "widget-type": "textbox",
-          "label": "Partition Directory Format",
-          "name": "filePathFormat"
+          "label": "Duration",
+          "name": "duration"
         },
         {
           "widget-type": "textbox",
-          "label": "Time Zone",
-          "name": "timeZone"
+          "label": "Delay",
+          "name": "delay"
         }
       ]
     }

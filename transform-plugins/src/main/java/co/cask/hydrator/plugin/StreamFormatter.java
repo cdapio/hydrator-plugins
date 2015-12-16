@@ -219,7 +219,7 @@ public final class StreamFormatter extends Transform<StructuredRecord, Structure
     @Name("format")
     @Description("Format of the body to be written to stream. Defaults CSV")
     private String format;
-    
+
     @Name("schema")
     @Description("Output schema")
     private String schema;
