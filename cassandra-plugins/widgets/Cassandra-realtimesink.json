@@ -1,0 +1,79 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Cassandra Configuration",
+      "properties": [
+        {
+          "widget-type": "csv",
+          "label": "Addresses",
+          "name": "addresses",
+          "widget-attributes": {
+            "delimiter": ","
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Consistency Level",
+          "name": "consistencyLevel",
+          "widget-attributes": {
+            "width": "medium"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Compression",
+          "name": "compression",
+          "widget-attributes": {
+            "width": "medium"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Username",
+          "name": "username",
+          "widget-attributes": {
+            "width": "medium"
+          }
+        },
+        {
+          "widget-type": "password",
+          "label": "Password",
+          "name": "password"
+        }
+      ]
+    },
+    {
+      "label": "Keyspace and Column Family",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Keyspace",
+          "name": "keyspace",
+          "widget-attributes": {
+            "width": "medium"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Column Family",
+          "name": "columnFamily",
+          "widget-attributes": {
+            "width": "medium"
+          }
+        },
+        {
+          "widget-type": "csv",
+          "label": "Columns",
+          "name": "columns",
+          "widget-attributes": {
+            "delimiter": ","
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}

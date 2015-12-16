@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Transform;
+import co.cask.hydrator.common.test.MockEmitter;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
@@ -152,5 +153,14 @@ public class EncoderTest {
     byte[] actual = emitter.getEmitted().get(0).get("a");
     Assert.assertEquals(2, emitter.getEmitted().get(0).getSchema().getFields().size());
     Assert.assertArrayEquals(expected, actual);
+  }
+
+  @Test
+  public void testSchemaValidation() throws Exception {
+    Transform<StructuredRecord, StructuredRecord> transform =
+      new Encoder(new Encoder.Config("a:BASE32", OUTPUTSTR.toString()));
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT);
+    transform.configurePipeline(mockPipelineConfigurer);
+    Assert.assertEquals(OUTPUTSTR, mockPipelineConfigurer.getOutputSchema());
   }
 }

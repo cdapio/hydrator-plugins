@@ -64,10 +64,6 @@ Example for loading the Cassandra Plugin (from the cassandra-plugins directory):
   > load artifact target/cassandra-plugins-1.0-SNAPSHOT-realtime.jar \
          config-file resources/cassandra-plugin-realtime.json
 
-Then, copy the UI configuration into the CDAP UI templates directory::
-
-  $ cp resources/Cassandra.json $CDAP_HOME/ui/templates/common
-
 You can build without running tests: ``mvn clean install -DskipTests``
 
 Mailing Lists

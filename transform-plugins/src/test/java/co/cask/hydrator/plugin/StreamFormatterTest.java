@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Transform;
+import co.cask.hydrator.common.test.MockEmitter;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -58,5 +59,16 @@ public class StreamFormatterTest {
     Map<String, String> header = emitter.getEmitted().get(0).get("header");
     Assert.assertEquals("2", header.get("b"));
     Assert.assertEquals("3", header.get("c"));
+  }
+
+
+  @Test
+  public void testSchemaValidation() throws Exception {
+    StreamFormatter.Config config = new StreamFormatter.Config("b,c", null, "CSV", OUTPUT.toString());
+    Transform<StructuredRecord, StructuredRecord> transform = new StreamFormatter(config);
+
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT);
+    transform.configurePipeline(mockPipelineConfigurer);
+    Assert.assertEquals(OUTPUT, mockPipelineConfigurer.getOutputSchema());
   }
 }

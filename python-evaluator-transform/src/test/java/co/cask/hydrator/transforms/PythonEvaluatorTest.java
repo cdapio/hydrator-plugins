@@ -21,15 +21,14 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.InvalidEntry;
 import co.cask.cdap.etl.api.Transform;
-import co.cask.cdap.etl.common.MockMetrics;
+import co.cask.hydrator.common.test.MockEmitter;
+import co.cask.hydrator.common.test.MockTransformContext;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -78,7 +77,6 @@ public class PythonEvaluatorTest {
     .build();
 
   @Test
-  @Ignore // ignore, until StructuredRecord has equals method defined in CDAP repo
   public void testSimple() throws Exception {
     PythonEvaluator.Config config = new PythonEvaluator.Config(
       "def transform(x, emitter, context):\n" +
@@ -87,7 +85,7 @@ public class PythonEvaluatorTest {
       "  emitter.emit(x)",
       null);
     Transform<StructuredRecord, StructuredRecord> transform = new PythonEvaluator(config);
-    transform.initialize(new MockTransformContext("transform"));
+    transform.initialize(new MockTransformContext());
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(RECORD1, emitter);
@@ -134,14 +132,50 @@ public class PythonEvaluatorTest {
   }
 
   @Test
-  @Ignore // ignore, until StructuredRecord has equals method defined in CDAP repo
+  public void testSchemaValidation() throws Exception {
+    Schema outputSchema = Schema.recordOf(
+      "smallerSchema",
+      Schema.Field.of("intField", Schema.of(Schema.Type.INT)),
+      Schema.Field.of("longField", Schema.of(Schema.Type.LONG)));
+
+    PythonEvaluator.Config config = new PythonEvaluator.Config(
+      "def transform(x, emitter, context):\n" +
+        " y = {}\n" +
+        "  y['intField'] *= 1024\n" +
+        "  y['longField'] *= 1024\n" +
+        "  emitter.emit(y)",
+      outputSchema.toString());
+
+    Schema inputSchema = Schema.recordOf(
+      "biggerSchema",
+      Schema.Field.of("intField", Schema.of(Schema.Type.INT)),
+      Schema.Field.of("longField", Schema.of(Schema.Type.LONG)),
+      Schema.Field.of("doubleField", Schema.of(Schema.Type.DOUBLE)));
+
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
+    new PythonEvaluator(config).configurePipeline(configurer);
+    Assert.assertEquals(outputSchema, configurer.getOutputSchema());
+
+    // check if schema is null, input schema is used.
+    config = new PythonEvaluator.Config(
+      "def transform(x, emitter, context):\n" +
+        " y = {}\n" +
+        "  y['intField'] *= 1024\n" +
+        "  y['longField'] *= 1024\n" +
+        "  emitter.emit(y)",
+      null);
+    new PythonEvaluator(config).configurePipeline(configurer);
+    Assert.assertEquals(inputSchema, configurer.getOutputSchema());
+  }
+
+  @Test
   public void testEmitError() throws Exception {
     PythonEvaluator.Config config = new PythonEvaluator.Config(
       "def transform(x, emitter, context):\n" +
         "  emitter.emitError({\"errorCode\":31, \"errorMsg\":\"error!\", \"invalidRecord\": x})",
       null);
     Transform<StructuredRecord, StructuredRecord> transform = new PythonEvaluator(config);
-    transform.initialize(new MockTransformContext("transform"));
+    transform.initialize(new MockTransformContext());
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(RECORD1, emitter);
@@ -161,7 +195,7 @@ public class PythonEvaluatorTest {
       "def transform(input, emitter, context): emitter.emit({ 'x':input['intField'], 'y':input['longField'] })",
       outputSchema.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new PythonEvaluator(config);
-    transform.initialize(new MockTransformContext("transform"));
+    transform.initialize(new MockTransformContext());
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(RECORD1, emitter);
@@ -241,14 +275,14 @@ public class PythonEvaluatorTest {
         "",
       outputSchema.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new PythonEvaluator(config);
-    MockStageMetrics mockMetrics = new MockStageMetrics("transform");
-    transform.initialize(new MockTransformContext("transform", new HashMap<String, String>(), mockMetrics));
+    MockTransformContext mockContext = new MockTransformContext();
+    transform.initialize(mockContext);
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(input, emitter);
     StructuredRecord output = emitter.getEmitted().get(0);
     Assert.assertEquals(outputSchema, output.getSchema());
     Assert.assertTrue(Math.abs(2.71 * 2.71 + 3.14 * 3.14 * 3.14 - (Double) output.get("x")) < 0.000001);
-    Assert.assertEquals(1, mockMetrics.getCount("script.transform.count"));
+    Assert.assertEquals(1, mockContext.getMockMetrics().getCount("script.transform.count"));
   }
 }

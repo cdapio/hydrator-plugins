@@ -19,12 +19,11 @@ package co.cask.hydrator.plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Transform;
-import org.apache.hadoop.hbase.util.Bytes;
+import co.cask.hydrator.common.test.MockEmitter;
 import org.junit.Assert;
 import org.junit.Test;
 import org.xerial.snappy.Snappy;
 
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.zip.GZIPOutputStream;
@@ -106,6 +105,14 @@ public class CompressorTest {
     Assert.assertArrayEquals(expected, actual);
   }
 
+  @Test
+  public void testSchemaValidation() throws Exception {
+    Transform<StructuredRecord, StructuredRecord> transform =
+      new Compressor(new Compressor.Config("a:GZIP", OUTPUT.toString()));
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT);
+    transform.configurePipeline(mockPipelineConfigurer);
+    Assert.assertEquals(OUTPUT, mockPipelineConfigurer.getOutputSchema());
+  }
 
   private static byte[] compressGZIP(byte[] input) throws IOException {
     ByteArrayOutputStream out = new ByteArrayOutputStream();

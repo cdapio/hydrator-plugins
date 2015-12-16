@@ -119,6 +119,9 @@ public class ScriptTransform extends Transform<StructuredRecord, StructuredRecor
     // try evaluating the script to fail application creation if the script is invalid
     init(null);
 
+    // init intializes schema if present in the config
+    Schema outputSchema = (schema == null) ? pipelineConfigurer.getStageConfigurer().getInputSchema() : schema;
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
     // TODO: CDAP-4169 verify existence of configured lookup tables
   }
 

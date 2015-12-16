@@ -1,0 +1,74 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Cassandra Configuration",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Initial Address",
+          "name": "initialAddress",
+          "widget-attributes": {
+            "width": "large"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Port",
+          "name": "port",
+          "widget-attributes": {
+            "width": "medium"
+          }
+        }
+      ]
+    },
+    {
+      "label": "Keyspace and Column Family",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Keyspace",
+          "name": "keyspace",
+          "widget-attributes": {
+            "width": "medium"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Partitioner",
+          "name": "partitioner",
+          "widget-attributes": {
+            "width": "large"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Column Family",
+          "name": "columnFamily",
+          "widget-attributes": {
+            "width": "medium"
+          }
+        },
+        {
+          "widget-type": "csv",
+          "label": "Primary Key",
+          "name": "primaryKey",
+          "widget-attributes": {
+            "delimiter": ","
+          }
+        },
+        {
+          "widget-type": "csv",
+          "label": "Columns",
+          "name": "columns",
+          "widget-attributes": {
+            "delimiter": ","
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}

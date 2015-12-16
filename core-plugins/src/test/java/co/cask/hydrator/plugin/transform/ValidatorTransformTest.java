@@ -19,14 +19,12 @@ package co.cask.hydrator.plugin.transform;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Validator;
-import co.cask.cdap.etl.common.MockMetrics;
-import co.cask.hydrator.plugin.common.MockEmitter;
+import co.cask.hydrator.common.test.MockEmitter;
+import co.cask.hydrator.common.test.MockTransformContext;
 import co.cask.hydrator.plugin.validator.CoreValidator;
 import com.google.common.collect.ImmutableList;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.HashMap;
 
 /**
  * Validator transformation testing
@@ -60,12 +58,11 @@ public class ValidatorTransformTest {
         "      return {'isValid': isValid, 'errorCode': errCode, 'errorMsg': errMsg}; " +
         "   };";
 
-    config.validators = "apache";
+    config.validators = "core";
 
     ValidatorTransform transform = new ValidatorTransform(config);
-    MockMetrics metrics = new MockMetrics();
-    transform.setUpInitialScript(new MockTransformContext(new HashMap<String, String>(), metrics, "validator.1."),
-                                 ImmutableList.<Validator>of(new CoreValidator()));
+    MockTransformContext mockContext = new MockTransformContext("validator.1");
+    transform.setUpInitialScript(mockContext, ImmutableList.<Validator>of(new CoreValidator()));
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
 
     StructuredRecord validRecord = StructuredRecord.builder(SCHEMA)
@@ -99,7 +96,42 @@ public class ValidatorTransformTest {
 
     Assert.assertEquals(1, emitter.getEmitted().size());
     Assert.assertEquals(3, emitter.getErrors().size());
-    Assert.assertEquals(4, metrics.getCount("total.processed"));
-    Assert.assertEquals(4, metrics.getCount("validator.1.total.processed"));
+    Assert.assertEquals(4, mockContext.getMockMetrics().getCount("total.processed"));
+    Assert.assertEquals(4, mockContext.getMockMetrics().getPipelineCount("validator.1.total.processed"));
+  }
+
+  @Test
+  public void testSchemaValidation() throws Exception {
+    ValidatorTransform.ValidatorConfig config = new ValidatorTransform.ValidatorConfig();
+    config.validationScript =
+      "   function isValid(input, context) { " +
+        "      var isValid = true; " +
+        "      var errMsg = \"\";" +
+        "      var errCode = 0;" +
+        "      var coreValidator = context.getValidator(\"coreValidator\");" +
+        "      if (!coreValidator.isDate(input.date)) { " +
+        "         isValid = false; errMsg = input.date + \"is invalid date\"; errCode = 5;" +
+        "      } else if (!coreValidator.isUrl(input.url)) { " +
+        "         isValid = false; errMsg = \"invalid url\"; errCode = 7;" +
+        "      } else if (!coreValidator.isInRange(input.content_length, 0, 1024 * 1024)) {" +
+        "         isValid = false; errMsg = \"content length >1MB\"; errCode = 10;" +
+        "      }" +
+        "      context.getMetrics().count(\"total.processed\", 1);" +
+        "      context.getMetrics().pipelineCount(\"total.processed\", 1);" +
+        "      context.getLogger().info(\"Test Log from Validator Transform\");" +
+        "      return {'isValid': isValid, 'errorCode': errCode, 'errorMsg': errMsg}; " +
+        "   };";
+
+    config.validators = "core";
+
+    ValidatorTransform transform = new ValidatorTransform(config);
+    Schema outputSchema = Schema.recordOf(
+      "smallerSchema",
+      Schema.Field.of("x", Schema.of(Schema.Type.INT)),
+      Schema.Field.of("y", Schema.of(Schema.Type.LONG)));
+
+    MockPipelineConfigurer pipelineConfigurer = new MockPipelineConfigurer(outputSchema);
+    transform.configurePipeline(pipelineConfigurer);
+    Assert.assertEquals(outputSchema, pipelineConfigurer.getOutputSchema());
   }
 }

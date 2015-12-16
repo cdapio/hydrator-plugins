@@ -1,0 +1,64 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "CSV Formatter Configuration",
+      "properties": [
+        {
+          "widget-type": "select",
+          "label": "Formats",
+          "name": "format",
+          "widget-attributes": {
+            "values": [
+              "DELIMITED",
+              "EXCEL",
+              "MYSQL",
+              "RFC4180",
+              "TDF"
+            ],
+            "default": "DELIMITED"
+          }
+        },
+        {
+          "widget-type": "select",
+          "label": "Choose a delimiter",
+          "name": "delimiter",
+          "widget-attributes": {
+            "values": [
+              "COMMA",
+              "CTRL-A",
+              "TAB",
+              "VBAR",
+              "STAR",
+              "CARROT",
+              "DOLLAR",
+              "HASH",
+              "CTRL-B",
+              "CTRL-C",
+              "CTRL-D",
+              "CTRL-E",
+              "CTRL-F"
+            ],
+            "default": "CTRL-A"
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "label": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "string"
+        ],
+        "schema-default-type": "string",
+        "property-watch": "format"
+      }
+    }
+  ]
+}

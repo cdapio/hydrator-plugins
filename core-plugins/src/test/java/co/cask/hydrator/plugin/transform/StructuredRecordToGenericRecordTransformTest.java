@@ -20,7 +20,8 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.TransformContext;
-import co.cask.hydrator.plugin.common.MockEmitter;
+import co.cask.hydrator.common.test.MockEmitter;
+import co.cask.hydrator.common.test.MockTransformContext;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.Assert;
 import org.junit.Test;
@@ -55,5 +56,13 @@ public class StructuredRecordToGenericRecordTransformTest {
     Assert.assertEquals("string1", value.get("field1"));
     Assert.assertEquals(2, value.get("field2"));
     Assert.assertEquals(3.0, value.get("field3"));
+  }
+
+  @Test
+  public void testSchemaValidation() throws Exception {
+    StructuredRecordToGenericRecordTransform transformer = new StructuredRecordToGenericRecordTransform();
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(eventSchema);
+    transformer.configurePipeline(mockPipelineConfigurer);
+    Assert.assertEquals(eventSchema, mockPipelineConfigurer.getOutputSchema());
   }
 }

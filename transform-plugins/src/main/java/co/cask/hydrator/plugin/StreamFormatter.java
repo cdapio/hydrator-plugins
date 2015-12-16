@@ -26,10 +26,9 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
-import co.cask.cdap.etl.common.StructuredRecordStringConverter;
+import co.cask.cdap.format.StructuredRecordStringConverter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,6 +113,7 @@ public final class StreamFormatter extends Transform<StructuredRecord, Structure
                                              "Map<String, String>.");
       }
 
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(out);
     } catch (IOException e) {
       throw new IllegalArgumentException("Output Schema specified is not a valid JSON. Please check the schema JSON");
     }
@@ -219,7 +219,7 @@ public final class StreamFormatter extends Transform<StructuredRecord, Structure
     @Name("format")
     @Description("Format of the body to be written to stream. Defaults CSV")
     private String format;
-    
+
     @Name("schema")
     @Description("Output schema")
     private String schema;

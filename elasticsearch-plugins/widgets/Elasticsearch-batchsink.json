@@ -1,0 +1,45 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Elasticsearch Configuration",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Elasticsearch Host",
+          "name": "es.host",
+          "widget-attributes": {
+            "width": "large"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Index",
+          "name": "es.index",
+          "widget-attributes": {
+            "width": "medium"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Type",
+          "name": "es.type",
+          "widget-attributes": {
+            "width": "medium"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "ID Field",
+          "name": "es.idField",
+          "widget-attributes": {
+            "width": "large"
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}

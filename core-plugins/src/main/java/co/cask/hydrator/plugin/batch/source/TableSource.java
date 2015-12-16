@@ -27,7 +27,7 @@ import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
-import co.cask.cdap.etl.common.RowRecordTransformer;
+import co.cask.hydrator.common.RowRecordTransformer;
 import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.common.TableSourceConfig;
 import com.google.common.base.Preconditions;

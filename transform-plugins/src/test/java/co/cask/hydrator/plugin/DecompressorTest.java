@@ -20,16 +20,15 @@ package co.cask.hydrator.plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Transform;
+import co.cask.hydrator.common.test.MockEmitter;
 import org.junit.Assert;
 import org.junit.Test;
 import org.xerial.snappy.Snappy;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 /**
@@ -126,5 +125,14 @@ public class DecompressorTest {
     zos.flush();
     zos.close();
     return out.toByteArray();
+  }
+
+  @Test
+  public void testSchemaValidation() throws Exception {
+    Transform<StructuredRecord, StructuredRecord> transform =
+      new Decompressor(new Decompressor.Config("a:ZIP", OUTPUT.toString()));
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT);
+    transform.configurePipeline(mockPipelineConfigurer);
+    Assert.assertEquals(OUTPUT, mockPipelineConfigurer.getOutputSchema());
   }
 }

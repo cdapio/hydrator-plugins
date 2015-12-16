@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Transform;
+import co.cask.hydrator.common.test.MockEmitter;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -153,4 +154,15 @@ public class CSVParserTest {
     transform.transform(StructuredRecord.builder(INPUT1)
                           .set("body", ",stringA,3,4.32,true").build(), emitter);
   }
+
+  @Test
+  public void testSchemaValidation() throws Exception {
+    CSVParser.Config config = new CSVParser.Config("DEFAULT", "body", OUTPUT1.toString());
+    Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
+
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT1);
+    transform.configurePipeline(mockPipelineConfigurer);
+    Assert.assertEquals(OUTPUT1, mockPipelineConfigurer.getOutputSchema());
+  }
+
 }

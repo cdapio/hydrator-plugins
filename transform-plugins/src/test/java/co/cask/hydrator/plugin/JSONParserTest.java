@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Transform;
+import co.cask.hydrator.common.test.MockEmitter;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -67,5 +68,15 @@ public class JSONParserTest {
     Assert.assertEquals("1", emitter.getEmitted().get(0).get("a"));
     Assert.assertEquals("2", emitter.getEmitted().get(0).get("b"));
     Assert.assertEquals("5", emitter.getEmitted().get(0).get("e"));
+  }
+
+  @Test
+  public void testSchemaValidation() throws Exception {
+    JSONParser.Config config = new JSONParser.Config("body", OUTPUT2.toString());
+    Transform<StructuredRecord, StructuredRecord> transform = new JSONParser(config);
+
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT1);
+    transform.configurePipeline(mockPipelineConfigurer);
+    Assert.assertEquals(OUTPUT2, mockPipelineConfigurer.getOutputSchema());
   }
 }

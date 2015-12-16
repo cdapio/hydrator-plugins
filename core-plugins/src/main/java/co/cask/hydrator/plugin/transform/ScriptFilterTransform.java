@@ -87,7 +87,7 @@ public class ScriptFilterTransform extends Transform<StructuredRecord, Structure
     Preconditions.checkArgument(!Strings.isNullOrEmpty(scriptFilterConfig.script), "Filter script must be specified.");
     // try evaluating the script to fail application creation if the script is invalid
     init(null);
-
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(pipelineConfigurer.getStageConfigurer().getInputSchema());
     // TODO: CDAP-4169 verify existence of configured lookup tables
   }
 

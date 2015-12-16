@@ -26,7 +26,7 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
-import co.cask.cdap.etl.common.StructuredRecordStringConverter;
+import co.cask.cdap.format.StructuredRecordStringConverter;
 import co.cask.hydrator.plugin.batch.ESProperties;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;

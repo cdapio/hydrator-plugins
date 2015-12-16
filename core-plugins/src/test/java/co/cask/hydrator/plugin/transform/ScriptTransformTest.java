@@ -23,13 +23,12 @@ import co.cask.cdap.etl.api.Lookup;
 import co.cask.cdap.etl.api.LookupConfig;
 import co.cask.cdap.etl.api.LookupTableConfig;
 import co.cask.cdap.etl.api.Transform;
-import co.cask.cdap.etl.common.MockMetrics;
-import co.cask.hydrator.plugin.common.MockEmitter;
-import co.cask.hydrator.plugin.common.MockLookupProvider;
+import co.cask.hydrator.common.test.MockEmitter;
+import co.cask.hydrator.common.test.MockLookupProvider;
+import co.cask.hydrator.common.test.MockTransformContext;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import org.junit.Assert;
 import org.junit.Test;
@@ -70,18 +69,21 @@ public class ScriptTransformTest {
     }
   };
 
-  private static final Schema SCHEMA = Schema.recordOf("record",
-    Schema.Field.of("booleanField", Schema.of(Schema.Type.BOOLEAN)),
-    Schema.Field.of("intField", Schema.of(Schema.Type.INT)),
-    Schema.Field.of("longField", Schema.of(Schema.Type.LONG)),
-    Schema.Field.of("floatField", Schema.of(Schema.Type.FLOAT)),
-    Schema.Field.of("doubleField", Schema.of(Schema.Type.DOUBLE)),
-    Schema.Field.of("bytesField", Schema.of(Schema.Type.BYTES)),
-    Schema.Field.of("stringField", Schema.of(Schema.Type.STRING)),
-    Schema.Field.of("nullableField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
-    Schema.Field.of("mapField", Schema.mapOf(Schema.of(Schema.Type.STRING), Schema.of(Schema.Type.INT))),
-    Schema.Field.of("arrayField", Schema.arrayOf(Schema.of(Schema.Type.STRING))),
-    Schema.Field.of("unionField", Schema.unionOf(Schema.of(Schema.Type.STRING), Schema.of(Schema.Type.INT))));
+  private static final Schema SCHEMA =
+    Schema.recordOf("record",
+                    Schema.Field.of("booleanField", Schema.of(Schema.Type.BOOLEAN)),
+                    Schema.Field.of("intField", Schema.of(Schema.Type.INT)),
+                    Schema.Field.of("longField", Schema.of(Schema.Type.LONG)),
+                    Schema.Field.of("floatField", Schema.of(Schema.Type.FLOAT)),
+                    Schema.Field.of("doubleField", Schema.of(Schema.Type.DOUBLE)),
+                    Schema.Field.of("bytesField", Schema.of(Schema.Type.BYTES)),
+                    Schema.Field.of("stringField", Schema.of(Schema.Type.STRING)),
+                    Schema.Field.of("nullableField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                    Schema.Field.of("mapField", Schema.mapOf(Schema.of(Schema.Type.STRING),
+                                                             Schema.of(Schema.Type.INT))),
+                    Schema.Field.of("arrayField", Schema.arrayOf(Schema.of(Schema.Type.STRING))),
+                    Schema.Field.of("unionField", Schema.unionOf(Schema.of(Schema.Type.STRING),
+                                                                 Schema.of(Schema.Type.INT))));
   private static final StructuredRecord RECORD1 = StructuredRecord.builder(SCHEMA)
     .set("booleanField", true)
     .set("intField", 28)
@@ -164,6 +166,36 @@ public class ScriptTransformTest {
   }
 
   @Test
+  public void testSchemaValidation() throws Exception {
+    Schema outputSchema = Schema.recordOf(
+      "smallerSchema",
+      Schema.Field.of("x", Schema.of(Schema.Type.INT)),
+      Schema.Field.of("y", Schema.of(Schema.Type.LONG)));
+    ScriptTransform.Config config = new ScriptTransform.Config(
+      "function transform(input, context) { return { 'x':input.intField, 'y':input.longField }; }",
+      outputSchema.toString(), null);
+
+    Schema inputSchema = Schema.recordOf(
+      "biggerSchema",
+      Schema.Field.of("x", Schema.of(Schema.Type.INT)),
+      Schema.Field.of("y", Schema.of(Schema.Type.LONG)),
+      Schema.Field.of("z", Schema.of(Schema.Type.DOUBLE)));
+
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
+    new ScriptTransform(config).configurePipeline(configurer);
+    Assert.assertEquals(outputSchema, configurer.getOutputSchema());
+
+    // if schame is null in config, then input schema is set as output schema
+    config = new ScriptTransform.Config(
+      "function transform(input, context) { return { 'x':input.intField, 'y':input.longField }; }",
+      null, null);
+
+    new ScriptTransform(config).configurePipeline(configurer);
+    Assert.assertEquals(inputSchema, configurer.getOutputSchema());
+
+  }
+
+  @Test
   public void testLookup() throws Exception {
     ScriptTransform.Config config = new ScriptTransform.Config(
       "function transform(x, ctx) { " +
@@ -178,8 +210,9 @@ public class ScriptTransformTest {
           "purchases", new LookupTableConfig(LookupTableConfig.TableType.DATASET))
       ));
     Transform<StructuredRecord, StructuredRecord> transform = new ScriptTransform(config);
-    transform.initialize(new MockTransformContext(
-      Maps.<String, String>newHashMap(), new MockMetrics(), "", new MockLookupProvider(TEST_LOOKUP)));
+    transform.initialize(new MockTransformContext("somestage",
+                                                  new HashMap<String, String>(),
+                                                  new MockLookupProvider(TEST_LOOKUP)));
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(STRING_RECORD, emitter);
@@ -220,9 +253,9 @@ public class ScriptTransformTest {
     Schema inner1Schema = Schema.recordOf(
       "inner1",
       Schema.Field.of("list",
-        Schema.arrayOf(Schema.mapOf(
-          Schema.of(Schema.Type.STRING), inner2Schema)
-      ))
+                      Schema.arrayOf(Schema.mapOf(
+                                       Schema.of(Schema.Type.STRING), inner2Schema)
+                      ))
     );
     Schema schema = Schema.recordOf(
       "complex",
@@ -264,33 +297,33 @@ public class ScriptTransformTest {
     Schema outputSchema = Schema.recordOf("output", Schema.Field.of("x", Schema.of(Schema.Type.DOUBLE)));
     ScriptTransform.Config config = new ScriptTransform.Config(
       "function transform(input, context) {\n" +
-      "  var pi = input.inner1.list[0].p;\n" +
-      "  var e = input.inner1.list[0].e;\n" +
-      "  var val = power(pi.val, 3) + power(e.val, 2);\n" +
-      "  print(pi); print(e);\n print(context);\n" +
-      "  context.getMetrics().count(\"script.transform.count\", 1);\n" +
-      "  context.getMetrics().pipelineCount(\"script.transform.count\", 1);\n" +
-      "  context.getLogger().info(\"Log test from Script Transform\");\n" +
-      "  return { 'x':val };\n" +
-      "}" +
-      "function power(x, y) { \n" +
-      "  var ans = 1; \n" +
-      "  for (i = 0; i < y; i++) { \n" +
-      "    ans = ans * x;\n" +
-      "  }\n" +
-      "  return ans;\n" +
-      "}",
+        "  var pi = input.inner1.list[0].p;\n" +
+        "  var e = input.inner1.list[0].e;\n" +
+        "  var val = power(pi.val, 3) + power(e.val, 2);\n" +
+        "  print(pi); print(e);\n print(context);\n" +
+        "  context.getMetrics().count(\"script.transform.count\", 1);\n" +
+        "  context.getMetrics().pipelineCount(\"script.transform.count\", 1);\n" +
+        "  context.getLogger().info(\"Log test from Script Transform\");\n" +
+        "  return { 'x':val };\n" +
+        "}" +
+        "function power(x, y) { \n" +
+        "  var ans = 1; \n" +
+        "  for (i = 0; i < y; i++) { \n" +
+        "    ans = ans * x;\n" +
+        "  }\n" +
+        "  return ans;\n" +
+        "}",
       outputSchema.toString(), null);
     Transform<StructuredRecord, StructuredRecord> transform = new ScriptTransform(config);
-    MockMetrics mockMetrics = new MockMetrics();
-    transform.initialize(new MockTransformContext(new HashMap<String, String>(), mockMetrics, "transform.1."));
+    MockTransformContext mockContext = new MockTransformContext("transform.1");
+    transform.initialize(mockContext);
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(input, emitter);
     StructuredRecord output = emitter.getEmitted().get(0);
     Assert.assertEquals(outputSchema, output.getSchema());
     Assert.assertTrue(Math.abs(2.71 * 2.71 + 3.14 * 3.14 * 3.14 - (Double) output.get("x")) < 0.000001);
-    Assert.assertEquals(1, mockMetrics.getCount("script.transform.count"));
-    Assert.assertEquals(1, mockMetrics.getCount("transform.1.script.transform.count"));
+    Assert.assertEquals(1, mockContext.getMockMetrics().getCount("script.transform.count"));
+    Assert.assertEquals(1, mockContext.getMockMetrics().getPipelineCount("transform.1.script.transform.count"));
   }
 }

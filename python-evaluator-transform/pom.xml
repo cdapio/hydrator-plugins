@@ -23,6 +23,7 @@
     <version>1.2.0-SNAPSHOT</version>
   </parent>
 
+  <name>Python Evaluator Transform Plugin</name>
   <artifactId>python-evaluator-transform</artifactId>
   <modelVersion>4.0.0</modelVersion>
 
@@ -43,8 +44,9 @@
       <artifactId>cdap-etl-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>co.cask.cdap</groupId>
-      <artifactId>cdap-etl-common</artifactId>
+      <groupId>co.cask.hydrator</groupId>
+      <artifactId>hydrator-common</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>co.cask.hydrator</groupId>

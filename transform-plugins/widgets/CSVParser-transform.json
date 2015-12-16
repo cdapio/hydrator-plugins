@@ -1,0 +1,55 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "CSV Parser",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Input field to Parse",
+          "name": "field",
+          "widget-attributes": {
+            "width": "large"
+          }
+        },
+        {
+          "widget-type": "select",
+          "label": "Formats",
+          "name": "format",
+          "widget-attributes": {
+            "values": [
+              "DEFAULT",
+              "EXCEL",
+              "MYSQL",
+              "RFC4180",
+              "TDF"
+            ],
+            "default": "DEFAULT"
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "label": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "boolean",
+          "int",
+          "long",
+          "float",
+          "double",
+          "bytes",
+          "string"
+        ],
+        "schema-default-type": "string",
+        "property-watch": "format"
+      }
+    }
+  ]
+}

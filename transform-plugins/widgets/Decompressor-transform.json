@@ -1,0 +1,32 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Decompressor",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Decompress Fields",
+          "name": "decompressor"
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "label": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "bytes",
+          "string"
+        ],
+        "schema-default-type": "bytes",
+        "property-watch": "format"
+      }
+    }
+  ]
+}

@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Transform;
+import co.cask.hydrator.common.test.MockEmitter;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -37,13 +38,6 @@ public class CSVFormatterTest {
                                                        Schema.Field.of("c", Schema.of(Schema.Type.STRING)),
                                                        Schema.Field.of("d", Schema.of(Schema.Type.STRING)),
                                                        Schema.Field.of("e", Schema.of(Schema.Type.STRING)));
-
-  private static final Schema INPUT2 = Schema.recordOf("input2",
-                                                       Schema.Field.of("a", Schema.of(Schema.Type.LONG)),
-                                                       Schema.Field.of("b", Schema.of(Schema.Type.STRING)),
-                                                       Schema.Field.of("c", Schema.of(Schema.Type.INT)),
-                                                       Schema.Field.of("d", Schema.of(Schema.Type.DOUBLE)),
-                                                       Schema.Field.of("e", Schema.of(Schema.Type.BOOLEAN)));
 
   @Test
   public void testDefaultCSVFormatter() throws Exception {
@@ -70,5 +64,15 @@ public class CSVFormatterTest {
                           .set("d", "9")
                           .set("e", "10").build(), emitter);
     Assert.assertEquals("6|7|8|9|10\r\n", emitter.getEmitted().get(0).get("body"));
+  }
+
+  @Test
+  public void testSchemaValidation() throws Exception {
+    CSVFormatter.Config config = new CSVFormatter.Config("DELIMITED", "VBAR", OUTPUT.toString());
+    Transform<StructuredRecord, StructuredRecord> transform = new CSVFormatter(config);
+
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT1);
+    transform.configurePipeline(mockPipelineConfigurer);
+    Assert.assertEquals(OUTPUT, mockPipelineConfigurer.getOutputSchema());
   }
 }
