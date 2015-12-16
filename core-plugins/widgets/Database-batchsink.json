@@ -38,11 +38,6 @@
         },
         {
           "widget-type": "textbox",
-          "label": "Driver Class",
-          "name": "driverClass"
-        },
-        {
-          "widget-type": "textbox",
           "label": "Connection String",
           "name": "connectionString"
         }
@@ -51,16 +46,6 @@
     {
       "label": "Table Properties",
       "properties": [
-        {
-          "widget-type": "textbox",
-          "label": "Import SQL",
-          "name": "importQuery"
-        },
-        {
-          "widget-type": "textbox",
-          "label": "Count SQL",
-          "name": "countQuery"
-        },
         {
           "widget-type": "select",
           "label": "Column Case",

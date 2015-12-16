@@ -45,14 +45,6 @@
           "widget-attributes": {
             "width": "medium"
           }
-        },
-        {
-          "widget-type": "textbox",
-          "label": "Parent Node of HBase in Zookeeper",
-          "name": "zkNodeParent",
-          "widget-attributes": {
-            "width": "large"
-          }
         }
       ]
     }

@@ -49,10 +49,10 @@
       "widget-type": "schema",
       "widget-attributes": {
         "schema-types": [
-          "string"
+          "string",
+          "map<string,string>"
         ],
-        "schema-default-type": "string",
-        "property-watch": "format"
+        "schema-default-type": "string"
       }
     }
   ]

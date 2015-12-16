@@ -8,7 +8,7 @@
       "properties": [
         {
           "widget-type": "csv",
-          "label": "Zookeeper Qourum",
+          "label": "Kafka Brokers",
           "name": "brokers",
           "widget-attributes": {
             "delimiter": ","
