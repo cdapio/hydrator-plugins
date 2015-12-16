@@ -37,12 +37,12 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
     org.apache.avro.Schema genericRecordSchema = genericRecord.getSchema();
 
     int hashCode = genericRecordSchema.hashCode();
-    co.cask.cdap.api.data.schema.Schema structuredSchema;
+    Schema structuredSchema;
 
     if (schemaCache.containsKey(hashCode)) {
       structuredSchema = schemaCache.get(hashCode);
     } else {
-      structuredSchema = co.cask.cdap.api.data.schema.Schema.parseJson(genericRecordSchema.toString());
+      structuredSchema = Schema.parseJson(genericRecordSchema.toString());
       schemaCache.put(hashCode, structuredSchema);
     }
 

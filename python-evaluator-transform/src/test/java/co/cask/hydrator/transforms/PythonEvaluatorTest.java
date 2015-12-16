@@ -1,5 +1,4 @@
-
-<<<<<<< e860d9498e6ea0deb075c90a9b427bdc377461ba/*
+/*
  * Copyright © 2015 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -22,8 +21,8 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.InvalidEntry;
 import co.cask.cdap.etl.api.Transform;
-import co.cask.hydrator.common.mock.MockEmitter;
-import co.cask.hydrator.common.mock.MockTransformContext;
+import co.cask.hydrator.common.test.MockEmitter;
+import co.cask.hydrator.common.test.MockTransformContext;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;

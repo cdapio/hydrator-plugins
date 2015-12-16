@@ -19,7 +19,7 @@ package co.cask.hydrator.plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Transform;
-import co.cask.hydrator.common.mock.MockEmitter;
+import co.cask.hydrator.common.test.MockEmitter;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.Assert;
 import org.junit.Test;

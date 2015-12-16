@@ -13,28 +13,35 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package co.cask.hydrator.common.mock;
 
-import co.cask.cdap.etl.api.Lookup;
-import co.cask.cdap.etl.api.LookupProvider;
+package co.cask.hydrator.common.test;
 
-import java.util.Map;
-import javax.annotation.Nullable;
+import co.cask.cdap.etl.api.StageMetrics;
 
 /**
- *
+ * No op metrics implementation for tests.
  */
-public class MockLookupProvider implements LookupProvider {
+public class NoopMetrics implements StageMetrics {
 
-  private final Lookup lookup;
+  public static final StageMetrics INSTANCE = new NoopMetrics();
 
-  public MockLookupProvider(Lookup lookup) {
-    this.lookup = lookup;
+  @Override
+  public void count(String s, int i) {
+    // no-op
   }
 
   @Override
-  public <T> Lookup<T> provide(String table, @Nullable Map<String, String> arguments) {
-    //noinspection unchecked
-    return lookup;
+  public void gauge(String s, long l) {
+    // no-op
+  }
+
+  @Override
+  public void pipelineCount(String metricName, int delta) {
+    // no-op
+  }
+
+  @Override
+  public void pipelineGauge(String metricName, long value) {
+    // no-op
   }
 }

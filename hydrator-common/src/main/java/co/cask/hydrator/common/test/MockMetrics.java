@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.common.mock;
+package co.cask.hydrator.common.test;
 
 import co.cask.cdap.api.metrics.Metrics;
 import com.google.common.collect.Maps;
