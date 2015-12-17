@@ -300,8 +300,8 @@ public class Kafka08SimpleApiConsumer extends KafkaSimpleApiConsumer<String, Byt
 
     OffsetResponse response = consumer.getOffsetsBefore(offsetRequest);
     if (response.hasError()) {
-      LOG.warn("Failed to fetch offset from broker {}:{} for topic-partition {}-{} with error code {}",
-                consumer.host(), consumer.port(), topic, partition, response.errorCode(topic, partition));
+//      LOG.warn("Failed to fetch offset from broker {}:{} for topic-partition {}-{} with error code {}",
+//                consumer.host(), consumer.port(), topic, partition, response.errorCode(topic, partition));
       return 0L;
     }
     return response.offsets(topic, partition)[0];
@@ -345,8 +345,8 @@ public class Kafka08SimpleApiConsumer extends KafkaSimpleApiConsumer<String, Byt
     String topic = topicPartition.getTopic();
     int partition = topicPartition.getPartition();
 
-    LOG.warn("Failed to fetch from broker {}:{} for topic-partition {}-{} with error code {}",
-              consumer.host(), consumer.port(), topic, partition, errorCode);
+//    LOG.warn("Failed to fetch from broker {}:{} for topic-partition {}-{} with error code {}",
+//              consumer.host(), consumer.port(), topic, partition, errorCode);
     if (errorCode == ErrorMapping.OffsetOutOfRangeCode()) {
       // Get the earliest offset
       long earliest = getReadOffset(consumer, topic, partition, kafka.api.OffsetRequest.EarliestTime());

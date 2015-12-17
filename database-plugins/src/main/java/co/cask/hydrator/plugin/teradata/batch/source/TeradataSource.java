@@ -97,9 +97,9 @@ public class TeradataSource extends BatchSource<LongWritable, DBRecord, Structur
       DBConfiguration.configureDB(hConf, driverClass.getName(), sourceConfig.connectionString,
                                   sourceConfig.user, sourceConfig.password);
     }
-    ETLDBInputFormat.setInput(job, DBRecord.class, sourceConfig.importQuery, sourceConfig.boundingQuery);
+    DataDrivenETLDBInputFormat.setInput(job, DBRecord.class, sourceConfig.importQuery, sourceConfig.boundingQuery);
     job.getConfiguration().set(DBConfiguration.INPUT_ORDER_BY_PROPERTY, sourceConfig.splitBy);
-    context.setInput(new SourceInputFormatProvider(ETLDBInputFormat.class, hConf));
+    context.setInput(new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf));
   }
 
   @Override

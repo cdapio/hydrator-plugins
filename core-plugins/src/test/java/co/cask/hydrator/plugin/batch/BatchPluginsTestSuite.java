@@ -26,7 +26,6 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
   BatchCubeSinkTestRun.class,
-  BatchETLDBTestRun.class,
   ETLSnapshotTestRun.class,
   ETLStreamConversionTestRun.class,
   ETLTPFSTestRun.class

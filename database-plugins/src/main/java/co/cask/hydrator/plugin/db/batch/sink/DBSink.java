@@ -180,7 +180,7 @@ public class DBSink extends BatchSink<StructuredRecord, DBRecord, NullWritable> 
    */
   public static class DBSinkConfig extends DBConfig {
     @Description("Comma-separated list of columns in the specified table to export to.")
-    String columns;
+    public String columns;
   }
 
   private static class DBOutputFormatProvider implements OutputFormatProvider {

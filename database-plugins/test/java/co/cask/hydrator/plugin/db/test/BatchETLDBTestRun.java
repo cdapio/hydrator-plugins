@@ -22,6 +22,8 @@ import co.cask.cdap.api.dataset.table.Put;
 import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
+import co.cask.cdap.api.plugin.PluginClass;
+import co.cask.cdap.api.plugin.PluginPropertyField;
 import co.cask.cdap.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.common.ETLStage;
@@ -34,18 +36,23 @@ import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestBase;
+import co.cask.hydrator.plugin.ETLDBOutputFormat;
 import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
 import co.cask.hydrator.plugin.common.Properties;
+import co.cask.hydrator.plugin.db.batch.sink.DBSink;
+import co.cask.hydrator.plugin.db.batch.source.DBSource;
+import co.cask.hydrator.plugin.db.batch.source.ETLDBInputFormat;
 import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.hsqldb.Server;
+import org.hsqldb.jdbc.JDBCDriver;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
@@ -55,6 +62,7 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Time;
@@ -62,6 +70,7 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,6 +91,15 @@ public class BatchETLDBTestRun extends ETLBatchTestBase {
 
   @BeforeClass
   public static void setup() throws Exception {
+    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "database-plugins", "1.0.0"), APP_ARTIFACT_ID,
+                      DBSource.class, DBSink.class, ETLDBInputFormat.class, ETLDBOutputFormat.class);
+
+    // add hypersql 3rd party plugin
+    PluginClass hypersql = new PluginClass("jdbc", "hypersql", "hypersql jdbc driver", JDBCDriver.class.getName(),
+                                           null, Collections.<String, PluginPropertyField>emptyMap());
+    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "hsql-jdbc", "1.0.0"), APP_ARTIFACT_ID,
+                      Sets.newHashSet(hypersql), JDBCDriver.class);
+
     String hsqlDBDir = temporaryFolder.newFolder("hsqldb").getAbsolutePath();
     hsqlDBServer = new HSQLDBServer(hsqlDBDir, "testdb");
     hsqlDBServer.start();
@@ -150,7 +168,7 @@ public class BatchETLDBTestRun extends ETLBatchTestBase {
                      "BLOB_COL BLOB(100), " +
                      "CLOB_COL CLOB(100)" +
                      ")");
-      stmt.execute("CREATE TABLE \"my_dest_table\" AS (" +
+      stmt.execute("CREATE TABLE \"MY_DEST_TABLE\" AS (" +
                      "SELECT * FROM \"my_table\") WITH DATA");
       stmt.execute("CREATE TABLE \"your_table\" AS (" +
                      "SELECT * FROM \"my_table\") WITH DATA");
@@ -570,9 +588,6 @@ public class BatchETLDBTestRun extends ETLBatchTestBase {
       "non-existent sink database.");
   }
 
-  // Test is ignored - Currently DBOutputFormat does a statement.executeBatch which seems to fail in HSQLDB.
-  // Need to investigate alternatives to HSQLDB.
-  @Ignore
   @Test
   public void testDBSink() throws Exception {
     String cols = "ID, NAME, SCORE, GRADUATED, TINY, SMALL, BIG, FLOAT_COL, REAL_COL, NUMERIC_COL, DECIMAL_COL, " +
@@ -584,7 +599,7 @@ public class BatchETLDBTestRun extends ETLBatchTestBase {
                                        Properties.Table.PROPERTY_SCHEMA, schema.toString()));
     Plugin sinkConfig = new Plugin("Database",
                                    ImmutableMap.of(Properties.DB.CONNECTION_STRING, hsqlDBServer.getConnectionUrl(),
-                                                   Properties.DB.TABLE_NAME, "my_dest_table",
+                                                   Properties.DB.TABLE_NAME, "MY_DEST_TABLE",
                                                    Properties.DB.COLUMNS, cols,
                                                    Properties.DB.JDBC_PLUGIN_NAME, "hypersql"
                                    ));
@@ -604,6 +619,17 @@ public class BatchETLDBTestRun extends ETLBatchTestBase {
     mrManager.waitForFinish(5, TimeUnit.MINUTES);
     List<RunRecord> runRecords = mrManager.getHistory();
     Assert.assertEquals(ProgramRunStatus.COMPLETED, runRecords.get(0).getStatus());
+
+    Connection conn = hsqlDBServer.getConnection();
+    Statement stmt = conn.createStatement();
+    stmt.execute("SELECT * FROM \"MY_DEST_TABLE\"");
+    ResultSet resultSet = stmt.getResultSet();
+    Assert.assertTrue(resultSet.next());
+    Assert.assertEquals("user1", resultSet.getString("NAME"));
+    Assert.assertTrue(resultSet.next());
+    Assert.assertEquals("user2", resultSet.getString("NAME"));
+    Assert.assertFalse(resultSet.next());
+    resultSet.close();
   }
 
   private void createInputData() throws Exception {
@@ -620,17 +646,17 @@ public class BatchETLDBTestRun extends ETLBatchTestBase {
       put.add("TINY", i + 1);
       put.add("SMALL", i + 2);
       put.add("BIG", 3456987L);
-      put.add("FLOAT", 3.456f);
-      put.add("REAL", 3.457f);
-      put.add("NUMERIC", 3.458);
-      put.add("DECIMAL", 3.459);
-      put.add("BIT", (i % 2 == 1));
-      put.add("DATE", currentTs);
-      put.add("TIME", currentTs);
-      put.add("TIMESTAMP", currentTs);
-      put.add("BINARY", name.getBytes(Charsets.UTF_8));
-      put.add("BLOB", name.getBytes(Charsets.UTF_8));
-      put.add("CLOB", clobData);
+      put.add("FLOAT_COL", 3.456f);
+      put.add("REAL_COL", 3.457f);
+      put.add("NUMERIC_COL", 3.458);
+      put.add("DECIMAL_COL", 3.459);
+      put.add("BIT_COL", (i % 2 == 1));
+      put.add("DATE_COL", currentTs);
+      put.add("TIME_COL", currentTs);
+      put.add("TIMESTAMP_COL", currentTs);
+      put.add("BINARY_COL", name.getBytes(Charsets.UTF_8));
+      put.add("BLOB_COL", name.getBytes(Charsets.UTF_8));
+      put.add("CLOB_COL", clobData);
       inputTable.put(put);
       inputManager.flush();
     }
@@ -645,6 +671,7 @@ public class BatchETLDBTestRun extends ETLBatchTestBase {
       stmt.execute("DROP TABLE \"my_table\"");
       stmt.execute("DROP TABLE \"your_table\"");
       stmt.execute("DROP USER \"emptyPwdUser\"");
+      stmt.execute("DROP TABLE \"MY_DEST_TABLE\"");
     }
 
     hsqlDBServer.stop();

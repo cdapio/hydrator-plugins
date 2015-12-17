@@ -14,13 +14,14 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.sink;
+package co.cask.hydrator.plugin.db.test;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.hydrator.common.test.MockEmitter;
-import co.cask.hydrator.plugin.common.db.DBRecord;
+import co.cask.hydrator.plugin.DBRecord;
+import co.cask.hydrator.plugin.db.batch.sink.DBSink;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -44,7 +45,6 @@ public class DBSinkTest {
     config.tableName = "foo";
 
     DBSink sink = new DBSink(config) {
-      @Override
       public List<String> getColumns() {
         return ImmutableList.copyOf(Splitter.on(",").split(config.columns));
       }
@@ -75,7 +75,6 @@ public class DBSinkTest {
     config.tableName = "foo";
 
     DBSink sink = new DBSink(config) {
-      @Override
       public List<String> getColumns() {
         return ImmutableList.copyOf(Splitter.on(",").split(config.columns));
       }
@@ -117,7 +116,6 @@ public class DBSinkTest {
     config.tableName = "foo";
 
     DBSink sink = new DBSink(config) {
-      @Override
       public List<String> getColumns() {
         return ImmutableList.copyOf(Splitter.on(",").split(config.columns));
       }

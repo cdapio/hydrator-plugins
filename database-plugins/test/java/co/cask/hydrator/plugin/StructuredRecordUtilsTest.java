@@ -18,8 +18,6 @@ package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.hydrator.plugin.common.FieldCase;
-import co.cask.hydrator.plugin.common.StructuredRecordUtils;
 import org.junit.Assert;
 import org.junit.Test;
 

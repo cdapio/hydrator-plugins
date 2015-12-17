@@ -38,8 +38,8 @@ import java.sql.SQLException;
 /**
  * Class that extends {@link DBInputFormat} to load the database driver class correctly.
  */
-public class ETLDBInputFormat extends DataDrivenDBInputFormat {
-  private static final Logger LOG = LoggerFactory.getLogger(ETLDBInputFormat.class);
+public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
+  private static final Logger LOG = LoggerFactory.getLogger(DataDrivenETLDBInputFormat.class);
   private Driver driver;
   private JDBCDriverShim driverShim;
 

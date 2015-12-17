@@ -16,7 +16,7 @@
 
 package co.cask.hydrator.plugin;
 
-import co.cask.hydrator.plugin.teradata.batch.source.ETLDBInputFormat;
+import co.cask.hydrator.plugin.teradata.batch.source.DataDrivenETLDBInputFormat;
 
 import java.sql.Connection;
 import java.sql.Driver;
@@ -38,7 +38,7 @@ import java.util.logging.Logger;
  * The workaround for this is to create a shim class that implements java.sql.Driver.
  * This shim class will do nothing but call the methods of an instance of a JDBC driver that we loaded dynamically.
  *
- * @see ETLDBInputFormat
+ * @see DataDrivenETLDBInputFormat
  * @see ETLDBOutputFormat
  */
 public class JDBCDriverShim implements Driver {
