@@ -87,9 +87,8 @@ Examples
 
 This example sends an error code ``'10'`` for any records whose ``'body'`` field contains
 a value whose length is greater than 10. It has been "pretty-printed" for readability. It
-uses the :ref:`CoreValidator <cdap-apps-etl-plugins-shared-core-validator>` (included
-using ``"validators": "core"`` ) and references a function using its Javascript name
-(``coreValidator.maxLength``):
+uses the ``CoreValidator`` (included using ``"validators": "core"`` ) and references a
+function using its Javascript name (``coreValidator.maxLength``):
 
       {
         "name": "Validator",
@@ -107,9 +106,9 @@ using ``"validators": "core"`` ) and references a function using its Javascript 
         }
       }
 
-This example uses the key-value dataset ``'blacklist'`` as a lookup table,
-and sends an error code ``'10'`` for any records whose ``'body'`` field exists in the ``'blacklist'`` dataset.
-It has been "pretty-printed" for readability:
+This example uses the key-value dataset ``'blacklist'`` as a lookup table, and sends an
+error code ``'10'`` for any records whose ``'body'`` field exists in the ``'blacklist'``
+dataset. It has been "pretty-printed" for readability:
 
     {
         "name": "Validator",

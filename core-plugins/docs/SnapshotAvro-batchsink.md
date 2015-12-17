@@ -10,10 +10,10 @@ can be used to read only the most recently written snapshot.
 Use Case
 --------
 
-This sink is used whenever you want access to a PartitionedFileSet containing exactly the most
-recent run's data in Avro format. For example,
-you might want to create daily snapshots of a database by reading the entire contents of
-a table, writing to this sink, and then other programs can analyze the contents of the specified file.
+This sink is used whenever you want access to a PartitionedFileSet containing exactly the
+most recent run's data in Avro format. For example, you might want to create daily
+snapshots of a database by reading the entire contents of a table, writing to this sink,
+and then other programs can analyze the contents of the specified file.
 
 Properties
 ----------

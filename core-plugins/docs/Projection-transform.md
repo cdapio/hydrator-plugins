@@ -7,7 +7,7 @@ The Projection transform lets you drop, rename, and cast fields to a different t
 Fields are first dropped, then cast, then renamed.
 
 For example, suppose the transform is configured to drop field 'B' and rename field 'A' to 'B'.
-If the transform receives this input record
+If the transform receives this input record:
 
     +============================+
     | field name | type | value  |
@@ -16,7 +16,7 @@ If the transform receives this input record
     | B          | int  | 20     |
     +============================+
 
-field 'B' will first be dropped
+field 'B' will first be dropped:
 
     +============================+
     | field name | type | value  |
@@ -24,7 +24,7 @@ field 'B' will first be dropped
     | A          | int  | 10     |
     +============================+
 
-and then field 'A' will be renamed to 'B'
+and then field 'A' will be renamed to 'B':
 
     +============================+
     | field name | type | value  |
