@@ -114,12 +114,6 @@
       </dependency>
       <dependency>
         <groupId>co.cask.cdap</groupId>
-        <artifactId>cdap-proto</artifactId>
-        <version>${cdap.version}</version>
-        <scope>provided</scope>
-      </dependency>
-      <dependency>
-        <groupId>co.cask.cdap</groupId>
         <artifactId>cdap-formats</artifactId>
         <version>${cdap.version}</version>
         <scope>provided</scope>
@@ -134,7 +128,13 @@
         <groupId>co.cask.cdap</groupId>
         <artifactId>cdap-etl-core</artifactId>
         <version>${cdap.version}</version>
-        <scope>provided</scope>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>co.cask.cdap</groupId>
+        <artifactId>cdap-proto</artifactId>
+        <version>${cdap.version}</version>
+        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>co.cask.cdap</groupId>
