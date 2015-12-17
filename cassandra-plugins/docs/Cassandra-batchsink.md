@@ -1,3 +1,5 @@
+# Cassandra Batch Sink
+
 Description
 -----------
 Batch sink to use Apache Cassandra as a sink.
