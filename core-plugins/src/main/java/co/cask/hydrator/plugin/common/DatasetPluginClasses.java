@@ -17,7 +17,6 @@
 package co.cask.hydrator.plugin.common;
 
 import co.cask.hydrator.plugin.batch.sink.BatchCubeSink;
-import co.cask.hydrator.plugin.batch.sink.DBSink;
 import co.cask.hydrator.plugin.batch.sink.KVTableSink;
 import co.cask.hydrator.plugin.batch.sink.S3AvroBatchSink;
 import co.cask.hydrator.plugin.batch.sink.S3ParquetBatchSink;
@@ -26,7 +25,6 @@ import co.cask.hydrator.plugin.batch.sink.SnapshotFileBatchParquetSink;
 import co.cask.hydrator.plugin.batch.sink.TableSink;
 import co.cask.hydrator.plugin.batch.sink.TimePartitionedFileSetDatasetAvroSink;
 import co.cask.hydrator.plugin.batch.sink.TimePartitionedFileSetDatasetParquetSink;
-import co.cask.hydrator.plugin.batch.source.DBSource;
 import co.cask.hydrator.plugin.batch.source.KVTableSource;
 import co.cask.hydrator.plugin.batch.source.SnapshotFileBatchAvroSource;
 import co.cask.hydrator.plugin.batch.source.SnapshotFileBatchParquetSource;
@@ -34,7 +32,6 @@ import co.cask.hydrator.plugin.batch.source.StreamBatchSource;
 import co.cask.hydrator.plugin.batch.source.TableSource;
 import co.cask.hydrator.plugin.batch.source.TimePartitionedFileSetDatasetAvroSource;
 import co.cask.hydrator.plugin.batch.source.TimePartitionedFileSetDatasetParquetSource;
-import co.cask.hydrator.plugin.common.db.DBRecord;
 import co.cask.hydrator.plugin.realtime.sink.RealtimeCubeSink;
 import co.cask.hydrator.plugin.realtime.sink.RealtimeTableSink;
 import co.cask.hydrator.plugin.realtime.sink.StreamSink;
@@ -61,7 +58,6 @@ import parquet.avro.AvroParquetOutputFormat;
 public class DatasetPluginClasses {
   public static final Class[] BATCH = {
     BatchCubeSink.class,
-    DBSource.class, DBSink.class, DBRecord.class,
     KVTableSource.class, KVTableSink.class,
     SnapshotFileBatchAvroSource.class, SnapshotFileBatchAvroSink.class,
     AvroKeyOutputFormat.class, AvroKey.class, AvroKeyInputFormat.class,

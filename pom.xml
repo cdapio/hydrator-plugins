@@ -22,14 +22,14 @@
   <artifactId>hydrator-plugins</artifactId>
   <version>1.2.0-SNAPSHOT</version>
   <modules>
-    <module>cassandra-plugins</module>
+    <module>hydrator-common</module>
     <module>core-plugins</module>
+    <module>cassandra-plugins</module>
+    <module>database-plugins</module>
     <module>elasticsearch-plugins</module>
-    <module>teradata-plugins</module>
     <module>hbase-plugins</module>
     <module>hdfs-plugins</module>
     <module>hive-plugins</module>
-    <module>hydrator-common</module>
     <module>kafka-plugins</module>
     <module>mongodb-plugins</module>
     <module>python-evaluator-transform</module>
