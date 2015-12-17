@@ -1,3 +1,5 @@
+# Log Parser Transform
+
 Description
 -----------
 
@@ -17,10 +19,14 @@ Properties
 **logFormat:** Log format to parse. Currently supports S3, CLF, and Cloudfront formats.
 
 **inputName:** Name of the field in the input schema which encodes the
-log information. The given field must be of type String or Bytes.
+log information. The given field must be of type ``String`` or ``Bytes``.
 
 Example
 -------
+
+This example searches for an input Schema field named 'body', and then attempts to parse
+the Combined Log Format entries found in the field for the URI, IP, browser, device,
+HTTP status code, and timestamp:
 
     {
         "name": "LogParser",
@@ -30,9 +36,7 @@ Example
         }
     }
 
-This example searches for an input Schema field named 'body', and then attempts to parse
-the Combined Log Format entries found in the field for the URI, IP, browser, device,
-HTTP status code, and timestamp. The Transform will emit records with this schema:
+The Transform will emit records with this schema:
 
     +============================+
     | field name    | type       |

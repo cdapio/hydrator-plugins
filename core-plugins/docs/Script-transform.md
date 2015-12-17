@@ -1,3 +1,5 @@
+# Script Transform
+
 Description
 -----------
 
@@ -20,7 +22,7 @@ Properties
 implement a function called ``'transform'``, which takes as input a JSON object (representing
 the input record) and a context object (which encapsulates CDAP metrics and logger),
 and returns a JSON object that represents the transformed input.
-For example::
+For example:
 
     function transform(input, context) {
         if(input.count < 0) {
@@ -43,6 +45,10 @@ Currently supports ``KeyValueTable``.
 
 Example
 -------
+
+The transform takes records that have a ``'subtotal'`` field, calculates ``'tax'`` and
+``'total'`` fields based on the subtotal, and then returns a record containing those three
+fields:
 
     {
         "name": "Script",
@@ -82,9 +88,7 @@ Example
         }
     }
 
-The transform takes records that have a ``'subtotal'`` field, calculates ``'tax'`` and
-``'total'`` fields based on the subtotal, and then returns a record containing those three
-fields. For example, if it receives as an input record:
+For example, if it receives as an input record:
 
     +=========================================================+
     | field name | type                | value                |

@@ -1,3 +1,5 @@
+# Validator Transform
+
 Description
 -----------
 
@@ -62,12 +64,12 @@ Properties
 ----------
 
 **validators** Comma-separated list of validators that are used by the validationScript.
-Example: ``"validators": "core| 
+Example: ``"validators": "core"``
 
 **validationScript:** Javascript that must implement a function ``isValid`` that takes a JSON object
 (representing the input record) and a context object (encapsulating CDAP metrics, logger, and validators)
 and returns a result JSON with validity, error code, and error message.
-Example response::
+Example response:
 
     {
         "isValid" : true [or] false,
@@ -82,6 +84,12 @@ Currently supports ``KeyValueTable``.
 
 Examples
 --------
+
+This example sends an error code ``'10'`` for any records whose ``'body'`` field contains
+a value whose length is greater than 10. It has been "pretty-printed" for readability. It
+uses the :ref:`CoreValidator <cdap-apps-etl-plugins-shared-core-validator>` (included
+using ``"validators": "core"`` ) and references a function using its Javascript name
+(``coreValidator.maxLength``):
 
       {
         "name": "Validator",
@@ -99,11 +107,9 @@ Examples
         }
       }
 
-This example sends an error code ``'10'`` for any records whose ``'body'`` field contains
-a value whose length is greater than 10. It has been "pretty-printed" for readability. It
-uses the :ref:`CoreValidator <cdap-apps-etl-plugins-shared-core-validator>` (included
-using ``"validators": "core| ) and references a function using its Javascript name
-(``coreValidator.maxLength``).
+This example uses the key-value dataset ``'blacklist'`` as a lookup table,
+and sends an error code ``'10'`` for any records whose ``'body'`` field exists in the ``'blacklist'`` dataset.
+It has been "pretty-printed" for readability:
 
     {
         "name": "Validator",
@@ -124,9 +130,13 @@ using ``"validators": "core| ) and references a function using its Javascript na
         }
     }
 
-This example uses the key-value dataset ``'blacklist'`` as a lookup table,
-and sends an error code ``'10'`` for any records whose ``'body'`` field exists in the ``'blacklist'`` dataset.
-It has been "pretty-printed" for readability.
+This example sends an error code ``'5'`` for any records whose ``'date'`` field is an
+invalid date, sends an error code ``'7'`` for any records whose ``'url'`` field is an
+invalid URL, and sends an error code ``'10'`` for any records whose ``'content_length'``
+field is greater than 1MB.
+
+It has been "pretty-printed" for readability. It uses the CoreValidator and references functions 
+using their Javascript names (such as ``coreValidator.isDate``):
 
     {
         "name": "Validator",
@@ -157,12 +167,4 @@ It has been "pretty-printed" for readability.
         }
     }
 
-This example sends an error code ``'5'`` for any records whose ``'date'`` field is an
-invalid date, sends an error code ``'7'`` for any records whose ``'url'`` field is an
-invalid URL, and sends an error code ``'10'`` for any records whose ``'content_length'``
-field is greater than 1MB.
-
-It has been "pretty-printed" for readability. It uses the CoreValidator and references functions using their Javascript names (such as
-``coreValidator.isDate``).
-
-**Note:** This plugin emits a metric called 'invalid' that tracks how many invalid records were found
+**Note:** This plugin emits a metric called 'invalid' that tracks how many invalid records were found.

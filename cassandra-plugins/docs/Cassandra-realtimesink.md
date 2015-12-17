@@ -1,3 +1,5 @@
+# Cassandra Real-time Sink
+
 Description
 -----------
 Real-time sink to use Apache Cassandra as a sink.
@@ -38,6 +40,9 @@ The columns should be listed in the same order as they are stored in the column 
 Example
 -------
 
+This example connects to Apache Cassandra, which is running locally, and writes the data to
+the specified keyspace (*megacorp*) and column family (*purchases*):
+
     {
         "name": "Cassandra",
         "properties": {
@@ -49,6 +54,3 @@ Example
             "compression": "NONE"
         }
     }
-
-This example connects to Apache Cassandra, which is running locally, and writes the data to
-the specified keyspace (*megacorp*) and column family (*purchases*).

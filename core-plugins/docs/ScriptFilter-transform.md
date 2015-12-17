@@ -1,3 +1,5 @@
+# Script Filter Transform
+
 Description
 -----------
 
@@ -24,6 +26,8 @@ Currently supports ``KeyValueTable``.
 Example
 -------
 
+This example filters out any records whose ``'count'`` field contains a value greater than 100:
+
     {
         "name": "ScriptFilter",
         "properties": {
@@ -45,7 +49,5 @@ Example
             }"
         }
     }
-
-This example filters out any records whose ``'count'`` field contains a value greater than 100.
 
 **Note:** This transform will emit a metric named ``filtered`` that records how many records it filtered out.

@@ -1,3 +1,5 @@
+# Hive Batch Sink
+
 Description
 -----------
 Converts a StructuredRecord to a HCatRecord and then writes it to an existing Hive table.
@@ -5,7 +7,7 @@ Converts a StructuredRecord to a HCatRecord and then writes it to an existing Hi
 Configuration
 -------------
 **metastoreURI:** The URI of Hive metastore in the format ``thrift://<hostname>:<port>``.
-Example: thrift://somehost.net:9083
+Example: ``thrift://somehost.net:9083``.
 
 **tableName:** The name of the Hive table. This table must exist.
 

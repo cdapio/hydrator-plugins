@@ -1,3 +1,5 @@
+# Cube Batch Sink
+
 Description
 -----------
 
@@ -27,9 +29,9 @@ new Cube dataset needs to be created. See [Cube dataset configuration details] f
 
 **dataset.cube.properties:** Provides any dataset properties to be used
 if a new Cube dataset needs to be created; provided as a JSON Map. For
-example, if aggregations are desired on fields `'abc'` and `'xyz'`, the
+example, if aggregations are desired on fields ``'abc'`` and ``'xyz'``, the
 property should have the value:
-`{"dataset.cube.aggregation.agg1.dimensions":"abc", "dataset.cube.aggregation.agg2.dimensions":"xyz"}`.
+``{"dataset.cube.aggregation.agg1.dimensions":"abc", "dataset.cube.aggregation.agg2.dimensions":"xyz"}``.
 See [Cube dataset configuration details] for more information.
 
   [Cube dataset configuration details]: http://docs.cask.co/cdap/current/en/developers-manual/building-blocks/datasets/cube.html
@@ -38,8 +40,8 @@ See [Cube dataset configuration details] for more information.
 timestamp to be used in the CubeFact. If not provided, the current time of the record
 processing will be used as the CubeFact timestamp.
 
-Name of the StructuredRecord's field that contains timestamp to be used in CubeFact.
-If not provided, the current time of the record processing will be used as CubeFact timestamp.
+Name of the StructuredRecord's field that contains the timestamp to be used in CubeFact.
+If not provided, the current time of the record processing will be used as a CubeFact timestamp.
 
 **cubeFact.timestamp.format:** Format of the value of timestamp field; example: "HH:mm:ss" (used if
 ``cubeFact.timestamp.field`` is provided).
@@ -56,7 +58,7 @@ Example
 This configuration specifies writing data into a Cube dataset named "myCube"; it provides
 dataset properties (``dataset.*``) for creating a new dataset, if one with the given name
 doesn't exist; it then configures measurements to aggregate and specifies the timestamp
-format for facts being written into the Cube
+format for facts being written into the Cube:
 
     {
         "name": "myCube",
@@ -74,7 +76,7 @@ format for facts being written into the Cube
     }
 
 Once the data is there, you could run queries using an ``AbstractCubeHttpHandler``. (You'd
-need to deploy an application containing a service using it.) A sample query
+need to deploy an application containing a service using it.) A sample query:
 
     {
         "aggregation": "byName",
@@ -87,7 +89,7 @@ need to deploy an application containing a service using it.) A sample query
         "limit": 1000
     }
 
-Example result
+Example result:
 
     [
         {

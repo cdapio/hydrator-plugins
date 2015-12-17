@@ -1,3 +1,5 @@
+# File Batch Source
+
 Description
 -----------
 
@@ -21,7 +23,7 @@ For example, the property names needed for S3 are "fs.s3n.awsSecretAccessKey"
 and "fs.s3n.awsAccessKeyId".
 
 **path:** Path to file(s) to be read. If a directory is specified,
-terminate the path name with a \'/\'.
+terminate the path name with a '/'.
 
 **fileRegex:** Regex to filter out filenames in the path.
 To use the *TimeFilter*, input ``timefilter``. The TimeFilter assumes that it is
@@ -42,6 +44,13 @@ subclass of FileInputFormat. Defaults to CombineTextInputFormat.
 Example
 -------
 
+This example connects to Amazon S3 and reads in files found in the specified directory while
+using the stateful Timefilter, which ensures that each file is read only once. The Timefilter
+requires that files be named with either the convention "yy-MM-dd-HH..." (S3) or "...'.'yy-MM-dd-HH..."
+(Cloudfront). The stateful metadata is stored in a table named 'timeTable'. With the maxSplitSize
+set to 1MB, if the total size of the files being read is larger than 1MB, CDAP will
+configure Hadoop to use more than one mapper:
+
     {
         "name": "FileBatchSource",
         "properties": {
@@ -56,10 +65,3 @@ Example
             "maxSplitSize": "1048576"
         }
     }
-
-This example connects to Amazon S3 and reads in files found in the specified directory while
-using the stateful Timefilter, which ensures that each file is read only once. The Timefilter
-requires that files be named with either the convention "yy-MM-dd-HH..." (S3) or "...'.'yy-MM-dd-HH..."
-(Cloudfront). The stateful metadata is stored in a table named 'timeTable'. With the maxSplitSize
-set to 1MB, if the total size of the files being read is larger than 1MB, CDAP will
-configure Hadoop to use more than one mapper.

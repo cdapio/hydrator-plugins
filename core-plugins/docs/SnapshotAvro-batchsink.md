@@ -1,3 +1,5 @@
+# SnapshotAvro Batch Sink
+
 Description
 -----------
 
@@ -30,6 +32,10 @@ The properties are also passed to the dataset at runtime as arguments.
 Example
 -------
 
+This example will write to a PartitionedFileSet named 'users'. It will write data in Avro format
+using the given schema. Every time the pipeline runs, the most recent run will be stored in
+a new partition in the PartitionedFileSet:
+
     {
         "name": "SnapshotAvro",
         "properties": {
@@ -46,6 +52,3 @@ Example
         }
     }
 
-This example will write to a PartitionedFileSet named 'users'. It will write data in Avro format
-using the given schema. Every time the pipeline runs, the most recent run will be stored in
-a new partition in the PartitionedFileSet.

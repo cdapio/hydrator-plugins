@@ -1,3 +1,5 @@
+# SnapshotParquet Batch Source
+
 Description
 -----------
 
@@ -30,6 +32,10 @@ The properties are also passed to the dataset at runtime as arguments.
 Example
 -------
 
+This example will read from a SnapshotFileSet named 'users'. It will read data in Parquet format
+using the given schema. Every time the pipeline runs, only the most recently added snapshot will
+be read:
+
     {
         "name": "SnapshotParquet",
         "properties": {
@@ -45,7 +51,3 @@ Example
             }"
         }
     }
-
-This example will read from a SnapshotFileSet named 'users'. It will read data in Parquet format
-using the given schema. Every time the pipeline runs, only the most recently added snapshot will
-be read.

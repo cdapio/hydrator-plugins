@@ -1,3 +1,5 @@
+# Elasticsearch Batch Sink
+
 Description
 -----------
 Takes the Structured Record from the input source and converts it to a JSON string, then indexes it in
@@ -10,22 +12,22 @@ with a stream batch source and Elasticsearch as a sink.
 
 Configuration
 -------------
-**es.host:** The hostname and port for the Elasticsearch instance
+**es.host:** The hostname and port for the Elasticsearch instance.
 
 **es.index:** The name of the index where the data will be stored; if the index does not
-already exist, it will be created using Elasticsearch's default properties
+already exist, it will be created using Elasticsearch's default properties.
 
 **es.type:** The name of the type where the data will be stored; if it does not already
-exist, it will be created
+exist, it will be created.
 
 **es.idField:** The field that will determine the id for the document; it should match a fieldname
-in the Structured Record of the input
+in the Structured Record of the input.
 
 Example
 -------
 This example connects to Elasticsearch, which is running locally, and writes the data to
 the specified index (megacorp) and type (employee). The data is indexed using the id field
-in the record. Each run, the documents will be updated if they are still present in the source::
+in the record. Each run, the documents will be updated if they are still present in the source:
 
     {
         "name": "Elasticsearch",

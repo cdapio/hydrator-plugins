@@ -1,3 +1,5 @@
+# Projection Transform
+
 Description
 -----------
 
@@ -66,6 +68,9 @@ converted to an int.
 Example
 -------
 
+This example drops the ``'ts'`` and ``'headers'`` fields. It also changes the type of the ``'cost'``
+field to a double and renames it ``'price'``. 
+
     {
         "name": "Projection",
         "properties": {
@@ -75,9 +80,7 @@ Example
         }
     }
  
-This example drops the ``'ts'`` and ``'headers'`` fields. It also changes the type of the ``'cost'``
-field to a double and renames it ``'price'``. For example, if the transform receives this
-input record:
+For example, if the transform receives this input record:
 
     +=========================================================+
     | field name | type                | value                |
@@ -96,4 +99,3 @@ It will transform it to this output record:
     | id         | string              | "abc123"             |
     | price      | double              | 8.88                 |
     +=========================================================+
-

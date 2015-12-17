@@ -1,3 +1,5 @@
+# Twitter Real-time Source
+
 Description
 -----------
 
@@ -36,13 +38,13 @@ the relevant app to find the consumer key and secret.
   [Twitter OAuth documentation]: https://dev.twitter.com/oauth/overview
   [your apps]: https://apps.twitter.com/
 
-**ConsumerKey:** Consumer Key
+**ConsumerKey:** Twitter Consumer Key.
 
-**ConsumerSecret:** Consumer Secret
+**ConsumerSecret:** Twitter Consumer Secret.
 
-**AccessToken:** Access Token
+**AccessToken:** Twitter Access Token.
 
-**AccessTokenSecret:** Access Token Secret
+**AccessTokenSecret:** Twitter Access Token Secret.
 
 Example
 -------

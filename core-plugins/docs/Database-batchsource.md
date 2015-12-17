@@ -1,3 +1,5 @@
+# Database Batch Source
+
 Description
 -----------
 
@@ -20,7 +22,7 @@ You can also specify a number of WHERE clauses or ORDER BY clauses. However, LIM
 should not be used in this query.
 
 **countQuery:** The SELECT query to use to get the count of records to import from the
-specified table. Examples::
+specified table. Examples:
 
   SELECT COUNT(*) from <my_table> where <my_column> 1
   SELECT COUNT(my_column) from my_table
@@ -32,7 +34,7 @@ query to reflect an accurate number of records to import.
 Possible options are ``upper`` or ``lower``. By default or for any other input, the column names are not modified and
 the names returned from the database are used as-is. Note that setting this property provides predictability
 of column name cases across different databases but might result in column name conflicts if multiple column
-names are the same when the case is ignored. (Optional)
+names are the same when the case is ignored (Optional).
 
 **connectionString:** JDBC connection string including database name.
 
@@ -51,6 +53,11 @@ defined in the JSON file for the JDBC plugin. Defaults to 'jdbc'.
 Example
 -------
 
+This example connects to a database using the specified 'connectionString', which means
+it will connect to the 'prod' database of a PostgreSQL instance running on 'localhost'.
+It will run the 'importQuery' against the 'users' table to read four columns from the table.
+The column types will be used to derive the record field types output by the source:
+
     {
         "name": "Database",
         "properties": {
@@ -64,10 +71,6 @@ Example
         }
     }
 
-This example connects to a database using the specified 'connectionString', which means
-it will connect to the 'prod' database of a PostgreSQL instance running on 'localhost'.
-It will run the 'importQuery' against the 'users' table to read four columns from the table.
-The column types will be used to derive the record field types output by the source.
 For example, if the 'id' column is a primary key of type int and the other columns are
 non-nullable varchars, output records will have this schema:
 
@@ -79,4 +82,3 @@ non-nullable varchars, output records will have this schema:
     | email          | string              |
     | phone          | string              |
     +======================================+
-

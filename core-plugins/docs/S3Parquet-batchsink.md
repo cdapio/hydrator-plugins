@@ -1,3 +1,5 @@
+# Amazon S3 Parquet Batch Sink
+
 Description
 -----------
 
@@ -34,6 +36,11 @@ example: the format ``'yyyy-MM-dd-HH-mm'`` will create a file path ending in
 Example
 -------
 
+This example will write to an S3 output located at ``s3n://logs``. It will write data in
+Parquet format using the given schema. Every time the pipeline runs, a new output directory
+from the base path (``s3n://logs``) will be created which will have the directory name
+corresponding to the start time in ``yyyy-MM-dd-HH-mm`` format:
+
     {
         "name": "S3Parquet",
         "properties": {
@@ -52,13 +59,3 @@ Example
             }"
         }
     }
-
-This example will connect to Amazon S3 and write files following the pattern
-'yyyy-MM-dd-HH-mm'. It will write data in Parquet format using the given schema. Every
-time the pipeline runs, the most recent run will be stored in S3 under the directory
-'logs'.
-
-This example will write to an S3 output located at ``s3n://logs``. It will write data in
-Parquet format using the given schema. Every time the pipeline runs, a new output directory
-from the base path (``s3n://logs``) will be created which will have the directory name
-corresponding to the start time in ``yyyy-MM-dd-HH-mm`` format.

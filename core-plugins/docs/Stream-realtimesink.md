@@ -1,7 +1,9 @@
+# Stream Real-time Sink
+
 Description
 -----------
 
-Real-time sink that outputs to a specified CDAP Stream
+Real-time sink that outputs to a specified CDAP Stream.
 
 Use Case
 --------
@@ -25,6 +27,11 @@ presumed to be a map of string to string.
 Example
 -------
 
+This example will write to a stream named 'purchases'. Each record it receives will be written
+as a single stream event. The stream event body will be equal to the value of the 'message' field
+from the input record. No headers will be written in this example because the 'headers.field'
+property is not set:
+
     {
         "name": "Stream",
         "properties": {
@@ -32,8 +39,3 @@ Example
             "body.field": "message"
         }
     }
-
-This example will write to a stream named 'purchases'. Each record it receives will be written
-as a single stream event. The stream event body will be equal to the value of the 'message' field
-from the input record. No headers will be written in this example because the 'headers.field'
-property is not set.

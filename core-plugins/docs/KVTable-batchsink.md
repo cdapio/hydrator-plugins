@@ -1,3 +1,5 @@
+# KeyValueTable Batch Sink
+
 Description
 -----------
 
@@ -22,6 +24,8 @@ Properties
 Example
 -------
 
+This example writes to a KeyValueTable named 'items':
+
     {
         "name": "KVTable",
         "properties": {
@@ -31,7 +35,7 @@ Example
         }
     }
 
-This example writes to a KeyValueTable named 'items'. It takes records with the following schema as input:
+It takes records with the following schema as input:
 
     +======================================+
     | field name     | type                |
