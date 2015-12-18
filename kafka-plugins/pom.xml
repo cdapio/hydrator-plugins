@@ -33,6 +33,10 @@
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
+      <artifactId>cdap-formats</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-etl-core</artifactId>
     </dependency>
     <dependency>

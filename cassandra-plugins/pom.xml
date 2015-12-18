@@ -46,6 +46,10 @@
       <artifactId>cdap-test</artifactId>
     </dependency>
     <dependency>
+      <groupId>co.cask.cdap</groupId>
+      <artifactId>cdap-formats</artifactId>
+    </dependency>
+    <dependency>
       <groupId>co.cask.hydrator</groupId>
       <artifactId>core-plugins</artifactId>
       <version>${project.version}</version>
