@@ -45,8 +45,8 @@ import java.util.List;
  *   <li>DEFAULT</li>
  *   <li>EXCEL</li>
  *   <li>RFC4180</li>
- *   <li>MYSQL and</li>
- *   <li>TDF</li>
+ *   <li>MYSQL</li>
+ *   <li>TDF and</li>
  *   <li>PDL</li>   
  * </ul>
  * </p>  
@@ -69,6 +69,8 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
 
   // Format of PDL.
   public static final CSVFormat PDL;
+  
+  // Initialize Pipe Delimiter CSV Parser. 
   static {
     PDL = CSVFormat.DEFAULT.withDelimiter('|').withEscape('\\').withIgnoreEmptyLines(false)
       .withAllowMissingColumnNames().withQuote((Character)null).withRecordSeparator('\n')
