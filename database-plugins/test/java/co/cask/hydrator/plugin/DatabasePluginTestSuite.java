@@ -14,21 +14,34 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch;
+package co.cask.hydrator.plugin;
 
+import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
+import co.cask.hydrator.plugin.db.test.BatchETLDBTestRun;
+import co.cask.hydrator.plugin.teradata.test.TeradataPluginTestRun;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * This is a test suite that runs all tests in for ETL batch. This avoids starting/stopping the unit-test framework
- * for every test class.
+ * This is a test suite that runs all the tests for Database plugins.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-  BatchCubeSinkTestRun.class,
-  ETLSnapshotTestRun.class,
-  ETLStreamConversionTestRun.class,
-  ETLTPFSTestRun.class
+  BatchETLDBTestRun.class,
+  TeradataPluginTestRun.class
 })
-public class BatchPluginsTestSuite extends ETLBatchTestBase {
+public class DatabasePluginTestSuite extends ETLBatchTestBase {
+
+  @BeforeClass
+  public static void setup() {
+    DatabasePluginTestBase.tearDown = false;
+  }
+
+  @AfterClass
+  public static void tearDown() throws Exception {
+    DatabasePluginTestBase.tearDown = true;
+    DatabasePluginTestBase.tearDownDB();
+  }
 }

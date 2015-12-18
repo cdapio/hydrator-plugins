@@ -22,13 +22,14 @@
   <artifactId>hydrator-plugins</artifactId>
   <version>1.2.0-SNAPSHOT</version>
   <modules>
-    <module>cassandra-plugins</module>
+    <module>hydrator-common</module>
     <module>core-plugins</module>
+    <module>cassandra-plugins</module>
+    <module>database-plugins</module>
     <module>elasticsearch-plugins</module>
     <module>hbase-plugins</module>
     <module>hdfs-plugins</module>
     <module>hive-plugins</module>
-    <module>hydrator-common</module>
     <module>kafka-plugins</module>
     <module>mongodb-plugins</module>
     <module>python-evaluator-transform</module>
@@ -71,10 +72,12 @@
     <fastutil.version>6.6.1</fastutil.version>
     <geronimo-jms.version>1.1.1</geronimo-jms.version>
     <hadoop.version>2.3.0</hadoop.version>
+    <hsql.version>2.2.4</hsql.version>
     <hive.version>1.1.0-cdh5.4.5</hive.version>
     <junit.version>4.11</junit.version>
     <kafka.version>0.8.2.2</kafka.version>
     <snappy.version>1.1.2</snappy.version>
+    <slf4j.version>1.7.5</slf4j.version>
     <twill.version>0.6.0-incubating</twill.version>
     <twitter4j.version>4.0.3</twitter4j.version>
     <zookeeper.version>3.4.5</zookeeper.version>
@@ -101,6 +104,11 @@
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
       <dependency>
         <groupId>javax.annotation</groupId>
         <artifactId>jsr250-api</artifactId>
@@ -309,6 +317,12 @@
         <groupId>org.twitter4j</groupId>
         <artifactId>twitter4j-stream</artifactId>
         <version>${twitter4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.hsqldb</groupId>
+        <artifactId>hsqldb</artifactId>
+        <version>${hsql.version}</version>
+        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.elasticsearch</groupId>
@@ -690,5 +704,4 @@
       </plugin>
     </plugins>
   </build>
-
 </project>

@@ -14,21 +14,27 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch;
+package co.cask.hydrator.plugin;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import com.google.common.base.Strings;
 
 /**
- * This is a test suite that runs all tests in for ETL batch. This avoids starting/stopping the unit-test framework
- * for every test class.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-  BatchCubeSinkTestRun.class,
-  ETLSnapshotTestRun.class,
-  ETLStreamConversionTestRun.class,
-  ETLTPFSTestRun.class
-})
-public class BatchPluginsTestSuite extends ETLBatchTestBase {
+* Enum to denote case of Structured Record field.
+*/
+public enum FieldCase {
+  LOWER,
+  UPPER,
+  NONE;
+
+  public static FieldCase toFieldCase(String fieldCase) {
+    if (Strings.isNullOrEmpty(fieldCase)) {
+      return FieldCase.NONE;
+    }
+
+    try {
+      return FieldCase.valueOf(fieldCase.toUpperCase());
+    } catch (IllegalArgumentException e) {
+      return FieldCase.NONE;
+    }
+  }
 }
