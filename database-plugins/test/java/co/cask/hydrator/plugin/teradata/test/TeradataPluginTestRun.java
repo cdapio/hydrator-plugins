@@ -21,8 +21,6 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.api.plugin.PluginClass;
-import co.cask.cdap.api.plugin.PluginPropertyField;
 import co.cask.cdap.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.common.ETLStage;
@@ -35,186 +33,28 @@ import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestBase;
-import co.cask.hydrator.plugin.DBRecord;
+import co.cask.hydrator.plugin.DatabasePluginTestBase;
 import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
 import co.cask.hydrator.plugin.common.Properties;
-import co.cask.hydrator.plugin.teradata.batch.source.DataDrivenETLDBInputFormat;
 import co.cask.hydrator.plugin.teradata.batch.source.TeradataSource;
-import com.google.common.base.Charsets;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import org.hsqldb.Server;
-import org.hsqldb.jdbc.JDBCDriver;
-import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStreamReader;
-import java.sql.Connection;
 import java.sql.Date;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Time;
-import java.sql.Timestamp;
-import java.sql.Types;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import javax.sql.rowset.serial.SerialBlob;
 
 /**
  * Test for ETL using databases.
  */
-public class TeradataPluginTest extends ETLBatchTestBase {
-  private static final long currentTs = System.currentTimeMillis();
-  private static final String clobData = "this is a long string with line separators \n that can be used as \n a clob";
-  private static HSQLDBServer hsqlDBServer;
-  private static Schema schema;
-
-  @ClassRule
-  public static TemporaryFolder temporaryFolder = new TemporaryFolder();
-
-  @BeforeClass
-  public static void setup() throws Exception {
-    // add artifact for batch sources and sinks
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "teradata-plugins", "1.0.0"), APP_ARTIFACT_ID,
-                      TeradataSource.class, DataDrivenETLDBInputFormat.class, DBRecord.class);
-
-    // add hypersql 3rd party plugin
-    PluginClass hypersql = new PluginClass("jdbc", "hypersql", "hypersql jdbc driver", JDBCDriver.class.getName(),
-                                           null, Collections.<String, PluginPropertyField>emptyMap());
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "hsql-jdbc", "1.0.0"), APP_ARTIFACT_ID,
-                      Sets.newHashSet(hypersql), JDBCDriver.class);
-
-    String hsqlDBDir = temporaryFolder.newFolder("hsqldb").getAbsolutePath();
-    hsqlDBServer = new HSQLDBServer(hsqlDBDir, "testdb");
-    hsqlDBServer.start();
-    try (Connection conn = hsqlDBServer.getConnection()) {
-      createTestUser(conn);
-      createTestTables(conn);
-      prepareTestData(conn);
-    }
-
-    Schema nullableString = Schema.nullableOf(Schema.of(Schema.Type.STRING));
-    Schema nullableBoolean = Schema.nullableOf(Schema.of(Schema.Type.BOOLEAN));
-    Schema nullableInt = Schema.nullableOf(Schema.of(Schema.Type.INT));
-    Schema nullableLong = Schema.nullableOf(Schema.of(Schema.Type.LONG));
-    Schema nullableFloat = Schema.nullableOf(Schema.of(Schema.Type.FLOAT));
-    Schema nullableDouble = Schema.nullableOf(Schema.of(Schema.Type.DOUBLE));
-    Schema nullableBytes = Schema.nullableOf(Schema.of(Schema.Type.BYTES));
-    schema = Schema.recordOf("student",
-                             Schema.Field.of("ID", Schema.of(Schema.Type.INT)),
-                             Schema.Field.of("NAME", Schema.of(Schema.Type.STRING)),
-                             Schema.Field.of("SCORE", nullableDouble),
-                             Schema.Field.of("GRADUATED", nullableBoolean),
-                             Schema.Field.of("TINY", nullableInt),
-                             Schema.Field.of("SMALL", nullableInt),
-                             Schema.Field.of("BIG", nullableLong),
-                             Schema.Field.of("FLOAT_COL", nullableFloat),
-                             Schema.Field.of("REAL_COL", nullableFloat),
-                             Schema.Field.of("NUMERIC_COL", nullableDouble),
-                             Schema.Field.of("DECIMAL_COL", nullableDouble),
-                             Schema.Field.of("BIT_COL", nullableBoolean),
-                             Schema.Field.of("DATE_COL", nullableLong),
-                             Schema.Field.of("TIME_COL", nullableLong),
-                             Schema.Field.of("TIMESTAMP_COL", nullableLong),
-                             Schema.Field.of("BINARY_COL", nullableBytes),
-                             Schema.Field.of("BLOB_COL", nullableBytes),
-                             Schema.Field.of("CLOB_COL", nullableString));
-  }
-
-  private static void createTestUser(Connection conn) throws SQLException {
-    try (Statement stmt = conn.createStatement()) {
-      stmt.execute("CREATE USER \"emptyPwdUser\" PASSWORD '' ADMIN");
-    }
-  }
-
-  private static void createTestTables(Connection conn) throws SQLException {
-    try (Statement stmt = conn.createStatement()) {
-      // note that the tables need quotation marks around them; otherwise, hsql creates them in upper case
-      stmt.execute("CREATE TABLE \"my_table\"" +
-                     "(" +
-                     "ID INT NOT NULL, " +
-                     "NAME VARCHAR(40) NOT NULL, " +
-                     "SCORE DOUBLE, " +
-                     "GRADUATED BOOLEAN, " +
-                     "NOT_IMPORTED VARCHAR(30), " +
-                     "TINY TINYINT, " +
-                     "SMALL SMALLINT, " +
-                     "BIG BIGINT, " +
-                     "FLOAT_COL FLOAT, " +
-                     "REAL_COL REAL, " +
-                     "NUMERIC_COL NUMERIC(10, 2), " +
-                     "DECIMAL_COL DECIMAL(10, 2), " +
-                     "BIT_COL BIT, " +
-                     "DATE_COL DATE, " +
-                     "TIME_COL TIME, " +
-                     "TIMESTAMP_COL TIMESTAMP, " +
-                     "BINARY_COL BINARY(100)," +
-                     "BLOB_COL BLOB(100), " +
-                     "CLOB_COL CLOB(100)" +
-                     ")");
-      stmt.execute("CREATE TABLE \"MY_DEST_TABLE\" AS (" +
-                     "SELECT * FROM \"my_table\") WITH DATA");
-      stmt.execute("CREATE TABLE \"your_table\" AS (" +
-                     "SELECT * FROM \"my_table\") WITH DATA");
-    }
-  }
-
-  private static void prepareTestData(Connection conn) throws SQLException {
-    try (
-      PreparedStatement pStmt1 =
-        conn.prepareStatement("INSERT INTO \"my_table\" " +
-                                "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-      PreparedStatement pStmt2 =
-        conn.prepareStatement("INSERT INTO \"your_table\" " +
-                                "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-    ) {
-      // insert the same data into both tables: my_table and your_table
-      final PreparedStatement[] preparedStatements = {pStmt1, pStmt2};
-        for (PreparedStatement pStmt : preparedStatements) {
-        for (int i = 1; i <= 5; i++) {
-          String name = "user" + i;
-          pStmt.setInt(1, i);
-          pStmt.setString(2, name);
-          pStmt.setDouble(3, 123.45 + i);
-          pStmt.setBoolean(4, (i % 2 == 0));
-          pStmt.setString(5, "random" + i);
-          pStmt.setShort(6, (short) i);
-          pStmt.setShort(7, (short) i);
-          pStmt.setLong(8, (long) i);
-          pStmt.setFloat(9, (float) 123.45 + i);
-          pStmt.setFloat(10, (float) 123.45 + i);
-          pStmt.setDouble(11, 123.45 + i);
-          if ((i % 2 == 0)) {
-            pStmt.setNull(12, Types.DOUBLE);
-          } else {
-            pStmt.setDouble(12, 123.45 + i);
-          }
-          pStmt.setBoolean(13, (i % 2 == 1));
-          pStmt.setDate(14, new Date(currentTs));
-          pStmt.setTime(15, new Time(currentTs));
-          pStmt.setTimestamp(16, new Timestamp(currentTs));
-          pStmt.setBytes(17, name.getBytes(Charsets.UTF_8));
-          pStmt.setBlob(18, new SerialBlob(name.getBytes(Charsets.UTF_8)));
-          pStmt.setClob(19, new InputStreamReader(new ByteArrayInputStream(clobData.getBytes(Charsets.UTF_8))));
-          pStmt.executeUpdate();
-        }
-      }
-    }
-  }
+public class TeradataPluginTestRun extends DatabasePluginTestBase {
 
   @Test
   @SuppressWarnings("ConstantConditions")
@@ -227,7 +67,7 @@ public class TeradataPluginTest extends ETLBatchTestBase {
     Plugin sourceConfig = new Plugin(
       "Teradata",
       ImmutableMap.<String, String>builder()
-        .put(Properties.DB.CONNECTION_STRING, hsqlDBServer.getConnectionUrl())
+        .put(Properties.DB.CONNECTION_STRING, getConnectionURL())
         .put(Properties.DB.TABLE_NAME, "my_table")
         .put(Properties.DB.IMPORT_QUERY, importQuery)
         .put(TeradataSource.TeradataSourceConfig.BOUNDING_QUERY, boundingQuery)
@@ -327,7 +167,7 @@ public class TeradataPluginTest extends ETLBatchTestBase {
     String boundingQuery = "SELECT MIN(ID),MAX(ID) from \"my_table\"";
     String splitBy = "ID";
     Plugin sourceConfig = new Plugin("Teradata", ImmutableMap.<String, String>builder()
-      .put(Properties.DB.CONNECTION_STRING, hsqlDBServer.getConnectionUrl())
+      .put(Properties.DB.CONNECTION_STRING, getConnectionURL())
       .put(Properties.DB.TABLE_NAME, "my_table")
       .put(Properties.DB.IMPORT_QUERY, importQuery)
       .put(TeradataSource.TeradataSourceConfig.BOUNDING_QUERY, boundingQuery)
@@ -387,7 +227,7 @@ public class TeradataPluginTest extends ETLBatchTestBase {
       "MAX(MAX(\"my_table\".ID), MAX(\"your_table\".ID))";
     String splitBy = "\"my_table\".ID";
     Plugin sourceConfig = new Plugin("Teradata", ImmutableMap.<String, String>builder()
-      .put(Properties.DB.CONNECTION_STRING, hsqlDBServer.getConnectionUrl())
+      .put(Properties.DB.CONNECTION_STRING, getConnectionURL())
       .put(Properties.DB.TABLE_NAME, "my_table")
       .put(Properties.DB.IMPORT_QUERY, importQuery)
       .put(TeradataSource.TeradataSourceConfig.BOUNDING_QUERY, boundingQuery)
@@ -446,19 +286,13 @@ public class TeradataPluginTest extends ETLBatchTestBase {
     List<ETLStage> transforms = new ArrayList<>();
 
     Map<String, String> baseSourceProps = ImmutableMap.<String, String>builder()
-      .put(Properties.DB.CONNECTION_STRING, hsqlDBServer.getConnectionUrl())
+      .put(Properties.DB.CONNECTION_STRING, getConnectionURL())
       .put(Properties.DB.TABLE_NAME, "my_table")
       .put(Properties.DB.JDBC_PLUGIN_NAME, "hypersql")
       .put(Properties.DB.IMPORT_QUERY, importQuery)
       .put(TeradataSource.TeradataSourceConfig.BOUNDING_QUERY, boundingQuery)
       .put(TeradataSource.TeradataSourceConfig.SPLIT_BY, splitBy)
       .build();
-
-    Map<String, String> baseSinkProps = ImmutableMap.of(
-      Properties.DB.CONNECTION_STRING, hsqlDBServer.getConnectionUrl(),
-      Properties.DB.TABLE_NAME, "my_table",
-      Properties.DB.JDBC_PLUGIN_NAME, "hypersql",
-      Properties.DB.COLUMNS, "*");
 
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbTest");
 
@@ -512,7 +346,7 @@ public class TeradataPluginTest extends ETLBatchTestBase {
       Properties.Table.PROPERTY_SCHEMA, schema.toString(),
       Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ID"));
     Plugin sourceBadNameConfig = new Plugin("Teradata", ImmutableMap.<String, String>builder()
-      .put(Properties.DB.CONNECTION_STRING, hsqlDBServer.getConnectionUrl())
+      .put(Properties.DB.CONNECTION_STRING, getConnectionURL())
       .put(Properties.DB.TABLE_NAME, "dummy")
       .put(Properties.DB.IMPORT_QUERY, importQuery)
       .put(TeradataSource.TeradataSourceConfig.BOUNDING_QUERY, boundingQuery)
@@ -529,7 +363,7 @@ public class TeradataPluginTest extends ETLBatchTestBase {
       "non-existent source table.");
 
     // Bad connection
-    String badConnection = String.format("jdbc:hsqldb:hsql://localhost/%sWRONG", hsqlDBServer.database);
+    String badConnection = String.format("jdbc:hsqldb:hsql://localhost/%sWRONG", getDatabase());
     Plugin sourceBadConnConfig = new Plugin("Teradata", ImmutableMap.of(
       Properties.DB.CONNECTION_STRING, badConnection,
       Properties.DB.IMPORT_QUERY, importQuery,
@@ -543,7 +377,7 @@ public class TeradataPluginTest extends ETLBatchTestBase {
 
     // sink
     Plugin sinkBadNameConfig = new Plugin("Teradata", ImmutableMap.of(
-      Properties.DB.CONNECTION_STRING, hsqlDBServer.getConnectionUrl(),
+      Properties.DB.CONNECTION_STRING, getConnectionURL(),
       Properties.DB.TABLE_NAME, "dummy",
       Properties.DB.COLUMNS, "ID, NAME",
       Properties.DB.JDBC_PLUGIN_NAME, "hypersql"
@@ -567,21 +401,6 @@ public class TeradataPluginTest extends ETLBatchTestBase {
       "non-existent sink database.");
   }
 
-  @AfterClass
-  public static void tearDown() throws SQLException {
-    try (
-      Connection conn = hsqlDBServer.getConnection();
-      Statement stmt = conn.createStatement()
-    ) {
-      stmt.execute("DROP TABLE \"my_table\"");
-      stmt.execute("DROP TABLE \"your_table\"");
-      stmt.execute("DROP TABLE \"MY_DEST_TABLE\"");
-      stmt.execute("DROP USER \"emptyPwdUser\"");
-    }
-
-    hsqlDBServer.stop();
-  }
-
   private void assertDeploymentFailure(Id.Application appId, ETLBatchConfig etlConfig,
                                        String failureMessage) throws Exception {
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
@@ -590,45 +409,6 @@ public class TeradataPluginTest extends ETLBatchTestBase {
       Assert.fail(failureMessage);
     } catch (IllegalStateException e) {
       // expected
-    }
-  }
-
-  private static class HSQLDBServer {
-
-    private final String locationUrl;
-    private final String database;
-    private final String connectionUrl;
-    private final Server server;
-    private final String hsqlDBDriver = "org.hsqldb.jdbcDriver";
-
-    private HSQLDBServer(String location, String database) {
-      this.locationUrl = String.format("%s/%s", location, database);
-      this.database = database;
-      this.connectionUrl = String.format("jdbc:hsqldb:hsql://localhost/%s", database);
-      this.server = new Server();
-    }
-
-    public int start() {
-      server.setDatabasePath(0, locationUrl);
-      server.setDatabaseName(0, database);
-      return server.start();
-    }
-
-    public int stop() {
-      return server.stop();
-    }
-
-    public Connection getConnection() {
-      try {
-        Class.forName(hsqlDBDriver);
-        return DriverManager.getConnection(connectionUrl);
-      } catch (Exception e) {
-        throw Throwables.propagate(e);
-      }
-    }
-
-    public String getConnectionUrl() {
-      return this.connectionUrl;
     }
   }
 }
