@@ -83,8 +83,8 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
   }
 
   @Override
-  public void configurePipeline(PipelineConfigurer config) throws IllegalArgumentException {
-    super.configurePipeline(config);
+  public void configurePipeline(PipelineConfigurer configurer) throws IllegalArgumentException {
+    super.configurePipeline(configurer);
 
     // Check if the format specified is valid.
     if (this.config.format == null || this.config.format.isEmpty()) {
@@ -103,7 +103,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
     // Check if schema specified is a valid schema or no.
     try {
       Schema outputSchema = Schema.parseJson(this.config.schema);
-      config.getStageConfigurer().setOutputSchema(outputSchema);
+      configurer.getStageConfigurer().setOutputSchema(outputSchema);
     } catch (IOException e) {
       throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
     }
