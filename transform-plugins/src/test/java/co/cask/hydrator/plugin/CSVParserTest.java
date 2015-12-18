@@ -124,6 +124,25 @@ public class CSVParserTest {
     Assert.assertEquals(4.32, emitter.getEmitted().get(0).get("d"));
     Assert.assertEquals(true, emitter.getEmitted().get(0).get("e"));
   }
+  
+  @Test
+  public void testPDL() throws Exception {
+    CSVParser.Config config = new CSVParser.Config("PDL", "body", OUTPUT1.toString());
+    Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
+    transform.initialize(null);
+
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+
+    // Test missing field.
+    emitter.clear();
+    transform.transform(StructuredRecord.builder(INPUT1)
+                          .set("body", "1|    2|3 |4|        ").build(), emitter);
+    Assert.assertEquals("1", emitter.getEmitted().get(0).get("a"));
+    Assert.assertEquals("2", emitter.getEmitted().get(0).get("b"));
+    Assert.assertEquals("3", emitter.getEmitted().get(0).get("c"));
+    Assert.assertEquals("4", emitter.getEmitted().get(0).get("d"));
+    Assert.assertEquals("", emitter.getEmitted().get(0).get("e"));
+  }
 
   @Test(expected = RuntimeException.class)
   public void testDoubleException() throws Exception {
