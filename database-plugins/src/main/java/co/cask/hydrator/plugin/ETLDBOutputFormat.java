@@ -65,6 +65,10 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
 
         private boolean emptyData = true;
 
+        //Implementation of the close method below is the exact implementation in DBOutputFormat except that
+        //we check if there is any data to be written and if not, we skip executeBatch call.
+        //There might be reducers that don't receive any data and thus this check is necessary to prevent
+        //empty data to be committed (since some Databases doesn't support that).
         @Override
         public void close(TaskAttemptContext context) throws IOException {
           try {

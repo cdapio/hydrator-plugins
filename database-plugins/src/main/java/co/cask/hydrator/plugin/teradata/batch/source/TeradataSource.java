@@ -116,8 +116,11 @@ public class TeradataSource extends BatchSource<LongWritable, DBRecord, Structur
 
   @Override
   public void destroy() {
-    DBUtils.cleanup(driverClass);
-    dbManager.destroy();
+    try {
+      DBUtils.cleanup(driverClass);
+    } finally {
+      dbManager.destroy();
+    }
   }
 
   private String getJDBCPluginId() {

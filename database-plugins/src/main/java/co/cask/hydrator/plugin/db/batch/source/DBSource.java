@@ -113,8 +113,11 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
 
   @Override
   public void destroy() {
-    DBUtils.cleanup(driverClass);
-    dbManager.destroy();
+    try {
+      DBUtils.cleanup(driverClass);
+    } finally {
+      dbManager.destroy();
+    }
   }
 
   private String getJDBCPluginId() {
