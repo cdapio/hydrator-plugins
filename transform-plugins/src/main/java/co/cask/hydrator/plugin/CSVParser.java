@@ -73,7 +73,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
   // Initialize Pipe Delimiter CSV Parser. 
   static {
     PDL = CSVFormat.DEFAULT.withDelimiter('|').withEscape('\\').withIgnoreEmptyLines(false)
-      .withAllowMissingColumnNames().withQuote((Character)null).withRecordSeparator('\n')
+      .withAllowMissingColumnNames().withQuote((Character) null).withRecordSeparator('\n')
       .withIgnoreSurroundingSpaces();
   }
 
@@ -83,27 +83,27 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
   }
 
   @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
-    super.configurePipeline(pipelineConfigurer);
+  public void configurePipeline(PipelineConfigurer config) throws IllegalArgumentException {
+    super.configurePipeline(config);
 
     // Check if the format specified is valid.
-    if (config.format == null || config.format.isEmpty()) {
+    if (this.config.format == null || this.config.format.isEmpty()) {
       throw new IllegalArgumentException("Format is not specified. Allowed values are DEFAULT, EXCEL, MYSQL," +
                                            " RFC4180, PDL & TDF");
     }
 
     // Check if format is one of the allowed types.
-    if (!config.format.equalsIgnoreCase("DEFAULT") && !config.format.equalsIgnoreCase("EXCEL") &&
-      !config.format.equalsIgnoreCase("MYSQL") && !config.format.equalsIgnoreCase("RFC4180") &&
-      !config.format.equalsIgnoreCase("TDF") && !config.format.equalsIgnoreCase("PDL")) {
+    if (!this.config.format.equalsIgnoreCase("DEFAULT") && !this.config.format.equalsIgnoreCase("EXCEL") &&
+      !this.config.format.equalsIgnoreCase("MYSQL") && !this.config.format.equalsIgnoreCase("RFC4180") &&
+      !this.config.format.equalsIgnoreCase("TDF") && !this.config.format.equalsIgnoreCase("PDL")) {
       throw new IllegalArgumentException("Format specified is not one of the allowed values. Allowed values are " +
                                            "DEFAULT, EXCEL, MYSQL, RFC4180, PDL & TDF");
     }
 
     // Check if schema specified is a valid schema or no.
     try {
-      Schema outputSchema = Schema.parseJson(config.schema);
-      pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
+      Schema outputSchema = Schema.parseJson(this.config.schema);
+      config.getStageConfigurer().setOutputSchema(outputSchema);
     } catch (IOException e) {
       throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
     }
