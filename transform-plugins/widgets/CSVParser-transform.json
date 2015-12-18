@@ -24,6 +24,7 @@
               "EXCEL",
               "MYSQL",
               "RFC4180",
+              "PDL",
               "TDF"
             ],
             "default": "DEFAULT"

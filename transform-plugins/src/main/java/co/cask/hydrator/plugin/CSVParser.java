@@ -47,6 +47,7 @@ import java.util.List;
  *   <li>RFC4180</li>
  *   <li>MYSQL and</li>
  *   <li>TDF</li>
+ *   <li>PDL</li>   
  * </ul>
  * </p>  
  */
@@ -66,6 +67,14 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
   // Format of CSV.
   private CSVFormat csvFormat = CSVFormat.DEFAULT;
 
+  // Format of PDL.
+  public static final CSVFormat PDL;
+  static {
+    PDL = CSVFormat.DEFAULT.withDelimiter('|').withEscape('\\').withIgnoreEmptyLines(false)
+      .withAllowMissingColumnNames().withQuote((Character)null).withRecordSeparator('\n')
+      .withIgnoreSurroundingSpaces();
+  }
+
   // This is used only for tests, otherwise this is being injected by the ingestion framework. 
   public CSVParser(Config config) {
     this.config = config;
@@ -78,15 +87,15 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
     // Check if the format specified is valid.
     if (config.format == null || config.format.isEmpty()) {
       throw new IllegalArgumentException("Format is not specified. Allowed values are DEFAULT, EXCEL, MYSQL," +
-                                           " RFC4180 & TDF");
+                                           " RFC4180, PDL & TDF");
     }
 
     // Check if format is one of the allowed types.
     if (!config.format.equalsIgnoreCase("DEFAULT") && !config.format.equalsIgnoreCase("EXCEL") &&
       !config.format.equalsIgnoreCase("MYSQL") && !config.format.equalsIgnoreCase("RFC4180") &&
-      !config.format.equalsIgnoreCase("TDF")) {
+      !config.format.equalsIgnoreCase("TDF") && !config.format.equalsIgnoreCase("PDL")) {
       throw new IllegalArgumentException("Format specified is not one of the allowed values. Allowed values are " +
-                                           "DEFAULT, EXCEL, MYSQL, RFC4180 & TDF");
+                                           "DEFAULT, EXCEL, MYSQL, RFC4180, PDL & TDF");
     }
 
     // Check if schema specified is a valid schema or no.
@@ -124,10 +133,14 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
       case "tdf":
         csvFormat = CSVFormat.TDF;
         break;
+      
+      case "pdl":
+        csvFormat = PDL;
+        break;
 
       default:
         throw new IllegalArgumentException("Format {} specified is not one of the allowed format. Allowed formats are" +
-                                             "DEFAULT, EXCEL, MYSQL, RFC4180 and TDF");
+                                             "DEFAULT, EXCEL, MYSQL, RFC4180, PDL and TDF");
     }
 
     try {
@@ -152,7 +165,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
           StructuredRecord sRecord = createStructuredRecord(record);
           emitter.emit(sRecord);
         } else {
-          LOG.warn("Skipping record as ouput schema specified has '{}' fields, while CSV record has '{}'",
+          LOG.warn("Skipping record as output schema specified has '{}' fields, while CSV record has '{}'",
                    fields.size(), record.size());
           // Write the record to error Dataset.
         }
@@ -178,7 +191,8 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
   public static class Config extends PluginConfig {
 
     @Name("format")
-    @Description("Specify one of the predefined formats. DEFAULT, EXCEL, MYSQL, RFC4180 & TDF are supported formats.")
+    @Description("Specify one of the predefined formats. DEFAULT, EXCEL, MYSQL, RFC4180, PDL & TDF " +
+      "are supported formats.")
     private final String format;
 
     @Name("field")
