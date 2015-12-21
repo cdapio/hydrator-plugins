@@ -34,7 +34,7 @@ You can get started with the CDAP-plugin by building directly from the latest so
 
   git clone https://github.com/caskdata/hydrator-plugins.git
   cd hydrator-plugins
-  mvn clean package -pl python-evaluator-transform
+  mvn clean package -pl python-evaluator-transform -am
 
 You can build without running tests by using::
 
