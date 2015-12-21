@@ -27,7 +27,7 @@ You get started with Hydrator plugins by building directly from the latest sourc
 
   git clone https://github.com/caskdata/hydrator-plugins.git
   cd hydrator-plugins
-  mvn clean package -pl cassandra-plugins
+  mvn clean package -pl cassandra-plugins -am
 
 After the build completes, you will have a JAR under the
 ``cassandra-plugins/target/`` directory.

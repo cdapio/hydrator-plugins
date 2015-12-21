@@ -27,7 +27,7 @@ You get started with Hydrator plugins by building directly from the latest sourc
 
   git clone https://github.com/caskdata/hydrator-plugins.git
   cd hydrator-plugins
-  mvn clean package -pl hive-plugins
+  mvn clean package -pl hive-plugins -am
 
 After the build completes, you will have a jar for each plugin under the
 ``hive-plugins/target/`` directory.
