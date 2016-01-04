@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -23,6 +23,7 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.InvalidEntry;
 import co.cask.cdap.etl.api.LookupConfig;
 import co.cask.cdap.etl.api.LookupProvider;
 import co.cask.cdap.etl.api.PipelineConfigurer;
@@ -31,6 +32,7 @@ import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
 import co.cask.hydrator.plugin.ScriptConstants;
 import co.cask.hydrator.plugin.common.StructuredRecordSerializer;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
@@ -52,19 +54,18 @@ import javax.script.ScriptException;
 
 /**
  * Transforms records using custom javascript provided by the config.
- * @deprecated use co.cask.hydrator.plugin.transform.JavaScriptTransform instead of this transform.
  */
 @Plugin(type = "transform")
-@Name("Script")
-@Description("Executes user-provided Javascript that transforms one record into another." +
-  "This transform has been deprecated, use JavaScriptTransform instead of this transform")
-public class ScriptTransform extends Transform<StructuredRecord, StructuredRecord> {
+@Name("JavaScript")
+@Description("Executes user-provided Javascript that transforms one record into zero or more records.")
+public class JavaScriptTransform extends Transform<StructuredRecord, StructuredRecord> {
   private static final Gson GSON = new GsonBuilder()
     .registerTypeAdapter(StructuredRecord.class, new StructuredRecordSerializer())
     .create();
-  private static final Logger LOG = LoggerFactory.getLogger(ScriptTransform.class);
+  private static final Logger LOG = LoggerFactory.getLogger(JavaScriptTransform.class);
   private static final String FUNCTION_NAME = "dont_name_your_function_this";
   private static final String VARIABLE_NAME = "dont_name_your_variable_this";
+  private static final String EMITTER_NAME = "dont_name_your_variable2_this";
   private static final String CONTEXT_NAME = "dont_name_your_context_this";
   private ScriptEngine engine;
   private Invocable invocable;
@@ -79,19 +80,26 @@ public class ScriptTransform extends Transform<StructuredRecord, StructuredRecor
    * Configuration for the script transform.
    */
   public static class Config extends PluginConfig {
-    @Description("Javascript defining how to transform one record into another. The script must implement a function " +
+    @Description("Javascript defining how to transform input record into zero or more records. " +
+      "The script must implement a function " +
       "called 'transform', which takes as input a JSON object (representing the input record) " +
-      "and a context object (which contains CDAP metrics and logger), and returns " +
-      "a JSON object that represents the transformed input. " +
+      "emitter object, which can be used to emit records and error messages" +
+      "and a context object (which contains CDAP metrics, logger and lookup)" +
       "For example:\n" +
-      "'function transform(input, context) {\n" +
-      "  if(input.count < 0) {\n" +
-      "    context.getMetrics().count(\"negative.count\", 1);\n" +
-      "    context.getLogger().debug(\"Received record with negative count\");\n" +
-      "  }\n" +
+      "'function transform(input, emitter, context) {\n" +
+      "  if(context.getLookup('blacklist').lookup(input.id) != null) {\n" +
+      "     emitter.emitError({\"errorCode\":31, \"errorMsg\":\"blacklisted id\", \"invalidRecord\": input}); \n" +
+      "  } else {\n" +
+      "     if(input.count < 0) {\n" +
+      "       context.getMetrics().count(\"negative.count\", 1);\n" +
+      "       context.getLogger().debug(\"Received record with negative count\");\n" +
+      "     }\n" +
       "  input.count = input.count * 1024;\n" +
-      "return input; }'\n" +
-      "will scale the 'count' field by 1024.")
+      "  emitter.emit(input); " +
+      "  } \n" +
+      "}'\n" +
+      "will emit an error if the input id is present in blacklist table, else scale the 'count' field by 1024"
+    )
     private final String script;
 
     @Description("The schema of output objects. If no schema is given, it is assumed that the output schema is " +
@@ -111,7 +119,7 @@ public class ScriptTransform extends Transform<StructuredRecord, StructuredRecor
   }
 
   // for unit tests, otherwise config is injected by plugin framework.
-  public ScriptTransform(Config config) {
+  public JavaScriptTransform(Config config) {
     this.config = config;
   }
 
@@ -139,7 +147,7 @@ public class ScriptTransform extends Transform<StructuredRecord, StructuredRecor
     } catch (NoSuchMethodException e) {
       throw new RuntimeException(
         "Failed to get method ScriptObjectMirror#values() for converting ScriptObjectMirror to List. " +
-        "Please check your version of Nashorn is supported.", e);
+          "Please check your version of Nashorn is supported.", e);
     } catch (ClassNotFoundException e) {
       // Ignore -- we don't have Nashorn, so no need to handle Nashorn
     }
@@ -151,12 +159,68 @@ public class ScriptTransform extends Transform<StructuredRecord, StructuredRecor
   public void transform(StructuredRecord input, Emitter<StructuredRecord> emitter) {
     try {
       engine.eval(String.format("var %s = %s;", VARIABLE_NAME, GSON.toJson(input)));
-      Map scriptOutput = (Map) invocable.invokeFunction(FUNCTION_NAME);
-      StructuredRecord output = decodeRecord(scriptOutput, schema == null ? input.getSchema() : schema);
-      emitter.emit(output);
+      Emitter<Map> jsEmitter = new JSEmitter(emitter, schema == null ? input.getSchema() : schema);
+      engine.put(EMITTER_NAME, jsEmitter);
+      invocable.invokeFunction(FUNCTION_NAME);
     } catch (Exception e) {
       throw new IllegalArgumentException("Could not transform input: " + e.getMessage(), e);
     }
+  }
+
+  /**
+   * Emitter to be used from within Javascript code
+   */
+  public final class JSEmitter implements Emitter<Map> {
+
+    private final Emitter<StructuredRecord> emitter;
+    private final Schema schema;
+
+    public JSEmitter(Emitter<StructuredRecord> emitter, Schema schema) {
+      this.emitter = emitter;
+      this.schema = schema;
+    }
+
+    @Override
+    public void emit(Map value) {
+      emitter.emit(decode(value));
+    }
+
+    @Override
+    public void emitError(InvalidEntry<Map> invalidEntry) {
+      emitter.emitError(new InvalidEntry<>(invalidEntry.getErrorCode(), invalidEntry.getErrorMsg(),
+                                           decode(invalidEntry.getInvalidRecord())));
+    }
+
+    public void emitError(Map invalidEntry) {
+      emitter.emitError(getErrorObject(invalidEntry, decode((Map) invalidEntry.get("invalidRecord"))));
+    }
+
+    private StructuredRecord decode(Map nativeObject) {
+      return decodeRecord(nativeObject, schema);
+    }
+  }
+
+  private InvalidEntry<StructuredRecord> getErrorObject(Map result, StructuredRecord input) {
+    Preconditions.checkState(result.containsKey("errorCode"));
+
+    Object errorCode = result.get("errorCode");
+    Preconditions.checkState(errorCode instanceof Number,
+                             "errorCode entry in resultMap is not a valid number. " +
+                               "please check your script to make sure error-code is a number");
+    int errorCodeInt;
+    // since javascript number's are 64-bit they get converted to Double in java,
+    // so we have to get integer value of the double for creating invalid entry errorCode.
+    if (errorCode instanceof Integer) {
+      errorCodeInt = (Integer) errorCode;
+    } else if (errorCode instanceof Double) {
+      Double errorCodeDouble = ((Double) errorCode);
+      Preconditions.checkState((errorCodeDouble >= Integer.MIN_VALUE && errorCodeDouble <= Integer.MAX_VALUE),
+                               "errorCode must be a valid Integer");
+      errorCodeInt = errorCodeDouble.intValue();
+    } else {
+      throw new IllegalArgumentException("Unsupported errorCode type: " + errorCode.getClass().getName());
+    }
+    return new InvalidEntry<>(errorCodeInt, (String) result.get("errorMsg"), input);
   }
 
   private Object decode(Object object, Schema schema) {
@@ -302,8 +366,8 @@ public class ScriptTransform extends Transform<StructuredRecord, StructuredRecor
       // function transform(input) { ... }
       // rather than function transform() { ... } and have them access a global variable in the function
 
-      String script = String.format("function %s() { return transform(%s, %s); }\n%s",
-        FUNCTION_NAME, VARIABLE_NAME, CONTEXT_NAME, config.script);
+      String script = String.format("function %s() { return transform(%s, %s, %s); }\n%s",
+                                    FUNCTION_NAME, VARIABLE_NAME, EMITTER_NAME, CONTEXT_NAME, config.script);
       engine.eval(script);
     } catch (ScriptException e) {
       throw new IllegalArgumentException("Invalid script: " + e.getMessage(), e);
