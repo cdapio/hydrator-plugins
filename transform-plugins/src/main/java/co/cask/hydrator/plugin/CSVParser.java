@@ -69,7 +69,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
 
   // Format of PDL.
   public static final CSVFormat PDL;
-  
+
   // Initialize Pipe Delimiter CSV Parser. 
   static {
     PDL = CSVFormat.DEFAULT.withDelimiter('|').withEscape('\\').withIgnoreEmptyLines(false)
@@ -98,6 +98,19 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
       !this.config.format.equalsIgnoreCase("TDF") && !this.config.format.equalsIgnoreCase("PDL")) {
       throw new IllegalArgumentException("Format specified is not one of the allowed values. Allowed values are " +
                                            "DEFAULT, EXCEL, MYSQL, RFC4180, PDL & TDF");
+    }
+
+    if (configurer.getStageConfigurer().getInputSchema() != null) {
+      Schema.Field inputSchemaField = configurer.getStageConfigurer().getInputSchema().getField(config.field);
+      if (inputSchemaField == null) {
+        throw new IllegalArgumentException(
+          "Field " + config.field + " is not present in the input schema");
+      } else {
+        if (!inputSchemaField.getSchema().getType().equals(Schema.Type.STRING)) {
+          throw new IllegalArgumentException(
+            "Type for field  " + config.field + " must be String");
+        }
+      }
     }
 
     // Check if schema specified is a valid schema or no.
@@ -135,7 +148,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
       case "tdf":
         csvFormat = CSVFormat.TDF;
         break;
-      
+
       case "pdl":
         csvFormat = PDL;
         break;

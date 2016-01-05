@@ -86,6 +86,28 @@ public class LogParserTransformTest {
     Assert.assertEquals(LOG_SCHEMA, mockConfigurer.getOutputSchema());
   }
 
+  @Test(expected = IllegalArgumentException.class)
+  public void testConfigurePipelineInvalidSchema() throws Exception {
+    Schema inputSchemaString = Schema.recordOf(
+      "event",
+      Schema.Field.of("CLF", Schema.of(Schema.Type.STRING)),
+      // "body" is config.inputName and that should be of only type String or Bytes
+      Schema.Field.of("body", Schema.of(Schema.Type.INT)));
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(inputSchemaString);
+    S3_TRANSFORM.configurePipeline(mockConfigurer);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testConfigurePipelineSchemaWithMissingInputNameField() throws Exception {
+    Schema inputSchemaString = Schema.recordOf(
+      "event",
+      Schema.Field.of("CLF", Schema.of(Schema.Type.STRING))
+      // "body" is config.inputName and we skip that, causing that field to be null
+      );
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(inputSchemaString);
+    S3_TRANSFORM.configurePipeline(mockConfigurer);
+  }
+
   @Test
   public void testS3LogTransform() throws Exception {
     StructuredRecord botRecord = StructuredRecord.builder(STRING_SCHEMA)

@@ -38,10 +38,10 @@ import java.io.IOException;
 @Description("Parses JSON Object into a Structured Record.")
 public final class JSONParser extends Transform<StructuredRecord, StructuredRecord> {
   private final Config config;
-  
+
   // Output Schema that specifies the fileds of JSON object. 
   private Schema outSchema;
-  
+
   // Mainly used for testing.
   public JSONParser(Config config) {
     this.config = config;
@@ -55,6 +55,11 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
       pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
     } catch (IOException e) {
       throw new IllegalArgumentException("Output Schema specified is not a valid JSON. Please check the Schema JSON");
+    }
+
+    Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
+    if (inputSchema != null && inputSchema.getField(config.field) == null) {
+      throw new IllegalArgumentException(String.format("Field %s is not present in input schema", config.field));
     }
   }
   

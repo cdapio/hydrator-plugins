@@ -95,6 +95,23 @@ public final class Encoder extends Transform<StructuredRecord, StructuredRecord>
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
     parseConfiguration(config.encode);
+
+    Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
+    // for the fields in input schema, if they are to be encoded (if present in encodeMap)
+    // make sure their type is either String or Bytes and throw exception otherwise
+    if (inputSchema != null) {
+      for (Schema.Field field : inputSchema.getFields()) {
+        if (encodeMap.containsKey(field.getName())) {
+          if (!field.getSchema().getType().equals(Schema.Type.BYTES) &&
+            !field.getSchema().getType().equals(Schema.Type.STRING)) {
+            throw new IllegalArgumentException(
+              String.format("Input field  %s should be of type bytes or string. It is currently of type %s",
+                            field.getName(), field.getSchema().getType().toString()));
+          }
+        }
+      }
+    }
+
     // Check if schema specified is a valid schema or no. 
     try {
       Schema outputSchema = Schema.parseJson(config.schema);

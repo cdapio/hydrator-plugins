@@ -93,7 +93,7 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
     parseConfiguration(config.decompressor);
-    
+
     // Check if schema specified is a valid schema or no.
     try {
       Schema outputSchema = Schema.parseJson(config.schema);
@@ -104,23 +104,36 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
       pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
     } catch (IOException e) {
       throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format. " +
-        e.getMessage());
+                                           e.getMessage());
     }
-    
+
+    Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
+    if (inputSchema != null) {
+      for (Schema.Field field : inputSchema.getFields()) {
+        if (outSchemaMap.containsKey(field.getName()) &&
+          deCompMap.containsKey(field.getName()) && deCompMap.get(field.getName()) != DecompressorType.NONE &&
+          !Schema.Type.BYTES.equals(field.getSchema().getType())) {
+          throw new IllegalArgumentException(
+            String.format("Input field  %s should be of type bytes or string. It is currently of type %s",
+                          field.getName(), field.getSchema().getType().toString()));
+        }
+      }
+    }
+
     for (Map.Entry<String, DecompressorType> entry : deCompMap.entrySet()) {
       if (!outSchemaMap.containsKey(entry.getKey())) {
         throw new IllegalArgumentException("Field '" + entry.getKey() + "' specified to be decompresed is not " +
                                              "present in the output schema. Please add field '" + entry.getKey() + "'" +
                                              "to output schema or remove it from decompress");
       }
-      if (outSchemaMap.get(entry.getKey()) != Schema.Type.BYTES && 
+      if (outSchemaMap.get(entry.getKey()) != Schema.Type.BYTES &&
         outSchemaMap.get(entry.getKey()) != Schema.Type.STRING) {
         throw new IllegalArgumentException("Field '" + entry.getKey() + "' should be of type BYTES or STRING in " +
                                              "output schema.");
       }
     }
   }
-  
+
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
@@ -133,7 +146,7 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
       }
     } catch (IOException e) {
       throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format." +
-          e.getMessage());
+                                           e.getMessage());
     }
   }
 
@@ -204,7 +217,7 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
    */
   private byte[] ungzip(byte[] body) {
     ByteArrayInputStream bytein = new ByteArrayInputStream(body);
-    try (GZIPInputStream gzin = new GZIPInputStream(bytein); 
+    try (GZIPInputStream gzin = new GZIPInputStream(bytein);
          ByteArrayOutputStream byteout = new ByteArrayOutputStream()) {
       int res = 0;
       byte buf[] = new byte[1024];
@@ -230,7 +243,7 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
     ZipEntry ze;
     byte buf[] = new byte[1024];
     try (ByteArrayOutputStream bao = new ByteArrayOutputStream();
-         ByteArrayInputStream bytein = new ByteArrayInputStream(body); 
+         ByteArrayInputStream bytein = new ByteArrayInputStream(body);
          ZipInputStream zis = new ZipInputStream(bytein)) {
       while ((ze = zis.getNextEntry()) != null) {
         int l = 0;
@@ -245,7 +258,7 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
     }
     return null;
   }
-  
+
   /**
    * Enum specifying the decompressor type.
    */

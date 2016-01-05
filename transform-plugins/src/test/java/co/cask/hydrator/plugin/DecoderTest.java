@@ -42,8 +42,8 @@ public class DecoderTest {
                                                        Schema.Field.of("b", Schema.of(Schema.Type.STRING)));
 
   private static final Schema OUTPUTSTR = Schema.recordOf("outputstr",
-                                                       Schema.Field.of("a", Schema.of(Schema.Type.STRING)),
-                                                       Schema.Field.of("b", Schema.of(Schema.Type.STRING)));
+                                                          Schema.Field.of("a", Schema.of(Schema.Type.STRING)),
+                                                          Schema.Field.of("b", Schema.of(Schema.Type.STRING)));
 
   @Test
   public void testBase64Decoder() throws Exception {
@@ -54,19 +54,19 @@ public class DecoderTest {
 
     MockEmitter<StructuredRecord> emitterEncoded = new MockEmitter<>();
     encoder.transform(StructuredRecord.builder(INPUT)
-                          .set("a", test)
-                          .set("b", "2")
-                          .set("c", "3")
-                          .set("d", "4")
-                          .set("e", "5").build(), emitterEncoded);
+                        .set("a", test)
+                        .set("b", "2")
+                        .set("c", "3")
+                        .set("d", "4")
+                        .set("e", "5").build(), emitterEncoded);
 
     Base64 base64 = new Base64();
     byte[] expected = base64.encode(test.getBytes("UTF-8"));
     byte[] actual = emitterEncoded.getEmitted().get(0).get("a");
     Assert.assertEquals(2, emitterEncoded.getEmitted().get(0).getSchema().getFields().size());
     Assert.assertArrayEquals(expected, actual);
-    
-    Transform<StructuredRecord, StructuredRecord> decoder = 
+
+    Transform<StructuredRecord, StructuredRecord> decoder =
       new Decoder(new Decoder.Config("a:BASE64", OUTPUTSTR.toString()));
     decoder.initialize(null);
     MockEmitter<StructuredRecord> emitterDecoded = new MockEmitter<>();
@@ -202,5 +202,19 @@ public class DecoderTest {
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT);
     decoder.configurePipeline(mockPipelineConfigurer);
     Assert.assertEquals(OUTPUT, mockPipelineConfigurer.getOutputSchema());
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testSchemaValidationWithInvalidInputSchema() throws Exception {
+    Transform<StructuredRecord, StructuredRecord> decoder =
+      new Decoder(new Decoder.Config("a:BASE64", OUTPUT.toString()));
+
+    final Schema invalidInput = Schema.recordOf("input",
+                                         Schema.Field.of("a", Schema.of(Schema.Type.INT)),
+                                         Schema.Field.of("b", Schema.of(Schema.Type.STRING)),
+                                         Schema.Field.of("c", Schema.of(Schema.Type.STRING)));
+
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(invalidInput);
+    decoder.configurePipeline(mockPipelineConfigurer);
   }
 }
