@@ -119,7 +119,7 @@ public class DecompressorTest {
   private byte[] zip(byte[] input) throws IOException {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     ZipOutputStream zos = new ZipOutputStream(out);
-    zos.setLevel(9);  
+    zos.setLevel(9);
     zos.putNextEntry(new ZipEntry("c"));
     zos.write(input, 0, input.length);
     zos.flush();
@@ -135,4 +135,31 @@ public class DecompressorTest {
     transform.configurePipeline(mockPipelineConfigurer);
     Assert.assertEquals(OUTPUT, mockPipelineConfigurer.getOutputSchema());
   }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testSchemaValidationWithInvalidInputSchema() throws Exception {
+    Transform<StructuredRecord, StructuredRecord> transform =
+      new Decompressor(new Decompressor.Config("a:ZIP", OUTPUT.toString()));
+    Schema invalidInput = Schema.recordOf("input",
+                                          Schema.Field.of("a", Schema.of(Schema.Type.STRING)),
+                                          Schema.Field.of("b", Schema.of(Schema.Type.STRING)));
+
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(invalidInput);
+    transform.configurePipeline(mockPipelineConfigurer);
+    Assert.assertEquals(OUTPUT, mockPipelineConfigurer.getOutputSchema());
+  }
+
+  @Test
+  public void testSchemaValidationWithValidInputSchema() throws Exception {
+    Transform<StructuredRecord, StructuredRecord> transform =
+      new Decompressor(new Decompressor.Config("a:NONE", OUTPUT.toString()));
+    Schema validInput = Schema.recordOf("input",
+                                        Schema.Field.of("a", Schema.of(Schema.Type.STRING)),
+                                        Schema.Field.of("b", Schema.of(Schema.Type.STRING)));
+
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(validInput);
+    transform.configurePipeline(mockPipelineConfigurer);
+    Assert.assertEquals(OUTPUT, mockPipelineConfigurer.getOutputSchema());
+  }
+
 }

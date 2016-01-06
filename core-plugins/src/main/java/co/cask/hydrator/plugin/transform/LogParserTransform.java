@@ -109,13 +109,10 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
         throw new IllegalArgumentException("Only Input Schema of type Schema.Type.RECORD is supported");
       }
       Schema.Field inputNameSchema = inputSchema.getField(config.inputName);
-      try {
-        if (inputNameSchema != null && inputNameSchema.getSchema() != null) {
-          validateInputSchemaType(inputNameSchema.getSchema().getType());
-        }
-      } catch (IllegalArgumentException e) {
-        LOG.error(e.getMessage());
-        throw Throwables.propagate(e);
+      if (inputNameSchema == null) {
+        throw new IllegalArgumentException("Field " + config.inputName + " is not present in the input schema");
+      } else {
+        validateInputSchemaType(inputNameSchema.getSchema().getType());
       }
     }
     pipelineConfigurer.getStageConfigurer().setOutputSchema(LOG_SCHEMA);

@@ -41,7 +41,7 @@ import java.util.TreeMap;
 
 /**
  * Decodes the input fields as BASE64, BASE32 or HEX.
- * 
+ *
  * Please note that Encoder and Decoder might look the same right now, but 
  * in near future they will diverge.
  */
@@ -98,6 +98,24 @@ public final class Decoder extends Transform<StructuredRecord, StructuredRecord>
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
     parseConfiguration(config.decode);
+
+    Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
+
+    // for the fields in input schema, if they are to be decoded (if present in decodeMap)
+    // make sure their type is either String or Bytes and throw exception otherwise
+    if (inputSchema != null) {
+      for (Schema.Field field : inputSchema.getFields()) {
+        if (decodeMap.containsKey(field.getName())) {
+          if (!field.getSchema().getType().equals(Schema.Type.BYTES) &&
+            !field.getSchema().getType().equals(Schema.Type.STRING)) {
+            throw new IllegalArgumentException(
+              String.format("Input field  %s should be of type bytes or string. It is currently of type %s",
+                            field.getName(), field.getSchema().getType().toString()));
+          }
+        }
+      }
+    }
+
     // Check if schema specified is a valid schema or no. 
     try {
       Schema outputSchema = Schema.parseJson(config.schema);
@@ -191,7 +209,7 @@ public final class Decoder extends Transform<StructuredRecord, StructuredRecord>
     STRING_BASE64("STRING_BASE64"),
     HEX("HEX"),
     NONE("NONE");
-    
+
     private String type;
 
     DecoderType(String type) {

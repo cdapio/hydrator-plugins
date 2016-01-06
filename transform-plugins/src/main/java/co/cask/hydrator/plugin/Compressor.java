@@ -63,18 +63,18 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
   public Compressor(Config config) {
     this.config = config;
   }
-  
+
   private void parseConfiguration(String config) throws IllegalArgumentException {
     String[] mappings = config.split(",");
     for (String mapping : mappings) {
       String[] params = mapping.split(":");
-      
+
       // If format is not right, then we throw an exception.
       if (params.length < 2) {
         throw new IllegalArgumentException("Configuration " + mapping + " is in-correctly formed. " +
                                              "Format should be <fieldname>:<compressor-type>");
       }
-      
+
       String field = params[0];
       String type = params[1].toUpperCase();
       CompressorType cType = CompressorType.valueOf(type);
@@ -95,9 +95,9 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
       outSchema = Schema.parseJson(config.schema);
       List<Field> outFields = outSchema.getFields();
       for (Field field : outFields) {
-        outSchemaMap.put(field.getName(), field.getSchema().getType());  
+        outSchemaMap.put(field.getName(), field.getSchema().getType());
       }
-      
+
       for (String field : compMap.keySet()) {
         if (compMap.containsKey(field)) {
           Schema.Type type = outSchemaMap.get(field);
@@ -127,34 +127,48 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
     } catch (IOException e) {
       throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
     }
+
+    Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
+    if (inputSchema != null) {
+      for (Schema.Field field : inputSchema.getFields()) {
+        if (outSchemaMap.containsKey(field.getName()) &&
+          compMap.containsKey(field.getName()) && compMap.get(field.getName()) != CompressorType.NONE &&
+          !Schema.Type.BYTES.equals(field.getSchema().getType()) &&
+          !Schema.Type.STRING.equals(field.getSchema().getType())) {
+          throw new IllegalArgumentException(
+            String.format("Input field  %s must be of type bytes or string. It is currently of type %s",
+                          field.getName(), field.getSchema().getType().toString()));
+        }
+      }
+    }
   }
-  
+
 
   @Override
   public void transform(StructuredRecord in, Emitter<StructuredRecord> emitter) throws Exception {
     StructuredRecord.Builder builder = StructuredRecord.builder(outSchema);
-    
+
     Schema inSchema = in.getSchema();
     List<Field> inFields = inSchema.getFields();
-    
+
     // Iterate through input fields. Check if field name is present 
     // in the fields that need to be compressed, if it's not then write
     // to output as it is. 
     for (Field field : inFields) {
       String name = field.getName();
-      
+
       // Check if output schema also have the same field name. If it's not 
       // then continue.
       if (!outSchemaMap.containsKey(name)) {
         continue;
       }
-      
+
       Schema.Type outFieldType = outSchemaMap.get(name);
-      
+
       // Check if the input field name is configured to be compressed. If the field is not
       // present or is defined as none, then pass through the field as is. 
       if (!compMap.containsKey(name) || compMap.get(name) == CompressorType.NONE) {
-        builder.set(name, in.get(name));          
+        builder.set(name, in.get(name));
       } else {
         // Now, the input field could be of type String or byte[], so transform everything
         // to byte[] 
@@ -164,7 +178,7 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
         } else if (field.getSchema().getType() == Schema.Type.STRING) {
           obj = Bytes.toBytes((String) in.get(name));
         }
-        
+
         // Now, based on the compressor type configured for the field - compress the byte[] of the
         // value.
         byte[] outValue = new byte[0];
@@ -176,7 +190,7 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
         } else if (type == CompressorType.GZIP) {
           outValue = gzip(obj);
         }
-        
+
         // Depending on the output field type, either convert it to 
         // Bytes or to String. 
         if (outFieldType == Schema.Type.BYTES) {
@@ -185,7 +199,7 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
           }
         } else {
           LOG.warn("Output field '" + name + "' is not of BYTES. In order to emit compressed data, you should set " +
-            "it to type BYTES.");
+                     "it to type BYTES.");
         }
       }
     }
@@ -212,10 +226,10 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
         }
       }
     }
-    
+
     return out.toByteArray();
   }
-  
+
   private byte[] zip(byte[] input) {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     ZipOutputStream zos = new ZipOutputStream(out);
@@ -238,7 +252,7 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
         return null;
       }
     }
-    
+
     return out.toByteArray();
   }
 
@@ -274,7 +288,7 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
     @Name("schema")
     @Description("Specifies the output schema")
     private final String schema;
-    
+
     public Config(String compressor, String schema) {
       this.compressor = compressor;
       this.schema = schema;

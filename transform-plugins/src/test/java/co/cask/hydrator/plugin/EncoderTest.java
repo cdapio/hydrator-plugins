@@ -163,4 +163,18 @@ public class EncoderTest {
     transform.configurePipeline(mockPipelineConfigurer);
     Assert.assertEquals(OUTPUTSTR, mockPipelineConfigurer.getOutputSchema());
   }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testSchemaValidationWithInvalidInputSchema() throws Exception {
+
+    Transform<StructuredRecord, StructuredRecord> transform =
+      new Encoder(new Encoder.Config("a:BASE32", OUTPUTSTR.toString()));
+    final Schema invalidInput = Schema.recordOf("input",
+                                                Schema.Field.of("a", Schema.of(Schema.Type.INT)),
+                                                Schema.Field.of("b", Schema.of(Schema.Type.STRING)),
+                                                Schema.Field.of("c", Schema.of(Schema.Type.STRING)));
+
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(invalidInput);
+    transform.configurePipeline(mockPipelineConfigurer);
+  }
 }

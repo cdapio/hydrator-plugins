@@ -114,6 +114,31 @@ public class CompressorTest {
     Assert.assertEquals(OUTPUT, mockPipelineConfigurer.getOutputSchema());
   }
 
+  @Test(expected = IllegalArgumentException.class)
+  public void testSchemaValidationWithInvalidInputSchema() throws Exception {
+    Transform<StructuredRecord, StructuredRecord> transform =
+      new Compressor(new Compressor.Config("a:ZIP", OUTPUT.toString()));
+    Schema invalidInput = Schema.recordOf("input",
+                                          Schema.Field.of("a", Schema.of(Schema.Type.INT)),
+                                          Schema.Field.of("b", Schema.of(Schema.Type.STRING)));
+
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(invalidInput);
+    transform.configurePipeline(mockPipelineConfigurer);
+  }
+
+  @Test
+  public void testSchemaValidationWithValidInputSchema() throws Exception {
+    Transform<StructuredRecord, StructuredRecord> transform =
+      new Compressor(new Compressor.Config("a:NONE", OUTPUT.toString()));
+    Schema validInput = Schema.recordOf("input",
+                                        Schema.Field.of("a", Schema.of(Schema.Type.INT)),
+                                        Schema.Field.of("b", Schema.of(Schema.Type.STRING)));
+
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(validInput);
+    transform.configurePipeline(mockPipelineConfigurer);
+    Assert.assertEquals(OUTPUT, mockPipelineConfigurer.getOutputSchema());
+  }
+
   private static byte[] compressGZIP(byte[] input) throws IOException {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     GZIPOutputStream gzip = new GZIPOutputStream(out);
