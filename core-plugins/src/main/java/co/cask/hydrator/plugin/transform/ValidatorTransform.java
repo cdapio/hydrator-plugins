@@ -104,7 +104,6 @@ public class ValidatorTransform extends Transform<StructuredRecord, StructuredRe
   private StageMetrics metrics;
   private Invocable invocable;
   private ScriptEngine engine;
-  private Logger logger;
 
   // for unit tests, otherwise config is injected by plugin framework.
   public ValidatorTransform(ValidatorConfig config) {
@@ -145,7 +144,6 @@ public class ValidatorTransform extends Transform<StructuredRecord, StructuredRe
   @VisibleForTesting
   void setUpInitialScript(TransformContext context, List<Validator> validators) throws ScriptException {
     metrics = context.getMetrics();
-    logger = LoggerFactory.getLogger(ValidatorTransform.class.getName() + " - Stage:" + context.getStageName());
     init(validators, context);
   }
 
@@ -223,8 +221,7 @@ public class ValidatorTransform extends Transform<StructuredRecord, StructuredRe
       throw new IllegalArgumentException("Invalid lookup config. Expected map of string to string", e);
     }
 
-    engine.put(CONTEXT_NAME, new ValidatorScriptContext(
-      logger, metrics, lookup, lookupConfig, js, validatorMap));
+    engine.put(CONTEXT_NAME, new ValidatorScriptContext(LOG, metrics, lookup, lookupConfig, js, validatorMap));
 
     // this is pretty ugly, but doing this so that we can pass the 'input' json into the isValid function.
     // that is, we want people to implement
