@@ -64,8 +64,9 @@ public class MongoDBBatchSource extends BatchSource<Object, BSONObject, Structur
     super.configurePipeline(pipelineConfigurer);
     try {
       BSONConverter.validateSchema(Schema.parseJson(config.schema));
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(Schema.parseJson(config.schema));
     } catch (IOException e) {
-      throw new IllegalArgumentException("Invalid schema", e);
+      throw new IllegalArgumentException("Invalid output schema : " + e.getMessage(), e);
     }
   }
 

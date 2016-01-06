@@ -24,6 +24,7 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
@@ -74,6 +75,16 @@ public class ElasticsearchSource extends BatchSource<Text, MapWritable, Structur
   @Override
   public void initialize(BatchRuntimeContext context) {
     schema = parseSchema();
+  }
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
+    try {
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(Schema.parseJson(config.schema));
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Invalid output schema : " + e.getMessage(), e);
+    }
   }
 
   @Override

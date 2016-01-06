@@ -74,9 +74,9 @@ public class KafkaSource extends RealtimeSource<StructuredRecord> {
   private static final String FORMAT_SETTING_PREFIX = "format.setting.";
 
   private static final Schema DEFAULT_SCHEMA = Schema.recordOf("Kafka Message",
-                                                       Schema.Field.of(MESSAGE, Schema.of(Schema.Type.BYTES)),
-                                                       Schema.Field.of(KEY, Schema.nullableOf(
-                                                         Schema.of(Schema.Type.STRING))));
+                                                               Schema.Field.of(MESSAGE, Schema.of(Schema.Type.BYTES)),
+                                                               Schema.Field.of(KEY, Schema.nullableOf(
+                                                                 Schema.of(Schema.Type.STRING))));
   private KafkaSimpleApiConsumer kafkaConsumer;
   private KafkaPluginConfig config;
 
@@ -95,6 +95,13 @@ public class KafkaSource extends RealtimeSource<StructuredRecord> {
     // check the schema if there is one
     if (!Strings.isNullOrEmpty(config.schema)) {
       config.parseSchema();
+      try {
+        pipelineConfigurer.getStageConfigurer().setOutputSchema(Schema.parseJson(config.schema));
+      } catch (IOException e) {
+        throw new IllegalArgumentException("Invalid output schema: " + e.getMessage(), e);
+      }
+    } else {
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(DEFAULT_SCHEMA);
     }
   }
 

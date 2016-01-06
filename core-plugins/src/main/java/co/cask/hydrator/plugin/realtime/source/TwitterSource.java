@@ -23,6 +23,7 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.realtime.RealtimeContext;
 import co.cask.cdap.etl.api.realtime.RealtimeSource;
 import co.cask.cdap.etl.api.realtime.SourceState;
@@ -70,10 +71,21 @@ public class TwitterSource extends RealtimeSource<StructuredRecord> {
   private static final String GLNG = "geoLong";
   private static final String ISRT = "isRetweet";
 
+  private static final Schema SCHEMA =
+    Schema.recordOf("tweet", Schema.Field.of(ID, Schema.of(Schema.Type.LONG)),
+                    Schema.Field.of(MSG, Schema.of(Schema.Type.STRING)),
+                    Schema.Field.of(LANG, Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                    Schema.Field.of(TIME, Schema.nullableOf(Schema.of(Schema.Type.LONG))),
+                    Schema.Field.of(FAVC, Schema.of(Schema.Type.INT)),
+                    Schema.Field.of(RTC, Schema.of(Schema.Type.INT)),
+                    Schema.Field.of(SRC, Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                    Schema.Field.of(GLAT, Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
+                    Schema.Field.of(GLNG, Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
+                    Schema.Field.of(ISRT, Schema.of(Schema.Type.BOOLEAN)));
+
   private TwitterStream twitterStream;
   private StatusListener statusListener;
   private Queue<Status> tweetQ = Queues.newConcurrentLinkedQueue();
-  private Schema schema;
 
   private final TwitterConfig twitterConfig;
 
@@ -110,8 +122,13 @@ public class TwitterSource extends RealtimeSource<StructuredRecord> {
     }
   }
 
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(SCHEMA);
+  }
+
   private StructuredRecord convertTweet(Status tweet) {
-    StructuredRecord.Builder recordBuilder = StructuredRecord.builder(this.schema);
+    StructuredRecord.Builder recordBuilder = StructuredRecord.builder(SCHEMA);
     recordBuilder.set(ID, tweet.getId());
     recordBuilder.set(MSG, tweet.getText());
     recordBuilder.set(LANG, tweet.getLang());
@@ -148,19 +165,6 @@ public class TwitterSource extends RealtimeSource<StructuredRecord> {
     // Disable chatty logging from twitter4j.
     System.setProperty("twitter4j.loggerFactory", "twitter4j.NullLoggerFactory");
 
-    Schema.Field idField = Schema.Field.of(ID, Schema.of(Schema.Type.LONG));
-    Schema.Field msgField = Schema.Field.of(MSG, Schema.of(Schema.Type.STRING));
-    Schema.Field langField = Schema.Field.of(LANG, Schema.nullableOf(Schema.of(Schema.Type.STRING)));
-    Schema.Field timeField = Schema.Field.of(TIME, Schema.nullableOf(Schema.of(Schema.Type.LONG)));
-    Schema.Field favCount = Schema.Field.of(FAVC, Schema.of(Schema.Type.INT));
-    Schema.Field rtCount = Schema.Field.of(RTC, Schema.of(Schema.Type.INT));
-    Schema.Field sourceField = Schema.Field.of(SRC, Schema.nullableOf(Schema.of(Schema.Type.STRING)));
-    Schema.Field geoLatField = Schema.Field.of(GLAT, Schema.nullableOf(Schema.of(Schema.Type.DOUBLE)));
-    Schema.Field geoLongField = Schema.Field.of(GLNG, Schema.nullableOf(Schema.of(Schema.Type.DOUBLE)));
-    Schema.Field reTweetField = Schema.Field.of(ISRT, Schema.of(Schema.Type.BOOLEAN));
-    schema = Schema.recordOf("tweet", idField, msgField, langField, timeField, favCount, rtCount, sourceField,
-                             geoLatField, geoLongField, reTweetField);
-
     statusListener = new StatusListener() {
       @Override
       public void onStatus(Status status) {
@@ -169,12 +173,12 @@ public class TwitterSource extends RealtimeSource<StructuredRecord> {
 
       @Override
       public void onDeletionNotice(StatusDeletionNotice statusDeletionNotice) {
-       // No-op
+        // No-op
       }
 
       @Override
       public void onTrackLimitationNotice(int i) {
-       // No-op
+        // No-op
       }
 
       @Override
@@ -195,10 +199,10 @@ public class TwitterSource extends RealtimeSource<StructuredRecord> {
 
     ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
     configurationBuilder.setDebugEnabled(false)
-        .setOAuthConsumerKey(twitterConfig.consumerKey)
-        .setOAuthConsumerSecret(twitterConfig.consumeSecret)
-        .setOAuthAccessToken(twitterConfig.accessToken)
-        .setOAuthAccessTokenSecret(twitterConfig.accessTokenSecret);
+      .setOAuthConsumerKey(twitterConfig.consumerKey)
+      .setOAuthConsumerSecret(twitterConfig.consumeSecret)
+      .setOAuthAccessToken(twitterConfig.accessToken)
+      .setOAuthAccessTokenSecret(twitterConfig.accessTokenSecret);
 
     twitterStream = new TwitterStreamFactory(configurationBuilder.build()).getInstance();
     twitterStream.addListener(statusListener);

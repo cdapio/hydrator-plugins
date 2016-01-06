@@ -94,6 +94,17 @@ public class StreamBatchSource extends BatchSource<LongWritable, Object, Structu
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     streamBatchConfig.validate();
     pipelineConfigurer.addStream(new Stream(streamBatchConfig.name));
+    // if no format is specified then default schema is used, if otherwise its based on input records.
+    if (streamBatchConfig.format == null) {
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(DEFAULT_SCHEMA);
+    } else if (streamBatchConfig.getFormatSpec() != null) {
+      List<Schema.Field> fields = Lists.newArrayList();
+      fields.add(Schema.Field.of("ts", Schema.of(Schema.Type.LONG)));
+      fields.add(Schema.Field.of("headers",
+                                 Schema.mapOf(Schema.of(Schema.Type.STRING), Schema.of(Schema.Type.STRING))));
+      fields.addAll(streamBatchConfig.getFormatSpec().getSchema().getFields());
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(Schema.recordOf("event", fields));
+    }
   }
 
   @Override

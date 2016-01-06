@@ -24,6 +24,7 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import com.datastax.driver.core.Row;
@@ -72,6 +73,17 @@ public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecor
 
   public BatchCassandraSource(CassandraSourceConfig config) {
     this.config = config;
+  }
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    Preconditions.checkArgument(!Strings.isNullOrEmpty(config.schema), "Schema must be specified.");
+    try {
+      Schema schema = Schema.parseJson(config.schema);
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(schema);
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Invalid output schema: " + e.getMessage(), e);
+    }
   }
 
   @Override
