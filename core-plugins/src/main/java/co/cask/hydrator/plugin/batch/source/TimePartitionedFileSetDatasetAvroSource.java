@@ -24,8 +24,11 @@ import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.hydrator.plugin.common.AvroToStructuredTransformer;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
@@ -68,6 +71,18 @@ public class TimePartitionedFileSetDatasetAvroSource extends
       } catch (Exception e) {
         throw new IllegalArgumentException("Unable to parse schema with error: " + e.getMessage(), e);
       }
+    }
+  }
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
+    Preconditions.checkArgument(!Strings.isNullOrEmpty(tpfsAvroConfig.schema), "Schema must be specified.");
+    try {
+      co.cask.cdap.api.data.schema.Schema schema = co.cask.cdap.api.data.schema.Schema.parseJson(tpfsAvroConfig.schema);
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(schema);
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Invalid output schema: " + e.getMessage(), e);
     }
   }
 

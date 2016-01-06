@@ -202,6 +202,8 @@ public class JmsSource extends RealtimeSource<StructuredRecord> {
                                 "Unable to find JMS Initial Connection Factory Context class. Please make sure that " +
                                   "the plugin '%s' of type '%s' containing the class has been installed correctly.",
                                 config.jmsPluginName, config.jmsPluginType);
+
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(SCHEMA);
   }
 
   private String getPluginId() {

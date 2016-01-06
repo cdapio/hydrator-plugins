@@ -63,6 +63,12 @@ public class TableSource extends BatchReadableSource<byte[], Row, StructuredReco
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
     Preconditions.checkArgument(!Strings.isNullOrEmpty(tableConfig.getSchemaStr()), "Schema must be specified.");
+    try {
+      Schema schema = Schema.parseJson(tableConfig.getSchemaStr());
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(schema);
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Invalid output schema: " + e.getMessage(), e);
+    }
   }
 
   @Override

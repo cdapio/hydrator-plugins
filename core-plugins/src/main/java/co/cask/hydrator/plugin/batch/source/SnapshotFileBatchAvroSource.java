@@ -23,8 +23,11 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.hydrator.plugin.common.AvroToStructuredTransformer;
 import co.cask.hydrator.plugin.common.SnapshotFileSetConfig;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaParseException;
 import org.apache.avro.generic.GenericRecord;
@@ -48,6 +51,18 @@ public class SnapshotFileBatchAvroSource extends SnapshotFileBatchSource<AvroKey
   public SnapshotFileBatchAvroSource(SnapshotAvroConfig config) {
     super(config);
     this.config = config;
+  }
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
+    Preconditions.checkArgument(!Strings.isNullOrEmpty(config.schema), "Schema must be specified.");
+    try {
+      co.cask.cdap.api.data.schema.Schema schema = co.cask.cdap.api.data.schema.Schema.parseJson(config.schema);
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(schema);
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Invalid output schema: " + e.getMessage(), e);
+    }
   }
 
   @Override

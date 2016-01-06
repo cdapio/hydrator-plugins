@@ -60,6 +60,13 @@ public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord,
     // stage.
     pipelineConfigurer.createDataset(HiveSchemaStore.HIVE_TABLE_SCHEMA_STORE, KeyValueTable.class,
                                      DatasetProperties.EMPTY);
+    if (config.schema != null) {
+      try {
+        pipelineConfigurer.getStageConfigurer().setOutputSchema(Schema.parseJson(config.schema));
+      } catch (Exception e) {
+        throw new IllegalArgumentException("Invalid output schema: " + e.getMessage(), e);
+      }
+    }
   }
 
   @Override

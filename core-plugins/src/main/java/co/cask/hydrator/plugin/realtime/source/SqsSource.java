@@ -23,6 +23,7 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.realtime.RealtimeContext;
 import co.cask.cdap.etl.api.realtime.RealtimeSource;
 import co.cask.cdap.etl.api.realtime.SourceState;
@@ -68,6 +69,11 @@ public class SqsSource extends RealtimeSource<StructuredRecord> {
 
   public SqsSource(SqsConfig config) {
     this.config = config;
+  }
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(DEFAULT_SCHEMA);
   }
 
   @Override

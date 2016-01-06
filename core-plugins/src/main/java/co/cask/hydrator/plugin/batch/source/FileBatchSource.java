@@ -33,6 +33,8 @@ import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.common.SourceInputFormatProvider;
 import co.cask.hydrator.plugin.common.BatchFileFilter;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -110,6 +112,7 @@ public class FileBatchSource extends BatchSource<LongWritable, Object, Structure
     if (config.timeTable != null) {
       pipelineConfigurer.createDataset(config.timeTable, KeyValueTable.class, DatasetProperties.EMPTY);
     }
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(DEFAULT_SCHEMA);
   }
 
   @Override
