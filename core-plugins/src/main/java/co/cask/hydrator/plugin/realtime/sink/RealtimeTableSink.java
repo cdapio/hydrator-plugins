@@ -29,11 +29,12 @@ import co.cask.cdap.etl.api.realtime.DataWriter;
 import co.cask.cdap.etl.api.realtime.RealtimeContext;
 import co.cask.cdap.etl.api.realtime.RealtimeSink;
 import co.cask.cdap.format.RecordPutTransformer;
-import co.cask.hydrator.plugin.common.Properties;
+import co.cask.hydrator.common.SchemaValidator;
 import co.cask.hydrator.plugin.common.TableSinkConfig;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -44,9 +45,9 @@ import java.util.Map;
 @Description("Real-time Sink for CDAP Table dataset")
 public class RealtimeTableSink extends RealtimeSink<StructuredRecord> {
 
+  private final TableSinkConfig tableSinkConfig;
   private RecordPutTransformer recordPutTransformer;
 
-  private final TableSinkConfig tableSinkConfig;
 
   public RealtimeTableSink(TableSinkConfig tableSinkConfig) {
     this.tableSinkConfig = tableSinkConfig;
@@ -54,10 +55,26 @@ public class RealtimeTableSink extends RealtimeSink<StructuredRecord> {
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    Map<String, String> properties = tableSinkConfig.getProperties().getProperties();
+    super.configurePipeline(pipelineConfigurer);
+
+    Map<String, String> properties;
+    if (tableSinkConfig.getProperties() == null) {
+      // NOTE : this is null only in unit-tests
+      properties = new HashMap<>();
+    } else {
+      properties = tableSinkConfig.getProperties().getProperties();
+    }
+
     Preconditions.checkArgument(!Strings.isNullOrEmpty(tableSinkConfig.getName()), "Dataset name must be given.");
     Preconditions.checkArgument(!Strings.isNullOrEmpty(tableSinkConfig.getRowField()),
                                 "Field to be used as rowkey must be given.");
+
+    Schema outputSchema =
+      SchemaValidator.validateOutputSchemaAndInputSchemaIfPresent(tableSinkConfig.getSchemaStr(),
+                                                                  tableSinkConfig.getRowField(), pipelineConfigurer);
+    // NOTE: this is done only for testing, once CDAP-4575 is implemented, we can use this schema in initialize
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
+
     pipelineConfigurer.createDataset(tableSinkConfig.getName(), Table.class.getName(), DatasetProperties.builder()
       .addAll(properties)
       .build());
@@ -66,13 +83,7 @@ public class RealtimeTableSink extends RealtimeSink<StructuredRecord> {
   @Override
   public void initialize(RealtimeContext context) throws Exception {
     super.initialize(context);
-    Schema outputSchema = null;
-    // If a schema string is present in the properties, use that to construct the outputSchema and pass it to the
-    // recordPutTransformer
-    String schemaString = context.getPluginProperties().getProperties().get(Properties.Table.PROPERTY_SCHEMA);
-    if (schemaString != null) {
-      outputSchema = Schema.parseJson(schemaString);
-    }
+    Schema outputSchema = Schema.parseJson(tableSinkConfig.getSchemaStr());
     recordPutTransformer = new RecordPutTransformer(tableSinkConfig.getRowField(), outputSchema);
   }
 

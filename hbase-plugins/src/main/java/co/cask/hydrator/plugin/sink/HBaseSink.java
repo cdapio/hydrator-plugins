@@ -25,11 +25,14 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.table.Put;
 import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.cdap.format.RecordPutTransformer;
+import co.cask.hydrator.common.SchemaValidator;
 import co.cask.hydrator.plugin.HBaseConfig;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -56,6 +59,11 @@ public class HBaseSink extends BatchSink<StructuredRecord, NullWritable, Mutatio
 
   private HBaseSinkConfig config;
   private RecordPutTransformer recordPutTransformer;
+  private Schema outputSchema;
+
+  public HBaseSink(HBaseSinkConfig config) {
+    this.config = config;
+  }
 
   @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
@@ -63,6 +71,18 @@ public class HBaseSink extends BatchSink<StructuredRecord, NullWritable, Mutatio
     Configuration conf = job.getConfiguration();
     context.addOutput(config.columnFamily, new HBaseOutputFormatProvider(config, conf));
     HBaseConfiguration.addHbaseResources(conf);
+  }
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
+    Preconditions.checkArgument(!Strings.isNullOrEmpty(config.rowField),
+                                "Row field must be given as a property.");
+    outputSchema =
+      SchemaValidator.validateOutputSchemaAndInputSchemaIfPresent(config.schema,
+                                                                  config.rowField, pipelineConfigurer);
+    // NOTE: this is done only for testing, once CDAP-4575 is implemented, we can use this schema in initialize
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
   }
 
   private class HBaseOutputFormatProvider implements OutputFormatProvider {
@@ -98,11 +118,7 @@ public class HBaseSink extends BatchSink<StructuredRecord, NullWritable, Mutatio
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    Schema outputSchema = null;
-    String schemaString = config.schema;
-    if (schemaString != null) {
-      outputSchema = Schema.parseJson(schemaString);
-    }
+    outputSchema = Schema.parseJson(config.schema);
     recordPutTransformer = new RecordPutTransformer(config.rowField, outputSchema);
   }
 
@@ -123,5 +139,9 @@ public class HBaseSink extends BatchSink<StructuredRecord, NullWritable, Mutatio
     @Description("Parent Node of HBase in Zookeeper. Defaults to '/hbase'")
     @Nullable
     private String zkNodeParent;
+
+    public HBaseSinkConfig(String tableName, String rowField, @Nullable String schema) {
+      super(tableName, rowField, schema);
+    }
   }
 }

@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin;
+package co.cask.hydrator.common;
 
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.data.stream.Stream;
