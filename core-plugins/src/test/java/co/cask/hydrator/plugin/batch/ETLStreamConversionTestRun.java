@@ -19,12 +19,14 @@ package co.cask.hydrator.plugin.batch;
 import co.cask.cdap.api.data.format.Formats;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
+import co.cask.cdap.common.utils.Tasks;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
 import co.cask.cdap.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.common.ETLStage;
 import co.cask.cdap.etl.common.Plugin;
 import co.cask.cdap.proto.Id;
+import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
@@ -33,11 +35,15 @@ import co.cask.cdap.test.StreamManager;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.gson.Gson;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -45,6 +51,7 @@ import java.util.concurrent.TimeUnit;
  * {@link TimePartitionedFileSet}
  */
 public class ETLStreamConversionTestRun extends ETLBatchTestBase {
+  private static final Gson GSON = new Gson();
 
   private static final Schema BODY_SCHEMA = Schema.recordOf(
     "event",
@@ -62,31 +69,37 @@ public class ETLStreamConversionTestRun extends ETLBatchTestBase {
 
   @Test
   public void testStreamConversionTPFSParquetSink() throws Exception {
-    String sinkType = "TPFSParquet";
-    testSink(sinkType);
+    testSink("TPFSParquet");
   }
 
   @Test
   public void testStreamConversionTPFSAvroSink() throws Exception {
-    String sinkType = "TPFSAvro";
-    testSink(sinkType);
+    testSink("TPFSAvro");
   }
 
   private void testSink(String sinkType) throws Exception {
-    String filesetName = "converted_stream";
-    StreamManager streamManager = getStreamManager("myStream");
+    String streamName = String.format("stream_%s", sinkType);
+    String filesetName = String.format("converted_%s", sinkType);
+    StreamManager streamManager = getStreamManager(streamName);
     streamManager.createStream();
     streamManager.send(ImmutableMap.of("header1", "bar"), "AAPL|10|500.32");
 
-    ETLBatchConfig etlConfig = constructETLBatchConfig(filesetName, sinkType);
+    ETLBatchConfig etlConfig = constructETLBatchConfig(streamName, filesetName, sinkType);
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "sconversion");
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, String.format("app_%s", sinkType));
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
+    final MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
     mrManager.start();
     mrManager.waitForFinish(4, TimeUnit.MINUTES);
+
+    Tasks.waitFor(1, new Callable<Integer>() {
+      @Override
+      public Integer call() throws Exception {
+        return mrManager.getHistory(ProgramRunStatus.COMPLETED).size();
+      }
+    }, 5, TimeUnit.SECONDS);
 
     // get the output fileset, and read the parquet/avro files it output.
     DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset(filesetName);
@@ -95,11 +108,21 @@ public class ETLStreamConversionTestRun extends ETLBatchTestBase {
     List<GenericRecord> records = readOutput(fileSet, EVENT_SCHEMA);
     Assert.assertEquals(1, records.size());
 
+    try (Connection sqlConn = getQueryClient(appId.getNamespace());
+         ResultSet resultSet = sqlConn.prepareStatement(String.format("select * from dataset_%s", filesetName))
+           .executeQuery()) {
+      Assert.assertTrue(resultSet.next());
+      Assert.assertEquals(GSON.toJson(ImmutableMap.of("header1", "bar")), resultSet.getString(2));
+      Assert.assertEquals("AAPL", resultSet.getString(3));
+      Assert.assertEquals(10, resultSet.getInt(4));
+      Assert.assertEquals(500.32, resultSet.getDouble(5), 0.0001);
+      Assert.assertFalse(resultSet.next());
+    }
   }
 
-  private ETLBatchConfig constructETLBatchConfig(String fileSetName, String sinkType) {
+  private ETLBatchConfig constructETLBatchConfig(String streamName, String fileSetName, String sinkType) {
     Plugin sourceConfig = new Plugin("Stream", ImmutableMap.<String, String>builder()
-      .put(Properties.Stream.NAME, "myStream")
+      .put(Properties.Stream.NAME, streamName)
       .put(Properties.Stream.DURATION, "10m")
       .put(Properties.Stream.DELAY, "0d")
       .put(Properties.Stream.FORMAT, Formats.CSV)
