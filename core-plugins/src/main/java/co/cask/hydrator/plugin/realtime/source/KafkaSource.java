@@ -92,6 +92,7 @@ public class KafkaSource extends RealtimeSource<StructuredRecord> {
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
     // check the schema if there is one
     if (!Strings.isNullOrEmpty(config.schema)) {
       config.parseSchema();

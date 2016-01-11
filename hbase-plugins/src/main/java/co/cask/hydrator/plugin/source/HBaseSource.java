@@ -67,6 +67,7 @@ public class HBaseSource extends BatchSource<ImmutableBytesWritable, Result, Str
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
     try {
       pipelineConfigurer.getStageConfigurer().setOutputSchema(Schema.parseJson(config.schema));
     } catch (Exception e) {

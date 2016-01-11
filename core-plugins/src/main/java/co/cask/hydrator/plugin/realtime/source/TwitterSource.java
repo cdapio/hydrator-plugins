@@ -124,6 +124,7 @@ public class TwitterSource extends RealtimeSource<StructuredRecord> {
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
     pipelineConfigurer.getStageConfigurer().setOutputSchema(SCHEMA);
   }
 

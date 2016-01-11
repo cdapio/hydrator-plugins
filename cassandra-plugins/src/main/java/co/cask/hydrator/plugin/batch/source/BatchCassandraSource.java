@@ -77,6 +77,7 @@ public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecor
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
     Preconditions.checkArgument(!Strings.isNullOrEmpty(config.schema), "Schema must be specified.");
     try {
       Schema schema = Schema.parseJson(config.schema);

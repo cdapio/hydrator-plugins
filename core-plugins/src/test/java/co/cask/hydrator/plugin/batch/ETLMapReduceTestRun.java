@@ -86,9 +86,9 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
   public void testKVToKV() throws Exception {
     // kv table to kv table pipeline
     Plugin sourceConfig =
-      new Plugin("KVTable", ImmutableMap.of(Properties.BatchReadableWritable.NAME, "table1"));
+      new Plugin("KVTable", ImmutableMap.of(Properties.BatchReadableWritable.NAME, "kvTable1"));
     Plugin sinkConfig =
-      new Plugin("KVTable", ImmutableMap.of(Properties.BatchReadableWritable.NAME, "table2"));
+      new Plugin("KVTable", ImmutableMap.of(Properties.BatchReadableWritable.NAME, "kvTable2"));
     Plugin transformConfig = new Plugin("Projection", ImmutableMap.<String, String>of());
     List<ETLStage> transformList = Lists.newArrayList(new ETLStage("transform", transformConfig));
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", new ETLStage("source", sourceConfig),
@@ -99,7 +99,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     // add some data to the input table
-    DataSetManager<KeyValueTable> table1 = getDataset("table1");
+    DataSetManager<KeyValueTable> table1 = getDataset("kvTable1");
     KeyValueTable inputTable = table1.get();
     for (int i = 0; i < 10000; i++) {
       inputTable.write("hello" + i, "world" + i);
@@ -110,7 +110,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     mrManager.start();
     mrManager.waitForFinish(5, TimeUnit.MINUTES);
 
-    DataSetManager<KeyValueTable> table2 = getDataset("table2");
+    DataSetManager<KeyValueTable> table2 = getDataset("kvTable2");
     try (KeyValueTable outputTable = table2.get()) {
       for (int i = 0; i < 10000; i++) {
         Assert.assertEquals("world" + i, Bytes.toString(outputTable.read("hello" + i)));
@@ -135,11 +135,13 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     Plugin sinkConfig1 = new Plugin("Table",
                                     ImmutableMap.of(
                                       Properties.BatchReadableWritable.NAME, "dagOutputTable1",
-                                      Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "rowkey"));
+                                      Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "rowkey",
+                                      Properties.Table.PROPERTY_SCHEMA, schema.toString()));
     Plugin sinkConfig2 = new Plugin("Table",
                                     ImmutableMap.of(
                                       Properties.BatchReadableWritable.NAME, "dagOutputTable2",
-                                      Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "rowkey"));
+                                      Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "rowkey",
+                                      Properties.Table.PROPERTY_SCHEMA, schema.toString()));
 
     String validationScript = "function isValid(input, context) {  " +
       "var errCode = 0; var errMsg = 'none'; var isValid = true;" +
@@ -245,7 +247,8 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     Plugin sink = new Plugin("Table",
                              ImmutableMap.of(
                                Properties.BatchReadableWritable.NAME, "outputTable",
-                               Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "rowkey"));
+                               Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "rowkey",
+                               Properties.Table.PROPERTY_SCHEMA, schema.toString()));
 
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *",
                                                   new ETLStage("source", sourceConfig),
