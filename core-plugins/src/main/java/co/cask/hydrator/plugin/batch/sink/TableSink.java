@@ -28,12 +28,13 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.format.RecordPutTransformer;
+import co.cask.hydrator.common.SchemaValidator;
 import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.common.TableSinkConfig;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.google.common.collect.Maps;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -57,24 +58,30 @@ public class TableSink extends BatchWritableSink<StructuredRecord, byte[], Put> 
     super.configurePipeline(pipelineConfigurer);
     Preconditions.checkArgument(!Strings.isNullOrEmpty(tableSinkConfig.getRowField()),
                                 "Row field must be given as a property.");
+    Schema outputSchema =
+      SchemaValidator.validateOutputSchemaAndInputSchemaIfPresent(tableSinkConfig.getSchemaStr(),
+                                                                  tableSinkConfig.getRowField(), pipelineConfigurer);
+
+    // NOTE: this is done only for testing, once CDAP-4575 is implemented, we can use this schema in initialize
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
   }
 
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    Schema outputSchema = null;
-    // If a schema string is present in the properties, use that to construct the outputSchema and pass it to the
-    // recordPutTransformer
-    String schemaString = tableSinkConfig.getSchemaStr();
-    if (schemaString != null) {
-      outputSchema = Schema.parseJson(schemaString);
-    }
+    Schema outputSchema = Schema.parseJson(tableSinkConfig.getSchemaStr());
     recordPutTransformer = new RecordPutTransformer(tableSinkConfig.getRowField(), outputSchema);
   }
 
   @Override
   protected Map<String, String> getProperties() {
-    Map<String, String> properties = Maps.newHashMap(tableSinkConfig.getProperties().getProperties());
+    Map<String, String> properties;
+    if (tableSinkConfig.getProperties() == null) {
+      // NOTE : this is null only in unit-tests
+      properties = new HashMap<>();
+    } else {
+      properties = new HashMap<>(tableSinkConfig.getProperties().getProperties());
+    }
     properties.put(Properties.BatchReadableWritable.NAME, tableSinkConfig.getName());
     properties.put(Properties.BatchReadableWritable.TYPE, Table.class.getName());
     return properties;

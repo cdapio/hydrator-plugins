@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.common;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.plugin.PluginConfig;
+import co.cask.cdap.api.plugin.PluginProperties;
 import co.cask.hydrator.plugin.batch.sink.TableSink;
 import co.cask.hydrator.plugin.realtime.sink.RealtimeTableSink;
 
@@ -33,14 +34,19 @@ public class TableSinkConfig extends PluginConfig {
   private String name;
 
   @Name(Properties.Table.PROPERTY_SCHEMA)
-  @Description("Optional schema of the table as a JSON Object. If the table does not already exist, one will be " +
+  @Description("schema of the table as a JSON Object. If the table does not already exist, one will be " +
     "created with this schema, which will allow the table to be explored through Hive.")
-  @Nullable
   private String schemaStr;
 
   @Name(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD)
   @Description("The name of the record field that should be used as the row key when writing to the table.")
   private String rowField;
+
+  public TableSinkConfig(String name, String rowField, @Nullable String schemaStr) {
+    this.name = name;
+    this.rowField = rowField;
+    this.schemaStr = schemaStr;
+  }
 
   public String getName() {
     return name;

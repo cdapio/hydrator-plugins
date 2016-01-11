@@ -27,7 +27,6 @@ import javax.annotation.Nullable;
 * Base HBase Config for use in {@link HBaseSource} and {@link HBaseSink}.
 */
 public class HBaseConfig extends PluginConfig {
-
   @Description("Name of the HBase Table")
   public String tableName;
 
@@ -47,4 +46,10 @@ public class HBaseConfig extends PluginConfig {
   @Description("Zookeeper Client Port. By default it is set to 2181")
   @Nullable
   public String zkClientPort;
+
+  public HBaseConfig(String tableName, String rowField, @Nullable String schema) {
+    this.tableName = tableName;
+    this.rowField = rowField;
+    this.schema = schema;
+  }
 }

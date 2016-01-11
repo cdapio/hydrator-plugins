@@ -95,7 +95,7 @@ public class StreamBatchSource extends BatchSource<LongWritable, Object, Structu
     super.configurePipeline(pipelineConfigurer);
     streamBatchConfig.validate();
     pipelineConfigurer.addStream(new Stream(streamBatchConfig.name));
-    // if no format is specified then default schema is used, if otherwise its based on input records.
+    // if no format is specified then default schema is used, if otherwise its based on format spec.
     if (streamBatchConfig.format == null) {
       pipelineConfigurer.getStageConfigurer().setOutputSchema(DEFAULT_SCHEMA);
     } else if (streamBatchConfig.getFormatSpec() != null) {
