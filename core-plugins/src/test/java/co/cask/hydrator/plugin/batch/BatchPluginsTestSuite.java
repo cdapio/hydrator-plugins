@@ -28,7 +28,8 @@ import org.junit.runners.Suite;
   BatchCubeSinkTestRun.class,
   ETLSnapshotTestRun.class,
   ETLStreamConversionTestRun.class,
-  ETLTPFSTestRun.class
+  ETLTPFSTestRun.class,
+  ETLMapReduceTestRun.class
 })
 public class BatchPluginsTestSuite extends ETLBatchTestBase {
 }

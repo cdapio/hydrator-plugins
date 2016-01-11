@@ -64,6 +64,7 @@ public class KVTableSource extends BatchReadableSource<byte[], byte[], Structure
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
     pipelineConfigurer.getStageConfigurer().setOutputSchema(SCHEMA);
   }
 
