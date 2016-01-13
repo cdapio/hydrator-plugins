@@ -712,12 +712,6 @@
     <profile>
       <id>dist</id>
       <properties>
-        <!--
-          Service name before removing cdap- prefix.
-          It's needed so that children pom can override it.
-          The value is then get transformed into service.name by regex using the build-helper plugin
-        -->
-        <original.service.name>${project.artifactId}</original.service.name>
         <stage.dir>${project.build.directory}/stage-packaging</stage.dir>
         <stage.opt.dir>${stage.dir}/opt/cdap/${package.name}</stage.opt.dir>
         <stage.lib.dir>${stage.opt.dir}/lib</stage.lib.dir>
@@ -893,13 +887,6 @@
                       <failIfNoMatch>false</failIfNoMatch>
                     </regexPropertySetting>
                     <regexPropertySetting>
-                      <name>service.name</name>
-                      <value>${original.service.name}</value>
-                      <regex>cdap-</regex>
-                      <replacement></replacement>
-                      <failIfNoMatch>false</failIfNoMatch>
-                    </regexPropertySetting>
-                    <regexPropertySetting>
                       <name>package.version</name>
                       <value>${project.version}</value>
                       <regex>-SNAPSHOT</regex>
@@ -987,18 +974,6 @@
               <artifactId>maven-antrun-plugin</artifactId>
               <version>1.7</version>
               <executions>
-                <!--<execution>-->
-                  <!--<id>rename-rpm-service</id>-->
-                  <!--<phase>process-resources</phase>-->
-                  <!--<goals>-->
-                    <!--<goal>run</goal>-->
-                  <!--</goals>-->
-                  <!--<configuration>-->
-                    <!--<target>-->
-                      <!--<copy file="${project.build.directory}/dist/rpm/cdap-service" tofile="${stage.dir}/etc/rc.d/init.d/cdap-${service.name}" />-->
-                    <!--</target>-->
-                  <!--</configuration>-->
-                <!--</execution>-->
                 <!--This is for workaround a bug in resource-plugin that it doesn't preserve file permission-->
                 <!--http://jira.codehaus.org/browse/MRESOURCES-132-->
                 <!--<execution>-->
@@ -1089,18 +1064,6 @@
               <artifactId>maven-antrun-plugin</artifactId>
               <version>1.7</version>
               <executions>
-                <!--<execution>-->
-                  <!--<id>rename-deb-service</id>-->
-                  <!--<phase>process-resources</phase>-->
-                  <!--<goals>-->
-                    <!--<goal>run</goal>-->
-                  <!--</goals>-->
-                  <!--<configuration>-->
-                    <!--<target>-->
-                      <!--<copy file="${project.build.directory}/dist/deb/cdap-service" tofile="${stage.dir}-deb/etc/init.d/cdap-${service.name}" />-->
-                    <!--</target>-->
-                  <!--</configuration>-->
-                <!--</execution>-->
                 <!--This is for workaround a bug in resource-plugin that it doesn't preserve file permission-->
                 <!--http://jira.codehaus.org/browse/MRESOURCES-132-->
                 <!--<execution>-->
