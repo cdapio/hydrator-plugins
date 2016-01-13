@@ -717,7 +717,6 @@
         <stage.lib.dir>${stage.opt.dir}/lib</stage.lib.dir>
         <stage.plugins.dir>${stage.opt.dir}/plugins</stage.plugins.dir>
         <package.depends>--depends cdap</package.depends>
-        <package.dirs>opt</package.dirs>
       </properties>
       <build>
         <pluginManagement>
@@ -809,28 +808,6 @@
                 </execution>
               </executions>
             </plugin>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-antrun-plugin</artifactId>
-              <version>1.7</version>
-              <executions>
-                <!--This is for workaround a bug in resource-plugin that it doesn't preserve file permission-->
-                <!--http://jira.codehaus.org/browse/MRESOURCES-132-->
-                <!--<execution>-->
-                  <!--<id>bin-permission</id>-->
-                  <!--<phase>prepare-package</phase>-->
-                  <!--<configuration>-->
-                    <!--<failOnError>false</failOnError>-->
-                    <!--<target>-->
-                      <!--<chmod file="${stage.opt.dir}/bin/**" perm="755"/>-->
-                    <!--</target>-->
-                  <!--</configuration>-->
-                  <!--<goals>-->
-                    <!--<goal>run</goal>-->
-                  <!--</goals>-->
-                <!--</execution>-->
-              </executions>
-            </plugin>
           </plugins>
         </pluginManagement>
 
@@ -919,7 +896,7 @@
                 </goals>
                 <configuration>
                   <source>
-                    if (project.version.endsWith("-SNAPSHOT")){
+                    if (project.version.endsWith("-SNAPSHOT")) {
 //                      project.properties['deploy.url'] = project.properties['cask.packages.snapshot.repo'];
 //                      project.properties['dist.deploy.groupId'] = "co.cask.cdap.distributions.snapshots";
                     } else {
@@ -946,27 +923,6 @@
               <artifactId>maven-resources-plugin</artifactId>
               <version>2.6</version>
               <executions>
-              </executions>
-            </plugin>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-antrun-plugin</artifactId>
-              <version>1.7</version>
-              <executions>
-                <!--This is for workaround a bug in resource-plugin that it doesn't preserve file permission-->
-                <!--http://jira.codehaus.org/browse/MRESOURCES-132-->
-                <!--<execution>-->
-                  <!--<id>rpm-bin-permission</id>-->
-                  <!--<phase>prepare-package</phase>-->
-                  <!--<configuration>-->
-                    <!--<target>-->
-                      <!--<chmod file="${stage.opt.dir}/bin/**" perm="755"/>-->
-                    <!--</target>-->
-                  <!--</configuration>-->
-                  <!--<goals>-->
-                    <!--<goal>run</goal>-->
-                  <!--</goals>-->
-                <!--</execution>-->
               </executions>
             </plugin>
           </plugins>
@@ -1003,27 +959,6 @@
                     </resources>
                   </configuration>
                 </execution>
-              </executions>
-            </plugin>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-antrun-plugin</artifactId>
-              <version>1.7</version>
-              <executions>
-                <!--This is for workaround a bug in resource-plugin that it doesn't preserve file permission-->
-                <!--http://jira.codehaus.org/browse/MRESOURCES-132-->
-                <!--<execution>-->
-                  <!--<id>deb-bin-permission</id>-->
-                  <!--<phase>prepare-package</phase>-->
-                  <!--<configuration>-->
-                    <!--<target>-->
-                      <!--<chmod file="${stage.dir}-deb/opt/cdap/${package.name}/bin/**" perm="755"/>-->
-                    <!--</target>-->
-                  <!--</configuration>-->
-                  <!--<goals>-->
-                    <!--<goal>run</goal>-->
-                  <!--</goals>-->
-                <!--</execution>-->
               </executions>
             </plugin>
           </plugins>
@@ -1073,7 +1008,7 @@
                       --iteration "${release.iteration}"
                       --depends libxml2
                       ${package.depends}
-                      ${package.dirs}
+                      opt
                     </commandlineArgs>
                   </configuration>
                 </execution>
@@ -1125,7 +1060,7 @@
                       --iteration "${release.iteration}"
                       --depends libxml2-utils
                       ${package.depends}
-                      ${package.dirs}
+                      opt
                     </commandlineArgs>
                   </configuration>
                 </execution>
