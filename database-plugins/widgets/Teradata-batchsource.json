@@ -9,26 +9,17 @@
         {
           "widget-type": "textbox",
           "label": "Username",
-          "name": "user",
-          "widget-attributes": {
-            "width": "large"
-          }
+          "name": "user"
         },
         {
           "widget-type": "textbox",
           "label": "Password",
-          "name": "password",
-          "widget-attributes": {
-            "width": "large"
-          }
+          "name": "password"
         },
         {
           "widget-type": "textbox",
           "label": "Table Name",
-          "name": "tableName",
-          "widget-attributes": {
-            "width": "large"
-          }
+          "name": "tableName"
         }
       ]
     },
@@ -38,34 +29,22 @@
         {
           "widget-type": "textbox",
           "label": "Plugin Name",
-          "name": "jdbcPluginName",
-          "widget-attributes": {
-            "width": "large"
-          }
+          "name": "jdbcPluginName"
         },
         {
           "widget-type": "textbox",
           "label": "Plugin Type",
-          "name": "jdbcPluginType",
-          "widget-attributes": {
-            "width": "large"
-          }
+          "name": "jdbcPluginType"
         },
         {
           "widget-type": "textbox",
           "label": "Driver Class",
-          "name": "driverClass",
-          "widget-attributes": {
-            "width": "large"
-          }
+          "name": "driverClass"
         },
         {
           "widget-type": "textbox",
           "label": "Connection String",
-          "name": "connectionString",
-          "widget-attributes": {
-            "width": "large"
-          }
+          "name": "connectionString"
         }
       ]
     },
@@ -75,26 +54,17 @@
         {
           "widget-type": "textbox",
           "label": "Import Query",
-          "name": "importQuery",
-          "widget-attributes": {
-            "width": "large"
-          }
+          "name": "importQuery"
         },
         {
           "widget-type": "textbox",
           "label": "Bounding Query",
-          "name": "boundingQuery",
-          "widget-attributes": {
-            "width": "large"
-          }
+          "name": "boundingQuery"
         },
         {
           "widget-type": "textbox",
           "label": "Split-By Field Name",
-          "name": "splitBy",
-          "widget-attributes": {
-            "width": "large"
-          }
+          "name": "splitBy"
         }
       ]
     }

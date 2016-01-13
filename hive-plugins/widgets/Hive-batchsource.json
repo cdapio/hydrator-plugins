@@ -9,34 +9,22 @@
         {
           "widget-type": "textbox",
           "label": "Hive Metastore URI",
-          "name": "metastoreURI",
-          "widget-attributes": {
-            "width": "large"
-          }
+          "name": "metastoreURI"
         },
         {
           "widget-type": "textbox",
           "label": "Hive Database Name",
-          "name": "databaseName",
-          "widget-attributes": {
-            "width": "large"
-          }
+          "name": "databaseName"
         },
         {
           "widget-type": "textbox",
           "label": "Hive Table Name",
-          "name": "tableName",
-          "widget-attributes": {
-            "width": "medium"
-          }
+          "name": "tableName"
         },
         {
           "widget-type": "javascript-editor",
           "label": "Hive Partition Filter",
-          "name": "partitions",
-          "widget-attributes": {
-            "width": "large"
-          }
+          "name": "partitions"
         }
       ]
     }

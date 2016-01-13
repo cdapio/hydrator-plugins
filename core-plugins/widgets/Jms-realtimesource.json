@@ -9,17 +9,13 @@
         {
           "widget-type": "textbox",
           "label": "Destination Queue",
-          "name": "jms.destination.name",
-          "widget-attributes": {
-            "width": "medium"
-          }
+          "name": "jms.destination.name"
         },
         {
           "widget-type": "number",
           "label": "Message Count",
           "name": "jms.messages.receive",
           "widget-attributes": {
-            "width": "extra-small",
             "default": 1
           }
         }

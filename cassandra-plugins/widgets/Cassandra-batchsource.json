@@ -9,26 +9,17 @@
         {
           "widget-type": "textbox",
           "label": "Initial Address",
-          "name": "initialAddress",
-          "widget-attributes": {
-            "width": "large"
-          }
+          "name": "initialAddress"
         },
         {
           "widget-type": "textbox",
           "label": "Port",
-          "name": "port",
-          "widget-attributes": {
-            "width": "medium"
-          }
+          "name": "port"
         },
         {
           "widget-type": "textbox",
           "label": "Username",
-          "name": "username",
-          "widget-attributes": {
-            "width": "medium"
-          }
+          "name": "username"
         },
         {
           "widget-type": "password",
@@ -51,26 +42,17 @@
         {
           "widget-type": "textbox",
           "label": "Keyspace",
-          "name": "keyspace",
-          "widget-attributes": {
-            "width": "medium"
-          }
+          "name": "keyspace"
         },
         {
           "widget-type": "textbox",
           "label": "Partitioner",
-          "name": "partitioner",
-          "widget-attributes": {
-            "width": "large"
-          }
+          "name": "partitioner"
         },
         {
           "widget-type": "textbox",
           "label": "Column Family",
-          "name": "columnFamily",
-          "widget-attributes": {
-            "width": "medium"
-          }
+          "name": "columnFamily"
         },
         {
           "widget-type": "textbox",

@@ -9,18 +9,12 @@
         {
           "widget-type": "textbox",
           "label": "Access Token",
-          "name": "AccessToken",
-          "widget-attributes": {
-            "width": "medium"
-          }
+          "name": "AccessToken"
         },
         {
           "widget-type": "password",
           "label": "Access Token Secret",
-          "name": "AccessTokenSecret",
-          "widget-attributes": {
-            "width": "medium"
-          }
+          "name": "AccessTokenSecret"
         }
       ]
     },
@@ -30,18 +24,12 @@
         {
           "widget-type": "textbox",
           "label": "Consumer Key",
-          "name": "ConsumerKey",
-          "widget-attributes": {
-            "width": "medium"
-          }
+          "name": "ConsumerKey"
         },
         {
           "widget-type": "password",
           "label": "Consumer Secret",
-          "name": "ConsumerSecret",
-          "widget-attributes": {
-            "width": "medium"
-          }
+          "name": "ConsumerSecret"
         }
       ]
     }
