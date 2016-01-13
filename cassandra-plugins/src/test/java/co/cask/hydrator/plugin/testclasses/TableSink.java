@@ -27,7 +27,7 @@ import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
-import co.cask.cdap.etl.common.RecordPutTransformer;
+import co.cask.cdap.format.RecordPutTransformer;
 import co.cask.hydrator.plugin.batch.sink.BatchWritableSink;
 import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.common.TableSinkConfig;
