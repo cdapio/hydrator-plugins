@@ -95,7 +95,7 @@
                     --before-install "${project.basedir}/src/rpm/scripts/common-preinst"
                     --before-remove "${project.basedir}/src/rpm/scripts/common-prerm"
                     --iteration "${release.iteration}"
-                    etc
+                    opt
                   </commandlineArgs>
                 </configuration>
               </execution>
@@ -171,7 +171,7 @@
                     --before-install "${project.basedir}/src/debian/scripts/common-preinst"
                     --before-remove "${project.basedir}/src/debian/scripts/common-prerm"
                     --iteration "${release.iteration}"
-                    etc
+                    opt
                   </commandlineArgs>
                 </configuration>
               </execution>
