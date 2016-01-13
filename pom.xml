@@ -946,27 +946,6 @@
               <artifactId>maven-resources-plugin</artifactId>
               <version>2.6</version>
               <executions>
-                <execution>
-                  <id>copy-rpm-scripts</id>
-                  <phase>process-resources</phase>
-                  <goals>
-                    <goal>copy-resources</goal>
-                  </goals>
-                  <configuration>
-                    <outputDirectory>${project.build.directory}/dist/rpm</outputDirectory>
-                    <!-- Copy it twice, one with filter, one without -->
-                    <resources>
-                      <resource>
-                        <directory>${project.parent.basedir}/hydrator-distributions/src/rpm/init.d</directory>
-                        <targetPath>unfilter</targetPath>
-                      </resource>
-                      <resource>
-                        <directory>${project.parent.basedir}/hydrator-distributions/src/rpm/init.d</directory>
-                        <filtering>true</filtering>
-                      </resource>
-                    </resources>
-                  </configuration>
-                </execution>
               </executions>
             </plugin>
             <plugin>
@@ -976,18 +955,6 @@
               <executions>
                 <!--This is for workaround a bug in resource-plugin that it doesn't preserve file permission-->
                 <!--http://jira.codehaus.org/browse/MRESOURCES-132-->
-                <!--<execution>-->
-                  <!--<id>rpm-init-permission</id>-->
-                  <!--<phase>prepare-package</phase>-->
-                  <!--<configuration>-->
-                    <!--<target>-->
-                      <!--<chmod file="${stage.dir}/etc/rc.d/init.d/**" perm="755"/>-->
-                    <!--</target>-->
-                  <!--</configuration>-->
-                  <!--<goals>-->
-                    <!--<goal>run</goal>-->
-                  <!--</goals>-->
-                <!--</execution>-->
                 <!--<execution>-->
                   <!--<id>rpm-bin-permission</id>-->
                   <!--<phase>prepare-package</phase>-->
@@ -1036,27 +1003,6 @@
                     </resources>
                   </configuration>
                 </execution>
-                <execution>
-                  <id>copy-deb-scripts</id>
-                  <phase>process-resources</phase>
-                  <goals>
-                    <goal>copy-resources</goal>
-                  </goals>
-                  <configuration>
-                    <outputDirectory>${project.build.directory}/dist/deb</outputDirectory>
-                    <resources>
-                      <!-- Copy it twice, one with filter, one without -->
-                      <resource>
-                        <directory>${project.parent.basedir}/hydrator-distributions/src/debian/init.d</directory>
-                        <targetPath>unfilter</targetPath>
-                      </resource>
-                      <resource>
-                        <directory>${project.parent.basedir}/hydrator-distributions/src/debian/init.d</directory>
-                        <filtering>true</filtering>
-                      </resource>
-                    </resources>
-                  </configuration>
-                </execution>
               </executions>
             </plugin>
             <plugin>
@@ -1066,18 +1012,6 @@
               <executions>
                 <!--This is for workaround a bug in resource-plugin that it doesn't preserve file permission-->
                 <!--http://jira.codehaus.org/browse/MRESOURCES-132-->
-                <!--<execution>-->
-                  <!--<id>deb-init-permission</id>-->
-                  <!--<phase>prepare-package</phase>-->
-                  <!--<configuration>-->
-                    <!--<target>-->
-                      <!--<chmod file="${stage.dir}-deb/etc/init.d/**" perm="755"/>-->
-                    <!--</target>-->
-                  <!--</configuration>-->
-                  <!--<goals>-->
-                    <!--<goal>run</goal>-->
-                  <!--</goals>-->
-                <!--</execution>-->
                 <!--<execution>-->
                   <!--<id>deb-bin-permission</id>-->
                   <!--<phase>prepare-package</phase>-->
