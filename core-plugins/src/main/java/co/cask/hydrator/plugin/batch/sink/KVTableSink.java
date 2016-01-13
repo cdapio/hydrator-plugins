@@ -21,15 +21,18 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.PipelineConfigurer;
+import co.cask.hydrator.common.SchemaValidator;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -80,8 +83,43 @@ public class KVTableSink extends BatchWritableSink<StructuredRecord, byte[], byt
   }
 
   @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
+    Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
+    // validate that input and output fields are present
+    if (inputSchema != null) {
+      SchemaValidator.validateFieldsArePresentInSchema(inputSchema, kvTableConfig.keyField);
+      SchemaValidator.validateFieldsArePresentInSchema(inputSchema, kvTableConfig.valueField);
+      validateSchemaTypeIsStringOrBytes(inputSchema, kvTableConfig.keyField, false);
+      validateSchemaTypeIsStringOrBytes(inputSchema, kvTableConfig.valueField, true);
+    }
+  }
+
+  private void validateSchemaTypeIsStringOrBytes(Schema inputSchema, String fieldName, boolean isNullable) {
+    Schema fieldSchema = inputSchema.getField(fieldName).getSchema();
+    boolean fieldIsNullable = fieldSchema.isNullable();
+    if (!isNullable && fieldIsNullable) {
+      throw new IllegalArgumentException("Field " + fieldName + " cannot be nullable");
+    }
+    Schema.Type fieldType = fieldIsNullable ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
+
+    if (fieldType != Schema.Type.STRING && fieldType != Schema.Type.BYTES) {
+      throw new IllegalArgumentException(
+        String.format("Field name %s is of type %s, only types String and Bytes are supported for KVTable",
+                      fieldName, fieldType));
+    }
+  }
+
+  @Override
   protected Map<String, String> getProperties() {
-    Map<String, String> properties = Maps.newHashMap(kvTableConfig.getProperties().getProperties());
+
+    Map<String, String> properties;
+    // will be null only in tests
+    if (kvTableConfig.getProperties() == null) {
+      properties = new HashMap<>();
+    } else {
+      properties = new HashMap<>(kvTableConfig.getProperties().getProperties());
+    }
     properties.put(Properties.BatchReadableWritable.NAME, kvTableConfig.name);
     properties.put(Properties.BatchReadableWritable.TYPE, KeyValueTable.class.getName());
     return properties;
@@ -91,9 +129,43 @@ public class KVTableSink extends BatchWritableSink<StructuredRecord, byte[], byt
   public void transform(StructuredRecord input, Emitter<KeyValue<byte[], byte[]>> emitter) throws Exception {
     Object key = input.get(kvTableConfig.keyField);
     Preconditions.checkArgument(key != null, "Key cannot be null.");
-    byte[] keyBytes = key instanceof ByteBuffer ? Bytes.toBytes((ByteBuffer) key) : (byte[]) key;
+    byte[] keyBytes;
+
+    Schema keyFieldSchema = input.getSchema().getField(kvTableConfig.keyField).getSchema();
+    if (keyFieldSchema.getType().equals(Schema.Type.STRING)) {
+      keyBytes = Bytes.toBytes((String) key);
+    } else if (keyFieldSchema.getType().equals(Schema.Type.BYTES)) {
+      keyBytes = key instanceof ByteBuffer ? Bytes.toBytes((ByteBuffer) key) : (byte[]) key;
+    } else if (keyFieldSchema.isNullable()) {
+      throw new Exception(
+        String.format("Key field %s cannot have nullable schema %s", kvTableConfig.keyField, keyFieldSchema));
+    } else {
+      throw new Exception(
+        String.format("Key field %s cannot have schema %s. It must of either String or Bytes",
+                      kvTableConfig.keyField, keyFieldSchema));
+    }
+
+    Schema.Field valueFieldSchema = input.getSchema().getField(kvTableConfig.valueField);
+    if (valueFieldSchema == null) {
+      throw new Exception("Value Field " + kvTableConfig.valueField + " is missing in the input record");
+    }
+
+    byte[] valBytes = null;
     Object val = input.get(kvTableConfig.valueField);
-    byte[] valBytes = val instanceof ByteBuffer ? Bytes.toBytes((ByteBuffer) val) : (byte[]) val;
+    if (val != null) {
+      Schema.Type valueFieldType =
+        valueFieldSchema.getSchema().isNullable() ? valueFieldSchema.getSchema().getNonNullable().getType() :
+          valueFieldSchema.getSchema().getType();
+      if (valueFieldType.equals(Schema.Type.STRING)) {
+        valBytes = Bytes.toBytes((String) val);
+      } else if (valueFieldType.equals(Schema.Type.BYTES)) {
+        valBytes = val instanceof ByteBuffer ? Bytes.toBytes((ByteBuffer) val) : (byte[]) val;
+      } else {
+        throw new Exception(
+          String.format("Value field %s cannot have schema %s. It must of either String or Bytes",
+                        kvTableConfig.valueField, valueFieldSchema));
+      }
+    }
     emitter.emit(new KeyValue<>(keyBytes, valBytes));
   }
 }
