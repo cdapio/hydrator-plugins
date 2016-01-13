@@ -56,7 +56,7 @@ import javax.annotation.Nullable;
 @Plugin(type = "batchsource")
 @Name("Cassandra")
 @Description("CDAP Cassandra Batch Source will select the rows returned by the user's query " +
-  "and convert each row to a {@link StructuredRecord} using the schema specified by the user. " +
+  "and convert each row to a structured record using the schema specified by the user. " +
   "The Cassandra server should be running prior to creating the application, " +
   "and the keyspace and column family should be created.")
 public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecord> {
