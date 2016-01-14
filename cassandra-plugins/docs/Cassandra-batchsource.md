@@ -1,3 +1,5 @@
+# Cassandra Batch Source
+
 Description
 -----------
 Batch source to use Apache Cassandra as a source.
@@ -39,6 +41,10 @@ and each property should be separated by a colon from its corresponding value.
 Example
 -------
 
+This example connects to Apache Cassandra, which is running locally, and reads in records in the
+specified keyspace (*megacorp*) and column family (*employee*) which match the query to (in this case) select all records.
+All data from the column family will be read on each run:
+
     {
         "name": "Cassandra",
         "properties": {
@@ -59,7 +65,3 @@ Example
             }"
         }
     }
-
-This example connects to Apache Cassandra, which is running locally, and reads in records in the
-specified keyspace (*megacorp*) and column family (*employee*) which match the query to (in this case) select all records.
-All data from the column family will be read on each run.

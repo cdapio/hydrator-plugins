@@ -1,3 +1,5 @@
+# MongoDB Batch Source
+
 Description
 -----------
 Reads documents from a MongoDB collection and converts each document into a StructuredRecord with the help
@@ -5,14 +7,14 @@ of the specified schema. The user can optionally provide input query, input fiel
 
 Configuration
 -------------
-**connectionString:** MongoDB connection string
+**connectionString:** MongoDB connection string.
 
-**schema:** Specifies the schema of document
+**schema:** Specifies the schema of document.
 
-**authConnectionString:** Auxiliary MongoDB connection string
+**authConnectionString:** Auxiliary MongoDB connection string.
 
-**inputQuery:** Filter the input collection with a query
+**inputQuery:** Filter the input collection with a query.
 
-**inputFields:** Projection document that can limit the fields that appear in each document
+**inputFields:** Projection document that can limit the fields that appear in each document.
 
-**splitterClass:** Name of the splitter class to use
+**splitterClass:** Name of the splitter class to use.

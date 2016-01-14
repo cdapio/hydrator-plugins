@@ -1,3 +1,5 @@
+# Amazon S3 Batch Source
+
 Description
 -----------
 
@@ -39,6 +41,13 @@ subclass of FileInputFormat. Defaults to TextInputFormat.
 Example
 -------
 
+This example connects to Amazon S3 and reads in files found in the specified directory while
+using the stateful ``timefilter``, which ensures that each file is read only once. The ``timefilter``
+requires that files be named with either the convention "yy-MM-dd-HH..." (S3) or "...'.'yy-MM-dd-HH..."
+(Cloudfront). The stateful metadata is stored in a table named 'timeTable'. With the maxSplitSize
+set to 1MB, if the total size of the files being read is larger than 1MB, CDAP will
+configure Hadoop to use one mapper per MB:
+
     {
         "name": "S3",
         "properties": {
@@ -50,10 +59,3 @@ Example
             "maxSplitSize": "1048576"
         }
     }
-
-This example connects to Amazon S3 and reads in files found in the specified directory while
-using the stateful ``timefilter``, which ensures that each file is read only once. The ``timefilter``
-requires that files be named with either the convention "yy-MM-dd-HH..." (S3) or "...'.'yy-MM-dd-HH..."
-(Cloudfront). The stateful metadata is stored in a table named 'timeTable'. With the maxSplitSize
-set to 1MB, if the total size of the files being read is larger than 1MB, CDAP will
-configure Hadoop to use one mapper per MB.

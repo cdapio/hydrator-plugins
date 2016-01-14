@@ -1,3 +1,5 @@
+# Hive Batch Source
+
 Description
 -----------
 Reads records from a Hive table and converts each record into a StructuredRecord with the help
@@ -6,7 +8,7 @@ of the specified schema (if provided) or the table's schema.
 Configuration
 -------------
 **metastoreURI:** The URI of Hive metastore in the format of ``thrift://<hostname>:<port>``.
-Example: thrift://somehost.net:9083
+Example: ``thrift://somehost.net:9083``.
 
 **tableName:** The name of the Hive table. This table must exist.
 

@@ -1,7 +1,9 @@
+# Table Batch Sink
+
 Description
 -----------
 
-Writes records to a Table with one record field mapping
+Writes records to a CDAP Table with one record field mapping
 to the Table rowkey, and all other record fields mapping to Table columns.
 
 Use Case
@@ -27,6 +29,8 @@ key when writing to the table.
 Example
 -------
 
+This example writes to a Table named 'users':
+
     {
         "name": "Table",
         "properties": {
@@ -44,7 +48,7 @@ Example
         }
     }
 
-This example writes to a Table named 'users'. It takes records with the following schema as input
+It takes records with this schema as input:
 
     +======================================+
     | field name     | type                |

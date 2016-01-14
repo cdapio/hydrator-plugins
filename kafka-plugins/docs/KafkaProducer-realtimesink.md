@@ -1,3 +1,5 @@
+# Kafka Producer Real-time Sink
+
 Description
 -----------
 Kafka producer plugin that allows you to convert a Structured Record into CSV or JSON.
@@ -7,14 +9,15 @@ can also be configured to operate in either sync or async mode.
 
 Configuration
 -------------
-**brokers:** Specifies a list of brokers to connect to
+**brokers:** Specifies a list of brokers to connect to.
 
-**async:** Specifies whether writing the events to broker is *Asynchronous* or *Synchronous*
+**async:** Specifies whether writing the events to broker is *Asynchronous* or *Synchronous*.
 
-**partitionfield:** Specifies the input fields that need to be used to determine the partition id; the field type should be int or long
+**partitionfield:** Specifies the input fields that need to be used to determine the partition id; 
+the field type should be int or long.
 
-**key:** Specifies the input field that should be used as the key for the event published into Kafka
+**key:** Specifies the input field that should be used as the key for the event published into Kafka.
 
-**topics:** Specifies a list of topics to which the event should be published to
+**topics:** Specifies a list of topics to which the event should be published to.
 
-**format:** Specifies the format of the event published to Kafka
+**format:** Specifies the format of the event published to Kafka.

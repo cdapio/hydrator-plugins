@@ -1,3 +1,5 @@
+# Stream Batch Source
+
 Description
 -----------
 
@@ -48,6 +50,8 @@ the schema.
 Example
 -------
 
+This example reads from a stream named 'accesslogs':
+
     {
         "name": "Stream",
         "properties": {
@@ -58,14 +62,16 @@ Example
         }
     }
 
-This example reads from a stream named 'accesslogs'. With the 'duration' property set to
-'10m', the source will read ten minutes-worth of data. As the 'delay' property is set to
-'5m', the source will read data up to five minutes before the logical start time of the
-run. The 'end time' of the data will then be five minutes before that logical start time. 
-Combining the duration and the delay, the 'start time' of the data will be 15 minutes
-before the logical start time of the run. For example, if the pipeline was scheduled to
-run at 10:00am, the source will read data from 9:45am to 9:55am. The stream contents will
-be parsed as 'clf' (Combined Log Format), which will output records with this schema:
+With the 'duration' property set to '10m', the source will read ten minutes-worth of data.
+As the 'delay' property is set to '5m', the source will read data up to five minutes
+before the logical start time of the run. The 'end time' of the data will then be five
+minutes before that logical start time. Combining the duration and the delay, the 'start
+time' of the data will be 15 minutes before the logical start time of the run. For
+example, if the pipeline was scheduled to run at 10:00am, the source will read data from
+9:45am to 9:55am. 
+
+The stream contents will be parsed as 'clf' (Combined Log Format), which will output
+records with this schema:
 
     +======================================+
     | field name     | type                |

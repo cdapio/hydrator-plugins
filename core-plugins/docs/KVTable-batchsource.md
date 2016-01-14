@@ -1,3 +1,5 @@
+# KeyValueTable Batch Source
+
 Description
 -----------
 
@@ -18,6 +20,8 @@ Properties
 Example
 -------
 
+This example reads from a KeyValueTable named 'items':
+
     {
         "name": "KVTable",
         "properties": {
@@ -25,7 +29,7 @@ Example
         }
     }
 
-This example reads from a KeyValueTable named 'items'. It outputs records with this schema:
+It outputs records with this schema:
 
     +====================+
     | field name | type  |
@@ -33,4 +37,3 @@ This example reads from a KeyValueTable named 'items'. It outputs records with t
     | key        | bytes |
     | value      | bytes |
     +====================+
-

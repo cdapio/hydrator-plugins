@@ -1,3 +1,5 @@
+# Database Batch Sink
+
 Description
 -----------
 
@@ -42,6 +44,12 @@ defined in the JSON file for the JDBC plugin. Defaults to 'jdbc'.
 Example
 -------
 
+This example connects to a database using the specified 'connectionString', which means
+it will connect to the 'prod' database of a PostgreSQL instance running on 'localhost'.
+Each input record will be written to a row of the 'users' table, with the value for each
+column taken from the value of the field in the record. For example, the 'id' field in
+the record will be written to the 'id' column of that row:
+
     {
         "name": "Database",
         "properties": {
@@ -54,9 +62,3 @@ Example
             "jdbcPluginType": "jdbc"
         }
     }
-
-This example connects to a database using the specified 'connectionString', which means
-it will connect to the 'prod' database of a PostgreSQL instance running on 'localhost'.
-Each input record will be written to a row of the 'users' table, with the value for each
-column taken from the value of the field in the record. For example, the 'id' field in
-the record will be written to the 'id' column of that row.

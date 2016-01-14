@@ -1,3 +1,5 @@
+# Elasticsearch Batch Source
+
 Description
 -----------
 
@@ -11,22 +13,23 @@ in an index and type from Elasticsearch and store the data in an HBase table.
 Configuration
 -------------
 
-**es.host:** The hostname and port for the Elasticsearch instance
+**es.host:** The hostname and port for the Elasticsearch instance.
 
-**es.index:** The name of the index to query
+**es.index:** The name of the index to query.
 
-**es.type:** The name of the type where the data is stored
+**es.type:** The name of the type where the data is stored.
 
 **query:** The query to use to import data from the specified index and type;
-see Elasticsearch for additional query examples
+see Elasticsearch for additional query examples.
 
-**schema:** The schema or mapping of the data in Elasticsearch
+**schema:** The schema or mapping of the data in Elasticsearch.
 
 Example
 -------
-    This example connects to Elasticsearch, which is running locally, and reads in records in the
-    specified index (*megacorp*) and type (*employee*) which match the query to (in this case) select all records.
-    All data from the index will be read on each run:
+
+This example connects to Elasticsearch, which is running locally, and reads in records in the
+specified index (*megacorp*) and type (*employee*) which match the query to (in this case) select all records.
+All data from the index will be read on each run:
 
     {
         "name": "Elasticsearch",

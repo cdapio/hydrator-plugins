@@ -1,3 +1,5 @@
+# Projection Transform
+
 Description
 -----------
 
@@ -5,7 +7,7 @@ The Projection transform lets you drop, rename, and cast fields to a different t
 Fields are first dropped, then cast, then renamed.
 
 For example, suppose the transform is configured to drop field 'B' and rename field 'A' to 'B'.
-If the transform receives this input record
+If the transform receives this input record:
 
     +============================+
     | field name | type | value  |
@@ -14,7 +16,7 @@ If the transform receives this input record
     | B          | int  | 20     |
     +============================+
 
-field 'B' will first be dropped
+field 'B' will first be dropped:
 
     +============================+
     | field name | type | value  |
@@ -22,7 +24,7 @@ field 'B' will first be dropped
     | A          | int  | 10     |
     +============================+
 
-and then field 'A' will be renamed to 'B'
+and then field 'A' will be renamed to 'B':
 
     +============================+
     | field name | type | value  |
@@ -66,6 +68,9 @@ converted to an int.
 Example
 -------
 
+This example drops the ``'ts'`` and ``'headers'`` fields. It also changes the type of the ``'cost'``
+field to a double and renames it ``'price'``. 
+
     {
         "name": "Projection",
         "properties": {
@@ -75,9 +80,7 @@ Example
         }
     }
  
-This example drops the ``'ts'`` and ``'headers'`` fields. It also changes the type of the ``'cost'``
-field to a double and renames it ``'price'``. For example, if the transform receives this
-input record:
+For example, if the transform receives this input record:
 
     +=========================================================+
     | field name | type                | value                |
@@ -96,4 +99,3 @@ It will transform it to this output record:
     | id         | string              | "abc123"             |
     | price      | double              | 8.88                 |
     +=========================================================+
-

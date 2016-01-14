@@ -1,3 +1,5 @@
+# Amazon S3 Avro Batch Sink
+
 Description
 -----------
 
@@ -34,6 +36,11 @@ example: the format ``'yyyy-MM-dd-HH-mm'`` will create a file path ending in
 Example
 -------
 
+This example will write to an S3 output located at ``s3n://logs``. It will write data in
+Avro format using the given schema. Every time the pipeline runs, a new output directory
+from the base path (``s3n://logs``) will be created which will have the directory name
+corresponding to the start time in ``yyyy-MM-dd-HH-mm`` format:
+
     {
         "name": "S3Avro",
         "properties": {
@@ -52,8 +59,3 @@ Example
             }"
         }
     }
-
-This example will write to an S3 output located at ``s3n://logs``. It will write data in
-Avro format using the given schema. Every time the pipeline runs, a new output directory
-from the base path (``s3n://logs``) will be created which will have the directory name
-corresponding to the start time in ``yyyy-MM-dd-HH-mm`` format.

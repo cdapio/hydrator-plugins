@@ -1,3 +1,5 @@
+# Amazon SQS Real-time Source
+
 Description
 -----------
 
@@ -28,6 +30,9 @@ Properties
 Example
 -------
 
+This example reads from a queue named 'queue_name' which is hosted on a server that's
+located in the 'us-west-1' region:
+
     {
         "name": "AmazonSQS",
         "properties": {
@@ -38,5 +43,3 @@ Example
         }
     }
 
-This example reads from a queue named 'queue_name' which is hosted on a server that's
-located in the 'us-west-1' region.

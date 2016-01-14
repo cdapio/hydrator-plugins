@@ -1,3 +1,5 @@
+# Table Batch Source
+
 Description
 -----------
 
@@ -27,6 +29,8 @@ the schema, and must not be nullable.
 Example
 -------
 
+This example reads from a Table named 'users':
+
     {
         "name": "Table",
         "properties": {
@@ -44,7 +48,7 @@ Example
         }
     }
 
-This example reads from a Table named 'users'. It outputs records with this schema:
+It outputs records with this schema:
 
     +======================================+
     | field name     | type                |

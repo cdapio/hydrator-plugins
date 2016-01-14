@@ -1,3 +1,5 @@
+# Cassandra Batch Sink
+
 Description
 -----------
 Batch sink to use Apache Cassandra as a sink.
@@ -33,6 +35,11 @@ The columns should be listed in the same order as they are stored in the column 
 Example
 -------
 
+This example connects to Apache Cassandra, which is running locally, and writes the data to
+the specified column family (*employees*), which is in the *megacorp* keyspace.
+This column family has four columns and two primary keys, and Apache Cassandra
+uses the default *Murmur3* partitioner:
+
     {
         "name": "Cassandra",
         "properties": {
@@ -45,8 +52,3 @@ Example
             "primaryKey": "fname,lname"
         }
     }
-
-This example connects to Apache Cassandra, which is running locally, and writes the data to
-the specified column family (*employees*), which is in the *megacorp* keyspace.
-This column family has four columns and two primary keys, and Apache Cassandra
-uses the default *Murmur3* partitioner.

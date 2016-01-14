@@ -1,3 +1,5 @@
+# TimePartitionedFileSet Parquet Batch Source
+
 Description
 -----------
 
@@ -34,6 +36,9 @@ start time to 10 minutes before its logical start time. The default value is 0.
 Example
 -------
 
+This example reads from a TimePartitionedFileSet named 'webactivity', assuming the underlying
+files are in Parquet format:
+
     {
         "name": "TPFSParquet",
         "properties": {
@@ -53,15 +58,16 @@ Example
         }
     }
 
-This example reads from a TimePartitionedFileSet named 'webactivity', assuming the underlying
-files are in Parquet format. TimePartitionedFileSets are partitioned by year, month, day, hour,
-and minute. Suppose the current run was scheduled to start at 10:00am on January 1, 2015.
-Since the 'delay' property is set to one minute, only data before 9:59am January 1, 2015 will
-be read. This excludes the partition for year 2015, month 1, day 1, hour 9, and minute 59.
-Since the 'duration' property is set to five minutes, a total of five partitions will be read.
-This means partitions for year 2015, month 1, day 1, hour 9, and minutes 54, 55, 56, 57, and 58
-will be read. The source will read the actual data using the given schema. This means it will output
-records with this schema:
+TimePartitionedFileSets are partitioned by year, month, day, hour, and minute. Suppose the
+current run was scheduled to start at 10:00am on January 1, 2015. Since the 'delay'
+property is set to one minute, only data before 9:59am January 1, 2015 will be read. This
+excludes the partition for year 2015, month 1, day 1, hour 9, and minute 59. Since the
+'duration' property is set to five minutes, a total of five partitions will be read. This
+means partitions for year 2015, month 1, day 1, hour 9, and minutes 54, 55, 56, 57, and 58
+will be read. 
+
+The source will read the actual data using the given schema and will output records with
+this schema:
 
     +=======================+
     | field name  | type    |

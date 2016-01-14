@@ -1,3 +1,5 @@
+# JMS Real-time Source
+
 Description
 -----------
 
@@ -37,6 +39,11 @@ JSON file for the JMS plugin. Defaults to ``JMSProvider``.
 Example
 -------
 
+This example will read from an instance of Apache ActiveMQ running on port 61616 on 'localhost'.
+It will poll the 'purchases' topic, reading up to 50 messages with each poll. A record is
+emitted for each message read from the topic. The record consists of a single field named 'message'
+containing the contents of the message:
+
     {
         "name":"JMS",
         "properties":{
@@ -47,9 +54,3 @@ Example
             "jms.plugin.custom.properties": "{\"topic.purchases\":\"purchases\"}"
         }
     }
-
-This example will read from an instance of Apache ActiveMQ running on port 61616 on 'localhost'.
-It will poll the 'purchases' topic, reading up to 50 messages with each poll. A record is
-emitted for each message read from the topic. The record consists of a single field named 'message'
-containing the contents of the message.
-
