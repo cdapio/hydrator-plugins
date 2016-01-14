@@ -63,6 +63,7 @@
       "widget-attributes": {
         "schema-types": [
           "boolean",
+          "bytes",
           "int",
           "long",
           "float",
