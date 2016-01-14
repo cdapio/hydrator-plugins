@@ -37,12 +37,20 @@ import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.thrift.DelegationTokenSelector;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.security.token.Token;
+import org.apache.hadoop.security.token.TokenIdentifier;
+import org.apache.hadoop.security.token.TokenSelector;
 import org.apache.hive.hcatalog.data.HCatRecord;
 import org.apache.hive.hcatalog.data.schema.HCatSchema;
 import org.apache.hive.hcatalog.mapreduce.HCatOutputFormat;
 import org.apache.hive.hcatalog.mapreduce.OutputJobInfo;
+import org.apache.hive.service.auth.HiveAuthFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -118,7 +126,10 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
     public HiveSinkOutputFormatProvider(Job job, HiveSinkConfig config) throws IOException {
       Configuration originalConf = job.getConfiguration();
       Configuration modifiedConf = new Configuration(originalConf);
-      modifiedConf.set("hive.metastore.uris", config.metaStoreURI);
+      modifiedConf.set(HiveConf.ConfVars.METASTOREURIS.varname, config.metaStoreURI);
+      if (UserGroupInformation.isSecurityEnabled()) {
+        addSecureHiveProperties(modifiedConf);
+      }
       HCatOutputFormat.setOutput(modifiedConf, job.getCredentials(), OutputJobInfo.create(config.dbName,
                                                                                           config.tableName,
                                                                                           getPartitions(config)));
@@ -130,6 +141,20 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
       }
       HCatOutputFormat.setSchema(modifiedConf, hiveSchema);
       conf = getConfigurationDiff(originalConf, modifiedConf);
+    }
+
+    private void addSecureHiveProperties(Configuration modifiedConf) throws IOException {
+      modifiedConf.set(HiveConf.ConfVars.METASTORE_USE_THRIFT_SASL.varname, "true");
+
+      // HCatalogOutputFormat reads Hive delegation token with empty service name
+      // because Oozie passes the Hive delegation with empty service name.
+      UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
+      TokenSelector<? extends TokenIdentifier> hiveTokenSelector = new DelegationTokenSelector();
+      Token<? extends TokenIdentifier> hiveToken = hiveTokenSelector.selectToken(
+        new Text(HiveAuthFactory.HS2_CLIENT_TOKEN), ugi.getTokens());
+      Token<? extends TokenIdentifier> noServiceHiveToken = new Token<>(hiveToken);
+      noServiceHiveToken.setService(new Text());
+      ugi.addToken(noServiceHiveToken);
     }
 
     private Map<String, String> getConfigurationDiff(Configuration originalConf, Configuration modifiedConf) {
