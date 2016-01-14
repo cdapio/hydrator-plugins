@@ -17,26 +17,17 @@
         {
           "widget-type": "textbox",
           "label": "Consistency Level",
-          "name": "consistencyLevel",
-          "widget-attributes": {
-            "width": "medium"
-          }
+          "name": "consistencyLevel"
         },
         {
           "widget-type": "textbox",
           "label": "Compression",
-          "name": "compression",
-          "widget-attributes": {
-            "width": "medium"
-          }
+          "name": "compression"
         },
         {
           "widget-type": "textbox",
           "label": "Username",
-          "name": "username",
-          "widget-attributes": {
-            "width": "medium"
-          }
+          "name": "username"
         },
         {
           "widget-type": "password",
@@ -51,18 +42,12 @@
         {
           "widget-type": "textbox",
           "label": "Keyspace",
-          "name": "keyspace",
-          "widget-attributes": {
-            "width": "medium"
-          }
+          "name": "keyspace"
         },
         {
           "widget-type": "textbox",
           "label": "Column Family",
-          "name": "columnFamily",
-          "widget-attributes": {
-            "width": "medium"
-          }
+          "name": "columnFamily"
         },
         {
           "widget-type": "csv",

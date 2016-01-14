@@ -8,11 +8,6 @@
       "properties": [
         {
           "widget-type": "textbox",
-          "label": "Stream Name",
-          "name": "name"
-        },
-        {
-          "widget-type": "textbox",
           "label": "Duration",
           "name": "duration"
         },
@@ -24,26 +19,17 @@
         {
           "widget-type": "textbox",
           "label": "Data Field Name",
-          "name": "body.field",
-          "widget-attributes": {
-            "width": "medium"
-          }
+          "name": "body.field"
         },
         {
           "widget-type": "textbox",
           "label": "Header Field Name",
-          "name": "headers.field",
-          "widget-attributes": {
-            "width": "medium"
-          }
+          "name": "headers.field"
         },
         {
           "widget-type": "stream-selector",
           "label": "Stream Name",
-          "name": "name",
-          "widget-attributes": {
-            "width": "medium"
-          }
+          "name": "name"
         }
       ]
     },
@@ -77,6 +63,7 @@
       "widget-attributes": {
         "schema-types": [
           "boolean",
+          "bytes",
           "int",
           "long",
           "float",

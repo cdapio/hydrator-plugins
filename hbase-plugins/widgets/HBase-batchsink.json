@@ -9,50 +9,32 @@
         {
           "widget-type": "textbox",
           "label": "HBase Table Name",
-          "name": "tableName",
-          "widget-attributes": {
-            "width": "large"
-          }
+          "name": "tableName"
         },
         {
           "widget-type": "textbox",
           "label": "HBase Column Family",
-          "name": "columnFamily",
-          "widget-attributes": {
-            "width": "large"
-          }
+          "name": "columnFamily"
         },
         {
           "widget-type": "textbox",
           "label": "Zookeeper Quorum String",
-          "name": "zkQuorum",
-          "widget-attributes": {
-            "width": "large"
-          }
+          "name": "zkQuorum"
         },
         {
           "widget-type": "textbox",
           "label": "Zookeeper Client Port",
-          "name": "zkClientPort",
-          "widget-attributes": {
-            "width": "medium"
-          }
+          "name": "zkClientPort"
         },
         {
           "widget-type": "textbox",
           "label": "Row Field Name",
-          "name": "rowField",
-          "widget-attributes": {
-            "width": "medium"
-          }
+          "name": "rowField"
         },
         {
           "widget-type": "textbox",
           "label": "Parent Node of HBase in Zookeeper",
-          "name": "zkNodeParent",
-          "widget-attributes": {
-            "width": "large"
-          }
+          "name": "zkNodeParent"
         }
       ]
     }
