@@ -98,7 +98,7 @@ public class StreamBatchSource extends BatchSource<LongWritable, Object, Structu
     // if no format is specified then default schema is used, if otherwise its based on format spec.
     if (streamBatchConfig.format == null) {
       pipelineConfigurer.getStageConfigurer().setOutputSchema(DEFAULT_SCHEMA);
-    } else if (streamBatchConfig.getFormatSpec() != null) {
+    } else if (streamBatchConfig.getFormatSpec() != null && streamBatchConfig.getFormatSpec().getSchema() != null) {
       List<Schema.Field> fields = Lists.newArrayList();
       fields.add(Schema.Field.of("ts", Schema.of(Schema.Type.LONG)));
       fields.add(Schema.Field.of("headers",
