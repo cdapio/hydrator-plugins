@@ -21,6 +21,7 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import com.google.common.base.Preconditions;
 
 import java.io.IOException;
+import javax.annotation.Nullable;
 
 /**
  * Utility class for with methods for validating schema fields and its types,
@@ -29,33 +30,39 @@ import java.io.IOException;
 public final class SchemaValidator {
 
   /**
-   * Validate output schema fields and if input schema is present
+   * Validate output schema fields and if input schema is present,
    * check if output schema is a subset of the input schema and return output schema.
    * @param outputSchemaString output schema from config
    * @param rowKeyField row key field from config
    * @param pipelineConfigurer Pipelineconfigurer that's used to get input schema and set output schema.
    * @return Schema - output schema
    */
+  @Nullable
   public static Schema validateOutputSchemaAndInputSchemaIfPresent(String outputSchemaString, String rowKeyField,
-                                                                 PipelineConfigurer pipelineConfigurer) {
-    Schema outputSchema;
-    // initialize output schema if presnet
-    Preconditions.checkNotNull(outputSchemaString, "Output schema string is null");
-
-    try {
-      outputSchema = Schema.parseJson(outputSchemaString);
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Unable to parse output schema : " + e.getMessage(), e);
+                                                                   PipelineConfigurer pipelineConfigurer) {
+    Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
+    if (inputSchema == null && outputSchemaString == null) {
+       return null;
     }
 
-    Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
+    // initialize output schema if present; otherwise, set it to input schema
+    Schema outputSchema;
+    if (outputSchemaString == null) {
+      outputSchema = inputSchema;
+    } else {
+      try {
+        outputSchema = Schema.parseJson(outputSchemaString);
+      } catch (IOException e) {
+        throw new IllegalArgumentException("Unable to parse output schema : " + e.getMessage(), e);
+      }
+    }
 
     // check that all fields in output schema are simple
     validateSchemaFieldsAreSimple(outputSchema);
+    validateFieldsArePresentInSchema(outputSchema, rowKeyField);
 
     if (inputSchema != null) {
       // check if output schema is a subset of input schema and check if rowkey field is present in input schema
-      validateFieldsArePresentInSchema(inputSchema, rowKeyField);
       validateOutputSchemaIsSubsetOfInputSchema(inputSchema, outputSchema);
     }
     return outputSchema;
