@@ -14,14 +14,13 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.db.test;
+package co.cask.hydrator.plugin.db.batch.sink;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.hydrator.common.test.MockEmitter;
 import co.cask.hydrator.plugin.DBRecord;
-import co.cask.hydrator.plugin.db.batch.sink.DBSink;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -30,7 +29,6 @@ import org.apache.hadoop.io.NullWritable;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -44,11 +42,8 @@ public class DBSinkTest {
     config.columns = "ts,body";
     config.tableName = "foo";
 
-    DBSink sink = new DBSink(config) {
-      public List<String> getColumns() {
-        return ImmutableList.copyOf(Splitter.on(",").split(config.columns));
-      }
-    };
+    DBSink sink = new DBSink(config);
+    sink.setColumns(ImmutableList.copyOf(Splitter.on(",").split(config.columns)));
 
     StructuredRecord input = StructuredRecord
       .builder(Schema.recordOf(
@@ -74,11 +69,8 @@ public class DBSinkTest {
     config.columns = "body,ts";
     config.tableName = "foo";
 
-    DBSink sink = new DBSink(config) {
-      public List<String> getColumns() {
-        return ImmutableList.copyOf(Splitter.on(",").split(config.columns));
-      }
-    };
+    DBSink sink = new DBSink(config);
+    sink.setColumns(ImmutableList.copyOf(Splitter.on(",").split(config.columns)));
 
     StructuredRecord input = StructuredRecord
       .builder(Schema.recordOf(
@@ -115,11 +107,8 @@ public class DBSinkTest {
     config.columns = "body,ts,missing";
     config.tableName = "foo";
 
-    DBSink sink = new DBSink(config) {
-      public List<String> getColumns() {
-        return ImmutableList.copyOf(Splitter.on(",").split(config.columns));
-      }
-    };
+    DBSink sink = new DBSink(config);
+    sink.setColumns(ImmutableList.copyOf(Splitter.on(",").split(config.columns)));
 
     StructuredRecord input = StructuredRecord
       .builder(Schema.recordOf(

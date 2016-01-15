@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.db.test;
+package co.cask.hydrator.plugin.db.batch.sink;
 
 import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.schema.Schema;
