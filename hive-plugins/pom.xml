@@ -112,7 +112,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <_exportcontents>co.cask.plugin.etl.batch.*;org.apache.commons.lang;org.apache.hive.hcatalog.*;
+            <_exportcontents>co.cask.hydrator.plugin.batch.*;org.apache.commons.lang;org.apache.hive.hcatalog.*;
               org.apache.hadoop.hive.metastore.*;
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
