@@ -95,7 +95,7 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
       DBConfiguration.configureDB(hConf, driverClass.getName(), dbSourceConfig.connectionString,
                                   dbSourceConfig.user, dbSourceConfig.password);
     }
-    ETLDBInputFormat.setInput(job, DBRecord.class, dbSourceConfig.importQuery, dbSourceConfig.countQuery);
+    ETLDBInputFormat.setInput(hConf, DBRecord.class, dbSourceConfig.importQuery, dbSourceConfig.countQuery);
     context.setInput(new SourceInputFormatProvider(ETLDBInputFormat.class, hConf));
   }
 
