@@ -27,7 +27,7 @@ import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
-import co.cask.cdap.format.RecordPutTransformer;
+import co.cask.hydrator.common.RecordPutTransformer;
 import co.cask.hydrator.common.SchemaValidator;
 import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.common.TableSinkConfig;
@@ -69,7 +69,13 @@ public class TableSink extends BatchWritableSink<StructuredRecord, byte[], Put> 
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    Schema outputSchema = Schema.parseJson(tableSinkConfig.getSchemaStr());
+    Schema outputSchema = null;
+    // If a schema string is present in the properties, use that to construct the outputSchema and pass it to the
+    // recordPutTransformer
+    String schemaString = tableSinkConfig.getSchemaStr();
+    if (schemaString != null) {
+      outputSchema = Schema.parseJson(schemaString);
+    }
     recordPutTransformer = new RecordPutTransformer(tableSinkConfig.getRowField(), outputSchema);
   }
 
