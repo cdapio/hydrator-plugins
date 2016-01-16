@@ -28,7 +28,7 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.realtime.DataWriter;
 import co.cask.cdap.etl.api.realtime.RealtimeContext;
 import co.cask.cdap.etl.api.realtime.RealtimeSink;
-import co.cask.cdap.format.RecordPutTransformer;
+import co.cask.hydrator.common.RecordPutTransformer;
 import co.cask.hydrator.common.SchemaValidator;
 import co.cask.hydrator.plugin.common.TableSinkConfig;
 import com.google.common.base.Preconditions;
@@ -83,7 +83,13 @@ public class RealtimeTableSink extends RealtimeSink<StructuredRecord> {
   @Override
   public void initialize(RealtimeContext context) throws Exception {
     super.initialize(context);
-    Schema outputSchema = Schema.parseJson(tableSinkConfig.getSchemaStr());
+    Schema outputSchema = null;
+    // If a schema string is present in the properties, use that to construct the outputSchema and pass it to the
+    // recordPutTransformer
+    String schemaString = tableSinkConfig.getSchemaStr();
+    if (schemaString != null) {
+      outputSchema = Schema.parseJson(schemaString);
+    }
     recordPutTransformer = new RecordPutTransformer(tableSinkConfig.getRowField(), outputSchema);
   }
 

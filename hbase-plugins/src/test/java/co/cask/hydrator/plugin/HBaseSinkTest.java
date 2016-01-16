@@ -143,9 +143,8 @@ public class HBaseSinkTest {
     tableSink.configurePipeline(mockPipelineConfigurer);
   }
 
-  @Test(expected = NullPointerException.class)
+  @Test
   public void testTableSinkWithMissingOutputSchema() {
-
     HBaseSink.HBaseSinkConfig tableSinkConfig = new HBaseSink.HBaseSinkConfig("hbaseSink",
                                                                               "rowkey", null);
     HBaseSink tableSink = new HBaseSink(tableSinkConfig);

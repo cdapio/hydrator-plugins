@@ -29,7 +29,7 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
-import co.cask.cdap.format.RecordPutTransformer;
+import co.cask.hydrator.common.RecordPutTransformer;
 import co.cask.hydrator.common.SchemaValidator;
 import co.cask.hydrator.plugin.HBaseConfig;
 import com.google.common.base.Preconditions;
@@ -59,7 +59,6 @@ public class HBaseSink extends BatchSink<StructuredRecord, NullWritable, Mutatio
 
   private HBaseSinkConfig config;
   private RecordPutTransformer recordPutTransformer;
-  private Schema outputSchema;
 
   public HBaseSink(HBaseSinkConfig config) {
     this.config = config;
@@ -78,7 +77,7 @@ public class HBaseSink extends BatchSink<StructuredRecord, NullWritable, Mutatio
     super.configurePipeline(pipelineConfigurer);
     Preconditions.checkArgument(!Strings.isNullOrEmpty(config.rowField),
                                 "Row field must be given as a property.");
-    outputSchema =
+    Schema outputSchema =
       SchemaValidator.validateOutputSchemaAndInputSchemaIfPresent(config.schema,
                                                                   config.rowField, pipelineConfigurer);
     // NOTE: this is done only for testing, once CDAP-4575 is implemented, we can use this schema in initialize
@@ -118,7 +117,13 @@ public class HBaseSink extends BatchSink<StructuredRecord, NullWritable, Mutatio
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    outputSchema = Schema.parseJson(config.schema);
+    Schema outputSchema = null;
+    // If a schema string is present in the properties, use that to construct the outputSchema and pass it to the
+    // recordPutTransformer
+    String schemaString = config.schema;
+    if (schemaString != null) {
+      outputSchema = Schema.parseJson(schemaString);
+    }
     recordPutTransformer = new RecordPutTransformer(config.rowField, outputSchema);
   }
 
