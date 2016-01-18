@@ -55,8 +55,7 @@ import javax.annotation.Nullable;
 @Plugin(type = "realtimesink")
 @Name("Elasticsearch")
 @Description("CDAP Elasticsearch Realtime Sink takes the structured record from the input source and converts it " +
-  "to a JSON string, then indexes it in Elasticsearch using the index, type, and id specified by the user. " +
-  "The Elasticsearch server should be running prior to creating the adapter.")
+  "to a JSON string, then indexes it in Elasticsearch using the index, type, and id specified by the user.")
 public class RealtimeElasticsearchSink extends RealtimeSink<StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(RealtimeElasticsearchSink.class);
   private static final String INDEX_DESCRIPTION = "The name of the index where the data will be stored. " +
