@@ -37,7 +37,6 @@ import co.cask.hydrator.plugin.realtime.sink.RealtimeTableSink;
 import co.cask.hydrator.plugin.realtime.sink.StreamSink;
 import co.cask.hydrator.plugin.realtime.source.DataGeneratorSource;
 import co.cask.hydrator.plugin.realtime.source.JmsSource;
-import co.cask.hydrator.plugin.realtime.source.KafkaSource;
 import co.cask.hydrator.plugin.realtime.source.SqsSource;
 import co.cask.hydrator.plugin.realtime.source.TwitterSource;
 import co.cask.hydrator.plugin.transform.ProjectionTransform;
@@ -70,7 +69,7 @@ public class DatasetPluginClasses {
     TimePartitionedFileSetDatasetParquetSource.class, TimePartitionedFileSetDatasetParquetSink.class
   };
   public static final Class[] REALTIME = {
-    DataGeneratorSource.class, JmsSource.class, KafkaSource.class,
+    DataGeneratorSource.class, JmsSource.class,
     TwitterSource.class, SqsSource.class,
     RealtimeCubeSink.class, RealtimeTableSink.class, StreamSink.class
   };

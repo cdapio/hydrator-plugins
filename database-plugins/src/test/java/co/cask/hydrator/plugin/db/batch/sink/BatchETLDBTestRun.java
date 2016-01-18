@@ -35,7 +35,6 @@ import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestBase;
 import co.cask.hydrator.plugin.DatabasePluginTestBase;
-import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
@@ -87,7 +86,7 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
     ETLStage sink = new ETLStage("tableSink2", sinkConfig);
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, Lists.<ETLStage>newArrayList());
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBatchTestBase.ETLBATCH_ARTIFACT, etlConfig);
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSourceTest");
     ApplicationManager appManager = TestBase.deployApplication(appId, appRequest);
 
@@ -186,7 +185,7 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
     ETLStage sink = new ETLStage("tableSink1", sinkConfig);
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, new ArrayList<ETLStage>());
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBatchTestBase.ETLBATCH_ARTIFACT, etlConfig);
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSourceTest");
     ApplicationManager appManager = TestBase.deployApplication(appId, appRequest);
 
@@ -245,7 +244,7 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
     ETLStage sink = new ETLStage("tableSink3", sinkConfig);
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, Lists.<ETLStage>newArrayList());
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBatchTestBase.ETLBATCH_ARTIFACT, etlConfig);
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSourceTest");
     ApplicationManager appManager = TestBase.deployApplication(appId, appRequest);
 
@@ -306,12 +305,12 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
     ETLStage table = new ETLStage("uniqueTableSink" , tableConfig);
     ETLStage database = new ETLStage("databaseSource" , dbConfig);
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", database, table, transforms);
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBatchTestBase.ETLBATCH_ARTIFACT, etlConfig);
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     TestBase.deployApplication(appId, appRequest);
     // as sink
     database = new ETLStage("databaseSink", new Plugin("Database", baseSinkProps));
     etlConfig = new ETLBatchConfig("* * * * *", table, database, transforms);
-    appRequest = new AppRequest<>(ETLBatchTestBase.ETLBATCH_ARTIFACT, etlConfig);
+    appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     TestBase.deployApplication(appId, appRequest);
 
     // non null user name, null password. Should fail.
@@ -353,7 +352,7 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
     emptyPassword.put(Properties.DB.PASSWORD, "");
     database = new ETLStage("databaseSource", new Plugin("Database", emptyPassword));
     etlConfig = new ETLBatchConfig("* * * * *", database, table, transforms);
-    appRequest = new AppRequest<>(ETLBatchTestBase.ETLBATCH_ARTIFACT, etlConfig);
+    appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     TestBase.deployApplication(appId, appRequest);
     // as sink
     emptyPassword = new HashMap<>(baseSinkProps);
@@ -361,7 +360,7 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
     emptyPassword.put(Properties.DB.PASSWORD, "");
     database = new ETLStage("databaseSink", new Plugin("Database", emptyPassword));
     etlConfig = new ETLBatchConfig("* * * * *", table, database, transforms);
-    appRequest = new AppRequest<>(ETLBatchTestBase.ETLBATCH_ARTIFACT, etlConfig);
+    appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     TestBase.deployApplication(appId, appRequest);
   }
 
@@ -450,7 +449,7 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
     ETLStage sink = new ETLStage("sink", sinkConfig);
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, transforms);
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBatchTestBase.ETLBATCH_ARTIFACT, etlConfig);
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSinkTest");
     ApplicationManager appManager = TestBase.deployApplication(appId, appRequest);
 
@@ -506,7 +505,7 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
 
   private void assertDeploymentFailure(Id.Application appId, ETLBatchConfig etlConfig,
                                        String failureMessage) throws Exception {
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBatchTestBase.ETLBATCH_ARTIFACT, etlConfig);
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     try {
       TestBase.deployApplication(appId, appRequest);
       Assert.fail(failureMessage);

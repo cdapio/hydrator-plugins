@@ -38,7 +38,6 @@
     <module>hive-plugins</module>
     <module>kafka-plugins</module>
     <module>mongodb-plugins</module>
-    <module>python-evaluator-transform</module>
     <module>transform-plugins</module>
   </modules>
 
@@ -114,6 +113,7 @@
     <twill.version>0.6.0-incubating</twill.version>
     <twitter4j.version>4.0.3</twitter4j.version>
     <zookeeper.version>3.4.5</zookeeper.version>
+    <jython.version>2.5.2</jython.version>
     <!-- properties for script build step that creates the config files for the artifacts -->
     <widgets.dir>widgets</widgets.dir>
     <docs.dir>docs</docs.dir>
@@ -525,6 +525,11 @@
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm-all</artifactId>
         <version>${asm.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.python</groupId>
+        <artifactId>jython-standalone</artifactId>
+        <version>${jython.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
