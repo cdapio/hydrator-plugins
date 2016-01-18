@@ -8,7 +8,7 @@
         {
           "widget-type": "javascript-editor",
           "label": "JavaScript",
-          "name": "JavaScript",
+          "name": "script",
           "widget-attributes": {
             "default": "function transform(input, emitter, context) {\n  emitter.emit(input);\n}"
           }

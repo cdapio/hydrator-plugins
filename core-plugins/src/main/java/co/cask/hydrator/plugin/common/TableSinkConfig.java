@@ -35,7 +35,9 @@ public class TableSinkConfig extends PluginConfig {
 
   @Name(Properties.Table.PROPERTY_SCHEMA)
   @Description("schema of the table as a JSON Object. If the table does not already exist, one will be " +
-    "created with this schema, which will allow the table to be explored through Hive.")
+    "created with this schema, which will allow the table to be explored through Hive. If no schema is given, the " +
+    "table created will not be explorable.")
+  @Nullable
   private String schemaStr;
 
   @Name(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD)

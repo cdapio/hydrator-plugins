@@ -7,6 +7,11 @@
       "label": "Stream Configuration",
       "properties": [
         {
+          "widget-type": "stream-selector",
+          "label": "Stream Name",
+          "name": "name"
+        },
+        {
           "widget-type": "textbox",
           "label": "Data Field Name",
           "name": "body.field"
@@ -15,11 +20,6 @@
           "widget-type": "textbox",
           "label": "Header Field Name",
           "name": "headers.field"
-        },
-        {
-          "widget-type": "stream-selector",
-          "label": "Stream Name",
-          "name": "name"
         }
       ]
     }

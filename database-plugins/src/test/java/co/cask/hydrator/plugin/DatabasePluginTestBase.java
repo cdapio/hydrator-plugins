@@ -56,8 +56,9 @@ import javax.sql.rowset.serial.SerialBlob;
 public class DatabasePluginTestBase extends ETLBatchTestBase {
   public static boolean tearDown = true;
 
-  protected static final long currentTs = System.currentTimeMillis();
-  protected static final String clobData = "this is a long string with line separators \n that can be used as \n a clob";
+  protected static final long CURRENT_TS = System.currentTimeMillis();
+  protected static final String CLOB_DATA =
+    "this is a long string with line separators \n that can be used as \n a clob";
 
   protected static HSQLDBServer hsqlDBServer;
   protected static Schema schema;
@@ -195,12 +196,12 @@ public class DatabasePluginTestBase extends ETLBatchTestBase {
             pStmt.setDouble(12, 123.45 + i);
           }
           pStmt.setBoolean(13, (i % 2 == 1));
-          pStmt.setDate(14, new Date(currentTs));
-          pStmt.setTime(15, new Time(currentTs));
-          pStmt.setTimestamp(16, new Timestamp(currentTs));
+          pStmt.setDate(14, new Date(CURRENT_TS));
+          pStmt.setTime(15, new Time(CURRENT_TS));
+          pStmt.setTimestamp(16, new Timestamp(CURRENT_TS));
           pStmt.setBytes(17, name.getBytes(Charsets.UTF_8));
           pStmt.setBlob(18, new SerialBlob(name.getBytes(Charsets.UTF_8)));
-          pStmt.setClob(19, new InputStreamReader(new ByteArrayInputStream(clobData.getBytes(Charsets.UTF_8))));
+          pStmt.setClob(19, new InputStreamReader(new ByteArrayInputStream(CLOB_DATA.getBytes(Charsets.UTF_8))));
           pStmt.executeUpdate();
         }
       }

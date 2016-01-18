@@ -138,9 +138,8 @@ public class TableSinkTest {
     tableSink.configurePipeline(mockPipelineConfigurer);
   }
 
-  @Test(expected = NullPointerException.class)
+  @Test
   public void testTableSinkWithMissingOutputSchema() {
-
     TableSinkConfig tableSinkConfig = new TableSinkConfig("tableSink", "rowkey", null);
     TableSink tableSink = new TableSink(tableSinkConfig);
 

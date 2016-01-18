@@ -51,9 +51,7 @@ import javax.annotation.Nullable;
 @Plugin(type = "batchsink")
 @Name("Cassandra")
 @Description("CDAP Cassandra Batch Sink takes the structured record from the input source " +
-  "and converts each field to a byte buffer, then puts it in the keyspace and column family specified by the user. " +
-  "The Cassandra server should be running prior to creating the application, " +
-  "and the keyspace and column family should be created.")
+  "and converts each field to a byte buffer, then puts it in the keyspace and column family specified by the user.")
 public class BatchCassandraSink extends BatchSink<StructuredRecord, Map<String, ByteBuffer>, List<ByteBuffer>> {
   private final CassandraBatchConfig config;
 

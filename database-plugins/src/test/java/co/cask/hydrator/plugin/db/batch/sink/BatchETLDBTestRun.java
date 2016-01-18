@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.db.test;
+package co.cask.hydrator.plugin.db.batch.sink;
 
 import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.schema.Schema;
@@ -138,7 +138,7 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
     Assert.assertEquals(true, row1.getBoolean("BIT_COL"));
     Assert.assertEquals(false, row2.getBoolean("BIT_COL"));
     // Verify time columns
-    java.util.Date date = new java.util.Date(currentTs);
+    java.util.Date date = new java.util.Date(CURRENT_TS);
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
     long expectedDateTimestamp = Date.valueOf(sdf.format(date)).getTime();
     sdf = new SimpleDateFormat("H:mm:ss");
@@ -147,15 +147,15 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
     Assert.assertEquals(expectedDateTimestamp, (long) row2.getLong("DATE_COL"));
     Assert.assertEquals(expectedTimeTimestamp, (long) row1.getLong("TIME_COL"));
     Assert.assertEquals(expectedTimeTimestamp, (long) row2.getLong("TIME_COL"));
-    Assert.assertEquals(currentTs, (long) row1.getLong("TIMESTAMP_COL"));
-    Assert.assertEquals(currentTs, (long) row2.getLong("TIMESTAMP_COL"));
+    Assert.assertEquals(CURRENT_TS, (long) row1.getLong("TIMESTAMP_COL"));
+    Assert.assertEquals(CURRENT_TS, (long) row2.getLong("TIMESTAMP_COL"));
     // verify binary columns
     Assert.assertEquals("user1", Bytes.toString(row1.get("BINARY_COL"), 0, 5));
     Assert.assertEquals("user2", Bytes.toString(row2.get("BINARY_COL"), 0, 5));
     Assert.assertEquals("user1", Bytes.toString(row1.get("BLOB_COL"), 0, 5));
     Assert.assertEquals("user2", Bytes.toString(row2.get("BLOB_COL"), 0, 5));
-    Assert.assertEquals(clobData, Bytes.toString(row1.get("CLOB_COL"), 0, clobData.length()));
-    Assert.assertEquals(clobData, Bytes.toString(row2.get("CLOB_COL"), 0, clobData.length()));
+    Assert.assertEquals(CLOB_DATA, Bytes.toString(row1.get("CLOB_COL"), 0, CLOB_DATA.length()));
+    Assert.assertEquals(CLOB_DATA, Bytes.toString(row2.get("CLOB_COL"), 0, CLOB_DATA.length()));
   }
 
   @Test
@@ -493,12 +493,12 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
       put.add("NUMERIC_COL", 3.458);
       put.add("DECIMAL_COL", 3.459);
       put.add("BIT_COL", (i % 2 == 1));
-      put.add("DATE_COL", currentTs);
-      put.add("TIME_COL", currentTs);
-      put.add("TIMESTAMP_COL", currentTs);
+      put.add("DATE_COL", CURRENT_TS);
+      put.add("TIME_COL", CURRENT_TS);
+      put.add("TIMESTAMP_COL", CURRENT_TS);
       put.add("BINARY_COL", name.getBytes(Charsets.UTF_8));
       put.add("BLOB_COL", name.getBytes(Charsets.UTF_8));
-      put.add("CLOB_COL", clobData);
+      put.add("CLOB_COL", CLOB_DATA);
       inputTable.put(put);
       inputManager.flush();
     }

@@ -48,8 +48,7 @@ import javax.annotation.Nullable;
 @Plugin(type = "batchsource")
 @Name("MongoDB")
 @Description("MongoDB Batch Source will read documents from MongoDB and convert each document " +
-  "into a StructuredRecord with the help of the specified Schema. " +
-  "Optionally, the user can specify input query, input fields, and splitter class.")
+  "into a StructuredRecord with the help of the specified Schema. ")
 public class MongoDBBatchSource extends BatchSource<Object, BSONObject, StructuredRecord> {
 
   private final MongoDBConfig config;
