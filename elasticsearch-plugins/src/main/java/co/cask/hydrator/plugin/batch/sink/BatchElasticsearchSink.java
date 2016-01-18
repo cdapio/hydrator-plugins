@@ -50,9 +50,8 @@ import java.util.Map;
  */
 @Plugin(type = "batchsink")
 @Name("Elasticsearch")
-@Description("CDAP Elasticsearch Batch Sink takes the structured record from the input source and converts it " +
-  "to a JSON string, then indexes it in Elasticsearch using the index, type, and id specified by the user. " +
-  "The Elasticsearch server should be running prior to creating the adapter.")
+@Description("Elasticsearch Batch Sink takes the structured record from the input source and converts it " +
+  "to a JSON string, then indexes it in Elasticsearch using the index, type, and id specified by the user.")
 public class BatchElasticsearchSink extends BatchSink<StructuredRecord, Writable, Writable> {
   private static final String INDEX_DESCRIPTION = "The name of the index where the data will be stored. " +
     "If the index does not already exist, it will be created using Elasticsearch's default properties.";
