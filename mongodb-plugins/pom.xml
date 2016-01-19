@@ -117,7 +117,10 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Export-Package>co.cask.plugin.etl.batch.*;com.mongodb.hadoop.*;co.cask.plugin.etl.realtime.*</Export-Package>
+            <Export-Package>
+              co.cask.hydrator.plugin.*;
+              com.mongodb.hadoop.*;
+            </Export-Package>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
             <Embed-Directory>lib</Embed-Directory>
