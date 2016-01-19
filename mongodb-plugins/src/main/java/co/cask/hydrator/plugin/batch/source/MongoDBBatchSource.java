@@ -28,7 +28,7 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
-import co.cask.cdap.etl.common.BSONConverter;
+import co.cask.hydrator.plugin.BSONConverter;
 import com.google.common.base.Strings;
 import com.mongodb.hadoop.MongoInputFormat;
 import com.mongodb.hadoop.splitter.MongoSplitter;
