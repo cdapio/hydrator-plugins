@@ -7,9 +7,20 @@
       "label": "Decoder",
       "properties": [
         {
-          "widget-type": "textbox",
+          "widget-type": "keyvalue-dropdown",
           "label": "Decode Fields",
-          "name": "decode"
+          "name": "decode",
+          "widget-attributes": {
+            "showDelimiter": "false",
+            "dropdownOptions": [
+              "BASE64",
+              "BASE32",
+              "STRING_BASE32",
+              "STRING_BASE64",
+              "HEX",
+              "NONE"
+            ]
+          }
         }
       ]
     }

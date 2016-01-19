@@ -7,9 +7,18 @@
       "label": "Decompressor",
       "properties": [
         {
-          "widget-type": "textbox",
+          "widget-type": "keyvalue-dropdown",
           "label": "Decompress Fields",
-          "name": "decompressor"
+          "name": "decompressor",
+          "widget-attributes": {
+            "showDelimiter": "false",
+            "dropdownOptions": [
+              "SNAPPY",
+              "ZIP",
+              "GZIP",
+              "NONE"
+            ]
+          }
         }
       ]
     }
