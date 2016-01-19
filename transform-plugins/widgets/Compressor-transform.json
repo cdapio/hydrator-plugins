@@ -7,9 +7,18 @@
       "label": "Compressor",
       "properties": [
         {
-          "widget-type": "textbox",
+          "widget-type": "keyvalue-dropdown",
           "label": "Compress Fields",
-          "name": "compressor"
+          "name": "compressor",
+          "widget-attributes": {
+            "showDelimiter": "false",
+            "dropdownOptions": [
+              "SNAPPY",
+              "ZIP",
+              "GZIP",
+              "NONE"
+            ]
+          }
         }
       ]
     }
