@@ -61,7 +61,7 @@
     {
       "widget-type": "non-editable-schema-editor",
       "schema": {
-        "message": "string"
+        "message": { "type": "string" }
       }
     }
   ]
