@@ -49,10 +49,7 @@ import javax.annotation.Nullable;
  */
 @Plugin(type = "realtimesource")
 @Name("Twitter")
-@Description("Samples tweets in real-time. Output records contain the fields " +
-  "id (long), message (string), lang (nullable string), time (nullable long), favCount (int), " +
-  "rtCount (int), source (nullable string), geoLat (nullable double), geoLong (nullable double), " +
-  "and isRetweet (boolean).")
+@Description("Samples tweets in real-time")
 public class TwitterSource extends RealtimeSource<StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(TwitterSource.class);
   private static final String CONSUMER_KEY = "ConsumerKey";

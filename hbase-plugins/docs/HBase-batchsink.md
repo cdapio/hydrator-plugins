@@ -1,0 +1,84 @@
+# HBase Batch Sink
+
+Description
+-----------
+
+Writes records to a column family in an HBase table with one record field mapping
+to the rowkey, and all other record fields mapping to table column qualifiers.
+This sink differs from the Table sink in that it does not use CDAP datasets, but writes
+to HBase directly.
+
+Use Case
+--------
+
+The sink is used whenever you need to write to an HBase table in batch. For example,
+you may want to periodically dump the contents of a relational database into an HBase table.
+
+Properties
+----------
+**tableName:** The name of the table to read from.
+
+**columnFamily:** The name of the column family to read from.
+
+**schema:** Schema of records read from the table. Row columns map to record
+fields. For example, if the schema contains a field named 'user' of type string, the value
+of that field will be taken from the value stored in the 'user' column qualifier. Only simple types
+are allowed (boolean, int, long, float, double, bytes, string).
+
+**rowField:** Field name indicating that the field value should
+be written as the rowkey instead of written to a column. The field name specified must be present in
+the schema, and must not be nullable.
+
+**zkQuorum:** The ZooKeeper quorum for the hbase instance you are writing to. This should
+be a comma separated list of hosts that make up the quorum. You can find the correct value
+by looking at the hbase.zookeeper.quorum setting in your hbase-site.xml file. This value
+defaults to 'localhost'.
+
+**zkClientPort:** The client port used to connect to the ZooKeeper quorum.
+You can find the correct value by looking at the hbase.zookeeper.quorum setting in your hbase-site.xml.
+This value defaults to 2181.
+
+**zkNodeParent:** The parent node of HBase in ZooKeeper. 
+You can find the correct value by looking at the hbase.zookeeper.quorum setting in your hbase-site.xml.
+This value defaults to '/hbase'.
+
+Example
+-------
+
+This example writes to the 'attr' column family of an HBase table named 'users':
+
+    {
+        "name": "Table",
+        "properties": {
+            "tableName": "users",
+            "columnFamily": "attr",
+            "rowField": "id",
+            "zkQuorum": "host1,host2,host3",
+            "zkClientPort": "2181",
+            "zkNodeParent": "/hbase",
+            "schema": "{
+                \"type\":\"record\",
+                \"name\":\"user\",
+                \"fields\":[
+                    {\"name\":\"id\",\"type\":\"long\"},
+                    {\"name\":\"name\",\"type\":\"string\"},
+                    {\"name\":\"birthyear\",\"type\":\"int\"}
+                ]
+            }",
+            "schema.row.field": "id"
+        }
+    }
+
+It takes records with this schema as input:
+
+    +======================================+
+    | field name     | type                |
+    +======================================+
+    | id             | long                |
+    | name           | string              |
+    | birthyear      | int                 |
+    +======================================+
+
+The 'id' field will be used as the rowkey when writing to the table. The 'name' and 'birthyear' record
+fields will be written to column qualifiers named 'name' and 'birthyear'.
+

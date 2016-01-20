@@ -71,6 +71,12 @@
       <artifactId>hydrator-common</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <!-- needed by TableOutputFormat, but TableOutputFormat is provided scope -->
+    <dependency>
+      <groupId>org.apache.zookeeper</groupId>
+      <artifactId>zookeeper</artifactId>
+      <scope>compile</scope>
+    </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-mapreduce-client-core</artifactId>
@@ -158,8 +164,12 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Export-Package>co.cask.hydrator.plugin.*;org.apache.commons.lang;org.apache.hadoop.hbase.mapreduce.*;
-              org.apache.hadoop.hbase.client.*;org.apache.hadoop.hbase.io.*;
+            <Export-Package>
+              co.cask.hydrator.plugin.*;
+              org.apache.commons.lang;
+              org.apache.hadoop.hbase.mapreduce.*;
+              org.apache.hadoop.hbase.client.*;
+              org.apache.hadoop.hbase.io.*;
             </Export-Package>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>

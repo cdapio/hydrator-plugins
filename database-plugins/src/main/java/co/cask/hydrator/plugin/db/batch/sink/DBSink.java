@@ -106,14 +106,14 @@ public class DBSink extends BatchSink<StructuredRecord, DBRecord, NullWritable> 
   public void transform(StructuredRecord input, Emitter<KeyValue<DBRecord, NullWritable>> emitter) throws Exception {
     // Create StructuredRecord that only has the columns in this.columns
     List<Schema.Field> outputFields = new ArrayList<>();
-    for (String column : getColumns()) {
+    for (String column : columns) {
       Schema.Field field = input.getSchema().getField(column);
       Preconditions.checkNotNull(field, "Missing schema field for column '%s'", column);
       outputFields.add(field);
     }
     StructuredRecord.Builder output = StructuredRecord.builder(
       Schema.recordOf(input.getSchema().getRecordName(), outputFields));
-    for (String column : getColumns()) {
+    for (String column : columns) {
       output.set(column, input.get(column));
     }
 
@@ -127,8 +127,8 @@ public class DBSink extends BatchSink<StructuredRecord, DBRecord, NullWritable> 
   }
 
   @VisibleForTesting
-  List<String> getColumns() {
-    return columns;
+  void setColumns(List<String> columns) {
+    this.columns = ImmutableList.copyOf(columns);
   }
 
   private void setResultSetMetadata() throws Exception {

@@ -28,7 +28,7 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
-import co.cask.cdap.etl.common.BSONConverter;
+import co.cask.hydrator.plugin.BSONConverter;
 import com.google.common.base.Strings;
 import com.mongodb.hadoop.MongoInputFormat;
 import com.mongodb.hadoop.splitter.MongoSplitter;
@@ -48,8 +48,7 @@ import javax.annotation.Nullable;
 @Plugin(type = "batchsource")
 @Name("MongoDB")
 @Description("MongoDB Batch Source will read documents from MongoDB and convert each document " +
-  "into a StructuredRecord with the help of the specified Schema. " +
-  "Optionally, the user can specify input query, input fields, and splitter class.")
+  "into a StructuredRecord with the help of the specified Schema. ")
 public class MongoDBBatchSource extends BatchSource<Object, BSONObject, StructuredRecord> {
 
   private final MongoDBConfig config;

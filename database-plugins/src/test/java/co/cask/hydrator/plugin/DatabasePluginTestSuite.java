@@ -17,7 +17,7 @@
 package co.cask.hydrator.plugin;
 
 import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
-import co.cask.hydrator.plugin.db.test.BatchETLDBTestRun;
+import co.cask.hydrator.plugin.db.batch.sink.BatchETLDBTestRun;
 import co.cask.hydrator.plugin.teradata.test.TeradataPluginTestRun;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

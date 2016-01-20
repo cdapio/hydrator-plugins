@@ -48,10 +48,8 @@ import java.io.IOException;
  */
 @Plugin(type = "batchsource")
 @Name("Elasticsearch")
-@Description("CDAP Elasticsearch Batch Source pulls documents from Elasticsearch " +
-  "according to the query specified by the user and converts each document to a structured record " +
-  "with the fields and schema specified by the user. " +
-  "The Elasticsearch server should be running prior to creating the adapter.")
+@Description("Elasticsearch Batch Source pulls documents from Elasticsearch " +
+  "according to the query specified by the user and converts each document to a structured record ")
 public class ElasticsearchSource extends BatchSource<Text, MapWritable, StructuredRecord> {
   private static final String INDEX_DESCRIPTION = "The name of the index to query.";
   private static final String TYPE_DESCRIPTION = "The name of the type where the data is stored.";
