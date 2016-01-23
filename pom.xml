@@ -21,6 +21,10 @@
   <groupId>co.cask.hydrator</groupId>
   <artifactId>hydrator-plugins</artifactId>
   <version>1.2.0</version>
+  <name>Hydrator Plugin Collection</name>
+  <description>A collection of plugins for Cask Hydrator.</description>
+  <url>https://github.com/caskdata/hydrator-plugins</url>
+
   <modules>
     <module>hydrator-common</module>
     <module>core-plugins</module>
@@ -37,10 +41,6 @@
   </modules>
   <packaging>pom</packaging>
 
-  <name>Hydrator Plugin Collection</name>
-
-  <url>http://docs.cdap.io/cdap/current/en/included-applications/index.html</url>
-
   <licenses>
     <license>
       <name>The Apache Software License, Version 2.0</name>
@@ -49,6 +49,22 @@
       <comments>A business-friendly OSS license</comments>
     </license>
   </licenses>
+
+  <developers>
+    <developer>
+      <name>Cask Data</name>
+      <email>cask-dev@googlegroups.com</email>
+      <organization>Cask Data, Inc.</organization>
+      <organizationUrl>http://www.cdap.io</organizationUrl>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:https://github.com/caskdata/hydrator-plugins.git</connection>
+    <developerConnection>scm:git:git@github.com:caskdata/hydrator-plugins.git</developerConnection>
+    <url>https://github.com/caskdata/hydrator-plugins.git</url>
+    <tag>HEAD</tag>
+  </scm>
 
   <distributionManagement>
     <repository>
