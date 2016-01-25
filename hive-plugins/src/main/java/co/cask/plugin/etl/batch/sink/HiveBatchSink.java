@@ -47,14 +47,18 @@ import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.security.token.TokenIdentifier;
 import org.apache.hadoop.security.token.TokenSelector;
 import org.apache.hive.hcatalog.data.HCatRecord;
+import org.apache.hive.hcatalog.data.schema.HCatFieldSchema;
 import org.apache.hive.hcatalog.data.schema.HCatSchema;
 import org.apache.hive.hcatalog.mapreduce.HCatOutputFormat;
 import org.apache.hive.hcatalog.mapreduce.OutputJobInfo;
 import org.apache.hive.service.auth.HiveAuthFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -64,6 +68,8 @@ import java.util.Map;
 @Name("Hive")
 @Description("Batch Sink to write to external Hive tables.")
 public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCatRecord> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(HiveBatchSink.class);
 
   private static final Gson GSON = new Gson();
   private static final Type STRING_MAP_TYPE = new TypeToken<Map<String, String>>() {
@@ -102,14 +108,6 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
     recordToHCatRecordTransformer = new RecordToHCatRecordTransformer(hCatSchema, schema);
   }
 
-  private Map<String, String> getPartitions() {
-    Map<String, String> partitionValues = null;
-    if (config.partitions != null) {
-      partitionValues = GSON.fromJson(config.partitions, STRING_MAP_TYPE);
-    }
-    return partitionValues;
-  }
-
   @Override
   public void transform(StructuredRecord input, Emitter<KeyValue<NullWritable, HCatRecord>> emitter) throws Exception {
     HCatRecord hCatRecord = recordToHCatRecordTransformer.toHCatRecord(input);
@@ -134,7 +132,22 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
                                                                                           config.tableName,
                                                                                           getPartitions(config)));
 
+      OutputJobInfo jobInfo = HCatOutputFormat.getJobInfo(modifiedConf);
+
       hiveSchema = HCatOutputFormat.getTableSchema(modifiedConf);
+
+      // if dynamic paritioning was used then append the dynamic partitioning columns to the table schema obtained from
+      // hive as the schema obtained does not have these columns.
+      if (jobInfo.isDynamicPartitioningUsed()) {
+        HCatSchema partitionColumns = jobInfo.getTableInfo().getPartitionColumns();
+        List<String> dynamicPartitioningKeys = jobInfo.getDynamicPartitioningKeys();
+
+        for (String dynamicPartitioningKey : dynamicPartitioningKeys) {
+          HCatFieldSchema curFieldSchema = partitionColumns.get(dynamicPartitioningKey);
+          hiveSchema.append(curFieldSchema);
+        }
+      }
+
       if (config.schema != null) {
         // if the user did provide a sink schema to use then use that one
         hiveSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(config.schema), hiveSchema);
