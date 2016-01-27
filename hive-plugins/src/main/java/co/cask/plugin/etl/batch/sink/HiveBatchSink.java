@@ -58,7 +58,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -89,9 +88,16 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
   @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
     Job job = context.getHadoopJob();
-    HiveSinkOutputFormatProvider sinkOutputFormatProvider = new HiveSinkOutputFormatProvider(job, config);
-    HCatSchema hiveSchema = sinkOutputFormatProvider.getHiveSchema();
-    HiveSchemaStore.storeHiveSchema(context, config.dbName, config.tableName, hiveSchema);
+    ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+    HiveSinkOutputFormatProvider sinkOutputFormatProvider;
+    try {
+      Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
+      sinkOutputFormatProvider = new HiveSinkOutputFormatProvider(job, config);
+      HCatSchema hiveSchema = sinkOutputFormatProvider.getHiveSchema();
+      HiveSchemaStore.storeHiveSchema(context, config.dbName, config.tableName, hiveSchema);
+    } finally {
+      Thread.currentThread().setContextClassLoader(classLoader);
+    }
     context.addOutput(config.tableName, sinkOutputFormatProvider);
   }
 
@@ -132,19 +138,14 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
                                                                                           config.tableName,
                                                                                           getPartitions(config)));
 
-      OutputJobInfo jobInfo = HCatOutputFormat.getJobInfo(modifiedConf);
-
       hiveSchema = HCatOutputFormat.getTableSchema(modifiedConf);
 
-      // if dynamic paritioning was used then append the dynamic partitioning columns to the table schema obtained from
+      // if partitioning was used then append the partitioning columns to the table schema obtained from
       // hive as the schema obtained does not have these columns.
-      if (jobInfo.isDynamicPartitioningUsed()) {
-        HCatSchema partitionColumns = jobInfo.getTableInfo().getPartitionColumns();
-        List<String> dynamicPartitioningKeys = jobInfo.getDynamicPartitioningKeys();
-
-        for (String dynamicPartitioningKey : dynamicPartitioningKeys) {
-          HCatFieldSchema curFieldSchema = partitionColumns.get(dynamicPartitioningKey);
-          hiveSchema.append(curFieldSchema);
+      HCatSchema partitionColumns = HCatOutputFormat.getJobInfo(modifiedConf).getTableInfo().getPartitionColumns();
+      if (partitionColumns != null && partitionColumns.size() > 0) {
+        for (HCatFieldSchema partitionColumnsKey : partitionColumns.getFields()) {
+          hiveSchema.append(partitionColumnsKey);
         }
       }
 

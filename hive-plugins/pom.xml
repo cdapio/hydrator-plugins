@@ -43,6 +43,16 @@
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-etl-lib</artifactId>
       <scope>test</scope>
+      <exclusions>
+      <exclusion>
+        <groupId>org.apache.avro</groupId>
+        <artifactId>avro</artifactId>
+      </exclusion>
+        <exclusion>
+          <groupId>org.apache.avro</groupId>
+          <artifactId>avro-mapred</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
@@ -64,12 +74,60 @@
     <dependency>
       <groupId>org.apache.hive.hcatalog</groupId>
       <artifactId>hive-hcatalog-core</artifactId>
-      <version>${hive.version}</version>
+      <version>${cdh.hive.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.avro</groupId>
+          <artifactId>avro</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.codehaus.jackson</groupId>
+          <artifactId>jackson-mapper-asl</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.codehaus.jackson</groupId>
+          <artifactId>jackson-core-asl</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.hive</groupId>
+          <artifactId>hive-serde</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.codehaus.jackson</groupId>
+          <artifactId>jackson-jaxrs</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.codehaus.jackson</groupId>
+          <artifactId>jackson-xc</artifactId>
+        </exclusion>
+      </exclusions>
+      <!--<exclusions>-->
+      <!--<exclusion>-->
+        <!--<groupId>org.codehaus.jackson</groupId>-->
+        <!--<artifactId>jackson-mapper-asl</artifactId>-->
+      <!--</exclusion>-->
+      <!--</exclusions>-->
     </dependency>
+    <!-- this is needed because hive-hcatalog-core of cdh has its own avro dependency for cdh -->
+    <!--<dependency>-->
+      <!--<groupId>org.apache.avro</groupId>-->
+      <!--<artifactId>avro</artifactId>-->
+      <!--<version>${cdh.avro.version}</version>-->
+    <!--</dependency>-->
+    <!--<dependency>-->
+      <!--<groupId>org.codehaus.jackson</groupId>-->
+      <!--<artifactId>jackson-mapper-asl</artifactId>-->
+      <!--<version>1.9.2</version>-->
+    <!--</dependency>-->
+    <!--<dependency>-->
+      <!--<groupId>org.apache.hive</groupId>-->
+      <!--<artifactId>hive-serde</artifactId>-->
+      <!--<version>1.1.0-cdh5.4.5</version>-->
+    <!--</dependency>-->
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-metastore</artifactId>
-      <version>${hive.version}</version>
+      <version>${cdh.hive.version}</version>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
@@ -94,6 +152,14 @@
         <exclusion>
           <groupId>org.slf4j</groupId>
           <artifactId>slf4j-log4j12</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.avro</groupId>
+          <artifactId>avro</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.hive</groupId>
+          <artifactId>hive-serde</artifactId>
         </exclusion>
       </exclusions>
     </dependency>

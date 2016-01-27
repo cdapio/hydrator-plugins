@@ -38,8 +38,11 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.VersionInfo;
 import org.apache.hive.hcatalog.data.HCatRecord;
+import org.apache.hive.hcatalog.data.schema.HCatFieldSchema;
 import org.apache.hive.hcatalog.data.schema.HCatSchema;
 import org.apache.hive.hcatalog.mapreduce.HCatInputFormat;
+import org.apache.hive.hcatalog.mapreduce.HCatOutputFormat;
+import org.apache.hive.hcatalog.mapreduce.OutputJobInfo;
 import org.apache.hive.service.auth.HiveAuthFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,6 +93,7 @@ public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord,
     }
 
     HCatSchema hCatSchema = HCatInputFormat.getTableSchema(configuration);
+
     if (config.schema != null) {
       // if the user provided a schema then we should use that schema to read the table. This will allow user to
       // drop non-primitive types and read the table.
