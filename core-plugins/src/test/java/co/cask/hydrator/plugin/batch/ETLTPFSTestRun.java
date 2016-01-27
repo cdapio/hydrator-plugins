@@ -19,7 +19,6 @@ package co.cask.hydrator.plugin.batch;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
-import co.cask.cdap.common.io.Locations;
 import co.cask.cdap.etl.batch.ETLWorkflow;
 import co.cask.cdap.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.etl.common.ETLStage;
@@ -96,7 +95,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     Location location = inputManager.get().getPartitionByTime(timeInMillis).getLocation();
     location = location.append("file.parquet");
     ParquetWriter<GenericRecord> parquetWriter =
-      new AvroParquetWriter<>(new Path(Locations.toURI(location)), avroSchema);
+      new AvroParquetWriter<>(new Path(location.toURI()), avroSchema);
     parquetWriter.write(record);
     parquetWriter.close();
     inputManager.flush();
