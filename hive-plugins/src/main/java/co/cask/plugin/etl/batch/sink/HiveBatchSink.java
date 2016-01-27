@@ -92,6 +92,13 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
     HiveSinkOutputFormatProvider sinkOutputFormatProvider;
     try {
       Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
+      ClassLoader curClassloader = getClass().getClassLoader();
+      LOG.info("The classloader while setting input for sink is  {}", curClassloader);
+      try {
+        Class<?> aClass = classLoader.loadClass("org.apache.avro.Schema");
+      } catch (ClassNotFoundException cfe) {
+        LOG.info("schema class not found", cfe);
+      }
       sinkOutputFormatProvider = new HiveSinkOutputFormatProvider(job, config);
       HCatSchema hiveSchema = sinkOutputFormatProvider.getHiveSchema();
       HiveSchemaStore.storeHiveSchema(context, config.dbName, config.tableName, hiveSchema);
