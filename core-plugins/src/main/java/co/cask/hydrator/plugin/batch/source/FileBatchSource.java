@@ -159,6 +159,7 @@ public class FileBatchSource extends BatchSource<LongWritable, Object, Structure
     }
 
     conf.set(CUTOFF_READ_TIME, dateFormat.format(prevHour));
+    job = Job.getInstance(conf);
     FileInputFormat.setInputPathFilter(job, BatchFileFilter.class);
     FileInputFormat.addInputPath(job, new Path(config.path));
     if (config.maxSplitSize != null) {
