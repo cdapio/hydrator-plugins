@@ -147,7 +147,7 @@
         <configuration>
           <instructions>
             <_exportcontents>co.cask.hydrator.plugin.batch.*;org.apache.commons.lang;org.apache.hive.hcatalog.*;
-              org.apache.hadoop.hive.metastore.*;
+              org.apache.hadoop.hive.metastore.*;org.apache.hadoop.hive.ql.io.avro
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>

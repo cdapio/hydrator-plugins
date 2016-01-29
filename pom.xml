@@ -626,6 +626,8 @@
                 <exclude>**/*.json</exclude>
                 <exclude>**/*.json.template</exclude>
                 <exclude>**/MANIFEST.MF</exclude>
+                <!-- exclude any hack classes -->
+                <exclude>**/org/apache/hadoop/**</exclude>
               </excludes>
             </configuration>
           </execution>
@@ -646,7 +648,7 @@
               <consoleOutput>true</consoleOutput>
               <failsOnError>true</failsOnError>
               <includeTestSourceDirectory>true</includeTestSourceDirectory>
-              <excludes>**/org/apache/cassandra/**</excludes>
+              <excludes>**/org/apache/cassandra/**,**/org/apache/hadoop/**</excludes>
             </configuration>
             <goals>
               <goal>check</goal>
