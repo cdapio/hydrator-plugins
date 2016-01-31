@@ -1,0 +1,41 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Azure Blob Store Configuration",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Azure Blob Store Path",
+          "name": "path"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Azure Blob Store Account",
+          "name": "account"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Azure Blob Store Container",
+          "name": "container"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Azure Blob Store Storage Key",
+          "name": "storageKey"
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "widget-type": "non-editable-schema-editor",
+      "schema": {
+        "offset": "long",
+        "body": "string"
+      }
+    }
+  ]
+}

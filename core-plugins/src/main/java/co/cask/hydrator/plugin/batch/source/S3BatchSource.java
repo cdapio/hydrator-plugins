@@ -71,10 +71,10 @@ public class S3BatchSource extends FileBatchSource {
    */
   public static class S3BatchConfig extends FileBatchConfig {
     @Description(ACCESS_ID_DESCRIPTION)
-    private String accessID;
+    private final String accessID;
 
     @Description(ACCESS_KEY_DESCRIPTION)
-    private String accessKey;
+    private final String accessKey;
 
     public S3BatchConfig(String accessID, String accessKey, String path) {
       this(accessID, accessKey, path, null, null, null, null, null);
