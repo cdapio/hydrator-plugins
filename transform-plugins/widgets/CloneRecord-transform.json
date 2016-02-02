@@ -7,12 +7,12 @@
       "label": "Clone Rows",
       "properties": [
         {
-          "widget-type": "number",
+          "widget-type": "textbox",
           "label": "Copies of record",
           "name": "copies",
           "widget-attributes": {
             "width": "large",
-            "default": 1
+            "default": "1"
           }
         }
       ]
