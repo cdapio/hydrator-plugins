@@ -1,0 +1,13 @@
+{
+  "parents": [
+    "system:cdap-etl-batch[3.2.0-SNAPSHOT,10.0.0)"
+  ],
+  "plugins" : [
+    {
+      "name": "jtds",
+      "type": "jdbc",
+      "description": "Microsoft SQL Server External JDBC Plugin using JTDS Driver",
+      "className": "net.sourceforge.jtds.jdbc.Driver"
+    }
+  ]
+}
