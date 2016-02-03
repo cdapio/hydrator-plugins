@@ -135,7 +135,7 @@ public class SQLServerSource extends BatchSource<LongWritable, DBRecord, Structu
   /**
    * {@link PluginConfig} for {@link SQLServerSource}
    */
-  public static class SQLServerConfig {
+  public static class SQLServerConfig extends PluginConfig {
     @Description(IMPORT_QUERY_DESCRIPTION)
     String importQuery;
 
