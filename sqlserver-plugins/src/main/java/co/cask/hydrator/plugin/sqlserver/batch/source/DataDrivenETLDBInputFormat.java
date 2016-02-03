@@ -16,8 +16,6 @@
 
 package co.cask.hydrator.plugin.sqlserver.batch.source;
 
-import co.cask.cdap.etl.common.DBUtils;
-import co.cask.cdap.etl.common.JDBCDriverShim;
 import com.google.common.base.Throwables;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputSplit;

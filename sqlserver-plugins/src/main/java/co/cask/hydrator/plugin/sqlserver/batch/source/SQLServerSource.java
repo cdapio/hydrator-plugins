@@ -16,8 +16,6 @@
 
 package co.cask.hydrator.plugin.sqlserver.batch.source;
 
-
-
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
@@ -30,12 +28,6 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
-import co.cask.cdap.etl.common.DBConfig;
-import co.cask.cdap.etl.common.DBRecord;
-import co.cask.cdap.etl.common.DBUtils;
-import co.cask.cdap.etl.common.ETLDBInputFormat;
-import co.cask.cdap.etl.common.FieldCase;
-import co.cask.cdap.etl.common.StructuredRecordUtils;
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
@@ -45,20 +37,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Driver;
+import javax.annotation.Nullable;
 
 /**
  * Batch source to read from a Teradata table
  */
 @Plugin(type = "batchsource")
 @Name("SQLServer")
-@Description("Reads from a Teradata table using a configurable SQL query." +
+@Description("Reads from a SQL Server table using a configurable SQL query." +
   " Outputs one record for each row returned by the query.")
 public class SQLServerSource extends BatchSource<LongWritable, DBRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(SQLServerSource.class);
 
-  public static final String BOUNDING_QUERY = "boundingQuery";
-  public static final String SPLIT_BY = "splitBy";
-  public static final String COLUMN_NAME_CASE = "columnNameCase";
   private static final String IMPORT_QUERY_DESCRIPTION = "The SELECT query to use to import data from the specified " +
     "table. You can specify an arbitrary number of columns to import, or import all columns using *. The Query should" +
     "contain the '$CONDITIONS' string. For example, 'SELECT * FROM table WHERE $CONDITIONS'. The '$CONDITIONS' string" +
@@ -145,7 +135,7 @@ public class SQLServerSource extends BatchSource<LongWritable, DBRecord, Structu
   /**
    * {@link PluginConfig} for {@link SQLServerSource}
    */
-  public static class SQLServerConfig extends DBConfig {
+  public static class SQLServerConfig {
     @Description(IMPORT_QUERY_DESCRIPTION)
     String importQuery;
 
@@ -157,5 +147,31 @@ public class SQLServerSource extends BatchSource<LongWritable, DBRecord, Structu
 
     @Description(COLUMN_NAME_CASE_DESCRIPTION)
     String columnNameCase;
+
+    @Description("JDBC connection string including database name.")
+    public String connectionString;
+
+    @Description("User identity for connecting to the specified database. Required for databases that " +
+      "need authentication. Optional for databases that do not require authentication.")
+    @Nullable
+    public String user;
+
+    @Description("Password to use to connect to the specified database. Required for databases that " +
+      "need authentication. Optional for databases that do not require authentication.")
+    @Nullable
+    public String password;
+
+    @Description("Name of the JDBC plugin to use. This is the value of the 'name' key defined in the JSON file " +
+      "for the JDBC plugin.")
+    public String jdbcPluginName;
+
+    @Description("Type of the JDBC plugin to use. This is the value of the 'type' key defined in the JSON file " +
+      "for the JDBC plugin. Defaults to 'jdbc'.")
+    @Nullable
+    public String jdbcPluginType = "jdbc";
+
+    public SQLServerConfig() {
+      jdbcPluginType = "jdbc";
+    }
   }
 }
