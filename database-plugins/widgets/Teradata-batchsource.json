@@ -65,6 +65,19 @@
           "widget-type": "textbox",
           "label": "Split-By Field Name",
           "name": "splitBy"
+        },
+        {
+          "widget-type": "select",
+          "label": "Column Name Case",
+          "name": "columnNameCase",
+          "widget-attributes": {
+            "values": [
+              "UPPER",
+              "lower",
+              "No change"
+            ],
+            "default": "No change"
+          }
         }
       ]
     }
