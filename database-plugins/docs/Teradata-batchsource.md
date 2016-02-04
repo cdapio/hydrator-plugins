@@ -54,16 +54,16 @@ Example
             "importQuery": "select id,name,email,phone from users where $CONDITIONS",
             "boundingQuery": "select min(id),max(id) from users",
             "splitBy": "id",
-            "connectionString": "jdbc:postgresql://localhost:5432/prod",
-            "user": "postgres",
+            "connectionString": "jdbc:teradata://localhost/database=prod",
+            "user": "teradata",
             "password": "",
-            "jdbcPluginName": "postgres",
+            "jdbcPluginName": "teradata",
             "jdbcPluginType": "jdbc"
         }
     }
 
 This example connects to a database using the specified 'connectionString', which means
-it will connect to the 'prod' database of a PostgreSQL instance running on 'localhost'.
+it will connect to the 'prod' database of a Teradata instance running on 'localhost'.
 It will run the 'importQuery' against the 'users' table to read four columns from the table.
 The column types will be used to derive the record field types output by the source.
 For example, if the 'id' column is a primary key of type int and the other columns are
