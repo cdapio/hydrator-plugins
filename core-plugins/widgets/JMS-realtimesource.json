@@ -12,11 +12,11 @@
           "name": "jms.destination.name"
         },
         {
-          "widget-type": "number",
+          "widget-type": "textbox",
           "label": "Message Count",
           "name": "jms.messages.receive",
           "widget-attributes": {
-            "default": 1
+            "default": "1"
           }
         }
       ]
