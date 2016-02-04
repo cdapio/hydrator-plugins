@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -34,8 +34,10 @@ import co.cask.hydrator.plugin.transform.JavaTypeConverters;
 import co.cask.hydrator.plugin.transform.ScriptContext;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.python.core.Py;
 import org.python.core.PyCode;
+import org.python.core.PyException;
 import org.python.util.PythonInterpreter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,8 +60,8 @@ public class PythonEvaluator extends Transform<StructuredRecord, StructuredRecor
   private static final String INPUT_STRUCTURED_RECORD_VARIABLE_NAME = "dont_name_your_variable_this1";
   private static final String EMITTER_VARIABLE_NAME = "dont_name_your_variable_this2";
   private static final String CONTEXT_NAME = "dont_name_your_context_this";
-  private Schema schema;
   private final Config config;
+  private Schema schema;
   private StageMetrics metrics;
   private Logger logger;
   private PythonInterpreter interpreter;
@@ -155,11 +157,7 @@ public class PythonEvaluator extends Transform<StructuredRecord, StructuredRecor
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
     if (config.schema != null) {
-      try {
-        pipelineConfigurer.getStageConfigurer().setOutputSchema(Schema.parseJson(config.schema));
-      } catch (IOException e) {
-        throw new IllegalArgumentException("Unable to parse schema: " + e.getMessage(), e);
-      }
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(parseJson(config.schema));
     } else {
       pipelineConfigurer.getStageConfigurer().setOutputSchema(pipelineConfigurer.getStageConfigurer().getInputSchema());
     }
@@ -173,8 +171,10 @@ public class PythonEvaluator extends Transform<StructuredRecord, StructuredRecor
       interpreter.set(EMITTER_VARIABLE_NAME, pythonEmitter);
       Py.runCode(compiledScript, interpreter.getLocals(), interpreter.getLocals());
 
-    } catch (Exception e) {
-      throw new IllegalArgumentException("Could not transform input: " + e.getMessage(), e);
+    } catch (PyException e) {
+      // We put the stack trace as the exception message, because otherwise the information from PyException is lost.
+      // PyException only exposes the actual cause (Python stack trace) if printStackTrace() is called on it.
+      throw new IllegalArgumentException("Could not transform input.\n" + ExceptionUtils.getStackTrace(e));
     }
   }
 
@@ -373,11 +373,15 @@ public class PythonEvaluator extends Transform<StructuredRecord, StructuredRecor
                                   EMITTER_VARIABLE_NAME, CONTEXT_NAME);
     compiledScript = interpreter.compile(script);
     if (config.schema != null) {
-      try {
-        schema = Schema.parseJson(config.schema);
-      } catch (IOException e) {
-        throw new IllegalArgumentException("Unable to parse schema: " + e.getMessage(), e);
-      }
+      schema = parseJson(config.schema);
+    }
+  }
+
+  private Schema parseJson(String schema) {
+    try {
+      return Schema.parseJson(schema);
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Unable to parse schema: " + e.getMessage(), e);
     }
   }
 }
