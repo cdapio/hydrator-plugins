@@ -37,14 +37,12 @@ import co.cask.hydrator.plugin.DatabasePluginTestBase;
 import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.teradata.batch.source.TeradataSource;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.sql.Date;
 import java.sql.Time;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,7 +80,11 @@ public class TeradataPluginTestRun extends DatabasePluginTestBase {
 
     ETLStage source = new ETLStage("dbSource2", sourceConfig);
     ETLStage sink = new ETLStage("tableSink2", sinkConfig);
-    ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, Lists.<ETLStage>newArrayList());
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .setSource(source)
+      .addSink(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSourceTest");
@@ -183,7 +185,11 @@ public class TeradataPluginTestRun extends DatabasePluginTestBase {
       // smaller case since we have set the db data's column case to be lower
       Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "id"));
     ETLStage sink = new ETLStage("tableSink1", sinkConfig);
-    ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, new ArrayList<ETLStage>());
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .setSource(source)
+      .addSink(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "teradataSourceTest");
@@ -242,7 +248,11 @@ public class TeradataPluginTestRun extends DatabasePluginTestBase {
 
     ETLStage source = new ETLStage("dbSource3", sourceConfig);
     ETLStage sink = new ETLStage("tableSink3", sinkConfig);
-    ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, Lists.<ETLStage>newArrayList());
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .setSource(source)
+      .addSink(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSourceTest");
@@ -282,8 +292,6 @@ public class TeradataPluginTestRun extends DatabasePluginTestBase {
       Properties.Table.PROPERTY_SCHEMA, schema.toString(),
       Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ID"));
 
-    List<ETLStage> transforms = new ArrayList<>();
-
     Map<String, String> baseSourceProps = ImmutableMap.<String, String>builder()
       .put(Properties.DB.CONNECTION_STRING, getConnectionURL())
       .put(Properties.DB.TABLE_NAME, "my_table")
@@ -300,7 +308,11 @@ public class TeradataPluginTestRun extends DatabasePluginTestBase {
     Plugin dbConfig = new Plugin("Teradata", baseSourceProps);
     ETLStage table = new ETLStage("uniqueTableSink" , tableConfig);
     ETLStage database = new ETLStage("databaseSource" , dbConfig);
-    ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", database, table, transforms);
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .setSource(database)
+      .addSink(table)
+      .addConnection(database.getName(), table.getName())
+      .build();
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     deployApplication(appId, appRequest);
 
@@ -309,7 +321,11 @@ public class TeradataPluginTestRun extends DatabasePluginTestBase {
     Map<String, String> noPassword = new HashMap<>(baseSourceProps);
     noPassword.put(Properties.DB.USER, "emptyPwdUser");
     database = new ETLStage("databaseSource", new Plugin("Teradata", noPassword));
-    etlConfig = new ETLBatchConfig("* * * * *", database, table, transforms);
+    etlConfig = ETLBatchConfig.builder("* * * * *")
+      .setSource(database)
+      .addSink(table)
+      .addConnection(database.getName(), table.getName())
+      .build();
     assertDeploymentFailure(
       appId, etlConfig, "Deploying DB Source with non-null username but null password should have failed.");
 
@@ -318,7 +334,11 @@ public class TeradataPluginTestRun extends DatabasePluginTestBase {
     Map<String, String> noUser = new HashMap<>(baseSourceProps);
     noUser.put(Properties.DB.PASSWORD, "password");
     database = new ETLStage("databaseSource", new Plugin("Teradata", noUser));
-    etlConfig = new ETLBatchConfig("* * * * *", database, table, transforms);
+    etlConfig = ETLBatchConfig.builder("* * * * *")
+      .setSource(database)
+      .addSink(table)
+      .addConnection(database.getName(), table.getName())
+      .build();
     assertDeploymentFailure(
       appId, etlConfig, "Deploying DB Source with null username but non-null password should have failed.");
 
@@ -328,7 +348,11 @@ public class TeradataPluginTestRun extends DatabasePluginTestBase {
     emptyPassword.put(Properties.DB.USER, "emptyPwdUser");
     emptyPassword.put(Properties.DB.PASSWORD, "");
     database = new ETLStage("databaseSource", new Plugin("Teradata", emptyPassword));
-    etlConfig = new ETLBatchConfig("* * * * *", database, table, transforms);
+    etlConfig = ETLBatchConfig.builder("* * * * *")
+      .setSource(database)
+      .addSink(table)
+      .addConnection(database.getName(), table.getName())
+      .build();
     appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     deployApplication(appId, appRequest);
   }
@@ -352,11 +376,14 @@ public class TeradataPluginTestRun extends DatabasePluginTestBase {
       .put(Properties.DB.JDBC_PLUGIN_NAME, "hypersql")
       .put(TeradataSource.TeradataSourceConfig.SPLIT_BY, splitBy)
       .build());
-    List<ETLStage> transforms = new ArrayList<>();
     ETLStage table = new ETLStage("tableName", tableConfig);
     ETLStage sourceBadName = new ETLStage("sourceBadName", sourceBadNameConfig);
 
-    ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", sourceBadName, table, transforms);
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .setSource(sourceBadName)
+      .addSink(table)
+      .addConnection(sourceBadName.getName(), table.getName())
+      .build();
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSourceNonExistingTest");
     assertRuntimeFailure(appId, etlConfig, "ETL Application with DB Source should have failed because of a " +
       "non-existent source table.");
@@ -372,7 +399,11 @@ public class TeradataPluginTestRun extends DatabasePluginTestBase {
       .put(TeradataSource.TeradataSourceConfig.SPLIT_BY, splitBy)
       .build());
     ETLStage sourceBadConn = new ETLStage("sourceBadConn", sourceBadConnConfig);
-    etlConfig = new ETLBatchConfig("* * * * *", sourceBadConn, table, transforms);
+    etlConfig = ETLBatchConfig.builder("* * * * *")
+      .setSource(sourceBadConn)
+      .addSink(table)
+      .addConnection(sourceBadConn.getName(), table.getName())
+      .build();
     assertRuntimeFailure(appId, etlConfig, "ETL Application with DB Source should have failed because of a " +
       "non-existent source database.");
   }

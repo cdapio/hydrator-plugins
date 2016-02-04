@@ -16,14 +16,12 @@
 
 package co.cask.hydrator.plugin.batch;
 
-import co.cask.cdap.api.Resources;
 import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
-import co.cask.cdap.etl.common.Connection;
 import co.cask.cdap.etl.common.ETLStage;
 import co.cask.cdap.etl.common.Plugin;
 import co.cask.cdap.proto.Id;
@@ -34,7 +32,6 @@ import co.cask.cdap.test.MapReduceManager;
 import co.cask.hydrator.plugin.batch.sink.SnapshotFileBatchSink;
 import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.dataset.SnapshotFileSet;
-import com.clearspring.analytics.util.Lists;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.avro.file.DataFileStream;
@@ -48,7 +45,6 @@ import org.junit.Test;
 import parquet.avro.AvroParquetReader;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,30 +62,35 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
   @Test
   public void testMultiSnapshotOutput() throws Exception {
     String tableName = "SnapshotInputTable";
-    Plugin sourceConfig = new Plugin("Table", ImmutableMap.<String, String>builder()
-      .put(Properties.Table.NAME, tableName)
-      .put(Properties.Table.PROPERTY_SCHEMA, SCHEMA.toString())
-      .put(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "id")
-      .build());
+    ETLStage source = new ETLStage(
+      "source",
+      new Plugin("Table", ImmutableMap.<String, String>builder()
+        .put(Properties.Table.NAME, tableName)
+        .put(Properties.Table.PROPERTY_SCHEMA, SCHEMA.toString())
+        .put(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "id")
+        .build()));
 
-    Plugin sink1Config = new Plugin("SnapshotParquet", ImmutableMap.<String, String>builder()
-      .put(Properties.SnapshotFileSetSink.NAME, "testParquet")
-      .put("schema", SCHEMA.toString())
-      .build());
+    ETLStage sink1 = new ETLStage(
+      "sink1",
+      new Plugin("SnapshotParquet", ImmutableMap.<String, String>builder()
+        .put(Properties.SnapshotFileSetSink.NAME, "testParquet")
+        .put("schema", SCHEMA.toString())
+        .build()));
 
-    Plugin sink2Config = new Plugin("SnapshotAvro", ImmutableMap.<String, String>builder()
-      .put(Properties.SnapshotFileSetSink.NAME, "testAvro")
-      .put("schema", SCHEMA.toString())
-      .build());
+    ETLStage sink2 = new ETLStage(
+      "sink2",
+      new Plugin("SnapshotAvro", ImmutableMap.<String, String>builder()
+        .put(Properties.SnapshotFileSetSink.NAME, "testAvro")
+        .put("schema", SCHEMA.toString())
+        .build()));
 
-
-    List<ETLStage> transforms = new ArrayList<>();
-    List<ETLStage> sinks = ImmutableList.of(new ETLStage("sink1", sink1Config),
-                                            new ETLStage("sink2", sink2Config));
-
-    ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", new ETLStage("source", sourceConfig), sinks, transforms,
-                                                  new ArrayList<Connection>(),
-                                                  new Resources(), Lists.<ETLStage>newArrayList());
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .setSource(source)
+      .addSink(sink1)
+      .addSink(sink2)
+      .addConnection(source.getName(), sink1.getName())
+      .addConnection(source.getName(), sink2.getName())
+      .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "snapshotSinkTest");
@@ -145,24 +146,27 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
   // deploys a pipeline that reads using a snapshot source and checks that it writes the expected records.
   private void testSource(String sourcePlugin, String sourceName, Map<String, Integer> expected) throws Exception {
     // run another pipeline that reads from avro dataset
-    Plugin sourceConfig = new Plugin(sourcePlugin, ImmutableMap.<String, String>builder()
-      .put(Properties.Table.NAME, sourceName)
-      .put(Properties.Table.PROPERTY_SCHEMA, SCHEMA.toString())
-      .put(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "id")
-      .build());
+    ETLStage source = new ETLStage(
+      "source",
+      new Plugin(sourcePlugin, ImmutableMap.<String, String>builder()
+        .put(Properties.Table.NAME, sourceName)
+        .put(Properties.Table.PROPERTY_SCHEMA, SCHEMA.toString())
+        .put(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "id")
+        .build()));
 
     String outputName = sourceName + "Output";
-    Plugin sinkConfig = new Plugin("SnapshotAvro", ImmutableMap.<String, String>builder()
-      .put(Properties.SnapshotFileSetSink.NAME, outputName)
-      .put("schema", SCHEMA.toString())
-      .build());
+    ETLStage sink = new ETLStage(
+      "sink",
+      new Plugin("SnapshotAvro", ImmutableMap.<String, String>builder()
+        .put(Properties.SnapshotFileSetSink.NAME, outputName)
+        .put("schema", SCHEMA.toString())
+        .build()));
 
-    List<ETLStage> transforms = ImmutableList.of();
-    List<ETLStage> sinks = ImmutableList.of(new ETLStage("sink", sinkConfig));
-    ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *",
-                                                  new ETLStage("source", sourceConfig), sinks, transforms,
-                                                  new ArrayList<Connection>(),
-                                                  new Resources(), Lists.<ETLStage>newArrayList());
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .setSource(source)
+      .addSink(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "snapshotSinkTest2");
