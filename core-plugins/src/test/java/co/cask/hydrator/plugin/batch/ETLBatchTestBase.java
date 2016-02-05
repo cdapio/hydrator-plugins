@@ -115,7 +115,7 @@ public class ETLBatchTestBase extends TestBase {
                       ValidatorTransform.class, CoreValidator.class,
                       StructuredRecordToGenericRecordTransform.class,
                       JavaScriptTransform.class,
-                      PythonEvaluator.class, PythonInterpreter.class);
+                      PythonEvaluator.class);
   }
 
   protected List<GenericRecord> readOutput(TimePartitionedFileSet fileSet, Schema schema) throws IOException {
