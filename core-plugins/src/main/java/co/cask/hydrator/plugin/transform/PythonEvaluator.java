@@ -159,6 +159,8 @@ public class PythonEvaluator extends Transform<StructuredRecord, StructuredRecor
     } else {
       pipelineConfigurer.getStageConfigurer().setOutputSchema(pipelineConfigurer.getStageConfigurer().getInputSchema());
     }
+    // try evaluating the script to fail application creation if the script is invalid
+    init();
   }
 
   @Override
