@@ -17,7 +17,6 @@
     }
   ],
   "errorDataset": {
-    "showErrorDataset": "true",
     "errorDatasetTooltip": "Dataset that collects error messages from emitter. Please check reference section for usage."
   },
   "outputs": [
