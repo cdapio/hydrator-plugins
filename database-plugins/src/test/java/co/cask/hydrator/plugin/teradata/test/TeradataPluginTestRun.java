@@ -34,7 +34,6 @@ import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestBase;
 import co.cask.hydrator.plugin.DatabasePluginTestBase;
-import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
 import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.teradata.batch.source.TeradataSource;
 import com.google.common.collect.ImmutableMap;
@@ -186,7 +185,7 @@ public class TeradataPluginTestRun extends DatabasePluginTestBase {
     ETLStage sink = new ETLStage("tableSink1", sinkConfig);
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, new ArrayList<ETLStage>());
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBatchTestBase.ETLBATCH_ARTIFACT, etlConfig);
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "teradataSourceTest");
     ApplicationManager appManager = TestBase.deployApplication(appId, appRequest);
 

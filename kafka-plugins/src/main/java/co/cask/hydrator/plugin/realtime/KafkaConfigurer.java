@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.realtime.kafka;
+package co.cask.hydrator.plugin.realtime;
 
 /**
  * This class is for configuring both Kafka broker and consumer information for {@link KafkaSimpleApiConsumer}.

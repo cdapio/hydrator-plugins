@@ -14,14 +14,13 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.realtime.kafka;
+package co.cask.hydrator.plugin.realtime;
 
 import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.realtime.RealtimeContext;
 import co.cask.cdap.etl.api.realtime.SourceState;
-import co.cask.hydrator.plugin.realtime.source.KafkaSource;
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;

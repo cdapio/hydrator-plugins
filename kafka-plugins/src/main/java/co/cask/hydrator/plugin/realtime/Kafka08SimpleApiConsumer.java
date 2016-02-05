@@ -14,14 +14,12 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.realtime.kafka;
+package co.cask.hydrator.plugin.realtime;
 
 import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.realtime.RealtimeContext;
-import co.cask.hydrator.plugin.realtime.source.KafkaSource;
-import co.cask.hydrator.plugin.realtime.source.KafkaSource.KafkaPluginConfig;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.cache.Cache;
@@ -95,7 +93,7 @@ public class Kafka08SimpleApiConsumer extends KafkaSimpleApiConsumer<String, Byt
 
   @Override
   protected void configureKafka(KafkaConfigurer configurer) {
-    KafkaPluginConfig pluginConfig = kafkaSource.getConfig();
+    KafkaSource.KafkaPluginConfig pluginConfig = kafkaSource.getConfig();
     Preconditions.checkNotNull(pluginConfig, "Could not have Kafka source plugin config to be null.");
 
     String zk = pluginConfig.getZkConnect();
@@ -110,7 +108,7 @@ public class Kafka08SimpleApiConsumer extends KafkaSimpleApiConsumer<String, Byt
     setupTopicPartitions(configurer, pluginConfig);
   }
 
-  private void setupTopicPartitions(KafkaConsumerConfigurer configurer, KafkaPluginConfig pluginConfig) {
+  private void setupTopicPartitions(KafkaConsumerConfigurer configurer, KafkaSource.KafkaPluginConfig pluginConfig) {
     int partitions = pluginConfig.getPartitions();
     int instanceId = getContext().getInstanceId();
     int instances = getContext().getInstanceCount();
