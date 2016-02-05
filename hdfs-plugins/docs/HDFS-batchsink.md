@@ -1,5 +1,6 @@
 # HDFS Batch Sink
 
+
 Description
 -----------
 Batch sink that writes to the Hadoop FileSystem directly instead of through CDAP.
@@ -9,11 +10,13 @@ if your fields contain commas. Non-string fields will be converted to strings
 using their ``toString()`` Java method, so fields should be limited to the
 string, long, int, double, float, and boolean types. Fields cannot have null values. 
 
+
 Use Case
 --------
 This sink is used when you want to write text files to a Hadoop FileSystem.
 For example, you may want to run a daily job that reads the contents of a database,
 then dumps the contents onto a Hadoop FileSystem. 
+
 
 Properties
 ----------
@@ -24,9 +27,9 @@ Properties
 year-month-day-hour-minute format, and append that to the path to get the final output directory.
 If not specified, no suffix is used.
 
+
 Example
 -------
-
 This example writes to the Hadoop FileSystem with its namenode running on ``mycluster.net``,
 to the ``/etc/accesslogs/YYYY-MM-dd-HH-mm`` path. For example if the run was scheduled to
 run midnight on new years day 2016, the pipeline would write to ``/etc/accesslogs/2016-01-01-00-00``. 

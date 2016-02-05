@@ -1,8 +1,10 @@
 # MongoDB Real-time Sink
 
+
 Description
 -----------
 Takes a StructuredRecord from a previous node, converts it into a BSONDocument and writes it to a MongoDB collection.
+
 
 Configuration
 -------------

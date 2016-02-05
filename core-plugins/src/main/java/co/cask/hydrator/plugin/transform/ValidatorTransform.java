@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -61,7 +61,7 @@ import javax.script.ScriptException;
   "Otherwise it passes the record on to the next stage.")
 public class ValidatorTransform extends Transform<StructuredRecord, StructuredRecord> {
 
-  private static final String SCRIPT_DESCRIPTION = "Javascript that must implement a function 'isValid' that " +
+  private static final String SCRIPT_DESCRIPTION = "JavaScript that must implement a function 'isValid' that " +
     "takes a JSON object representation of the input record " +
     "and a context object (encapsulating CDAP metrics, logger, and validators) " +
     "and returns a result JSON with validity, error code, and error message." +
@@ -90,7 +90,7 @@ public class ValidatorTransform extends Transform<StructuredRecord, StructuredRe
     "      }" +
     "      return {'isValid': isValid, 'errorCode': errCode, 'errorMsg': errMsg}; " +
     "   };" +
-    "The isValid function in this Javascript example uses CoreValidator functions.";
+    "The isValid function in this JavaScript example uses CoreValidator functions.";
 
   private static final Gson GSON = new GsonBuilder()
     .registerTypeAdapter(StructuredRecord.class, new StructuredRecordSerializer())
@@ -238,7 +238,7 @@ public class ValidatorTransform extends Transform<StructuredRecord, StructuredRe
    * ValidatorConfig whose list of validators and script can be configured
    */
   public static class ValidatorConfig extends PluginConfig {
-    @Description("Comma separated list of validator plugins that are used in script")
+    @Description("Comma-separated list of validator plugins that are used in script")
     String validators;
     @Description(SCRIPT_DESCRIPTION)
     String validationScript;

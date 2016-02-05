@@ -1,10 +1,12 @@
 # CSV Formatter Transform
 
+
 Description
 -----------
-Formats a Structured Record as a CSV Record. Supported CSV Record formats are DELIMITED,
-EXCEL, MYSQL, RFC4180, and TDF. When the format is DELIMITED, one can specify different
+Formats a Structured Record as a CSV Record. Supported CSV Record formats are ``DELIMITED``,
+``EXCEL``, ``MYSQL``, ``RFC4180``, and ``TDF``. When the format is ``DELIMITED``, one can specify different
 delimiters that a CSV Record should use for separating fields.
+
 
 Configuration
 -------------

@@ -1,11 +1,13 @@
 # Kafka Producer Real-time Sink
 
+
 Description
 -----------
 Kafka producer plugin that allows you to convert a Structured Record into CSV or JSON.
 Plugin has the capability to push the data to one or more Kafka topics. It can
 use one of the field values from input to partition the data on topic. The producer
 can also be configured to operate in either sync or async mode.
+
 
 Configuration
 -------------

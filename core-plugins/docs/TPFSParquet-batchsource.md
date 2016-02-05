@@ -1,21 +1,21 @@
 # TimePartitionedFileSet Parquet Batch Source
 
+
 Description
 -----------
-
 Reads from a TimePartitionedFileSet whose data is in Parquet format.
+
 
 Use Case
 --------
-
 The source is used when you need to read partitions of a TimePartitionedFileSet.
 For example, suppose there is an application that ingests data by writing to a TimePartitionedFileSet,
 where arrival time of the data is used as the partition key. You may want to create a pipeline that
 reads the newly-arrived files, performs data validation and cleansing, and then writes to a Table.
 
+
 Properties
 ----------
-
 **name:** Name of the TimePartitionedFileSet from which the records are to be read from.
 
 **schema:** The Parquet schema of the record being read from the source as a JSON Object.
@@ -33,9 +33,9 @@ format as the duration value. For example, a duration of '5m' and a delay of '10
 each run of the pipeline will read events for 5 minutes of data from 15 minutes before its logical
 start time to 10 minutes before its logical start time. The default value is 0.
 
+
 Example
 -------
-
 This example reads from a TimePartitionedFileSet named 'webactivity', assuming the underlying
 files are in Parquet format:
 
@@ -77,4 +77,3 @@ this schema:
     | action      | string  |
     | item        | string  |
     +=======================+
-

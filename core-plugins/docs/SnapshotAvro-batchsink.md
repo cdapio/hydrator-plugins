@@ -1,23 +1,23 @@
 # SnapshotAvro Batch Sink
 
+
 Description
 -----------
-
 A batch sink for a PartitionedFileSet that writes snapshots of data as a new
 partition. Data is written in Avro format. A corresponding SnapshotAvro source
 can be used to read only the most recently written snapshot.
 
+
 Use Case
 --------
-
 This sink is used whenever you want access to a PartitionedFileSet containing exactly the
 most recent run's data in Avro format. For example, you might want to create daily
 snapshots of a database by reading the entire contents of a table, writing to this sink,
 and then other programs can analyze the contents of the specified file.
 
+
 Properties
 ----------
-
 **name:** Name of the PartitionedFileSet to which records are written.
 If it doesn't exist, it will be created.
 
@@ -29,9 +29,9 @@ If it doesn't exist, it will be created.
 specified as a JSON object of string to string. These properties are set on the dataset if one is created.
 The properties are also passed to the dataset at runtime as arguments.
 
+
 Example
 -------
-
 This example will write to a PartitionedFileSet named 'users'. It will write data in Avro format
 using the given schema. Every time the pipeline runs, the most recent run will be stored in
 a new partition in the PartitionedFileSet:
@@ -51,4 +51,3 @@ a new partition in the PartitionedFileSet:
             }"
         }
     }
-

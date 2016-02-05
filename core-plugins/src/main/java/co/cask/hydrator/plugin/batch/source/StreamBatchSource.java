@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -76,7 +76,7 @@ public class StreamBatchSource extends BatchSource<LongWritable, Object, Structu
     "of the pipeline will read events from 15 minutes before its logical start time to 10 minutes before its " +
     "logical start time. The default value is 0.";
   private static final String FORMAT_DESCRIPTION = "Optional format of the stream. Any format supported by CDAP " +
-    "is also supported. For example, a value of 'csv' will attempt to parse stream events as comma separated values. " +
+    "is also supported. For example, a value of 'csv' will attempt to parse stream events as comma-separated values. " +
     "If no format is given, event bodies will be treated as bytes, resulting in a three-field schema: " +
     "'ts' of type long, 'headers' of type map of string to string, and 'body' of type bytes.";
   private static final String SCHEMA_DESCRIPTION = "Optional schema for the body of stream events. Schema is used " +

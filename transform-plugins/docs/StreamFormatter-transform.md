@@ -1,9 +1,11 @@
 # Stream Formatter Transform
 
+
 Description
 -----------
 Formats a Structured Record as Stream format. Plugin will convert the Structured Record to Stream format.
-It will include a header and body configurations. The body of the Stream event can be either type CSV or JSON.
+It will include a header and body configurations. The body of the Stream event can be either type ``CSV`` or ``JSON``.
+
 
 Configuration
 -------------
@@ -11,7 +13,7 @@ Configuration
 
 **header:** Specifies the input Structured Record fields that should be included in the header of the Stream event.
 
-**format:** Specifies the format of the body. Currently supported formats are JSON, CSV, TSV, and PSV.
+**format:** Specifies the format of the body. Currently supported formats are ``JSON``, ``CSV``, ``TSV``, and ``PSV``.
 
 **schema:** Specifies the output schema; the output schema can have only two fields: one of type ``STRING`` 
 and the other of type ``MAP<STRING, STRING>``.

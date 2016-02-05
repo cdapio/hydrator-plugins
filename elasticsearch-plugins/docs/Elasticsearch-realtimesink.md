@@ -1,5 +1,6 @@
 # Elasticsearch Real-time Sink
 
+
 Description
 -----------
 Takes the Structured Record from the input source and converts it to a JSON string, then indexes it in
@@ -9,6 +10,7 @@ be running prior to creating the application.
 This sink is used whenever you need to write data into Elasticsearch.
 For example, you may want to read Kafka logs and store them in Elasticsearch
 to be able to search on them.
+
 
 Configuration
 -------------
@@ -25,9 +27,9 @@ it will be created using Elasticsearch's default properties.
 **es.idField:** The field that will determine the id for the document; it should match a fieldname in the
 Structured Record of the input; if left blank, Elasticsearch will create a unique id for each document.
 
+
 Example
 --------
-
 This example connects to Elasticsearch, which is running locally, and writes the data to
 the specified index (*logs*) and type (*cdap*). The data is indexed using the timestamp (*ts*) field
 in the record:

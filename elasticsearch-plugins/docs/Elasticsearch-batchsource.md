@@ -1,8 +1,8 @@
 # Elasticsearch Batch Source
 
+
 Description
 -----------
-
 Pulls documents from Elasticsearch according to the query specified by the user and converts each document
 to a Structured Record with the fields and schema specified by the user. The Elasticsearch server should
 be running prior to creating the application.
@@ -10,9 +10,9 @@ be running prior to creating the application.
 This source is used whenever you need to read data from Elasticsearch. For example, you may want to read
 in an index and type from Elasticsearch and store the data in an HBase table.
 
+
 Configuration
 -------------
-
 **es.host:** The hostname and port for the Elasticsearch instance.
 
 **es.index:** The name of the index to query.
@@ -24,9 +24,9 @@ see Elasticsearch for additional query examples.
 
 **schema:** The schema or mapping of the data in Elasticsearch.
 
+
 Example
 -------
-
 This example connects to Elasticsearch, which is running locally, and reads in records in the
 specified index (*megacorp*) and type (*employee*) which match the query to (in this case) select all records.
 All data from the index will be read on each run:
