@@ -1,8 +1,10 @@
 # Python Evaluator Transform
 
+
 Description
 -----------
 Executes user-provided Python code that transforms one record into another.
+
 
 Configuration
 -------------
@@ -20,9 +22,9 @@ will scale the ``'count'`` field of ``record`` by 1024.
 **schema:** The schema of output objects. If no schema is given, it is assumed that the output
 schema is the same as the input schema.
 
+
 Example
 -------
-
 The transform takes records that have a ``'subtotal'`` field, calculates ``'tax'`` and
 ``'total'`` fields based on the subtotal, and then returns a record, as a Python dictionary,
 containing those three fields:
@@ -53,6 +55,7 @@ containing those three fields:
             }"
         }
     }
+
 
 Known Issues
 ------------

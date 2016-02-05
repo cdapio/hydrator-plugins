@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -56,7 +56,7 @@ import javax.script.ScriptException;
  */
 @Plugin(type = "transform")
 @Name("Script")
-@Description("Executes user-provided Javascript that transforms one record into another." +
+@Description("Executes user-provided JavaScript that transforms one record into another." +
   "This transform has been deprecated, use JavaScriptTransform instead of this transform")
 public class ScriptTransform extends Transform<StructuredRecord, StructuredRecord> {
   private static final Gson GSON = new GsonBuilder()
@@ -79,7 +79,7 @@ public class ScriptTransform extends Transform<StructuredRecord, StructuredRecor
    * Configuration for the script transform.
    */
   public static class Config extends PluginConfig {
-    @Description("Javascript defining how to transform one record into another. The script must implement a function " +
+    @Description("JavaScript defining how to transform one record into another. The script must implement a function " +
       "called 'transform', which takes as input a JSON object (representing the input record) " +
       "and a context object (which contains CDAP metrics and logger), and returns " +
       "a JSON object that represents the transformed input. " +

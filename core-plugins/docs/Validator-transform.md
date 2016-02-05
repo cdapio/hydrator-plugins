@@ -1,13 +1,12 @@
 # Validator Transform
 
+
 Description
 -----------
-
 Validates a record, writing to an error dataset if the record is invalid.
 Otherwise it passes the record on to the next stage.
 
 This table lists the methods available in CoreValidator that can be called from the ValidatorTransform:
-
 
     +==================================================================================================================+
     | function                                        | description                                                    |
@@ -53,16 +52,16 @@ This table lists the methods available in CoreValidator that can be called from 
     |                                                 | top-level domain                                               |
     +==================================================================================================================+
 
+
 Use Case
 --------
-
 The transform is used when you need to validate records. For example, you may want to
 validate records as being valid IP addresses or valid dates and log errors if they aren't
 valid.
 
+
 Properties
 ----------
-
 **validators** Comma-separated list of validators that are used by the validationScript.
 Example: ``"validators": "core"``
 
@@ -82,9 +81,9 @@ For example, if lookup table "purchases" is configured, then you will be able to
 operations with that lookup table in your script: ``context.getLookup('purchases').lookup('key')``
 Currently supports ``KeyValueTable``.
 
+
 Examples
 --------
-
 This example sends an error code ``'10'`` for any records whose ``'body'`` field contains
 a value whose length is greater than 10. It has been "pretty-printed" for readability. It
 uses the ``CoreValidator`` (included using ``"validators": "core"`` ) and references a

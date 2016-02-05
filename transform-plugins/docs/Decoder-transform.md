@@ -1,9 +1,11 @@
 # Decoder Transform
 
+
 Description
 -----------
 Decodes configured fields. Multiple fields can be specified to be decoded using different decoding methods.
-Available decoding methods are STRING_BASE64, BASE64, BASE32, STRING_BASE32, and HEX.
+Available decoding methods are ``STRING_BASE64``, ``BASE64``, ``BASE32``, ``STRING_BASE32``, and ``HEX``.
+
 
 Configuration
 -------------

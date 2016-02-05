@@ -1,8 +1,8 @@
 # Twitter Real-time Source
 
+
 Description
 -----------
-
 Samples tweets in real-time. Output records will have this schema:
 
     +================================+
@@ -20,16 +20,16 @@ Samples tweets in real-time. Output records will have this schema:
     | isRetweet   | boolean          |
     +================================+
 
+
 Use Case
 --------
-
 The source is used whenever you want to sample tweets from Twitter in real-time.
 For example, you may want to read tweets and store them in a table where they can
 be accessed by your data scientists to perform experiments.
 
+
 Properties
 ----------
-
 See the [Twitter OAuth documentation] for more information on obtaining
 your access token and access token secret. The consumer key and secret
 are specific to your Twitter app. Login, view [your apps], then click on
@@ -45,6 +45,7 @@ the relevant app to find the consumer key and secret.
 **AccessToken:** Twitter Access Token.
 
 **AccessTokenSecret:** Twitter Access Token Secret.
+
 
 Example
 -------

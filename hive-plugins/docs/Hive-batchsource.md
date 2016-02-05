@@ -1,9 +1,11 @@
 # Hive Batch Source
 
+
 Description
 -----------
 Reads records from a Hive table and converts each record into a StructuredRecord with the help
 of the specified schema (if provided) or the table's schema.
+
 
 Configuration
 -------------

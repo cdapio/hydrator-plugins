@@ -1,20 +1,20 @@
 # Table Batch Source
 
+
 Description
 -----------
-
 Reads the entire contents of a CDAP Table. Outputs one record for each row in the Table.
 The Table must conform to a given schema. 
 
+
 Use Case
 --------
-
 The source is used whenever you need to read from a table in batch. For example,
 you may want to periodically dump the contents of a CDAP Table to a relational database.
 
+
 Properties
 ----------
-
 **name:** Table name. If the table does not already exist, it will be created.
 
 **schema:** Schema of records read from the table. Row columns map to record
@@ -26,9 +26,9 @@ are allowed (boolean, int, long, float, double, bytes, string).
 come from the row key instead of a row column. The field name specified must be present in
 the schema, and must not be nullable.
 
+
 Example
 -------
-
 This example reads from a Table named 'users':
 
     {

@@ -1,10 +1,12 @@
 # Decompressor Transform
 
+
 Description
 -----------
 Decompresses configured fields. Multiple fields can be specified to be decompressed using
-different decompression algorithms. Plugin supports SNAPPY, ZIP, and GZIP types of
+different decompression algorithms. Plugin supports ``SNAPPY``, ``ZIP``, and ``GZIP`` types of
 decompression of fields.
+
 
 Configuration
 -------------

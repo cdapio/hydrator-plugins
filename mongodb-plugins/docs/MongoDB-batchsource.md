@@ -1,13 +1,16 @@
 # MongoDB Batch Source
 
+
 Description
 -----------
 Reads documents from a MongoDB collection and converts each document into a StructuredRecord with the help
 of a specified schema. The user can optionally provide input query, input fields, and splitter classes.
 
+
 Configuration
 -------------
-**connectionString:** MongoDB connection string. Example: `mongodb://localhost:27017/analytics.users` [Reference](http://docs.mongodb.org/manual/reference/connection-string)
+**connectionString:** MongoDB connection string. Example: `mongodb://localhost:27017/analytics.users` 
+[Reference](http://docs.mongodb.org/manual/reference/connection-string)
 
 **schema:** Specifies the schema of the documents.
 

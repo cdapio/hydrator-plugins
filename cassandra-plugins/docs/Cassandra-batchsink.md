@@ -1,16 +1,19 @@
 # Cassandra Batch Sink
 
+
 Description
 -----------
 Batch sink to use Apache Cassandra as a sink.
 
 **Note** Apache Cassandra v. 2.1.0 is currently the only supported version of Apache Cassandra.
 
+
 Use Case
 --------
 This sink is used whenever you need to write data into Cassandra.
 For example, you may want to parse a file and read its contents into Cassandra,
 which you can achieve with a stream batch source and Cassandra as a sink.
+
 
 Properties
 ----------
@@ -32,9 +35,9 @@ The columns should be listed in the same order as they are stored in the column 
 
 **primaryKey:** A comma-separated list of primary keys.
 
+
 Example
 -------
-
 This example connects to Apache Cassandra, which is running locally, and writes the data to
 the specified column family (*employees*), which is in the *megacorp* keyspace.
 This column family has four columns and two primary keys, and Apache Cassandra

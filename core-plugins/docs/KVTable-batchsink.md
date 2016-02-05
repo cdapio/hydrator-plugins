@@ -1,20 +1,18 @@
 # KeyValueTable Batch Sink
 
+
 Description
 -----------
-
 Writes records to a KeyValueTable, using configurable fields from input records as the
 key and value.
 
 Use Case
 --------
-
 The source is used whenever you need to write to a KeyValueTable in batch. For example,
 you may want to periodically copy portions of a Table into a KeyValueTable.
 
 Properties
 ----------
-
 **name:** Name of the dataset. If it does not already exist, one will be created.
 
 **key.field:** The name of the field to use as the key. Defaults to 'key'.
@@ -23,7 +21,6 @@ Properties
 
 Example
 -------
-
 This example writes to a KeyValueTable named 'items':
 
     {

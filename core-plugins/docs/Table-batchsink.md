@@ -1,20 +1,20 @@
 # Table Batch Sink
 
+
 Description
 -----------
-
 Writes records to a CDAP Table with one record field mapping
 to the Table rowkey, and all other record fields mapping to Table columns.
 
+
 Use Case
 --------
-
 The sink is used whenever you need to write to a Table in batch. For example,
 you may want to periodically dump the contents of a relational database into a CDAP Table.
 
+
 Properties
 ----------
-
 **name:** Name of the table dataset. If it does not already exist, one will be created.
 
 **schema:** Optional schema of the table as a JSON Object. If the table does not
@@ -26,9 +26,9 @@ key when writing to the table.
 
 **case.sensitive.row.field:** Whether 'schema.row.field' is case sensitive; defaults to true.
 
+
 Example
 -------
-
 This example writes to a Table named 'users':
 
     {
