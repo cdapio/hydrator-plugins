@@ -19,13 +19,20 @@ package co.cask.hydrator.plugin;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.plugin.PluginClass;
 import co.cask.cdap.api.plugin.PluginPropertyField;
+import co.cask.cdap.etl.api.PipelineConfigurable;
+import co.cask.cdap.etl.api.batch.BatchSource;
+import co.cask.cdap.etl.batch.ETLBatchApplication;
 import co.cask.cdap.proto.Id;
-import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
+import co.cask.cdap.proto.artifact.ArtifactSummary;
+import co.cask.cdap.test.TestBase;
+import co.cask.cdap.test.TestConfiguration;
 import co.cask.hydrator.plugin.db.batch.sink.DBSink;
 import co.cask.hydrator.plugin.db.batch.source.DBSource;
 import co.cask.hydrator.plugin.db.batch.source.ETLDBInputFormat;
 import co.cask.hydrator.plugin.teradata.batch.source.DataDrivenETLDBInputFormat;
 import co.cask.hydrator.plugin.teradata.batch.source.TeradataSource;
+import co.cask.hydrator.plugin.test.TableSink;
+import co.cask.hydrator.plugin.test.TableSource;
 import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Sets;
@@ -53,32 +60,46 @@ import javax.sql.rowset.serial.SerialBlob;
 /**
  * Database Plugin Tests setup.
  */
-public class DatabasePluginTestBase extends ETLBatchTestBase {
-  public static boolean tearDown = true;
-
-  protected static final long CURRENT_TS = System.currentTimeMillis();
+public class DatabasePluginTestBase extends TestBase {
+  protected static final Id.Artifact APP_ARTIFACT_ID = Id.Artifact.from(Id.Namespace.DEFAULT, "etlbatch", "3.2.0");
+  protected static final ArtifactSummary ETLBATCH_ARTIFACT = new ArtifactSummary("etlbatch", "3.2.0");
   protected static final String CLOB_DATA =
     "this is a long string with line separators \n that can be used as \n a clob";
-
-  protected static HSQLDBServer hsqlDBServer;
-  protected static Schema schema;
+  protected static final long CURRENT_TS = System.currentTimeMillis();
 
   private static int startCount;
+  protected static HSQLDBServer hsqlDBServer;
+  protected static Schema schema;
+  public static boolean tearDown = true;
 
   @ClassRule
   public static TemporaryFolder temporaryFolder = new TemporaryFolder();
 
+  @ClassRule
+  public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", true);
+
   @BeforeClass
-  public static void setupDB() throws Exception {
+  public static void setupTest() throws Exception {
     if (startCount++ > 0) {
       return;
     }
 
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "database-plugins", "1.0.0"), APP_ARTIFACT_ID,
-                      DBSource.class, DBSink.class, DBRecord.class, ETLDBInputFormat.class, ETLDBOutputFormat.class);
+    // add the artifact for etl batch app
+    addAppArtifact(APP_ARTIFACT_ID, ETLBatchApplication.class,
+                   BatchSource.class.getPackage().getName(),
+                   PipelineConfigurable.class.getPackage().getName(),
+                   "org.apache.avro.mapred", "org.apache.avro", "org.apache.avro.generic", "org.apache.avro.io",
+                   // these are not real exports for the application, but are required for unit tests.
+                   // the stupid hive-exec jar pulled in by cdap-unit-test contains ParquetInputSplit...
+                   // without this, different classloaders will be used for ParquetInputSplit and we'll see errors
+                   "parquet.hadoop.api", "parquet.hadoop", "parquet.schema", "parquet.io.api");
 
-    // add artifact for batch sources and sinks
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "teradata-plugins", "1.0.0"), APP_ARTIFACT_ID,
+    // add artifact for tests
+    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "test-plugins", "1.0.0"), APP_ARTIFACT_ID,
+                      TableSink.class, TableSource.class);
+
+    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "database-plugins", "1.0.0"), APP_ARTIFACT_ID,
+                      DBSource.class, DBSink.class, DBRecord.class, ETLDBInputFormat.class, ETLDBOutputFormat.class,
                       TeradataSource.class, DataDrivenETLDBInputFormat.class, DBRecord.class);
 
     // add hypersql 3rd party plugin

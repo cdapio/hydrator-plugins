@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.transforms;
+package co.cask.hydrator.plugin.transform;
 
 import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;

@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.transforms;
+package co.cask.hydrator.plugin.transform;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
@@ -30,8 +30,6 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.StageMetrics;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
-import co.cask.hydrator.plugin.transform.JavaTypeConverters;
-import co.cask.hydrator.plugin.transform.ScriptContext;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang3.exception.ExceptionUtils;

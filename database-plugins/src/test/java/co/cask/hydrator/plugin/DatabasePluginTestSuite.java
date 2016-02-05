@@ -16,7 +16,6 @@
 
 package co.cask.hydrator.plugin;
 
-import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
 import co.cask.hydrator.plugin.db.batch.sink.BatchETLDBTestRun;
 import co.cask.hydrator.plugin.teradata.test.TeradataPluginTestRun;
 import org.junit.AfterClass;
@@ -32,16 +31,15 @@ import org.junit.runners.Suite;
   BatchETLDBTestRun.class,
   TeradataPluginTestRun.class
 })
-public class DatabasePluginTestSuite extends ETLBatchTestBase {
+public class DatabasePluginTestSuite extends DatabasePluginTestBase {
 
   @BeforeClass
   public static void setup() {
-    DatabasePluginTestBase.tearDown = false;
+    tearDown = false;
   }
 
   @AfterClass
   public static void tearDown() throws Exception {
-    DatabasePluginTestBase.tearDown = true;
-    DatabasePluginTestBase.tearDownDB();
+    tearDown = true;
   }
 }

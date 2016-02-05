@@ -27,15 +27,17 @@ import co.cask.hydrator.plugin.realtime.sink.RealtimeTableSink;
 import co.cask.hydrator.plugin.realtime.sink.StreamSink;
 import co.cask.hydrator.plugin.realtime.source.DataGeneratorSource;
 import co.cask.hydrator.plugin.realtime.source.JmsSource;
-import co.cask.hydrator.plugin.realtime.source.KafkaSource;
 import co.cask.hydrator.plugin.realtime.source.SqsSource;
 import co.cask.hydrator.plugin.realtime.source.TwitterSource;
+import co.cask.hydrator.plugin.transform.JavaScriptTransform;
 import co.cask.hydrator.plugin.transform.ProjectionTransform;
+import co.cask.hydrator.plugin.transform.PythonEvaluator;
 import co.cask.hydrator.plugin.transform.ScriptFilterTransform;
 import co.cask.hydrator.plugin.transform.ScriptTransform;
 import co.cask.hydrator.plugin.transform.StructuredRecordToGenericRecordTransform;
 import co.cask.hydrator.plugin.transform.ValidatorTransform;
 import org.junit.BeforeClass;
+import org.python.util.PythonInterpreter;
 
 /**
  * Performs common setup logic
@@ -53,12 +55,13 @@ public class ETLRealtimeTestBase extends TestBase {
                    PipelineConfigurable.class.getPackage().getName());
 
     addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "core-plugins", "1.0.0"), APP_ARTIFACT_ID,
-                      DataGeneratorSource.class, JmsSource.class, KafkaSource.class,
+                      DataGeneratorSource.class, JmsSource.class,
                       TwitterSource.class, SqsSource.class,
                       RealtimeCubeSink.class, RealtimeTableSink.class,
                       StreamSink.class,
                       ProjectionTransform.class, ScriptTransform.class, ScriptFilterTransform.class,
-                      ValidatorTransform.class,
+                      JavaScriptTransform.class, ValidatorTransform.class,
+                      PythonEvaluator.class, PythonInterpreter.class,
                       StructuredRecordToGenericRecordTransform.class);
   }
 }
