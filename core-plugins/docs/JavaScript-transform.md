@@ -3,9 +3,9 @@
 
 Description
 -----------
-Executes user-provided Javascript that transforms one record into zero or more records.
+Executes user-provided JavaScript that transforms one record into zero or more records.
 Input records are converted into JSON objects which can be directly accessed in
-Javascript. The transform expects to receive a JSON object as input, which it can
+JavaScript. The transform expects to receive a JSON object as input, which it can
 process and emit zero or more records or emit error using the provided emitter object.
 
 
@@ -18,10 +18,10 @@ to ``'megabytes'``. Or you might want to convert a timestamp into a human-readab
 
 Properties
 ----------
-**script:** Javascript defining how to transform input record into zero or more records. The script must
+**script:** JavaScript defining how to transform input record into zero or more records. The script must
 implement a function called ``'transform'``, which takes as input a JSON object (representing
-the input record), emitter object (to emit zero or more output records) 
-and a context object (which encapsulates CDAP metrics, logger and lookup).
+the input record), an emitter object (to emit zero or more output records), 
+and a context object (which encapsulates CDAP metrics, logger, and lookup).
 For example:
 
     function transform(input, emitter, context) {
