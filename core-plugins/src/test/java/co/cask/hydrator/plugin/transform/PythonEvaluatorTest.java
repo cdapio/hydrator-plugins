@@ -132,6 +132,31 @@ public class PythonEvaluatorTest {
     Assert.assertEquals(expectedListField, output.get("arrayField"));
   }
 
+  @Test(expected = Exception.class)
+  public void testScriptCompilationValidation() throws Exception {
+    Schema outputSchema = Schema.recordOf(
+      "smallerSchema",
+      Schema.Field.of("intField", Schema.of(Schema.Type.INT)),
+      Schema.Field.of("longField", Schema.of(Schema.Type.LONG)));
+
+    PythonEvaluator.Config config = new PythonEvaluator.Config(
+      "def transform(x, emitter, context):\n" +
+        " y = {}\n" +
+        "y['intField'] *= 1024\n" +
+        "  y['longField'] *= 1024\n" +
+        "  emitter.emit(y)",
+      outputSchema.toString());
+
+    Schema inputSchema = Schema.recordOf(
+      "biggerSchema",
+      Schema.Field.of("intField", Schema.of(Schema.Type.INT)),
+      Schema.Field.of("longField", Schema.of(Schema.Type.LONG)),
+      Schema.Field.of("doubleField", Schema.of(Schema.Type.DOUBLE)));
+
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
+    new PythonEvaluator(config).configurePipeline(configurer);
+  }
+
   @Test
   public void testSchemaValidation() throws Exception {
     Schema outputSchema = Schema.recordOf(
@@ -142,9 +167,9 @@ public class PythonEvaluatorTest {
     PythonEvaluator.Config config = new PythonEvaluator.Config(
       "def transform(x, emitter, context):\n" +
         " y = {}\n" +
-        "  y['intField'] *= 1024\n" +
-        "  y['longField'] *= 1024\n" +
-        "  emitter.emit(y)",
+        " y['intField'] *= 1024\n" +
+        " y['longField'] *= 1024\n" +
+        " emitter.emit(y)",
       outputSchema.toString());
 
     Schema inputSchema = Schema.recordOf(
@@ -160,7 +185,7 @@ public class PythonEvaluatorTest {
     // check if schema is null, input schema is used.
     config = new PythonEvaluator.Config(
       "def transform(x, emitter, context):\n" +
-        " y = {}\n" +
+        "  y = {}\n" +
         "  y['intField'] *= 1024\n" +
         "  y['longField'] *= 1024\n" +
         "  emitter.emit(y)",
