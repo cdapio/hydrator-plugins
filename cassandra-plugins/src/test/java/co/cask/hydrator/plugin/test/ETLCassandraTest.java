@@ -160,8 +160,8 @@ public class ETLCassandraTest extends TestBase {
       ByteBufferUtil.bytes("CREATE TABLE testtablebatch ( ticker text PRIMARY KEY, price double, num int );"),
       Compression.NONE, ConsistencyLevel.ALL);
     client.execute_cql3_query(
-      ByteBufferUtil.bytes("CREATE TABLE testtablerealtime ( name text PRIMARY KEY, graduated boolean, " +
-                             "id int, score double, time bigint );"),
+      ByteBufferUtil.bytes("CREATE TABLE testtablerealtime ( name text, graduated boolean, " +
+                             "id int, score double, time bigint PRIMARY KEY );"),
       Compression.NONE, ConsistencyLevel.ALL);
   }
 
@@ -334,6 +334,7 @@ public class ETLCassandraTest extends TestBase {
         .put(RealtimeCassandraSink.Cassandra.COMPRESSION, "NONE")
         .put(RealtimeCassandraSink.Cassandra.CONSISTENCY_LEVEL, "QUORUM")
         .build()));
+    final String cqlQuery = "select name,graduated,id,score,time from testtablerealtime";
     List<ETLStage> transforms = new ArrayList<>();
     ETLRealtimeConfig etlConfig = new ETLRealtimeConfig(source, sink, transforms);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testESSink");
@@ -343,17 +344,17 @@ public class ETLCassandraTest extends TestBase {
     WorkerManager workerManager = appManager.getWorkerManager(ETLWorker.class.getSimpleName());
 
     workerManager.start();
-    Tasks.waitFor(1, new Callable<Integer>() {
+    Tasks.waitFor(true, new Callable<Boolean>() {
       @Override
-      public Integer call() throws Exception {
-        CqlResult result = client.execute_cql3_query(ByteBufferUtil.bytes("select * from testtablerealtime"),
+      public Boolean call() throws Exception {
+        CqlResult result = client.execute_cql3_query(ByteBufferUtil.bytes(cqlQuery),
                                                      Compression.NONE, ConsistencyLevel.ALL);
-        return result.rows.size();
+        return result.rows.size() >= 2;
       }
     }, 30, TimeUnit.SECONDS, 50, TimeUnit.MILLISECONDS);
     workerManager.stop();
 
-    CqlResult result = client.execute_cql3_query(ByteBufferUtil.bytes("select * from testtablerealtime"),
+    CqlResult result = client.execute_cql3_query(ByteBufferUtil.bytes(cqlQuery),
                                                  Compression.NONE, ConsistencyLevel.ALL);
     List<Column> columns = result.getRows().get(0).getColumns();
 
@@ -364,5 +365,9 @@ public class ETLCassandraTest extends TestBase {
     Assert.assertEquals(1, ByteBufferUtil.toInt(columns.get(2).bufferForValue()));
     Assert.assertEquals(3.4, ByteBufferUtil.toDouble(columns.get(3).bufferForValue()), 0.000001);
     Assert.assertNotNull(ByteBufferUtil.toLong(columns.get(4).bufferForValue()));
+
+    List<Column> columns2 = result.getRows().get(1).getColumns();
+    Assert.assertNotEquals(ByteBufferUtil.toLong(columns.get(4).bufferForValue()),
+                           ByteBufferUtil.toLong(columns2.get(4).bufferForValue()));
   }
 }
