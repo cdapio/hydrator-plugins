@@ -68,7 +68,7 @@
     <apache-commons.version>1.2</apache-commons.version>
     <commons-codec.version>1.10</commons-codec.version>
     <snappy.version>1.1.2</snappy.version>
-    <hive.version>1.1.0-cdh5.4.5</hive.version>
+    <cdh.hive.version>1.1.0-cdh5.4.5</cdh.hive.version>
     <surefire.redirectTestOutputToFile>true</surefire.redirectTestOutputToFile>
   </properties>
 
@@ -467,6 +467,8 @@
                 <exclude>**/*.json</exclude>
                 <exclude>**/*.json.template</exclude>
                 <exclude>**/MANIFEST.MF</exclude>
+                <!-- exclude any hack classes -->
+                <exclude>**/org/apache/hadoop/**</exclude>
               </excludes>
             </configuration>
           </execution>
@@ -487,7 +489,7 @@
               <consoleOutput>true</consoleOutput>
               <failsOnError>true</failsOnError>
               <includeTestSourceDirectory>true</includeTestSourceDirectory>
-              <excludes>**/org/apache/cassandra/**</excludes>
+              <excludes>**/org/apache/cassandra/**,**/org/apache/hadoop/**</excludes>
             </configuration>
             <goals>
               <goal>check</goal>
