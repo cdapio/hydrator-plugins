@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -357,57 +357,23 @@ public class TeradataPluginTestRun extends DatabasePluginTestBase {
     ETLStage sourceBadName = new ETLStage("sourceBadName", sourceBadNameConfig);
 
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", sourceBadName, table, transforms);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSourceTest");
-    assertDeploymentFailure(appId, etlConfig, "ETL Application with DB Source should have failed because of a " +
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSourceNonExistingTest");
+    assertRuntimeFailure(appId, etlConfig, "ETL Application with DB Source should have failed because of a " +
       "non-existent source table.");
 
     // Bad connection
     String badConnection = String.format("jdbc:hsqldb:hsql://localhost/%sWRONG", getDatabase());
-    Plugin sourceBadConnConfig = new Plugin("Teradata", ImmutableMap.of(
-      Properties.DB.CONNECTION_STRING, badConnection,
-      Properties.DB.IMPORT_QUERY, importQuery,
-      Properties.DB.COUNT_QUERY, boundingQuery,
-      Properties.DB.JDBC_PLUGIN_NAME, "hypersql"
-    ));
+    Plugin sourceBadConnConfig = new Plugin("Teradata", ImmutableMap.<String, String>builder()
+      .put(Properties.DB.CONNECTION_STRING, badConnection)
+      .put(Properties.DB.TABLE_NAME, "dummy")
+      .put(Properties.DB.IMPORT_QUERY, importQuery)
+      .put(TeradataSource.TeradataSourceConfig.BOUNDING_QUERY, boundingQuery)
+      .put(Properties.DB.JDBC_PLUGIN_NAME, "hypersql")
+      .put(TeradataSource.TeradataSourceConfig.SPLIT_BY, splitBy)
+      .build());
     ETLStage sourceBadConn = new ETLStage("sourceBadConn", sourceBadConnConfig);
     etlConfig = new ETLBatchConfig("* * * * *", sourceBadConn, table, transforms);
-    assertDeploymentFailure(appId, etlConfig, "ETL Application with DB Source should have failed because of a " +
+    assertRuntimeFailure(appId, etlConfig, "ETL Application with DB Source should have failed because of a " +
       "non-existent source database.");
-
-    // sink
-    Plugin sinkBadNameConfig = new Plugin("Teradata", ImmutableMap.of(
-      Properties.DB.CONNECTION_STRING, getConnectionURL(),
-      Properties.DB.TABLE_NAME, "dummy",
-      Properties.DB.COLUMNS, "ID, NAME",
-      Properties.DB.JDBC_PLUGIN_NAME, "hypersql"
-    ));
-    ETLStage sinkBadName = new ETLStage("sourceBadConn", sinkBadNameConfig);
-    etlConfig = new ETLBatchConfig("* * * * *", table, sinkBadName, transforms);
-    appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSinkTestBadName");
-    assertDeploymentFailure(appId, etlConfig, "ETL Application with DB Sink should have failed because of a " +
-      "non-existent sink table.");
-
-    // Bad connection
-    Plugin sinkBadConnConfig = new Plugin("Teradata", ImmutableMap.of(
-      Properties.DB.CONNECTION_STRING, badConnection,
-      Properties.DB.TABLE_NAME, "dummy",
-      Properties.DB.COLUMNS, "ID, NAME",
-      Properties.DB.JDBC_PLUGIN_NAME, "hypersql"
-    ));
-    ETLStage sinkBadConn = new ETLStage("sourceBadConn", sinkBadConnConfig);
-    etlConfig = new ETLBatchConfig("* * * * *", table, sinkBadConn, transforms);
-    assertDeploymentFailure(appId, etlConfig, "ETL Application with DB Sink should have failed because of a " +
-      "non-existent sink database.");
-  }
-
-  private void assertDeploymentFailure(Id.Application appId, ETLBatchConfig etlConfig,
-                                       String failureMessage) throws Exception {
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    try {
-      deployApplication(appId, appRequest);
-      Assert.fail(failureMessage);
-    } catch (IllegalStateException e) {
-      // expected
-    }
   }
 }
