@@ -1,19 +1,19 @@
 # JMS Real-time Source
 
+
 Description
 -----------
-
 Java Message Service (JMS) real-time source. Emits a record with a field 'message' of type string.
+
 
 Use Case
 --------
-
 This source is used whenever you want to read from a JMS queue. For example, you may want to read
 from an Apache ActiveMQ queue and write to a stream.
 
+
 Properties
 ----------
-
 **jms.destination.name:** Name of the destination from which to retrieve messages.
 
 **jms.messages.receive:** Maximum number of messages that should be retrieved per poll.
@@ -36,9 +36,9 @@ JSON file for the JMS plugin. Defaults to ``JMSProvider``.
 
 **jms.plugin.custom.properties:** Provide any required custom properties as a JSON Map.
 
+
 Example
 -------
-
 This example will read from an instance of Apache ActiveMQ running on port 61616 on 'localhost'.
 It will poll the 'purchases' topic, reading up to 50 messages with each poll. A record is
 emitted for each message read from the topic. The record consists of a single field named 'message'

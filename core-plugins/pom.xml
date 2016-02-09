@@ -84,6 +84,12 @@
       <artifactId>avro-mapred</artifactId>
       <classifier>hadoop2</classifier>
     </dependency>
+    <!-- python script transform -->
+    <dependency>
+      <groupId>org.python</groupId>
+      <artifactId>jython-standalone</artifactId>
+      <version>2.5.2</version>
+    </dependency>
     <!-- Start for JMS Source -->
     <dependency>
       <groupId>org.apache.geronimo.specs</groupId>
@@ -106,37 +112,6 @@
       </exclusions>
     </dependency>
     <!-- End for JMS Source -->
-    <!-- Start for Kafka Source -->
-    <dependency>
-      <groupId>org.apache.zookeeper</groupId>
-      <artifactId>zookeeper</artifactId>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.twill</groupId>
-      <artifactId>twill-core</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.kafka</groupId>
-          <artifactId>kafka_2.10</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.kafka</groupId>
-      <artifactId>kafka_2.10</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.xerial.snappy</groupId>
-          <artifactId>snappy-java</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.xerial.snappy</groupId>
-      <artifactId>snappy-java</artifactId>
-    </dependency>
-    <!-- End for Kafka Source -->
     <!-- Start for SQS -->
     <dependency>
       <groupId>com.amazonaws</groupId>
@@ -215,18 +190,6 @@
             <phase>package</phase>
             <goals>
               <goal>bundle</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>2.4</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>test-jar</goal>
             </goals>
           </execution>
         </executions>

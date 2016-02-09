@@ -1,8 +1,8 @@
 # Projection Transform
 
+
 Description
 -----------
-
 The Projection transform lets you drop, rename, and cast fields to a different type.
 Fields are first dropped, then cast, then renamed.
 
@@ -32,9 +32,9 @@ and then field 'A' will be renamed to 'B':
     | B          | int  | 10     |
     +============================+
 
+
 Use Case
 --------
-
 The transform is used when you need to drop fields, change field types, or rename fields.
 
 For example, you may want to rename a field from ``'timestamp'`` to ``'ts'`` because you want
@@ -42,9 +42,9 @@ to write to a database where ``'timestamp'`` is a reserved keyword. Or, you migh
 drop a field named ``'headers'`` because you know it is always empty for your particular
 data source. 
 
+
 Properties
 ----------
-
 **drop:** Comma-separated list of fields to drop. For example: ``'field1,field2,field3'``.
 
 **rename:** List of fields to rename. This is a comma-separated list of key-value pairs,
@@ -65,9 +65,9 @@ simple type can be converted to bytes or a string. Otherwise, a type can only be
 to a larger type. For example, an int can be converted to a long, but a long cannot be
 converted to an int.
 
+
 Example
 -------
-
 This example drops the ``'ts'`` and ``'headers'`` fields. It also changes the type of the ``'cost'``
 field to a double and renames it ``'price'``. 
 

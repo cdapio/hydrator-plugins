@@ -1,22 +1,22 @@
 # Amazon SQS Real-time Source
 
+
 Description
 -----------
-
 Amazon SQS (Simple Queue Service) real-time source that emits a record with a field
 'body' of type String.
 
+
 Use Case
 --------
-
 This source is used when you want to read messages from Amazon SQS. For example,
 a web beacon is pushing log records to SQS and you want to read these log events
 in real-time. We can use this source to read these records and then store them
 into a Cube.
 
+
 Properties
 ----------
-
 **region:** Region where the queue is located.
 
 **accessKey:** Access Key of the AWS (Amazon Web Services) account to use.
@@ -27,9 +27,9 @@ Properties
   
 **endpoint:** Endpoint of the SQS server to connect to. Omit this field to connect to AWS.
 
+
 Example
 -------
-
 This example reads from a queue named 'queue_name' which is hosted on a server that's
 located in the 'us-west-1' region:
 

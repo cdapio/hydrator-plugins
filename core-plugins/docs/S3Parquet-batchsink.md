@@ -1,22 +1,22 @@
 # Amazon S3 Parquet Batch Sink
 
+
 Description
 -----------
-
 A batch sink to write to S3 in Parquet format.
+
 
 Use Case
 --------
-
 This source is used whenever you need to write to Amazon S3 in Parquet format. For example,
 you might want to create daily snapshots of a database by reading the entire contents of a
 table, writing to this sink, and then other programs can analyze the contents of the
 specified file. The output of the run will be stored in a directory with suffix
 'yyyy-MM-dd-HH-mm' from the base path provided.
 
+
 Properties
 ----------
-
 **accessID:** Access ID of the Amazon S3 instance to connect to.
 
 **accessKey:** Access Key of the Amazon S3 instance to connect to.
@@ -33,9 +33,9 @@ example: the format ``'yyyy-MM-dd-HH-mm'`` will create a file path ending in
 
 **schema:** The Parquet schema of the record being written to the sink as a JSON object.
 
+
 Example
 -------
-
 This example will write to an S3 output located at ``s3n://logs``. It will write data in
 Parquet format using the given schema. Every time the pipeline runs, a new output directory
 from the base path (``s3n://logs``) will be created which will have the directory name

@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.realtime.source;
+package co.cask.hydrator.plugin.realtime;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
@@ -31,8 +31,6 @@ import co.cask.cdap.etl.api.realtime.RealtimeContext;
 import co.cask.cdap.etl.api.realtime.RealtimeSource;
 import co.cask.cdap.etl.api.realtime.SourceState;
 import co.cask.cdap.format.RecordFormats;
-import co.cask.hydrator.plugin.realtime.kafka.Kafka08SimpleApiConsumer;
-import co.cask.hydrator.plugin.realtime.kafka.KafkaSimpleApiConsumer;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;

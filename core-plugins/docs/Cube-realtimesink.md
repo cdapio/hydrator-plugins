@@ -1,8 +1,8 @@
 # Cube Real-time Sink
 
+
 Description
 -----------
-
 Real-time sink that writes data to a CDAP Cube dataset.
 
 Real-time Cube sink takes in a ``StructuredRecord``, maps it to a ``CubeFact``, and writes it to
@@ -11,16 +11,16 @@ the Cube dataset identified by the name property.
 If Cube dataset does not exist, it will be created using properties provided with this
 sink.
 
+
 Use Case
 --------
-
 A real-time Cube sink is used to write data into a Cube from data sources to allow further OLAP data analysis.
 For example, you can write data from a Stream into a Cube as the data arrives to perform complex
 data queries across multiple dimensions and aggregated measurements.
 
+
 Properties
 ----------
-
 **name:** Name of the Cube dataset. If the Cube does not already exist, one will be created.
 
 **dataset.cube.resolutions:** Aggregation resolutions to be used if a
@@ -46,9 +46,9 @@ Provide properties as a JSON Map. For example, to use the 'price' field as a mea
 and the 'quantity' field as a measurement of type ``counter``, the property should have the value
 ``{"cubeFact.measurement.price":"GAUGE", "cubeFact.measurement.quantity":"COUNTER"}``.
 
+
 Example
 -------
-
 This configuration specifies writing data into a Cube dataset named "myCube"; it provides
 dataset properties (``dataset.*``) for creating a new dataset, if one with the given name
 doesn't exist; it then configures measurements to aggregate and specifies the timestamp

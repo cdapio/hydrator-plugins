@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.realtime.source;
+package co.cask.hydrator.sinks;
 
 import co.cask.cdap.api.data.format.Formats;
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -22,6 +22,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.InvalidEntry;
 import co.cask.cdap.etl.api.realtime.SourceState;
 import co.cask.hydrator.common.test.MockRealtimeContext;
+import co.cask.hydrator.plugin.realtime.KafkaSource;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;

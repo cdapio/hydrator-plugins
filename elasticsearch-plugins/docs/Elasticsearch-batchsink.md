@@ -1,5 +1,6 @@
 # Elasticsearch Batch Sink
 
+
 Description
 -----------
 Takes the Structured Record from the input source and converts it to a JSON string, then indexes it in
@@ -9,6 +10,7 @@ be running prior to creating the application.
 This sink is used whenever you need to write to an Elasticsearch server. For example, you
 may want to parse a file and read its contents into Elasticsearch, which you can achieve
 with a stream batch source and Elasticsearch as a sink.
+
 
 Configuration
 -------------
@@ -22,6 +24,7 @@ exist, it will be created.
 
 **es.idField:** The field that will determine the id for the document; it should match a fieldname
 in the Structured Record of the input.
+
 
 Example
 -------

@@ -1,11 +1,13 @@
 # JavaScript Transform
 
+
 Description
 -----------
-Executes user-provided Javascript that transforms one record into zero or more records.
+Executes user-provided JavaScript that transforms one record into zero or more records.
 Input records are converted into JSON objects which can be directly accessed in
-Javascript. The transform expects to receive a JSON object as input, which it can
+JavaScript. The transform expects to receive a JSON object as input, which it can
 process and emit zero or more records or emit error using the provided emitter object.
+
 
 Use Case
 --------
@@ -13,13 +15,14 @@ The JavaScript transform is used when other transforms cannot meet your needs.
 For example, you may want to multiply a field by 1024 and rename it from ``'gigabytes'``
 to ``'megabytes'``. Or you might want to convert a timestamp into a human-readable date string.
 
+
 Properties
 ----------
-**script:** Javascript defining how to transform input record into zero or more records. The script must
+**script:** JavaScript defining how to transform input record into zero or more records. The script must
 implement a function called ``'transform'``, which takes as input a JSON object (representing
-the input record), emitter object (to emit zero or more output records) 
-and a context object (which encapsulates CDAP metrics, logger and lookup).
-For example::
+the input record), an emitter object (to emit zero or more output records), 
+and a context object (which encapsulates CDAP metrics, logger, and lookup).
+For example:
 
     function transform(input, emitter, context) {
         if (context.getLookup('blacklist').lookup(input.id) != null) {
@@ -47,6 +50,7 @@ schema is the same as the input schema.
 For example, if lookup table "purchases" is configured, then you will be able to perform
 operations with that lookup table in your script: ``context.getLookup('purchases').lookup('key')``
 Currently supports ``KeyValueTable``.
+
 
 Example
 -------

@@ -1,8 +1,8 @@
 # Stream Batch Source
 
+
 Description
 -----------
-
 Reads a batch of data from a stream. The source will read a configurable chunk of data from
 a stream, based on the logical start time of the workflow it runs in and the configured
 duration and delay of the source. If the format and schema of the stream are known,
@@ -10,17 +10,17 @@ they can be specified as well. The source will return a record for each stream e
 Records will always contain a 'ts' field of type 'long' that contains the timestamp of the event,
 as well as a 'headers' field of type 'map<string, string>' that contains the headers for
 the event. Other fields output records are determined by the configured format and schema.
-  
+
+
 Use Case
 --------
-
 The source is used whenever you need to read from a stream in batch. For example,
 you may want to read from a stream every hour, perform some data cleansing, then write
 the cleansed data for that hour as Avro files.
 
+
 Properties
 ----------
-
 **name:** Name of the stream. Must be a valid stream name. If the stream does not exist,
 it will be created.
     
@@ -47,9 +47,9 @@ of records output by the source will contain an additional field named 'ts' for 
 timestamp and a field named 'headers' for the headers as the first and second fields of
 the schema.
 
+
 Example
 -------
-
 This example reads from a stream named 'accesslogs':
 
     {

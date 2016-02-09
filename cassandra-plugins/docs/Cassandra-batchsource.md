@@ -1,16 +1,19 @@
 # Cassandra Batch Source
 
+
 Description
 -----------
 Batch source to use Apache Cassandra as a source.
 
 **Note** Apache Cassandra v. 2.1.0 is currently the only supported version of Apache Cassandra.
 
+
 Use Case
 --------
 This source is used whenever you need to read data from Apache Cassandra.
 For example, you may want to read in a column family from Cassandra
 and store the data in an HBase table.
+
 
 Properties
 ----------
@@ -38,9 +41,9 @@ If this is not empty, then you must supply a username.
 **properties:** Any extra properties to include. The property-value pairs should be comma-separated,
 and each property should be separated by a colon from its corresponding value.
 
+
 Example
 -------
-
 This example connects to Apache Cassandra, which is running locally, and reads in records in the
 specified keyspace (*megacorp*) and column family (*employee*) which match the query to (in this case) select all records.
 All data from the column family will be read on each run:

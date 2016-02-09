@@ -1,10 +1,12 @@
 # JSON Parser Transform
 
+
 Description
 -----------
 Parses an input field value as a JSON Object. Each record in the input is parsed as a JSON Object 
 and converted into a Structured Record. The Structured Record can specify particular fields that 
-it's interested in, making projections possible.
+it is interested in, making projections possible.
+
 
 Configuration
 -------------

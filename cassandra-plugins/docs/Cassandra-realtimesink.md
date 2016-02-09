@@ -1,21 +1,22 @@
 # Cassandra Real-time Sink
 
+
 Description
 -----------
 Real-time sink to use Apache Cassandra as a sink.
 
 **Note** Apache Cassandra v. 2.1.0 is currently the only supported version of Apache Cassandra.
 
+
 Use Case
 --------
-
 This sink is used whenever you need to write data into Cassandra.
 For example, you may want, in real time, to collect purchase records
 and store them in Cassandra for later access.
 
+
 Properties
 ----------
-
 **addresses:** A comma-separated list of address(es) to connect to.
 
 **keyspace:** The keyspace to inject data into.
@@ -37,9 +38,9 @@ The columns should be listed in the same order as they are stored in the column 
 
 **compression:** The string representation of the compression for the query.
 
+
 Example
 -------
-
 This example connects to Apache Cassandra, which is running locally, and writes the data to
 the specified keyspace (*megacorp*) and column family (*purchases*):
 

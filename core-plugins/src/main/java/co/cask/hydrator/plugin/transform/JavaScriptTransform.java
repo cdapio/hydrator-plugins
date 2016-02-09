@@ -53,11 +53,11 @@ import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
 /**
- * Transforms records using custom javascript provided by the config.
+ * Transforms records using custom JavaScript provided by the config.
  */
 @Plugin(type = "transform")
 @Name("JavaScript")
-@Description("Executes user-provided Javascript that transforms one record into zero or more records.")
+@Description("Executes user-provided JavaScript that transforms one record into zero or more records.")
 public class JavaScriptTransform extends Transform<StructuredRecord, StructuredRecord> {
   private static final Gson GSON = new GsonBuilder()
     .registerTypeAdapter(StructuredRecord.class, new StructuredRecordSerializer())
@@ -80,7 +80,7 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
    * Configuration for the script transform.
    */
   public static class Config extends PluginConfig {
-    @Description("Javascript defining how to transform input record into zero or more records. " +
+    @Description("JavaScript defining how to transform input record into zero or more records. " +
       "The script must implement a function " +
       "called 'transform', which takes as input a JSON object (representing the input record) " +
       "emitter object, which can be used to emit records and error messages" +
@@ -168,7 +168,7 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
   }
 
   /**
-   * Emitter to be used from within Javascript code
+   * Emitter to be used from within JavaScript code
    */
   public final class JSEmitter implements Emitter<Map> {
 

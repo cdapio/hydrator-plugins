@@ -1,8 +1,10 @@
 # Hive Batch Sink
 
+
 Description
 -----------
 Converts a StructuredRecord to a HCatRecord and then writes it to an existing Hive table.
+
 
 Configuration
 -------------

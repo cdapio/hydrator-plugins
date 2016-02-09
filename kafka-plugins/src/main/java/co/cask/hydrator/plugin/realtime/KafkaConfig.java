@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.realtime.kafka;
+package co.cask.hydrator.plugin.realtime;
 
 import javax.annotation.Nullable;
 

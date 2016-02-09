@@ -58,7 +58,7 @@
         },
         {
           "widget-type": "select",
-          "label": "Column Case",
+          "label": "Column Name Case",
           "name": "columnNameCase",
           "widget-attributes": {
             "values": [

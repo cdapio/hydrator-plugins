@@ -1,23 +1,23 @@
 # Script Transform
 
+
 Description
 -----------
-
 Executes user-provided Javascript that transforms one record into another.
 Input records are converted into JSON objects which can be directly accessed in
 Javascript. The transform expects to receive a JSON object as input, which it will
 convert back to a record in Java to pass to downstream transforms and sinks.
 
+
 Use Case
 --------
-
 The Script transform is used when other transforms cannot meet your needs.
 For example, you may want to multiply a field by 1024 and rename it from ``'gigabytes'``
-to ``'megabytes'``. Or you might want to convert a timestamp into a human-readable date string.
+to ``'megabytes'``. Or, you might want to convert a timestamp into a human-readable date string.
+
 
 Properties
 ----------
-
 **script:** Javascript defining how to transform one record into another. The script must
 implement a function called ``'transform'``, which takes as input a JSON object (representing
 the input record) and a context object (which encapsulates CDAP metrics and logger),
@@ -43,9 +43,9 @@ For example, if lookup table "purchases" is configured, then you will be able to
 operations with that lookup table in your script: ``context.getLookup('purchases').lookup('key')``
 Currently supports ``KeyValueTable``.
 
+
 Example
 -------
-
 The transform takes records that have a ``'subtotal'`` field, calculates ``'tax'`` and
 ``'total'`` fields based on the subtotal, and then returns a record containing those three
 fields:

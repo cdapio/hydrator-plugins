@@ -1,16 +1,19 @@
 # HBase Batch Source
 
+
 Description
 -----------
 Batch source that reads from a column family in an HBase table.
 This source differs from the Table source in that it does not use a CDAP dataset,
 but reads directly from HBase.
 
+
 Use Case
 --------
 This source is used when you want to read from a column family in an HBase table.
 For example, you may want to read from an HBase table, filter some records out,
 then write the results to a Database table. 
+
 
 Properties
 ----------
@@ -36,9 +39,9 @@ defaults to 'localhost'.
 You can find the correct value by looking at the hbase.zookeeper.quorum setting in your hbase-site.xml.
 This value defaults to 2181.
 
+
 Example
 -------
-
 This example reads from the 'attr' column family of an HBase table named 'users':
 
     {
@@ -75,4 +78,3 @@ It outputs records with this schema:
 The 'id' field will be read from the row key of the table. The 'name' field will be read from the
 'name' column in the table. The 'birthyear' field will be read from the 'birthyear' column in the
 table. Any other columns in the Table will be ignored by the source.
-

@@ -1,9 +1,11 @@
 # Clone Record Transform
 
+
 Description
 -----------
 Makes a copy of every input record received for a configured number of times on the output. 
 This transform does not change any record fields or types. It's an identity transform.
+
 
 Configuration
 -------------

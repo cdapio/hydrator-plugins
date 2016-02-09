@@ -40,28 +40,16 @@ import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkerManager;
 import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.realtime.source.DataGeneratorSource;
-import co.cask.hydrator.plugin.realtime.source.KafkaSource;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.gson.Gson;
-import org.apache.twill.internal.kafka.EmbeddedKafkaServer;
-import org.apache.twill.internal.kafka.client.ZKKafkaClientService;
-import org.apache.twill.internal.utils.Networks;
-import org.apache.twill.internal.zookeeper.InMemoryZKServer;
-import org.apache.twill.kafka.client.Compression;
-import org.apache.twill.kafka.client.KafkaClientService;
-import org.apache.twill.kafka.client.KafkaPublisher;
-import org.apache.twill.zookeeper.ZKClientService;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.sql.Connection;
@@ -81,20 +69,11 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
 
   private static final Gson GSON = new Gson();
 
-  private static ZKClientService zkClient;
-  private static KafkaClientService kafkaClient;
-
   @ClassRule
   public static final TemporaryFolder TMP_FOLDER = new TemporaryFolder();
 
   @ClassRule
   public static final TestConfiguration CONFIG = new TestConfiguration(Constants.Explore.EXPLORE_ENABLED, true);
-
-  protected static final int PARTITIONS = 1;
-
-  protected static InMemoryZKServer zkServer;
-  protected static EmbeddedKafkaServer kafkaServer;
-  protected static int kafkaPort;
 
   @Test
   public void testEmptyProperties() throws Exception {
@@ -271,8 +250,6 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
     Assert.assertEquals(3.4, results.getDouble(3), 0.000001);
   }
 
-
-
   @Test
   @SuppressWarnings("ConstantConditions")
   public void testDAG() throws Exception {
@@ -358,59 +335,6 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
     Assert.assertNotNull(row.getLong("time"));
   }
 
-  @Test
-  @SuppressWarnings("ConstantConditions")
-  public void testKafkaSource() throws Exception {
-    Schema schema = Schema.recordOf("student",
-                                    Schema.Field.of("NAME", Schema.of(Schema.Type.STRING)),
-                                    Schema.Field.of("ID", Schema.of(Schema.Type.INT)),
-                                    Schema.Field.of("AGE", Schema.of(Schema.Type.INT)));
-    setUp();
-    Plugin source = new Plugin("Kafka", ImmutableMap.<String, String>builder()
-      .put(KafkaSource.KAFKA_TOPIC, "MyTopic")
-      .put(KafkaSource.KAFKA_ZOOKEEPER, zkServer.getConnectionStr())
-      .put(KafkaSource.FORMAT, "csv")
-      .put(KafkaSource.SCHEMA, schema.toString())
-      .put(KafkaSource.KAFKA_PARTITIONS, Integer.toString(PARTITIONS))
-      .build()
-    );
-
-    Plugin sink = new Plugin("Table", ImmutableMap.of(
-      "name", "outputTable",
-      Properties.Table.PROPERTY_SCHEMA, schema.toString(),
-      Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "NAME"));
-
-    Map<String, String> message = Maps.newHashMap();
-    message.put("1", "Bob,1,3");
-    sendMessage("MyTopic", message);
-
-    ETLRealtimeConfig etlConfig = new ETLRealtimeConfig(new ETLStage("source", source), new ETLStage("sink", sink));
-
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testToStream");
-    AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(APP_ARTIFACT, etlConfig);
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-
-    WorkerManager workerManager = appManager.getWorkerManager(ETLWorker.NAME);
-
-    workerManager.start();
-    DataSetManager<Table> tableManager = getDataset("outputTable");
-    waitForTableToBePopulated(tableManager);
-    workerManager.stop();
-
-    // verify. We need to get the table fresh because it doesn't update otherwise
-    Table table = tableManager.get();
-    Row row = table.get("Bob".getBytes(Charsets.UTF_8));
-
-    Assert.assertEquals(1, (int) row.getInt("ID"));
-    Assert.assertEquals(3, (int) row.getInt("AGE"));
-
-    Connection connection = getQueryClient();
-    ResultSet results = connection.prepareStatement("select NAME,ID,AGE from dataset_outputTable").executeQuery();
-    Assert.assertTrue(results.next());
-    Assert.assertEquals("Bob", results.getString(1));
-    Assert.assertEquals(1, results.getInt(2));
-    Assert.assertEquals(3, results.getInt(3));
-  }
 
   private void waitForTableToBePopulated(final DataSetManager<Table> tableManager) throws Exception {
     Tasks.waitFor(true, new Callable<Boolean>() {
@@ -423,68 +347,6 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
         return row.getColumns().size() != 0;
       }
     }, 10, TimeUnit.SECONDS);
-  }
-
-  public static void setUp() throws IOException {
-    zkServer = InMemoryZKServer.builder().setDataDir(TMP_FOLDER.newFolder()).build();
-    zkServer.startAndWait();
-
-    kafkaPort = Networks.getRandomPort();
-    kafkaServer = new EmbeddedKafkaServer(generateKafkaConfig(zkServer.getConnectionStr(),
-                                                              kafkaPort, TMP_FOLDER.newFolder()));
-    kafkaServer.startAndWait();
-
-    zkClient = ZKClientService.Builder.of(zkServer.getConnectionStr()).build();
-    zkClient.startAndWait();
-
-    kafkaClient = new ZKKafkaClientService(zkClient);
-    kafkaClient.startAndWait();
-  }
-
-  private static java.util.Properties generateKafkaConfig(String zkConnectStr, int port, File logDir) {
-    // Note: the log size properties below have been set so that we can have log rollovers
-    // and log deletions in a minute.
-    java.util.Properties prop = new java.util.Properties();
-    prop.setProperty("log.dir", logDir.getAbsolutePath());
-    prop.setProperty("port", Integer.toString(port));
-    prop.setProperty("broker.id", "1");
-    prop.setProperty("socket.send.buffer.bytes", "1048576");
-    prop.setProperty("socket.receive.buffer.bytes", "1048576");
-    prop.setProperty("socket.request.max.bytes", "104857600");
-    prop.setProperty("num.partitions", Integer.toString(PARTITIONS));
-    prop.setProperty("log.retention.hours", "24");
-    prop.setProperty("log.flush.interval.messages", "10");
-    prop.setProperty("log.flush.interval.ms", "1000");
-    prop.setProperty("log.segment.bytes", "100");
-    prop.setProperty("zookeeper.connect", zkConnectStr);
-    prop.setProperty("zookeeper.connection.timeout.ms", "1000000");
-    prop.setProperty("default.replication.factor", "1");
-    prop.setProperty("log.retention.bytes", "1000");
-    prop.setProperty("log.retention.check.interval.ms", "60000");
-
-    return prop;
-  }
-
-  protected void sendMessage(String topic, Map<String, String> messages) {
-    // Publish a message to Kafka, the flow should consume it
-    KafkaPublisher publisher = kafkaClient.getPublisher(KafkaPublisher.Ack.ALL_RECEIVED, Compression.NONE);
-
-    // If publish failed, retry up to 20 times, with 100ms delay between each retry
-    // This is because leader election in Kafka 08 takes time when a topic is being created upon publish request.
-    int count = 0;
-    do {
-      KafkaPublisher.Preparer preparer = publisher.prepare(topic);
-      for (Map.Entry<String, String> entry : messages.entrySet()) {
-        preparer.add(Charsets.UTF_8.encode(entry.getValue()), entry.getKey());
-      }
-      try {
-        preparer.send().get();
-        break;
-      } catch (Exception e) {
-        // Backoff if send failed.
-        Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
-      }
-    } while (count++ < 20);
   }
 
   private boolean checkStreams(Collection<StreamManager> streamManagers, long startTime) throws IOException {

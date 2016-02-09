@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -49,9 +49,9 @@ import javax.script.ScriptException;
  */
 @Plugin(type = "transform")
 @Name("ScriptFilter")
-@Description("A transform plugin that filters records using a custom Javascript provided in the plugin's config.")
+@Description("A transform plugin that filters records using a custom JavaScript provided in the plugin's config.")
 public class ScriptFilterTransform extends Transform<StructuredRecord, StructuredRecord> {
-  private static final String SCRIPT_DESCRIPTION = "Javascript that must implement a function 'shouldFilter' that " +
+  private static final String SCRIPT_DESCRIPTION = "JavaScript that must implement a function 'shouldFilter' that " +
     "takes a JSON object representation of the input record and a context object (which encapsulates CDAP metrics " +
     "and logger) and returns true if the input record should be filtered and false if not. " +
     "For example:\n" +
