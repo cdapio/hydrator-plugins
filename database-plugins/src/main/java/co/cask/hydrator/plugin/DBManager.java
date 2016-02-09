@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -58,13 +58,9 @@ public class DBManager implements Destroyable {
       jdbcDriverClass != null, "Unable to load JDBC Driver class for plugin name '%s'. Please make sure that the " +
         "plugin '%s' of type '%s' containing the driver has been installed correctly.", dbConfig.jdbcPluginName,
       dbConfig.jdbcPluginName, dbConfig.jdbcPluginType);
-    Preconditions.checkArgument(
-      tableExists(jdbcDriverClass), "Table %s does not exist. Please check that the 'tableName' property has been " +
-        "set correctly, and that the connection string %s points to a valid database.",
-      dbConfig.connectionString, dbConfig.tableName);
   }
 
-  private boolean tableExists(Class<? extends Driver> jdbcDriverClass) {
+  public boolean tableExists(Class<? extends Driver> jdbcDriverClass) {
     try {
       ensureJDBCDriverIsAvailable(jdbcDriverClass);
     } catch (IllegalAccessException | InstantiationException | SQLException e) {

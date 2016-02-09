@@ -32,7 +32,7 @@ import org.junit.Test;
 import java.util.Map;
 
 /**
- *
+ * Tests for {@link DBSink}
  */
 public class DBSinkTest {
 
