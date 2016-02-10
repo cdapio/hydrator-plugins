@@ -45,6 +45,18 @@
           "widget-type": "textbox",
           "label": "Connection String",
           "name": "connectionString"
+        },
+        {
+          "widget-type": "select",
+          "label": "Enable Auto-Commit",
+          "name": "enableAutoCommit",
+          "widget-attributes": {
+            "values": [
+              "false",
+              "true"
+            ],
+            "default": "false"
+          }
         }
       ]
     },

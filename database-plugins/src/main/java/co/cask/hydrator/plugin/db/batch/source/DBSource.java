@@ -43,6 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Driver;
+import javax.annotation.Nullable;
 
 /**
  * Batch source to read from a Database table
@@ -53,16 +54,6 @@ import java.sql.Driver;
   " Outputs one record for each row returned by the query.")
 public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(DBSource.class);
-
-  private static final String IMPORT_QUERY_DESCRIPTION = "The SELECT query to use to import data from the specified " +
-    "table. You can specify an arbitrary number of columns to import, or import all columns using *. " +
-    "You can also specify a number of WHERE clauses or ORDER BY clauses. However, LIMIT and OFFSET clauses " +
-    "should not be used in this query.";
-  private static final String COUNT_QUERY_DESCRIPTION = "The SELECT query to use to get the count of records to " +
-    "import from the specified table. Examples: SELECT COUNT(*) from <my_table> where <my_column> 1, " +
-    "SELECT COUNT(my_column) from my_table. NOTE: Please include the same WHERE clauses in this query as the ones " +
-    "used in the import query to reflect an accurate number of records to import.";
-
   private final DBSourceConfig dbSourceConfig;
   private final DBManager dbManager;
   private Class<? extends Driver> driverClass;
@@ -105,7 +96,8 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
       DBConfiguration.configureDB(hConf, driverClass.getName(), dbSourceConfig.connectionString,
                                   dbSourceConfig.user, dbSourceConfig.password);
     }
-    ETLDBInputFormat.setInput(hConf, DBRecord.class, dbSourceConfig.importQuery, dbSourceConfig.countQuery);
+    ETLDBInputFormat.setInput(hConf, DBRecord.class, dbSourceConfig.importQuery,
+                              dbSourceConfig.countQuery, dbSourceConfig.enableAutoCommit);
     context.setInput(new SourceInputFormatProvider(ETLDBInputFormat.class, hConf));
   }
 
@@ -138,10 +130,29 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
    * {@link PluginConfig} for {@link DBSource}
    */
   public static class DBSourceConfig extends DBConfig {
-    @Description(IMPORT_QUERY_DESCRIPTION)
+    @Description("The SELECT query to use to import data from the specified " +
+      "table. You can specify an arbitrary number of columns to import, or import all columns using *. " +
+      "You can also specify a number of WHERE clauses or ORDER BY clauses. However, LIMIT and OFFSET clauses " +
+      "should not be used in this query.")
     String importQuery;
 
-    @Description(COUNT_QUERY_DESCRIPTION)
+    @Description("The SELECT query to use to get the count of records to " +
+      "import from the specified table. Examples: SELECT COUNT(*) from <my_table> where <my_column> 1, " +
+      "SELECT COUNT(my_column) from my_table. NOTE: Please include the same WHERE clauses in this query as the ones " +
+      "used in the import query to reflect an accurate number of records to import.")
     String countQuery;
+
+    @Description("Whether to enable auto commit for queries run by this source. Defaults to false. " +
+      "This setting should only matter if you are using a jdbc driver that does not support a false value for " +
+      "auto commit, or a driver that does not support the commit call. For example, the Hive jdbc driver will throw " +
+      "an exception whenever a commit is called. For drivers like that, this should be set to true.")
+    @Nullable
+    Boolean enableAutoCommit;
+
+    // for setting defaults
+    public DBSourceConfig() {
+      super();
+      enableAutoCommit = false;
+    }
   }
 }

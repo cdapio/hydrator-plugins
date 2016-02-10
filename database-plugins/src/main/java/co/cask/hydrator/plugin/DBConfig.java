@@ -49,7 +49,7 @@ public class DBConfig extends PluginConfig {
   @Description("Type of the JDBC plugin to use. This is the value of the 'type' key defined in the JSON file " +
     "for the JDBC plugin. Defaults to 'jdbc'.")
   @Nullable
-  public String jdbcPluginType = "jdbc";
+  public String jdbcPluginType;
 
   @Description("Sets the case of the column names returned from the query. " +
     "Possible options are upper or lower. By default or for any other input, the column names are not modified and " +
