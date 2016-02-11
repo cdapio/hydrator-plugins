@@ -34,6 +34,7 @@ import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.hydrator.plugin.db.batch.sink.DBSink;
+import co.cask.hydrator.plugin.db.batch.sink.ETLDBOutputFormat;
 import co.cask.hydrator.plugin.db.batch.source.DBSource;
 import co.cask.hydrator.plugin.db.batch.source.DataDrivenETLDBInputFormat;
 import co.cask.hydrator.plugin.db.batch.source.ETLDBInputFormat;

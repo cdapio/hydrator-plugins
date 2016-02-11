@@ -40,7 +40,7 @@ import java.sql.SQLException;
  * Class that extends {@link DBInputFormat} to load the database driver class correctly.
  */
 public class ETLDBInputFormat extends DBInputFormat {
-  public static final String AUTO_COMMIT_ENABLED = "co.cask.hydrator.db.autocommit.enabled";
+  public static final String AUTO_COMMIT_ENABLED = "co.cask.hydrator.db.input.autocommit.enabled";
 
   private static final Logger LOG = LoggerFactory.getLogger(ETLDBInputFormat.class);
   private Driver driver;
