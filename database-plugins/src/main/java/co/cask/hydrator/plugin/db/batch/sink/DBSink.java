@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -92,6 +92,16 @@ public class DBSink extends BatchSink<StructuredRecord, DBRecord, NullWritable> 
 
     // Load the plugin class to make sure it is available.
     Class<? extends Driver> driverClass = context.loadPluginClass(getJDBCPluginId());
+    // make sure that the table exists
+    try {
+      Preconditions.checkArgument(
+        dbManager.tableExists(driverClass), "Table %s does not exist. Please check that the 'tableName' property " +
+          "has been set correctly, and that the connection string %s points to a valid database.",
+        dbSinkConfig.tableName, dbSinkConfig.connectionString);
+    } finally {
+      DBUtils.cleanup(driverClass);
+    }
+
     context.addOutput(dbSinkConfig.tableName, new DBOutputFormatProvider(dbSinkConfig, driverClass));
   }
 

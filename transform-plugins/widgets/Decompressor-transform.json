@@ -10,6 +10,7 @@
           "widget-type": "keyvalue-dropdown",
           "label": "Decompress Fields",
           "name": "decompressor",
+          "description": "List of fields to decompress. The key specifies the name of the field to be decompressed, with its corresponding value specifying the type of decompression that will be applied to it.",
           "widget-attributes": {
             "showDelimiter": "false",
             "dropdownOptions": [

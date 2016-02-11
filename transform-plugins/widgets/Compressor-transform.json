@@ -10,6 +10,7 @@
           "widget-type": "keyvalue-dropdown",
           "label": "Compress Fields",
           "name": "compressor",
+          "description": "List of fields to compress. The key specifies the name of the field to be compressed, with its corresponding value specifying the type of compression that will be applied to it.",
           "widget-attributes": {
             "showDelimiter": "false",
             "dropdownOptions": [

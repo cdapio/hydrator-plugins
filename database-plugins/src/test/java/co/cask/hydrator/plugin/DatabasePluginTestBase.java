@@ -22,8 +22,15 @@ import co.cask.cdap.api.plugin.PluginPropertyField;
 import co.cask.cdap.etl.api.PipelineConfigurable;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
+import co.cask.cdap.etl.batch.config.ETLBatchConfig;
+import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.proto.Id;
+import co.cask.cdap.proto.ProgramRunStatus;
+import co.cask.cdap.proto.RunRecord;
+import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
+import co.cask.cdap.test.ApplicationManager;
+import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.hydrator.plugin.db.batch.sink.DBSink;
@@ -39,6 +46,7 @@ import com.google.common.collect.Sets;
 import org.hsqldb.Server;
 import org.hsqldb.jdbc.JDBCDriver;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.rules.TemporaryFolder;
@@ -55,6 +63,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 import javax.sql.rowset.serial.SerialBlob;
 
 /**
@@ -226,6 +235,30 @@ public class DatabasePluginTestBase extends TestBase {
           pStmt.executeUpdate();
         }
       }
+    }
+  }
+
+  protected static void assertDeploymentFailure(Id.Application appId, ETLBatchConfig etlConfig,
+                                                String failureMessage) throws Exception {
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    try {
+      deployApplication(appId, appRequest);
+      Assert.fail(failureMessage);
+    } catch (IllegalStateException e) {
+      // expected
+    }
+  }
+
+  protected static void assertRuntimeFailure(Id.Application appId, ETLBatchConfig etlConfig,
+                                             String failureMessage) throws Exception {
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
+    mrManager.start();
+    // Waiting for only 1 minute here because MR should have failed in the prepareRun() stage
+    mrManager.waitForFinish(1, TimeUnit.MINUTES);
+    for (RunRecord runRecord : mrManager.getHistory()) {
+      Assert.assertEquals(failureMessage, ProgramRunStatus.FAILED, runRecord.getStatus());
     }
   }
 
