@@ -2,7 +2,7 @@
 Hydrator Plugins Collection
 ===========================
 
-.. image:: https://travis-ci.org/caskdata/hydrator-plugins.svg?branch=release/1.2
+.. image:: https://travis-ci.org/caskdata/hydrator-plugins.svg?branch=develop
     :target: https://travis-ci.org/caskdata/hydrator-plugins
 
 Introduction
