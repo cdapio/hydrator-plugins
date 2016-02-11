@@ -18,6 +18,7 @@ package co.cask.hydrator.plugin.db.batch.source;
 
 import co.cask.hydrator.plugin.DBUtils;
 import co.cask.hydrator.plugin.JDBCDriverShim;
+import co.cask.hydrator.plugin.db.batch.NoOpCommitConnection;
 import com.google.common.base.Throwables;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -39,17 +40,22 @@ import java.sql.SQLException;
  * Class that extends {@link DBInputFormat} to load the database driver class correctly.
  */
 public class ETLDBInputFormat extends DBInputFormat {
+  public static final String AUTO_COMMIT_ENABLED = "co.cask.hydrator.db.input.autocommit.enabled";
+
   private static final Logger LOG = LoggerFactory.getLogger(ETLDBInputFormat.class);
   private Driver driver;
   private JDBCDriverShim driverShim;
 
   public static void setInput(Configuration conf,
                               Class<? extends DBWritable> inputClass,
-                              String inputQuery, String inputCountQuery) {
+                              String inputQuery,
+                              String inputCountQuery,
+                              boolean autoCommitEnabled) {
     DBConfiguration dbConf = new DBConfiguration(conf);
     dbConf.setInputClass(inputClass);
     dbConf.setInputQuery(inputQuery);
     dbConf.setInputCountQuery(inputCountQuery);
+    conf.setBoolean(AUTO_COMMIT_ENABLED, autoCommitEnabled);
   }
 
   @Override
@@ -85,7 +91,14 @@ public class ETLDBInputFormat extends DBInputFormat {
                                                         conf.get(DBConfiguration.USERNAME_PROPERTY),
                                                         conf.get(DBConfiguration.PASSWORD_PROPERTY));
         }
-        this.connection.setAutoCommit(false);
+
+        boolean autoCommitEnabled = conf.getBoolean(AUTO_COMMIT_ENABLED, false);
+        if (autoCommitEnabled) {
+          // hack to work around jdbc drivers like the hive driver that throw exceptions on commit
+          this.connection = new NoOpCommitConnection(this.connection);
+        } else {
+          this.connection.setAutoCommit(false);
+        }
         this.connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
       } catch (Exception e) {
         throw Throwables.propagate(e);
@@ -125,11 +138,16 @@ public class ETLDBInputFormat extends DBInputFormat {
 
       @Override
       public void close() throws IOException {
-        dbRecordReader.close();
         try {
-          DriverManager.deregisterDriver(driverShim);
-        } catch (SQLException e) {
-          throw new IOException(e);
+          dbRecordReader.close();
+        } finally {
+          try {
+            DriverManager.deregisterDriver(driverShim);
+          } catch (SQLException e) {
+            LOG.error("Error de-registering driver shim. This does not matter for distributed mapreduce jobs, but " +
+                        "may lead to memory leaks in local implementations where the jvm does not shut down " +
+                        "after this mapreduce.", e);
+          }
         }
       }
     };
@@ -144,4 +162,5 @@ public class ETLDBInputFormat extends DBInputFormat {
       throw Throwables.propagate(e);
     }
   }
+
 }

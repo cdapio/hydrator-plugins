@@ -45,6 +45,11 @@ defined in the JSON file for the JDBC plugin.
 **jdbcPluginType:** Type of the JDBC plugin to use. This is the value of the 'type' key
 defined in the JSON file for the JDBC plugin. Defaults to 'jdbc'.
 
+**enableAutoCommit:** Whether to enable auto-commit for queries run by this source. Defaults to 'false'.
+Normally this setting does not matter. It only matters if you are using a jdbc driver -- like the Hive
+driver -- that will error when the commit operation is run, or a driver that will error when auto-commit is
+set to false. For drivers like those, you will need to set this to 'true'.
+
 
 Example
 -------

@@ -34,6 +34,7 @@ import co.cask.hydrator.plugin.DBRecord;
 import co.cask.hydrator.plugin.DBUtils;
 import co.cask.hydrator.plugin.FieldCase;
 import co.cask.hydrator.plugin.StructuredRecordUtils;
+import co.cask.hydrator.plugin.db.batch.source.DataDrivenETLDBInputFormat;
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
@@ -43,6 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Driver;
+import javax.annotation.Nullable;
 
 /**
  * Batch source to read from a Teradata table
@@ -53,14 +55,6 @@ import java.sql.Driver;
   " Outputs one record for each row returned by the query.")
 public class TeradataSource extends BatchSource<LongWritable, DBRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(TeradataSource.class);
-
-  private static final String IMPORT_QUERY_DESCRIPTION = "The SELECT query to use to import data from the specified " +
-    "table. You can specify an arbitrary number of columns to import, or import all columns using *. The Query should" +
-    "contain the '$CONDITIONS' string. For example, 'SELECT * FROM table WHERE $CONDITIONS'. The '$CONDITIONS' string" +
-    "will be replaced by 'splitBy' field limits specified by the bounding query.";
-  private static final String BOUNDING_QUERY_DESCRIPTION = "Bounding Query should return the min and max of the " +
-    "values of the 'splitBy' field. For example, 'SELECT MIN(id),MAX(id) FROM table'";
-  private static final String SPLIT_FIELD_DESCRIPTION = "Field Name which will be used to generate splits.";
 
   private final TeradataSourceConfig sourceConfig;
   private final DBManager dbManager;
@@ -106,7 +100,8 @@ public class TeradataSource extends BatchSource<LongWritable, DBRecord, Structur
       DBConfiguration.configureDB(hConf, driverClass.getName(), sourceConfig.connectionString,
                                   sourceConfig.user, sourceConfig.password);
     }
-    DataDrivenETLDBInputFormat.setInput(job, DBRecord.class, sourceConfig.importQuery, sourceConfig.boundingQuery);
+    DataDrivenETLDBInputFormat.setInput(hConf, DBRecord.class, sourceConfig.importQuery,
+                                        sourceConfig.boundingQuery, sourceConfig.enableAutoCommit);
     job.getConfiguration().set(DBConfiguration.INPUT_ORDER_BY_PROPERTY, sourceConfig.splitBy);
     context.setInput(new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf));
   }
@@ -143,15 +138,31 @@ public class TeradataSource extends BatchSource<LongWritable, DBRecord, Structur
     public static final String BOUNDING_QUERY = "boundingQuery";
     public static final String SPLIT_BY = "splitBy";
 
-    @Description(IMPORT_QUERY_DESCRIPTION)
+    @Description("The SELECT query to use to import data from the specified table. " +
+      "You can specify an arbitrary number of columns to import, or import all columns using *. The Query should" +
+      "contain the '$CONDITIONS' string. For example, 'SELECT * FROM table WHERE $CONDITIONS'. " +
+      "The '$CONDITIONS' string will be replaced by 'splitBy' field limits specified by the bounding query.")
     String importQuery;
 
     @Name(BOUNDING_QUERY)
-    @Description(BOUNDING_QUERY_DESCRIPTION)
+    @Description("Bounding Query should return the min and max of the values of the 'splitBy' field. " +
+      "For example, 'SELECT MIN(id),MAX(id) FROM table'")
     String boundingQuery;
 
     @Name(SPLIT_BY)
-    @Description(SPLIT_FIELD_DESCRIPTION)
+    @Description("Field Name which will be used to generate splits.")
     String splitBy;
+
+    @Description("Whether to enable auto commit for queries run by this source. Defaults to false. " +
+      "This setting should only matter if you are using a jdbc driver that does not support a false value for " +
+      "auto commit, or a driver that does not support the commit call. For example, the Hive jdbc driver will throw " +
+      "an exception whenever a commit is called. For drivers like that, this should be set to true.")
+    @Nullable
+    Boolean enableAutoCommit;
+
+    public TeradataSourceConfig() {
+      super();
+      enableAutoCommit = false;
+    }
   }
 }

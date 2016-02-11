@@ -14,10 +14,11 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.teradata.batch.source;
+package co.cask.hydrator.plugin.db.batch.source;
 
 import co.cask.hydrator.plugin.DBUtils;
 import co.cask.hydrator.plugin.JDBCDriverShim;
+import co.cask.hydrator.plugin.db.batch.NoOpCommitConnection;
 import com.google.common.base.Throwables;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -25,6 +26,7 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.db.DBConfiguration;
 import org.apache.hadoop.mapreduce.lib.db.DBInputFormat;
+import org.apache.hadoop.mapreduce.lib.db.DBWritable;
 import org.apache.hadoop.mapreduce.lib.db.DataDrivenDBInputFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,9 +41,23 @@ import java.sql.SQLException;
  * Class that extends {@link DBInputFormat} to load the database driver class correctly.
  */
 public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
+  public static final String AUTO_COMMIT_ENABLED = "co.cask.hydrator.db.autocommit.enabled";
+
   private static final Logger LOG = LoggerFactory.getLogger(DataDrivenETLDBInputFormat.class);
   private Driver driver;
   private JDBCDriverShim driverShim;
+
+  public static void setInput(Configuration conf,
+                              Class<? extends DBWritable> inputClass,
+                              String inputQuery,
+                              String inputBoundingQuery,
+                              boolean enableAutoCommit) {
+    DBConfiguration dbConf = new DBConfiguration(conf);
+    dbConf.setInputClass(inputClass);
+    dbConf.setInputQuery(inputQuery);
+    dbConf.setInputBoundingQuery(inputBoundingQuery);
+    conf.setBoolean(AUTO_COMMIT_ENABLED, enableAutoCommit);
+  }
 
   @Override
   public Connection getConnection() {
@@ -76,7 +92,14 @@ public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
                                                         conf.get(DBConfiguration.USERNAME_PROPERTY),
                                                         conf.get(DBConfiguration.PASSWORD_PROPERTY));
         }
-        this.connection.setAutoCommit(false);
+
+        boolean autoCommitEnabled = conf.getBoolean(AUTO_COMMIT_ENABLED, false);
+        if (autoCommitEnabled) {
+          // hack to work around jdbc drivers like the hive driver that throw exceptions on commit
+          this.connection = new NoOpCommitConnection(this.connection);
+        } else {
+          this.connection.setAutoCommit(false);
+        }
         this.connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
       } catch (Exception e) {
         throw Throwables.propagate(e);
