@@ -57,10 +57,8 @@ You can deploy a plugin using the CDAP CLI::
 
 Example for loading the Cassandra Plugin (from the cassandra-plugins directory)::
 
-  > load artifact target/cassandra-plugins-1.0-SNAPSHOT-batch.jar \
-         config-file resources/cassandra-plugin-batch.json
-  > load artifact target/cassandra-plugins-1.0-SNAPSHOT-realtime.jar \
-         config-file resources/cassandra-plugin-realtime.json
+  > load artifact target/cassandra-plugins-<version>.jar \
+         config-file target/cassandra-plugins-<version>.json
 
 You can build without running tests: ``mvn clean install -DskipTests``
 
