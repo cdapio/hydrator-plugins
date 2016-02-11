@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -386,21 +386,22 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
     ETLStage sourceBadName = new ETLStage("sourceBadName", sourceBadNameConfig);
 
     ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", sourceBadName, table, transforms);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSourceTest");
-    assertDeploymentFailure(appId, etlConfig, "ETL Application with DB Source should have failed because of a " +
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSourceNonExistingTest");
+    assertRuntimeFailure(appId, etlConfig, "ETL Application with DB Source should have failed because of a " +
       "non-existent source table.");
 
     // Bad connection
     String badConnection = String.format("jdbc:hsqldb:hsql://localhost/%sWRONG", getDatabase());
     Plugin sourceBadConnConfig = new Plugin("Database", ImmutableMap.of(
       Properties.DB.CONNECTION_STRING, badConnection,
+      Properties.DB.TABLE_NAME, "my_table",
       Properties.DB.IMPORT_QUERY, importQuery,
       Properties.DB.COUNT_QUERY, countQuery,
       Properties.DB.JDBC_PLUGIN_NAME, "hypersql"
     ));
     ETLStage sourceBadConn = new ETLStage("sourceBadConn", sourceBadConnConfig);
     etlConfig = new ETLBatchConfig("* * * * *", sourceBadConn, table, transforms);
-    assertDeploymentFailure(appId, etlConfig, "ETL Application with DB Source should have failed because of a " +
+    assertRuntimeFailure(appId, etlConfig, "ETL Application with DB Source should have failed because of a " +
       "non-existent source database.");
 
     // sink
@@ -412,20 +413,20 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
     ));
     ETLStage sinkBadName = new ETLStage("sourceBadConn", sinkBadNameConfig);
     etlConfig = new ETLBatchConfig("* * * * *", table, sinkBadName, transforms);
-    appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSinkTestBadName");
-    assertDeploymentFailure(appId, etlConfig, "ETL Application with DB Sink should have failed because of a " +
+    appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSinkNonExistingTest");
+    assertRuntimeFailure(appId, etlConfig, "ETL Application with DB Sink should have failed because of a " +
       "non-existent sink table.");
 
     // Bad connection
     Plugin sinkBadConnConfig = new Plugin("Database", ImmutableMap.of(
       Properties.DB.CONNECTION_STRING, badConnection,
-      Properties.DB.TABLE_NAME, "dummy",
+      Properties.DB.TABLE_NAME, "my_dest_table",
       Properties.DB.COLUMNS, "ID, NAME",
       Properties.DB.JDBC_PLUGIN_NAME, "hypersql"
     ));
     ETLStage sinkBadConn = new ETLStage("sourceBadConn", sinkBadConnConfig);
     etlConfig = new ETLBatchConfig("* * * * *", table, sinkBadConn, transforms);
-    assertDeploymentFailure(appId, etlConfig, "ETL Application with DB Sink should have failed because of a " +
+    assertRuntimeFailure(appId, etlConfig, "ETL Application with DB Sink should have failed because of a " +
       "non-existent sink database.");
   }
 
@@ -500,17 +501,6 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
       put.add("CLOB_COL", CLOB_DATA);
       inputTable.put(put);
       inputManager.flush();
-    }
-  }
-
-  private void assertDeploymentFailure(Id.Application appId, ETLBatchConfig etlConfig,
-                                       String failureMessage) throws Exception {
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    try {
-      TestBase.deployApplication(appId, appRequest);
-      Assert.fail(failureMessage);
-    } catch (IllegalStateException e) {
-      // expected
     }
   }
 }

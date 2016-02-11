@@ -3,8 +3,10 @@
 
 Description
 -----------
-Executes user-provided Python code that transforms one record into another.
-
+Executes user-provided python code that transforms one record into zero or more records.
+Each input record is converted into a dictionary which can be directly accessed in
+python. The transform expects to receive a dictionary as input, which it can
+process and emit zero or more transformed dictionaries, or emit an error dictionary using the provided emitter object.
 
 Configuration
 -------------
@@ -25,35 +27,40 @@ schema is the same as the input schema.
 
 Example
 -------
-The transform takes records that have a ``'subtotal'`` field, calculates ``'tax'`` and
-``'total'`` fields based on the subtotal, and then returns a record, as a Python dictionary,
-containing those three fields:
+The transform checks each record's ``'subtotal'`` field: if the ``'subtotal'`` is negative, it emits an error;
+else, it calculates the ``'tax'`` and ``'total'`` fields based on the ``'subtotal'``, and then returns a record
+as a Python dictionary containing those three fields, with the error records written to the configured error dataset:
 
     {
-        "name": "PythonEvaluator",
-        "properties": {
-            "script": "def transform(record, emitter, context):
-                           tax = record['subtotal'] * 0.0975
-                           if (tax > 1000.0):
-                               context.getMetrics().count('tax.above.1000', 1)
-                           if (tax < 0.0):
-                               context.getLogger().info('Received record with negative subtotal')
-                           emitter.emit({
-                               'subtotal': record['subtotal'],
-                               'tax': tax,
-                               'total': record['subtotal'] + tax,
-                           })
-                      ",
-            "schema": "{
-                \"type\":\"record\",
-                \"name\":\"expanded\",
-                \"fields\":[
-                    {\"name\":\"subtotal\",\"type\":\"double\"},
-                    {\"name\":\"tax\",\"type\":\"double\"},
-                    {\"name\":\"total\",\"type\":\"double\"}
-                ]
-            }"
-        }
+      "name": "PythonEvaluator",
+      "properties": {
+        "script": "def transform(record, emitter, context):
+                     if (record['subtotal'] < 0):
+                       emitter.emitError({
+                         'errorCode': 10,
+                         'errorMsg': 'subtotal is less than 0',
+                         'invalidRecord': record,
+                       })
+                     else:
+                       tax = record['subtotal'] * 0.0975
+                       if (tax > 1000.0):
+                         context.getMetrics().count('tax.above.1000', 1)
+                       emitter.emit({
+                         'subtotal': record['subtotal'],
+                         'tax': tax,
+                         'total': record['subtotal'] + tax,
+                       })
+                  ",
+        "schema": "{
+          \"type\":\"record\",
+          \"name\":\"expanded\",
+          \"fields\":[
+            {\"name\":\"subtotal\",\"type\":\"double\"},
+            {\"name\":\"tax\",\"type\":\"double\"},
+            {\"name\":\"total\",\"type\":\"double\"}
+          ]
+        }"
+      }
     }
 
 

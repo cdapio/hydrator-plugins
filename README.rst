@@ -4,9 +4,6 @@ Hydrator Plugins Collection
 
 .. image:: https://travis-ci.org/caskdata/hydrator-plugins.svg?branch=develop
     :target: https://travis-ci.org/caskdata/hydrator-plugins
-    
-.. image:: https://badges.ondemand.coverity.com/jobs/2mi4qrcv9h4v9btngg3d0mkhe0
-    :target: https://ondemand.coverity.com/jobs/2mi4qrcv9h4v9btngg3d0mkhe0/results
 
 Introduction
 ============
@@ -25,11 +22,12 @@ This repository is a collection of Hydrator plugins that were built by the team 
 people in the CDAP community. If you are interested in building and contributing a plugin, you are more 
 than welcome to do so. If you would like to build plugins, here are links to get you started:
 
-- `Overview of Hydrator <http://docs.cask.co/cdap/current/en/included-applications/etl/index.html>`__
-- `How to build custom Hydrator plugins <http://docs.cask.co/cdap/current/en/included-applications/etl/custom.html>`__
-- `How to test plugin <http://docs.cask.co/cdap/current/en/included-applications/etl/custom.html#test-framework-for-plugins>`__
-- `How to package and deploy <http://docs.cask.co/cdap/current/en/included-applications/etl/custom.html#plugin-packaging-and-deployment>`__
-- `How to include third-party JARs <http://docs.cask.co/cdap/current/en/included-applications/etl/plugins/third-party.html>`__
+- `Overview of Hydrator <http://docs.cask.co/cdap/current/en/cdap-apps/hydrator/index.html>`__
+- `How to build custom Hydrator plugins <http://docs.cask.co/cdap/current/en/cdap-apps/hydrator/custom.html>`__
+- `How to test a plugin <http://docs.cask.co/cdap/current/en/cdap-apps/hydrator/custom.html#test-framework-for-plugins>`__
+- `How to package and deploy <http://docs.cask.co/cdap/current/en/cdap-apps/hydrator/custom.html#plugin-packaging-and-deployment>`__
+- `How to include third-party JARs <http://docs.cask.co/cdap/current/en/cdap-apps/hydrator/hydrator-plugins/third-party.html>`__
+- `CDAP Developers' Manual: Plugins <http://docs.cask.co/cdap/current/en/developers-manual/building-blocks/plugins.html>`__
 
 
 Getting Started
@@ -85,7 +83,7 @@ CDAP IRC Channel: #cdap on irc.freenode.net
 License and Trademarks
 ======================
 
-Copyright © 2015 Cask Data, Inc.
+Copyright © 2015-2016 Cask Data, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 in compliance with the License. You may obtain a copy of the License at

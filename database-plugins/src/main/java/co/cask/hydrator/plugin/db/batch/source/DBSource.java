@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -34,6 +34,7 @@ import co.cask.hydrator.plugin.DBRecord;
 import co.cask.hydrator.plugin.DBUtils;
 import co.cask.hydrator.plugin.FieldCase;
 import co.cask.hydrator.plugin.StructuredRecordUtils;
+import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.Job;
@@ -89,6 +90,15 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
 
     // Load the plugin class to make sure it is available.
     Class<? extends Driver> driverClass = context.loadPluginClass(getJDBCPluginId());
+    // make sure that the table exists
+    try {
+      Preconditions.checkArgument(
+        dbManager.tableExists(driverClass), "Table %s does not exist. Please check that the 'tableName' property " +
+          "has been set correctly, and that the connection string %s points to a valid database.",
+        dbSourceConfig.tableName, dbSourceConfig.connectionString);
+    } finally {
+      DBUtils.cleanup(driverClass);
+    }
     if (dbSourceConfig.user == null && dbSourceConfig.password == null) {
       DBConfiguration.configureDB(hConf, driverClass.getName(), dbSourceConfig.connectionString);
     } else {
