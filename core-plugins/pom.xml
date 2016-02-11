@@ -129,6 +129,16 @@
       <version>0.6.3</version>
     </dependency>
     <!-- End for SQS -->
+    <!-- EMail action -->
+    <dependency>
+      <groupId>dumbster</groupId>
+      <artifactId>dumbster</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>javax.mail</groupId>
+      <artifactId>mail</artifactId>
+    </dependency>
+    <!-- End for EMail -->
     <dependency>
       <groupId>com.twitter</groupId>
       <artifactId>parquet-avro</artifactId>
@@ -178,7 +188,7 @@
               co.cask.hydrator.plugin.realtime.*;
               co.cask.hydrator.plugin.transform.*;
               co.cask.hydrator.plugin.validator.*;
-              co.cask.hydrator.plugin.common
+              co.cask.hydrator.plugin.common;
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>

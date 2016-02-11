@@ -25,6 +25,7 @@ import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
 import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
+import co.cask.hydrator.plugin.batch.action.EmailAction;
 import co.cask.hydrator.plugin.batch.condition.PartitionExistsCondition;
 import co.cask.hydrator.plugin.batch.sink.BatchCubeSink;
 import co.cask.hydrator.plugin.batch.sink.KVTableSink;
@@ -61,7 +62,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.twill.filesystem.Location;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.python.util.PythonInterpreter;
 import parquet.avro.AvroParquetInputFormat;
 import parquet.avro.AvroParquetOutputFormat;
 import parquet.avro.AvroParquetReader;
@@ -98,8 +98,7 @@ public class ETLBatchTestBase extends TestBase {
                    // without this, different classloaders will be used for ParquetInputSplit and we'll see errors
                    "parquet.hadoop.api", "parquet.hadoop", "parquet.schema", "parquet.io.api");
 
-    // add artifact for batch sources and sinks
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "batch-plugins", "1.0.0"), APP_ARTIFACT_ID,
+    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "core-plugins", "1.0.0"), APP_ARTIFACT_ID,
                       KVTableSource.class, StreamBatchSource.class, TableSource.class,
                       TimePartitionedFileSetDatasetAvroSource.class,
                       TimePartitionedFileSetDatasetParquetSource.class,
@@ -110,14 +109,13 @@ public class ETLBatchTestBase extends TestBase {
                       SnapshotFileBatchAvroSink.class, SnapshotFileBatchParquetSink.class,
                       SnapshotFileBatchAvroSource.class, SnapshotFileBatchParquetSource.class,
                       S3AvroBatchSink.class, S3ParquetBatchSink.class,
-                      PartitionExistsCondition.class);
-    // add artifact for transforms
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "transforms", "1.0.0"), APP_ARTIFACT_ID,
+                      PartitionExistsCondition.class,
                       ProjectionTransform.class, ScriptFilterTransform.class,
                       ValidatorTransform.class, CoreValidator.class,
                       StructuredRecordToGenericRecordTransform.class,
                       JavaScriptTransform.class,
-                      PythonEvaluator.class);
+                      PythonEvaluator.class,
+                      EmailAction.class);
   }
 
   protected List<GenericRecord> readOutput(TimePartitionedFileSet fileSet, Schema schema) throws IOException {
