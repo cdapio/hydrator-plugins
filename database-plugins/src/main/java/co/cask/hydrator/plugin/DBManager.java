@@ -36,50 +36,50 @@ import java.sql.SQLException;
  */
 public class DBManager implements Destroyable {
   private static final Logger LOG = LoggerFactory.getLogger(DBManager.class);
-  private final DBConfig dbConfig;
+  private final ConnectionConfig config;
   private JDBCDriverShim driverShim;
 
-  public DBManager(DBConfig dbConfig) {
-    this.dbConfig = dbConfig;
+  public DBManager(ConnectionConfig dbConfig) {
+    this.config = dbConfig;
   }
 
   public void validateJDBCPluginPipeline(PipelineConfigurer pipelineConfigurer, String jdbcPluginId) {
-    Preconditions.checkArgument(!(dbConfig.user == null && dbConfig.password != null),
+    Preconditions.checkArgument(!(config.user == null && config.password != null),
                                 "user is null. Please provide both user name and password if database requires " +
                                   "authentication. If not, please remove password and retry.");
-    Preconditions.checkArgument(!(dbConfig.user != null && dbConfig.password == null),
+    Preconditions.checkArgument(!(config.user != null && config.password == null),
                                 "password is null. Please provide both user name and password if database requires" +
                                   "authentication. If not, please remove dbUser and retry.");
-    Class<? extends Driver> jdbcDriverClass = pipelineConfigurer.usePluginClass(dbConfig.jdbcPluginType,
-                                                                                dbConfig.jdbcPluginName,
+    Class<? extends Driver> jdbcDriverClass = pipelineConfigurer.usePluginClass(config.jdbcPluginType,
+                                                                                config.jdbcPluginName,
                                                                                 jdbcPluginId,
                                                                                 PluginProperties.builder().build());
     Preconditions.checkArgument(
       jdbcDriverClass != null, "Unable to load JDBC Driver class for plugin name '%s'. Please make sure that the " +
-        "plugin '%s' of type '%s' containing the driver has been installed correctly.", dbConfig.jdbcPluginName,
-      dbConfig.jdbcPluginName, dbConfig.jdbcPluginType);
+        "plugin '%s' of type '%s' containing the driver has been installed correctly.", config.jdbcPluginName,
+      config.jdbcPluginName, config.jdbcPluginType);
   }
 
-  public boolean tableExists(Class<? extends Driver> jdbcDriverClass) {
+  public boolean tableExists(Class<? extends Driver> jdbcDriverClass, String tableName) {
     try {
       ensureJDBCDriverIsAvailable(jdbcDriverClass);
     } catch (IllegalAccessException | InstantiationException | SQLException e) {
       LOG.error("Unable to load or register JDBC driver {} while checking for the existence of the database table {}.",
-                jdbcDriverClass, dbConfig.tableName, e);
+                jdbcDriverClass, tableName, e);
       throw Throwables.propagate(e);
     }
 
     Connection connection;
     try {
-      if (dbConfig.user == null) {
-        connection = DriverManager.getConnection(dbConfig.connectionString);
+      if (config.user == null) {
+        connection = DriverManager.getConnection(config.connectionString);
       } else {
-        connection = DriverManager.getConnection(dbConfig.connectionString, dbConfig.user, dbConfig.password);
+        connection = DriverManager.getConnection(config.connectionString, config.user, config.password);
       }
 
       try {
         DatabaseMetaData metadata = connection.getMetaData();
-        try (ResultSet rs = metadata.getTables(null, null, dbConfig.tableName, null)) {
+        try (ResultSet rs = metadata.getTables(null, null, tableName, null)) {
           return rs.next();
         }
       } finally {
@@ -87,7 +87,7 @@ public class DBManager implements Destroyable {
       }
     } catch (SQLException e) {
       LOG.error("Exception while trying to check the existence of database table {} for connection {}.",
-                dbConfig.tableName, dbConfig.connectionString, e);
+                tableName, config.connectionString, e);
       throw Throwables.propagate(e);
     }
   }
@@ -99,11 +99,11 @@ public class DBManager implements Destroyable {
   public void ensureJDBCDriverIsAvailable(Class<? extends Driver> jdbcDriverClass)
     throws IllegalAccessException, InstantiationException, SQLException {
     try {
-      DriverManager.getDriver(dbConfig.connectionString);
+      DriverManager.getDriver(config.connectionString);
     } catch (SQLException e) {
       // Driver not found. We will try to register it with the DriverManager.
       LOG.debug("Plugin Type: {} and Plugin Name: {}; Driver Class: {} not found. Registering JDBC driver via shim {} ",
-                dbConfig.jdbcPluginType, dbConfig.jdbcPluginName, jdbcDriverClass.getName(),
+                config.jdbcPluginType, config.jdbcPluginName, jdbcDriverClass.getName(),
                 JDBCDriverShim.class.getName());
       driverShim = new JDBCDriverShim(jdbcDriverClass.newInstance());
       try {

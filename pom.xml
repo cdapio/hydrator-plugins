@@ -97,7 +97,7 @@
     <cassandraunit.version>2.0.2.2</cassandraunit.version>
     <commons-codec.version>1.10</commons-codec.version>
     <commons-httpclient.version>3.1</commons-httpclient.version>
-    <cdap.version>3.3.0</cdap.version>
+    <cdap.version>3.3.1-SNAPSHOT</cdap.version>
     <datastax.version>2.0.5</datastax.version>
     <es.version>1.6.0</es.version>
     <es-hadoop.version>2.1.0</es-hadoop.version>

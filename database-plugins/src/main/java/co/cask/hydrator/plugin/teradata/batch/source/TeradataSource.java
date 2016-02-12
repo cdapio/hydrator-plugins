@@ -39,6 +39,7 @@ import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.lib.db.DBConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +79,7 @@ public class TeradataSource extends BatchSource<LongWritable, DBRecord, Structur
                 "boundingQuery = {}",
               sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName,
               sourceConfig.connectionString, sourceConfig.importQuery, sourceConfig.boundingQuery);
-
+    sourceConfig.substituteMacros(context);
     Job job = Job.getInstance();
     Configuration hConf = job.getConfiguration();
     hConf.clear();
@@ -88,7 +89,8 @@ public class TeradataSource extends BatchSource<LongWritable, DBRecord, Structur
     // make sure that the table exists
     try {
       Preconditions.checkArgument(
-        dbManager.tableExists(driverClass), "Table %s does not exist. Please check that the 'tableName' property " +
+        dbManager.tableExists(driverClass, sourceConfig.tableName),
+        "Table %s does not exist. Please check that the 'tableName' property " +
           "has been set correctly, and that the connection string %s points to a valid database.",
         sourceConfig.tableName, sourceConfig.connectionString);
     } finally {
@@ -102,7 +104,10 @@ public class TeradataSource extends BatchSource<LongWritable, DBRecord, Structur
     }
     DataDrivenETLDBInputFormat.setInput(hConf, DBRecord.class, sourceConfig.importQuery,
                                         sourceConfig.boundingQuery, sourceConfig.enableAutoCommit);
-    job.getConfiguration().set(DBConfiguration.INPUT_ORDER_BY_PROPERTY, sourceConfig.splitBy);
+    hConf.set(DBConfiguration.INPUT_ORDER_BY_PROPERTY, sourceConfig.splitBy);
+    if (sourceConfig.numMaps != null) {
+      hConf.setInt(MRJobConfig.NUM_MAPS, sourceConfig.numMaps);
+    }
     context.setInput(new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf));
   }
 
@@ -141,28 +146,27 @@ public class TeradataSource extends BatchSource<LongWritable, DBRecord, Structur
     @Description("The SELECT query to use to import data from the specified table. " +
       "You can specify an arbitrary number of columns to import, or import all columns using *. The Query should" +
       "contain the '$CONDITIONS' string. For example, 'SELECT * FROM table WHERE $CONDITIONS'. " +
-      "The '$CONDITIONS' string will be replaced by 'splitBy' field limits specified by the bounding query.")
+      "The '$CONDITIONS' string will be replaced by 'splitBy' field limits specified by the bounding query. " +
+      "Supports macro substitution. " +
+      "${runtime.year} will be replaced by the runtime year. " +
+      "${runtime.month} will be replaced by a value from 1 to 12 for the runtime month. " +
+      "${runtime.day} will be replaced by the runtime day. " +
+      "${runtime.hour} will be replaced by a value from 0 to 23 for the runtime hour. " +
+      "${runtime.minute} will be replaced by the runtime minute.")
     String importQuery;
 
     @Name(BOUNDING_QUERY)
     @Description("Bounding Query should return the min and max of the values of the 'splitBy' field. " +
-      "For example, 'SELECT MIN(id),MAX(id) FROM table'")
+      "For example, 'SELECT MIN(id),MAX(id) FROM table'. Supports macro substitution. " +
+      "See the importQuery description for details about macros.")
     String boundingQuery;
 
     @Name(SPLIT_BY)
     @Description("Field Name which will be used to generate splits.")
     String splitBy;
 
-    @Description("Whether to enable auto commit for queries run by this source. Defaults to false. " +
-      "This setting should only matter if you are using a jdbc driver that does not support a false value for " +
-      "auto commit, or a driver that does not support the commit call. For example, the Hive jdbc driver will throw " +
-      "an exception whenever a commit is called. For drivers like that, this should be set to true.")
+    @Description("The number of mappers to use.")
     @Nullable
-    Boolean enableAutoCommit;
-
-    public TeradataSourceConfig() {
-      super();
-      enableAutoCommit = false;
-    }
+    Integer numMaps;
   }
 }

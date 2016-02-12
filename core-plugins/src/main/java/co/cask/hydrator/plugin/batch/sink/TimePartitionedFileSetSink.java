@@ -21,6 +21,7 @@ import co.cask.cdap.api.dataset.lib.TimePartitionedFileSetArguments;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
+import co.cask.hydrator.common.ETLTime;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 
@@ -65,7 +66,7 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
   @Override
   public void prepareRun(BatchSinkContext context) {
     Map<String, String> sinkArgs = getAdditionalTPFSArguments();
-    TimePartitionedFileSetArguments.setOutputPartitionTime(sinkArgs, context.getLogicalStartTime());
+    TimePartitionedFileSetArguments.setOutputPartitionTime(sinkArgs, ETLTime.getRuntime(context));
     if (!Strings.isNullOrEmpty(tpfsSinkConfig.filePathFormat)) {
       TimePartitionedFileSetArguments.setOutputPathFormat(sinkArgs, tpfsSinkConfig.filePathFormat,
                                                           tpfsSinkConfig.timeZone);

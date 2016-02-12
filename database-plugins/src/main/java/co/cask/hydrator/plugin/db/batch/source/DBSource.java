@@ -38,6 +38,7 @@ import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.lib.db.DBConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +75,7 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
                 "countQuery = {}",
               dbSourceConfig.jdbcPluginType, dbSourceConfig.jdbcPluginName,
               dbSourceConfig.connectionString, dbSourceConfig.importQuery, dbSourceConfig.countQuery);
-
+    dbSourceConfig.substituteMacros(context);
     Job job = Job.getInstance();
     Configuration hConf = job.getConfiguration();
     hConf.clear();
@@ -84,7 +85,8 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
     // make sure that the table exists
     try {
       Preconditions.checkArgument(
-        dbManager.tableExists(driverClass), "Table %s does not exist. Please check that the 'tableName' property " +
+        dbManager.tableExists(driverClass, dbSourceConfig.tableName),
+        "Table %s does not exist. Please check that the 'tableName' property " +
           "has been set correctly, and that the connection string %s points to a valid database.",
         dbSourceConfig.tableName, dbSourceConfig.connectionString);
     } finally {
@@ -98,6 +100,9 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
     }
     ETLDBInputFormat.setInput(hConf, DBRecord.class, dbSourceConfig.importQuery,
                               dbSourceConfig.countQuery, dbSourceConfig.enableAutoCommit);
+    if (dbSourceConfig.numMaps != null) {
+      hConf.setInt(MRJobConfig.NUM_MAPS, dbSourceConfig.numMaps);
+    }
     context.setInput(new SourceInputFormatProvider(ETLDBInputFormat.class, hConf));
   }
 
@@ -133,26 +138,24 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
     @Description("The SELECT query to use to import data from the specified " +
       "table. You can specify an arbitrary number of columns to import, or import all columns using *. " +
       "You can also specify a number of WHERE clauses or ORDER BY clauses. However, LIMIT and OFFSET clauses " +
-      "should not be used in this query.")
+      "should not be used in this query. " +
+      "Supports macro substitution. " +
+      "${runtime.year} will be replaced by the runtime year. " +
+      "${runtime.month} will be replaced by a value from 1 to 12 for the runtime month. " +
+      "${runtime.day} will be replaced by the runtime day. " +
+      "${runtime.hour} will be replaced by a value from 0 to 23 for the runtime hour. " +
+      "${runtime.minute} will be replaced by the runtime minute.")
     String importQuery;
 
     @Description("The SELECT query to use to get the count of records to " +
       "import from the specified table. Examples: SELECT COUNT(*) from <my_table> where <my_column> 1, " +
       "SELECT COUNT(my_column) from my_table. NOTE: Please include the same WHERE clauses in this query as the ones " +
-      "used in the import query to reflect an accurate number of records to import.")
+      "used in the import query to reflect an accurate number of records to import. Supports macro substitution. " +
+      "See the importQuery description for details about macros.")
     String countQuery;
 
-    @Description("Whether to enable auto commit for queries run by this source. Defaults to false. " +
-      "This setting should only matter if you are using a jdbc driver that does not support a false value for " +
-      "auto commit, or a driver that does not support the commit call. For example, the Hive jdbc driver will throw " +
-      "an exception whenever a commit is called. For drivers like that, this should be set to true.")
+    @Description("The number of mappers to use.")
     @Nullable
-    Boolean enableAutoCommit;
-
-    // for setting defaults
-    public DBSourceConfig() {
-      super();
-      enableAutoCommit = false;
-    }
+    Integer numMaps;
   }
 }

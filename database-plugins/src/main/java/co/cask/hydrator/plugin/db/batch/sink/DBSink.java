@@ -53,7 +53,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nullable;
 
 /**
  * Sink that can be configured to export data to a database table.
@@ -95,7 +94,8 @@ public class DBSink extends BatchSink<StructuredRecord, DBRecord, NullWritable> 
     // make sure that the table exists
     try {
       Preconditions.checkArgument(
-        dbManager.tableExists(driverClass), "Table %s does not exist. Please check that the 'tableName' property " +
+        dbManager.tableExists(driverClass, dbSinkConfig.tableName),
+        "Table %s does not exist. Please check that the 'tableName' property " +
           "has been set correctly, and that the connection string %s points to a valid database.",
         dbSinkConfig.tableName, dbSinkConfig.connectionString);
     } finally {
@@ -191,18 +191,6 @@ public class DBSink extends BatchSink<StructuredRecord, DBRecord, NullWritable> 
   public static class DBSinkConfig extends DBConfig {
     @Description("Comma-separated list of columns in the specified table to export to.")
     public String columns;
-
-    @Description("Whether to enable auto commit for queries run by this source. Defaults to false. " +
-      "This setting should only matter if you are using a jdbc driver that does not support a false value for " +
-      "auto commit, or a driver that does not support the commit call. For example, the Hive jdbc driver will throw " +
-      "an exception whenever a commit is called. For drivers like that, this should be set to true.")
-    @Nullable
-    Boolean enableAutoCommit;
-
-    public DBSinkConfig() {
-      super();
-      enableAutoCommit = false;
-    }
   }
 
   private static class DBOutputFormatProvider implements OutputFormatProvider {

@@ -33,6 +33,7 @@ import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
+import co.cask.hydrator.plugin.db.batch.action.QueryAction;
 import co.cask.hydrator.plugin.db.batch.sink.DBSink;
 import co.cask.hydrator.plugin.db.batch.sink.ETLDBOutputFormat;
 import co.cask.hydrator.plugin.db.batch.source.DBSource;
@@ -110,7 +111,7 @@ public class DatabasePluginTestBase extends TestBase {
 
     addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "database-plugins", "1.0.0"), APP_ARTIFACT_ID,
                       DBSource.class, DBSink.class, DBRecord.class, ETLDBInputFormat.class, ETLDBOutputFormat.class,
-                      TeradataSource.class, DataDrivenETLDBInputFormat.class, DBRecord.class);
+                      TeradataSource.class, DataDrivenETLDBInputFormat.class, DBRecord.class, QueryAction.class);
 
     // add hypersql 3rd party plugin
     PluginClass hypersql = new PluginClass("jdbc", "hypersql", "hypersql jdbc driver", JDBCDriver.class.getName(),

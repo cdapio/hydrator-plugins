@@ -32,7 +32,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
-import co.cask.hydrator.common.ETLUtils;
+import co.cask.hydrator.common.ETLTime;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -98,8 +98,8 @@ public class StreamBatchSource extends BatchSource<LongWritable, Object, Structu
 
   @Override
   public void prepareRun(BatchSourceContext context) {
-    long duration = ETLUtils.parseDuration(streamBatchConfig.duration);
-    long delay = Strings.isNullOrEmpty(streamBatchConfig.delay) ? 0 : ETLUtils.parseDuration(streamBatchConfig.delay);
+    long duration = ETLTime.parseDuration(streamBatchConfig.duration);
+    long delay = Strings.isNullOrEmpty(streamBatchConfig.delay) ? 0 : ETLTime.parseDuration(streamBatchConfig.delay);
     long endTime = context.getLogicalStartTime() - delay;
     long startTime = endTime - duration;
 
@@ -188,10 +188,10 @@ public class StreamBatchSource extends BatchSource<LongWritable, Object, Structu
         parseSchema();
       }
       // check duration and delay
-      long durationInMs = ETLUtils.parseDuration(duration);
+      long durationInMs = ETLTime.parseDuration(duration);
       Preconditions.checkArgument(durationInMs > 0, "Duration must be greater than 0");
       if (!Strings.isNullOrEmpty(delay)) {
-        ETLUtils.parseDuration(delay);
+        ETLTime.parseDuration(delay);
       }
     }
 

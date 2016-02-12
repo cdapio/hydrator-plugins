@@ -26,7 +26,7 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
-import co.cask.hydrator.common.ETLUtils;
+import co.cask.hydrator.common.ETLTime;
 import co.cask.hydrator.common.SourceInputFormatProvider;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -72,10 +72,10 @@ public abstract class TimePartitionedFileSetSource<KEY, VALUE> extends BatchSour
 
     protected void validate() {
       // check duration and delay
-      long durationInMs = ETLUtils.parseDuration(duration);
+      long durationInMs = ETLTime.parseDuration(duration);
       Preconditions.checkArgument(durationInMs > 0, "Duration must be greater than 0");
       if (!Strings.isNullOrEmpty(delay)) {
-        ETLUtils.parseDuration(delay);
+        ETLTime.parseDuration(delay);
       }
     }
   }
@@ -99,14 +99,9 @@ public abstract class TimePartitionedFileSetSource<KEY, VALUE> extends BatchSour
 
   @Override
   public final void prepareRun(BatchSourceContext context) {
-    Map<String, String> runtimeArgs = context.getRuntimeArguments();
-    long runtime = context.getLogicalStartTime();
-    if (runtimeArgs.containsKey("runtime")) {
-      runtime = Long.parseLong(runtimeArgs.get("runtime"));
-    }
-
-    long duration = ETLUtils.parseDuration(config.duration);
-    long delay = Strings.isNullOrEmpty(config.delay) ? 0 : ETLUtils.parseDuration(config.delay);
+    long runtime = ETLTime.getRuntime(context);
+    long duration = ETLTime.parseDuration(config.duration);
+    long delay = Strings.isNullOrEmpty(config.delay) ? 0 : ETLTime.parseDuration(config.delay);
     long endTime = runtime - delay;
     long startTime = endTime - duration;
     Map<String, String> sourceArgs = Maps.newHashMap();

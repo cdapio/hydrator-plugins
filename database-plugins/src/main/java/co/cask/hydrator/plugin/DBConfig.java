@@ -24,32 +24,7 @@ import javax.annotation.Nullable;
 /**
  * Defines a base {@link PluginConfig} that Database source and sink can re-use
  */
-public class DBConfig extends PluginConfig {
-
-  @Description("JDBC connection string including database name.")
-  public String connectionString;
-
-  @Description("User to use to connect to the specified database. Required for databases that " +
-    "need authentication. Optional for databases that do not require authentication.")
-  @Nullable
-  public String user;
-
-  @Description("Password to use to connect to the specified database. Required for databases that " +
-    "need authentication. Optional for databases that do not require authentication.")
-  @Nullable
-  public String password;
-
-  @Description("Name of the JDBC plugin to use. This is the value of the 'name' key defined in the JSON file " +
-    "for the JDBC plugin.")
-  public String jdbcPluginName;
-
-  @Description("Name of the database table to use as a source or a sink.")
-  public String tableName;
-
-  @Description("Type of the JDBC plugin to use. This is the value of the 'type' key defined in the JSON file " +
-    "for the JDBC plugin. Defaults to 'jdbc'.")
-  @Nullable
-  public String jdbcPluginType;
+public class DBConfig extends ConnectionConfig {
 
   @Description("Sets the case of the column names returned from the query. " +
     "Possible options are upper or lower. By default or for any other input, the column names are not modified and " +
@@ -59,7 +34,6 @@ public class DBConfig extends PluginConfig {
   @Nullable
   public String columnNameCase;
 
-  public DBConfig() {
-    jdbcPluginType = "jdbc";
-  }
+  @Description("Name of the database table to use as a source or a sink.")
+  public String tableName;
 }
