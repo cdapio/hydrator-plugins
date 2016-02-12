@@ -74,7 +74,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -193,8 +192,11 @@ public class ETLCassandraTest extends TestBase {
         .put(RealtimeCassandraSink.Cassandra.COMPRESSION, "NONE")
         .put(RealtimeCassandraSink.Cassandra.CONSISTENCY_LEVEL, "QUORUM")
         .build()));
-    List<ETLStage> transforms = new ArrayList<>();
-    ETLRealtimeConfig etlConfig = new ETLRealtimeConfig(source, sink, transforms);
+    ETLRealtimeConfig etlConfig = ETLRealtimeConfig.builder()
+      .setSource(source)
+      .addSink(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testESSink");
     AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(REALTIME_APP_ARTIFACT, etlConfig);
     try {
@@ -234,8 +236,11 @@ public class ETLCassandraTest extends TestBase {
         .put(BatchCassandraSink.Cassandra.PRIMARY_KEY, "ticker")
         .build()));
 
-    List<ETLStage> transforms = new ArrayList<>();
-    ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, transforms);
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .setSource(source)
+      .addSink(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "cassandraSinkTest");
@@ -288,8 +293,11 @@ public class ETLCassandraTest extends TestBase {
                       Properties.Table.PROPERTY_SCHEMA, BODY_SCHEMA.toString(),
                       Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ticker")));
 
-    List<ETLStage> transforms = new ArrayList<>();
-    ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, transforms);
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .setSource(source)
+      .addSink(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "CassandraSourceTest");
@@ -334,8 +342,11 @@ public class ETLCassandraTest extends TestBase {
         .put(RealtimeCassandraSink.Cassandra.COMPRESSION, "NONE")
         .put(RealtimeCassandraSink.Cassandra.CONSISTENCY_LEVEL, "QUORUM")
         .build()));
-    List<ETLStage> transforms = new ArrayList<>();
-    ETLRealtimeConfig etlConfig = new ETLRealtimeConfig(source, sink, transforms);
+    ETLRealtimeConfig etlConfig = ETLRealtimeConfig.builder()
+      .setSource(source)
+      .addSink(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testESSink");
     AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(REALTIME_APP_ARTIFACT, etlConfig);
     ApplicationManager appManager = deployApplication(appId, appRequest);

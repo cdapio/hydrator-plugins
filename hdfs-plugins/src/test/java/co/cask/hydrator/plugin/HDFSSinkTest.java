@@ -149,8 +149,11 @@ public class HDFSSinkTest extends TestBase {
       ImmutableMap.<String, String>builder()
         .put("path", outputDir.toUri().toString())
         .build()));
-    List<ETLStage> transforms = new ArrayList<>();
-    ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, transforms);
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .setSource(source)
+      .addSink(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "HDFSTest");
