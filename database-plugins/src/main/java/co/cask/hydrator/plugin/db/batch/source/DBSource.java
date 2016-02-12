@@ -175,7 +175,6 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
                 "boundingQuery = {}",
               sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName,
               sourceConfig.connectionString, sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery());
-
     Job job = Job.getInstance();
     Configuration hConf = job.getConfiguration();
     hConf.clear();
@@ -191,7 +190,9 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
     DataDrivenETLDBInputFormat.setInput(hConf, DBRecord.class,
                                         sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery(),
                                         sourceConfig.getEnableAutoCommit());
-    hConf.set(DBConfiguration.INPUT_ORDER_BY_PROPERTY, sourceConfig.splitBy);
+    if (sourceConfig.numSplits == null || sourceConfig.numSplits != 1) {
+      hConf.set(DBConfiguration.INPUT_ORDER_BY_PROPERTY, sourceConfig.splitBy);
+    }
     if (sourceConfig.numSplits != null) {
       hConf.setInt(MRJobConfig.NUM_MAPS, sourceConfig.numSplits);
     }
