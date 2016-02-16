@@ -16,6 +16,7 @@
 
 package co.cask.hydrator.plugin.batch;
 
+import co.cask.hydrator.plugin.batch.condition.PartitionExistsConditionTestRun;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -29,7 +30,8 @@ import org.junit.runners.Suite;
   ETLSnapshotTestRun.class,
   ETLStreamConversionTestRun.class,
   ETLTPFSTestRun.class,
-  ETLMapReduceTestRun.class
+  ETLMapReduceTestRun.class,
+  PartitionExistsConditionTestRun.class
 })
 public class BatchPluginsTestSuite extends ETLBatchTestBase {
 }

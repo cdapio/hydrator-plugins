@@ -108,7 +108,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     // run the pipeline
     WorkflowManager workflowManager = appManager.getWorkflowManager(ETLWorkflow.NAME);
     // add a minute to the end time to make sure the newly added partition is included in the run.
-    workflowManager.start(ImmutableMap.of("runtime", String.valueOf(timeInMillis + 60 * 1000)));
+    workflowManager.start(ImmutableMap.of("logicalStartTime", String.valueOf(timeInMillis + 60 * 1000)));
     workflowManager.waitForFinish(4, TimeUnit.MINUTES);
 
     DataSetManager<TimePartitionedFileSet> outputManager = getDataset("outputParquet");
@@ -177,7 +177,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(ETLWorkflow.NAME);
     // add a minute to the end time to make sure the newly added partition is included in the run.
-    workflowManager.start(ImmutableMap.of("runtime", String.valueOf(timeInMillis + 60 * 1000)));
+    workflowManager.start(ImmutableMap.of("logicalStartTime", String.valueOf(timeInMillis + 60 * 1000)));
     workflowManager.waitForFinish(4, TimeUnit.MINUTES);
 
     DataSetManager<TimePartitionedFileSet> newFileSetManager = getDataset(newFilesetName);

@@ -80,6 +80,11 @@
             ],
             "default": "No change"
           }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Number of Splits",
+          "name": "numSplits"
         }
       ]
     }

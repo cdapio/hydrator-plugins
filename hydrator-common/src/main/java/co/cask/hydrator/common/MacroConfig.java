@@ -19,12 +19,12 @@ package co.cask.hydrator.common;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.batch.BatchContext;
+import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import com.google.common.base.Strings;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
 import javax.annotation.Nullable;
@@ -36,10 +36,11 @@ public abstract class MacroConfig extends PluginConfig {
   private static final String RUNTIME_PREFIX = "${runtime:";
 
   @Nullable
-  @Description("The timezone to use for macro substitution. " +
-    "Macros are of the format ${runtime.format}, " +
+  @Description("The timezone to use for macro substitution. See Java's TimeZone class for more information about " +
+    "time zone codes. If the specified time zone is unknown, GMT will be used. " +
+    "Macros are of the format ${runtime:format}, " +
     "where format is a date format as described by Java's SimpleDateFormat. " +
-    "For example, ${runtime:yyyy} will be replaced by the year of the runtime.")
+    "For example, ${runtime:yyyy} will be replaced by the runtime year.")
   protected String macroTimeZone;
 
   @Nullable
@@ -62,23 +63,20 @@ public abstract class MacroConfig extends PluginConfig {
    * @throws IllegalArgumentException if there are invalid config fields.
    */
   public void validate() throws IllegalArgumentException {
-    ETLTime.parseDuration(macroTimeOffset);
+    if (macroTimeOffset != null) {
+      ETLTime.parseDuration(macroTimeOffset);
+    }
   }
 
   /**
-   * Performs macro substitution on all non-static string fields.
+   * Performs macro substition on all non-static string fields.
    *
-   * @param context context of the pipeline run
+   * @param runtime runtime of the pipeline run
    */
-  public void substituteMacros(BatchContext context) {
-    Calendar calendar = Strings.isNullOrEmpty(macroTimeZone) ?
-      Calendar.getInstance() : Calendar.getInstance(TimeZone.getTimeZone(macroTimeZone));
-
-    long runtime = ETLTime.getRuntime(context);
+  public void substituteMacros(long runtime) {
     if (!Strings.isNullOrEmpty(macroTimeOffset)) {
       runtime -= ETLTime.parseDuration(macroTimeOffset);
     }
-    calendar.setTimeInMillis(runtime);
     TimeZone timeZone = macroTimeZone == null ? null : TimeZone.getTimeZone(macroTimeZone);
 
     for (Field field : getClass().getDeclaredFields()) {
@@ -89,7 +87,10 @@ public abstract class MacroConfig extends PluginConfig {
       if (field.getType() == String.class) {
         try {
           field.setAccessible(true);
-          field.set(this, substitute((String) field.get(this), runtime, timeZone));
+          String fieldValue = (String) field.get(this);
+          if (fieldValue != null) {
+            field.set(this, substitute(fieldValue, runtime, timeZone));
+          }
         } catch (IllegalAccessException e) {
           // can't do anything, just ignore
         }

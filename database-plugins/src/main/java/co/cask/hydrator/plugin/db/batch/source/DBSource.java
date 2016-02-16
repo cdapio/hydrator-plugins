@@ -71,11 +71,11 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
+    dbSourceConfig.substituteMacros(context.getLogicalStartTime());
     LOG.debug("pluginType = {}; pluginName = {}; connectionString = {}; importQuery = {}; " +
                 "countQuery = {}",
               dbSourceConfig.jdbcPluginType, dbSourceConfig.jdbcPluginName,
               dbSourceConfig.connectionString, dbSourceConfig.importQuery, dbSourceConfig.countQuery);
-    dbSourceConfig.substituteMacros(context);
     Job job = Job.getInstance();
     Configuration hConf = job.getConfiguration();
     hConf.clear();
@@ -100,8 +100,8 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
     }
     ETLDBInputFormat.setInput(hConf, DBRecord.class, dbSourceConfig.importQuery,
                               dbSourceConfig.countQuery, dbSourceConfig.enableAutoCommit);
-    if (dbSourceConfig.numMaps != null) {
-      hConf.setInt(MRJobConfig.NUM_MAPS, dbSourceConfig.numMaps);
+    if (dbSourceConfig.numSplits != null) {
+      hConf.setInt(MRJobConfig.NUM_MAPS, dbSourceConfig.numSplits);
     }
     context.setInput(new SourceInputFormatProvider(ETLDBInputFormat.class, hConf));
   }
@@ -138,24 +138,17 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
     @Description("The SELECT query to use to import data from the specified " +
       "table. You can specify an arbitrary number of columns to import, or import all columns using *. " +
       "You can also specify a number of WHERE clauses or ORDER BY clauses. However, LIMIT and OFFSET clauses " +
-      "should not be used in this query. " +
-      "Supports macro substitution. " +
-      "${runtime.year} will be replaced by the runtime year. " +
-      "${runtime.month} will be replaced by a value from 1 to 12 for the runtime month. " +
-      "${runtime.day} will be replaced by the runtime day. " +
-      "${runtime.hour} will be replaced by a value from 0 to 23 for the runtime hour. " +
-      "${runtime.minute} will be replaced by the runtime minute.")
+      "should not be used in this query.")
     String importQuery;
 
     @Description("The SELECT query to use to get the count of records to " +
       "import from the specified table. Examples: SELECT COUNT(*) from <my_table> where <my_column> 1, " +
       "SELECT COUNT(my_column) from my_table. NOTE: Please include the same WHERE clauses in this query as the ones " +
-      "used in the import query to reflect an accurate number of records to import. Supports macro substitution. " +
-      "See the importQuery description for details about macros.")
+      "used in the import query to reflect an accurate number of records to import.")
     String countQuery;
 
-    @Description("The number of mappers to use.")
+    @Description("The number of splits to use.")
     @Nullable
-    Integer numMaps;
+    Integer numSplits;
   }
 }

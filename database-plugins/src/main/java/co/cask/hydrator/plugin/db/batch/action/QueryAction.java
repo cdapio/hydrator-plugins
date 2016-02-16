@@ -46,7 +46,7 @@ public class QueryAction extends PostAction {
 
   @Override
   public void run(boolean succeeded, BatchContext batchContext) throws Exception {
-    config.substituteMacros(batchContext);
+    config.substituteMacros(batchContext.getLogicalStartTime());
     if (config.runOnSuccess != succeeded && config.runOnFailure == succeeded) {
       return;
     }

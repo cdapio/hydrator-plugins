@@ -70,6 +70,7 @@ public class TeradataPluginTestRun extends DatabasePluginTestBase {
         .put(TeradataSource.TeradataSourceConfig.BOUNDING_QUERY, boundingQuery)
         .put(TeradataSource.TeradataSourceConfig.SPLIT_BY, splitBy)
         .put(Properties.DB.JDBC_PLUGIN_NAME, "hypersql")
+        .put("numSplits", "1")
         .build()
     );
 

@@ -25,6 +25,7 @@ import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
 import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
+import co.cask.hydrator.plugin.batch.condition.PartitionExistsCondition;
 import co.cask.hydrator.plugin.batch.sink.BatchCubeSink;
 import co.cask.hydrator.plugin.batch.sink.KVTableSink;
 import co.cask.hydrator.plugin.batch.sink.S3AvroBatchSink;
@@ -108,7 +109,8 @@ public class ETLBatchTestBase extends TestBase {
                       TimePartitionedFileSetDatasetParquetSink.class, AvroParquetOutputFormat.class,
                       SnapshotFileBatchAvroSink.class, SnapshotFileBatchParquetSink.class,
                       SnapshotFileBatchAvroSource.class, SnapshotFileBatchParquetSource.class,
-                      S3AvroBatchSink.class, S3ParquetBatchSink.class);
+                      S3AvroBatchSink.class, S3ParquetBatchSink.class,
+                      PartitionExistsCondition.class);
     // add artifact for transforms
     addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "transforms", "1.0.0"), APP_ARTIFACT_ID,
                       ProjectionTransform.class, ScriptFilterTransform.class,

@@ -36,6 +36,7 @@ import co.cask.hydrator.plugin.FieldCase;
 import co.cask.hydrator.plugin.StructuredRecordUtils;
 import co.cask.hydrator.plugin.db.batch.source.DataDrivenETLDBInputFormat;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.Job;
@@ -68,18 +69,17 @@ public class TeradataSource extends BatchSource<LongWritable, DBRecord, Structur
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    sourceConfig.validate();
     dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId());
-    Preconditions.checkArgument(sourceConfig.importQuery.contains("$CONDITIONS"), "Import Query %s must contain the " +
-      "string '$CONDITIONS'.", sourceConfig.importQuery);
   }
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
+    sourceConfig.substituteMacros(context.getLogicalStartTime());
     LOG.debug("pluginType = {}; pluginName = {}; connectionString = {}; importQuery = {}; " +
                 "boundingQuery = {}",
               sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName,
               sourceConfig.connectionString, sourceConfig.importQuery, sourceConfig.boundingQuery);
-    sourceConfig.substituteMacros(context);
     Job job = Job.getInstance();
     Configuration hConf = job.getConfiguration();
     hConf.clear();
@@ -104,9 +104,13 @@ public class TeradataSource extends BatchSource<LongWritable, DBRecord, Structur
     }
     DataDrivenETLDBInputFormat.setInput(hConf, DBRecord.class, sourceConfig.importQuery,
                                         sourceConfig.boundingQuery, sourceConfig.enableAutoCommit);
-    hConf.set(DBConfiguration.INPUT_ORDER_BY_PROPERTY, sourceConfig.splitBy);
-    if (sourceConfig.numMaps != null) {
-      hConf.setInt(MRJobConfig.NUM_MAPS, sourceConfig.numMaps);
+    if (sourceConfig.splitBy != null) {
+      // this is a terrible configuration key name.
+      // DataDrivenDBInputFormat stores the split field name in the order by field name.
+      hConf.set(DBConfiguration.INPUT_ORDER_BY_PROPERTY, sourceConfig.splitBy);
+    }
+    if (sourceConfig.numSplits != null) {
+      hConf.setInt(MRJobConfig.NUM_MAPS, sourceConfig.numSplits);
     }
     context.setInput(new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf));
   }
@@ -146,27 +150,36 @@ public class TeradataSource extends BatchSource<LongWritable, DBRecord, Structur
     @Description("The SELECT query to use to import data from the specified table. " +
       "You can specify an arbitrary number of columns to import, or import all columns using *. The Query should" +
       "contain the '$CONDITIONS' string. For example, 'SELECT * FROM table WHERE $CONDITIONS'. " +
-      "The '$CONDITIONS' string will be replaced by 'splitBy' field limits specified by the bounding query. " +
-      "Supports macro substitution. " +
-      "${runtime.year} will be replaced by the runtime year. " +
-      "${runtime.month} will be replaced by a value from 1 to 12 for the runtime month. " +
-      "${runtime.day} will be replaced by the runtime day. " +
-      "${runtime.hour} will be replaced by a value from 0 to 23 for the runtime hour. " +
-      "${runtime.minute} will be replaced by the runtime minute.")
+      "The '$CONDITIONS' string will be replaced by 'splitBy' field limits specified by the bounding query.")
     String importQuery;
 
     @Name(BOUNDING_QUERY)
     @Description("Bounding Query should return the min and max of the values of the 'splitBy' field. " +
-      "For example, 'SELECT MIN(id),MAX(id) FROM table'. Supports macro substitution. " +
-      "See the importQuery description for details about macros.")
+      "For example, 'SELECT MIN(id),MAX(id) FROM table'. This is required unless numSplits is set to 1.")
+    @Nullable
     String boundingQuery;
 
     @Name(SPLIT_BY)
-    @Description("Field Name which will be used to generate splits.")
+    @Description("Field Name which will be used to generate splits. This is required unless numSplits is set to 1.")
+    @Nullable
     String splitBy;
 
-    @Description("The number of mappers to use.")
+    @Description("The number of splits to use. " +
+      "If this is set to 1, the boundingQuery and splitBy fields are not needed.")
     @Nullable
-    Integer numMaps;
+    Integer numSplits;
+
+    public void validate() {
+      super.validate();
+      boolean notOneSplit = numSplits == null || numSplits != 1;
+      if (notOneSplit && !importQuery.contains("$CONDITIONS")) {
+        throw new IllegalArgumentException(String.format(
+          "Import Query %s must contain the string '$CONDITIONS'.", importQuery));
+      }
+      if (notOneSplit && (Strings.isNullOrEmpty(boundingQuery) || Strings.isNullOrEmpty(splitBy))) {
+        throw new IllegalArgumentException(
+          "The boundingQuery and splitBy settings must both be specified, or numSplits must be set to 1.");
+      }
+    }
   }
 }

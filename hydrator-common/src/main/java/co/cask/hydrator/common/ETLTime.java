@@ -16,7 +16,6 @@
 
 package co.cask.hydrator.common;
 
-import co.cask.cdap.etl.api.batch.BatchContext;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
@@ -24,24 +23,9 @@ import com.google.common.base.Throwables;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Utility class for ETL
+ * Utility class for ETL.
  */
 public final class ETLTime {
-
-  /**
-   * Get the runtime for a run. Uses the runtime in the runtime arguments if it exists, otherwise uses the
-   * logical start time of the run.
-   *
-   * @param context context of the run
-   * @return runtime for the run
-   */
-  public static long getRuntime(BatchContext context) {
-    String runtimeStr = context.getRuntimeArguments().get("runtime");
-    if (!Strings.isNullOrEmpty(runtimeStr)) {
-      return Long.parseLong(runtimeStr);
-    }
-    return context.getLogicalStartTime();
-  }
 
   /**
    * Parses a duration String to its long value.

@@ -79,6 +79,16 @@
           "name": "splitBy"
         },
         {
+          "widget-type": "textbox",
+          "label": "Order-By Field Name",
+          "name": "orderBy"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Number of Splits",
+          "name": "numSplits"
+        },
+        {
           "widget-type": "select",
           "label": "Column Name Case",
           "name": "columnNameCase",
