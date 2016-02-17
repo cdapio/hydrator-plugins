@@ -57,9 +57,10 @@
               "grok",
               "syslog",
               "text",
-              "tsv"
+              "tsv",
+              ""
             ],
-            "default": "text"
+            "default": ""
           }
         }
       ]

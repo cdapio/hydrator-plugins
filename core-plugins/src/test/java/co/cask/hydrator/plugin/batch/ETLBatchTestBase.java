@@ -60,7 +60,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.twill.filesystem.Location;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.python.util.PythonInterpreter;
 import parquet.avro.AvroParquetInputFormat;
 import parquet.avro.AvroParquetOutputFormat;
 import parquet.avro.AvroParquetReader;

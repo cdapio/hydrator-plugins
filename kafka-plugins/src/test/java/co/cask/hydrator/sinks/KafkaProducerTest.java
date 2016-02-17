@@ -23,6 +23,13 @@ import co.cask.hydrator.common.test.MockRealtimeContext;
 import co.cask.hydrator.plugin.realtime.KafkaProducer;
 import com.clearspring.analytics.util.Lists;
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableList;
+import org.apache.avro.generic.GenericDatumReader;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.io.BinaryDecoder;
+import org.apache.avro.io.DatumReader;
+import org.apache.avro.io.DecoderFactory;
+import org.apache.avro.util.ByteBufferInputStream;
 import org.apache.twill.internal.kafka.EmbeddedKafkaServer;
 import org.apache.twill.internal.kafka.client.ZKKafkaClientService;
 import org.apache.twill.internal.utils.Networks;
@@ -42,10 +49,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -107,7 +114,7 @@ public class KafkaProducerTest {
     kafkaproducer.write(input, null);
     
     final CountDownLatch latch = new CountDownLatch(input.size());
-    final List<String> consumedMessages = new ArrayList<String>(input.size());
+    final List<String> consumedMessages = new CopyOnWriteArrayList<>();
       kafkaClient.getConsumer().prepare()
         .addFromBeginning(testTopic, 0)
         .addFromBeginning(testTopic, 1)
@@ -158,7 +165,7 @@ public class KafkaProducerTest {
     kafkaproducer.write(input, null);
 
     final CountDownLatch latch = new CountDownLatch(input.size());
-    final List<String> consumedMessages = new ArrayList<String>(input.size());
+    final List<String> consumedMessages = new CopyOnWriteArrayList<>();
     kafkaClient.getConsumer().prepare()
       .addFromBeginning(testTopic, 0)
       .addFromBeginning(testTopic, 1)
@@ -209,7 +216,7 @@ public class KafkaProducerTest {
     kafkaproducer.write(input, null);
 
     final CountDownLatch latch = new CountDownLatch(input.size());
-    final List<String> consumedMessages = new ArrayList<String>(input.size());
+    final List<String> consumedMessages = new CopyOnWriteArrayList<>();
     kafkaClient.getConsumer().prepare()
       .addFromBeginning(testTopic, 0)
       .addFromBeginning(testTopic, 1)
@@ -260,7 +267,7 @@ public class KafkaProducerTest {
     kafkaproducer.write(input, null);
 
     final CountDownLatch latch = new CountDownLatch(input.size());
-    final List<String> consumedMessages = new ArrayList<String>(input.size());
+    final List<String> consumedMessages = new CopyOnWriteArrayList<>();
     kafkaClient.getConsumer().prepare()
       .addFromBeginning(testTopic, 0)
       .addFromBeginning(testTopic, 1)
@@ -311,7 +318,7 @@ public class KafkaProducerTest {
     kafkaproducer.write(input, null);
 
     final CountDownLatch latch = new CountDownLatch(input.size());
-    final List<String> consumedMessages = new ArrayList<String>(input.size());
+    final List<String> consumedMessages = new CopyOnWriteArrayList<>();
     kafkaClient.getConsumer().prepare()
       .addFromBeginning(testTopic, 0)
       .addFromBeginning(testTopic, 1)
@@ -363,7 +370,7 @@ public class KafkaProducerTest {
     kafkaproducer.write(input, null);
 
     final CountDownLatch latch = new CountDownLatch(input.size());
-    final List<String> consumedMessages = new ArrayList<String>(input.size());
+    final List<String> consumedMessages = new CopyOnWriteArrayList<>();
     kafkaClient.getConsumer().prepare()
       .addFromBeginning(testTopic, 0)
       .addFromBeginning(testTopic, 1)
@@ -392,8 +399,73 @@ public class KafkaProducerTest {
     Assert.assertEquals("2\tsecond 2\t2\t13.34\ttrue\r\n", consumedMessages.get(2));
     Assert.assertEquals("3\tthird 3\t3\t14.34\tfalse\r\n", consumedMessages.get(3));
     kafkaproducer.destroy();
-  }  
-  
+  }
+
+  @Test
+  public void testAvroPublish() throws Exception {
+    String testTopic = "avro";
+
+    KafkaProducer.Config sconfig = new KafkaProducer.Config(getBroker(), "FALSE", "c", "b", testTopic,
+                                                            "avro");
+    RealtimeSink<StructuredRecord> kafkaproducer = new KafkaProducer(sconfig);
+    kafkaproducer.initialize(new MockRealtimeContext());
+
+    List<StructuredRecord> input = Lists.newArrayList();
+    input.add(StructuredRecord.builder(INPUT).set("a", 1L).set("b", "first 1").set("c", 1).set("d", 1.0000332)
+                .set("e", false).build());
+    input.add(StructuredRecord.builder(INPUT).set("a", 2L).set("b", "second 2").set("c", 2).set("d", 13.34)
+                .set("e", true).build());
+    input.add(StructuredRecord.builder(INPUT).set("a", 3L).set("b", "third 3").set("c", 3).set("d", 14.34)
+                .set("e", false).build());
+    input.add(StructuredRecord.builder(INPUT).set("a", 4L).set("b", "fourth 4").set("c", 4).set("d", 15.342423442424)
+                .set("e", true).build());
+    kafkaproducer.write(input, null);
+
+    final org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(INPUT.toString());
+    final DatumReader<GenericRecord> datumReader = new GenericDatumReader<>(avroSchema);
+    final CountDownLatch latch = new CountDownLatch(input.size());
+    final List<GenericRecord> consumedMessages = new CopyOnWriteArrayList<>();
+    kafkaClient.getConsumer().prepare()
+      .addFromBeginning(testTopic, 0)
+      .addFromBeginning(testTopic, 1)
+      .addFromBeginning(testTopic, 2)
+      .addFromBeginning(testTopic, 3)
+      .consume(new KafkaConsumer.MessageCallback() {
+        @Override
+        public void onReceived(Iterator<FetchedMessage> messages) {
+          while (messages.hasNext()) {
+            FetchedMessage msg = messages.next();
+            // Add to array with partition id as index.
+            ByteBufferInputStream byteBufferInputStream = new ByteBufferInputStream(ImmutableList.of(msg.getPayload()));
+            BinaryDecoder binaryDecoder = DecoderFactory.get().binaryDecoder(byteBufferInputStream, null);
+            try {
+              consumedMessages.add(msg.getTopicPartition().getPartition(), datumReader.read(null, binaryDecoder));
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+            latch.countDown();
+          }
+        }
+
+        @Override
+        public void finished() {
+        }
+      });
+    latch.await();
+    Assert.assertEquals(4L, consumedMessages.size());
+    Assert.assertEquals(4L, consumedMessages.get(0).get("a"));
+    Assert.assertEquals(1L, consumedMessages.get(1).get("a"));
+    Assert.assertEquals(2L, consumedMessages.get(2).get("a"));
+    Assert.assertEquals(3L, consumedMessages.get(3).get("a"));
+    /*
+    Assert.assertEquals("4\tfourth 4\t4\t15.342423442424\ttrue\r\n", consumedMessages.get(0));
+    Assert.assertEquals("1\tfirst 1\t1\t1.0000332\tfalse\r\n", consumedMessages.get(1));
+    Assert.assertEquals("2\tsecond 2\t2\t13.34\ttrue\r\n", consumedMessages.get(2));
+    Assert.assertEquals("3\tthird 3\t3\t14.34\tfalse\r\n", consumedMessages.get(3));
+    */
+    kafkaproducer.destroy();
+  }
+
   @BeforeClass
   public static void beforeClass() throws IOException {
     zkServer = InMemoryZKServer.builder().setDataDir(TMP_FOLDER.newFolder()).build();

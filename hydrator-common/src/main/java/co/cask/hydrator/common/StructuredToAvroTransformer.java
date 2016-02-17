@@ -15,10 +15,9 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.common;
+package co.cask.hydrator.common;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.hydrator.common.RecordConverter;
 import com.google.common.collect.Maps;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
@@ -26,6 +25,7 @@ import org.apache.avro.generic.GenericRecordBuilder;
 
 import java.io.IOException;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * Creates GenericRecords from StructuredRecords
@@ -35,7 +35,7 @@ public class StructuredToAvroTransformer extends RecordConverter<StructuredRecor
   private final Map<Integer, Schema> schemaCache;
   private final Schema outputAvroSchema;
 
-  public StructuredToAvroTransformer(String outputSchema) {
+  public StructuredToAvroTransformer(@Nullable String outputSchema) {
     this.schemaCache = Maps.newHashMap();
     this.outputAvroSchema = (outputSchema != null) ? new Schema.Parser().parse(outputSchema) : null;
   }

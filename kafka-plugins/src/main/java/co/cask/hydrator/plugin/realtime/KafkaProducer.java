@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.realtime;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.plugin.PluginConfig;
@@ -27,8 +28,15 @@ import co.cask.cdap.etl.api.realtime.DataWriter;
 import co.cask.cdap.etl.api.realtime.RealtimeContext;
 import co.cask.cdap.etl.api.realtime.RealtimeSink;
 import co.cask.cdap.format.StructuredRecordStringConverter;
+import co.cask.hydrator.common.StructuredToAvroTransformer;
 import com.google.common.collect.Lists;
 import kafka.producer.ProducerConfig;
+import org.apache.avro.generic.GenericDatumWriter;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.io.BinaryEncoder;
+import org.apache.avro.io.DatumWriter;
+import org.apache.avro.io.Encoder;
+import org.apache.avro.io.EncoderFactory;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.kafka.clients.producer.Callback;
@@ -37,9 +45,13 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Properties;
+import javax.annotation.Nullable;
 
 /**
  * Implementation of Kafka Realtime Producer Hydrator plugin. 
@@ -72,7 +84,7 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
   private ProducerConfig kafkaConfig;
   
   // Kafka producer handle
-  private org.apache.kafka.clients.producer.KafkaProducer<String, String> producer;
+  private org.apache.kafka.clients.producer.KafkaProducer<String, byte[]> producer;
   
   // Plugin context
   private RealtimeContext context;
@@ -83,7 +95,9 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
   // List of Kafka topics.
   private String[] topics;
 
-  
+  private StructuredToAvroTransformer toAvroTransformer;
+
+
   // required for testing.
   public KafkaProducer(Config kafkaConfig) {
     this.producerConfig = kafkaConfig;
@@ -112,7 +126,7 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
     // Configure the properties for kafka.
     props.put(BROKER_LIST, producerConfig.brokers);
     props.put(KEY_SERIALIZER, "org.apache.kafka.common.serialization.StringSerializer");
-    props.put(VAL_SERIALIZER, "org.apache.kafka.common.serialization.StringSerializer");
+    props.put(VAL_SERIALIZER, "org.apache.kafka.common.serialization.ByteArraySerializer");
     props.put(CLIENT_ID, "kafka-producer-" + context.getInstanceId());
     if (producerConfig.async.equalsIgnoreCase("TRUE")) {
       props.put(ACKS_REQUIRED, "1");
@@ -120,8 +134,8 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
     }
     
     //config = new ProducerConfig(props);
-    producer = new org.apache.kafka.clients.producer.KafkaProducer<String, String>(props);
-    
+    producer = new org.apache.kafka.clients.producer.KafkaProducer<>(props);
+    toAvroTransformer = new StructuredToAvroTransformer(null);
   }
   
   @Override
@@ -136,9 +150,20 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
 
       // Depending on the configuration create a body that needs to be 
       // built and pushed to Kafka. 
-      String body = "";
+      byte[] body = {};
       if (producerConfig.format.equalsIgnoreCase("JSON")) {
-        body = StructuredRecordStringConverter.toJsonString(object);
+        body = Bytes.toBytes(StructuredRecordStringConverter.toJsonString(object));
+      } else if (producerConfig.format.equalsIgnoreCase("AVRO")) {
+        GenericRecord genericRecord = toAvroTransformer.transform(object);
+
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+          BinaryEncoder encoder = EncoderFactory.get().binaryEncoder(out, null);
+          DatumWriter<GenericRecord> writer = new ByteArraySupportedWriter<>(genericRecord.getSchema());
+
+          writer.write(genericRecord, encoder);
+          encoder.flush();
+          body = out.toByteArray();
+        }
       } else {
         // Extract all values from the structured record
         List<Object> objs = Lists.newArrayList();
@@ -148,10 +173,10 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
 
         StringWriter writer = new StringWriter();
         CSVPrinter printer = null;
-        
+
         try {
           CSVFormat csvFileFormat;
-          switch(producerConfig.format.toLowerCase()) {
+          switch (producerConfig.format.toLowerCase()) {
             case "csv":
               csvFileFormat = CSVFormat.Predefined.Default.getFormat();
               printer = new CSVPrinter(writer, csvFileFormat);
@@ -177,12 +202,12 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
               printer = new CSVPrinter(writer, csvFileFormat);
               break;
           }
-          
+
           if (printer != null) {
             printer.printRecord(objs);
-            body = writer.toString();
-          }      
-          
+            body = Bytes.toBytes(writer.toString());
+          }
+
         } finally {
           if (printer != null) {
             printer.close();
@@ -198,18 +223,21 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
       
       // Extract the partition key from the record. If the partition key is 
       // Integer then we use it as-is else
-      int partitionKey = 0;
+      Integer partitionKey = null;
       if (producerConfig.partitionField != null) {
         if (object.get(producerConfig.partitionField) != null) {
           partitionKey = object.get(producerConfig.partitionField).hashCode();
         }
       }
+      if (partitionKey == null) {
+        partitionKey = object.hashCode();
+      }
 
       // Write to all the configured topics
       for (String topic : topics) {
-        partitionKey = partitionKey % producer.partitionsFor(topic).size();
+        partitionKey = Math.abs(partitionKey) % producer.partitionsFor(topic).size();
         if (isAsync) {
-          producer.send(new ProducerRecord<String, String>(topic, partitionKey, key, body), new Callback() {
+          producer.send(new ProducerRecord<>(topic, partitionKey, key, body), new Callback() {
             @Override
             public void onCompletion(RecordMetadata meta, Exception e) {
               if (meta != null) {
@@ -223,7 +251,7 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
           });
         } else {
           // Waits infinitely to push the message through. 
-          producer.send(new ProducerRecord<String, String>(topic, partitionKey, key, body)).get();
+          producer.send(new ProducerRecord<>(topic, partitionKey, key, body)).get();
         }
         context.getMetrics().count("kafka.producer.count", 1);
       }
@@ -255,14 +283,17 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
     @Name("async")
     @Description("Specifies whether an acknowledgment is required from broker that message was received. " +
       "Default is FALSE")
+    @Nullable
     private String async;
     
     @Name("partitionfield")
-    @Description("Specify field that should be used as partition ID. Should be a int or long")
+    @Description("Specify field that should be used as partition ID. Should be a int or long.")
+    @Nullable
     private String partitionField;
 
     @Name("key")
     @Description("Specify the key field to be used in the message")
+    @Nullable
     private String key;
     
     @Name("topics")
@@ -272,7 +303,11 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
     @Name("format")
     @Description("Format a structured record should be converted to")
     private String format;
-    
+
+    public Config() {
+      async = "FALSE";
+    }
+
     public Config(String brokers, String async, String partitionField, String key, String topics,
                   String format) {
       this.brokers = brokers;
@@ -281,6 +316,27 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
       this.key = key;
       this.topics = topics;
       this.format = format;
+    }
+  }
+
+  /**
+   * StructuredRecord supports using ByteBuffer or byte[] for a bytes field.
+   */
+  private static class ByteArraySupportedWriter<T> extends GenericDatumWriter<T> {
+
+    public ByteArraySupportedWriter(org.apache.avro.Schema root) {
+      super(root);
+    }
+
+    @Override
+    protected void writeBytes(Object datum, Encoder out) throws IOException {
+      if (datum instanceof byte[]) {
+        out.writeBytes((byte[]) datum);
+      } else if (datum instanceof ByteBuffer) {
+        out.writeBytes((ByteBuffer) datum);
+      } else {
+        throw new IOException("Unsupported object for bytes field.");
+      }
     }
   }
 }

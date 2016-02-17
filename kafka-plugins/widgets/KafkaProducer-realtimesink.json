@@ -50,7 +50,8 @@
               "EXCEL",
               "MYSQL",
               "TDF",
-              "RFC4180"
+              "RFC4180",
+              "AVRO"
             ],
             "default": "CSV"
           }
