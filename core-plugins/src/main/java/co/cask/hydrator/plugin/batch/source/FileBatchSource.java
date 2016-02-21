@@ -170,7 +170,7 @@ public class FileBatchSource extends BatchSource<LongWritable, Object, Structure
   @Override
   public void transform(KeyValue<LongWritable, Object> input, Emitter<StructuredRecord> emitter) throws Exception {
     StructuredRecord output = StructuredRecord.builder(DEFAULT_SCHEMA)
-      .set("ts", System.currentTimeMillis())
+      .set("offset", input.getKey().get())
       .set("body", input.getValue().toString())
       .build();
     emitter.emit(output);
