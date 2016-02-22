@@ -72,7 +72,7 @@ public class FileBatchSource extends BatchSource<LongWritable, Object, Structure
   public static final String USE_TIMEFILTER = "timefilter";
   public static final Schema DEFAULT_SCHEMA = Schema.recordOf(
     "event",
-    Schema.Field.of("ts", Schema.of(Schema.Type.LONG)),
+    Schema.Field.of("offset", Schema.of(Schema.Type.LONG)),
     Schema.Field.of("body", Schema.of(Schema.Type.STRING))
   );
   protected static final String MAX_SPLIT_SIZE_DESCRIPTION = "Maximum split-size for each mapper in the MapReduce " +
@@ -170,7 +170,7 @@ public class FileBatchSource extends BatchSource<LongWritable, Object, Structure
   @Override
   public void transform(KeyValue<LongWritable, Object> input, Emitter<StructuredRecord> emitter) throws Exception {
     StructuredRecord output = StructuredRecord.builder(DEFAULT_SCHEMA)
-      .set("ts", System.currentTimeMillis())
+      .set("offset", input.getKey().get())
       .set("body", input.getValue().toString())
       .build();
     emitter.emit(output);
