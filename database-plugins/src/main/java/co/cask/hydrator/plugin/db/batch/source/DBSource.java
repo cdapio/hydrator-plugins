@@ -90,15 +90,6 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
 
     // Load the plugin class to make sure it is available.
     Class<? extends Driver> driverClass = context.loadPluginClass(getJDBCPluginId());
-    // make sure that the table exists
-    try {
-      Preconditions.checkArgument(
-        dbManager.tableExists(driverClass), "Table %s does not exist. Please check that the 'tableName' property " +
-          "has been set correctly, and that the connection string %s points to a valid database.",
-        dbSourceConfig.tableName, dbSourceConfig.connectionString);
-    } finally {
-      DBUtils.cleanup(driverClass);
-    }
     if (dbSourceConfig.user == null && dbSourceConfig.password == null) {
       DBConfiguration.configureDB(hConf, driverClass.getName(), dbSourceConfig.connectionString);
     } else {
