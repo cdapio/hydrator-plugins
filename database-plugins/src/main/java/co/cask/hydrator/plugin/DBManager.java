@@ -60,12 +60,12 @@ public class DBManager implements Destroyable {
       dbConfig.jdbcPluginName, dbConfig.jdbcPluginType);
   }
 
-  public boolean tableExists(Class<? extends Driver> jdbcDriverClass) {
+  public boolean tableExists(Class<? extends Driver> jdbcDriverClass, String tableName) {
     try {
       ensureJDBCDriverIsAvailable(jdbcDriverClass);
     } catch (IllegalAccessException | InstantiationException | SQLException e) {
       LOG.error("Unable to load or register JDBC driver {} while checking for the existence of the database table {}.",
-                jdbcDriverClass, dbConfig.tableName, e);
+                jdbcDriverClass, tableName, e);
       throw Throwables.propagate(e);
     }
 
@@ -79,7 +79,7 @@ public class DBManager implements Destroyable {
 
       try {
         DatabaseMetaData metadata = connection.getMetaData();
-        try (ResultSet rs = metadata.getTables(null, null, dbConfig.tableName, null)) {
+        try (ResultSet rs = metadata.getTables(null, null, tableName, null)) {
           return rs.next();
         }
       } finally {
@@ -87,7 +87,7 @@ public class DBManager implements Destroyable {
       }
     } catch (SQLException e) {
       LOG.error("Exception while trying to check the existence of database table {} for connection {}.",
-                dbConfig.tableName, dbConfig.connectionString, e);
+                tableName, dbConfig.connectionString, e);
       throw Throwables.propagate(e);
     }
   }

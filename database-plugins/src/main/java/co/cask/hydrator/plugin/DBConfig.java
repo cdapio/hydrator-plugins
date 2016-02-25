@@ -43,9 +43,6 @@ public class DBConfig extends PluginConfig {
     "for the JDBC plugin.")
   public String jdbcPluginName;
 
-  @Description("Name of the database table to use as a source or a sink.")
-  public String tableName;
-
   @Description("Type of the JDBC plugin to use. This is the value of the 'type' key defined in the JSON file " +
     "for the JDBC plugin. Defaults to 'jdbc'.")
   @Nullable

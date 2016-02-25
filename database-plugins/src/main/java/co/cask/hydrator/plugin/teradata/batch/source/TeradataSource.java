@@ -91,15 +91,6 @@ public class TeradataSource extends BatchSource<LongWritable, DBRecord, Structur
 
     // Load the plugin class to make sure it is available.
     Class<? extends Driver> driverClass = context.loadPluginClass(getJDBCPluginId());
-    // make sure that the table exists
-    try {
-      Preconditions.checkArgument(
-        dbManager.tableExists(driverClass), "Table %s does not exist. Please check that the 'tableName' property " +
-          "has been set correctly, and that the connection string %s points to a valid database.",
-        sourceConfig.tableName, sourceConfig.connectionString);
-    } finally {
-      DBUtils.cleanup(driverClass);
-    }
     if (sourceConfig.user == null && sourceConfig.password == null) {
       DBConfiguration.configureDB(hConf, driverClass.getName(), sourceConfig.connectionString);
     } else {
