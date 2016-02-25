@@ -28,7 +28,7 @@ Example
 -------
 
 This example connects to Azure Blob Store and reads in files found in the specified directory. This example uses
-the 'hydrator' container on the 'hydratorstorage.blob.core.windows.net' account on Azure Blob Store
+the 'hydrator' container on the 'hydratorstorage.blob.core.windows.net' account on Azure Blob Store:
 
     {
         "name": "AzureBlobStore",
