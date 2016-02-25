@@ -1,34 +1,38 @@
-# Azure Blob Store Batch Source
+# Microsoft Azure Blob Storage Batch Source
 
 Description
 -----------
 
-Batch source to use Azure Blob Store as a source.
+Batch source to use Microsoft Azure Blob Storage as a source.
 
 Use Case
 --------
 
-This source is used whenever you need to read from a Azure Blob Store.
-For example, you may want to read in files from Azure Blob Storage, parse them and then store
-them in a Microsoft SQL Server Database.
+This source is used whenever you need to read from Microsoft Azure Blob Storage. For
+example, you may want to read in files from Microsoft Azure Blob Storage, parse them and
+then store them in a Microsoft SQL Server Database.
 
 Properties
 ----------
 
-**path:** The path on Azure Blob Storage to use as input.
+**path:** The path on Microsoft Azure Blob Storage to use as input.
 
-**account:** The Microsoft Azure Storage account to use.
+**account:** The Microsoft Azure Blob Storage endpoint, with the Microsoft Azure Storage
+account to use. This is of the form `mystorageaccount.blob.core.windows.net`, where
+`mystorageaccount` is the Microsoft Azure Storage account name.
 
 **container:** The container to use on the specified Microsoft Azure Storage account.
 
-**storageKey:** The storage key for the specified container on the specified Azure Storage account. Must be a valid
-base64 encoded storage key provided by Microsoft Azure.
+**storageKey:** The storage key for the specified container on the Microsoft Azure Storage account. 
+Must be a valid base64 encoded storage key provided by Microsoft Azure.
 
 Example
 -------
 
-This example connects to Azure Blob Store and reads in files found in the specified directory. This example uses
-the 'hydrator' container on the 'hydratorstorage.blob.core.windows.net' account on Azure Blob Store:
+This example connects to Microsoft Azure Blob Storage and reads in files found in the
+specified directory. This example uses the 'hydrator' container at the
+'hydratorstorage.blob.core.windows.net' endpoint on Microsoft Azure Storage, using the
+'hydratorstorage' account:
 
     {
         "name": "AzureBlobStore",
