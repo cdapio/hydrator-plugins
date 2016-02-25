@@ -47,9 +47,6 @@ public class DBManager implements Destroyable {
     Preconditions.checkArgument(!(dbConfig.user == null && dbConfig.password != null),
                                 "user is null. Please provide both user name and password if database requires " +
                                   "authentication. If not, please remove password and retry.");
-    Preconditions.checkArgument(!(dbConfig.user != null && dbConfig.password == null),
-                                "password is null. Please provide both user name and password if database requires" +
-                                  "authentication. If not, please remove dbUser and retry.");
     Class<? extends Driver> jdbcDriverClass = pipelineConfigurer.usePluginClass(dbConfig.jdbcPluginType,
                                                                                 dbConfig.jdbcPluginName,
                                                                                 jdbcPluginId,

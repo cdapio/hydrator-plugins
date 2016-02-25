@@ -313,22 +313,6 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
     appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     TestBase.deployApplication(appId, appRequest);
 
-    // non null user name, null password. Should fail.
-    // as source
-    Map<String, String> noPassword = new HashMap<>(baseSourceProps);
-    noPassword.put(Properties.DB.USER, "emptyPwdUser");
-    database = new ETLStage("databaseSource", new Plugin("Database", noPassword));
-    etlConfig = new ETLBatchConfig("* * * * *", database, table, transforms);
-    assertDeploymentFailure(
-      appId, etlConfig, "Deploying DB Source with non-null username but null password should have failed.");
-    // as sink
-    noPassword = new HashMap<>(baseSinkProps);
-    noPassword.put(Properties.DB.USER, "emptyPwdUser");
-    database = new ETLStage("databaseSink", new Plugin("Database", noPassword));
-    etlConfig = new ETLBatchConfig("* * * * *", table, database, transforms);
-    assertDeploymentFailure(
-      appId, etlConfig, "Deploying DB Sink with non-null username but null password should have failed.");
-
     // null user name, non-null password. Should fail.
     // as source
     Map<String, String> noUser = new HashMap<>(baseSourceProps);
@@ -360,6 +344,17 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
     emptyPassword.put(Properties.DB.PASSWORD, "");
     database = new ETLStage("databaseSink", new Plugin("Database", emptyPassword));
     etlConfig = new ETLBatchConfig("* * * * *", table, database, transforms);
+    appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    TestBase.deployApplication(appId, appRequest);
+    // non-null username, null password. Should succeed.
+    Map<String, String> nullPassword = new HashMap<>(baseSourceProps);
+    emptyPassword.put(Properties.DB.USER, "emptyPwdUser");
+    database = new ETLStage("databaseSource", new Plugin("Database", nullPassword));
+    etlConfig = ETLBatchConfig.builder("* * * * *")
+      .setSource(database)
+      .addSink(table)
+      .addConnection(database.getName(), table.getName())
+      .build();
     appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     TestBase.deployApplication(appId, appRequest);
   }
@@ -438,7 +433,8 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
                                      ImmutableMap.of(
                                        Properties.BatchReadableWritable.NAME, "DBInputTable",
                                        Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ID",
-                                       Properties.Table.PROPERTY_SCHEMA, schema.toString()));
+                                       Properties.Table.PROPERTY_SCHEMA, schema.toString(),
+                                       Properties.DB.USER, "emptyPwdUser"));
     Plugin sinkConfig = new Plugin("Database",
                                    ImmutableMap.of(Properties.DB.CONNECTION_STRING, getConnectionURL(),
                                                    Properties.DB.TABLE_NAME, "MY_DEST_TABLE",
