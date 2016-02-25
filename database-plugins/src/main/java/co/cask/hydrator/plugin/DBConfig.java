@@ -62,4 +62,9 @@ public class DBConfig extends PluginConfig {
   public DBConfig() {
     jdbcPluginType = "jdbc";
   }
+
+  protected String cleanQuery(String query) {
+    query = query.trim();
+    return query.endsWith(";") ? query.substring(0, query.length() - 1) : query;
+  }
 }
