@@ -193,7 +193,7 @@ public class DBSink extends BatchSink<StructuredRecord, DBRecord, NullWritable> 
     @Description("Comma-separated list of columns in the specified table to export to.")
     public String columns;
 
-    @Description("Name of the database table to use as a source or a sink.")
+    @Description("Name of the database table to write to.")
     public String tableName;
   }
 
