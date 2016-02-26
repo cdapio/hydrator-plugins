@@ -356,7 +356,18 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
       .addConnection(database.getName(), table.getName())
       .build();
     appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    TestBase.deployApplication(appId, appRequest);
+    deployApplication(appId, appRequest);
+    // as sink
+    nullPassword = new HashMap<>(baseSinkProps);
+    nullPassword.put(Properties.DB.USER, "emptyPwdUser");
+    database = new ETLStage("databaseSink", new Plugin("Database", nullPassword));
+    etlConfig = ETLBatchConfig.builder("* * * * *")
+      .setSource(table)
+      .addSink(database)
+      .addConnection(table.getName(), database.getName())
+      .build();
+    appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    deployApplication(appId, appRequest);
   }
 
   @Test
