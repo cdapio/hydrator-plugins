@@ -59,4 +59,20 @@ public class DBConfig extends PluginConfig {
   public DBConfig() {
     jdbcPluginType = "jdbc";
   }
+
+  protected String cleanQuery(String query) {
+    query = query.trim();
+    // find the last character that is not whitespace or a semicolon
+    int idx = query.length() - 1;
+    char currChar = query.charAt(idx);
+    while (idx > 0 && currChar == ';' || Character.isWhitespace(currChar)) {
+      idx--;
+      currChar = query.charAt(idx);
+    }
+    // why would somebody do this?
+    if (idx == 0) {
+      return "";
+    }
+    return query.substring(0, idx + 1);
+  }
 }
