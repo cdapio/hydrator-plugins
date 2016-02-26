@@ -20,13 +20,24 @@ import org.junit.Assert;
 import org.junit.Test;
 
 /**
+ * Tests for the db config.
  */
 public class DBConfigTest {
 
   @Test
   public void testQueryClean() {
-    TestDBConfig config = new TestDBConfig("select * from table; ");
+    TestDBConfig config = new TestDBConfig("select * from table; ; ;; ;;; ;");
     Assert.assertEquals("select * from table", config.query);
+    config = new TestDBConfig("select * from table;");
+    Assert.assertEquals("select * from table", config.query);
+    config = new TestDBConfig("select * from table");
+    Assert.assertEquals("select * from table", config.query);
+  }
+
+  @Test
+  public void testCleanDumbQuery() {
+    TestDBConfig config = new TestDBConfig("; ; ;; ;;; ;");
+    Assert.assertEquals("", config.query);
   }
 
   /**
