@@ -49,6 +49,40 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
 
   @Test
   @SuppressWarnings("ConstantConditions")
+  public void testDBMacroSupport() throws Exception {
+    String importQuery = "SELECT * FROM \"my_table\" WHERE DATE_COL <= '${runtime(yyyy-MM-dd,1d)}' AND $CONDITIONS";
+    String boundingQuery = "SELECT MIN(ID),MAX(ID) from \"my_table\"";
+    String splitBy = "ID";
+    Plugin sourceConfig = new Plugin(
+      "Database",
+      ImmutableMap.<String, String>builder()
+        .put(Properties.DB.CONNECTION_STRING, getConnectionURL())
+        .put(Properties.DB.TABLE_NAME, "my_table")
+        .put(Properties.DB.IMPORT_QUERY, importQuery)
+        .put(DBSource.DBSourceConfig.BOUNDING_QUERY, boundingQuery)
+        .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
+        .put(Properties.DB.JDBC_PLUGIN_NAME, "hypersql")
+        .build()
+    );
+
+    Plugin sinkConfig = new Plugin("Table", ImmutableMap.of(
+      "name", "macroOutputTable",
+      Properties.Table.PROPERTY_SCHEMA, schema.toString(),
+      Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ID"));
+
+    ApplicationManager appManager = deployETL(sourceConfig, sinkConfig);
+
+    Map<String, String> arguments = new HashMap<>();
+    arguments.put("logical.start.time", String.valueOf(CURRENT_TS));
+    runETLOnce(appManager, arguments);
+
+    DataSetManager<Table> outputManager = getDataset("macroOutputTable");
+    Table outputTable = outputManager.get();
+    Assert.assertNull(outputTable.scan(null, null).next());
+  }
+
+  @Test
+  @SuppressWarnings("ConstantConditions")
   public void testDBSource() throws Exception {
     String importQuery = "SELECT ID, NAME, SCORE, GRADUATED, TINY, SMALL, BIG, FLOAT_COL, REAL_COL, NUMERIC_COL, " +
       "DECIMAL_COL, BIT_COL, DATE_COL, TIME_COL, TIMESTAMP_COL, BINARY_COL, BLOB_COL, CLOB_COL FROM \"my_table\"" +

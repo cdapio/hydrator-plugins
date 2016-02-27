@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.plugin.PluginConfig;
+import co.cask.hydrator.common.macro.MacroConfig;
 
 import javax.annotation.Nullable;
 

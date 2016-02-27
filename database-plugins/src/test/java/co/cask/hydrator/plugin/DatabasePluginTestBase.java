@@ -64,7 +64,9 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.sql.rowset.serial.SerialBlob;
@@ -268,8 +270,13 @@ public class DatabasePluginTestBase extends HydratorTestBase {
   }
 
   protected void runETLOnce(ApplicationManager appManager) throws TimeoutException, InterruptedException {
+    runETLOnce(appManager, new HashMap<String, String>());
+  }
+
+  protected void runETLOnce(ApplicationManager appManager,
+                            Map<String, String> arguments) throws TimeoutException, InterruptedException {
     MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
+    mrManager.start(arguments);
     mrManager.waitForFinish(5, TimeUnit.MINUTES);
     List<RunRecord> runRecords = mrManager.getHistory();
     Assert.assertEquals(ProgramRunStatus.COMPLETED, runRecords.get(0).getStatus());
