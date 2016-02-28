@@ -43,9 +43,6 @@ public class DBConfig extends PluginConfig {
     "for the JDBC plugin.")
   public String jdbcPluginName;
 
-  @Description("Name of the database table to use as a source or a sink.")
-  public String tableName;
-
   @Description("Type of the JDBC plugin to use. This is the value of the 'type' key defined in the JSON file " +
     "for the JDBC plugin. Defaults to 'jdbc'.")
   @Nullable
@@ -61,5 +58,21 @@ public class DBConfig extends PluginConfig {
 
   public DBConfig() {
     jdbcPluginType = "jdbc";
+  }
+
+  protected String cleanQuery(String query) {
+    query = query.trim();
+    // find the last character that is not whitespace or a semicolon
+    int idx = query.length() - 1;
+    char currChar = query.charAt(idx);
+    while (idx > 0 && currChar == ';' || Character.isWhitespace(currChar)) {
+      idx--;
+      currChar = query.charAt(idx);
+    }
+    // why would somebody do this?
+    if (idx == 0) {
+      return "";
+    }
+    return query.substring(0, idx + 1);
   }
 }

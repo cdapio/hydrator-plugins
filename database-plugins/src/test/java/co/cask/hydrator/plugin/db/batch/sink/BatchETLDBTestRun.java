@@ -64,8 +64,8 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
   public void testDBSource() throws Exception {
     String importQuery = "SELECT ID, NAME, SCORE, GRADUATED, TINY, SMALL, BIG, FLOAT_COL, REAL_COL, NUMERIC_COL, " +
       "DECIMAL_COL, BIT_COL, DATE_COL, TIME_COL, TIMESTAMP_COL, BINARY_COL, BLOB_COL, CLOB_COL FROM \"my_table\"" +
-      "WHERE ID < 3";
-    String countQuery = "SELECT COUNT(ID) from \"my_table\" WHERE id < 3";
+      "WHERE ID < 3;";
+    String countQuery = "SELECT COUNT(ID) from \"my_table\" WHERE id < 3; ";
     Plugin sourceConfig = new Plugin(
       "Database",
       ImmutableMap.<String, String>builder()

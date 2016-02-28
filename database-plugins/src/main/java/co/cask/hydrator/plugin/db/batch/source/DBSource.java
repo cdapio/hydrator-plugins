@@ -54,15 +54,6 @@ import java.sql.Driver;
 public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(DBSource.class);
 
-  private static final String IMPORT_QUERY_DESCRIPTION = "The SELECT query to use to import data from the specified " +
-    "table. You can specify an arbitrary number of columns to import, or import all columns using *. " +
-    "You can also specify a number of WHERE clauses or ORDER BY clauses. However, LIMIT and OFFSET clauses " +
-    "should not be used in this query.";
-  private static final String COUNT_QUERY_DESCRIPTION = "The SELECT query to use to get the count of records to " +
-    "import from the specified table. Examples: SELECT COUNT(*) from <my_table> where <my_column> 1, " +
-    "SELECT COUNT(my_column) from my_table. NOTE: Please include the same WHERE clauses in this query as the ones " +
-    "used in the import query to reflect an accurate number of records to import.";
-
   private final DBSourceConfig dbSourceConfig;
   private final DBManager dbManager;
   private Class<? extends Driver> driverClass;
@@ -82,7 +73,7 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
     LOG.debug("pluginType = {}; pluginName = {}; connectionString = {}; importQuery = {}; " +
                 "countQuery = {}",
               dbSourceConfig.jdbcPluginType, dbSourceConfig.jdbcPluginName,
-              dbSourceConfig.connectionString, dbSourceConfig.importQuery, dbSourceConfig.countQuery);
+              dbSourceConfig.connectionString, dbSourceConfig.getImportQuery(), dbSourceConfig.getCountQuery());
 
     Job job = Job.getInstance();
     Configuration hConf = job.getConfiguration();
@@ -90,22 +81,13 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
 
     // Load the plugin class to make sure it is available.
     Class<? extends Driver> driverClass = context.loadPluginClass(getJDBCPluginId());
-    // make sure that the table exists
-    try {
-      Preconditions.checkArgument(
-        dbManager.tableExists(driverClass), "Table %s does not exist. Please check that the 'tableName' property " +
-          "has been set correctly, and that the connection string %s points to a valid database.",
-        dbSourceConfig.tableName, dbSourceConfig.connectionString);
-    } finally {
-      DBUtils.cleanup(driverClass);
-    }
     if (dbSourceConfig.user == null && dbSourceConfig.password == null) {
       DBConfiguration.configureDB(hConf, driverClass.getName(), dbSourceConfig.connectionString);
     } else {
       DBConfiguration.configureDB(hConf, driverClass.getName(), dbSourceConfig.connectionString,
                                   dbSourceConfig.user, dbSourceConfig.password);
     }
-    ETLDBInputFormat.setInput(hConf, DBRecord.class, dbSourceConfig.importQuery, dbSourceConfig.countQuery);
+    ETLDBInputFormat.setInput(hConf, DBRecord.class, dbSourceConfig.getImportQuery(), dbSourceConfig.getCountQuery());
     context.setInput(new SourceInputFormatProvider(ETLDBInputFormat.class, hConf));
   }
 
@@ -138,10 +120,24 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
    * {@link PluginConfig} for {@link DBSource}
    */
   public static class DBSourceConfig extends DBConfig {
-    @Description(IMPORT_QUERY_DESCRIPTION)
+    @Description("The SELECT query to use to import data from the specified " +
+      "table. You can specify an arbitrary number of columns to import, or import all columns using *. " +
+      "You can also specify a number of WHERE clauses or ORDER BY clauses. However, LIMIT and OFFSET clauses " +
+      "should not be used in this query.")
     String importQuery;
 
-    @Description(COUNT_QUERY_DESCRIPTION)
+    @Description("The SELECT query to use to get the count of records to " +
+      "import from the specified table. Examples: SELECT COUNT(*) from <my_table> where <my_column> 1, " +
+      "SELECT COUNT(my_column) from my_table. NOTE: Please include the same WHERE clauses in this query as the ones " +
+      "used in the import query to reflect an accurate number of records to import.")
     String countQuery;
+
+    public String getImportQuery() {
+      return cleanQuery(importQuery);
+    }
+
+    public String getCountQuery() {
+      return cleanQuery(countQuery);
+    }
   }
 }
