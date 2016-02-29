@@ -32,7 +32,7 @@ Example
 This example connects to Microsoft Azure Blob Storage and reads in files found in the
 specified directory. This example uses the 'hydrator' container at the
 'hydratorstorage.blob.core.windows.net' endpoint on Microsoft Azure Storage, using the
-'hydratorstorage' account:
+'hydratorstorage' account name:
 
     {
         "name": "AzureBlobStore",
