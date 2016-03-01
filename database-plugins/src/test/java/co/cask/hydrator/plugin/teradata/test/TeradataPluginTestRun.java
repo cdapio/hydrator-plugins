@@ -304,15 +304,6 @@ public class TeradataPluginTestRun extends DatabasePluginTestBase {
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     deployApplication(appId, appRequest);
 
-    // non null user name, null password. Should fail.
-    // as source
-    Map<String, String> noPassword = new HashMap<>(baseSourceProps);
-    noPassword.put(Properties.DB.USER, "emptyPwdUser");
-    database = new ETLStage("databaseSource", new Plugin("Teradata", noPassword));
-    etlConfig = new ETLBatchConfig("* * * * *", database, table, transforms);
-    assertDeploymentFailure(
-      appId, etlConfig, "Deploying DB Source with non-null username but null password should have failed.");
-
     // null user name, non-null password. Should fail.
     // as source
     Map<String, String> noUser = new HashMap<>(baseSourceProps);
