@@ -17,9 +17,9 @@ Properties
 
 **path:** The path on Microsoft Azure Blob Storage to use as input.
 
-**account:** The Microsoft Azure Blob Storage endpoint, with the Microsoft Azure Storage
-account to use. This is of the form `mystorageaccount.blob.core.windows.net`, where
-`mystorageaccount` is the Microsoft Azure Storage account name.
+**account:** The Microsoft Azure Blob Storage account to use. This is of the form 
+`mystorageaccount.blob.core.windows.net`, where `mystorageaccount` is the Microsoft 
+Azure Storage account name.
 
 **container:** The container to use on the specified Microsoft Azure Storage account.
 
@@ -30,8 +30,8 @@ Example
 -------
 
 This example connects to Microsoft Azure Blob Storage and reads in files found in the
-specified directory. This example uses the 'hydrator' container at the
-'hydratorstorage.blob.core.windows.net' endpoint on Microsoft Azure Storage, using the
+specified directory. This example uses the 'hydrator' container at
+'hydratorstorage.blob.core.windows.net' (Microsoft Azure Storage), using the
 'hydratorstorage' account name:
 
     {
