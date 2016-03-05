@@ -81,7 +81,11 @@ public class BatchCubeSinkTestRun extends ETLBatchTestBase {
                                                    Properties.Cube.MEASUREMENTS, new Gson().toJson(measurementsProps)));
 
     ETLStage sink = new ETLStage("cubeSinkUnique", sinkConfig);
-    ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, Lists.<ETLStage>newArrayList());
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .setSource(source)
+      .addSink(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testCubeAdapter");

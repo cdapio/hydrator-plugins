@@ -33,7 +33,6 @@ import co.cask.hydrator.plugin.DBConfig;
 import co.cask.hydrator.plugin.DBManager;
 import co.cask.hydrator.plugin.DBRecord;
 import co.cask.hydrator.plugin.DBUtils;
-import co.cask.hydrator.plugin.ETLDBOutputFormat;
 import co.cask.hydrator.plugin.FieldCase;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -195,6 +194,7 @@ public class DBSink extends BatchSink<StructuredRecord, DBRecord, NullWritable> 
 
     @Description("Name of the database table to write to.")
     public String tableName;
+
   }
 
   private static class DBOutputFormatProvider implements OutputFormatProvider {
@@ -203,6 +203,7 @@ public class DBSink extends BatchSink<StructuredRecord, DBRecord, NullWritable> 
     public DBOutputFormatProvider(DBSinkConfig dbSinkConfig, Class<? extends Driver> driverClass) {
       this.conf = new HashMap<>();
 
+      conf.put(ETLDBOutputFormat.AUTO_COMMIT_ENABLED, String.valueOf(dbSinkConfig.getEnableAutoCommit()));
       conf.put(DBConfiguration.DRIVER_CLASS_PROPERTY, driverClass.getName());
       conf.put(DBConfiguration.URL_PROPERTY, dbSinkConfig.connectionString);
       if (dbSinkConfig.user != null && dbSinkConfig.password != null) {
