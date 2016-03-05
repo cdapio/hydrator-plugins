@@ -33,31 +33,31 @@ public abstract class TPFSSinkConfig extends PluginConfig {
     "are written to. If it doesn't exist, it will be created.")
   protected String name;
 
-  @Description("The base path for the time partitioned fileset. Defaults to the " +
+  @Description("The base path for the Time Partitioned FileSet. Defaults to the " +
     "name of the dataset.")
   @Nullable
   protected String basePath;
 
   @Description("The format for the path; for example: " +
-    "'yyyy-MM-dd/HH-mm' will create a file path ending in the format of 2015-01-01/20-42. " +
-    "The string provided will be provided to SimpleDataFormat. " +
-    "If left blank, then the partitions will be of the form 2015-01-01/20-42.142017372000. " +
+    "'yyyy-MM-dd/HH-mm' will create a file path ending such as '2015-01-01/20-42'. " +
+    "The string provided will be passed to SimpleDataFormat. " +
+    "If left blank, the partitions will be of the form '2015-01-01/20-42.142017372000'. " +
     "Note that each partition must have a unique file path or a runtime exception will be thrown.")
   @Nullable
   protected String filePathFormat;
 
   @Description("The time zone to format the partition. " +
-    "This option is only used if pathFormat is set. If blank or an invalid TimeZone ID, defaults to UTC. " +
+    "This option is only used if filePathFormat is set. If blank or an invalid TimeZone ID, defaults to UTC. " +
     "Note that the time zone provided must be recognized by TimeZone.getTimeZone(String); " +
     "for example: \"America/Los_Angeles\"")
   @Nullable
   protected String timeZone;
 
-  @Description("Amount of time to subtract from the pipeline runtime to get the output partition. Defaults to 0m. " +
-    "The format is expected to be a number followed by an 's', 'm', 'h', or 'd' specifying the time unit, with 's' " +
-    "for seconds, 'm' for minutes, 'h' for hours, and 'd' for days. For example, if the pipeline is scheduled to " +
-    "run at midnight of January 1, 2016, and the offset is set to '1d', data will be written to the partition for " +
-    "midnight Dec 31, 2015.")
+  @Description("Amount of time to subtract from the pipeline runtime to determine the output partition. " +
+    "Defaults to 0m. The format is expected to be a number followed by an 's', 'm', 'h', or 'd' " +
+    "specifying the time unit, with 's' for seconds, 'm' for minutes, 'h' for hours, and 'd' for days. " +
+    "For example, if the pipeline is scheduled to run at midnight of January 1, 2016, and the offset is set to '1d', " +
+    "data will be written to the partition for midnight Dec 31, 2015.")
   @Nullable
   protected String partitionOffset;
 
