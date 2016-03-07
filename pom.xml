@@ -103,6 +103,7 @@
     <es-hadoop.version>2.1.0</es-hadoop.version>
     <fastutil.version>6.6.1</fastutil.version>
     <geronimo-jms.version>1.1.1</geronimo-jms.version>
+    <guava.version>13.0.1</guava.version>
     <hadoop.version>2.3.0</hadoop.version>
     <hsql.version>2.2.4</hsql.version>
     <hive.version>1.1.0-cdh5.4.5</hive.version>
@@ -201,6 +202,11 @@
         </exclusions>
       </dependency>
       <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>${guava.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.apache.hadoop</groupId>
         <artifactId>hadoop-minicluster</artifactId>
         <version>${hadoop.version}</version>
@@ -233,8 +239,8 @@
             <artifactId>zookeeper</artifactId>
           </exclusion>
           <exclusion>
-            <artifactId>guava</artifactId>
             <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
           </exclusion>
           <exclusion>
             <artifactId>jersey-core</artifactId>
@@ -311,6 +317,10 @@
           <exclusion>
             <groupId>javax.servlet</groupId>
             <artifactId>servlet-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
