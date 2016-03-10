@@ -46,7 +46,7 @@ public class DBConfig extends PluginConfig {
   @Description("Type of the JDBC plugin to use. This is the value of the 'type' key defined in the JSON file " +
     "for the JDBC plugin. Defaults to 'jdbc'.")
   @Nullable
-  public String jdbcPluginType = "jdbc";
+  public String jdbcPluginType;
 
   @Description("Sets the case of the column names returned from the query. " +
     "Possible options are upper or lower. By default or for any other input, the column names are not modified and " +
@@ -56,8 +56,20 @@ public class DBConfig extends PluginConfig {
   @Nullable
   public String columnNameCase;
 
+  @Description("Whether to enable auto commit for queries run by this source. Defaults to false. " +
+    "This setting should only matter if you are using a jdbc driver that does not support a false value for " +
+    "auto commit, or a driver that does not support the commit call. For example, the Hive jdbc driver will throw " +
+    "an exception whenever a commit is called. For drivers like that, this should be set to true.")
+  @Nullable
+  Boolean enableAutoCommit;
+
   public DBConfig() {
     jdbcPluginType = "jdbc";
+    enableAutoCommit = false;
+  }
+
+  public Boolean getEnableAutoCommit() {
+    return enableAutoCommit;
   }
 
   protected String cleanQuery(String query) {

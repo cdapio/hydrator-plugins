@@ -185,7 +185,11 @@ public class MongoDBTest extends TestBase {
                       String.format("mongodb://localhost:%d", mongoPort),
                       MongoDBRealtimeSink.Properties.DB_NAME, "cdap",
                       MongoDBRealtimeSink.Properties.COLLECTION_NAME, "real")));
-    ETLRealtimeConfig etlConfig = new ETLRealtimeConfig(source, sink, new ArrayList<ETLStage>());
+    ETLRealtimeConfig etlConfig = ETLRealtimeConfig.builder()
+      .setSource(source)
+      .addSink(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "MongoDBRealtimeSinkTest");
     AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(ETLREALTIME_ARTIFACT, etlConfig);
     ApplicationManager appManager = deployApplication(appId, appRequest);
@@ -228,7 +232,11 @@ public class MongoDBTest extends TestBase {
         .put(MongoDBBatchSink.Properties.CONNECTION_STRING,
              String.format("mongodb://localhost:%d/%s.%s",
                            mongoPort, MONGO_DB, MONGO_SINK_COLLECTIONS)).build()));
-    ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, new ArrayList<ETLStage>());
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .setSource(source)
+      .addSink(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "MongoSinkTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
@@ -270,7 +278,11 @@ public class MongoDBTest extends TestBase {
       .put(MongoDBBatchSink.Properties.CONNECTION_STRING,
            String.format("mongodb://localhost:%d/%s.%s",
                          mongoPort, MONGO_DB, MONGO_SINK_COLLECTIONS)).build()));
-    ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, new ArrayList<ETLStage>());
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .setSource(source)
+      .addSink(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "MongoToMongoTest");
@@ -315,7 +327,11 @@ public class MongoDBTest extends TestBase {
                                                           Properties.Table.PROPERTY_SCHEMA,
                                                           SINK_BODY_SCHEMA.toString(),
                                                           Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ticker")));
-    ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, new ArrayList<ETLStage>());
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .setSource(source)
+      .addSink(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "MongoSourceTest");

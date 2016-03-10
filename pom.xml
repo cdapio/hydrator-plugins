@@ -106,7 +106,7 @@
     <guava.version>13.0.1</guava.version>
     <hadoop.version>2.3.0</hadoop.version>
     <hsql.version>2.2.4</hsql.version>
-    <hive.version>1.1.0-cdh5.4.5</hive.version>
+    <cdh.hive.version>1.1.0-cdh5.5.1</cdh.hive.version>
     <junit.version>4.11</junit.version>
     <kafka.version>0.8.2.2</kafka.version>
     <snappy.version>1.1.2</snappy.version>
@@ -636,6 +636,8 @@
                 <exclude>**/*.json</exclude>
                 <exclude>**/*.json.template</exclude>
                 <exclude>**/MANIFEST.MF</exclude>
+                <!-- exclude any hack classes -->
+                <exclude>**/org/apache/hadoop/**</exclude>
               </excludes>
             </configuration>
           </execution>
@@ -656,7 +658,7 @@
               <consoleOutput>true</consoleOutput>
               <failsOnError>true</failsOnError>
               <includeTestSourceDirectory>true</includeTestSourceDirectory>
-              <excludes>**/org/apache/cassandra/**</excludes>
+              <excludes>**/org/apache/cassandra/**,**/org/apache/hadoop/**</excludes>
             </configuration>
             <goals>
               <goal>check</goal>
