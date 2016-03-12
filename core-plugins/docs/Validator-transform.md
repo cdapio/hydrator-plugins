@@ -65,7 +65,7 @@ Properties
 **validators** Comma-separated list of validators that are used by the validationScript.
 Example: ``"validators": "core"``
 
-**validationScript:** Javascript that must implement a function ``isValid`` that takes a JSON object
+**validationScript:** JavaScript that must implement a function ``isValid`` that takes a JSON object
 (representing the input record) and a context object (encapsulating CDAP metrics, logger, and validators)
 and returns a result JSON with validity, error code, and error message.
 Example response:
@@ -87,7 +87,7 @@ Examples
 This example sends an error code ``'10'`` for any records whose ``'body'`` field contains
 a value whose length is greater than 10. It has been "pretty-printed" for readability. It
 uses the ``CoreValidator`` (included using ``"validators": "core"`` ) and references a
-function using its Javascript name (``coreValidator.maxLength``):
+function using its JavaScript name (``coreValidator.maxLength``):
 
       {
         "name": "Validator",
@@ -134,7 +134,7 @@ invalid URL, and sends an error code ``'10'`` for any records whose ``'content_l
 field is greater than 1MB.
 
 It has been "pretty-printed" for readability. It uses the CoreValidator and references functions 
-using their Javascript names (such as ``coreValidator.isDate``):
+using their JavaScript names (such as ``coreValidator.isDate``):
 
     {
         "name": "Validator",

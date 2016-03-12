@@ -3,7 +3,7 @@
 
 Description
 -----------
-A transform plugin that filters records using a custom Javascript provided in the plugin's config.
+A transform plugin that filters records using a custom JavaScript provided in the plugin's config.
 
 
 Use Case
@@ -14,7 +14,7 @@ out records that have null values for an important field.
 
 Properties
 ----------
-**script:** Javascript that must implement a function ``'shouldFilter'``, takes a
+**script:** JavaScript that must implement a function ``'shouldFilter'``, takes a
 JSON object (representing the input record) and a context object (which encapsulates CDAP metrics and logger),
 and returns true if the input record should be filtered and false if not.
 
