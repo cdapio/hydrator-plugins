@@ -1,9 +1,10 @@
 # Script Transform
 
+**Note:** The Script transform has been deprecated. Use the JavaScript transform instead.
 
 Description
 -----------
-Executes user-provided Javascript that transforms one record into another.
+Executes user-provided JavaScript that transforms one record into another.
 Input records are converted into JSON objects which can be directly accessed in
 Javascript. The transform expects to receive a JSON object as input, which it will
 convert back to a record in Java to pass to downstream transforms and sinks.
@@ -18,7 +19,7 @@ to ``'megabytes'``. Or, you might want to convert a timestamp into a human-reada
 
 Properties
 ----------
-**script:** Javascript defining how to transform one record into another. The script must
+**script:** JavaScript defining how to transform one record into another. The script must
 implement a function called ``'transform'``, which takes as input a JSON object (representing
 the input record) and a context object (which encapsulates CDAP metrics and logger),
 and returns a JSON object that represents the transformed input.
