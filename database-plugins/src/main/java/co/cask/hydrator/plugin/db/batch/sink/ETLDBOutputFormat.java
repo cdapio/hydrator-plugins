@@ -14,8 +14,11 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin;
+package co.cask.hydrator.plugin.db.batch.sink;
 
+import co.cask.hydrator.plugin.DBUtils;
+import co.cask.hydrator.plugin.JDBCDriverShim;
+import co.cask.hydrator.plugin.db.batch.NoOpCommitConnection;
 import com.google.common.base.Throwables;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.RecordWriter;
@@ -43,6 +46,8 @@ import java.sql.SQLException;
  * {@inheritDoc}
  */
 public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<K, V> {
+  public static final String AUTO_COMMIT_ENABLED = "co.cask.hydrator.db.output.autocommit.enabled";
+
   private static final Logger LOG = LoggerFactory.getLogger(ETLDBOutputFormat.class);
   private Driver driver;
   private JDBCDriverShim driverShim;
@@ -143,7 +148,14 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
                                                  conf.get(DBConfiguration.USERNAME_PROPERTY),
                                                  conf.get(DBConfiguration.PASSWORD_PROPERTY));
       }
-      connection.setAutoCommit(false);
+
+      boolean autoCommitEnabled = conf.getBoolean(AUTO_COMMIT_ENABLED, false);
+      if (autoCommitEnabled) {
+        // hack to work around jdbc drivers like the hive driver that throw exceptions on commit
+        connection = new NoOpCommitConnection(connection);
+      } else {
+        connection.setAutoCommit(false);
+      }
       connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
     } catch (Exception e) {
       throw Throwables.propagate(e);

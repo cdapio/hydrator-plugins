@@ -103,9 +103,10 @@
     <es-hadoop.version>2.1.0</es-hadoop.version>
     <fastutil.version>6.6.1</fastutil.version>
     <geronimo-jms.version>1.1.1</geronimo-jms.version>
+    <guava.version>13.0.1</guava.version>
     <hadoop.version>2.3.0</hadoop.version>
     <hsql.version>2.2.4</hsql.version>
-    <hive.version>1.1.0-cdh5.4.5</hive.version>
+    <cdh.hive.version>1.1.0-cdh5.5.1</cdh.hive.version>
     <junit.version>4.11</junit.version>
     <kafka.version>0.8.2.2</kafka.version>
     <snappy.version>1.1.2</snappy.version>
@@ -201,6 +202,11 @@
         </exclusions>
       </dependency>
       <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>${guava.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.apache.hadoop</groupId>
         <artifactId>hadoop-minicluster</artifactId>
         <version>${hadoop.version}</version>
@@ -233,8 +239,8 @@
             <artifactId>zookeeper</artifactId>
           </exclusion>
           <exclusion>
-            <artifactId>guava</artifactId>
             <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
           </exclusion>
           <exclusion>
             <artifactId>jersey-core</artifactId>
@@ -311,6 +317,10 @@
           <exclusion>
             <groupId>javax.servlet</groupId>
             <artifactId>servlet-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
@@ -626,6 +636,8 @@
                 <exclude>**/*.json</exclude>
                 <exclude>**/*.json.template</exclude>
                 <exclude>**/MANIFEST.MF</exclude>
+                <!-- exclude any hack classes -->
+                <exclude>**/org/apache/hadoop/**</exclude>
               </excludes>
             </configuration>
           </execution>
@@ -646,7 +658,7 @@
               <consoleOutput>true</consoleOutput>
               <failsOnError>true</failsOnError>
               <includeTestSourceDirectory>true</includeTestSourceDirectory>
-              <excludes>**/org/apache/cassandra/**</excludes>
+              <excludes>**/org/apache/cassandra/**,**/org/apache/hadoop/**</excludes>
             </configuration>
             <goals>
               <goal>check</goal>

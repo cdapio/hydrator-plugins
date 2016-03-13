@@ -34,7 +34,6 @@ import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.StreamManager;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.Assert;
@@ -137,6 +136,12 @@ public class ETLStreamConversionTestRun extends ETLBatchTestBase {
     ETLStage sink = new ETLStage("sink", sinkConfig);
     Plugin transformConfig = new Plugin("Projection", ImmutableMap.<String, String>of());
     ETLStage transform = new ETLStage("transforms", transformConfig);
-    return new ETLBatchConfig("* * * * *", source, sink, Lists.newArrayList(transform));
+    return ETLBatchConfig.builder("* * * * *")
+      .setSource(source)
+      .addSink(sink)
+      .addTransform(transform)
+      .addConnection(source.getName(), transform.getName())
+      .addConnection(transform.getName(), sink.getName())
+      .build();
   }
 }

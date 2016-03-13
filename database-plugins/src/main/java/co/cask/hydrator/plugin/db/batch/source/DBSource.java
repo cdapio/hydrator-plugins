@@ -34,7 +34,6 @@ import co.cask.hydrator.plugin.DBRecord;
 import co.cask.hydrator.plugin.DBUtils;
 import co.cask.hydrator.plugin.FieldCase;
 import co.cask.hydrator.plugin.StructuredRecordUtils;
-import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.Job;
@@ -53,7 +52,6 @@ import java.sql.Driver;
   " Outputs one record for each row returned by the query.")
 public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(DBSource.class);
-
   private final DBSourceConfig dbSourceConfig;
   private final DBManager dbManager;
   private Class<? extends Driver> driverClass;
@@ -87,7 +85,8 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
       DBConfiguration.configureDB(hConf, driverClass.getName(), dbSourceConfig.connectionString,
                                   dbSourceConfig.user, dbSourceConfig.password);
     }
-    ETLDBInputFormat.setInput(hConf, DBRecord.class, dbSourceConfig.getImportQuery(), dbSourceConfig.getCountQuery());
+    ETLDBInputFormat.setInput(hConf, DBRecord.class, dbSourceConfig.getImportQuery(),
+                              dbSourceConfig.getCountQuery(), dbSourceConfig.getEnableAutoCommit());
     context.setInput(new SourceInputFormatProvider(ETLDBInputFormat.class, hConf));
   }
 

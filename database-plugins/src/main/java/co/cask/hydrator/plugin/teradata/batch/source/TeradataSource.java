@@ -34,6 +34,7 @@ import co.cask.hydrator.plugin.DBRecord;
 import co.cask.hydrator.plugin.DBUtils;
 import co.cask.hydrator.plugin.FieldCase;
 import co.cask.hydrator.plugin.StructuredRecordUtils;
+import co.cask.hydrator.plugin.db.batch.source.DataDrivenETLDBInputFormat;
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
@@ -90,8 +91,9 @@ public class TeradataSource extends BatchSource<LongWritable, DBRecord, Structur
       DBConfiguration.configureDB(hConf, driverClass.getName(), sourceConfig.connectionString,
                                   sourceConfig.user, sourceConfig.password);
     }
-    DataDrivenETLDBInputFormat.setInput(job, DBRecord.class,
-                                        sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery());
+    DataDrivenETLDBInputFormat.setInput(hConf, DBRecord.class,
+                                        sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery(),
+                                        sourceConfig.getEnableAutoCommit());
     job.getConfiguration().set(DBConfiguration.INPUT_ORDER_BY_PROPERTY, sourceConfig.splitBy);
     context.setInput(new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf));
   }

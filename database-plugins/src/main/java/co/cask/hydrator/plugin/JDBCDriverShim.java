@@ -16,7 +16,8 @@
 
 package co.cask.hydrator.plugin;
 
-import co.cask.hydrator.plugin.teradata.batch.source.DataDrivenETLDBInputFormat;
+import co.cask.hydrator.plugin.db.batch.sink.ETLDBOutputFormat;
+import co.cask.hydrator.plugin.db.batch.source.DataDrivenETLDBInputFormat;
 
 import java.sql.Connection;
 import java.sql.Driver;
