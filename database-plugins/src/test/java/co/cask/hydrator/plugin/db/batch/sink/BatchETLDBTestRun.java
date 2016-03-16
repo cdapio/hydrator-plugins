@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.db.batch.sink;
 
 import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Put;
 import co.cask.cdap.api.dataset.table.Row;
@@ -34,6 +35,7 @@ import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestBase;
+import co.cask.hydrator.plugin.DBRecord;
 import co.cask.hydrator.plugin.DatabasePluginTestBase;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.base.Charsets;
@@ -43,10 +45,14 @@ import org.junit.Test;
 
 import java.sql.Connection;
 import java.sql.Date;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Time;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -530,6 +536,24 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
     Assert.assertEquals("user2", resultSet.getString("NAME"));
     Assert.assertFalse(resultSet.next());
     resultSet.close();
+  }
+
+
+
+  @Test
+  public void test() throws SQLException {
+    List<Schema.Field> fields = new ArrayList<>();
+    fields.add(Schema.Field.of("nullableFloat", Schema.nullableOf(Schema.of(Schema.Type.FLOAT))));
+    fields.add(Schema.Field.of("nullableDouble", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))));
+    fields.add(Schema.Field.of("string", Schema.of(Schema.Type.STRING)));
+    StructuredRecord record = StructuredRecord.builder(Schema.recordOf("schema", fields))
+      .set("nullableFloat", null).set("nullableDouble", null).set("string", "fooooo").build();
+    DBRecord dbRecord = new DBRecord(record, new int[]{1, 2});
+    Connection conn = hsqlDBServer.getConnection();
+    Statement statement = conn.createStatement();
+    statement.execute("create table foo (a float, b double, c varchar(20))");
+    PreparedStatement stmt = conn.prepareStatement("insert into foo values(?,?,?)");
+    dbRecord.write(stmt);
   }
 
   private void createInputData() throws Exception {

@@ -142,7 +142,9 @@ public class DBRecord implements Writable, DBWritable {
       String fieldName = field.getName();
       Schema.Type fieldType = getNonNullableType(field);
       Object fieldValue = record.get(fieldName);
-      writeToDB(stmt, fieldType, fieldValue, i);
+      if (fieldValue != null) {
+        writeToDB(stmt, fieldType, fieldValue, i);
+      }
     }
   }
 

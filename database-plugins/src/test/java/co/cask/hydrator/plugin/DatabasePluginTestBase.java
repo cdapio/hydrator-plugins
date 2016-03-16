@@ -291,7 +291,7 @@ public class DatabasePluginTestBase extends TestBase {
     return hsqlDBServer == null ? null : hsqlDBServer.getConnection();
   }
 
-  private static class HSQLDBServer {
+  public static class HSQLDBServer {
     private final String locationUrl;
     private final String database;
     private final String connectionUrl;
