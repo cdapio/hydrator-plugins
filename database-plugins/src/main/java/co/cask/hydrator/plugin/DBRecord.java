@@ -144,6 +144,8 @@ public class DBRecord implements Writable, DBWritable {
       Object fieldValue = record.get(fieldName);
       if (fieldValue != null) {
         writeToDB(stmt, fieldType, fieldValue, i);
+      } else {
+        stmt.setNull(i+1, columnTypes[i]);
       }
     }
   }
