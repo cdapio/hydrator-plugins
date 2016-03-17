@@ -59,14 +59,20 @@
       "label": "Table Properties",
       "properties": [
         {
-          "widget-type": "textbox",
+          "widget-type": "textarea",
           "label": "Import Query",
-          "name": "importQuery"
+          "name": "importQuery",
+          "widget-attributes": {
+            "rows": "4"
+          }
         },
         {
-          "widget-type": "textbox",
+          "widget-type": "textarea",
           "label": "Bounding Query",
-          "name": "boundingQuery"
+          "name": "boundingQuery",
+          "widget-attributes": {
+            "rows": "4"
+          }
         },
         {
           "widget-type": "textbox",
