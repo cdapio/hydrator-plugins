@@ -54,14 +54,20 @@
       "label": "Table Properties",
       "properties": [
         {
-          "widget-type": "textbox",
+          "widget-type": "textarea",
           "label": "Import SQL",
-          "name": "importQuery"
+          "name": "importQuery",
+          "widget-attributes": {
+            "rows": "4"
+          }
         },
         {
-          "widget-type": "textbox",
+          "widget-type": "textarea",
           "label": "Count SQL",
-          "name": "countQuery"
+          "name": "countQuery",
+          "widget-attributes": {
+            "rows": "4"
+          }
         },
         {
           "widget-type": "select",
