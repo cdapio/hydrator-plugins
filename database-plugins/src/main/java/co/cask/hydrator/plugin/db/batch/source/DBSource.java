@@ -34,6 +34,7 @@ import co.cask.hydrator.plugin.DBRecord;
 import co.cask.hydrator.plugin.DBUtils;
 import co.cask.hydrator.plugin.FieldCase;
 import co.cask.hydrator.plugin.StructuredRecordUtils;
+import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.Job;
@@ -44,34 +45,38 @@ import org.slf4j.LoggerFactory;
 import java.sql.Driver;
 
 /**
- * Batch source to read from a Database table
+ * Batch source to read from a Teradata table
  */
 @Plugin(type = "batchsource")
-@Name("Database")
-@Description("Reads from a database using a configurable SQL query." +
+@Name("Teradata")
+@Description("Reads from a Teradata table using a configurable SQL query." +
   " Outputs one record for each row returned by the query.")
 public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(DBSource.class);
-  private final DBSourceConfig dbSourceConfig;
+
+  private final TeradataSourceConfig sourceConfig;
   private final DBManager dbManager;
   private Class<? extends Driver> driverClass;
 
-  public DBSource(DBSourceConfig dbSourceConfig) {
-    this.dbSourceConfig = dbSourceConfig;
-    this.dbManager = new DBManager(dbSourceConfig);
+  public DBSource(TeradataSourceConfig sourceConfig) {
+    this.sourceConfig = sourceConfig;
+    this.dbManager = new DBManager(sourceConfig);
   }
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId());
+    Preconditions.checkArgument(sourceConfig.getImportQuery().contains("$CONDITIONS"),
+                                "Import Query %s must contain the string '$CONDITIONS'.",
+                                sourceConfig.importQuery);
   }
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
     LOG.debug("pluginType = {}; pluginName = {}; connectionString = {}; importQuery = {}; " +
-                "countQuery = {}",
-              dbSourceConfig.jdbcPluginType, dbSourceConfig.jdbcPluginName,
-              dbSourceConfig.connectionString, dbSourceConfig.getImportQuery(), dbSourceConfig.getCountQuery());
+                "boundingQuery = {}",
+              sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName,
+              sourceConfig.connectionString, sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery());
 
     Job job = Job.getInstance();
     Configuration hConf = job.getConfiguration();
@@ -79,15 +84,17 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
 
     // Load the plugin class to make sure it is available.
     Class<? extends Driver> driverClass = context.loadPluginClass(getJDBCPluginId());
-    if (dbSourceConfig.user == null && dbSourceConfig.password == null) {
-      DBConfiguration.configureDB(hConf, driverClass.getName(), dbSourceConfig.connectionString);
+    if (sourceConfig.user == null && sourceConfig.password == null) {
+      DBConfiguration.configureDB(hConf, driverClass.getName(), sourceConfig.connectionString);
     } else {
-      DBConfiguration.configureDB(hConf, driverClass.getName(), dbSourceConfig.connectionString,
-                                  dbSourceConfig.user, dbSourceConfig.password);
+      DBConfiguration.configureDB(hConf, driverClass.getName(), sourceConfig.connectionString,
+                                  sourceConfig.user, sourceConfig.password);
     }
-    ETLDBInputFormat.setInput(hConf, DBRecord.class, dbSourceConfig.getImportQuery(),
-                              dbSourceConfig.getCountQuery(), dbSourceConfig.getEnableAutoCommit());
-    context.setInput(new SourceInputFormatProvider(ETLDBInputFormat.class, hConf));
+    DataDrivenETLDBInputFormat.setInput(hConf, DBRecord.class,
+                                        sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery(),
+                                        sourceConfig.getEnableAutoCommit());
+    job.getConfiguration().set(DBConfiguration.INPUT_ORDER_BY_PROPERTY, sourceConfig.splitBy);
+    context.setInput(new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf));
   }
 
   @Override
@@ -99,7 +106,7 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
   @Override
   public void transform(KeyValue<LongWritable, DBRecord> input, Emitter<StructuredRecord> emitter) throws Exception {
     emitter.emit(StructuredRecordUtils.convertCase(
-      input.getValue().getRecord(), FieldCase.toFieldCase(dbSourceConfig.columnNameCase)));
+      input.getValue().getRecord(), FieldCase.toFieldCase(sourceConfig.columnNameCase)));
   }
 
   @Override
@@ -112,31 +119,38 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
   }
 
   private String getJDBCPluginId() {
-    return String.format("%s.%s.%s", "source", dbSourceConfig.jdbcPluginType, dbSourceConfig.jdbcPluginName);
+    return String.format("%s.%s.%s", "source", sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName);
   }
 
   /**
    * {@link PluginConfig} for {@link DBSource}
    */
-  public static class DBSourceConfig extends DBConfig {
-    @Description("The SELECT query to use to import data from the specified " +
-      "table. You can specify an arbitrary number of columns to import, or import all columns using *. " +
-      "You can also specify a number of WHERE clauses or ORDER BY clauses. However, LIMIT and OFFSET clauses " +
-      "should not be used in this query.")
+  public static class TeradataSourceConfig extends DBConfig {
+    public static final String BOUNDING_QUERY = "boundingQuery";
+    public static final String SPLIT_BY = "splitBy";
+
+    @Description("The SELECT query to use to import data from the specified table. " +
+      "You can specify an arbitrary number of columns to import, or import all columns using *. " +
+      "The Query should contain the '$CONDITIONS' string. " +
+      "For example, 'SELECT * FROM table WHERE $CONDITIONS'. The '$CONDITIONS' string" +
+      "will be replaced by 'splitBy' field limits specified by the bounding query.")
     String importQuery;
 
-    @Description("The SELECT query to use to get the count of records to " +
-      "import from the specified table. Examples: SELECT COUNT(*) from <my_table> where <my_column> 1, " +
-      "SELECT COUNT(my_column) from my_table. NOTE: Please include the same WHERE clauses in this query as the ones " +
-      "used in the import query to reflect an accurate number of records to import.")
-    String countQuery;
+    @Name(BOUNDING_QUERY)
+    @Description("Bounding Query should return the min and max of the " +
+      "values of the 'splitBy' field. For example, 'SELECT MIN(id),MAX(id) FROM table'")
+    String boundingQuery;
 
-    public String getImportQuery() {
+    @Name(SPLIT_BY)
+    @Description("Field Name which will be used to generate splits.")
+    String splitBy;
+
+    private String getImportQuery() {
       return cleanQuery(importQuery);
     }
 
-    public String getCountQuery() {
-      return cleanQuery(countQuery);
+    private String getBoundingQuery() {
+      return cleanQuery(boundingQuery);
     }
   }
 }

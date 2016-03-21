@@ -18,7 +18,6 @@ package co.cask.hydrator.plugin.db.batch.sink;
 
 import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.table.Put;
 import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
@@ -36,15 +35,12 @@ import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestBase;
 import co.cask.hydrator.plugin.DatabasePluginTestBase;
 import co.cask.hydrator.plugin.common.Properties;
-import com.google.common.base.Charsets;
+import co.cask.hydrator.plugin.db.batch.source.DBSource;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.sql.Connection;
 import java.sql.Date;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.sql.Time;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
@@ -55,22 +51,24 @@ import java.util.concurrent.TimeUnit;
 /**
  * Test for ETL using databases.
  */
-public class BatchETLDBTestRun extends DatabasePluginTestBase {
+public class DBSourceTestRun extends DatabasePluginTestBase {
 
   @Test
   @SuppressWarnings("ConstantConditions")
   public void testDBSource() throws Exception {
     String importQuery = "SELECT ID, NAME, SCORE, GRADUATED, TINY, SMALL, BIG, FLOAT_COL, REAL_COL, NUMERIC_COL, " +
       "DECIMAL_COL, BIT_COL, DATE_COL, TIME_COL, TIMESTAMP_COL, BINARY_COL, BLOB_COL, CLOB_COL FROM \"my_table\"" +
-      "WHERE ID < 3;";
-    String countQuery = "SELECT COUNT(ID) from \"my_table\" WHERE id < 3; ";
+      "WHERE ID < 3 AND $CONDITIONS";
+    String boundingQuery = "SELECT MIN(ID),MAX(ID) from \"my_table\"";
+    String splitBy = "ID";
     Plugin sourceConfig = new Plugin(
-      "Database",
+      "Teradata",
       ImmutableMap.<String, String>builder()
         .put(Properties.DB.CONNECTION_STRING, getConnectionURL())
         .put(Properties.DB.TABLE_NAME, "my_table")
         .put(Properties.DB.IMPORT_QUERY, importQuery)
-        .put(Properties.DB.COUNT_QUERY, countQuery)
+        .put(DBSource.TeradataSourceConfig.BOUNDING_QUERY, boundingQuery)
+        .put(DBSource.TeradataSourceConfig.SPLIT_BY, splitBy)
         .put(Properties.DB.JDBC_PLUGIN_NAME, "hypersql")
         .build()
     );
@@ -90,7 +88,7 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSourceTest");
-    ApplicationManager appManager = TestBase.deployApplication(appId, appRequest);
+    ApplicationManager appManager = deployApplication(appId, appRequest);
 
     MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
     mrManager.start();
@@ -166,13 +164,15 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
                                     Schema.Field.of("id", Schema.of(Schema.Type.INT)),
                                     Schema.Field.of("name", Schema.of(Schema.Type.STRING)));
 
-    String importQuery = "SELECT ID, NAME FROM \"my_table\" WHERE ID < 3";
-    String countQuery = "SELECT COUNT(ID) from \"my_table\" WHERE id < 3";
-    Plugin sourceConfig = new Plugin("Database", ImmutableMap.<String, String>builder()
+    String importQuery = "SELECT ID, NAME FROM \"my_table\" WHERE ID < 3 AND $CONDITIONS";
+    String boundingQuery = "SELECT MIN(ID),MAX(ID) from \"my_table\"";
+    String splitBy = "ID";
+    Plugin sourceConfig = new Plugin("Teradata", ImmutableMap.<String, String>builder()
       .put(Properties.DB.CONNECTION_STRING, getConnectionURL())
       .put(Properties.DB.TABLE_NAME, "my_table")
       .put(Properties.DB.IMPORT_QUERY, importQuery)
-      .put(Properties.DB.COUNT_QUERY, countQuery)
+      .put(DBSource.TeradataSourceConfig.BOUNDING_QUERY, boundingQuery)
+      .put(DBSource.TeradataSourceConfig.SPLIT_BY, splitBy)
       .put(Properties.DB.JDBC_PLUGIN_NAME, "hypersql")
       .put(Properties.DB.COLUMN_NAME_CASE, "lower")
       .build()
@@ -192,7 +192,7 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSourceTest");
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "teradataSourceTest");
     ApplicationManager appManager = TestBase.deployApplication(appId, appRequest);
 
     MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
@@ -221,30 +221,30 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
   @Test
   public void testDbSourceMultipleTables() throws Exception {
     Schema schema = Schema.recordOf("student",
-                                    Schema.Field.of("id", Schema.of(Schema.Type.INT)),
-                                    Schema.Field.of("name", Schema.of(Schema.Type.STRING)));
+                                    Schema.Field.of("ID", Schema.of(Schema.Type.INT)),
+                                    Schema.Field.of("NAME", Schema.of(Schema.Type.STRING)));
 
     // have the same data in both tables ('\"my_table\"' and '\"your_table\"'), and select the ID and NAME fields from
     // separate tables
     String importQuery = "SELECT \"my_table\".ID, \"your_table\".NAME FROM \"my_table\", \"your_table\"" +
-      "WHERE \"my_table\".ID < 3 and \"my_table\".ID = \"your_table\".ID";
-    String countQuery = "SELECT COUNT(\"my_table\".ID) FROM \"my_table\", \"your_table\"" +
-      "WHERE \"my_table\".ID < 3 and \"my_table\".ID = \"your_table\".ID";
-    Plugin sourceConfig = new Plugin("Database", ImmutableMap.<String, String>builder()
+      "WHERE \"my_table\".ID < 3 and \"my_table\".ID = \"your_table\".ID and $CONDITIONS";
+    String boundingQuery = "SELECT MIN(MIN(\"my_table\".ID), MIN(\"your_table\".ID)), " +
+      "MAX(MAX(\"my_table\".ID), MAX(\"your_table\".ID))";
+    String splitBy = "\"my_table\".ID";
+    Plugin sourceConfig = new Plugin("Teradata", ImmutableMap.<String, String>builder()
       .put(Properties.DB.CONNECTION_STRING, getConnectionURL())
       .put(Properties.DB.TABLE_NAME, "my_table")
       .put(Properties.DB.IMPORT_QUERY, importQuery)
-      .put(Properties.DB.COUNT_QUERY, countQuery)
+      .put(DBSource.TeradataSourceConfig.BOUNDING_QUERY, boundingQuery)
+      .put(DBSource.TeradataSourceConfig.SPLIT_BY, splitBy)
       .put(Properties.DB.JDBC_PLUGIN_NAME, "hypersql")
-      .put(Properties.DB.COLUMN_NAME_CASE, "lower")
       .build()
     );
 
     Plugin sinkConfig = new Plugin("Table", ImmutableMap.of(
       "name", "outputTable1",
       Properties.Table.PROPERTY_SCHEMA, schema.toString(),
-      // smaller case since we have set the db data's column case to be lower
-      Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "id"));
+      Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ID"));
 
     ETLStage source = new ETLStage("dbSource3", sourceConfig);
     ETLStage sink = new ETLStage("tableSink3", sinkConfig);
@@ -256,7 +256,7 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSourceTest");
-    ApplicationManager appManager = TestBase.deployApplication(appId, appRequest);
+    ApplicationManager appManager = deployApplication(appId, appRequest);
 
     MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
     mrManager.start();
@@ -275,41 +275,37 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
     Assert.assertNull(scanner.next());
     scanner.close();
     // Verify data
-    Assert.assertEquals("user1", row1.getString("name"));
-    Assert.assertEquals("user2", row2.getString("name"));
+    Assert.assertEquals("user1", row1.getString("NAME"));
+    Assert.assertEquals("user2", row2.getString("NAME"));
     Assert.assertEquals(1, Bytes.toInt(row1.getRow()));
     Assert.assertEquals(2, Bytes.toInt(row2.getRow()));
   }
 
   @Test
   public void testUserNamePasswordCombinations() throws Exception {
-    String importQuery = "SELECT * FROM \"my_table\"";
-    String countQuery = "SELECT COUNT(*) from \"my_table\"";
+    String importQuery = "SELECT * FROM \"my_table\" WHERE $CONDITIONS";
+    String boundingQuery = "SELECT MIN(ID),MAX(ID) from \"my_table\"";
+    String splitBy = "ID";
 
     Plugin tableConfig = new Plugin("Table", ImmutableMap.of(
       "name", "outputTable",
       Properties.Table.PROPERTY_SCHEMA, schema.toString(),
       Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ID"));
 
-    Map<String, String> baseSourceProps = ImmutableMap.of(
-      Properties.DB.CONNECTION_STRING, getConnectionURL(),
-      Properties.DB.TABLE_NAME, "my_table",
-      Properties.DB.JDBC_PLUGIN_NAME, "hypersql",
-      Properties.DB.IMPORT_QUERY, importQuery,
-      Properties.DB.COUNT_QUERY, countQuery);
-
-    Map<String, String> baseSinkProps = ImmutableMap.of(
-      Properties.DB.CONNECTION_STRING, getConnectionURL(),
-      Properties.DB.TABLE_NAME, "my_table",
-      Properties.DB.JDBC_PLUGIN_NAME, "hypersql",
-      Properties.DB.COLUMNS, "*",
-      Properties.DB.COLUMN_NAME_CASE, "upper");
+    Map<String, String> baseSourceProps = ImmutableMap.<String, String>builder()
+      .put(Properties.DB.CONNECTION_STRING, getConnectionURL())
+      .put(Properties.DB.TABLE_NAME, "my_table")
+      .put(Properties.DB.JDBC_PLUGIN_NAME, "hypersql")
+      .put(Properties.DB.IMPORT_QUERY, importQuery)
+      .put(DBSource.TeradataSourceConfig.BOUNDING_QUERY, boundingQuery)
+      .put(DBSource.TeradataSourceConfig.SPLIT_BY, splitBy)
+      .build();
 
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbTest");
 
     // null user name, null password. Should succeed.
     // as source
-    Plugin dbConfig = new Plugin("Database", baseSourceProps);
+    Plugin dbConfig = new Plugin("Teradata", baseSourceProps);
     ETLStage table = new ETLStage("uniqueTableSink" , tableConfig);
     ETLStage database = new ETLStage("databaseSource" , dbConfig);
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
@@ -318,22 +314,13 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
       .addConnection(database.getName(), table.getName())
       .build();
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    TestBase.deployApplication(appId, appRequest);
-    // as sink
-    database = new ETLStage("databaseSink", new Plugin("Database", baseSinkProps));
-    etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(table)
-      .addSink(database)
-      .addConnection(table.getName(), database.getName())
-      .build();
-    appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    TestBase.deployApplication(appId, appRequest);
+    deployApplication(appId, appRequest);
 
     // null user name, non-null password. Should fail.
     // as source
     Map<String, String> noUser = new HashMap<>(baseSourceProps);
     noUser.put(Properties.DB.PASSWORD, "password");
-    database = new ETLStage("databaseSource", new Plugin("Database", noUser));
+    database = new ETLStage("databaseSource", new Plugin("Teradata", noUser));
     etlConfig = ETLBatchConfig.builder("* * * * *")
       .setSource(database)
       .addSink(table)
@@ -341,62 +328,17 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
       .build();
     assertDeploymentFailure(
       appId, etlConfig, "Deploying DB Source with null username but non-null password should have failed.");
-    // as sink
-    noUser = new HashMap<>(baseSinkProps);
-    noUser.put(Properties.DB.PASSWORD, "password");
-    database = new ETLStage("databaseSink", new Plugin("Database", noUser));
-    etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(table)
-      .addSink(database)
-      .addConnection(table.getName(), database.getName())
-      .build();
-    assertDeploymentFailure(
-      appId, etlConfig, "Deploying DB Sink with null username but non-null password should have failed.");
 
     // non-null username, non-null, but empty password. Should succeed.
     // as source
     Map<String, String> emptyPassword = new HashMap<>(baseSourceProps);
     emptyPassword.put(Properties.DB.USER, "emptyPwdUser");
     emptyPassword.put(Properties.DB.PASSWORD, "");
-    database = new ETLStage("databaseSource", new Plugin("Database", emptyPassword));
+    database = new ETLStage("databaseSource", new Plugin("Teradata", emptyPassword));
     etlConfig = ETLBatchConfig.builder("* * * * *")
       .setSource(database)
       .addSink(table)
       .addConnection(database.getName(), table.getName())
-      .build();
-    appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    TestBase.deployApplication(appId, appRequest);
-    // as sink
-    emptyPassword = new HashMap<>(baseSinkProps);
-    emptyPassword.put(Properties.DB.USER, "emptyPwdUser");
-    emptyPassword.put(Properties.DB.PASSWORD, "");
-    database = new ETLStage("databaseSink", new Plugin("Database", emptyPassword));
-    etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(table)
-      .addSink(database)
-      .addConnection(table.getName(), database.getName())
-      .build();
-    appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    TestBase.deployApplication(appId, appRequest);
-    // non-null username, null password. Should succeed.
-    Map<String, String> nullPassword = new HashMap<>(baseSourceProps);
-    emptyPassword.put(Properties.DB.USER, "emptyPwdUser");
-    database = new ETLStage("databaseSource", new Plugin("Database", nullPassword));
-    etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(database)
-      .addSink(table)
-      .addConnection(database.getName(), table.getName())
-      .build();
-    appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    deployApplication(appId, appRequest);
-    // as sink
-    nullPassword = new HashMap<>(baseSinkProps);
-    nullPassword.put(Properties.DB.USER, "emptyPwdUser");
-    database = new ETLStage("databaseSink", new Plugin("Database", nullPassword));
-    etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(table)
-      .addSink(database)
-      .addConnection(table.getName(), database.getName())
       .build();
     appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     deployApplication(appId, appRequest);
@@ -405,20 +347,22 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
   @Test
   public void testNonExistentDBTable() throws Exception {
     // source
-    String importQuery = "SELECT ID, NAME FROM dummy WHERE ID < 3";
-    String countQuery = "SELECT COUNT(ID) from dummy WHERE id < 3";
+    String importQuery = "SELECT ID, NAME FROM dummy WHERE ID < 3 AND $CONDITIONS";
+    String boundingQuery = "SELECT MIN(ID),MAX(ID) FROM dummy";
+    String splitBy = "ID";
     //TODO: Also test for bad connection:
     Plugin tableConfig = new Plugin("Table", ImmutableMap.of(
       Properties.BatchReadableWritable.NAME, "table",
       Properties.Table.PROPERTY_SCHEMA, schema.toString(),
       Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ID"));
-    Plugin sourceBadNameConfig = new Plugin("Database", ImmutableMap.of(
-      Properties.DB.CONNECTION_STRING, getConnectionURL(),
-      Properties.DB.TABLE_NAME, "dummy",
-      Properties.DB.IMPORT_QUERY, importQuery,
-      Properties.DB.COUNT_QUERY, countQuery,
-      Properties.DB.JDBC_PLUGIN_NAME, "hypersql"
-    ));
+    Plugin sourceBadNameConfig = new Plugin("Teradata", ImmutableMap.<String, String>builder()
+      .put(Properties.DB.CONNECTION_STRING, getConnectionURL())
+      .put(Properties.DB.TABLE_NAME, "dummy")
+      .put(Properties.DB.IMPORT_QUERY, importQuery)
+      .put(DBSource.TeradataSourceConfig.BOUNDING_QUERY, boundingQuery)
+      .put(Properties.DB.JDBC_PLUGIN_NAME, "hypersql")
+      .put(DBSource.TeradataSourceConfig.SPLIT_BY, splitBy)
+      .build());
     ETLStage table = new ETLStage("tableName", tableConfig);
     ETLStage sourceBadName = new ETLStage("sourceBadName", sourceBadNameConfig);
 
@@ -433,13 +377,14 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
 
     // Bad connection
     String badConnection = String.format("jdbc:hsqldb:hsql://localhost/%sWRONG", getDatabase());
-    Plugin sourceBadConnConfig = new Plugin("Database", ImmutableMap.of(
-      Properties.DB.CONNECTION_STRING, badConnection,
-      Properties.DB.TABLE_NAME, "my_table",
-      Properties.DB.IMPORT_QUERY, importQuery,
-      Properties.DB.COUNT_QUERY, countQuery,
-      Properties.DB.JDBC_PLUGIN_NAME, "hypersql"
-    ));
+    Plugin sourceBadConnConfig = new Plugin("Teradata", ImmutableMap.<String, String>builder()
+      .put(Properties.DB.CONNECTION_STRING, badConnection)
+      .put(Properties.DB.TABLE_NAME, "dummy")
+      .put(Properties.DB.IMPORT_QUERY, importQuery)
+      .put(DBSource.TeradataSourceConfig.BOUNDING_QUERY, boundingQuery)
+      .put(Properties.DB.JDBC_PLUGIN_NAME, "hypersql")
+      .put(DBSource.TeradataSourceConfig.SPLIT_BY, splitBy)
+      .build());
     ETLStage sourceBadConn = new ETLStage("sourceBadConn", sourceBadConnConfig);
     etlConfig = ETLBatchConfig.builder("* * * * *")
       .setSource(sourceBadConn)
@@ -448,116 +393,5 @@ public class BatchETLDBTestRun extends DatabasePluginTestBase {
       .build();
     assertRuntimeFailure(appId, etlConfig, "ETL Application with DB Source should have failed because of a " +
       "non-existent source database.");
-
-    // sink
-    Plugin sinkBadNameConfig = new Plugin("Database", ImmutableMap.of(
-      Properties.DB.CONNECTION_STRING, getConnectionURL(),
-      Properties.DB.TABLE_NAME, "dummy",
-      Properties.DB.COLUMNS, "ID, NAME",
-      Properties.DB.JDBC_PLUGIN_NAME, "hypersql"
-    ));
-    ETLStage sinkBadName = new ETLStage("sourceBadConn", sinkBadNameConfig);
-      etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(table)
-      .addSink(sinkBadName)
-      .addConnection(table.getName(), sinkBadName.getName())
-      .build();
-    appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSinkNonExistingTest");
-    assertRuntimeFailure(appId, etlConfig, "ETL Application with DB Sink should have failed because of a " +
-      "non-existent sink table.");
-
-    // Bad connection
-    Plugin sinkBadConnConfig = new Plugin("Database", ImmutableMap.of(
-      Properties.DB.CONNECTION_STRING, badConnection,
-      Properties.DB.TABLE_NAME, "my_dest_table",
-      Properties.DB.COLUMNS, "ID, NAME",
-      Properties.DB.JDBC_PLUGIN_NAME, "hypersql"
-    ));
-    ETLStage sinkBadConn = new ETLStage("sourceBadConn", sinkBadConnConfig);
-      etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(table)
-      .addSink(sinkBadConn)
-      .addConnection(table.getName(), sinkBadConn.getName())
-      .build();
-    assertRuntimeFailure(appId, etlConfig, "ETL Application with DB Sink should have failed because of a " +
-      "non-existent sink database.");
-  }
-
-  @Test
-  public void testDBSink() throws Exception {
-    String cols = "ID, NAME, SCORE, GRADUATED, TINY, SMALL, BIG, FLOAT_COL, REAL_COL, NUMERIC_COL, DECIMAL_COL, " +
-      "BIT_COL, DATE_COL, TIME_COL, TIMESTAMP_COL, BINARY_COL, BLOB_COL, CLOB_COL";
-    Plugin sourceConfig = new Plugin("Table",
-                                     ImmutableMap.of(
-                                       Properties.BatchReadableWritable.NAME, "DBInputTable",
-                                       Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ID",
-                                       Properties.Table.PROPERTY_SCHEMA, schema.toString(),
-                                       Properties.DB.USER, "emptyPwdUser"));
-    Plugin sinkConfig = new Plugin("Database",
-                                   ImmutableMap.of(Properties.DB.CONNECTION_STRING, getConnectionURL(),
-                                                   Properties.DB.TABLE_NAME, "MY_DEST_TABLE",
-                                                   Properties.DB.COLUMNS, cols,
-                                                   Properties.DB.JDBC_PLUGIN_NAME, "hypersql"
-                                   ));
-    ETLStage source = new ETLStage("source", sourceConfig);
-    ETLStage sink = new ETLStage("sink", sinkConfig);
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(source)
-      .addSink(sink)
-      .addConnection(source.getName(), sink.getName())
-      .build();
-
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSinkTest");
-    ApplicationManager appManager = TestBase.deployApplication(appId, appRequest);
-
-    createInputData();
-
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(5, TimeUnit.MINUTES);
-    List<RunRecord> runRecords = mrManager.getHistory();
-    Assert.assertEquals(ProgramRunStatus.COMPLETED, runRecords.get(0).getStatus());
-
-    Connection conn = getConnection();
-    Statement stmt = conn.createStatement();
-    stmt.execute("SELECT * FROM \"MY_DEST_TABLE\"");
-    ResultSet resultSet = stmt.getResultSet();
-    Assert.assertTrue(resultSet.next());
-    Assert.assertEquals("user1", resultSet.getString("NAME"));
-    Assert.assertTrue(resultSet.next());
-    Assert.assertEquals("user2", resultSet.getString("NAME"));
-    Assert.assertFalse(resultSet.next());
-    resultSet.close();
-  }
-
-  private void createInputData() throws Exception {
-    // add some data to the input table
-    DataSetManager<Table> inputManager = getDataset("DBInputTable");
-    Table inputTable = inputManager.get();
-    for (int i = 1; i <= 2; i++) {
-      Put put = new Put(Bytes.toBytes("row" + i));
-      String name = "user" + i;
-      put.add("ID", i);
-      put.add("NAME", name);
-      put.add("SCORE", 3.451);
-      put.add("GRADUATED", (i % 2 == 0));
-      put.add("TINY", i + 1);
-      put.add("SMALL", i + 2);
-      put.add("BIG", 3456987L);
-      put.add("FLOAT_COL", 3.456f);
-      put.add("REAL_COL", 3.457f);
-      put.add("NUMERIC_COL", 3.458);
-      put.add("DECIMAL_COL", 3.459);
-      put.add("BIT_COL", (i % 2 == 1));
-      put.add("DATE_COL", CURRENT_TS);
-      put.add("TIME_COL", CURRENT_TS);
-      put.add("TIMESTAMP_COL", CURRENT_TS);
-      put.add("BINARY_COL", name.getBytes(Charsets.UTF_8));
-      put.add("BLOB_COL", name.getBytes(Charsets.UTF_8));
-      put.add("CLOB_COL", CLOB_DATA);
-      inputTable.put(put);
-      inputManager.flush();
-    }
   }
 }
