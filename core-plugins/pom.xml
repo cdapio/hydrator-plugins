@@ -61,6 +61,10 @@
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
+      <artifactId>cdap-etl-data-pipeline</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-etl-realtime</artifactId>
     </dependency>
     <dependency>
