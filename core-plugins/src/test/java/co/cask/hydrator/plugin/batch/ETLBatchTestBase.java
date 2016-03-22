@@ -60,7 +60,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.twill.filesystem.Location;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.python.util.PythonInterpreter;
 import parquet.avro.AvroParquetInputFormat;
 import parquet.avro.AvroParquetOutputFormat;
 import parquet.avro.AvroParquetReader;
@@ -119,31 +118,37 @@ public class ETLBatchTestBase extends TestBase {
   }
 
   protected List<GenericRecord> readOutput(TimePartitionedFileSet fileSet, Schema schema) throws IOException {
-    org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(schema.toString());
-    DatumReader<GenericRecord> datumReader = new GenericDatumReader<>(avroSchema);
     List<GenericRecord> records = Lists.newArrayList();
     for (Location dayLoc : fileSet.getEmbeddedFileSet().getBaseLocation().list()) {
       // this level should be the day (ex: 2015-01-19)
       for (Location timeLoc : dayLoc.list()) {
         // this level should be the time (ex: 21-23.1234567890000)
-        for (Location file : timeLoc.list()) {
-          // this level should be the actual mapred output
-          String locName = file.getName();
+        records.addAll(readOutput(timeLoc, schema));
+      }
+    }
+    return records;
+  }
 
-          if (locName.endsWith(".avro")) {
-            DataFileStream<GenericRecord> fileStream = new DataFileStream<>(file.getInputStream(), datumReader);
-            Iterables.addAll(records, fileStream);
-            fileStream.close();
-          }
-          if (locName.endsWith(".parquet")) {
-            Path parquetFile = new Path(file.toString());
-            AvroParquetReader<GenericRecord> reader = new AvroParquetReader<GenericRecord>(parquetFile);
-            GenericRecord result = reader.read();
-            while (result != null) {
-              records.add(result);
-              result = reader.read();
-            }
-          }
+  protected List<GenericRecord> readOutput(Location location, Schema schema) throws IOException {
+    org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(schema.toString());
+    DatumReader<GenericRecord> datumReader = new GenericDatumReader<>(avroSchema);
+    List<GenericRecord> records = Lists.newArrayList();
+    for (Location file : location.list()) {
+      // this level should be the actual mapred output
+      String locName = file.getName();
+
+      if (locName.endsWith(".avro")) {
+        DataFileStream<GenericRecord> fileStream = new DataFileStream<>(file.getInputStream(), datumReader);
+        Iterables.addAll(records, fileStream);
+        fileStream.close();
+      }
+      if (locName.endsWith(".parquet")) {
+        Path parquetFile = new Path(file.toString());
+        AvroParquetReader<GenericRecord> reader = new AvroParquetReader<>(parquetFile);
+        GenericRecord result = reader.read();
+        while (result != null) {
+          records.add(result);
+          result = reader.read();
         }
       }
     }
