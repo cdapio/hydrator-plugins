@@ -67,8 +67,8 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
         .put(Properties.DB.CONNECTION_STRING, getConnectionURL())
         .put(Properties.DB.TABLE_NAME, "my_table")
         .put(Properties.DB.IMPORT_QUERY, importQuery)
-        .put(DBSource.TeradataSourceConfig.BOUNDING_QUERY, boundingQuery)
-        .put(DBSource.TeradataSourceConfig.SPLIT_BY, splitBy)
+        .put(DBSource.DBSourceConfig.BOUNDING_QUERY, boundingQuery)
+        .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
         .put(Properties.DB.JDBC_PLUGIN_NAME, "hypersql")
         .build()
     );
@@ -171,8 +171,8 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
       .put(Properties.DB.CONNECTION_STRING, getConnectionURL())
       .put(Properties.DB.TABLE_NAME, "my_table")
       .put(Properties.DB.IMPORT_QUERY, importQuery)
-      .put(DBSource.TeradataSourceConfig.BOUNDING_QUERY, boundingQuery)
-      .put(DBSource.TeradataSourceConfig.SPLIT_BY, splitBy)
+      .put(DBSource.DBSourceConfig.BOUNDING_QUERY, boundingQuery)
+      .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
       .put(Properties.DB.JDBC_PLUGIN_NAME, "hypersql")
       .put(Properties.DB.COLUMN_NAME_CASE, "lower")
       .build()
@@ -235,8 +235,8 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
       .put(Properties.DB.CONNECTION_STRING, getConnectionURL())
       .put(Properties.DB.TABLE_NAME, "my_table")
       .put(Properties.DB.IMPORT_QUERY, importQuery)
-      .put(DBSource.TeradataSourceConfig.BOUNDING_QUERY, boundingQuery)
-      .put(DBSource.TeradataSourceConfig.SPLIT_BY, splitBy)
+      .put(DBSource.DBSourceConfig.BOUNDING_QUERY, boundingQuery)
+      .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
       .put(Properties.DB.JDBC_PLUGIN_NAME, "hypersql")
       .build()
     );
@@ -297,8 +297,8 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
       .put(Properties.DB.TABLE_NAME, "my_table")
       .put(Properties.DB.JDBC_PLUGIN_NAME, "hypersql")
       .put(Properties.DB.IMPORT_QUERY, importQuery)
-      .put(DBSource.TeradataSourceConfig.BOUNDING_QUERY, boundingQuery)
-      .put(DBSource.TeradataSourceConfig.SPLIT_BY, splitBy)
+      .put(DBSource.DBSourceConfig.BOUNDING_QUERY, boundingQuery)
+      .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
       .build();
 
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbTest");
@@ -359,9 +359,9 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
       .put(Properties.DB.CONNECTION_STRING, getConnectionURL())
       .put(Properties.DB.TABLE_NAME, "dummy")
       .put(Properties.DB.IMPORT_QUERY, importQuery)
-      .put(DBSource.TeradataSourceConfig.BOUNDING_QUERY, boundingQuery)
+      .put(DBSource.DBSourceConfig.BOUNDING_QUERY, boundingQuery)
       .put(Properties.DB.JDBC_PLUGIN_NAME, "hypersql")
-      .put(DBSource.TeradataSourceConfig.SPLIT_BY, splitBy)
+      .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
       .build());
     ETLStage table = new ETLStage("tableName", tableConfig);
     ETLStage sourceBadName = new ETLStage("sourceBadName", sourceBadNameConfig);
@@ -381,9 +381,9 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
       .put(Properties.DB.CONNECTION_STRING, badConnection)
       .put(Properties.DB.TABLE_NAME, "dummy")
       .put(Properties.DB.IMPORT_QUERY, importQuery)
-      .put(DBSource.TeradataSourceConfig.BOUNDING_QUERY, boundingQuery)
+      .put(DBSource.DBSourceConfig.BOUNDING_QUERY, boundingQuery)
       .put(Properties.DB.JDBC_PLUGIN_NAME, "hypersql")
-      .put(DBSource.TeradataSourceConfig.SPLIT_BY, splitBy)
+      .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
       .build());
     ETLStage sourceBadConn = new ETLStage("sourceBadConn", sourceBadConnConfig);
     etlConfig = ETLBatchConfig.builder("* * * * *")

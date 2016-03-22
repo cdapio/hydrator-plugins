@@ -45,20 +45,20 @@ import org.slf4j.LoggerFactory;
 import java.sql.Driver;
 
 /**
- * Batch source to read from a Teradata table
+ * Batch source to read from a DB table
  */
 @Plugin(type = "batchsource")
-@Name("Teradata")
-@Description("Reads from a Teradata table using a configurable SQL query." +
+@Name("Database")
+@Description("Reads from a database table using a configurable SQL query." +
   " Outputs one record for each row returned by the query.")
 public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(DBSource.class);
 
-  private final TeradataSourceConfig sourceConfig;
+  private final DBSourceConfig sourceConfig;
   private final DBManager dbManager;
   private Class<? extends Driver> driverClass;
 
-  public DBSource(TeradataSourceConfig sourceConfig) {
+  public DBSource(DBSourceConfig sourceConfig) {
     this.sourceConfig = sourceConfig;
     this.dbManager = new DBManager(sourceConfig);
   }
@@ -125,7 +125,7 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
   /**
    * {@link PluginConfig} for {@link DBSource}
    */
-  public static class TeradataSourceConfig extends DBConfig {
+  public static class DBSourceConfig extends DBConfig {
     public static final String BOUNDING_QUERY = "boundingQuery";
     public static final String SPLIT_BY = "splitBy";
 
