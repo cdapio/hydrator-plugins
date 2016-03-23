@@ -34,6 +34,7 @@ import co.cask.hydrator.plugin.batch.sink.SnapshotFileBatchParquetSink;
 import co.cask.hydrator.plugin.batch.sink.TableSink;
 import co.cask.hydrator.plugin.batch.sink.TimePartitionedFileSetDatasetAvroSink;
 import co.cask.hydrator.plugin.batch.sink.TimePartitionedFileSetDatasetParquetSink;
+import co.cask.hydrator.plugin.batch.source.FTPBatchSource;
 import co.cask.hydrator.plugin.batch.source.KVTableSource;
 import co.cask.hydrator.plugin.batch.source.SnapshotFileBatchAvroSource;
 import co.cask.hydrator.plugin.batch.source.SnapshotFileBatchParquetSource;
@@ -60,7 +61,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.twill.filesystem.Location;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.python.util.PythonInterpreter;
 import parquet.avro.AvroParquetInputFormat;
 import parquet.avro.AvroParquetOutputFormat;
 import parquet.avro.AvroParquetReader;
@@ -108,7 +108,7 @@ public class ETLBatchTestBase extends TestBase {
                       TimePartitionedFileSetDatasetParquetSink.class, AvroParquetOutputFormat.class,
                       SnapshotFileBatchAvroSink.class, SnapshotFileBatchParquetSink.class,
                       SnapshotFileBatchAvroSource.class, SnapshotFileBatchParquetSource.class,
-                      S3AvroBatchSink.class, S3ParquetBatchSink.class);
+                      S3AvroBatchSink.class, S3ParquetBatchSink.class, FTPBatchSource.class);
     // add artifact for transforms
     addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "transforms", "1.0.0"), APP_ARTIFACT_ID,
                       ProjectionTransform.class, ScriptFilterTransform.class,
