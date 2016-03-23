@@ -62,7 +62,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     String boundingQuery = "SELECT MIN(ID),MAX(ID) from \"my_table\"";
     String splitBy = "ID";
     Plugin sourceConfig = new Plugin(
-      "Teradata",
+      "Database",
       ImmutableMap.<String, String>builder()
         .put(Properties.DB.CONNECTION_STRING, getConnectionURL())
         .put(Properties.DB.TABLE_NAME, "my_table")
@@ -167,7 +167,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     String importQuery = "SELECT ID, NAME FROM \"my_table\" WHERE ID < 3 AND $CONDITIONS";
     String boundingQuery = "SELECT MIN(ID),MAX(ID) from \"my_table\"";
     String splitBy = "ID";
-    Plugin sourceConfig = new Plugin("Teradata", ImmutableMap.<String, String>builder()
+    Plugin sourceConfig = new Plugin("Database", ImmutableMap.<String, String>builder()
       .put(Properties.DB.CONNECTION_STRING, getConnectionURL())
       .put(Properties.DB.TABLE_NAME, "my_table")
       .put(Properties.DB.IMPORT_QUERY, importQuery)
@@ -192,7 +192,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "teradataSourceTest");
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSourceTest");
     ApplicationManager appManager = TestBase.deployApplication(appId, appRequest);
 
     MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
@@ -231,7 +231,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     String boundingQuery = "SELECT MIN(MIN(\"my_table\".ID), MIN(\"your_table\".ID)), " +
       "MAX(MAX(\"my_table\".ID), MAX(\"your_table\".ID))";
     String splitBy = "\"my_table\".ID";
-    Plugin sourceConfig = new Plugin("Teradata", ImmutableMap.<String, String>builder()
+    Plugin sourceConfig = new Plugin("Database", ImmutableMap.<String, String>builder()
       .put(Properties.DB.CONNECTION_STRING, getConnectionURL())
       .put(Properties.DB.TABLE_NAME, "my_table")
       .put(Properties.DB.IMPORT_QUERY, importQuery)
@@ -305,7 +305,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
 
     // null user name, null password. Should succeed.
     // as source
-    Plugin dbConfig = new Plugin("Teradata", baseSourceProps);
+    Plugin dbConfig = new Plugin("Database", baseSourceProps);
     ETLStage table = new ETLStage("uniqueTableSink" , tableConfig);
     ETLStage database = new ETLStage("databaseSource" , dbConfig);
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
@@ -320,7 +320,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     // as source
     Map<String, String> noUser = new HashMap<>(baseSourceProps);
     noUser.put(Properties.DB.PASSWORD, "password");
-    database = new ETLStage("databaseSource", new Plugin("Teradata", noUser));
+    database = new ETLStage("databaseSource", new Plugin("Database", noUser));
     etlConfig = ETLBatchConfig.builder("* * * * *")
       .setSource(database)
       .addSink(table)
@@ -334,7 +334,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     Map<String, String> emptyPassword = new HashMap<>(baseSourceProps);
     emptyPassword.put(Properties.DB.USER, "emptyPwdUser");
     emptyPassword.put(Properties.DB.PASSWORD, "");
-    database = new ETLStage("databaseSource", new Plugin("Teradata", emptyPassword));
+    database = new ETLStage("databaseSource", new Plugin("Database", emptyPassword));
     etlConfig = ETLBatchConfig.builder("* * * * *")
       .setSource(database)
       .addSink(table)
@@ -355,7 +355,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
       Properties.BatchReadableWritable.NAME, "table",
       Properties.Table.PROPERTY_SCHEMA, schema.toString(),
       Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ID"));
-    Plugin sourceBadNameConfig = new Plugin("Teradata", ImmutableMap.<String, String>builder()
+    Plugin sourceBadNameConfig = new Plugin("Database", ImmutableMap.<String, String>builder()
       .put(Properties.DB.CONNECTION_STRING, getConnectionURL())
       .put(Properties.DB.TABLE_NAME, "dummy")
       .put(Properties.DB.IMPORT_QUERY, importQuery)
@@ -377,7 +377,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
 
     // Bad connection
     String badConnection = String.format("jdbc:hsqldb:hsql://localhost/%sWRONG", getDatabase());
-    Plugin sourceBadConnConfig = new Plugin("Teradata", ImmutableMap.<String, String>builder()
+    Plugin sourceBadConnConfig = new Plugin("Database", ImmutableMap.<String, String>builder()
       .put(Properties.DB.CONNECTION_STRING, badConnection)
       .put(Properties.DB.TABLE_NAME, "dummy")
       .put(Properties.DB.IMPORT_QUERY, importQuery)
