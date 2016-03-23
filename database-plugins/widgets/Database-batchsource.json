@@ -33,11 +33,6 @@
         },
         {
           "widget-type": "textbox",
-          "label": "Driver Class",
-          "name": "driverClass"
-        },
-        {
-          "widget-type": "textbox",
           "label": "Connection String",
           "name": "connectionString"
         },

@@ -49,7 +49,7 @@ import java.sql.Driver;
  */
 @Plugin(type = "batchsource")
 @Name("Database")
-@Description("Reads from a database table using a configurable SQL query." +
+@Description("Reads from a database table(s) using a configurable SQL query." +
   " Outputs one record for each row returned by the query.")
 public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(DBSource.class);
@@ -93,7 +93,7 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
     DataDrivenETLDBInputFormat.setInput(hConf, DBRecord.class,
                                         sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery(),
                                         sourceConfig.getEnableAutoCommit());
-    job.getConfiguration().set(DBConfiguration.INPUT_ORDER_BY_PROPERTY, sourceConfig.splitBy);
+    hConf.set(DBConfiguration.INPUT_ORDER_BY_PROPERTY, sourceConfig.splitBy);
     context.setInput(new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf));
   }
 
