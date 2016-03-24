@@ -37,7 +37,7 @@ import java.sql.SQLException;
 public class DBManager implements Destroyable {
   private static final Logger LOG = LoggerFactory.getLogger(DBManager.class);
   private final DBConfig dbConfig;
-  private JDBCDriverShim driverShim;
+  private DriverCleanup driverCleanup;
 
   public DBManager(DBConfig dbConfig) {
     this.dbConfig = dbConfig;
@@ -95,31 +95,12 @@ public class DBManager implements Destroyable {
    */
   public void ensureJDBCDriverIsAvailable(Class<? extends Driver> jdbcDriverClass)
     throws IllegalAccessException, InstantiationException, SQLException {
-    try {
-      DriverManager.getDriver(dbConfig.connectionString);
-    } catch (SQLException e) {
-      // Driver not found. We will try to register it with the DriverManager.
-      LOG.debug("Plugin Type: {} and Plugin Name: {}; Driver Class: {} not found. Registering JDBC driver via shim {} ",
-                dbConfig.jdbcPluginType, dbConfig.jdbcPluginName, jdbcDriverClass.getName(),
-                JDBCDriverShim.class.getName());
-      driverShim = new JDBCDriverShim(jdbcDriverClass.newInstance());
-      try {
-        DBUtils.deregisterAllDrivers(jdbcDriverClass);
-      } catch (NoSuchFieldException | ClassNotFoundException e1) {
-        LOG.error("Unable to deregister JDBC Driver class {}", jdbcDriverClass);
-      }
-      DriverManager.registerDriver(driverShim);
-    }
+    driverCleanup = DBUtils.ensureJDBCDriverIsAvailable(jdbcDriverClass, dbConfig.connectionString,
+                                                        dbConfig.jdbcPluginType, dbConfig.jdbcPluginName);
   }
 
   @Override
   public void destroy() {
-    try {
-      // DriverManager handles nulls
-      DriverManager.deregisterDriver(driverShim);
-    } catch (SQLException e) {
-      LOG.warn("Error while de-registering JDBC drivers in ETLDBOutputFormat.", e);
-      throw Throwables.propagate(e);
-    }
+    driverCleanup.destroy();
   }
 }

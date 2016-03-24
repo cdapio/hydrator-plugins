@@ -20,8 +20,11 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
+import co.cask.cdap.api.plugin.EndpointPluginContext;
 import co.cask.cdap.api.plugin.PluginConfig;
+import co.cask.cdap.api.plugin.PluginProperties;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
@@ -32,6 +35,7 @@ import co.cask.hydrator.plugin.DBConfig;
 import co.cask.hydrator.plugin.DBManager;
 import co.cask.hydrator.plugin.DBRecord;
 import co.cask.hydrator.plugin.DBUtils;
+import co.cask.hydrator.plugin.DriverCleanup;
 import co.cask.hydrator.plugin.FieldCase;
 import co.cask.hydrator.plugin.StructuredRecordUtils;
 import com.google.common.base.Preconditions;
@@ -42,7 +46,16 @@ import org.apache.hadoop.mapreduce.lib.db.DBConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Connection;
 import java.sql.Driver;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.SQLSyntaxErrorException;
+import java.sql.Statement;
+import javax.annotation.Nullable;
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.Path;
 
 /**
  * Batch source to read from a DB table
@@ -69,6 +82,72 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
     Preconditions.checkArgument(sourceConfig.getImportQuery().contains("$CONDITIONS"),
                                 "Import Query %s must contain the string '$CONDITIONS'.",
                                 sourceConfig.importQuery);
+  }
+
+  class GetSchemaRequest {
+    public String connectionString;
+    @Nullable
+    public String user;
+    @Nullable
+    public String password;
+    public String jdbcPluginName;
+    @Nullable
+    public String jdbcPluginType = "jdbc";
+    public String query;
+  }
+
+  /**
+   * Endpoint method to get the output schema of a query.
+   *
+   * @param request {@link GetSchemaRequest} containing information required for connection and query to execute.
+   * @param pluginContext context to create plugins
+   * @return schema of fields
+   * @throws SQLException
+   * @throws InstantiationException
+   * @throws IllegalAccessException
+   * @throws BadRequestException If executing the query threw {@link SQLSyntaxErrorException}
+   * we get the message and throw it as BadRequestException
+   */
+  @Path("getSchema")
+  public Schema getSchema(GetSchemaRequest request,
+                          EndpointPluginContext pluginContext)
+    throws SQLException, InstantiationException, IllegalAccessException, BadRequestException {
+    DriverCleanup driverCleanup = loadPluginClassAndGetDriver(request, pluginContext);
+    try {
+      try (Connection connection = getConnection(request.connectionString, request.user, request.password)) {
+        Statement statement = connection.createStatement();
+        statement.setMaxRows(1);
+        ResultSet resultSet = statement.executeQuery(request.query);
+        return Schema.recordOf("outputSchema", DBUtils.getSchemaFields(resultSet));
+      }
+    } catch (SQLSyntaxErrorException e) {
+      throw new BadRequestException(e.getMessage());
+    } finally {
+      driverCleanup.destroy();
+    }
+  }
+
+  private DriverCleanup loadPluginClassAndGetDriver(GetSchemaRequest request, EndpointPluginContext pluginContext)
+    throws IllegalAccessException, InstantiationException, SQLException {
+    Class<? extends Driver> driverClass =
+      pluginContext.loadPluginClass(request.jdbcPluginType, request.jdbcPluginName, PluginProperties.builder().build());
+
+    try {
+      return DBUtils.ensureJDBCDriverIsAvailable(driverClass, request.connectionString,
+                                                 request.jdbcPluginType, request.jdbcPluginName);
+    } catch (IllegalAccessException | InstantiationException | SQLException e) {
+      LOG.error("Unable to load or register driver {}", driverClass, e);
+      throw e;
+    }
+  }
+
+  private Connection getConnection(String connectionString,
+                                   @Nullable String user, @Nullable String password) throws SQLException {
+    if (user == null) {
+      return DriverManager.getConnection(connectionString);
+    } else {
+      return DriverManager.getConnection(connectionString, user, password);
+    }
   }
 
   @Override
