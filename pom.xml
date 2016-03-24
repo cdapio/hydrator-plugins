@@ -38,6 +38,7 @@
     <module>hive-plugins</module>
     <module>kafka-plugins</module>
     <module>mongodb-plugins</module>
+    <module>spark-plugins</module>
     <module>transform-plugins</module>
   </modules>
 
@@ -151,6 +152,12 @@
       <dependency>
         <groupId>co.cask.cdap</groupId>
         <artifactId>cdap-etl-api</artifactId>
+        <version>${cdap.version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>co.cask.cdap</groupId>
+        <artifactId>cdap-etl-api-spark</artifactId>
         <version>${cdap.version}</version>
         <scope>provided</scope>
       </dependency>
