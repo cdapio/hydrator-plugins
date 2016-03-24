@@ -37,8 +37,6 @@ import co.cask.hydrator.plugin.db.batch.sink.DBSink;
 import co.cask.hydrator.plugin.db.batch.sink.ETLDBOutputFormat;
 import co.cask.hydrator.plugin.db.batch.source.DBSource;
 import co.cask.hydrator.plugin.db.batch.source.DataDrivenETLDBInputFormat;
-import co.cask.hydrator.plugin.db.batch.source.ETLDBInputFormat;
-import co.cask.hydrator.plugin.teradata.batch.source.TeradataSource;
 import co.cask.hydrator.plugin.test.TableSink;
 import co.cask.hydrator.plugin.test.TableSource;
 import com.google.common.base.Charsets;
@@ -109,8 +107,8 @@ public class DatabasePluginTestBase extends TestBase {
                       TableSink.class, TableSource.class);
 
     addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "database-plugins", "1.0.0"), APP_ARTIFACT_ID,
-                      DBSource.class, DBSink.class, DBRecord.class, ETLDBInputFormat.class, ETLDBOutputFormat.class,
-                      TeradataSource.class, DataDrivenETLDBInputFormat.class, DBRecord.class);
+                      DBSource.class, DBSink.class, DBRecord.class, ETLDBOutputFormat.class,
+                      DataDrivenETLDBInputFormat.class, DBRecord.class);
 
     // add hypersql 3rd party plugin
     PluginClass hypersql = new PluginClass("jdbc", "hypersql", "hypersql jdbc driver", JDBCDriver.class.getName(),

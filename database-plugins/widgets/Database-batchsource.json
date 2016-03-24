@@ -55,7 +55,7 @@
       "properties": [
         {
           "widget-type": "textarea",
-          "label": "Import SQL",
+          "label": "Import Query",
           "name": "importQuery",
           "widget-attributes": {
             "rows": "4"
@@ -63,11 +63,16 @@
         },
         {
           "widget-type": "textarea",
-          "label": "Count SQL",
-          "name": "countQuery",
+          "label": "Bounding Query",
+          "name": "boundingQuery",
           "widget-attributes": {
             "rows": "4"
           }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Split-By Field Name",
+          "name": "splitBy"
         },
         {
           "widget-type": "select",
@@ -84,6 +89,5 @@
         }
       ]
     }
-  ],
-  "outputs": []
+  ]
 }
