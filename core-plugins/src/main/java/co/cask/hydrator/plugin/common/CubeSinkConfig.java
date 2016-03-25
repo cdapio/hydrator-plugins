@@ -37,14 +37,20 @@ public class CubeSinkConfig extends PluginConfig {
   @Nullable
   String resolutions;
 
+  @Name(Properties.Cube.AGGREGATIONS)
+  @Description("Provided as a collection of aggregation-groups. " +
+    "Each aggregation group is identified by a unique name and value is a collection of fields. " +
+    "Example, if aggregations are desired on fields 'abc' and 'xyz', " +
+    "the property can have aggregation group with one entry, with entry's key 'agg1' and " +
+    "value 'abc,xyz'. the fields are comma separated, key and value are delimited by ':' and " +
+    "the entries are delimited by ';'. See [Cube dataset configuration details] for more information. " +
+    "[Cube dataset configuration details]: " +
+    "http://docs.cask.co/cdap/current/en/developers-manual/building-blocks/datasets/cube.html")
+  @Nullable
+  String aggregations;
+
   @Name(Properties.Cube.DATASET_OTHER)
-  @Description("Provides any dataset properties to be used if a new Cube dataset needs to be created; " +
-    "provided as a JSON Map. For example, if aggregations are desired on fields 'abc' and 'xyz', " +
-    "the property should have the value: " +
-    "\"{\"dataset.cube.aggregation.agg1.dimensions\":\"abc\", \"dataset.cube.aggregation.agg2.dimensions\":\"xyz\"}. " +
-    "See Cube dataset configuration details available at " +
-    "http://docs.cask.co/cdap/current/en/developers-manual/building-blocks/datasets/cube.html#cube-configuration " +
-    "for more information.")
+  @Description("Extra dataset properties to be included")
   @Nullable
   String datasetOther;
 
@@ -61,18 +67,21 @@ public class CubeSinkConfig extends PluginConfig {
   String tsFormat;
 
   @Name(Properties.Cube.MEASUREMENTS)
-  @Description("Measurements to be extracted from StructuredRecord to be " +
-    "used in CubeFact. Provide properties as a JSON Map. For example, to use the 'price' field as a measurement of " +
-    "type gauge, and the 'count' field as a measurement of type counter, the property should have the value: " +
-    "\"{\"cubeFact.measurement.price\":\"GAUGE\", \"cubeFact.measurement.count\":\"COUNTER\"}.")
-  @Nullable
+  @Description("Measurements to be extracted from StructuredRecord to be used" +
+    "in CubeFact. Supports collection of measurements and requires at least one measurement to be provided." +
+    "Each measurement has measurement-name and measurement-type. " +
+    "Currently supported measurement types are COUNTER, GAUGE." +
+    "For example, to use the 'price' field as a measurement of type gauge, and the '" +
+    "quantity' field as a measurement of type counter, property will have two measurements. " +
+    "one measurement with name 'price' and type 'GAUGE', second measurement with name 'quantity' and type 'COUNTER'. " +
+    "the key and value are delimited by ':' while the entries are delimited by ';'")
   String measurements;
 
-  public CubeSinkConfig(String name, String resolutions, String datasetOther,
+  public CubeSinkConfig(String name, String resolutions, String aggregations,
                         String tsField, String tsFormat, String measurements) {
     this.name = name;
     this.resolutions = resolutions;
-    this.datasetOther = datasetOther;
+    this.aggregations = aggregations;
     this.tsField = tsField;
     this.tsFormat = tsFormat;
     this.measurements = measurements;
@@ -88,8 +97,8 @@ public class CubeSinkConfig extends PluginConfig {
   }
 
   @Nullable
-  public String getDatasetOther() {
-    return datasetOther;
+  public String getAggregations() {
+    return aggregations;
   }
 
   @Nullable

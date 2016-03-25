@@ -27,8 +27,10 @@ import co.cask.cdap.etl.api.realtime.DataWriter;
 import co.cask.cdap.etl.api.realtime.RealtimeContext;
 import co.cask.cdap.etl.api.realtime.RealtimeSink;
 import co.cask.hydrator.plugin.common.CubeSinkConfig;
+import co.cask.hydrator.plugin.common.CubeUtils;
 import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.common.StructuredRecordToCubeFact;
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
@@ -71,21 +73,41 @@ public class RealtimeCubeSink extends RealtimeSink<StructuredRecord> {
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     String datasetName = config.getName();
-    Map<String, String> properties = new HashMap<>(config.getProperties().getProperties());
-    // todo: workaround for CDAP-2944: allows specifying custom props via JSON map in a property value
-    if (!Strings.isNullOrEmpty(config.getDatasetOther())) {
-      properties.remove(Properties.Cube.DATASET_OTHER);
-      Map<String, String> datasetOther = GSON.fromJson(config.getDatasetOther(), STRING_MAP_TYPE);
-      properties.putAll(datasetOther);
-    }
     Preconditions.checkArgument(datasetName != null && !datasetName.isEmpty(), "Dataset name must be given.");
 
-    // will invoke validation of properties for mapping to the CubeFact
-    new StructuredRecordToCubeFact(properties);
-
     pipelineConfigurer.createDataset(datasetName, Cube.class.getName(), DatasetProperties.builder()
-      .addAll(properties)
+      .addAll(getProperties())
       .build());
+  }
+
+  protected Map<String, String> getProperties() {
+    Map<String, String> properties = new HashMap<>(config.getProperties().getProperties());
+    // add aggregations
+    if (!Strings.isNullOrEmpty(config.getAggregations())) {
+      properties.remove(Properties.Cube.AGGREGATIONS);
+      properties.putAll(CubeUtils.parseAndGetProperties(Properties.Cube.AGGREGATIONS,
+                                                        config.getAggregations(), ";", ":",
+                                                        new Function<String, String>() {
+                                                          @Override
+                                                          public String apply(String input) {
+                                                            return "dataset.cube.aggregation." + input + ".dimensions";
+                                                          }
+                                                        }));
+    }
+
+    // add measurements
+    if (!Strings.isNullOrEmpty(config.getMeasurements())) {
+      properties.remove(Properties.Cube.MEASUREMENTS);
+      properties.putAll(CubeUtils.parseAndGetProperties(Properties.Cube.MEASUREMENTS,
+                                                        config.getMeasurements(), ";", ":",
+                                                        new Function<String, String>() {
+                                                          @Override
+                                                          public String apply(String input) {
+                                                            return Properties.Cube.MEASUREMENT_PREFIX + input;
+                                                          }
+                                                        }));
+    }
+    return properties;
   }
 
   @Override
@@ -102,7 +124,6 @@ public class RealtimeCubeSink extends RealtimeSink<StructuredRecord> {
   @Override
   public void initialize(RealtimeContext context) throws Exception {
     super.initialize(context);
-    Map<String, String> runtimeArguments = config.getProperties().getProperties();
-    transform = new StructuredRecordToCubeFact(runtimeArguments);
+    transform = new StructuredRecordToCubeFact(getProperties());
   }
 }
