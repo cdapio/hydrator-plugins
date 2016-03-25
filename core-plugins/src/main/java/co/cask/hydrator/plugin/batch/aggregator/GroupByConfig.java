@@ -42,12 +42,6 @@ import java.util.Set;
  * Config for group by types of plugins.
  */
 public class GroupByConfig extends PluginConfig {
-  @Description("Comma separated list of record fields to group by. " +
-    "All records with the same value for all these fields will be grouped together. " +
-    "The records output by this aggregator will contain all the group by fields and aggregate fields. " +
-    "For example, if grouping by the 'user' field and calculating a count aggregate called 'numActions', " +
-    "output records will have a 'user' field and 'numActions' field.")
-  private final String groupByFields;
 
   @Description("Aggregates to compute on grouped records. " +
     "Supported aggregate functions are count, count(*), sum, avg, min, max, first, last. " +
@@ -57,6 +51,13 @@ public class GroupByConfig extends PluginConfig {
     "The first will create a field called 'avgPrice' that is the average of all 'price' fields in the group. " +
     "The second will create a field called 'cheapest' that contains the minimum 'price' field in the group")
   private final String aggregates;
+
+  @Description("Comma separated list of record fields to group by. " +
+    "All records with the same value for all these fields will be grouped together. " +
+    "The records output by this aggregator will contain all the group by fields and aggregate fields. " +
+    "For example, if grouping by the 'user' field and calculating a count aggregate called 'numActions', " +
+    "output records will have a 'user' field and 'numActions' field.")
+  private final String groupByFields;
 
   public GroupByConfig() {
     this.groupByFields = "";

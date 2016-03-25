@@ -48,7 +48,6 @@ import com.google.gson.Gson;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -68,9 +67,6 @@ import java.util.concurrent.TimeUnit;
 public class ETLWorkerTest extends ETLRealtimeTestBase {
 
   private static final Gson GSON = new Gson();
-
-  @ClassRule
-  public static final TemporaryFolder TMP_FOLDER = new TemporaryFolder();
 
   @ClassRule
   public static final TestConfiguration CONFIG = new TestConfiguration(Constants.Explore.EXPLORE_ENABLED, true);

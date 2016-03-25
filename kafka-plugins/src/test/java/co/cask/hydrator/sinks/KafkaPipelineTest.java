@@ -56,7 +56,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.sql.Connection;
@@ -71,9 +70,6 @@ public class KafkaPipelineTest extends TestBase {
   private static final Id.Artifact APP_ARTIFACT_ID = Id.Artifact.from(Id.Namespace.DEFAULT, "etlrealtime", "3.2.0");
   private static final ArtifactSummary APP_ARTIFACT = ArtifactSummary.from(APP_ARTIFACT_ID);
   private static final int PARTITIONS = 1;
-
-  @ClassRule
-  public static final TemporaryFolder TMP_FOLDER = new TemporaryFolder();
 
   @ClassRule
   public static final TestConfiguration CONFIG = new TestConfiguration(Constants.Explore.EXPLORE_ENABLED, true);

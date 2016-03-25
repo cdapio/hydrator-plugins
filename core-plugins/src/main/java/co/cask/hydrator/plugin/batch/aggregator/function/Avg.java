@@ -25,7 +25,7 @@ import co.cask.cdap.api.data.schema.Schema;
 public class Avg implements AggregateFunction<Double> {
   private final String fieldName;
   private final Schema outputSchema;
-  private double sum;
+  private double avg;
   private double count;
 
   public Avg(String fieldName, Schema fieldSchema) {
@@ -35,15 +35,15 @@ public class Avg implements AggregateFunction<Double> {
     if (!(fieldType == Schema.Type.INT || fieldType == Schema.Type.LONG ||
       fieldType == Schema.Type.FLOAT || fieldType == Schema.Type.DOUBLE)) {
       throw new IllegalArgumentException(String.format(
-        "Cannot compute avg on field %s because its type %s is not numeric", fieldName, fieldSchema));
+        "Cannot compute avg on field %s because its type %s is not numeric", fieldName, fieldType));
     }
     outputSchema = isNullable ? Schema.nullableOf(Schema.of(Schema.Type.DOUBLE)) : Schema.of(Schema.Type.DOUBLE);
   }
 
   @Override
   public void beginAggregate() {
-    sum = 0;
-    count = 0;
+    avg = 0d;
+    count = 0d;
   }
 
   @Override
@@ -52,8 +52,8 @@ public class Avg implements AggregateFunction<Double> {
     if (val == null) {
       return;
     }
-    sum += ((Number) val).doubleValue();
     count++;
+    avg = avg + (((Number) val).doubleValue() - avg) / count;
   }
 
   @Override
@@ -62,7 +62,7 @@ public class Avg implements AggregateFunction<Double> {
       // only happens if the field value was always null
       return null;
     }
-    return sum / count;
+    return avg;
   }
 
   @Override

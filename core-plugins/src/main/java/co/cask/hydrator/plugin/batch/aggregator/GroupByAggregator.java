@@ -65,38 +65,9 @@ public class GroupByAggregator extends BatchAggregator<StructuredRecord, Structu
       return;
     }
 
-    // otherwise, we have a constant input schema. Check that all the group by fields exist in the input schema,
-    List<Schema.Field> outputFields = new ArrayList<>(groupByFields.size() + aggregates.size());
-    for (String groupByField : groupByFields) {
-      Schema.Field field = inputSchema.getField(groupByField);
-      if (field == null) {
-        throw new IllegalArgumentException(String.format(
-          "Cannot group by field '%s' because it does not exist in input schema %s.",
-          groupByField, inputSchema));
-      }
-      outputFields.add(field);
-    }
-    // check that all fields needed by aggregate functions exist in the input schema.
-    for (GroupByConfig.FunctionInfo functionInfo : aggregates) {
-      // special case count(*) because we don't have to check that the input field exists
-      if (functionInfo.getField().equals("*")) {
-        AggregateFunction aggregateFunction = functionInfo.getAggregateFunction(null);
-        outputFields.add(Schema.Field.of(functionInfo.getName(), aggregateFunction.getOutputSchema()));
-        continue;
-      }
-
-      Schema.Field inputField = inputSchema.getField(functionInfo.getField());
-      if (inputField == null) {
-        throw new IllegalArgumentException(String.format(
-          "Invalid aggregate %s(%s): Field '%s' does not exist in input schema %s.",
-          functionInfo.getFunction(), functionInfo.getField(), functionInfo.getField(), inputSchema));
-      }
-      AggregateFunction aggregateFunction = functionInfo.getAggregateFunction(inputField.getSchema());
-      outputFields.add(Schema.Field.of(functionInfo.getName(), aggregateFunction.getOutputSchema()));
-    }
+    // otherwise, we have a constant input schema. Get the output schema and
     // propagate the schema, which is group by fields + aggregate fields
-    Schema outputSchema = Schema.recordOf(inputSchema.getRecordName() + ".agg", outputFields);
-    stageConfigurer.setOutputSchema(outputSchema);
+    stageConfigurer.setOutputSchema(getOutputSchema(inputSchema, groupByFields, aggregates));
   }
 
   @Override
@@ -139,6 +110,41 @@ public class GroupByAggregator extends BatchAggregator<StructuredRecord, Structu
       builder.set(aggregateFunction.getKey(), aggregateFunction.getValue().finishAggregate());
     }
     emitter.emit(builder.build());
+  }
+
+  private Schema getOutputSchema(Schema inputSchema, Set<String> groupByFields,
+                                 List<GroupByConfig.FunctionInfo> aggregates) {
+    // Check that all the group by fields exist in the input schema,
+    List<Schema.Field> outputFields = new ArrayList<>(groupByFields.size() + aggregates.size());
+    for (String groupByField : groupByFields) {
+      Schema.Field field = inputSchema.getField(groupByField);
+      if (field == null) {
+        throw new IllegalArgumentException(String.format(
+          "Cannot group by field '%s' because it does not exist in input schema %s.",
+          groupByField, inputSchema));
+      }
+      outputFields.add(field);
+    }
+
+    // check that all fields needed by aggregate functions exist in the input schema.
+    for (GroupByConfig.FunctionInfo functionInfo : aggregates) {
+      // special case count(*) because we don't have to check that the input field exists
+      if (functionInfo.getField().equals("*")) {
+        AggregateFunction aggregateFunction = functionInfo.getAggregateFunction(null);
+        outputFields.add(Schema.Field.of(functionInfo.getName(), aggregateFunction.getOutputSchema()));
+        continue;
+      }
+
+      Schema.Field inputField = inputSchema.getField(functionInfo.getField());
+      if (inputField == null) {
+        throw new IllegalArgumentException(String.format(
+          "Invalid aggregate %s(%s): Field '%s' does not exist in input schema %s.",
+          functionInfo.getFunction(), functionInfo.getField(), functionInfo.getField(), inputSchema));
+      }
+      AggregateFunction aggregateFunction = functionInfo.getAggregateFunction(inputField.getSchema());
+      outputFields.add(Schema.Field.of(functionInfo.getName(), aggregateFunction.getOutputSchema()));
+    }
+    return Schema.recordOf(inputSchema.getRecordName() + ".agg", outputFields);
   }
 
   private void updateAggregates(StructuredRecord groupVal) {
