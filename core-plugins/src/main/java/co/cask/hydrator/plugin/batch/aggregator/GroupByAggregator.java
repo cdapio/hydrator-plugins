@@ -174,7 +174,13 @@ public class GroupByAggregator extends BatchAggregator<StructuredRecord, Structu
   private Schema getGroupKeySchema(Schema inputSchema) {
     List<Schema.Field> fields = new ArrayList<>();
     for (String groupByField : conf.getGroupByFields()) {
-      fields.add(inputSchema.getField(groupByField));
+      Schema.Field fieldSchema = inputSchema.getField(groupByField);
+      if (fieldSchema == null) {
+        throw new IllegalArgumentException(String.format(
+          "Cannot group by field '%s' because it does not exist in input schema %s",
+          groupByField, inputSchema));
+      }
+      fields.add(fieldSchema);
     }
     return Schema.recordOf("group.key.schema", fields);
   }
