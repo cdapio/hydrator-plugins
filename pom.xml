@@ -118,7 +118,7 @@
     <!-- properties for script build step that creates the config files for the artifacts -->
     <widgets.dir>widgets</widgets.dir>
     <docs.dir>docs</docs.dir>
-    <etl.versionRange>[3.3.0-SNAPSHOT,3.5.0-SNAPSHOT)</etl.versionRange>
+    <app.parents>system:cdap-etl-batch[3.4.0-SNAPSHOT,3.5.0-SNAPSHOT),system:cdap-etl-realtime[3.4.0-SNAPSHOT,3.5.0-SNAPSHOT),system:cdap-etl-data-pipeline[3.4.0-SNAPSHOT,3.5.0-SNAPSHOT)</app.parents>
     <!-- this is here because project.basedir evaluates to null in the script build step -->
     <main.basedir>${project.basedir}</main.basedir>
   </properties>
@@ -701,10 +701,15 @@
                     cfgFile.createNewFile();
                   }
 
-                  var etlRange = project.getProperty("etl.versionRange");
+                  var parents = project.getProperty("app.parents").split(",");
                   var config = {
-                    "parents": [ "system:cdap-etl-batch" + etlRange, "system:cdap-etl-realtime" + etlRange, "system:cdap-etl-data-pipeline" + etlRange ],
+                    "parents": [ ],
                     "properties": {}
+                  }
+                  for (i = 0; i < parents.length; i+=2) {
+                    // because name1[lo,hi],name2[lo,hi] gets split into "name1[lo", "hi]", "name2[lo", "hi]"
+                    // so we have to combine them again
+                    config.parents.push(parents[i] + "," + parents[i+1]);
                   }
 
                   // look in widgets directory for widget config for each plugin
