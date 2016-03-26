@@ -21,10 +21,13 @@ import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.etl.api.PipelineConfigurable;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
+import co.cask.cdap.etl.datapipeline.DataPipelineApp;
 import co.cask.cdap.proto.Id;
+import co.cask.cdap.proto.artifact.ArtifactRange;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
 import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
+import co.cask.hydrator.plugin.batch.aggregator.GroupByAggregator;
 import co.cask.hydrator.plugin.batch.sink.BatchCubeSink;
 import co.cask.hydrator.plugin.batch.sink.KVTableSink;
 import co.cask.hydrator.plugin.batch.sink.S3AvroBatchSink;
@@ -48,6 +51,7 @@ import co.cask.hydrator.plugin.transform.ScriptFilterTransform;
 import co.cask.hydrator.plugin.transform.StructuredRecordToGenericRecordTransform;
 import co.cask.hydrator.plugin.transform.ValidatorTransform;
 import co.cask.hydrator.plugin.validator.CoreValidator;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.apache.avro.file.DataFileStream;
@@ -66,6 +70,7 @@ import parquet.avro.AvroParquetReader;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Base test class that sets up plugin and the etl batch app artifacts.
@@ -75,8 +80,12 @@ public class ETLBatchTestBase extends TestBase {
   @ClassRule
   public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", true);
 
-  protected static final Id.Artifact APP_ARTIFACT_ID = Id.Artifact.from(Id.Namespace.DEFAULT, "etlbatch", "3.2.0");
+  protected static final Id.Artifact ETLBATCH_ARTIFACT_ID =
+    Id.Artifact.from(Id.Namespace.DEFAULT, "etlbatch", "3.2.0");
+  protected static final Id.Artifact DATAPIPELINE_ARTIFACT_ID =
+    Id.Artifact.from(Id.Namespace.DEFAULT, "data-pipeline", "3.2.0");
   protected static final ArtifactSummary ETLBATCH_ARTIFACT = new ArtifactSummary("etlbatch", "3.2.0");
+  protected static final ArtifactSummary DATAPIPELINE_ARTIFACT = new ArtifactSummary("data-pipeline", "3.2.0");
 
   private static int startCount;
 
@@ -87,7 +96,7 @@ public class ETLBatchTestBase extends TestBase {
     }
 
     // add the artifact for etl batch app
-    addAppArtifact(APP_ARTIFACT_ID, ETLBatchApplication.class,
+    addAppArtifact(ETLBATCH_ARTIFACT_ID, ETLBatchApplication.class,
                    BatchSource.class.getPackage().getName(),
                    PipelineConfigurable.class.getPackage().getName(),
                    "org.apache.avro.mapred", "org.apache.avro", "org.apache.avro.generic", "org.apache.avro.io",
@@ -96,8 +105,20 @@ public class ETLBatchTestBase extends TestBase {
                    // without this, different classloaders will be used for ParquetInputSplit and we'll see errors
                    "parquet.hadoop.api", "parquet.hadoop", "parquet.schema", "parquet.io.api");
 
+    // add the artifact for etl batch app
+    addAppArtifact(DATAPIPELINE_ARTIFACT_ID, DataPipelineApp.class,
+                   BatchSource.class.getPackage().getName(),
+                   PipelineConfigurable.class.getPackage().getName());
+
+
+    Set<ArtifactRange> parents = ImmutableSet.of(
+      new ArtifactRange(Id.Namespace.DEFAULT, ETLBATCH_ARTIFACT_ID.getName(),
+                        ETLBATCH_ARTIFACT_ID.getVersion(), true, ETLBATCH_ARTIFACT_ID.getVersion(), true),
+      new ArtifactRange(Id.Namespace.DEFAULT, DATAPIPELINE_ARTIFACT_ID.getName(),
+                        DATAPIPELINE_ARTIFACT_ID.getVersion(), true, DATAPIPELINE_ARTIFACT_ID.getVersion(), true)
+    );
     // add artifact for batch sources and sinks
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "batch-plugins", "1.0.0"), APP_ARTIFACT_ID,
+    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "batch-plugins", "1.0.0"), parents,
                       KVTableSource.class, StreamBatchSource.class, TableSource.class,
                       TimePartitionedFileSetDatasetAvroSource.class,
                       TimePartitionedFileSetDatasetParquetSource.class,
@@ -107,14 +128,13 @@ public class ETLBatchTestBase extends TestBase {
                       TimePartitionedFileSetDatasetParquetSink.class, AvroParquetOutputFormat.class,
                       SnapshotFileBatchAvroSink.class, SnapshotFileBatchParquetSink.class,
                       SnapshotFileBatchAvroSource.class, SnapshotFileBatchParquetSource.class,
-                      S3AvroBatchSink.class, S3ParquetBatchSink.class);
-    // add artifact for transforms
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "transforms", "1.0.0"), APP_ARTIFACT_ID,
+                      S3AvroBatchSink.class, S3ParquetBatchSink.class,
                       ProjectionTransform.class, ScriptFilterTransform.class,
                       ValidatorTransform.class, CoreValidator.class,
                       StructuredRecordToGenericRecordTransform.class,
                       JavaScriptTransform.class,
-                      PythonEvaluator.class);
+                      PythonEvaluator.class,
+                      GroupByAggregator.class);
   }
 
   protected List<GenericRecord> readOutput(TimePartitionedFileSet fileSet, Schema schema) throws IOException {

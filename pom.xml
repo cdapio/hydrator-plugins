@@ -167,6 +167,12 @@
       </dependency>
       <dependency>
         <groupId>co.cask.cdap</groupId>
+        <artifactId>cdap-etl-data-pipeline</artifactId>
+        <version>${cdap.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>co.cask.cdap</groupId>
         <artifactId>cdap-etl-core</artifactId>
         <version>${cdap.version}</version>
         <scope>test</scope>
@@ -697,7 +703,7 @@
 
                   var etlRange = project.getProperty("etl.versionRange");
                   var config = {
-                    "parents": [ "system:cdap-etl-batch" + etlRange, "system:cdap-etl-realtime" + etlRange ],
+                    "parents": [ "system:cdap-etl-batch" + etlRange, "system:cdap-etl-realtime" + etlRange, "system:cdap-etl-data-pipeline" + etlRange ],
                     "properties": {}
                   }
 
