@@ -33,7 +33,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.Path;
 
 /**
  * Batch group by aggregator.
@@ -43,7 +44,7 @@ import java.util.Set;
 @Description("Groups records by a set of fields, then performs aggregates on record fields.")
 public class GroupByAggregator extends BatchAggregator<StructuredRecord, StructuredRecord, StructuredRecord> {
   private final GroupByConfig conf;
-  private Set<String> groupByFields;
+  private List<String> groupByFields;
   private List<GroupByConfig.FunctionInfo> functionInfos;
   private Schema outputSchema;
   private Map<String, AggregateFunction> aggregateFunctions;
@@ -54,7 +55,7 @@ public class GroupByAggregator extends BatchAggregator<StructuredRecord, Structu
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    Set<String> groupByFields = conf.getGroupByFields();
+    List<String> groupByFields = conf.getGroupByFields();
     List<GroupByConfig.FunctionInfo> aggregates = conf.getAggregates();
 
     StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
@@ -112,7 +113,22 @@ public class GroupByAggregator extends BatchAggregator<StructuredRecord, Structu
     emitter.emit(builder.build());
   }
 
-  private Schema getOutputSchema(Schema inputSchema, Set<String> groupByFields,
+  @Path("outputSchema")
+  public Schema getOutputSchema(GetSchemaRequest request) {
+    Schema inputSchema;
+    try {
+      inputSchema = Schema.parseJson(request.inputSchema);
+    } catch (Exception e) {
+      throw new BadRequestException("Could not parse input schema " + request.inputSchema);
+    }
+    try {
+      return getOutputSchema(inputSchema, request.getGroupByFields(), request.getAggregates());
+    } catch (IllegalArgumentException e) {
+      throw new BadRequestException(e.getMessage());
+    }
+  }
+
+  private Schema getOutputSchema(Schema inputSchema, List<String> groupByFields,
                                  List<GroupByConfig.FunctionInfo> aggregates) {
     // Check that all the group by fields exist in the input schema,
     List<Schema.Field> outputFields = new ArrayList<>(groupByFields.size() + aggregates.size());
@@ -185,4 +201,10 @@ public class GroupByAggregator extends BatchAggregator<StructuredRecord, Structu
     return Schema.recordOf("group.key.schema", fields);
   }
 
+  /**
+   * Endpoint request for output schema.
+   */
+  public static class GetSchemaRequest extends GroupByConfig {
+    private String inputSchema;
+  }
 }
