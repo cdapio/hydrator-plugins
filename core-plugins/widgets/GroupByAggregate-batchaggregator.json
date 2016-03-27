@@ -8,19 +8,22 @@
       "label": "General",
       "properties": [
         {
-          "widget-type": "keyvalue-dropdown",
+          "widget-type": "function-dropdown-with-alias",
           "label": "Aggregates",
           "name": "aggregates",
           "widget-attributes": {
-            "showDelimiter": "false",
+            "placeholders": {
+              "field": "field",
+              "alias": "alias"
+            },
             "dropdownOptions": [
-              "COUNT",
-              "SUM",
-              "AVG",
-              "MIN",
-              "MAX",
-              "FIRST",
-              "LAST"
+              "Count",
+              "Sum",
+              "Avg",
+              "Min",
+              "Max",
+              "First",
+              "Last"
             ]
           }
         },
