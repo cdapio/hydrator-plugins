@@ -4,7 +4,7 @@
 Description
 -----------
 Groups by one or more fields, then performs one or more aggregate functions on each group.
-Supports count, sum, avg, min, max, first, last as aggregate functions.
+Supports `avg`, `count`, `count(*)`, `first`, `last`, `max`, `min`,`sum` as aggregate functions.
 
 Use Case
 --------
@@ -20,9 +20,9 @@ For example, if grouping by the ``user`` field and calculating an aggregate ``nu
 output records will have a ``user`` field and a ``numActions`` field.
 
 **aggregates:** Aggregates to compute on each group of records.
-Supported aggregate functions are count, count(*), sum, avg, min, max, first, last.
+Supported aggregate functions are `avg`, `count`, `count(*)`, `first`, `last`, `max`, `min`,`sum`.
 A function must specify the field it should be applied on, as well as the name it should be called.
-Aggregates are specified using syntax: name:function(field)[, other aggregates].
+Aggregates are specified using the syntax `name:function(field)[, other aggregates]`.
 For example, ``avgPrice:avg(price),cheapest:min(price)`` will calculate two aggregates.
 The first will create a field called ``avgPrice`` that is the average of all ``price`` fields in the group.
 The second will create a field called ``cheapest`` that contains the minimum ``price`` field in the group.
