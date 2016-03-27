@@ -41,7 +41,8 @@ import javax.ws.rs.Path;
  */
 @Plugin(type = BatchAggregator.PLUGIN_TYPE)
 @Name("GroupByAggregate")
-@Description("Groups records by a set of fields, then performs aggregates on record fields.")
+@Description("Groups by one or more fields, then performs one or more aggregate functions on each group. " +
+  "Supports avg, count, count(*), first, last, max, min, and sum as aggregate functions.")
 public class GroupByAggregator extends BatchAggregator<StructuredRecord, StructuredRecord, StructuredRecord> {
   private final GroupByConfig conf;
   private List<String> groupByFields;

@@ -26,6 +26,8 @@ Aggregates are specified using the syntax `name:function(field)[, other aggregat
 For example, ``avgPrice:avg(price),cheapest:min(price)`` will calculate two aggregates.
 The first will create a field called ``avgPrice`` that is the average of all ``price`` fields in the group.
 The second will create a field called ``cheapest`` that contains the minimum ``price`` field in the group.
+The count function differs from count(*) in that it contains non-null values of a specific field,
+while count(*) will count all records regardless of value.
 
 
 Example
