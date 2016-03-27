@@ -25,38 +25,39 @@ import javax.annotation.Nullable;
  * Represents a string and whether that is spam or not.
  */
 public class SpamMessage {
-  public static final String IS_SPAM_FIELD = "isSpam";
+  public static final String SPAM_PREDICTION_FIELD = "isSpam";
   public static final String TEXT_FIELD = "text";
   static final Schema SCHEMA = Schema.recordOf(
     "simpleMessage",
-    Schema.Field.of(IS_SPAM_FIELD, Schema.nullableOf(Schema.of(Schema.Type.BOOLEAN))),
+    Schema.Field.of(SPAM_PREDICTION_FIELD, Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
     Schema.Field.of(TEXT_FIELD, Schema.of(Schema.Type.STRING))
   );
 
   private final String text;
   @Nullable
-  private final Boolean isSpam;
+  private final Double spamPrediction;
 
   public SpamMessage(String text) {
     this(text, null);
   }
 
-  public SpamMessage(String text, @Nullable Boolean isSpam) {
+  public SpamMessage(String text, @Nullable Double spamPrediction) {
     this.text = text;
-    this.isSpam = isSpam;
+    this.spamPrediction = spamPrediction;
   }
 
   public StructuredRecord toStructuredRecord() {
     StructuredRecord.Builder builder = StructuredRecord.builder(SCHEMA);
     builder.set(TEXT_FIELD, text);
-    if (isSpam != null) {
-      builder.set(IS_SPAM_FIELD, isSpam);
+    if (spamPrediction != null) {
+      builder.set(SPAM_PREDICTION_FIELD, spamPrediction);
     }
     return builder.build();
   }
 
   public static SpamMessage fromStructuredRecord(StructuredRecord structuredRecord) {
-    return new SpamMessage((String) structuredRecord.get(TEXT_FIELD), (Boolean) structuredRecord.get(IS_SPAM_FIELD));
+    return new SpamMessage((String) structuredRecord.get(TEXT_FIELD),
+                           (Double) structuredRecord.get(SPAM_PREDICTION_FIELD));
   }
 
   @Override
@@ -73,14 +74,14 @@ public class SpamMessage {
     if (!text.equals(that.text)) {
       return false;
     }
-    return !(isSpam != null ? !isSpam.equals(that.isSpam) : that.isSpam != null);
+    return !(spamPrediction != null ? !spamPrediction.equals(that.spamPrediction) : that.spamPrediction != null);
 
   }
 
   @Override
   public int hashCode() {
     int result = text.hashCode();
-    result = 31 * result + (isSpam != null ? isSpam.hashCode() : 0);
+    result = 31 * result + (spamPrediction != null ? spamPrediction.hashCode() : 0);
     return result;
   }
 }

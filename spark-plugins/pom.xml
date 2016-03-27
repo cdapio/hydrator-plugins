@@ -89,6 +89,7 @@
           <artifactId>spark-streaming_2.10</artifactId>
         </exclusion>
       </exclusions>
+      <!-- TODO: scope provided? -->
       <!--<scope>test</scope>-->
     </dependency>
 

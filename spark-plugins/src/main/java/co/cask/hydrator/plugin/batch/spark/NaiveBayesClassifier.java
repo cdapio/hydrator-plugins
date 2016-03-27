@@ -20,7 +20,9 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.FileSet;
+import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.batch.SparkPluginContext;
 import co.cask.cdap.etl.api.batch.SparkTransform;
 import com.google.common.collect.Lists;
@@ -36,22 +38,57 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * SparkTransform that uses a trained model to determine whether messages are spam or not.
+ * SparkTransform that uses a trained model to classify and tag input records.
  */
 @Plugin(type = SparkTransform.PLUGIN_TYPE)
-@Name(MessageClassifyingTransform.PLUGIN_NAME)
-@Description("Uses a trained model to determine whether messages are spam or not.")
-public class MessageClassifyingTransform extends SparkTransform<StructuredRecord, StructuredRecord> {
+@Name(NaiveBayesClassifier.PLUGIN_NAME)
+@Description("Uses a trained Naive Bayes model to classify records.")
+public class NaiveBayesClassifier extends SparkTransform<StructuredRecord, StructuredRecord> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MessageClassifyingTransform.class);
+  private static final Logger LOG = LoggerFactory.getLogger(NaiveBayesClassifier.class);
 
-  public static final String PLUGIN_NAME = "MessageClassifyingTransform";
+  public static final String PLUGIN_NAME = "NaiveBayesClassifier";
+
+  private final Config config;
+
+  /**
+   * Configuration for the spark transform.
+   */
+  public static class Config extends PluginConfig {
+
+    @Description("FileSet to use to load the model from.")
+    private final String fileSetName;
+
+    @Description("Path of the FileSet to load the model from.")
+    private final String path;
+
+    @Description("A space-separated sequence of words, which to classify.")
+    private final String fieldToClassify;
+
+    @Description("The field on which to set the prediction. It must be of type double.")
+    private final String fieldToSet;
+
+    public Config(String fileSetName, String path, String fieldToClassify, String fieldToSet) {
+      this.fileSetName = fileSetName;
+      this.path = path;
+      this.fieldToClassify = fieldToClassify;
+      this.fieldToSet = fieldToSet;
+    }
+  }
+
+  // for unit tests, otherwise config is injected by plugin framework.
+  public NaiveBayesClassifier(Config config) {
+    this.config = config;
+  }
+
+  // TODO: check if the fieldToSet is already set on the input? is it double type?
+  // TODO: If the field is not nullable in the input schema, create a schema that includes this field.
 
   @Override
   public JavaRDD<StructuredRecord> transform(SparkPluginContext context,
                                              JavaRDD<StructuredRecord> input) throws Exception {
-    FileSet fileSet = context.getDataset(SpamOrHam.MODEL_FILESET);
-    Location modelLocation = fileSet.getBaseLocation().append("output");
+    FileSet fileSet = context.getDataset(config.fileSetName);
+    Location modelLocation = fileSet.getBaseLocation().append(config.path);
     if (!modelLocation.exists()) {
       LOG.warn("Failed to find model to use for classification. Location does not exist: {}.", modelLocation);
       return input;
@@ -67,16 +104,25 @@ public class MessageClassifyingTransform extends SparkTransform<StructuredRecord
     JavaRDD<StructuredRecord> output = input.map(new Function<StructuredRecord, StructuredRecord>() {
       @Override
       public StructuredRecord call(StructuredRecord structuredRecord) throws Exception {
-        String text = structuredRecord.get(SpamMessage.TEXT_FIELD);
+        String text = structuredRecord.get(config.fieldToClassify);
         Vector vector = tf.transform(Lists.newArrayList(text.split(" ")));
         double prediction = loadedModel.predict(vector);
 
-        return StructuredRecord.builder(structuredRecord.getSchema())
-          .set(SpamMessage.TEXT_FIELD, text)
-          .set(SpamMessage.IS_SPAM_FIELD, prediction >= 0.5)
+        return cloneRecord(structuredRecord)
+          .set(config.fieldToSet, prediction)
           .build();
       }
     });
     return output;
+  }
+
+  // creates a builder based off the given record
+  private StructuredRecord.Builder cloneRecord(StructuredRecord record) {
+    Schema schema = record.getSchema();
+    StructuredRecord.Builder builder = StructuredRecord.builder(schema);
+    for (Schema.Field field : schema.getFields()) {
+      builder.set(field.getName(), record.get(field.getName()));
+    }
+    return builder;
   }
 }

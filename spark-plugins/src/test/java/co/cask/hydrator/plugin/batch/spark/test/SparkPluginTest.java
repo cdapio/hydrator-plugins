@@ -37,11 +37,12 @@ import co.cask.cdap.test.StreamManager;
 import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkflowManager;
-import co.cask.hydrator.plugin.batch.spark.MessageClassifyingTransform;
+import co.cask.hydrator.plugin.batch.spark.NaiveBayesClassifier;
 import co.cask.hydrator.plugin.batch.spark.SpamMessage;
 import co.cask.hydrator.plugin.batch.spark.SpamOrHam;
 import co.cask.hydrator.plugin.batch.spark.testclasses.MockSink;
 import co.cask.hydrator.plugin.batch.spark.testclasses.MockSource;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -83,7 +84,7 @@ public class SparkPluginTest extends TestBase {
 
     // add artifact for spark plugins
     addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "spark-plugins", "1.0.0"), parents,
-                      SpamOrHam.class, MessageClassifyingTransform.class);
+                      SpamOrHam.class, NaiveBayesClassifier.class);
 
     // add artifact for test plugins
     addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "test-sources", "1.0.0"), parents,
@@ -116,16 +117,16 @@ public class SparkPluginTest extends TestBase {
 
     // set up five spam messages and five non-spam messages to be used for classification
     List<StructuredRecord> messagesToWrite = new ArrayList<>();
-    messagesToWrite.add(new SpamMessage("buy our clothes", true).toStructuredRecord());
-    messagesToWrite.add(new SpamMessage("sell your used books to us", true).toStructuredRecord());
-    messagesToWrite.add(new SpamMessage("earn money for free", true).toStructuredRecord());
-    messagesToWrite.add(new SpamMessage("this is definitely not spam", true).toStructuredRecord());
-    messagesToWrite.add(new SpamMessage("you won the lottery", true).toStructuredRecord());
-    messagesToWrite.add(new SpamMessage("how was your day", false).toStructuredRecord());
-    messagesToWrite.add(new SpamMessage("what are you up to", false).toStructuredRecord());
-    messagesToWrite.add(new SpamMessage("this is a genuine message", false).toStructuredRecord());
-    messagesToWrite.add(new SpamMessage("this is an even more genuine message", false).toStructuredRecord());
-    messagesToWrite.add(new SpamMessage("could you send me the report", false).toStructuredRecord());
+    messagesToWrite.add(new SpamMessage("buy our clothes", 1.0).toStructuredRecord());
+    messagesToWrite.add(new SpamMessage("sell your used books to us", 1.0).toStructuredRecord());
+    messagesToWrite.add(new SpamMessage("earn money for free", 1.0).toStructuredRecord());
+    messagesToWrite.add(new SpamMessage("this is definitely not spam", 1.0).toStructuredRecord());
+    messagesToWrite.add(new SpamMessage("you won the lottery", 1.0).toStructuredRecord());
+    messagesToWrite.add(new SpamMessage("how was your day", 0.0).toStructuredRecord());
+    messagesToWrite.add(new SpamMessage("what are you up to", 0.0).toStructuredRecord());
+    messagesToWrite.add(new SpamMessage("this is a genuine message", 0.0).toStructuredRecord());
+    messagesToWrite.add(new SpamMessage("this is an even more genuine message", 0.0).toStructuredRecord());
+    messagesToWrite.add(new SpamMessage("could you send me the report", 0.0).toStructuredRecord());
 
     // write records to source
     DataSetManager<Table> inputManager = getDataset(Id.Namespace.DEFAULT, "messages");
@@ -150,8 +151,13 @@ public class SparkPluginTest extends TestBase {
      */
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
       .addStage(new ETLStage("source", MockSource.getPlugin(SpamOrHam.TEXTS_TO_CLASSIFY)))
-      .addStage(new ETLStage("sparktransform", new ETLPlugin(MessageClassifyingTransform.PLUGIN_NAME, SparkTransform.PLUGIN_TYPE,
-                                                             Collections.<String, String>emptyMap(), null)))
+      .addStage(new ETLStage("sparktransform",
+                             new ETLPlugin(NaiveBayesClassifier.PLUGIN_NAME, SparkTransform.PLUGIN_TYPE,
+                                           ImmutableMap.of("fileSetName", SpamOrHam.MODEL_FILESET,
+                                                           "path", "output",
+                                                           "fieldToClassify", SpamMessage.TEXT_FIELD,
+                                                           "fieldToSet", SpamMessage.SPAM_PREDICTION_FIELD),
+                                           null)))
       .addStage(new ETLStage("sink", MockSink.getPlugin(CLASSIFIED_TEXTS)))
       .addConnection("source", "sparktransform")
       .addConnection("sparktransform", "sink")
@@ -188,11 +194,11 @@ public class SparkPluginTest extends TestBase {
     }
 
     Set<SpamMessage> expected = new HashSet<>();
-    expected.add(new SpamMessage("how are you doing today", false));
+    expected.add(new SpamMessage("how are you doing today", 0.0));
     // only 'free money money' should be predicated as spam
-    expected.add(new SpamMessage("free money money", true));
-    expected.add(new SpamMessage("what are you doing today", false));
-    expected.add(new SpamMessage("genuine report", false));
+    expected.add(new SpamMessage("free money money", 1.0));
+    expected.add(new SpamMessage("what are you doing today", 0.0));
+    expected.add(new SpamMessage("genuine report", 0.0));
 
     Assert.assertEquals(expected, results);
   }

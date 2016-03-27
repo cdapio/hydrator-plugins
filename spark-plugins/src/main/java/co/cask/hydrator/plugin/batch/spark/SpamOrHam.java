@@ -69,14 +69,14 @@ public final class SpamOrHam extends SparkSink<StructuredRecord> {
     final JavaRDD<StructuredRecord> spam = input.filter(new Function<StructuredRecord, Boolean>() {
       @Override
       public Boolean call(StructuredRecord record) throws Exception {
-        return record.get(SpamMessage.IS_SPAM_FIELD);
+        return 0.5 < (Double) record.get(SpamMessage.SPAM_PREDICTION_FIELD);
       }
     });
 
     JavaRDD<StructuredRecord> ham = input.filter(new Function<StructuredRecord, Boolean>() {
       @Override
       public Boolean call(StructuredRecord record) throws Exception {
-        return !(Boolean) record.get(SpamMessage.IS_SPAM_FIELD);
+        return 0.5 > (Double) record.get(SpamMessage.SPAM_PREDICTION_FIELD);
       }
     });
 
