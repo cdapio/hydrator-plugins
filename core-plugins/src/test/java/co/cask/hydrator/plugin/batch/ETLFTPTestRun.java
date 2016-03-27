@@ -30,10 +30,14 @@ import co.cask.hydrator.plugin.batch.source.FileBatchSource;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mockftpserver.fake.FakeFtpServer;
@@ -55,14 +59,14 @@ public class ETLFTPTestRun extends ETLBatchTestBase {
   private static final String PWD = "abcd";
   private static final String TEST_STRING = "Hello World";
 
-  @ClassRule
-  public static final TemporaryFolder TMP_FOLDER = new TemporaryFolder();
-
   public static File folder;
   public static File file;
   public static int port;
 
   private static FakeFtpServer ftpServer;
+
+  @Rule
+  public final TemporaryFolder TMP_FOLDER = new TemporaryFolder();
 
   @Before
   public void init() throws Exception {
@@ -90,6 +94,41 @@ public class ETLFTPTestRun extends ETLBatchTestBase {
     }
   }
 
+  @Test
+  public void testFTPSink() throws Exception {
+    String filePath = "file:///tmp/test/text.txt";
+    String testData = "String for testing purposes.";
+
+    Path textFile = new Path(filePath);
+    Configuration conf = new Configuration();
+    org.apache.hadoop.fs.FileSystem fs = org.apache.hadoop.fs.FileSystem.get(conf);
+    FSDataOutputStream writeData = fs.create(textFile);
+    writeData.write(testData.getBytes());
+    writeData.flush();
+    writeData.close();
+
+    ETLStage source = new ETLStage("source", new Plugin("File", ImmutableMap.<String, String>builder()
+    .put(Properties.File.FILESYSTEM, "Text").put(Properties.File.PATH, filePath).build()));
+
+    ETLStage sink = new ETLStage("sink", new Plugin("FTP", ImmutableMap.<String, String>builder()
+      .put("basePath", "ftp://tom:tom@fileserver6986-1000.dev.continuuity.net:/data2").build()));
+
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .setSource(source)
+      .addSink(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "FileToFTP");
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+
+    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
+    mrManager.start();
+    mrManager.waitForFinish(2, TimeUnit.MINUTES);
+  }
+
+  @Ignore
   @Test
   public void testFTPBatchSource() throws Exception {
     ETLStage source = new ETLStage("source", new Plugin("FTP", ImmutableMap.<String, String>builder()
