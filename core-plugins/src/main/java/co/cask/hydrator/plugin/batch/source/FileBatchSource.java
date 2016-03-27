@@ -88,7 +88,7 @@ public class FileBatchSource extends BatchSource<LongWritable, Object, Structure
     "2015-06-16-15 (June 16th 2015, 3pm), it will read in files that contain '2015-06-16-14' in the filename. " +
     "If the field 'timeTable' is present, then it will read in files that have not yet been read. Defaults to '.*', " +
     "which indicates that no files will be filtered.";
-  private static final String FILESYSTEM_PROPERTIES_DESCRIPTION = "A JSON string representing a map of properties " +
+  protected static final String FILESYSTEM_PROPERTIES_DESCRIPTION = "A JSON string representing a map of properties " +
     "needed for the distributed file system.";
   private static final Gson GSON = new Gson();
   private static final Type ARRAYLIST_DATE_TYPE = new TypeToken<ArrayList<Date>>() { }.getType();

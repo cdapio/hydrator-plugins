@@ -109,6 +109,7 @@
     <cdh.hive.version>1.1.0-cdh5.5.1</cdh.hive.version>
     <junit.version>4.11</junit.version>
     <kafka.version>0.8.2.2</kafka.version>
+    <mockftp.version>2.6</mockftp.version>
     <snappy.version>1.1.2</snappy.version>
     <slf4j.version>1.7.5</slf4j.version>
     <twill.version>0.7.0-incubating</twill.version>
@@ -366,6 +367,12 @@
         <groupId>org.twitter4j</groupId>
         <artifactId>twitter4j-stream</artifactId>
         <version>${twitter4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mockftpserver</groupId>
+        <artifactId>MockFtpServer</artifactId>
+        <version>${mockftp.version}</version>
+        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.hsqldb</groupId>
