@@ -110,7 +110,6 @@ public class ETLBatchTestBase extends TestBase {
                    BatchSource.class.getPackage().getName(),
                    PipelineConfigurable.class.getPackage().getName());
 
-
     Set<ArtifactRange> parents = ImmutableSet.of(
       new ArtifactRange(Id.Namespace.DEFAULT, ETLBATCH_ARTIFACT_ID.getName(),
                         ETLBATCH_ARTIFACT_ID.getVersion(), true, ETLBATCH_ARTIFACT_ID.getVersion(), true),
