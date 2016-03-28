@@ -47,7 +47,7 @@ import java.util.concurrent.TimeUnit;
 public class GroupByTestRun extends ETLBatchTestBase {
 
   @Test
-  public void testDAG() throws Exception {
+  public void testGroupBy() throws Exception {
 
     /*
                                   |--> group by user, totalPurchases:count(*), totalSpent:sum(price) --> user table

@@ -108,7 +108,12 @@ public class ETLBatchTestBase extends TestBase {
     // add the artifact for etl batch app
     addAppArtifact(DATAPIPELINE_ARTIFACT_ID, DataPipelineApp.class,
                    BatchSource.class.getPackage().getName(),
-                   PipelineConfigurable.class.getPackage().getName());
+                   PipelineConfigurable.class.getPackage().getName(),
+                   "org.apache.avro.mapred", "org.apache.avro", "org.apache.avro.generic", "org.apache.avro.io",
+                   // these are not real exports for the application, but are required for unit tests.
+                   // the stupid hive-exec jar pulled in by cdap-unit-test contains ParquetInputSplit...
+                   // without this, different classloaders will be used for ParquetInputSplit and we'll see errors
+                   "parquet.hadoop.api", "parquet.hadoop", "parquet.schema", "parquet.io.api");
 
 
     Set<ArtifactRange> parents = ImmutableSet.of(
