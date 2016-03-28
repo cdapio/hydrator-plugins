@@ -21,6 +21,7 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.UnsupportedTypeException;
+import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
@@ -99,9 +100,11 @@ public class TimePartitionedFileSetDatasetParquetSource extends
       .setEnableExploreOnCreate(true)
       .setExploreFormat("parquet");
     try {
+      String schema = tpfsParquetConfig.schema.toLowerCase();
       String hiveSchema = HiveSchemaConverter.toHiveSchema(
-        co.cask.cdap.api.data.schema.Schema.parseJson(tpfsParquetConfig.schema.toLowerCase()));
+        co.cask.cdap.api.data.schema.Schema.parseJson(schema));
       properties.setExploreSchema(hiveSchema.substring(1, hiveSchema.length() - 1));
+      properties.add(DatasetProperties.SCHEMA, schema);
     } catch (UnsupportedTypeException e) {
       throw new IllegalArgumentException("schema " + tpfsParquetConfig.schema + " is not supported.", e);
     } catch (Exception e) {

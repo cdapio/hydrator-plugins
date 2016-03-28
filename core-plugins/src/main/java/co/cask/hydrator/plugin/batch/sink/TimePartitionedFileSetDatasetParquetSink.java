@@ -22,6 +22,7 @@ import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.data.schema.UnsupportedTypeException;
+import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
@@ -64,11 +65,12 @@ public class TimePartitionedFileSetDatasetParquetSink extends
     super.configurePipeline(pipelineConfigurer);
     String tpfsName = tpfsSinkConfig.name;
     String basePath = tpfsSinkConfig.basePath == null ? tpfsName : tpfsSinkConfig.basePath;
+    String schema = config.schema.toLowerCase();
     // parse to make sure it's valid
-    new org.apache.avro.Schema.Parser().parse(config.schema.toLowerCase());
+    new org.apache.avro.Schema.Parser().parse(schema);
     String hiveSchema;
     try {
-      hiveSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(config.schema.toLowerCase()));
+      hiveSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(schema));
     } catch (UnsupportedTypeException | IOException e) {
       throw new RuntimeException("Error: Schema is not valid ", e);
     }
@@ -79,6 +81,7 @@ public class TimePartitionedFileSetDatasetParquetSink extends
       .setEnableExploreOnCreate(true)
       .setExploreFormat("parquet")
       .setExploreSchema(hiveSchema.substring(1, hiveSchema.length() - 1))
+      .add(DatasetProperties.SCHEMA, schema)
       .build());
   }
 
