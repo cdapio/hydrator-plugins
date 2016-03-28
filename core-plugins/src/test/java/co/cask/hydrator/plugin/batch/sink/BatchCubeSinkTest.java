@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch;
+package co.cask.hydrator.plugin.batch.sink;
 
 import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.schema.Schema;
@@ -24,7 +24,6 @@ import co.cask.cdap.api.dataset.lib.cube.CubeQuery;
 import co.cask.cdap.api.dataset.lib.cube.TimeSeries;
 import co.cask.cdap.api.dataset.table.Put;
 import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.data2.dataset2.lib.cube.CubeDatasetDefinition;
 import co.cask.cdap.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.common.ETLStage;
@@ -34,22 +33,48 @@ import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
+import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
+import co.cask.hydrator.plugin.common.CubeSinkConfig;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.gson.Gson;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
  *
  */
-public class BatchCubeSinkTestRun extends ETLBatchTestBase {
+public class BatchCubeSinkTest extends ETLBatchTestBase {
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testIncompleteAggregation() throws Exception {
+    String aggregationGroup = ":user";
+    String measurement = "count:COUNTER";
+    CubeSinkConfig cubeSinkConfig = new CubeSinkConfig("test_cube", "1", aggregationGroup, null, null, measurement);
+    BatchCubeSink cubeSink = new BatchCubeSink(cubeSinkConfig);
+    cubeSink.getProperties();
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testIncompleteMeasurement() throws Exception {
+    String aggregationGroup = "byUser:user";
+    String measurement = ":COUNTER";
+    CubeSinkConfig cubeSinkConfig = new CubeSinkConfig("test_cube", "1", aggregationGroup, null, null, measurement);
+    BatchCubeSink cubeSink = new BatchCubeSink(cubeSinkConfig);
+    cubeSink.getProperties();
+  }
+
+  @Test
+  public void testValidProperties() throws Exception {
+    String aggregationGroup = "byUser:user";
+    String measurement = "count:COUNTER";
+    CubeSinkConfig cubeSinkConfig = new CubeSinkConfig("test_cube", "1", aggregationGroup, null, null, measurement);
+    BatchCubeSink cubeSink = new BatchCubeSink(cubeSinkConfig);
+    cubeSink.getProperties();
+  }
 
   @Test
   public void test() throws Exception {
@@ -68,17 +93,13 @@ public class BatchCubeSinkTestRun extends ETLBatchTestBase {
                                        Properties.Table.PROPERTY_SCHEMA, schema.toString()));
     ETLStage source = new ETLStage("tableSource", sourceConfig);
 
-    // single aggregation
-    Map<String, String> datasetProps = ImmutableMap.of(
-      CubeDatasetDefinition.PROPERTY_AGGREGATION_PREFIX + "byUser.dimensions", "user"
-    );
-    Map<String, String> measurementsProps = ImmutableMap.of(
-      Properties.Cube.MEASUREMENT_PREFIX + "count", "COUNTER"
-    );
+    String aggregationGroup = "byUser:user";
+    String measurement = "count:COUNTER";
+
     Plugin sinkConfig = new Plugin("Cube",
                                    ImmutableMap.of(Properties.Cube.DATASET_NAME, "batch_cube",
-                                                   Properties.Cube.DATASET_OTHER, new Gson().toJson(datasetProps),
-                                                   Properties.Cube.MEASUREMENTS, new Gson().toJson(measurementsProps)));
+                                                   Properties.Cube.AGGREGATIONS, aggregationGroup,
+                                                   Properties.Cube.MEASUREMENTS, measurement));
 
     ETLStage sink = new ETLStage("cubeSinkUnique", sinkConfig);
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
