@@ -46,6 +46,9 @@ public class DistinctAggregator extends BatchAggregator<StructuredRecord, Struct
   private final Conf conf;
   private Iterable<String> fields;
 
+  /**
+   * Plugin Configuration
+   */
   public static class Conf extends PluginConfig {
     @Description("Optional comma-separated list of fields to perform the distinct on. If none is given, each record " +
       "will be taken as is. Otherwise, only fields in this list will be considered.")
