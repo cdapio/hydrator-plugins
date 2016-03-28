@@ -8,6 +8,14 @@
       "label": "General",
       "properties": [
         {
+          "widget-type": "csv",
+          "label": "Group by fields",
+          "name": "groupByFields",
+          "widget-attributes": {
+            "delimiter": ","
+          }
+        },
+        {
           "widget-type": "function-dropdown-with-alias",
           "label": "Aggregates",
           "name": "aggregates",
@@ -25,14 +33,6 @@
               "First",
               "Last"
             ]
-          }
-        },
-        {
-          "widget-type": "csv",
-          "label": "Group by fields",
-          "name": "groupByFields",
-          "widget-attributes": {
-            "delimiter": ","
           }
         }
       ]
