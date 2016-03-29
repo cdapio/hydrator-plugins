@@ -29,6 +29,8 @@ The second will create a field called ``cheapest`` that contains the minimum ``p
 The count function differs from count(*) in that it contains non-null values of a specific field,
 while count(*) will count all records regardless of value.
 
+**numPartitions:** Number of partitions to use when grouping fields. If not specified, the execution
+framework will decide on the number to use.
 
 Example
 -------
