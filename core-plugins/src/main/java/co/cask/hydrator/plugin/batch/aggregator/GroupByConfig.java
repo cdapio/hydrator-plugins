@@ -70,8 +70,8 @@ public class GroupByConfig extends PluginConfig {
     this.aggregates = aggregates;
   }
 
-  Set<String> getGroupByFields() {
-    Set<String> fields = new HashSet<>();
+  List<String> getGroupByFields() {
+    List<String> fields = new ArrayList<>();
     for (String field : Splitter.on(',').trimResults().split(groupByFields)) {
       fields.add(field);
     }
