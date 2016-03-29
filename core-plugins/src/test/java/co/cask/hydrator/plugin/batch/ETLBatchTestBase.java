@@ -115,7 +115,6 @@ public class ETLBatchTestBase extends TestBase {
                    // without this, different classloaders will be used for ParquetInputSplit and we'll see errors
                    "parquet.hadoop.api", "parquet.hadoop", "parquet.schema", "parquet.io.api");
 
-
     Set<ArtifactRange> parents = ImmutableSet.of(
       new ArtifactRange(Id.Namespace.DEFAULT, ETLBATCH_ARTIFACT_ID.getName(),
                         ETLBATCH_ARTIFACT_ID.getVersion(), true, ETLBATCH_ARTIFACT_ID.getVersion(), true),
