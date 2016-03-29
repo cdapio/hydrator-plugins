@@ -37,8 +37,8 @@ import org.apache.spark.mllib.feature.HashingTF;
 import org.apache.spark.mllib.regression.LabeledPoint;
 
 /**
- * Spark Sink plugin that trains a model based upon whether messages are spam or not. Writes this model to
- * a file of a FileSet.
+ * Spark Sink plugin that trains a model based upon a label in the structured record.
+ * Writes this model to a file of a FileSet.
  */
 @Plugin(type = SparkSink.PLUGIN_TYPE)
 @Name(NaiveBayesTrainer.PLUGIN_NAME)
@@ -53,13 +53,13 @@ public final class NaiveBayesTrainer extends SparkSink<StructuredRecord> {
    */
   public static class Config extends PluginConfig {
 
-    @Description("FileSet to use to save the model to.")
+    @Description("The name of the FileSet to save the model to.")
     private final String fileSetName;
 
     @Description("Path of the FileSet to save the model to.")
     private final String path;
 
-    @Description("A space-separated sequence of words to use for classification.")
+    @Description("A space-separated sequence of words to use for training.")
     private final String fieldToClassify;
 
     @Description("The field from which to get the prediction. It must be of type double.")
