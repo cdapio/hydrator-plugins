@@ -61,16 +61,13 @@ public class RealtimeCubeSinkTest extends ETLRealtimeTestBase {
                                ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE,
                                                DataGeneratorSource.TABLE_TYPE));
     // single aggregation
-    Map<String, String> datasetProps = ImmutableMap.of(
-      CubeDatasetDefinition.PROPERTY_AGGREGATION_PREFIX + "byName.dimensions", "name"
-    );
-    Map<String, String> measurementsProps = ImmutableMap.of(
-      Properties.Cube.MEASUREMENT_PREFIX + "score", "GAUGE"
-    );
+    String aggregationGroup = "byName:name";
+    String measurement = "score:GAUGE";
+
     Plugin sink = new Plugin("Cube",
                              ImmutableMap.of(Properties.Cube.DATASET_NAME, "cube1",
-                                             Properties.Cube.DATASET_OTHER, new Gson().toJson(datasetProps),
-                                             Properties.Cube.MEASUREMENTS, new Gson().toJson(measurementsProps)));
+                                             Properties.Cube.AGGREGATIONS, aggregationGroup,
+                                             Properties.Cube.MEASUREMENTS, measurement));
     ETLRealtimeConfig etlConfig = new ETLRealtimeConfig(new ETLStage("source", source),
                                                         new ETLStage("sink", sink), Lists.<ETLStage>newArrayList());
 

@@ -25,6 +25,16 @@
           }
         },
         {
+          "widget-type": "keyvalue",
+          "label": "Aggregations",
+          "name": "dataset.cube.aggregations",
+          "widget-attributes": {
+            "showDelimiter": "false",
+            "kv-delimiter" : ":",
+            "delimiter" : ";"
+          }
+        },
+        {
           "widget-type": "json-editor",
           "label": "Other Dataset Properties",
           "name": "dataset.cube.properties"
@@ -35,6 +45,17 @@
       "label": "CubeFact Mapping",
       "properties": [
         {
+          "widget-type": "keyvalue-dropdown",
+          "label": "Measurements",
+          "name": "cubeFact.measurements",
+          "widget-attributes": {
+            "showDelimiter": "false",
+            "kv-delimiter" : ":",
+            "delimiter" : ";",
+            "dropdownOptions": ["COUNTER", "GAUGE"]
+          }
+        },
+        {
           "widget-type": "textbox",
           "label": "Timestamp Field",
           "name": "cubeFact.timestamp.field"
@@ -43,11 +64,6 @@
           "widget-type": "textbox",
           "label": "Timestamp Format",
           "name": "cubeFact.timestamp.format"
-        },
-        {
-          "widget-type": "json-editor",
-          "label": "Measurements",
-          "name": "cubeFact.measurements"
         }
       ]
     }

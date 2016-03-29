@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -14,13 +14,14 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.source;
+package co.cask.hydrator.plugin.batch.file.source;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.UnsupportedTypeException;
+import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
@@ -28,7 +29,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.hydrator.common.HiveSchemaConverter;
-import co.cask.hydrator.plugin.common.AvroToStructuredTransformer;
+import co.cask.hydrator.plugin.batch.file.AvroToStructuredTransformer;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
@@ -99,9 +100,11 @@ public class TimePartitionedFileSetDatasetParquetSource extends
       .setEnableExploreOnCreate(true)
       .setExploreFormat("parquet");
     try {
+      String schema = tpfsParquetConfig.schema.toLowerCase();
       String hiveSchema = HiveSchemaConverter.toHiveSchema(
-        co.cask.cdap.api.data.schema.Schema.parseJson(tpfsParquetConfig.schema.toLowerCase()));
+        co.cask.cdap.api.data.schema.Schema.parseJson(schema));
       properties.setExploreSchema(hiveSchema.substring(1, hiveSchema.length() - 1));
+      properties.add(DatasetProperties.SCHEMA, schema);
     } catch (UnsupportedTypeException e) {
       throw new IllegalArgumentException("schema " + tpfsParquetConfig.schema + " is not supported.", e);
     } catch (Exception e) {

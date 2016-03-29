@@ -1,0 +1,18 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Distinct",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Fields",
+          "name": "fields"
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}

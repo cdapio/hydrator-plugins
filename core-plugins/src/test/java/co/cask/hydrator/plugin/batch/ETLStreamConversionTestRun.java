@@ -67,11 +67,6 @@ public class ETLStreamConversionTestRun extends ETLBatchTestBase {
     Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
 
   @Test
-  public void testStreamConversionTPFSParquetSink() throws Exception {
-    testSink("TPFSParquet");
-  }
-
-  @Test
   public void testStreamConversionTPFSAvroSink() throws Exception {
     testSink("TPFSAvro");
   }
