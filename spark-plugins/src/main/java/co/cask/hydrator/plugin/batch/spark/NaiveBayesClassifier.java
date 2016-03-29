@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.ws.rs.Path;
 
 /**
  * SparkCompute that uses a trained model to classify and tag input records.
@@ -112,13 +113,6 @@ public class NaiveBayesClassifier extends SparkCompute<StructuredRecord, Structu
                                 "Prediction field must not already exist in input schema.");
   }
 
-  private Schema getOutputSchema(Schema inputSchema) {
-    List<Schema.Field> fields = new ArrayList<>(inputSchema.getFields());
-    fields.add(Schema.Field.of(config.predictionField, Schema.of(Schema.Type.DOUBLE)));
-    return Schema.recordOf(inputSchema.getRecordName() + ".predicted", fields);
-  }
-
-
   @Override
   public JavaRDD<StructuredRecord> transform(SparkPluginContext context,
                                              JavaRDD<StructuredRecord> input) throws Exception {
@@ -163,5 +157,29 @@ public class NaiveBayesClassifier extends SparkCompute<StructuredRecord, Structu
       builder.set(field.getName(), record.get(field.getName()));
     }
     return builder;
+  }
+
+
+  private Schema getOutputSchema(Schema inputSchema) {
+    return getOutputSchema(inputSchema, config.predictionField);
+  }
+
+  private Schema getOutputSchema(Schema inputSchema, String predictionField) {
+    List<Schema.Field> fields = new ArrayList<>(inputSchema.getFields());
+    fields.add(Schema.Field.of(predictionField, Schema.of(Schema.Type.DOUBLE)));
+    return Schema.recordOf(inputSchema.getRecordName() + ".predicted", fields);
+  }
+
+  @Path("outputSchema")
+  public Schema getOutputSchema(GetSchemaRequest request) {
+    return getOutputSchema(request.inputSchema, request.predictionField);
+  }
+
+  /**
+   * Endpoint request for output schema.
+   */
+  private static final class GetSchemaRequest {
+    private Schema inputSchema;
+    private String predictionField;
   }
 }
