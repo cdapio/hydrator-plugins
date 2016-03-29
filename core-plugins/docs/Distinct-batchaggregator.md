@@ -15,6 +15,9 @@ Properties
 ----------
 **fields:** Optional comma-separated list of fields to perform the distinct on. If not given, all fields are used.
 
+**numPartitions:** Number of partitions to use when grouping fields. If not specified, the execution
+framework will decide on the number to use.
+
 Example
 -------
 

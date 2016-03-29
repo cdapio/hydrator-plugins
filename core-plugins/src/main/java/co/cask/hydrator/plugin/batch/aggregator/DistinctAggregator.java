@@ -21,7 +21,6 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.StageConfigurer;
@@ -42,14 +41,14 @@ import javax.annotation.Nullable;
 @Description("Deduplicates input records so that all output records are distinct. " +
   "Can optionally take a list of fields, which will project out all other fields and perform a distinct " +
   "on just those fields.")
-public class DistinctAggregator extends BatchAggregator<StructuredRecord, StructuredRecord, StructuredRecord> {
+public class DistinctAggregator extends RecordAggregator {
   private final Conf conf;
   private Iterable<String> fields;
 
   /**
    * Plugin Configuration
    */
-  public static class Conf extends PluginConfig {
+  public static class Conf extends AggregatorConfig {
     @Description("Optional comma-separated list of fields to perform the distinct on. If none is given, each record " +
       "will be taken as is. Otherwise, only fields in this list will be considered.")
     @Nullable
@@ -57,6 +56,7 @@ public class DistinctAggregator extends BatchAggregator<StructuredRecord, Struct
   }
 
   public DistinctAggregator(Conf conf) {
+    super(conf.numPartitions);
     this.conf = conf;
   }
 

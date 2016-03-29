@@ -43,7 +43,7 @@ import javax.ws.rs.Path;
 @Name("GroupByAggregate")
 @Description("Groups by one or more fields, then performs one or more aggregate functions on each group. " +
   "Supports avg, count, count(*), first, last, max, min, and sum as aggregate functions.")
-public class GroupByAggregator extends BatchAggregator<StructuredRecord, StructuredRecord, StructuredRecord> {
+public class GroupByAggregator extends RecordAggregator {
   private final GroupByConfig conf;
   private List<String> groupByFields;
   private List<GroupByConfig.FunctionInfo> functionInfos;
@@ -51,6 +51,7 @@ public class GroupByAggregator extends BatchAggregator<StructuredRecord, Structu
   private Map<String, AggregateFunction> aggregateFunctions;
 
   public GroupByAggregator(GroupByConfig conf) {
+    super(conf.numPartitions);
     this.conf = conf;
   }
 

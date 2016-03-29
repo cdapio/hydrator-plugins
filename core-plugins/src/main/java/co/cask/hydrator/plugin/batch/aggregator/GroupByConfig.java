@@ -18,7 +18,6 @@ package co.cask.hydrator.plugin.batch.aggregator;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.hydrator.plugin.batch.aggregator.function.AggregateFunction;
 import co.cask.hydrator.plugin.batch.aggregator.function.Avg;
 import co.cask.hydrator.plugin.batch.aggregator.function.Count;
@@ -41,7 +40,7 @@ import java.util.Set;
 /**
  * Config for group by types of plugins.
  */
-public class GroupByConfig extends PluginConfig {
+public class GroupByConfig extends AggregatorConfig {
 
   @Description("Aggregates to compute on grouped records. " +
     "Supported aggregate functions are count, count(*), sum, avg, min, max, first, last. " +
