@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -14,38 +14,23 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch;
+package co.cask.hydrator.plugin.batch.file;
 
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.etl.api.PipelineConfigurable;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
-import co.cask.cdap.etl.datapipeline.DataPipelineApp;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.ArtifactRange;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
 import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
-import co.cask.hydrator.plugin.batch.aggregator.GroupByAggregator;
-import co.cask.hydrator.plugin.batch.sink.BatchCubeSink;
-import co.cask.hydrator.plugin.batch.sink.KVTableSink;
-import co.cask.hydrator.plugin.batch.sink.S3AvroBatchSink;
-import co.cask.hydrator.plugin.batch.sink.SnapshotFileBatchAvroSink;
-import co.cask.hydrator.plugin.batch.sink.TableSink;
-import co.cask.hydrator.plugin.batch.sink.TimePartitionedFileSetDatasetAvroSink;
-import co.cask.hydrator.plugin.batch.source.KVTableSource;
-import co.cask.hydrator.plugin.batch.source.SnapshotFileBatchAvroSource;
-import co.cask.hydrator.plugin.batch.source.StreamBatchSource;
-import co.cask.hydrator.plugin.batch.source.TableSource;
-import co.cask.hydrator.plugin.batch.source.TimePartitionedFileSetDatasetAvroSource;
-import co.cask.hydrator.plugin.transform.JavaScriptTransform;
-import co.cask.hydrator.plugin.transform.ProjectionTransform;
-import co.cask.hydrator.plugin.transform.PythonEvaluator;
-import co.cask.hydrator.plugin.transform.ScriptFilterTransform;
-import co.cask.hydrator.plugin.transform.StructuredRecordToGenericRecordTransform;
-import co.cask.hydrator.plugin.transform.ValidatorTransform;
-import co.cask.hydrator.plugin.validator.CoreValidator;
+import co.cask.hydrator.plugin.batch.file.sink.S3ParquetBatchSink;
+import co.cask.hydrator.plugin.batch.file.sink.SnapshotFileBatchParquetSink;
+import co.cask.hydrator.plugin.batch.file.sink.TimePartitionedFileSetDatasetParquetSink;
+import co.cask.hydrator.plugin.batch.file.source.SnapshotFileBatchParquetSource;
+import co.cask.hydrator.plugin.batch.file.source.TimePartitionedFileSetDatasetParquetSource;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -53,12 +38,12 @@ import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.DatumReader;
-import org.apache.avro.mapred.AvroKey;
-import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.apache.hadoop.fs.Path;
 import org.apache.twill.filesystem.Location;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import parquet.avro.AvroParquetInputFormat;
+import parquet.avro.AvroParquetOutputFormat;
 import parquet.avro.AvroParquetReader;
 
 import java.io.IOException;
@@ -75,10 +60,7 @@ public class ETLBatchTestBase extends TestBase {
 
   protected static final Id.Artifact ETLBATCH_ARTIFACT_ID =
     Id.Artifact.from(Id.Namespace.DEFAULT, "etlbatch", "3.2.0");
-  protected static final Id.Artifact DATAPIPELINE_ARTIFACT_ID =
-    Id.Artifact.from(Id.Namespace.DEFAULT, "data-pipeline", "3.2.0");
   protected static final ArtifactSummary ETLBATCH_ARTIFACT = new ArtifactSummary("etlbatch", "3.2.0");
-  protected static final ArtifactSummary DATAPIPELINE_ARTIFACT = new ArtifactSummary("data-pipeline", "3.2.0");
 
   private static int startCount;
 
@@ -98,37 +80,18 @@ public class ETLBatchTestBase extends TestBase {
                    // without this, different classloaders will be used for ParquetInputSplit and we'll see errors
                    "parquet.hadoop.api", "parquet.hadoop", "parquet.schema", "parquet.io.api");
 
-    // add the artifact for etl batch app
-    addAppArtifact(DATAPIPELINE_ARTIFACT_ID, DataPipelineApp.class,
-                   BatchSource.class.getPackage().getName(),
-                   PipelineConfigurable.class.getPackage().getName(),
-                   "org.apache.avro.mapred", "org.apache.avro", "org.apache.avro.generic", "org.apache.avro.io",
-                   // these are not real exports for the application, but are required for unit tests.
-                   // the stupid hive-exec jar pulled in by cdap-unit-test contains ParquetInputSplit...
-                   // without this, different classloaders will be used for ParquetInputSplit and we'll see errors
-                   "parquet.hadoop.api", "parquet.hadoop", "parquet.schema", "parquet.io.api");
-
     Set<ArtifactRange> parents = ImmutableSet.of(
       new ArtifactRange(Id.Namespace.DEFAULT, ETLBATCH_ARTIFACT_ID.getName(),
-                        ETLBATCH_ARTIFACT_ID.getVersion(), true, ETLBATCH_ARTIFACT_ID.getVersion(), true),
-      new ArtifactRange(Id.Namespace.DEFAULT, DATAPIPELINE_ARTIFACT_ID.getName(),
-                        DATAPIPELINE_ARTIFACT_ID.getVersion(), true, DATAPIPELINE_ARTIFACT_ID.getVersion(), true)
+                        ETLBATCH_ARTIFACT_ID.getVersion(), true, ETLBATCH_ARTIFACT_ID.getVersion(), true)
     );
     // add artifact for batch sources and sinks
     addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "batch-plugins", "1.0.0"), parents,
-                      KVTableSource.class, StreamBatchSource.class, TableSource.class,
-                      TimePartitionedFileSetDatasetAvroSource.class,
-                      BatchCubeSink.class, KVTableSink.class, TableSink.class,
-                      TimePartitionedFileSetDatasetAvroSink.class, AvroKeyOutputFormat.class, AvroKey.class,
-                      SnapshotFileBatchAvroSink.class,
-                      SnapshotFileBatchAvroSource.class,
-                      S3AvroBatchSink.class,
-                      ProjectionTransform.class, ScriptFilterTransform.class,
-                      ValidatorTransform.class, CoreValidator.class,
-                      StructuredRecordToGenericRecordTransform.class,
-                      JavaScriptTransform.class,
-                      PythonEvaluator.class,
-                      GroupByAggregator.class);
+                      TimePartitionedFileSetDatasetParquetSource.class,
+                      AvroParquetInputFormat.class,
+                      TimePartitionedFileSetDatasetParquetSink.class, AvroParquetOutputFormat.class,
+                      SnapshotFileBatchParquetSink.class,
+                      SnapshotFileBatchParquetSource.class,
+                      S3ParquetBatchSink.class);
   }
 
   protected List<GenericRecord> readOutput(TimePartitionedFileSet fileSet, Schema schema) throws IOException {

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.dataset;
+package co.cask.hydrator.plugin.batch.file;
 
 import co.cask.cdap.api.dataset.lib.PartitionDetail;
 import co.cask.cdap.api.dataset.lib.PartitionKey;
@@ -22,7 +22,6 @@ import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSetArguments;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSetProperties;
 import co.cask.cdap.api.dataset.lib.Partitioning;
-import co.cask.hydrator.plugin.common.SnapshotFileSetConfig;
 import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.io.CharStreams;
@@ -130,7 +129,7 @@ public class SnapshotFileSet {
     try {
       PartitionDetail partition = getLatestPartition();
       if (partition == null) {
-        throw new IllegalArgumentException("Snapshot fileset does not have a latest snapshot, so cannot be read.");
+        throw new IllegalArgumentException("Snapshot fileset does not a latest snapshot, so cannot be read.");
       }
       Map<String, String> args = new HashMap<>();
       args.putAll(otherProperties);

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.sink;
+package co.cask.hydrator.plugin.batch.file.sink;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
@@ -25,8 +25,7 @@ import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
-import co.cask.hydrator.plugin.common.Properties;
-import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
+import co.cask.hydrator.plugin.batch.file.StructuredToAvroTransformer;
 import com.google.common.collect.Maps;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -76,7 +75,6 @@ public class S3ParquetBatchSink extends S3BatchSink<Void, GenericRecord> {
    */
   public static class S3ParquetSinkConfig extends S3BatchSinkConfig {
 
-    @Name(Properties.S3BatchSink.SCHEMA)
     @Description(SCHEMA_DESC)
     private String schema;
 

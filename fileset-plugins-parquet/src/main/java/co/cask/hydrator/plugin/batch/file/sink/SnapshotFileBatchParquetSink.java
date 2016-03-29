@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.sink;
+package co.cask.hydrator.plugin.batch.file.sink;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
@@ -28,8 +28,8 @@ import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.hydrator.common.HiveSchemaConverter;
-import co.cask.hydrator.plugin.common.SnapshotFileSetConfig;
-import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
+import co.cask.hydrator.plugin.batch.file.SnapshotFileSetConfig;
+import co.cask.hydrator.plugin.batch.file.StructuredToAvroTransformer;
 import org.apache.avro.generic.GenericRecord;
 import parquet.avro.AvroParquetInputFormat;
 import parquet.avro.AvroParquetOutputFormat;

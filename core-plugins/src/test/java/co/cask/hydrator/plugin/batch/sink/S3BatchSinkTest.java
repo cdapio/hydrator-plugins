@@ -16,7 +16,6 @@
 
 package co.cask.hydrator.plugin.batch.sink;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import org.junit.Assert;
@@ -48,18 +47,5 @@ public class S3BatchSinkTest {
     Assert.assertEquals(2, fsProperties.size());
     Assert.assertEquals(accessID, fsProperties.get("fs.s3n.awsAccessKeyId"));
     Assert.assertEquals(accessKey, fsProperties.get("fs.s3n.awsSecretAccessKey"));
-
-    // Test extra properties
-    S3ParquetBatchSink.S3ParquetSinkConfig s3ParquetSinkConfig =
-      new S3ParquetBatchSink.S3ParquetSinkConfig(path, schema, accessID, accessKey, null,
-                                                 GSON.toJson(ImmutableMap.of("s3.compression", "gzip")));
-    S3ParquetBatchSink s3ParquetBatchSink = new S3ParquetBatchSink(s3ParquetSinkConfig);
-    s3BatchSinkConfig = s3ParquetBatchSink.getConfig();
-    fsProperties = GSON.fromJson(s3BatchSinkConfig.fileSystemProperties, MAP_STRING_STRING_TYPE);
-    Assert.assertNotNull(fsProperties);
-    Assert.assertEquals(3, fsProperties.size());
-    Assert.assertEquals(accessID, fsProperties.get("fs.s3n.awsAccessKeyId"));
-    Assert.assertEquals(accessKey, fsProperties.get("fs.s3n.awsSecretAccessKey"));
-    Assert.assertEquals("gzip", fsProperties.get("s3.compression"));
   }
 }
