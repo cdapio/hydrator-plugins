@@ -152,7 +152,7 @@ public class SparkPluginTest extends TestBase {
                                            ImmutableMap.of("fileSetName", "modelFileSet",
                                                            "path", "output",
                                                            "fieldToClassify", SpamMessage.TEXT_FIELD,
-                                                           "fieldToSet", SpamMessage.SPAM_PREDICTION_FIELD),
+                                                           "predictionField", SpamMessage.SPAM_PREDICTION_FIELD),
                                            null)))
       .addStage(new ETLStage("sink", MockSink.getPlugin(CLASSIFIED_TEXTS)))
       .addConnection("source", "sparkcompute")

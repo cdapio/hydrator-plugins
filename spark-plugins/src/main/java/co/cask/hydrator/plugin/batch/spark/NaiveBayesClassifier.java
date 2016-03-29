@@ -63,7 +63,7 @@ public class NaiveBayesClassifier extends SparkCompute<StructuredRecord, Structu
    */
   public static class Config extends PluginConfig {
 
-    @Description("FileSet to use to load the model from.")
+    @Description("The name of the FileSet to load the model from.")
     private final String fileSetName;
 
     @Description("Path of the FileSet to load the model from.")
@@ -73,13 +73,13 @@ public class NaiveBayesClassifier extends SparkCompute<StructuredRecord, Structu
     private final String fieldToClassify;
 
     @Description("The field on which to set the prediction. It will be of type double.")
-    private final String fieldToSet;
+    private final String predictionField;
 
-    public Config(String fileSetName, String path, String fieldToClassify, String fieldToSet) {
+    public Config(String fileSetName, String path, String fieldToClassify, String predictionField) {
       this.fileSetName = fileSetName;
       this.path = path;
       this.fieldToClassify = fieldToClassify;
-      this.fieldToSet = fieldToSet;
+      this.predictionField = predictionField;
     }
   }
 
@@ -107,14 +107,14 @@ public class NaiveBayesClassifier extends SparkCompute<StructuredRecord, Structu
     Preconditions.checkArgument(fieldToClassifyType == Schema.Type.STRING,
                                 "Field to classify must be of type String, but was %s.", fieldToClassifyType);
 
-    Schema.Field predictionField = inputSchema.getField(config.fieldToSet);
+    Schema.Field predictionField = inputSchema.getField(config.predictionField);
     Preconditions.checkArgument(predictionField == null,
                                 "Prediction field must not already exist in input schema.");
   }
 
   private Schema getOutputSchema(Schema inputSchema) {
     List<Schema.Field> fields = new ArrayList<>(inputSchema.getFields());
-    fields.add(Schema.Field.of(config.fieldToSet, Schema.of(Schema.Type.DOUBLE)));
+    fields.add(Schema.Field.of(config.predictionField, Schema.of(Schema.Type.DOUBLE)));
     return Schema.recordOf(inputSchema.getRecordName() + ".predicted", fields);
   }
 
@@ -144,7 +144,7 @@ public class NaiveBayesClassifier extends SparkCompute<StructuredRecord, Structu
         double prediction = loadedModel.predict(vector);
 
         return cloneRecord(structuredRecord)
-          .set(config.fieldToSet, prediction)
+          .set(config.predictionField, prediction)
           .build();
       }
     });
@@ -156,7 +156,7 @@ public class NaiveBayesClassifier extends SparkCompute<StructuredRecord, Structu
     Schema schemaToUse = outputSchema != null ? outputSchema : getOutputSchema(record.getSchema());
     StructuredRecord.Builder builder = StructuredRecord.builder(schemaToUse);
     for (Schema.Field field : schemaToUse.getFields()) {
-      if (config.fieldToSet.equals(field.getName())) {
+      if (config.predictionField.equals(field.getName())) {
         // don't copy the field to set from the input record; it will be set later
         continue;
       }
