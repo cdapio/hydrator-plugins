@@ -38,10 +38,10 @@ import co.cask.hydrator.plugin.DBUtils;
 import co.cask.hydrator.plugin.DriverCleanup;
 import co.cask.hydrator.plugin.FieldCase;
 import co.cask.hydrator.plugin.StructuredRecordUtils;
-import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.lib.db.DBConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,9 +79,28 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId());
-    Preconditions.checkArgument(sourceConfig.getImportQuery().contains("$CONDITIONS"),
-                                "Import Query %s must contain the string '$CONDITIONS'.",
-                                sourceConfig.importQuery);
+    boolean hasOneSplit = false;
+    if (sourceConfig.numSplits != null) {
+      if (sourceConfig.numSplits < 1) {
+        throw new IllegalArgumentException(
+          "Invalid value for numSplits. Must be at least 1, but got " + sourceConfig.numSplits);
+      }
+      if (sourceConfig.numSplits == 1) {
+        hasOneSplit = true;
+      }
+    }
+    if (!hasOneSplit) {
+      if (!sourceConfig.getImportQuery().contains("$CONDITIONS")) {
+        throw new IllegalArgumentException(String.format("Import Query %s must contain the string '$CONDITIONS'.",
+                                                         sourceConfig.importQuery));
+      }
+      if (sourceConfig.splitBy == null || sourceConfig.splitBy.isEmpty()) {
+        throw new IllegalArgumentException("The splitBy must be specified if numSplits is not set to 1.");
+      }
+      if (sourceConfig.boundingQuery == null || sourceConfig.boundingQuery.isEmpty()) {
+        throw new IllegalArgumentException("The boundingQuery must be specified if numSplits is not set to 1.");
+      }
+    }
   }
 
   class GetSchemaRequest {
@@ -173,6 +192,9 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
                                         sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery(),
                                         sourceConfig.getEnableAutoCommit());
     hConf.set(DBConfiguration.INPUT_ORDER_BY_PROPERTY, sourceConfig.splitBy);
+    if (sourceConfig.numSplits != null) {
+      hConf.setInt(MRJobConfig.NUM_MAPS, sourceConfig.numSplits);
+    }
     context.setInput(new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf));
   }
 
@@ -210,19 +232,28 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
 
     @Description("The SELECT query to use to import data from the specified table. " +
       "You can specify an arbitrary number of columns to import, or import all columns using *. " +
-      "The Query should contain the '$CONDITIONS' string. " +
+      "The Query should contain the '$CONDITIONS' string unless numSplits is set to one. " +
       "For example, 'SELECT * FROM table WHERE $CONDITIONS'. The '$CONDITIONS' string" +
       "will be replaced by 'splitBy' field limits specified by the bounding query.")
     String importQuery;
 
+    @Nullable
     @Name(BOUNDING_QUERY)
     @Description("Bounding Query should return the min and max of the " +
-      "values of the 'splitBy' field. For example, 'SELECT MIN(id),MAX(id) FROM table'")
+      "values of the 'splitBy' field. For example, 'SELECT MIN(id),MAX(id) FROM table'. " +
+      "This is required unless numSplits is set to one.")
     String boundingQuery;
 
+    @Nullable
     @Name(SPLIT_BY)
-    @Description("Field Name which will be used to generate splits.")
+    @Description("Field Name which will be used to generate splits. This is required unless numSplits is set to one.")
     String splitBy;
+
+    @Nullable
+    @Description("The number of splits to generate. If set to one, the boundingQuery is not needed, " +
+      "and no $CONDITIONS string needs to be specified in the importQuery. If not specified, the " +
+      "execution framework will pick a value.")
+    Integer numSplits;
 
     private String getImportQuery() {
       return cleanQuery(importQuery);

@@ -51,7 +51,7 @@
       ]
     },
     {
-      "label": "Table Properties",
+      "label": "Database Properties",
       "properties": [
         {
           "widget-type": "textarea",
@@ -73,6 +73,11 @@
           "widget-type": "textbox",
           "label": "Split-By Field Name",
           "name": "splitBy"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Number of Splits to Generate",
+          "name": "numSplits"
         },
         {
           "widget-type": "select",

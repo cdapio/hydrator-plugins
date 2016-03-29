@@ -217,7 +217,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     Assert.assertEquals(1, Bytes.toInt(row1.getRow()));
     Assert.assertEquals(2, Bytes.toInt(row2.getRow()));
   }
-
+  
   @Test
   public void testDbSourceMultipleTables() throws Exception {
     Schema schema = Schema.recordOf("student",

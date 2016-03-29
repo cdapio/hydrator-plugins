@@ -16,19 +16,18 @@ a TimePartitionedFileSet.
 
 Properties
 ----------
-**importQuery:** The SELECT query to use to import data from the specified 
-table. You can specify an arbitrary number of columns to import, or import all columns using \*. 
-You can also specify a number of WHERE clauses or ORDER BY clauses. However, LIMIT and OFFSET clauses 
-should not be used in this query.
+**importQuery:** The SELECT query to use to import data from the specified table.
+You can specify an arbitrary number of columns to import, or import all columns using \*. The Query should
+contain the '$CONDITIONS' string. For example, 'SELECT * FROM table WHERE $CONDITIONS'.
+The '$CONDITIONS' string will be replaced by 'splitBy' field limits specified by the bounding query.
+The '$CONDITIONS' string is not required if numSplits is set to one.
 
-**countQuery:** The SELECT query to use to get the count of records to import from the
-specified table. Examples:
+**boundingQuery:** Bounding Query should return the min and max of the values of the 'splitBy' field.
+For example, 'SELECT MIN(id),MAX(id) FROM table'. Not required if numSplits is set to one.
 
-    SELECT COUNT(*) from <my_table> where <my_column> 1
-    SELECT COUNT(my_column) from my_table
+**splitBy:** Field Name which will be used to generate splits. Not required if numSplits is set to one.
 
-*Note:* Please include the same WHERE clauses in this query as the ones used in the import
-query to reflect an accurate number of records to import.
+**numSplits:** Number of splits to generate.
 
 **columnCase:** Sets the case of the column names returned from the query.
 Possible options are ``upper`` or ``lower``. By default or for any other input, the column names are not modified and
@@ -65,12 +64,14 @@ The column types will be used to derive the record field types output by the sou
 
     {
         "name": "Database",
+        "type": "batchsource",
         "properties": {
-            "importQuery": "select id,name,email,phone from users",
-            "countQuery": "select count(*) from users",
+            "importQuery": "select id,name,email,phone from users where $CONDITIONS",
+            "boundingQuery": "select min(id),max(id) from users",
+            "splitBy": "id",
             "connectionString": "jdbc:postgresql://localhost:5432/prod",
-            "user": "postgres",
-            "password": "",
+            "user": "user123",
+            "password": "password-abc",
             "jdbcPluginName": "postgres",
             "jdbcPluginType": "jdbc"
         }
