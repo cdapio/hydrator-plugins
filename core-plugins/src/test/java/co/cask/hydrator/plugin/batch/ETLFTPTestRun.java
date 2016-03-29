@@ -93,7 +93,8 @@ public class ETLFTPTestRun extends ETLBatchTestBase {
     }
   }
 
-  // TODO: Find out why modified FTPInputStream in cdap-app-fabric is not used in Unit Tests. Test fails otherwise.
+  // TODO: In unit-test, the classpath has hadoop-common jar ahead of cdap-app-fabric and hence the modified
+  // FTPInputStream.java in cdap-app-fabric is not getting picked up. Hence ignoring the test.
   @Ignore
   @Test
   public void testFTPBatchSource() throws Exception {
