@@ -403,7 +403,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
                                           FileBatchSource.DEFAULT_SCHEMA.toString(),
                                           Properties.TimePartitionedFileSetDataset.TPFS_NAME, "fileSink1")));
     ETLStage sink2 = new ETLStage(
-      "sink2", new Plugin("TPFSParquet",
+      "sink2", new Plugin("TPFSAvro",
                           ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA,
                                           FileBatchSource.DEFAULT_SCHEMA.toString(),
                                           Properties.TimePartitionedFileSetDataset.TPFS_NAME, "fileSink2")));
@@ -450,7 +450,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
                                          Properties.TimePartitionedFileSetDataset.TPFS_NAME, "fileSink1")));
     // duplicate name for 2nd sink, should throw exception
     ETLStage sink2 = new ETLStage(
-      "sink", new Plugin("TPFSParquet",
+      "sink", new Plugin("TPFSAvro",
                          ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA,
                                          FileBatchSource.DEFAULT_SCHEMA.toString(),
                                          Properties.TimePartitionedFileSetDataset.TPFS_NAME, "fileSink2")));

@@ -178,7 +178,6 @@
               co.cask.hydrator.plugin.validator.*;
               co.cask.hydrator.plugin.common;
               org.apache.avro.mapreduce;
-              parquet.avro.*;parquet.hadoop.*;
               co.cask.hydrator.plugin.realtime.*;
               co.cask.hydrator.plugin.transform.*;
               co.cask.hydrator.plugin.validator.*;
