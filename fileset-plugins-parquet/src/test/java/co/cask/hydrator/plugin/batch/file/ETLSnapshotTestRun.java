@@ -35,6 +35,8 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.fs.Path;
 import org.apache.twill.filesystem.Location;
 import org.junit.Assert;
+import org.junit.Ignore;
+import org.junit.Test;
 import parquet.avro.AvroParquetReader;
 
 import java.io.IOException;
@@ -52,7 +54,10 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
     Schema.Field.of("id", Schema.of(Schema.Type.STRING)),
     Schema.Field.of("price", Schema.of(Schema.Type.INT)));
 
-  //@Test
+
+  // CDAP-5488 - Remove this test or remove the Ignore annotation
+  @Ignore
+  @Test
   public void testMultiSnapshotOutput() throws Exception {
     String tableName = "SnapshotInputTable";
     ETLStage source = new ETLStage(
