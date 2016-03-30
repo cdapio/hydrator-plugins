@@ -34,6 +34,7 @@ import co.cask.hydrator.plugin.batch.sink.S3AvroBatchSink;
 import co.cask.hydrator.plugin.batch.sink.SnapshotFileBatchAvroSink;
 import co.cask.hydrator.plugin.batch.sink.TableSink;
 import co.cask.hydrator.plugin.batch.sink.TimePartitionedFileSetDatasetAvroSink;
+import co.cask.hydrator.plugin.batch.source.FTPBatchSource;
 import co.cask.hydrator.plugin.batch.source.KVTableSource;
 import co.cask.hydrator.plugin.batch.source.SnapshotFileBatchAvroSource;
 import co.cask.hydrator.plugin.batch.source.StreamBatchSource;
@@ -123,6 +124,7 @@ public class ETLBatchTestBase extends TestBase {
                       SnapshotFileBatchAvroSink.class,
                       SnapshotFileBatchAvroSource.class,
                       S3AvroBatchSink.class,
+                      FTPBatchSource.class,
                       ProjectionTransform.class, ScriptFilterTransform.class,
                       ValidatorTransform.class, CoreValidator.class,
                       StructuredRecordToGenericRecordTransform.class,
