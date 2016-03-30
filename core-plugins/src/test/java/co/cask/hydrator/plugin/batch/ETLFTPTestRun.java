@@ -93,7 +93,8 @@ public class ETLFTPTestRun extends ETLBatchTestBase {
     }
   }
 
-  // TODO: In unit-test, the classpath has hadoop-common jar ahead of cdap-app-fabric and hence the modified
+  // TODO: https://issues.cask.co/browse/CDAP-5480
+  // In unit-test, the classpath has hadoop-common jar ahead of cdap-app-fabric and hence the modified
   // FTPInputStream.java in cdap-app-fabric is not getting picked up. Hence ignoring the test.
   @Ignore
   @Test
