@@ -21,7 +21,6 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.batch.BatchSource;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
@@ -82,17 +81,11 @@ public class FTPBatchSource extends FileBatchSource {
     @Nullable
     public String inputFormatClassName;
 
-    public FTPBatchSourceConfig() {
-      this.fileSystemProperties = GSON.toJson(ImmutableMap.<String, String>of());
-      this.fileRegex = ".*";
-    }
-
     public FTPBatchSourceConfig(String path, @Nullable String fileSystemProperties, @Nullable String fileRegex,
                                 @Nullable String inputFormatClassName) {
       this.path = path;
-      this.fileSystemProperties = fileSystemProperties == null ? GSON.toJson(ImmutableMap.<String, String>of()) :
-        fileSystemProperties;
-      this.fileRegex = fileRegex == null ? ".*" : fileRegex;
+      this.fileSystemProperties = fileSystemProperties;
+      this.fileRegex = fileRegex;
       this.inputFormatClassName = inputFormatClassName;
     }
   }
