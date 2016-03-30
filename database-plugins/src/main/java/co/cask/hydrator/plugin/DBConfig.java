@@ -72,8 +72,14 @@ public class DBConfig extends PluginConfig {
     return enableAutoCommit;
   }
 
-  protected String cleanQuery(String query) {
+  protected String cleanQuery(@Nullable String query) {
+    if (query == null) {
+      return null;
+    }
     query = query.trim();
+    if (query.isEmpty()) {
+      return query;
+    }
     // find the last character that is not whitespace or a semicolon
     int idx = query.length() - 1;
     char currChar = query.charAt(idx);
