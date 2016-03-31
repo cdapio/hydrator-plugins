@@ -17,7 +17,6 @@
 package co.cask.hydrator.plugin.batch.aggregator;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -39,7 +38,7 @@ public class GroupByAggregatorConfigTest {
                                                "lastItem: last( item)," +
                                                "smallestPurchase:min( price) , " +
                                                "largestPurchase :max(price ) ");
-    Assert.assertEquals(ImmutableSet.of("user", "item", "email"), config.getGroupByFields());
+    Assert.assertEquals(ImmutableList.of("user", "item", "email"), config.getGroupByFields());
     List<GroupByConfig.FunctionInfo> expected = ImmutableList.of(
       new GroupByConfig.FunctionInfo("avgPrice", "price", GroupByConfig.Function.AVG),
       new GroupByConfig.FunctionInfo("numPurchases", "*", GroupByConfig.Function.COUNT),
