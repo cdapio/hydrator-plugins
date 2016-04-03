@@ -39,6 +39,7 @@
     <module>kafka-plugins</module>
     <module>mongodb-plugins</module>
     <module>transform-plugins</module>
+    <module>omniture-plugins</module>
   </modules>
 
   <licenses>
