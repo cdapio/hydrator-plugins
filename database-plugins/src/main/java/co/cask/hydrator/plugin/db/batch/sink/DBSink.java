@@ -189,9 +189,14 @@ public class DBSink extends BatchSink<StructuredRecord, DBRecord, NullWritable> 
    * {@link PluginConfig} for {@link DBSink}
    */
   public static class DBSinkConfig extends DBConfig {
+    public static final String COLUMNS = "columns";
+    public static final String TABLE_NAME = "tableName";
+
+    @Name(COLUMNS)
     @Description("Comma-separated list of columns in the specified table to export to.")
     public String columns;
 
+    @Name(TABLE_NAME)
     @Description("Name of the database table to write to.")
     public String tableName;
 

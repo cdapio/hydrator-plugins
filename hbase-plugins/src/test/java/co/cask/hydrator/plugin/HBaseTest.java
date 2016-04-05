@@ -18,31 +18,31 @@ package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.artifact.ArtifactVersion;
 import co.cask.cdap.api.common.Bytes;
-import co.cask.cdap.api.data.format.Formats;
+import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.table.Row;
-import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.etl.api.PipelineConfigurable;
+import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
-import co.cask.cdap.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
-import co.cask.cdap.etl.common.ETLStage;
-import co.cask.cdap.etl.common.Plugin;
+import co.cask.cdap.etl.mock.batch.MockSink;
+import co.cask.cdap.etl.mock.batch.MockSource;
+import co.cask.cdap.etl.mock.test.HydratorTestBase;
+import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
+import co.cask.cdap.etl.proto.v2.ETLPlugin;
+import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
+import co.cask.cdap.proto.id.NamespaceId;
+import co.cask.cdap.proto.id.NamespacedArtifactId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
-import co.cask.cdap.test.StreamManager;
-import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
-import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.sink.HBaseSink;
 import co.cask.hydrator.plugin.source.HBaseSource;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
 import org.apache.hadoop.hbase.HBaseTestingUtility;
 import org.apache.hadoop.hbase.MiniHBaseCluster;
 import org.apache.hadoop.hbase.client.Get;
@@ -63,7 +63,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,9 +71,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Unit Tests for {@link HBaseSource} and {@link HBaseSink}
  */
-public class HBaseTest extends TestBase {
-  private static final String STREAM_NAME = "someStream";
-  private static final String TABLE_NAME = "outputTable";
+public class HBaseTest extends HydratorTestBase {
   private static final String HBASE_TABLE_NAME = "input";
   private static final String HBASE_FAMILY_COLUMN = "col";
   private static final String ROW1 = "row1";
@@ -98,9 +95,10 @@ public class HBaseTest extends TestBase {
 
   private static final ArtifactVersion CURRENT_VERSION = new ArtifactVersion("3.2.0");
 
-  private static final Id.Artifact BATCH_APP_ARTIFACT_ID = Id.Artifact.from(Id.Namespace.DEFAULT,
-                                                                            "etlbatch", CURRENT_VERSION);
-  private static final ArtifactSummary ETLBATCH_ARTIFACT = ArtifactSummary.from(BATCH_APP_ARTIFACT_ID);
+  private static final NamespacedArtifactId BATCH_APP_ARTIFACT_ID =
+    NamespaceId.DEFAULT.artifact("etlbatch", CURRENT_VERSION.getVersion());
+  private static final ArtifactSummary ETLBATCH_ARTIFACT =
+    new ArtifactSummary(BATCH_APP_ARTIFACT_ID.getArtifact(), BATCH_APP_ARTIFACT_ID.getVersion());
 
   private static HBaseTestingUtility testUtil;
   private static HBaseAdmin hBaseAdmin;
@@ -109,19 +107,14 @@ public class HBaseTest extends TestBase {
   @BeforeClass
   public static void setupTest() throws Exception {
     // add the artifact for etl batch app
-    addAppArtifact(BATCH_APP_ARTIFACT_ID, ETLBatchApplication.class,
-                   BatchSource.class.getPackage().getName(),
-                   PipelineConfigurable.class.getPackage().getName());
+    setupBatchArtifacts(BATCH_APP_ARTIFACT_ID, ETLBatchApplication.class);
 
     // add artifact for batch sources and sinks
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "batch-plugins", "1.0.0"), BATCH_APP_ARTIFACT_ID,
+    addPluginArtifact(NamespaceId.DEFAULT.artifact("batch-plugins", "1.0.0"), BATCH_APP_ARTIFACT_ID,
                       HBaseSource.class, HBaseSink.class,
                       TableInputFormat.class, TableOutputFormat.class,
                       Result.class, ImmutableBytesWritable.class,
                       Put.class, Mutation.class);
-
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "test-plugins", "1.0.0"), BATCH_APP_ARTIFACT_ID,
-                      TableSink.class, StreamBatchSource.class);
   }
 
   @Before
@@ -158,21 +151,8 @@ public class HBaseTest extends TestBase {
 
   @Test
   public void testHBaseSink() throws Exception {
-    StreamManager streamManager = getStreamManager(STREAM_NAME);
-    streamManager.createStream();
-    streamManager.send("AAPL|10|500.32");
-    streamManager.send("ORCL|13|212.36");
-
-    ETLStage source = new ETLStage("Stream", new Plugin(
-      "Stream",
-      ImmutableMap.<String, String>builder()
-        .put(Properties.Stream.NAME, STREAM_NAME)
-        .put(Properties.Stream.DURATION, "10m")
-        .put(Properties.Stream.DELAY, "0d")
-        .put(Properties.Stream.FORMAT, Formats.CSV)
-        .put(Properties.Stream.SCHEMA, BODY_SCHEMA.toString())
-        .put("format.setting.delimiter", "|")
-        .build()));
+    String inputDatasetName = "input-hbasesinktest";
+    ETLStage source = new ETLStage("source", MockSource.getPlugin(inputDatasetName));
 
     Map<String, String> hBaseProps = new HashMap<>();
     hBaseProps.put("tableName", HBASE_TABLE_NAME);
@@ -181,17 +161,23 @@ public class HBaseTest extends TestBase {
     hBaseProps.put("schema", BODY_SCHEMA.toString());
     hBaseProps.put("zkNodeParent", testUtil.getConfiguration().get("zookeeper.znode.parent"));
     hBaseProps.put("rowField", "ticker");
-    ETLStage sink = new ETLStage("HBase", new Plugin("HBase", hBaseProps));
-    List<ETLStage> transforms = new ArrayList<>();
+    ETLStage sink = new ETLStage("HBase", new ETLPlugin("HBase", BatchSink.PLUGIN_TYPE, hBaseProps, null));
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(source)
-      .addSink(sink)
+      .addStage(source)
+      .addStage(sink)
       .addConnection(source.getName(), sink.getName())
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "HBaseSinkTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
+
+    DataSetManager<Table> inputManager = getDataset(inputDatasetName);
+    List<StructuredRecord> input = ImmutableList.of(
+      StructuredRecord.builder(BODY_SCHEMA).set("ticker", "AAPL").set("col1", "10").set("col2", "500.32").build(),
+      StructuredRecord.builder(BODY_SCHEMA).set("ticker", "ORCL").set("col1", "13").set("col2", "212.36").build()
+    );
+    MockSource.writeInput(inputManager, input);
 
     MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
     mrManager.start();
@@ -222,16 +208,13 @@ public class HBaseTest extends TestBase {
     hBaseProps.put("schema", BODY_SCHEMA.toString());
     hBaseProps.put("rowField", "ticker");
 
-    ETLStage source = new ETLStage("HBase", new Plugin("HBase", hBaseProps));
-    ETLStage sink = new ETLStage("Table", new Plugin(
-      "Table",
-      ImmutableMap.of("name", TABLE_NAME,
-                      Table.PROPERTY_SCHEMA, BODY_SCHEMA.toString(),
-                      Table.PROPERTY_SCHEMA_ROW_FIELD, "ticker")));
+    ETLStage source = new ETLStage("HBase", new ETLPlugin("HBase", BatchSource.PLUGIN_TYPE, hBaseProps, null));
+    String outputDatasetName = "output-hbasesourcetest";
+    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(source)
-      .addSink(sink)
+      .addStage(source)
+      .addStage(sink)
       .addConnection(source.getName(), sink.getName())
       .build();
 
@@ -243,22 +226,18 @@ public class HBaseTest extends TestBase {
     mrManager.start();
     mrManager.waitForFinish(5, TimeUnit.MINUTES);
 
-    DataSetManager<Table> outputManager = getDataset(TABLE_NAME);
-    Table outputTable = outputManager.get();
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);
+    Assert.assertEquals(2, outputRecords.size());
+    String rowkey = outputRecords.get(0).get("ticker");
+    StructuredRecord row1 = ROW1.equals(rowkey) ? outputRecords.get(0) : outputRecords.get(1);
+    StructuredRecord row2 = ROW1.equals(rowkey) ? outputRecords.get(1) : outputRecords.get(0);
 
-    // Scanner to verify number of rows
-    Scanner scanner = outputTable.scan(null, null);
-    int countRows = 0;
-    while (scanner.next() != null) {
-      countRows++;
-    }
-    Assert.assertEquals(2, countRows);
-    scanner.close();
-    Row row = outputTable.get(ROW1.getBytes());
-    Assert.assertNotNull(row);
-    Assert.assertEquals(VAL1, Bytes.toString(row.get(COL1)));
-    Assert.assertEquals(VAL2, Bytes.toString(row.get(COL2)));
-    scanner.close();
-    // Verify data
+    Assert.assertEquals(ROW1, row1.get("ticker"));
+    Assert.assertEquals(VAL1, row1.get(COL1));
+    Assert.assertEquals(VAL2, row1.get(COL2));
+    Assert.assertEquals(ROW2, row2.get("ticker"));
+    Assert.assertEquals(VAL1, row2.get(COL1));
+    Assert.assertEquals(VAL2, row2.get(COL2));
   }
 }

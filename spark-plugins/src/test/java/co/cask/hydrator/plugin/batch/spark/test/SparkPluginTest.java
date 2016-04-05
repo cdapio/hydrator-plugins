@@ -20,28 +20,26 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.datapipeline.DataPipelineApp;
 import co.cask.cdap.datapipeline.SmartWorkflow;
-import co.cask.cdap.etl.api.PipelineConfigurable;
-import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.SparkCompute;
 import co.cask.cdap.etl.api.batch.SparkSink;
+import co.cask.cdap.etl.mock.batch.MockSink;
+import co.cask.cdap.etl.mock.batch.MockSource;
+import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
-import co.cask.cdap.proto.artifact.ArtifactRange;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
+import co.cask.cdap.proto.id.NamespaceId;
+import co.cask.cdap.proto.id.NamespacedArtifactId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
-import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.batch.spark.NaiveBayesClassifier;
 import co.cask.hydrator.plugin.batch.spark.NaiveBayesTrainer;
-import co.cask.hydrator.plugin.batch.spark.testclasses.MockSink;
-import co.cask.hydrator.plugin.batch.spark.testclasses.MockSource;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -56,13 +54,13 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests for Spark plugins.
  */
-public class SparkPluginTest extends TestBase {
+public class SparkPluginTest extends HydratorTestBase {
 
   @ClassRule
   public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
 
-  protected static final Id.Artifact DATAPIPELINE_ARTIFACT_ID =
-    Id.Artifact.from(Id.Namespace.DEFAULT, "data-pipeline", "3.2.0");
+  protected static final NamespacedArtifactId DATAPIPELINE_ARTIFACT_ID =
+    NamespaceId.DEFAULT.artifact("data-pipeline", "3.2.0");
   protected static final ArtifactSummary DATAPIPELINE_ARTIFACT = new ArtifactSummary("data-pipeline", "3.2.0");
 
   private static final String CLASSIFIED_TEXTS = "classifiedTexts";
@@ -70,22 +68,11 @@ public class SparkPluginTest extends TestBase {
   @BeforeClass
   public static void setupTest() throws Exception {
     // add the artifact for etl batch app
-    addAppArtifact(DATAPIPELINE_ARTIFACT_ID, DataPipelineApp.class,
-                   BatchSource.class.getPackage().getName(), SparkSink.class.getPackage().getName(),
-                   PipelineConfigurable.class.getPackage().getName());
-
-    Set<ArtifactRange> parents = ImmutableSet.of(
-      new ArtifactRange(Id.Namespace.DEFAULT, DATAPIPELINE_ARTIFACT_ID.getName(),
-                        DATAPIPELINE_ARTIFACT_ID.getVersion(), true, DATAPIPELINE_ARTIFACT_ID.getVersion(), true)
-    );
+    setupBatchArtifacts(DATAPIPELINE_ARTIFACT_ID, DataPipelineApp.class);
 
     // add artifact for spark plugins
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "spark-plugins", "1.0.0"), parents,
+    addPluginArtifact(NamespaceId.DEFAULT.artifact("spark-plugins", "1.0.0"), DATAPIPELINE_ARTIFACT_ID,
                       NaiveBayesTrainer.class, NaiveBayesClassifier.class);
-
-    // add artifact for test plugins
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "test-sources", "1.0.0"), parents,
-                      MockSource.class, MockSink.class);
   }
 
   @Test

@@ -54,7 +54,7 @@ import javax.annotation.Nullable;
  * and writes it to the Cassandra server.
  * </p>
  */
-@Plugin(type = "realtimesink")
+@Plugin(type = RealtimeSink.PLUGIN_TYPE)
 @Name("Cassandra")
 @Description("CDAP Cassandra Realtime Sink.")
 public class RealtimeCassandraSink extends RealtimeSink<StructuredRecord> {

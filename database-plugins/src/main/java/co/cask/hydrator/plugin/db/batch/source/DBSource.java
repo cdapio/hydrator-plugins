@@ -227,9 +227,12 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
    * {@link PluginConfig} for {@link DBSource}
    */
   public static class DBSourceConfig extends DBConfig {
+    public static final String IMPORT_QUERY = "importQuery";
     public static final String BOUNDING_QUERY = "boundingQuery";
     public static final String SPLIT_BY = "splitBy";
+    public static final String NUM_SPLITS = "numSplits";
 
+    @Name(IMPORT_QUERY)
     @Description("The SELECT query to use to import data from the specified table. " +
       "You can specify an arbitrary number of columns to import, or import all columns using *. " +
       "The Query should contain the '$CONDITIONS' string unless numSplits is set to one. " +
