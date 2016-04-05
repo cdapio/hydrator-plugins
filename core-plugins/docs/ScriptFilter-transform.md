@@ -39,11 +39,13 @@ This example filters out any records whose ``'count'`` field contains a value gr
                 return input.count > 100;
             }",
             "lookup": "{
-                \"purchases\":{
-                    \"type\":\"DATASET\",
-                    \"datasetProperties\":{
-                        \"dataset_argument1\":\"foo\",
-                        \"dataset_argument2\":\"bar\"
+                \"tables\":{
+                    \"purchases\":{
+                        \"type\":\"DATASET\",
+                        \"datasetProperties\":{
+                            \"dataset_argument1\":\"foo\",
+                            \"dataset_argument2\":\"bar\"
+                        }
                     }
                 }
             }"
