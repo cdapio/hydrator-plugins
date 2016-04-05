@@ -24,11 +24,16 @@ import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
 import co.cask.cdap.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
+import co.cask.cdap.etl.common.ETLStage;
+import co.cask.cdap.etl.common.Plugin;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.RunRecord;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
+import co.cask.cdap.proto.id.ApplicationId;
+import co.cask.cdap.proto.id.NamespaceId;
+import co.cask.cdap.proto.id.NamespacedArtifactId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestBase;
@@ -62,14 +67,16 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import javax.sql.rowset.serial.SerialBlob;
 
 /**
  * Database Plugin Tests setup.
  */
 public class DatabasePluginTestBase extends TestBase {
-  protected static final Id.Artifact APP_ARTIFACT_ID = Id.Artifact.from(Id.Namespace.DEFAULT, "etlbatch", "3.2.0");
+  protected static final NamespacedArtifactId APP_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("etlbatch", "3.2.0");
   protected static final ArtifactSummary ETLBATCH_ARTIFACT = new ArtifactSummary("etlbatch", "3.2.0");
   protected static final String CLOB_DATA =
     "this is a long string with line separators \n that can be used as \n a clob";
@@ -93,7 +100,7 @@ public class DatabasePluginTestBase extends TestBase {
     }
 
     // add the artifact for etl batch app
-    addAppArtifact(APP_ARTIFACT_ID, ETLBatchApplication.class,
+    addAppArtifact(APP_ARTIFACT_ID.toId(), ETLBatchApplication.class,
                    BatchSource.class.getPackage().getName(),
                    PipelineConfigurable.class.getPackage().getName(),
                    "org.apache.avro.mapred", "org.apache.avro", "org.apache.avro.generic", "org.apache.avro.io",
@@ -103,17 +110,17 @@ public class DatabasePluginTestBase extends TestBase {
                    "parquet.hadoop.api", "parquet.hadoop", "parquet.schema", "parquet.io.api");
 
     // add artifact for tests
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "test-plugins", "1.0.0"), APP_ARTIFACT_ID,
+    addPluginArtifact(NamespaceId.DEFAULT.artifact("test-plugins", "1.0.0"), APP_ARTIFACT_ID,
                       TableSink.class, TableSource.class);
 
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "database-plugins", "1.0.0"), APP_ARTIFACT_ID,
+    addPluginArtifact(NamespaceId.DEFAULT.artifact("database-plugins", "1.0.0"), APP_ARTIFACT_ID,
                       DBSource.class, DBSink.class, DBRecord.class, ETLDBOutputFormat.class,
                       DataDrivenETLDBInputFormat.class, DBRecord.class);
 
     // add hypersql 3rd party plugin
     PluginClass hypersql = new PluginClass("jdbc", "hypersql", "hypersql jdbc driver", JDBCDriver.class.getName(),
                                            null, Collections.<String, PluginPropertyField>emptyMap());
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "hsql-jdbc", "1.0.0"), APP_ARTIFACT_ID,
+    addPluginArtifact(NamespaceId.DEFAULT.artifact("hsql-jdbc", "1.0.0"), APP_ARTIFACT_ID,
                       Sets.newHashSet(hypersql), JDBCDriver.class);
 
 
@@ -259,6 +266,28 @@ public class DatabasePluginTestBase extends TestBase {
     for (RunRecord runRecord : mrManager.getHistory()) {
       Assert.assertEquals(failureMessage, ProgramRunStatus.FAILED, runRecord.getStatus());
     }
+  }
+
+  protected ApplicationManager deployETL(Plugin sourcePlugin, Plugin sinkPlugin) throws Exception {
+    ETLStage source = new ETLStage("source", sourcePlugin);
+    ETLStage sink = new ETLStage("sink", sinkPlugin);
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .setSource(source)
+      .addSink(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app("dbSinkTest");
+    return deployApplication(appId.toId(), appRequest);
+  }
+
+  protected void runETLOnce(ApplicationManager appManager) throws TimeoutException, InterruptedException {
+    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
+    mrManager.start();
+    mrManager.waitForFinish(5, TimeUnit.MINUTES);
+    List<RunRecord> runRecords = mrManager.getHistory();
+    Assert.assertEquals(ProgramRunStatus.COMPLETED, runRecords.get(0).getStatus());
   }
 
   @AfterClass
