@@ -109,9 +109,8 @@ public class DBRecord implements Writable, DBWritable {
     List<Schema.Field> schemaFields = recordSchema.getFields();
     for (Schema.Field field : schemaFields) {
       String fieldName = field.getName();
-      Schema.Type fieldType = field.getSchema().getType();
+      Schema.Type fieldType = getNonNullableType(field);
       Object fieldValue = record.get(fieldName);
-      // In JDBC, field indices start with 1
       writeToDataOut(out, fieldType, fieldValue);
     }
   }
@@ -133,8 +132,6 @@ public class DBRecord implements Writable, DBWritable {
     }
   }
 
-
-
   private Schema.Type getNonNullableType(Schema.Field field) {
     Schema.Type type;
     if (field.getSchema().isNullable()) {
@@ -144,8 +141,8 @@ public class DBRecord implements Writable, DBWritable {
     }
     Preconditions.checkArgument(type.isSimpleType(),
                                 "Only simple types are supported (boolean, int, long, float, double, string, bytes) " +
-                                  "for writing to a Database Sink. Found %s. Please remove this column or " +
-                                  "transform it to a simple type.", type);
+                                  "for writing a DBRecord, but found '%s' as the type for column '%s'. Please " +
+                                  "remove this column or transform it to a simple type.", type, field.getName());
     return type;
   }
 
@@ -193,7 +190,10 @@ public class DBRecord implements Writable, DBWritable {
     return original;
   }
 
-  private void writeToDataOut(DataOutput out, Schema.Type fieldType, Object fieldValue) throws IOException {
+  private void writeToDataOut(DataOutput out, Schema.Type fieldType, @Nullable Object fieldValue) throws IOException {
+    if (fieldValue == null) {
+      return;
+    }
     switch (fieldType) {
       case NULL:
         break;
@@ -227,12 +227,16 @@ public class DBRecord implements Writable, DBWritable {
     }
   }
 
-  private void writeToDB(PreparedStatement stmt, Schema.Type fieldType, Object fieldValue,
+  private void writeToDB(PreparedStatement stmt, Schema.Type fieldType, @Nullable Object fieldValue,
                          int fieldIndex) throws SQLException {
     int sqlIndex = fieldIndex + 1;
+    if (fieldValue == null) {
+      stmt.setNull(sqlIndex, columnTypes[fieldIndex]);
+      return;
+    }
     switch (fieldType) {
       case NULL:
-        stmt.setNull(sqlIndex, fieldIndex);
+        stmt.setNull(sqlIndex, columnTypes[fieldIndex]);
         break;
       case STRING:
         // clob can also be written to as setString
