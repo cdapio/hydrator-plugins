@@ -119,9 +119,9 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Export-Package>co.cask.hydrator.plugin.batch.*;org.elasticsearch.hadoop.mr.*;
+            <_exportcontents>co.cask.hydrator.plugin.batch.*;org.elasticsearch.hadoop.mr.*;
               org.apache.commons.lang;org.apache.commons.logging.*;
-              org.codehaus.jackson.*;co.cask.hydrator.plugin.realtime.*</Export-Package>
+              org.codehaus.jackson.*;co.cask.hydrator.plugin.realtime.*</_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
             <Embed-Directory>lib</Embed-Directory>
