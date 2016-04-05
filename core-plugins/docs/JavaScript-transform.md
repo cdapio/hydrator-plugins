@@ -82,11 +82,13 @@ Example
                 ]
             }",
             "lookup": "{
-                \"purchases\":{
-                    \"type\":\"DATASET\",
-                    \"datasetProperties\":{
-                        \"dataset_argument1\":\"foo\",
-                        \"dataset_argument2\":\"bar\"
+                \"tables\":{
+                    \"purchases\":{
+                        \"type\":\"DATASET\",
+                        \"datasetProperties\":{
+                            \"dataset_argument1\":\"foo\",
+                            \"dataset_argument2\":\"bar\"
+                        }
                     }
                 }
             }"
