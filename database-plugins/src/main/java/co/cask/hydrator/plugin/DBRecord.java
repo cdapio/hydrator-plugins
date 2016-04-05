@@ -142,11 +142,7 @@ public class DBRecord implements Writable, DBWritable {
       String fieldName = field.getName();
       Schema.Type fieldType = getNonNullableType(field);
       Object fieldValue = record.get(fieldName);
-      if (fieldValue != null) {
-        writeToDB(stmt, fieldType, fieldValue, i);
-      } else {
-        stmt.setNull(i+1, columnTypes[i]);
-      }
+      writeToDB(stmt, fieldType, fieldValue, i);
     }
   }
 
@@ -304,9 +300,13 @@ public class DBRecord implements Writable, DBWritable {
     }
   }
 
-  private void writeToDB(PreparedStatement stmt, Schema.Type fieldType, Object fieldValue,
+  private void writeToDB(PreparedStatement stmt, Schema.Type fieldType, @Nullable Object fieldValue,
                          int fieldIndex) throws SQLException {
     int sqlIndex = fieldIndex + 1;
+    if (fieldValue == null) {
+      stmt.setNull(sqlIndex, columnTypes[fieldIndex]);
+      return;
+    }
     switch (fieldType) {
       case NULL:
         stmt.setNull(sqlIndex, fieldIndex);
