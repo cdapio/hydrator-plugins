@@ -109,8 +109,8 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Export-Package>co.cask.hydrator.plugin.batch.*;org.apache.cassandra.hadoop.*;
-              org.apache.commons.lang;co.cask.hydrator.plugin.realtime.*</Export-Package>
+            <_exportcontents>co.cask.hydrator.plugin.batch.*;org.apache.cassandra.hadoop.*;
+              org.apache.commons.lang;co.cask.hydrator.plugin.realtime.*</_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
             <Embed-Directory>lib</Embed-Directory>

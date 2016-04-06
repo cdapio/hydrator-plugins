@@ -17,40 +17,36 @@
 package co.cask.hydrator.plugin.db.batch.sink;
 
 import co.cask.cdap.api.common.Bytes;
-import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Put;
-import co.cask.cdap.api.dataset.table.Row;
-import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.common.ETLStage;
 import co.cask.cdap.etl.common.Plugin;
-import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.RunRecord;
 import co.cask.cdap.proto.artifact.AppRequest;
+import co.cask.cdap.proto.id.ApplicationId;
+import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
-import co.cask.cdap.test.TestBase;
 import co.cask.hydrator.plugin.DatabasePluginTestBase;
 import co.cask.hydrator.plugin.common.Properties;
+import co.cask.hydrator.plugin.db.batch.source.DBSource;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.sql.Connection;
-import java.sql.Date;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Time;
-import java.text.SimpleDateFormat;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Test for ETL using databases.
@@ -73,36 +69,53 @@ public class DBSinkTestRun extends DatabasePluginTestBase {
                                                    Properties.DB.COLUMNS, cols,
                                                    Properties.DB.JDBC_PLUGIN_NAME, "hypersql"
                                    ));
-    ETLStage source = new ETLStage("source", sourceConfig);
-    ETLStage sink = new ETLStage("sink", sinkConfig);
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(source)
-      .addSink(sink)
-      .addConnection(source.getName(), sink.getName())
-      .build();
-
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSinkTest");
-    ApplicationManager appManager = TestBase.deployApplication(appId, appRequest);
+    ApplicationManager appManager = deployETL(sourceConfig, sinkConfig);
 
     createInputData();
 
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(5, TimeUnit.MINUTES);
-    List<RunRecord> runRecords = mrManager.getHistory();
-    Assert.assertEquals(ProgramRunStatus.COMPLETED, runRecords.get(0).getStatus());
+    runETLOnce(appManager);
 
-    Connection conn = getConnection();
-    Statement stmt = conn.createStatement();
-    stmt.execute("SELECT * FROM \"MY_DEST_TABLE\"");
-    ResultSet resultSet = stmt.getResultSet();
-    Assert.assertTrue(resultSet.next());
-    Assert.assertEquals("user1", resultSet.getString("NAME"));
-    Assert.assertTrue(resultSet.next());
-    Assert.assertEquals("user2", resultSet.getString("NAME"));
-    Assert.assertFalse(resultSet.next());
-    resultSet.close();
+    try (Connection conn = getConnection();
+         Statement stmt = conn.createStatement()) {
+      stmt.execute("SELECT * FROM \"MY_DEST_TABLE\"");
+      try (ResultSet resultSet = stmt.getResultSet()) {
+        Assert.assertTrue(resultSet.next());
+        Assert.assertEquals("user1", resultSet.getString("NAME"));
+        Assert.assertTrue(resultSet.next());
+        Assert.assertEquals("user2", resultSet.getString("NAME"));
+        Assert.assertFalse(resultSet.next());
+      }
+    }
+  }
+
+  @Test
+  public void testNullFields() throws Exception {
+    prepareInputAndOutputTables();
+    String importQuery = "SELECT A, B, C FROM INPUT WHERE $CONDITIONS";
+    String boundingQuery = "SELECT MIN(A),MAX(A) from INPUT";
+    String splitBy = "A";
+    Plugin sourceConfig = new Plugin(
+      "Database",
+      ImmutableMap.<String, String>builder()
+        .put(Properties.DB.CONNECTION_STRING, getConnectionURL())
+        .put(Properties.DB.TABLE_NAME, "INPUT")
+        .put(Properties.DB.IMPORT_QUERY, importQuery)
+        .put(DBSource.DBSourceConfig.BOUNDING_QUERY, boundingQuery)
+        .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
+        .put(Properties.DB.JDBC_PLUGIN_NAME, "hypersql")
+        .build()
+    );
+    Plugin sinkConfig = new Plugin(
+      "Database",
+      ImmutableMap.of(
+        Properties.DB.CONNECTION_STRING, getConnectionURL(),
+        Properties.DB.TABLE_NAME, "OUTPUT",
+        Properties.DB.COLUMNS, "A, B, C",
+        Properties.DB.JDBC_PLUGIN_NAME, "hypersql")
+    );
+    ApplicationManager appManager = deployETL(sourceConfig, sinkConfig);
+    // if nulls are not handled correctly, the MR program will fail with an NPE
+    runETLOnce(appManager);
   }
 
   private void createInputData() throws Exception {
@@ -132,6 +145,29 @@ public class DBSinkTestRun extends DatabasePluginTestBase {
       put.add("CLOB_COL", CLOB_DATA);
       inputTable.put(put);
       inputManager.flush();
+    }
+  }
+
+  private void prepareInputAndOutputTables() throws SQLException {
+    try (Connection conn = getConnection();
+         Statement stmt = conn.createStatement()) {
+      stmt.execute("create table INPUT (a float, b double, c varchar(20))");
+      try (PreparedStatement pStmt = conn.prepareStatement("insert into INPUT values(?,?,?)")) {
+        for (int i = 1; i <= 5; i++) {
+          if (i % 2 == 0) {
+            pStmt.setNull(1, 6);
+            pStmt.setDouble(2, 5.44342321332d);
+          } else {
+            pStmt.setFloat(1, 4.3f);
+            pStmt.setNull(2, 8);
+          }
+          pStmt.setString(3, "input" + i);
+          pStmt.addBatch();
+        }
+        pStmt.executeBatch();
+      }
+      // create output table
+      stmt.execute("create table OUTPUT (a float, b double, c varchar(20))");
     }
   }
 }

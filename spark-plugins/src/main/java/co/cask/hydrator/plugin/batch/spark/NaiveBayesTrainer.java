@@ -24,6 +24,7 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.FileSet;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.PipelineConfigurer;
+import co.cask.cdap.etl.api.batch.SparkExecutionPluginContext;
 import co.cask.cdap.etl.api.batch.SparkPluginContext;
 import co.cask.cdap.etl.api.batch.SparkSink;
 import com.google.common.base.Preconditions;
@@ -98,7 +99,7 @@ public final class NaiveBayesTrainer extends SparkSink<StructuredRecord> {
   }
 
   @Override
-  public void run(SparkPluginContext sparkContext, JavaRDD<StructuredRecord> input) throws Exception {
+  public void run(SparkExecutionPluginContext context, JavaRDD<StructuredRecord> input) throws Exception {
     Preconditions.checkArgument(input.count() != 0, "Input RDD is empty.");
 
     final HashingTF tf = new HashingTF(100);
@@ -116,9 +117,9 @@ public final class NaiveBayesTrainer extends SparkSink<StructuredRecord> {
     final NaiveBayesModel model = NaiveBayes.train(trainingData.rdd(), 1.0);
 
     // save the model to a file in the output FileSet
-    JavaSparkContext javaSparkContext = sparkContext.getOriginalSparkContext();
-    FileSet outputFS = sparkContext.getDataset(config.fileSetName);
-    model.save(JavaSparkContext.toSparkContext(javaSparkContext),
+    JavaSparkContext sparkContext = context.getSparkContext();
+    FileSet outputFS = context.getDataset(config.fileSetName);
+    model.save(JavaSparkContext.toSparkContext(sparkContext),
                outputFS.getBaseLocation().append(config.path).toURI().getPath());
   }
 }

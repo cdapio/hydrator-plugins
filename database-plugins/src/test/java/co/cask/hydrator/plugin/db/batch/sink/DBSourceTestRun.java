@@ -22,17 +22,12 @@ import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.etl.batch.config.ETLBatchConfig;
-import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.common.ETLStage;
 import co.cask.cdap.etl.common.Plugin;
 import co.cask.cdap.proto.Id;
-import co.cask.cdap.proto.ProgramRunStatus;
-import co.cask.cdap.proto.RunRecord;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
-import co.cask.cdap.test.MapReduceManager;
-import co.cask.cdap.test.TestBase;
 import co.cask.hydrator.plugin.DatabasePluginTestBase;
 import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.db.batch.source.DBSource;
@@ -44,9 +39,7 @@ import java.sql.Date;
 import java.sql.Time;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Test for ETL using databases.
@@ -78,21 +71,9 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
       Properties.Table.PROPERTY_SCHEMA, schema.toString(),
       Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ID"));
 
-    ETLStage source = new ETLStage("dbSource2", sourceConfig);
-    ETLStage sink = new ETLStage("tableSink2", sinkConfig);
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(source)
-      .addSink(sink)
-      .addConnection(source.getName(), sink.getName())
-      .build();
+    ApplicationManager appManager = deployETL(sourceConfig, sinkConfig);
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSourceTest");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(5, TimeUnit.MINUTES);
+    runETLOnce(appManager);
 
     DataSetManager<Table> outputManager = getDataset("outputTable");
     Table outputTable = outputManager.get();
@@ -178,28 +159,14 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
       .build()
     );
 
-    ETLStage source = new ETLStage("dbSource1", sourceConfig);
     Plugin sinkConfig = new Plugin("Table", ImmutableMap.of(
       "name", "outputTable1",
       Properties.Table.PROPERTY_SCHEMA, schema.toString(),
       // smaller case since we have set the db data's column case to be lower
       Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "id"));
-    ETLStage sink = new ETLStage("tableSink1", sinkConfig);
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(source)
-      .addSink(sink)
-      .addConnection(source.getName(), sink.getName())
-      .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSourceTest");
-    ApplicationManager appManager = TestBase.deployApplication(appId, appRequest);
-
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(5, TimeUnit.MINUTES);
-    List<RunRecord> runRecords = mrManager.getHistory();
-    Assert.assertEquals(ProgramRunStatus.COMPLETED, runRecords.get(0).getStatus());
+    ApplicationManager appManager = deployETL(sourceConfig, sinkConfig);
+    runETLOnce(appManager);
 
     // records should be written
     DataSetManager<Table> outputManager = getDataset("outputTable1");
@@ -246,23 +213,8 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
       Properties.Table.PROPERTY_SCHEMA, schema.toString(),
       Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ID"));
 
-    ETLStage source = new ETLStage("dbSource3", sourceConfig);
-    ETLStage sink = new ETLStage("tableSink3", sinkConfig);
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(source)
-      .addSink(sink)
-      .addConnection(source.getName(), sink.getName())
-      .build();
-
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSourceTest");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(5, TimeUnit.MINUTES);
-    List<RunRecord> runRecords = mrManager.getHistory();
-    Assert.assertEquals(ProgramRunStatus.COMPLETED, runRecords.get(0).getStatus());
+    ApplicationManager appManager = deployETL(sourceConfig, sinkConfig);
+    runETLOnce(appManager);
 
     // records should be written
     DataSetManager<Table> outputManager = getDataset("outputTable1");
