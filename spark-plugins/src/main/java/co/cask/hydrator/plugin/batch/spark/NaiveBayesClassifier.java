@@ -26,7 +26,7 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.StageConfigurer;
 import co.cask.cdap.etl.api.batch.SparkCompute;
-import co.cask.cdap.etl.api.batch.SparkPluginContext;
+import co.cask.cdap.etl.api.batch.SparkExecutionPluginContext;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.spark.SparkContext;
@@ -114,7 +114,7 @@ public class NaiveBayesClassifier extends SparkCompute<StructuredRecord, Structu
   }
 
   @Override
-  public JavaRDD<StructuredRecord> transform(SparkPluginContext context,
+  public JavaRDD<StructuredRecord> transform(SparkExecutionPluginContext context,
                                              JavaRDD<StructuredRecord> input) throws Exception {
     FileSet fileSet = context.getDataset(config.fileSetName);
     Location modelLocation = fileSet.getBaseLocation().append(config.path);
@@ -124,7 +124,7 @@ public class NaiveBayesClassifier extends SparkCompute<StructuredRecord, Structu
     }
 
     // load the model from a file in the model fileset
-    JavaSparkContext javaSparkContext = context.getOriginalSparkContext();
+    JavaSparkContext javaSparkContext = context.getSparkContext();
     SparkContext sparkContext = JavaSparkContext.toSparkContext(javaSparkContext);
     final NaiveBayesModel loadedModel = NaiveBayesModel.load(sparkContext, modelLocation.toURI().getPath());
 
