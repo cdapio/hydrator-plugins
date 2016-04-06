@@ -31,6 +31,8 @@ import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.common.SourceInputFormatProvider;
+import co.cask.hydrator.common.preview.PreviewRecord;
+import co.cask.hydrator.common.preview.PreviewRequest;
 import co.cask.hydrator.plugin.DBConfig;
 import co.cask.hydrator.plugin.DBManager;
 import co.cask.hydrator.plugin.DBRecord;
@@ -46,6 +48,7 @@ import org.apache.hadoop.mapreduce.lib.db.DBConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
@@ -53,6 +56,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLSyntaxErrorException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.Nullable;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Path;
@@ -143,6 +148,48 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
       throw new BadRequestException(e.getMessage());
     } finally {
       driverCleanup.destroy();
+    }
+  }
+
+  @Path("preview")
+  public List<PreviewRecord> preview(PreviewRequest<DBSourceConfig> request,
+                                     EndpointPluginContext pluginContext)
+    throws IllegalAccessException, SQLException, InstantiationException, IOException {
+
+    DBSourceConfig sourceConfig = request.getProperties();
+    Class<? extends Driver> driverClass =
+      pluginContext.loadPluginClass(sourceConfig.jdbcPluginType,
+                                    sourceConfig.jdbcPluginName,
+                                    PluginProperties.builder().build());
+    if (driverClass == null) {
+      throw new BadRequestException("Could not find jdbc driver for jdbc plugin " + sourceConfig.jdbcPluginName);
+    }
+
+    try {
+      DriverCleanup driverCleanup = DBUtils.ensureJDBCDriverIsAvailable(driverClass,
+                                                                        sourceConfig.connectionString,
+                                                                        sourceConfig.jdbcPluginType,
+                                                                        sourceConfig.jdbcPluginName);
+      try {
+        List<PreviewRecord> previewRecords = new ArrayList<>();
+        DBRecord dbRecord = new DBRecord();
+        try (Connection connection = getConnection(sourceConfig.connectionString,
+                                                   sourceConfig.user, sourceConfig.password)) {
+          Statement statement = connection.createStatement();
+          statement.setMaxRows(1);
+          ResultSet resultSet = statement.executeQuery(sourceConfig.getImportQuery());
+          while (resultSet.next()) {
+            dbRecord.readFields(resultSet);
+            previewRecords.add(PreviewRecord.from(dbRecord.getRecord()));
+          }
+          return previewRecords;
+        }
+      } finally {
+        driverCleanup.destroy();
+      }
+    } catch (IllegalAccessException | InstantiationException | SQLException | IOException e) {
+      LOG.error("Unable to load or register driver {}", driverClass, e);
+      throw e;
     }
   }
 

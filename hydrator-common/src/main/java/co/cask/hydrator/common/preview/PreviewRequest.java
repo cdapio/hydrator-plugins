@@ -17,6 +17,9 @@
 package co.cask.hydrator.common.preview;
 
 /**
+ * Request for previews in sources, and base class for transform previews.
+ *
+ * @param <T> the PluginConfig
  */
 public class PreviewRequest<T> {
   private final T properties;

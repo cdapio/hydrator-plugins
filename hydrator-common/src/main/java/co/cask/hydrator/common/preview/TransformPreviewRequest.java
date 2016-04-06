@@ -23,6 +23,9 @@ import co.cask.cdap.format.StructuredRecordStringConverter;
 import java.io.IOException;
 
 /**
+ * Request for transform previews.
+ *
+ * @param <T> the PluginConfig
  */
 public class TransformPreviewRequest<T> extends PreviewRequest<T> {
   private final Schema inputSchema;
