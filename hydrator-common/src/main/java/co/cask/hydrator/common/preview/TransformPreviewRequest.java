@@ -19,6 +19,7 @@ package co.cask.hydrator.common.preview;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.format.StructuredRecordStringConverter;
+import com.google.gson.JsonObject;
 
 import java.io.IOException;
 
@@ -29,9 +30,9 @@ import java.io.IOException;
  */
 public class TransformPreviewRequest<T> extends PreviewRequest<T> {
   private final Schema inputSchema;
-  private final String inputRecord;
+  private final JsonObject inputRecord;
 
-  public TransformPreviewRequest(Schema inputSchema, String inputRecord, T properties) {
+  public TransformPreviewRequest(Schema inputSchema, JsonObject inputRecord, T properties) {
     super(properties);
     this.inputSchema = inputSchema;
     this.inputRecord = inputRecord;
@@ -41,11 +42,7 @@ public class TransformPreviewRequest<T> extends PreviewRequest<T> {
     return inputSchema;
   }
 
-  public String getInputRecord() {
-    return inputRecord;
-  }
-
   public StructuredRecord getInputStructuredRecord() throws IOException {
-    return StructuredRecordStringConverter.fromJsonString(inputRecord, inputSchema);
+    return StructuredRecordStringConverter.fromJsonString(inputRecord.toString(), inputSchema);
   }
 }

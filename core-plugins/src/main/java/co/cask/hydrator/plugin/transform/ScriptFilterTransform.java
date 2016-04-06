@@ -28,6 +28,8 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.StageMetrics;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
+import co.cask.hydrator.common.preview.PreviewRecord;
+import co.cask.hydrator.common.preview.TransformPreviewRequest;
 import co.cask.hydrator.plugin.ScriptConstants;
 import co.cask.hydrator.plugin.common.StructuredRecordSerializer;
 import com.google.common.base.Preconditions;
@@ -38,11 +40,16 @@ import com.google.gson.JsonSyntaxException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.Nullable;
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.Path;
 
 /**
  * Filters records using custom javascript provided by the config.
@@ -70,7 +77,7 @@ public class ScriptFilterTransform extends Transform<StructuredRecord, Structure
   private static final String VARIABLE_NAME = "dont_name_your_variable_this";
   private static final String CONTEXT_NAME = "dont_name_your_context_this";
 
-  private final ScriptFilterConfig scriptFilterConfig;
+  private ScriptFilterConfig scriptFilterConfig;
 
   private ScriptEngine engine;
   private Invocable invocable;
@@ -112,6 +119,24 @@ public class ScriptFilterTransform extends Transform<StructuredRecord, Structure
       }
     } catch (Exception e) {
       throw new IllegalArgumentException("Invalid filter condition.", e);
+    }
+  }
+
+  @Path("preview")
+  public List<PreviewRecord> preview(TransformPreviewRequest<ScriptFilterConfig> request) throws IOException {
+    scriptFilterConfig = request.getProperties();
+    init(null);
+    StructuredRecord input = request.getInputStructuredRecord();
+    try {
+      List<PreviewRecord> previewRecords = new ArrayList<>();
+      engine.eval(String.format("var %s = %s;", VARIABLE_NAME, GSON.toJson(input)));
+      Boolean shouldFilter = (Boolean) invocable.invokeFunction(FUNCTION_NAME);
+      if (!shouldFilter) {
+        previewRecords.add(PreviewRecord.from(input));
+      }
+      return previewRecords;
+    } catch (Exception e) {
+      throw new BadRequestException("Invalid filter condition.", e);
     }
   }
 

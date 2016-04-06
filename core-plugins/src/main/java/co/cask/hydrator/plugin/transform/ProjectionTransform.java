@@ -28,6 +28,8 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
+import co.cask.hydrator.common.preview.PreviewRecord;
+import co.cask.hydrator.common.preview.TransformPreviewRequest;
 import co.cask.hydrator.plugin.common.KeyValueListParser;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
@@ -36,13 +38,17 @@ import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
+import javax.ws.rs.Path;
 
 /**
  * Projection transform that allows dropping, renaming, and converting field types.
@@ -51,6 +57,7 @@ import javax.annotation.Nullable;
 @Name("Projection")
 @Description("The Projection transform lets you drop, rename, and cast fields to a different type.")
 public class ProjectionTransform extends Transform<StructuredRecord, StructuredRecord> {
+  private static final Logger LOG = LoggerFactory.getLogger(ProjectionTransform.class);
   private static final String DROP_DESC = "Comma-separated list of fields to drop. For example: " +
     "'field1,field2,field3'.";
   private static final String RENAME_DESC = "List of fields to rename. This is a comma-separated list of key-value " +
@@ -88,18 +95,18 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
     }
   }
 
-  private final ProjectionTransformConfig projectionTransformConfig;
+  private ProjectionTransformConfig projectionTransformConfig;
 
   public ProjectionTransform(ProjectionTransformConfig projectionTransformConfig) {
     this.projectionTransformConfig = projectionTransformConfig;
   }
 
   private static final Pattern fieldDelimiter = Pattern.compile("\\s*,\\s*");
-  private Set<String> fieldsToDrop = Sets.newHashSet();
-  private BiMap<String, String> fieldsToRename = HashBiMap.create();
-  private Map<String, Schema.Type> fieldsToConvert = Maps.newHashMap();
+  private Set<String> fieldsToDrop;
+  private BiMap<String, String> fieldsToRename;
+  private Map<String, Schema.Type> fieldsToConvert;
   // cache input schema hash to output schema so we don't have to build it each time
-  private Map<Schema, Schema> schemaCache = Maps.newHashMap();
+  private Map<Schema, Schema> schemaCache;
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
@@ -122,6 +129,10 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
 
   @Override
   public void transform(StructuredRecord valueIn, Emitter<StructuredRecord> emitter) {
+    emitter.emit(transform(valueIn));
+  }
+
+  private StructuredRecord transform(StructuredRecord valueIn) {
     Schema inputSchema = valueIn.getSchema();
     Schema outputSchema = getOutputSchema(inputSchema);
     StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
@@ -147,10 +158,35 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
         builder.set(outputFieldName, inputVal);
       }
     }
-    emitter.emit(builder.build());
+    return builder.build();
+  }
+
+  @Path("preview")
+  public List<PreviewRecord> preview(TransformPreviewRequest<ProjectionTransformConfig> request) throws Exception {
+    projectionTransformConfig = request.getProperties();
+    try {
+      init();
+    } catch (Exception e) {
+      LOG.error("Error initializing projection.", e);
+      throw e;
+    }
+    List<PreviewRecord> previewRecords = new ArrayList<>();
+    try {
+      StructuredRecord output = transform(request.getInputStructuredRecord());
+      previewRecords.add(PreviewRecord.from(output));
+    } catch (Exception e) {
+      LOG.error("Error performing projection.", e);
+      throw e;
+    }
+    return previewRecords;
   }
 
   private void init() {
+    fieldsToDrop = Sets.newHashSet();
+    fieldsToRename = HashBiMap.create();
+    fieldsToConvert = Maps.newHashMap();
+    // cache input schema hash to output schema so we don't have to build it each time
+    schemaCache = Maps.newHashMap();
     if (!Strings.isNullOrEmpty(projectionTransformConfig.drop)) {
       for (String dropField : Splitter.on(fieldDelimiter).split(projectionTransformConfig.drop)) {
         fieldsToDrop.add(dropField);

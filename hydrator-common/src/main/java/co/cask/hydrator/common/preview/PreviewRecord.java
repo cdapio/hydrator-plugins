@@ -19,6 +19,8 @@ package co.cask.hydrator.common.preview;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.format.StructuredRecordStringConverter;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 import java.io.IOException;
 
@@ -26,15 +28,17 @@ import java.io.IOException;
  *
  */
 public class PreviewRecord {
+  private static final Gson GSON = new Gson();
   private final Schema outputSchema;
-  private final String outputRecord;
+  private final JsonObject outputRecord;
 
-  private PreviewRecord(Schema schema, String record) {
+  private PreviewRecord(Schema schema, JsonObject record) {
     this.outputSchema = schema;
     this.outputRecord = record;
   }
 
   public static PreviewRecord from(StructuredRecord record) throws IOException {
-    return new PreviewRecord(record.getSchema(), StructuredRecordStringConverter.toJsonString(record));
+    return new PreviewRecord(record.getSchema(),
+                             GSON.fromJson(StructuredRecordStringConverter.toJsonString(record), JsonObject.class));
   }
 }
