@@ -21,6 +21,7 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.plugin.EndpointPluginContext;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.InvalidEntry;
@@ -30,20 +31,27 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.StageMetrics;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
+import co.cask.hydrator.common.preview.PreviewRecord;
+import co.cask.hydrator.common.preview.PreviewRequest;
+import co.cask.hydrator.common.preview.TransformPreviewRequest;
+import co.cask.hydrator.common.test.MockEmitter;
 import co.cask.hydrator.plugin.ScriptConstants;
 import co.cask.hydrator.plugin.common.StructuredRecordSerializer;
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
+import org.apache.avro.data.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -51,6 +59,7 @@ import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+import javax.ws.rs.Path;
 
 /**
  * Transforms records using custom JavaScript provided by the config.
@@ -165,6 +174,20 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
     } catch (Exception e) {
       throw new IllegalArgumentException("Could not transform input: " + e.getMessage(), e);
     }
+  }
+
+  @Path("preview")
+  public List<PreviewRecord> preview(TransformPreviewRequest<Config> request,
+                                     EndpointPluginContext context) throws IOException {
+    StructuredRecord inputRecord = request.getInputStructuredRecord();
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    transform(inputRecord, emitter);
+    List<StructuredRecord> emitted = emitter.getEmitted();
+    List<PreviewRecord> records = new ArrayList<>();
+    for (StructuredRecord structuredRecord : emitted) {
+      records.add(PreviewRecord.from(structuredRecord));
+    }
+    return records;
   }
 
   /**
