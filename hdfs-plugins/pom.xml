@@ -101,9 +101,9 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Export-Package>co.cask.hydrator.plugin.*;
+            <_exportcontents>co.cask.hydrator.plugin.*;
               org.apache.commons.lang;org.apache.commons.logging.*;
-              org.codehaus.jackson.*</Export-Package>
+              org.codehaus.jackson.*</_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
             <Embed-Directory>lib</Embed-Directory>

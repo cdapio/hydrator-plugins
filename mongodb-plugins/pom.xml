@@ -117,10 +117,10 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Export-Package>
+            <_exportcontents>
               co.cask.hydrator.plugin.*;
               com.mongodb.hadoop.*;
-            </Export-Package>
+            </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
             <Embed-Directory>lib</Embed-Directory>
