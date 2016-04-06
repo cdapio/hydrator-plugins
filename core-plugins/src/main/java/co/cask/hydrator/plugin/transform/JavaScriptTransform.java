@@ -32,19 +32,16 @@ import co.cask.cdap.etl.api.StageMetrics;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
 import co.cask.hydrator.common.preview.PreviewRecord;
-import co.cask.hydrator.common.preview.PreviewRequest;
 import co.cask.hydrator.common.preview.TransformPreviewRequest;
 import co.cask.hydrator.common.test.MockEmitter;
 import co.cask.hydrator.plugin.ScriptConstants;
 import co.cask.hydrator.plugin.common.StructuredRecordSerializer;
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
-import org.apache.avro.data.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +76,7 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
   private ScriptEngine engine;
   private Invocable invocable;
   private Schema schema;
-  private final Config config;
+  private Config config;
   private StageMetrics metrics;
 
   @Nullable
@@ -148,19 +145,6 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
     metrics = context.getMetrics();
-
-    // for Nashorn (Java 8+) support -- get method to convert ScriptObjectMirror to List
-    try {
-      Class<?> somClass = Class.forName("jdk.nashorn.api.scripting.ScriptObjectMirror");
-      somValuesMethod = somClass.getMethod("values");
-    } catch (NoSuchMethodException e) {
-      throw new RuntimeException(
-        "Failed to get method ScriptObjectMirror#values() for converting ScriptObjectMirror to List. " +
-          "Please check your version of Nashorn is supported.", e);
-    } catch (ClassNotFoundException e) {
-      // Ignore -- we don't have Nashorn, so no need to handle Nashorn
-    }
-
     init(context);
   }
 
@@ -178,10 +162,22 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
 
   @Path("preview")
   public List<PreviewRecord> preview(TransformPreviewRequest<Config> request,
-                                     EndpointPluginContext context) throws IOException {
+                                     EndpointPluginContext context) throws Exception {
+    config = request.getProperties();
+    try {
+      init(null);
+    } catch (Exception e) {
+      LOG.error("Error initializing script engine.", e);
+      throw e;
+    }
     StructuredRecord inputRecord = request.getInputStructuredRecord();
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
-    transform(inputRecord, emitter);
+    try {
+      transform(inputRecord, emitter);
+    } catch (Exception e) {
+      LOG.error("Error transforming record.", e);
+      throw e;
+    }
     List<StructuredRecord> emitted = emitter.getEmitted();
     List<PreviewRecord> records = new ArrayList<>();
     for (StructuredRecord structuredRecord : emitted) {
@@ -362,6 +358,19 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
   }
 
   private void init(LookupProvider lookup) {
+
+    // for Nashorn (Java 8+) support -- get method to convert ScriptObjectMirror to List
+    try {
+      Class<?> somClass = Class.forName("jdk.nashorn.api.scripting.ScriptObjectMirror");
+      somValuesMethod = somClass.getMethod("values");
+    } catch (NoSuchMethodException e) {
+      throw new RuntimeException(
+        "Failed to get method ScriptObjectMirror#values() for converting ScriptObjectMirror to List. " +
+          "Please check your version of Nashorn is supported.", e);
+    } catch (ClassNotFoundException e) {
+      // Ignore -- we don't have Nashorn, so no need to handle Nashorn
+    }
+
     ScriptEngineManager manager = new ScriptEngineManager();
     engine = manager.getEngineByName("JavaScript");
     try {
