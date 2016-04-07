@@ -123,7 +123,6 @@
           <artifactId>spark-streaming_2.10</artifactId>
         </exclusion>
       </exclusions>
-      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -150,8 +149,8 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <_exportcontents>co.cask.hydrator.plugin.batch.spark.*
-            </_exportcontents>
+            <Export-Package>co.cask.hydrator.plugin.batch.spark.*;org.apache.spark.mllib.*;org.json4s.*
+            </Export-Package>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
             <Embed-Directory>lib</Embed-Directory>
