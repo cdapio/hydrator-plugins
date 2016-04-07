@@ -26,6 +26,9 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
+import co.cask.hydrator.common.preview.PreviewRecord;
+import co.cask.hydrator.common.preview.TransformPreviewRequest;
+import co.cask.hydrator.common.test.MockEmitter;
 import com.google.common.base.Throwables;
 import net.sf.uadetector.ReadableUserAgent;
 import net.sf.uadetector.UserAgentStringParser;
@@ -33,12 +36,16 @@ import net.sf.uadetector.service.UADetectorServiceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
+import javax.ws.rs.Path;
 
 /**
  * Parses log formats to extract access information
@@ -87,9 +94,7 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
   private static final String S3_LOG = "S3";
   private static final String CLF_LOG = "CLF";
   private static final String CLOUDFRONT_LOG = "Cloudfront";
-  private final LogParserConfig config;
-  private final SimpleDateFormat sdfStrftime = new SimpleDateFormat("dd/MMM/yyyy:HH:mm:ss Z");
-  private final SimpleDateFormat sdfCloudfront = new SimpleDateFormat("yyyy-MM-dd:HH:mm:ss z");
+  private LogParserConfig config;
 
   public LogParserTransform(LogParserConfig config) {
     this.config = config;
@@ -150,6 +155,7 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
       String[] fields = log.split("\\t");
       String uri = fields[7];
       String ip = fields[4];
+      SimpleDateFormat sdfCloudfront = new SimpleDateFormat("yyyy-MM-dd:HH:mm:ss z");
       long ts = sdfCloudfront.parse(String.format("%s:%s UTC", fields[0], fields[1])).getTime();
       UserAgentStringParser parser = UADetectorServiceFactory.getResourceModuleParser();
       ReadableUserAgent userAgent = parser.parse(fields[10]);
@@ -170,6 +176,24 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
     if (output != null) {
       emitter.emit(output);
     }
+  }
+
+  @Path("preview")
+  public List<PreviewRecord> preview(TransformPreviewRequest<LogParserConfig> request) throws Exception {
+    config = request.getProperties();
+    StructuredRecord record = request.getInputStructuredRecord();
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    try {
+      transform(record, emitter);
+    } catch (Exception e) {
+      LOG.error("Error running preview", e);
+      throw e;
+    }
+    List<PreviewRecord> result = new ArrayList<>();
+    for (StructuredRecord toEmit : emitter.getEmitted()) {
+      result.add(PreviewRecord.from(toEmit));
+    }
+    return result;
   }
 
   /**
@@ -238,6 +262,7 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
 
     String uri = requestMatcher.group(2);
     long ts = System.currentTimeMillis();
+    SimpleDateFormat sdfStrftime = new SimpleDateFormat("dd/MMM/yyyy:HH:mm:ss Z");
     try {
       ts = sdfStrftime.parse(logMatcher.group(indices[1])).getTime();
     } catch (ParseException e) {

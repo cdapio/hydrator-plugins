@@ -161,8 +161,7 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
   }
 
   @Path("preview")
-  public List<PreviewRecord> preview(TransformPreviewRequest<Config> request,
-                                     EndpointPluginContext context) throws Exception {
+  public List<PreviewRecord> preview(TransformPreviewRequest<Config> request) throws Exception {
     config = request.getProperties();
     try {
       init(null);
