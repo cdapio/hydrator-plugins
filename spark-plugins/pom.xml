@@ -149,7 +149,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Export-Package>co.cask.hydrator.plugin.batch.spark.*;org.apache.spark.mllib.*;org.json4s.*
+            <Export-Package>co.cask.hydrator.plugin.batch.spark.*;org.apache.spark.mllib.*;org.json4s.*;com.thoughtworks.*
             </Export-Package>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
