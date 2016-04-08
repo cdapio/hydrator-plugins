@@ -117,7 +117,7 @@
     <!-- properties for script build step that creates the config files for the artifacts -->
     <widgets.dir>widgets</widgets.dir>
     <docs.dir>docs</docs.dir>
-    <etl.versionRange>[3.3.0-SNAPSHOT,3.5.0-SNAPSHOT)</etl.versionRange>
+    <etl.versionRange>[3.3.0-SNAPSHOT,3.5.0-SNAPSHOT]</etl.versionRange>
     <!-- this is here because project.basedir evaluates to null in the script build step -->
     <main.basedir>${project.basedir}</main.basedir>
   </properties>
