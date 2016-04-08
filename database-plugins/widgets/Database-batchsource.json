@@ -59,6 +59,9 @@
           "name": "importQuery",
           "widget-attributes": {
             "rows": "4"
+          },
+          "plugin-function": {
+            "method": "getSchema"
           }
         },
         {
