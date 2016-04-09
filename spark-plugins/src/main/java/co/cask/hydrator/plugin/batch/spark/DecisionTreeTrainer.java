@@ -31,13 +31,16 @@ import com.google.common.collect.Lists;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.mllib.evaluation.MulticlassMetrics;
 import org.apache.spark.mllib.feature.HashingTF;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.tree.DecisionTree;
 import org.apache.spark.mllib.tree.model.DecisionTreeModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.Tuple2;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import javax.annotation.Nullable;
 
@@ -104,10 +107,13 @@ public final class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
   @Override
   public void run(SparkExecutionPluginContext context, JavaRDD<StructuredRecord> input)
     throws Exception {
+
+    double[] weight = {0.8, 0.2};
+    JavaRDD<StructuredRecord>[] javaRDDs = input.randomSplit(weight);
     Preconditions.checkArgument(input.count() != 0, "Input RDD is empty.");
 
     final HashingTF tf = new HashingTF(100);
-    JavaRDD<LabeledPoint> trainingData = input.map(new Function<StructuredRecord, LabeledPoint>() {
+    JavaRDD<LabeledPoint> trainingData = javaRDDs[0].map(new Function<StructuredRecord, LabeledPoint>() {
       @Override
       public LabeledPoint call(StructuredRecord record) throws Exception {
         String text = record.get(config.dataPoints);
@@ -119,20 +125,55 @@ public final class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
 
     trainingData.cache();
 
-    String impurity = config.impurity == null ? "gini" : config.impurity;
-    int maxTreeDepth = config.maxTreeDepth == null ? 4 : config.maxTreeDepth;
-    int maxBinCount = config.maxBinCount == null ? 100 : config.maxBinCount;
+    JavaRDD<LabeledPoint> validationData = javaRDDs[1].map(new Function<StructuredRecord, LabeledPoint>() {
+      @Override
+      public LabeledPoint call(StructuredRecord record) throws Exception {
+        String text = record.get(config.dataPoints);
+        LOG.info("classificationField" + record.get(config.classificationField));
+        return new LabeledPoint(Double.valueOf((String) record.get(config.classificationField)),
+                                tf.transform(Lists.newArrayList(text.split(","))));
+      }
+    });
 
-    final DecisionTreeModel decisionTreeModel = DecisionTree.trainClassifier(trainingData, config.numClasses,
-                                                                             new HashMap<Integer, Integer>(),
-                                                                             impurity, maxTreeDepth, maxBinCount);
+    validationData.cache();
+
+    DecisionTreeModel decisionTreeModel = null;
+    double accuracy = -1;
+    int bins = 300;
+    for (String impurity : Arrays.asList("gini", "entropy")) {
+      for (int depth = 10; depth < 21; depth++) {
+
+          final DecisionTreeModel model = DecisionTree.trainClassifier(trainingData, config.numClasses,
+                                                                       new HashMap<Integer, Integer>(), impurity,
+                                                                       depth, bins);
+
+          JavaRDD<Tuple2<Object, Object>> predictionAndLable = validationData.map(new Function<LabeledPoint,
+            Tuple2<Object, Object>>() {
+            @Override
+            public Tuple2<Object, Object> call(LabeledPoint p) throws Exception {
+              Double prediction = model.predict(p.features());
+              return new Tuple2<Object, Object>(prediction, p.label());
+            }
+          });
+
+          MulticlassMetrics multiclassMetrics = new MulticlassMetrics(predictionAndLable.rdd());
+          if (multiclassMetrics.precision() > accuracy || decisionTreeModel == null) {
+            accuracy = multiclassMetrics.precision();
+            decisionTreeModel = model;
+            LOG.info("Selected {}, {}", impurity, depth);
+          }
+
+      }
+    }
 
     // save the model to a file in the output FileSet
     JavaSparkContext sparkContext = context.getSparkContext();
     FileSet outputFS = context.getDataset(config.fileSetName);
-    decisionTreeModel.save(JavaSparkContext.toSparkContext(sparkContext),
-                           outputFS.getBaseLocation().append(config.path).toURI().getPath());
 
+    if (decisionTreeModel != null) {
+      decisionTreeModel.save(JavaSparkContext.toSparkContext(sparkContext),
+                             outputFS.getBaseLocation().append(config.path).toURI().getPath());
+    }
   }
 
   @Override
