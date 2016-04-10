@@ -157,6 +157,11 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
     throws IllegalAccessException, SQLException, InstantiationException, IOException {
 
     DBSourceConfig sourceConfig = request.getProperties();
+    int count = request.getCount() == null ? 1 : request.getCount();
+    if (count > 20) {
+      throw new BadRequestException("In preview mode, you can specify 20 events at max. Found " + count +
+                                      ". Please specify a value less than 20.");
+    }
     Class<? extends Driver> driverClass =
       pluginContext.loadPluginClass(sourceConfig.jdbcPluginType,
                                     sourceConfig.jdbcPluginName,
@@ -176,7 +181,7 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
         try (Connection connection = getConnection(sourceConfig.connectionString,
                                                    sourceConfig.user, sourceConfig.password)) {
           Statement statement = connection.createStatement();
-          statement.setMaxRows(1);
+          statement.setMaxRows(count);
           ResultSet resultSet = statement.executeQuery(sourceConfig.getImportQuery());
           while (resultSet.next()) {
             dbRecord.readFields(resultSet);

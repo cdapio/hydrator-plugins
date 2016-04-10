@@ -32,8 +32,8 @@ public class TransformPreviewRequest<T> extends PreviewRequest<T> {
   private final Schema inputSchema;
   private final JsonObject inputRecord;
 
-  public TransformPreviewRequest(Schema inputSchema, JsonObject inputRecord, T properties) {
-    super(properties);
+  public TransformPreviewRequest(Schema inputSchema, JsonObject inputRecord, T properties, int count) {
+    super(properties, count);
     this.inputSchema = inputSchema;
     this.inputRecord = inputRecord;
   }

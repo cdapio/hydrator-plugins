@@ -23,12 +23,18 @@ package co.cask.hydrator.common.preview;
  */
 public class PreviewRequest<T> {
   private final T properties;
+  private final Integer count;
 
-  public PreviewRequest(T properties) {
+  public PreviewRequest(T properties, Integer count) {
     this.properties = properties;
+    this.count = count;
   }
 
   public T getProperties() {
     return properties;
+  }
+
+  public Integer getCount() {
+    return count;
   }
 }
