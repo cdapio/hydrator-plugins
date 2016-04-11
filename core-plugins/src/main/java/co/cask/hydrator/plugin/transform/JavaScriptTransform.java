@@ -161,26 +161,29 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
   }
 
   @Path("preview")
-  public List<PreviewRecord> preview(TransformPreviewRequest<Config> request) throws Exception {
-    config = request.getProperties();
-    try {
-      init(null);
-    } catch (Exception e) {
-      LOG.error("Error initializing script engine.", e);
-      throw e;
-    }
-    StructuredRecord inputRecord = request.getInputStructuredRecord();
-    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
-    try {
-      transform(inputRecord, emitter);
-    } catch (Exception e) {
-      LOG.error("Error transforming record.", e);
-      throw e;
-    }
-    List<StructuredRecord> emitted = emitter.getEmitted();
+  public List<PreviewRecord> preview(List<TransformPreviewRequest<Config>> requests) throws Exception {
     List<PreviewRecord> records = new ArrayList<>();
-    for (StructuredRecord structuredRecord : emitted) {
-      records.add(PreviewRecord.from(structuredRecord));
+    for (TransformPreviewRequest<Config> request : requests) {
+      config = request.getProperties();
+      try {
+        init(null);
+      } catch (Exception e) {
+        LOG.error("Error initializing script engine.", e);
+        throw e;
+      }
+      StructuredRecord inputRecord = request.getInputStructuredRecord();
+      MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+      try {
+        transform(inputRecord, emitter);
+      } catch (Exception e) {
+        LOG.error("Error transforming record.", e);
+        throw e;
+      }
+      List<StructuredRecord> emitted = emitter.getEmitted();
+
+      for (StructuredRecord structuredRecord : emitted) {
+        records.add(PreviewRecord.from(structuredRecord));
+      }
     }
     return records;
   }

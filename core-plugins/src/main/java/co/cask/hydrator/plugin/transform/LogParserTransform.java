@@ -29,14 +29,12 @@ import co.cask.cdap.etl.api.Transform;
 import co.cask.hydrator.common.preview.PreviewRecord;
 import co.cask.hydrator.common.preview.TransformPreviewRequest;
 import co.cask.hydrator.common.test.MockEmitter;
-import com.google.common.base.Throwables;
 import net.sf.uadetector.ReadableUserAgent;
 import net.sf.uadetector.UserAgentStringParser;
 import net.sf.uadetector.service.UADetectorServiceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -179,19 +177,21 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
   }
 
   @Path("preview")
-  public List<PreviewRecord> preview(TransformPreviewRequest<LogParserConfig> request) throws Exception {
-    config = request.getProperties();
-    StructuredRecord record = request.getInputStructuredRecord();
-    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
-    try {
-      transform(record, emitter);
-    } catch (Exception e) {
-      LOG.error("Error running preview", e);
-      throw e;
-    }
+  public List<PreviewRecord> preview(List<TransformPreviewRequest<LogParserConfig>> requests) throws Exception {
     List<PreviewRecord> result = new ArrayList<>();
-    for (StructuredRecord toEmit : emitter.getEmitted()) {
-      result.add(PreviewRecord.from(toEmit));
+    for (TransformPreviewRequest<LogParserConfig> request : requests) {
+      config = request.getProperties();
+      StructuredRecord record = request.getInputStructuredRecord();
+      MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+      try {
+        transform(record, emitter);
+      } catch (Exception e) {
+        LOG.error("Error running preview", e);
+        throw e;
+      }
+      for (StructuredRecord toEmit : emitter.getEmitted()) {
+        result.add(PreviewRecord.from(toEmit));
+      }
     }
     return result;
   }

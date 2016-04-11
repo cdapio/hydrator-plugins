@@ -123,21 +123,23 @@ public class ScriptFilterTransform extends Transform<StructuredRecord, Structure
   }
 
   @Path("preview")
-  public List<PreviewRecord> preview(TransformPreviewRequest<ScriptFilterConfig> request) throws IOException {
-    scriptFilterConfig = request.getProperties();
-    init(null);
-    StructuredRecord input = request.getInputStructuredRecord();
-    try {
-      List<PreviewRecord> previewRecords = new ArrayList<>();
-      engine.eval(String.format("var %s = %s;", VARIABLE_NAME, GSON.toJson(input)));
-      Boolean shouldFilter = (Boolean) invocable.invokeFunction(FUNCTION_NAME);
-      if (!shouldFilter) {
-        previewRecords.add(PreviewRecord.from(input));
+  public List<PreviewRecord> preview(List<TransformPreviewRequest<ScriptFilterConfig>> requests) throws IOException {
+    List<PreviewRecord> previewRecords = new ArrayList<>();
+    for (TransformPreviewRequest<ScriptFilterConfig> request : requests) {
+      scriptFilterConfig = request.getProperties();
+      init(null);
+      StructuredRecord input = request.getInputStructuredRecord();
+      try {
+        engine.eval(String.format("var %s = %s;", VARIABLE_NAME, GSON.toJson(input)));
+        Boolean shouldFilter = (Boolean) invocable.invokeFunction(FUNCTION_NAME);
+        if (!shouldFilter) {
+          previewRecords.add(PreviewRecord.from(input));
+        }
+      } catch (Exception e) {
+        throw new BadRequestException("Invalid filter condition.", e);
       }
-      return previewRecords;
-    } catch (Exception e) {
-      throw new BadRequestException("Invalid filter condition.", e);
     }
+    return previewRecords;
   }
 
   private void init(LookupProvider lookupProvider) {

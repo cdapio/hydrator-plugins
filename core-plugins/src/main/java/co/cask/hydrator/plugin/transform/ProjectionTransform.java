@@ -162,21 +162,25 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
   }
 
   @Path("preview")
-  public List<PreviewRecord> preview(TransformPreviewRequest<ProjectionTransformConfig> request) throws Exception {
-    projectionTransformConfig = request.getProperties();
-    try {
-      init();
-    } catch (Exception e) {
-      LOG.error("Error initializing projection.", e);
-      throw e;
-    }
+  public List<PreviewRecord> preview(List<TransformPreviewRequest<ProjectionTransformConfig>> requests)
+    throws Exception {
     List<PreviewRecord> previewRecords = new ArrayList<>();
-    try {
-      StructuredRecord output = transform(request.getInputStructuredRecord());
-      previewRecords.add(PreviewRecord.from(output));
-    } catch (Exception e) {
-      LOG.error("Error performing projection.", e);
-      throw e;
+    for (TransformPreviewRequest<ProjectionTransformConfig> request : requests) {
+      projectionTransformConfig = request.getProperties();
+      try {
+        init();
+      } catch (Exception e) {
+        LOG.error("Error initializing projection.", e);
+        throw e;
+      }
+
+      try {
+        StructuredRecord output = transform(request.getInputStructuredRecord());
+        previewRecords.add(PreviewRecord.from(output));
+      } catch (Exception e) {
+        LOG.error("Error performing projection.", e);
+        throw e;
+      }
     }
     return previewRecords;
   }
