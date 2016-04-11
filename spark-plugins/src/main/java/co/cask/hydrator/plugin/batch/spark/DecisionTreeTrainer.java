@@ -34,15 +34,12 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.mllib.evaluation.MulticlassMetrics;
 import org.apache.spark.mllib.feature.HashingTF;
 import org.apache.spark.mllib.regression.LabeledPoint;
-import org.apache.spark.mllib.tree.DecisionTree;
 import org.apache.spark.mllib.tree.RandomForest;
-import org.apache.spark.mllib.tree.model.DecisionTreeModel;
 import org.apache.spark.mllib.tree.model.RandomForestModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -140,43 +137,34 @@ public final class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
 
     validationData.cache();
 
-    RandomForestModel randomForestModel = null;
-    double accuracy = -1;
-    for (int treeDepth = 4; treeDepth < 5; treeDepth++) {
-      Map<Integer, Integer> categories = new HashMap<>();
-      categories.put(10, 4);
-      categories.put(11, 40);
-      final RandomForestModel model = RandomForest.trainClassifier(trainingData, config.numClasses,
-                                                                   categories, 7, "auto", config.impurity,
-                                                                   config.maxTreeDepth, 300, 3);
+    Map<Integer, Integer> categories = new HashMap<>();
+    categories.put(10, 4);
+    categories.put(11, 40);
+    final RandomForestModel randomForestModel = RandomForest.trainClassifier(trainingData, config.numClasses,
+                                                                             categories, 7, "auto", config.impurity,
+                                                                             config.maxTreeDepth, 300, 3);
 
-      JavaRDD<Tuple2<Object, Object>> predictionAndLabel = validationData.map(new Function<LabeledPoint,
-        Tuple2<Object, Object>>() {
-        @Override
-        public Tuple2<Object, Object> call(LabeledPoint p) throws Exception {
-          Double prediction = model.predict(p.features());
-          return new Tuple2<Object, Object>(prediction, p.label());
-        }
-      });
-
-      MulticlassMetrics multiclassMetrics = new MulticlassMetrics(predictionAndLabel.rdd());
-      LOG.info("SAGAR1 Accuracy with impurity {}, depth {} is {}.", config.impurity, treeDepth,
-               multiclassMetrics.precision());
-
-      if (multiclassMetrics.precision() > accuracy) {
-        accuracy = multiclassMetrics.precision();
-        randomForestModel = model;
+    JavaRDD<Tuple2<Object, Object>> predictionAndLabel = validationData.map(new Function<LabeledPoint,
+      Tuple2<Object, Object>>() {
+      @Override
+      public Tuple2<Object, Object> call(LabeledPoint p) throws Exception {
+        Double prediction = randomForestModel.predict(p.features());
+        return new Tuple2<Object, Object>(prediction, p.label());
       }
-    }
+    });
+
+    MulticlassMetrics multiclassMetrics = new MulticlassMetrics(predictionAndLabel.rdd());
+    LOG.info("Accuracy of the selected model with impurity {}, depth {} is {}.", config.impurity, config.maxTreeDepth,
+             multiclassMetrics.precision());
 
     // save the model to a file in the output FileSet
     JavaSparkContext sparkContext = context.getSparkContext();
     FileSet outputFS = context.getDataset(config.fileSetName);
 
-    if (randomForestModel != null) {
-      randomForestModel.save(JavaSparkContext.toSparkContext(sparkContext),
-                             outputFS.getBaseLocation().append(config.path).toURI().getPath());
-    }
+    randomForestModel.save(JavaSparkContext.toSparkContext(sparkContext),
+                           outputFS.getBaseLocation().append(config.path).toURI().getPath());
+
+    LOG.info("Saving model at path {}.", outputFS.getBaseLocation().append(config.path).toURI().getPath());
   }
 
   @Override
