@@ -35,13 +35,16 @@ import org.apache.spark.mllib.evaluation.MulticlassMetrics;
 import org.apache.spark.mllib.feature.HashingTF;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.tree.DecisionTree;
+import org.apache.spark.mllib.tree.RandomForest;
 import org.apache.spark.mllib.tree.model.DecisionTreeModel;
+import org.apache.spark.mllib.tree.model.RandomForestModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -77,7 +80,6 @@ public final class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
     @Description("Data points")
     private String dataPoints;
 
-    @Nullable
     @Description("Maximum depth of decision tree")
     private Integer maxTreeDepth;
 
@@ -108,9 +110,10 @@ public final class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
   public void run(SparkExecutionPluginContext context, JavaRDD<StructuredRecord> input)
     throws Exception {
 
-    double[] weight = {0.8, 0.2};
-    JavaRDD<StructuredRecord>[] javaRDDs = input.randomSplit(weight);
     Preconditions.checkArgument(input.count() != 0, "Input RDD is empty.");
+
+    double[] weight = {0.8, 0.1, 0.1};
+    JavaRDD<StructuredRecord>[] javaRDDs = input.randomSplit(weight);
 
     final HashingTF tf = new HashingTF(100);
     JavaRDD<LabeledPoint> trainingData = javaRDDs[0].map(new Function<StructuredRecord, LabeledPoint>() {
@@ -137,32 +140,32 @@ public final class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
 
     validationData.cache();
 
-    DecisionTreeModel decisionTreeModel = null;
+    RandomForestModel randomForestModel = null;
     double accuracy = -1;
-    int bins = 300;
-    for (String impurity : Arrays.asList("gini", "entropy")) {
-      for (int depth = 10; depth < 21; depth++) {
+    for (int treeDepth = 4; treeDepth < 5; treeDepth++) {
+      Map<Integer, Integer> categories = new HashMap<>();
+      categories.put(10, 4);
+      categories.put(11, 40);
+      final RandomForestModel model = RandomForest.trainClassifier(trainingData, config.numClasses,
+                                                                   categories, 7, "auto", config.impurity,
+                                                                   config.maxTreeDepth, 300, 3);
 
-          final DecisionTreeModel model = DecisionTree.trainClassifier(trainingData, config.numClasses,
-                                                                       new HashMap<Integer, Integer>(), impurity,
-                                                                       depth, bins);
+      JavaRDD<Tuple2<Object, Object>> predictionAndLabel = validationData.map(new Function<LabeledPoint,
+        Tuple2<Object, Object>>() {
+        @Override
+        public Tuple2<Object, Object> call(LabeledPoint p) throws Exception {
+          Double prediction = model.predict(p.features());
+          return new Tuple2<Object, Object>(prediction, p.label());
+        }
+      });
 
-          JavaRDD<Tuple2<Object, Object>> predictionAndLable = validationData.map(new Function<LabeledPoint,
-            Tuple2<Object, Object>>() {
-            @Override
-            public Tuple2<Object, Object> call(LabeledPoint p) throws Exception {
-              Double prediction = model.predict(p.features());
-              return new Tuple2<Object, Object>(prediction, p.label());
-            }
-          });
+      MulticlassMetrics multiclassMetrics = new MulticlassMetrics(predictionAndLabel.rdd());
+      LOG.info("SAGAR1 Accuracy with impurity {}, depth {} is {}.", config.impurity, treeDepth,
+               multiclassMetrics.precision());
 
-          MulticlassMetrics multiclassMetrics = new MulticlassMetrics(predictionAndLable.rdd());
-          if (multiclassMetrics.precision() > accuracy || decisionTreeModel == null) {
-            accuracy = multiclassMetrics.precision();
-            decisionTreeModel = model;
-            LOG.info("Selected {}, {}", impurity, depth);
-          }
-
+      if (multiclassMetrics.precision() > accuracy) {
+        accuracy = multiclassMetrics.precision();
+        randomForestModel = model;
       }
     }
 
@@ -170,8 +173,8 @@ public final class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
     JavaSparkContext sparkContext = context.getSparkContext();
     FileSet outputFS = context.getDataset(config.fileSetName);
 
-    if (decisionTreeModel != null) {
-      decisionTreeModel.save(JavaSparkContext.toSparkContext(sparkContext),
+    if (randomForestModel != null) {
+      randomForestModel.save(JavaSparkContext.toSparkContext(sparkContext),
                              outputFS.getBaseLocation().append(config.path).toURI().getPath());
     }
   }
