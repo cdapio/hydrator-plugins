@@ -49,6 +49,7 @@ parses Kafka messages using the 'csv' format into records with the specified sch
 
     {
         "name": "Kafka",
+        "type": "realtimesource",
         "properties": {
             "kafka.partitions": 10,
             "kafka.topic": "purchases",

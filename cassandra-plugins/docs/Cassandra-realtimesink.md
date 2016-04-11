@@ -46,6 +46,7 @@ the specified keyspace (*megacorp*) and column family (*purchases*):
 
     {
         "name": "Cassandra",
+        "type": "realtimesink",
         "properties": {
             "addresses": "localhost:9042",
             "keyspace": "megacorp",

@@ -33,6 +33,7 @@ This example reads from a Table named 'users':
 
     {
         "name": "Table",
+        "type": "batchsource",
         "properties": {
             "name": "users",
             "schema": "{

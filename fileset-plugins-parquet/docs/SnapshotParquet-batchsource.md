@@ -38,6 +38,7 @@ be read:
 
     {
         "name": "SnapshotParquet",
+        "type": "batchsource",
         "properties": {
             "name": "users",
             "schema": "{

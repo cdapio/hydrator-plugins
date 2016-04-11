@@ -50,6 +50,7 @@ This example will write to a ``TimePartitionedFileSet`` named ``'users'``:
 
     {
         "name": "TPFSParquet",
+        "type": "batchsink",
         "properties": {
             "name": "users",
             "filePathFormat": "yyyy-MM-dd/HH-mm",

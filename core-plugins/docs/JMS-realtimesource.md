@@ -45,12 +45,13 @@ emitted for each message read from the topic. The record consists of a single fi
 containing the contents of the message:
 
     {
-        "name":"JMS",
-        "properties":{
-            "jms.messages.receive": 50,
+        "name": "JMS",
+        "type": "realtimesource",
+        "properties": {
+            "jms.messages.receive": "50",
             "jms.destination.name": "purchases",
             "jms.factory.initial": "org.apache.activemq.jndi.ActiveMQInitialContextFactory",
-            "jms.provider.url":"tcp://localhost:61616",
+            "jms.provider.url": "tcp://localhost:61616",
             "jms.plugin.custom.properties": "{\"topic.purchases\":\"purchases\"}"
         }
     }

@@ -63,17 +63,21 @@ doesn't exist; it then configures measurements to aggregate and specifies the ti
 format for facts being written into the Cube:
 
     {
-        "name": "myCube",
-        "dataset.cube.resolutions": "1,60,3600",
-        "dataset.cube.properties": {
-          "dataset.cube.aggregation.byName.dimensions": "name",
-          "dataset.cube.aggregation.byNameByZip.dimensions": "name,zip",
-        },
-        "cubeFact.timestamp.field": "ts",
-        "cubeFact.timestamp.format": "MM/dd/yyyy HH:mm:ss",
-        "cubeFact.measurements": {
-          "cubeFact.measurement.price": "GAUGE"
-          "cubeFact.measurement.quantity": "COUNTER"
+        "name": "Cube",
+        "type": "batchsink",
+        "properties": {
+            "name": "myCube",
+            "dataset.cube.resolutions": "1,60,3600",
+            "dataset.cube.properties": "{
+                \"dataset.cube.aggregation.byName.dimensions\": \"name\",
+                \"dataset.cube.aggregation.byNameByZip.dimensions\": \"name,zip\"
+            }",
+            "cubeFact.timestamp.field": "ts",
+            "cubeFact.timestamp.format": "MM/dd/yyyy HH:mm:ss",
+            "cubeFact.measurements": "{
+                \"cubeFact.measurement.price\": \"GAUGE\",
+                \"cubeFact.measurement.quantity\": \"COUNTER\"
+            }"
         }
     }
 

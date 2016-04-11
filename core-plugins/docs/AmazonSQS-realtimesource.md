@@ -35,6 +35,7 @@ located in the 'us-west-1' region:
 
     {
         "name": "AmazonSQS",
+        "type": "realtimesource",
         "properties": {
             "region": "us-west-1",
             "accessID": "accessID",

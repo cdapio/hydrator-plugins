@@ -45,6 +45,7 @@ uses the default *Murmur3* partitioner:
 
     {
         "name": "Cassandra",
+        "type" "batchsink",
         "properties": {
             "initialAddress": "localhost",
             "port": "9160",

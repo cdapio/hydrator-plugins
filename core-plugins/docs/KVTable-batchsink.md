@@ -25,6 +25,7 @@ This example writes to a KeyValueTable named 'items':
 
     {
         "name": "KVTable",
+        "type": "batchsink",
         "properties": {
             "name": "items",
             "key.field": "id",
