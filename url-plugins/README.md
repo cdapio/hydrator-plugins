@@ -1,11 +1,11 @@
 ===========
-Url Plugins
+URL Plugins
 ===========
 
 Introduction
 ============
 
-A Hydrator Real Time Plugin that allows data to be fetched from a given Url at a specified interval.
+A Hydrator Real Time Plugin that allows data to be fetched from a given URL at a specified interval.
 
 Getting Started
 ===============
@@ -52,7 +52,7 @@ For example, if your artifact is named 'my-plugins-1.0.0'::
 License and Trademarks
 ======================
 
-Copyright © 2015 Cask Data, Inc.
+Copyright © 2016 Cask Data, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 in compliance with the License. You may obtain a copy of the License at

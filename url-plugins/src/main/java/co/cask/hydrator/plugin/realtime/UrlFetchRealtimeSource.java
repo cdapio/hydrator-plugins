@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.realtime;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Emitter;
@@ -44,9 +45,9 @@ import javax.annotation.Nullable;
 /**
  * Real Time Source to fetch data from a url.
  */
-@Plugin(type = "realtimesource")
-@Name("UrlFetch")
-@Description("Fetch data from an external url at a regular interval.")
+@Plugin(type = RealtimeSource.PLUGIN_TYPE)
+@Name("URLFetch")
+@Description("Fetch data from an external URL at a regular interval.")
 public class UrlFetchRealtimeSource extends RealtimeSource<StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(UrlFetchRealtimeSource.class);
 
@@ -71,12 +72,12 @@ public class UrlFetchRealtimeSource extends RealtimeSource<StructuredRecord> {
     String response;
     URLConnection rawConnection = url.openConnection();
     try {
-      HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+      HttpURLConnection connection = (HttpURLConnection) rawConnection;
       try {
         if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-          response = new String(ByteStreams.toByteArray(connection.getInputStream()), Charsets.UTF_8);
+          response = Bytes.toString(ByteStreams.toByteArray(connection.getInputStream()));
         } else if (connection.getResponseCode() == HttpURLConnection.HTTP_BAD_REQUEST) {
-          response = new String(ByteStreams.toByteArray(connection.getErrorStream()), Charsets.UTF_8);
+          response = Bytes.toString(ByteStreams.toByteArray(connection.getErrorStream()));
         } else {
           throw new Exception("Invalid response code returned: " + connection.getResponseCode());
         }
@@ -86,7 +87,7 @@ public class UrlFetchRealtimeSource extends RealtimeSource<StructuredRecord> {
     } catch (ClassCastException e) {
       // Used in test class for reading from file url
       if (e.getMessage().contains("FileURLConnection cannot be cast to java.net.HttpURLConnection")) {
-        response = new String(ByteStreams.toByteArray(rawConnection.getInputStream()), Charsets.UTF_8);
+        response = Bytes.toString(ByteStreams.toByteArray(rawConnection.getInputStream()));
       } else {
         throw e;
       }
@@ -100,7 +101,7 @@ public class UrlFetchRealtimeSource extends RealtimeSource<StructuredRecord> {
       }
     }
     writeDefaultRecords(writer, response, flattenedHeaders);
-    TimeUnit.SECONDS.sleep(config.getDelayInSeconds());
+    TimeUnit.SECONDS.sleep(config.getIntervalInSeconds());
     return currentState;
   }
 
@@ -116,5 +117,3 @@ public class UrlFetchRealtimeSource extends RealtimeSource<StructuredRecord> {
     writer.emit(recordBuilder.build());
   }
 }
-
-
