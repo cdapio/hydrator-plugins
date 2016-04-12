@@ -26,7 +26,6 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.realtime.RealtimeSource;
 import co.cask.cdap.etl.api.realtime.SourceState;
 import co.cask.hydrator.plugin.realtime.config.UrlFetchRealtimeSourceConfig;
-import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.io.ByteStreams;
@@ -35,7 +34,6 @@ import org.slf4j.LoggerFactory;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,29 +68,20 @@ public class UrlFetchRealtimeSource extends RealtimeSource<StructuredRecord> {
   public SourceState poll(Emitter<StructuredRecord> writer, SourceState currentState) throws Exception {
     URL url = new URL(config.getUrl());
     String response;
-    URLConnection rawConnection = url.openConnection();
+    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
     try {
-      HttpURLConnection connection = (HttpURLConnection) rawConnection;
-      try {
-        if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-          response = Bytes.toString(ByteStreams.toByteArray(connection.getInputStream()));
-        } else if (connection.getResponseCode() == HttpURLConnection.HTTP_BAD_REQUEST) {
-          response = Bytes.toString(ByteStreams.toByteArray(connection.getErrorStream()));
-        } else {
-          throw new Exception("Invalid response code returned: " + connection.getResponseCode());
-        }
-      } finally {
-        connection.disconnect();
-      }
-    } catch (ClassCastException e) {
-      // Used in test class for reading from file url
-      if (e.getMessage().contains("FileURLConnection cannot be cast to java.net.HttpURLConnection")) {
-        response = Bytes.toString(ByteStreams.toByteArray(rawConnection.getInputStream()));
+      if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+        response = Bytes.toString(ByteStreams.toByteArray(connection.getInputStream()));
+      } else if (connection.getResponseCode() == HttpURLConnection.HTTP_BAD_REQUEST) {
+        response = Bytes.toString(ByteStreams.toByteArray(connection.getErrorStream()));
       } else {
-        throw e;
+        throw new Exception("Invalid response code returned: " + connection.getResponseCode());
       }
+    } finally {
+      connection.disconnect();
     }
-    Map<String, List<String>> headers = rawConnection.getHeaderFields();
+
+    Map<String, List<String>> headers = connection.getHeaderFields();
     Map<String, String> flattenedHeaders = new HashMap<>();
     for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
       if (!Strings.isNullOrEmpty(entry.getKey())) {

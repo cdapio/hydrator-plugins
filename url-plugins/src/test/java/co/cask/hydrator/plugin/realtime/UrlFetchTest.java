@@ -17,18 +17,24 @@
 package co.cask.hydrator.plugin.realtime;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.etl.api.Emitter;
-import co.cask.cdap.etl.api.InvalidEntry;
 import co.cask.cdap.etl.api.realtime.SourceState;
 import co.cask.cdap.test.TestBase;
+import co.cask.http.AbstractHttpHandler;
+import co.cask.http.HttpResponder;
+import co.cask.http.NettyHttpService;
 import co.cask.hydrator.common.test.MockEmitter;
 import co.cask.hydrator.common.test.MockRealtimeContext;
 import co.cask.hydrator.plugin.realtime.config.UrlFetchRealtimeSourceConfig;
+import com.google.common.collect.ImmutableList;
+import org.jboss.netty.handler.codec.http.HttpRequest;
+import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
 
 /**
  * <p>
@@ -36,16 +42,39 @@ import java.nio.file.Paths;
  * </p>
  */
 public class UrlFetchTest extends TestBase {
+  private NettyHttpService service;
+
+  @Before
+  public void setupHttpService() {
+    // Setup HTTP service for testing and add Handlers
+    service = NettyHttpService.builder()
+      .setHost("localhost")
+      .setPort(7777)
+      .addHttpHandlers(ImmutableList.of(new PingHandler()))
+      .build();
+    service.startAndWait();
+
+    UrlFetchRealtimeSourceConfig config = new UrlFetchRealtimeSourceConfig(
+      String.format("http://%s:%s/ping",
+                    service.getBindAddress().getHostName(),
+                    service.getBindAddress().getPort()),
+      1L
+    );
+  }
+
+  @After
+  public void stopHttpService() {
+    service.stopAndWait();
+  }
 
   @Test
   public void testUrlFetch() throws Exception {
-    Path testFilePath =
-      Paths.get(UrlFetchTest.class.getProtectionDomain().getCodeSource().getLocation().getPath() + "/testdata.json");
     UrlFetchRealtimeSourceConfig config = new UrlFetchRealtimeSourceConfig(
-      testFilePath.toUri().toString(),
+      String.format("http://%s:%s/ping",
+                    service.getBindAddress().getHostName(),
+                    service.getBindAddress().getPort()),
       1L
     );
-
     UrlFetchRealtimeSource source = new UrlFetchRealtimeSource(config);
     source.initialize(new MockRealtimeContext());
 
@@ -58,5 +87,14 @@ public class UrlFetchTest extends TestBase {
     Assert.assertNotNull(urlData);
     Assert.assertNotNull(urlData.get("url"));
     Assert.assertNotNull(urlData.get("body"));
+  }
+
+  // Simple service for testing connection to URL
+  public static class PingHandler extends AbstractHttpHandler {
+    @GET
+    @Path("/ping")
+    public void testGet(HttpRequest request, HttpResponder responder) {
+      responder.sendString(HttpResponseStatus.OK, "OK");
+    }
   }
 }
