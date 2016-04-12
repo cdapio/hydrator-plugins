@@ -30,6 +30,7 @@ import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.proto.id.NamespacedArtifactId;
 import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
+import co.cask.hydrator.plugin.batch.action.EmailAction;
 import co.cask.hydrator.plugin.batch.aggregator.GroupByAggregator;
 import co.cask.hydrator.plugin.batch.sink.BatchCubeSink;
 import co.cask.hydrator.plugin.batch.sink.KVTableSink;
@@ -134,7 +135,8 @@ public class ETLBatchTestBase extends TestBase {
                       StructuredRecordToGenericRecordTransform.class,
                       JavaScriptTransform.class,
                       PythonEvaluator.class,
-                      GroupByAggregator.class);
+                      GroupByAggregator.class,
+                      EmailAction.class);
   }
 
   protected List<GenericRecord> readOutput(TimePartitionedFileSet fileSet, Schema schema) throws IOException {
