@@ -100,7 +100,7 @@ public class UrlFetchRealtimeSource extends RealtimeSource<StructuredRecord> {
     StructuredRecord.Builder recordBuilder = StructuredRecord.builder(DEFAULT_SCHEMA);
     recordBuilder
       .set("ts", System.currentTimeMillis())
-      .set("url", config.toString())
+      .set("url", config.getUrl())
       .set("headers", headerFields)
       .set("body", response);
     writer.emit(recordBuilder.build());

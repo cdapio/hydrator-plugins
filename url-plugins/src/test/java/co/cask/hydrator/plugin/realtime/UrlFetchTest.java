@@ -33,6 +33,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Map;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
@@ -86,7 +87,12 @@ public class UrlFetchTest extends TestBase {
     StructuredRecord urlData = emitter.getEmitted().get(0);
     Assert.assertNotNull(urlData);
     Assert.assertNotNull(urlData.get("url"));
+    Assert.assertEquals("http://localhost:7777/ping", urlData.get("url"));
     Assert.assertNotNull(urlData.get("body"));
+    Assert.assertEquals("OK", urlData.get("body"));
+    Assert.assertNotNull(urlData.get("headers"));
+    Assert.assertEquals("2", ((Map) urlData.get("headers")).get("Content-Length"));
+
   }
 
   // Simple service for testing connection to URL
