@@ -14,9 +14,8 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch;
+package co.cask.hydrator.plugin.batch.action;
 
-import co.cask.cdap.common.utils.Networks;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.PostAction;
@@ -27,42 +26,69 @@ import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.WorkflowManager;
-import co.cask.hydrator.plugin.batch.action.EmailAction;
-import com.dumbster.smtp.SimpleSmtpServer;
-import com.dumbster.smtp.SmtpMessage;
+import co.cask.http.HttpHandler;
+import co.cask.http.NettyHttpService;
+import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
+import co.cask.hydrator.plugin.mock.MockFeedHandler;
+import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.CharStreams;
+import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.Iterator;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import javax.ws.rs.HttpMethod;
 
 /**
- * Test for {@link EmailAction}
  */
-public class ETLEmailActionTestRun extends ETLBatchTestBase {
+public class HttpCallbackActionTestRun extends ETLBatchTestBase {
+  private static NettyHttpService httpService;
+  private static String baseURL;
 
-  private SimpleSmtpServer server;
-  private int port;
+  @BeforeClass
+  public static void setup() throws Exception {
+    List<HttpHandler> handlers = new ArrayList<>();
+    handlers.add(new MockFeedHandler());
+    httpService = NettyHttpService.builder()
+      .addHttpHandlers(handlers)
+      .build();
+    httpService.startAndWait();
 
-  @Before
-  public void beforeTest() {
-    port = Networks.getRandomPort();
-    server = SimpleSmtpServer.start(port);
+    int port = httpService.getBindAddress().getPort();
+    baseURL = "http://localhost:" + port;
+    // tell service what its port is.
+    URL setPortURL = new URL(baseURL + "/port");
+    HttpURLConnection urlConn = (HttpURLConnection) setPortURL.openConnection();
+    urlConn.setDoOutput(true);
+    urlConn.setRequestMethod(HttpMethod.PUT);
+    urlConn.getOutputStream().write(String.valueOf(port).getBytes(Charsets.UTF_8));
+    Assert.assertEquals(200, urlConn.getResponseCode());
+    urlConn.disconnect();
+  }
+
+  @AfterClass
+  public static void teardown() {
+    httpService.stopAndWait();
   }
 
   @Test
   public void testEmailAction() throws Exception {
 
+    String body = "samuel jackson, dwayne johnson, christopher walken";
     ETLStage action = new ETLStage(
-      "email",
-      new ETLPlugin("Email", PostAction.PLUGIN_TYPE,
-                    ImmutableMap.of("recipients", "to@test.com",
-                                    "sender", "from@test.com",
-                                    "message", "testing body",
-                                    "subject", "Test",
-                                    "port", Integer.toString(port)),
+      "http",
+      new ETLPlugin("HttpCallback", PostAction.PLUGIN_TYPE,
+                    ImmutableMap.of("url", baseURL + "/feeds/users",
+                                    "method", "PUT",
+                                    "body", body),
                     null));
 
     ETLStage source = new ETLStage("source",
@@ -86,13 +112,14 @@ public class ETLEmailActionTestRun extends ETLBatchTestBase {
     manager.start();
     manager.waitForFinish(5, TimeUnit.MINUTES);
 
-    server.stop();
 
-    Assert.assertEquals(1, server.getReceivedEmailSize());
-    Iterator emailIter = server.getReceivedEmail();
-    SmtpMessage email = (SmtpMessage) emailIter.next();
-    Assert.assertEquals("Test", email.getHeaderValue("Subject"));
-    Assert.assertTrue(email.getBody().startsWith("testing body"));
-    Assert.assertFalse(emailIter.hasNext());
+    URL url = new URL(baseURL + "/feeds/users");
+    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+    conn.setRequestMethod(HttpMethod.GET);
+    Assert.assertEquals(200, conn.getResponseCode());
+    try (Reader responseReader = new InputStreamReader(conn.getInputStream(), Charsets.UTF_8)) {
+      Assert.assertEquals(body, CharStreams.toString(responseReader));
+    }
   }
+
 }

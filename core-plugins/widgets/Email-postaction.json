@@ -4,8 +4,21 @@
   },
   "configuration-groups": [
     {
-      "label": "Distinct",
+      "label": "Email Properties",
       "properties": [
+        {
+          "widget-type": "select",
+          "label": "Run Condition",
+          "name": "runCondition",
+          "widget-attributes": {
+            "values": [
+              "completion",
+              "success",
+              "failure"
+            ],
+            "default": "completion"
+          }
+        },
         {
           "widget-type": "textbox",
           "label": "Sender",
@@ -64,19 +77,6 @@
               "false"
             ],
             "default": "false"
-          }
-        },
-        {
-          "widget-type": "select",
-          "label": "Run Condition",
-          "name": "runCondition",
-          "widget-attributes": {
-            "values": [
-              "completion",
-              "success",
-              "failure"
-            ],
-            "default": "completion"
           }
         }
       ]
