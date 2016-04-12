@@ -17,7 +17,7 @@
 package co.cask.hydrator.plugin.realtime.config;
 
 /**
- * Config class for Url Fetch plugin
+ * Config class for URL Fetch plugin
  */
 
 import co.cask.cdap.api.annotation.Description;
@@ -30,23 +30,23 @@ import co.cask.cdap.api.plugin.PluginConfig;
 public class UrlFetchRealtimeSourceConfig extends PluginConfig {
 
   @Name("URL")
-  @Description("The url to fetch data from.")
+  @Description("The URL to fetch data from.")
   private String url;
 
-  @Name("Delay")
+  @Name("Interval")
   @Description("The amount of time to wait between each poll in seconds.")
-  private long delayInSeconds;
+  private long intervalInSeconds;
 
-  public UrlFetchRealtimeSourceConfig(String url, long delayInSeconds) {
+  public UrlFetchRealtimeSourceConfig(String url, long intervalInSeconds) {
     this.url = url;
-    this.delayInSeconds = delayInSeconds;
+    this.intervalInSeconds = intervalInSeconds;
   }
 
   public String getUrl() {
     return url;
   }
 
-  public long getDelayInSeconds() {
-    return delayInSeconds;
+  public long getIntervalInSeconds() {
+    return intervalInSeconds;
   }
 }

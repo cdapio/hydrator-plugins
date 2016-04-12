@@ -34,11 +34,10 @@
     <!-- properties for script build step that creates the config files for the artifacts -->
     <widgets.dir>widgets</widgets.dir>
     <docs.dir>docs</docs.dir>
-    <etl.versionRange>[3.3.0,3.6.0-SNAPSHOT)</etl.versionRange>
+    <etl.versionRange>[3.4.0,3.6.0-SNAPSHOT)</etl.versionRange>
     <!-- this is here because project.basedir evaluates to null in the script build step -->
     <main.basedir>${project.basedir}</main.basedir>
     <guava.version>13.0.1</guava.version>
-    <hydrator-common.version>1.4.0-SNAPSHOT</hydrator-common.version>
   </properties>
 
   <repositories>
@@ -84,7 +83,7 @@
     <dependency>
       <groupId>co.cask.hydrator</groupId>
       <artifactId>hydrator-common</artifactId>
-      <version>${hydrator-common.version}</version>
+      <version>${parent.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

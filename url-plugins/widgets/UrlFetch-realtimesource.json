@@ -4,17 +4,17 @@
   },
   "configuration-groups": [
     {
-      "label": "Url Fetch Configuration",
+      "label": "URL Fetch Configuration",
       "properties": [
         {
           "widget-type": "textbox",
-          "label": "Url",
+          "label": "URL",
           "name": "url"
         },
         {
           "widget-type": "number",
-          "label": "Delay",
-          "name": "delay",
+          "label": "Interval",
+          "name": "interval",
           "widget-attributes" : {
             "default": "3600"
           }

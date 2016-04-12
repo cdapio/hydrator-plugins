@@ -21,6 +21,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.InvalidEntry;
 import co.cask.cdap.etl.api.realtime.SourceState;
 import co.cask.cdap.test.TestBase;
+import co.cask.hydrator.common.test.MockEmitter;
 import co.cask.hydrator.common.test.MockRealtimeContext;
 import co.cask.hydrator.plugin.realtime.config.UrlFetchRealtimeSourceConfig;
 import org.junit.Assert;
@@ -48,33 +49,14 @@ public class UrlFetchTest extends TestBase {
     UrlFetchRealtimeSource source = new UrlFetchRealtimeSource(config);
     source.initialize(new MockRealtimeContext());
 
-    MockEmitter emitter = new MockEmitter();
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     SourceState state = new SourceState();
 
     source.poll(emitter, state);
-    StructuredRecord urlData = emitter.getUrlData();
+    Assert.assertEquals(1, emitter.getEmitted().size());
+    StructuredRecord urlData = emitter.getEmitted().get(0);
     Assert.assertNotNull(urlData);
     Assert.assertNotNull(urlData.get("url"));
     Assert.assertNotNull(urlData.get("body"));
-  }
-
-  private static class MockEmitter implements Emitter<StructuredRecord> {
-
-    private StructuredRecord urlData;
-
-    @Override
-    public void emit(StructuredRecord value) {
-      urlData = value;
-    }
-
-    @Override
-    public void emitError(InvalidEntry<StructuredRecord> value) {
-      //no-op
-    }
-
-    public StructuredRecord getUrlData() {
-      return urlData;
-    }
-
   }
 }
