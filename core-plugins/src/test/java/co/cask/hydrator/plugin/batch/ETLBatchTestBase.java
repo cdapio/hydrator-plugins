@@ -16,6 +16,7 @@
 
 package co.cask.hydrator.plugin.batch;
 
+import co.cask.cdap.api.artifact.ArtifactVersion;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.datapipeline.DataPipelineApp;
@@ -25,6 +26,8 @@ import co.cask.cdap.etl.batch.ETLBatchApplication;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.ArtifactRange;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
+import co.cask.cdap.proto.id.NamespaceId;
+import co.cask.cdap.proto.id.NamespacedArtifactId;
 import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.hydrator.plugin.batch.aggregator.GroupByAggregator;
@@ -74,10 +77,9 @@ public class ETLBatchTestBase extends TestBase {
   @ClassRule
   public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", true);
 
-  protected static final Id.Artifact ETLBATCH_ARTIFACT_ID =
-    Id.Artifact.from(Id.Namespace.DEFAULT, "etlbatch", "3.2.0");
-  protected static final Id.Artifact DATAPIPELINE_ARTIFACT_ID =
-    Id.Artifact.from(Id.Namespace.DEFAULT, "data-pipeline", "3.2.0");
+  protected static final NamespacedArtifactId ETLBATCH_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("etlbatch", "3.2.0");
+  protected static final NamespacedArtifactId DATAPIPELINE_ARTIFACT_ID =
+    NamespaceId.DEFAULT.artifact("data-pipeline", "3.2.0");
   protected static final ArtifactSummary ETLBATCH_ARTIFACT = new ArtifactSummary("etlbatch", "3.2.0");
   protected static final ArtifactSummary DATAPIPELINE_ARTIFACT = new ArtifactSummary("data-pipeline", "3.2.0");
 
@@ -110,13 +112,15 @@ public class ETLBatchTestBase extends TestBase {
                    "parquet.hadoop.api", "parquet.hadoop", "parquet.schema", "parquet.io.api");
 
     Set<ArtifactRange> parents = ImmutableSet.of(
-      new ArtifactRange(Id.Namespace.DEFAULT, ETLBATCH_ARTIFACT_ID.getName(),
-                        ETLBATCH_ARTIFACT_ID.getVersion(), true, ETLBATCH_ARTIFACT_ID.getVersion(), true),
-      new ArtifactRange(Id.Namespace.DEFAULT, DATAPIPELINE_ARTIFACT_ID.getName(),
-                        DATAPIPELINE_ARTIFACT_ID.getVersion(), true, DATAPIPELINE_ARTIFACT_ID.getVersion(), true)
+      new ArtifactRange(Id.Namespace.DEFAULT, ETLBATCH_ARTIFACT_ID.getArtifact(),
+                        new ArtifactVersion(ETLBATCH_ARTIFACT_ID.getVersion()), true,
+                        new ArtifactVersion(ETLBATCH_ARTIFACT_ID.getVersion()), true),
+      new ArtifactRange(Id.Namespace.DEFAULT, DATAPIPELINE_ARTIFACT_ID.getArtifact(),
+                        new ArtifactVersion(DATAPIPELINE_ARTIFACT_ID.getVersion()), true,
+                        new ArtifactVersion(DATAPIPELINE_ARTIFACT_ID.getVersion()), true)
     );
     // add artifact for batch sources and sinks
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "batch-plugins", "1.0.0"), parents,
+    addPluginArtifact(NamespaceId.DEFAULT.artifact("core-plugins", "1.0.0"), parents,
                       KVTableSource.class, StreamBatchSource.class, TableSource.class,
                       TimePartitionedFileSetDatasetAvroSource.class,
                       BatchCubeSink.class, KVTableSink.class, TableSink.class,

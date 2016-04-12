@@ -19,13 +19,12 @@ package co.cask.hydrator.plugin;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.plugin.PluginClass;
 import co.cask.cdap.api.plugin.PluginPropertyField;
-import co.cask.cdap.etl.api.PipelineConfigurable;
-import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
-import co.cask.cdap.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
-import co.cask.cdap.etl.common.ETLStage;
-import co.cask.cdap.etl.common.Plugin;
+import co.cask.cdap.etl.mock.test.HydratorTestBase;
+import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
+import co.cask.cdap.etl.proto.v2.ETLPlugin;
+import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.RunRecord;
@@ -36,14 +35,11 @@ import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.proto.id.NamespacedArtifactId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.MapReduceManager;
-import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.hydrator.plugin.db.batch.sink.DBSink;
 import co.cask.hydrator.plugin.db.batch.sink.ETLDBOutputFormat;
 import co.cask.hydrator.plugin.db.batch.source.DBSource;
 import co.cask.hydrator.plugin.db.batch.source.DataDrivenETLDBInputFormat;
-import co.cask.hydrator.plugin.test.TableSink;
-import co.cask.hydrator.plugin.test.TableSource;
 import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Sets;
@@ -75,7 +71,7 @@ import javax.sql.rowset.serial.SerialBlob;
 /**
  * Database Plugin Tests setup.
  */
-public class DatabasePluginTestBase extends TestBase {
+public class DatabasePluginTestBase extends HydratorTestBase {
   protected static final NamespacedArtifactId APP_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("etlbatch", "3.2.0");
   protected static final ArtifactSummary ETLBATCH_ARTIFACT = new ArtifactSummary("etlbatch", "3.2.0");
   protected static final String CLOB_DATA =
@@ -99,30 +95,18 @@ public class DatabasePluginTestBase extends TestBase {
       return;
     }
 
-    // add the artifact for etl batch app
-    addAppArtifact(APP_ARTIFACT_ID.toId(), ETLBatchApplication.class,
-                   BatchSource.class.getPackage().getName(),
-                   PipelineConfigurable.class.getPackage().getName(),
-                   "org.apache.avro.mapred", "org.apache.avro", "org.apache.avro.generic", "org.apache.avro.io",
-                   // these are not real exports for the application, but are required for unit tests.
-                   // the stupid hive-exec jar pulled in by cdap-unit-test contains ParquetInputSplit...
-                   // without this, different classloaders will be used for ParquetInputSplit and we'll see errors
-                   "parquet.hadoop.api", "parquet.hadoop", "parquet.schema", "parquet.io.api");
-
-    // add artifact for tests
-    addPluginArtifact(NamespaceId.DEFAULT.artifact("test-plugins", "1.0.0"), APP_ARTIFACT_ID,
-                      TableSink.class, TableSource.class);
-
-    addPluginArtifact(NamespaceId.DEFAULT.artifact("database-plugins", "1.0.0"), APP_ARTIFACT_ID,
+    setupBatchArtifacts(APP_ARTIFACT_ID, ETLBatchApplication.class);
+    addPluginArtifact(NamespaceId.DEFAULT.artifact("database-plugins", "1.0.0"),
+                      APP_ARTIFACT_ID,
                       DBSource.class, DBSink.class, DBRecord.class, ETLDBOutputFormat.class,
                       DataDrivenETLDBInputFormat.class, DBRecord.class);
 
     // add hypersql 3rd party plugin
     PluginClass hypersql = new PluginClass("jdbc", "hypersql", "hypersql jdbc driver", JDBCDriver.class.getName(),
                                            null, Collections.<String, PluginPropertyField>emptyMap());
-    addPluginArtifact(NamespaceId.DEFAULT.artifact("hsql-jdbc", "1.0.0"), APP_ARTIFACT_ID,
+    addPluginArtifact(NamespaceId.DEFAULT.artifact("hsql-jdbc", "1.0.0"),
+                      APP_ARTIFACT_ID,
                       Sets.newHashSet(hypersql), JDBCDriver.class);
-
 
     String hsqlDBDir = temporaryFolder.newFolder("hsqldb").getAbsolutePath();
     hsqlDBServer = new HSQLDBServer(hsqlDBDir, "testdb");
@@ -268,12 +252,12 @@ public class DatabasePluginTestBase extends TestBase {
     }
   }
 
-  protected ApplicationManager deployETL(Plugin sourcePlugin, Plugin sinkPlugin) throws Exception {
+  protected ApplicationManager deployETL(ETLPlugin sourcePlugin, ETLPlugin sinkPlugin) throws Exception {
     ETLStage source = new ETLStage("source", sourcePlugin);
     ETLStage sink = new ETLStage("sink", sinkPlugin);
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(source)
-      .addSink(sink)
+      .addStage(source)
+      .addStage(sink)
       .addConnection(source.getName(), sink.getName())
       .build();
 

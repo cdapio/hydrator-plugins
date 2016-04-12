@@ -18,10 +18,12 @@ package co.cask.hydrator.plugin.batch;
 
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.common.utils.Tasks;
-import co.cask.cdap.etl.batch.config.ETLBatchConfig;
+import co.cask.cdap.etl.api.batch.BatchSink;
+import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
-import co.cask.cdap.etl.common.ETLStage;
-import co.cask.cdap.etl.common.Plugin;
+import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
+import co.cask.cdap.etl.proto.v2.ETLPlugin;
+import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.test.ApplicationManager;
@@ -99,16 +101,25 @@ public class ETLFTPTestRun extends ETLBatchTestBase {
   @Ignore
   @Test
   public void testFTPBatchSource() throws Exception {
-    ETLStage source = new ETLStage("source", new Plugin("FTP", ImmutableMap.<String, String>builder()
-      .put(Properties.File.PATH, String.format("ftp://%s:%s@localhost:%d%s", USER, PWD, port, folder.getAbsolutePath()))
-      .build()));
-    ETLStage sink = new ETLStage("sink", new Plugin("TPFSAvro", ImmutableMap.<String, String>builder()
-      .put(Properties.TimePartitionedFileSetDataset.SCHEMA, FileBatchSource.DEFAULT_SCHEMA.toString())
-      .put(Properties.TimePartitionedFileSetDataset.TPFS_NAME, "fileSink").build()));
+    ETLStage source = new ETLStage("source", new ETLPlugin(
+      "FTP",
+      BatchSource.PLUGIN_TYPE,
+      ImmutableMap.<String, String>builder()
+        .put(Properties.File.PATH, String.format("ftp://%s:%s@localhost:%d%s",
+                                                 USER, PWD, port, folder.getAbsolutePath()))
+        .build(),
+      null));
+    ETLStage sink = new ETLStage("sink", new ETLPlugin(
+      "TPFSAvro",
+      BatchSink.PLUGIN_TYPE,
+      ImmutableMap.<String, String>builder()
+        .put(Properties.TimePartitionedFileSetDataset.SCHEMA, FileBatchSource.DEFAULT_SCHEMA.toString())
+        .put(Properties.TimePartitionedFileSetDataset.TPFS_NAME, "fileSink").build(),
+      null));
 
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(source)
-      .addSink(sink)
+      .addStage(source)
+      .addStage(sink)
       .addConnection(source.getName(), sink.getName())
       .build();
 

@@ -20,16 +20,17 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.TimePartitionDetail;
 import co.cask.cdap.api.dataset.lib.TimePartitionOutput;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
+import co.cask.cdap.etl.api.batch.BatchSink;
+import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.batch.ETLWorkflow;
-import co.cask.cdap.etl.batch.config.ETLBatchConfig;
-import co.cask.cdap.etl.common.ETLStage;
-import co.cask.cdap.etl.common.Plugin;
+import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
+import co.cask.cdap.etl.proto.v2.ETLPlugin;
+import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.WorkflowManager;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericRecordBuilder;
@@ -52,23 +53,30 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
                                           Schema.Field.of("l", Schema.of(Schema.Type.LONG))
     );
 
-    Plugin sourceConfig = new Plugin("TPFSParquet",
-                                     ImmutableMap.of(
-                                       "schema", recordSchema.toString(),
-                                       "name", "cleanupInput",
-                                       "delay", "0d",
-                                       "duration", "1h"));
-    Plugin sinkConfig = new Plugin("TPFSParquet",
-                                   ImmutableMap.of(
-                                     "schema", recordSchema.toString(),
-                                     "name", "cleanupOutput",
-                                     "partitionOffset", "1h",
-                                     "cleanPartitionsOlderThan", "30d"));
+    ETLPlugin sourceConfig = new ETLPlugin("TPFSParquet",
+                                           BatchSource.PLUGIN_TYPE,
+                                           ImmutableMap.of(
+                                             "schema", recordSchema.toString(),
+                                             "name", "cleanupInput",
+                                             "delay", "0d",
+                                             "duration", "1h"),
+                                           null);
+    ETLPlugin sinkConfig = new ETLPlugin("TPFSParquet",
+                                         BatchSink.PLUGIN_TYPE,
+                                         ImmutableMap.of(
+                                           "schema", recordSchema.toString(),
+                                           "name", "cleanupOutput",
+                                           "partitionOffset", "1h",
+                                           "cleanPartitionsOlderThan", "30d"),
+                                         null);
 
     ETLStage source = new ETLStage("source", sourceConfig);
     ETLStage sink = new ETLStage("sink", sinkConfig);
 
-    ETLBatchConfig etlConfig = new ETLBatchConfig("* * * * *", source, sink, ImmutableList.<ETLStage>of());
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addConnection(source.getName(), sink.getName()).build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "parquetTest");
@@ -132,23 +140,27 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
                                           Schema.Field.of("l", Schema.of(Schema.Type.LONG))
     );
 
-    Plugin sourceConfig = new Plugin("TPFSParquet",
-                                     ImmutableMap.of(
-                                       "schema", recordSchema.toString(),
-                                       "name", "inputParquet",
-                                       "delay", "0d",
-                                       "duration", "1h"));
-    Plugin sinkConfig = new Plugin("TPFSParquet",
-                                   ImmutableMap.of(
-                                     "schema", recordSchema.toString(),
-                                     "name", "outputParquet"));
+    ETLPlugin sourceConfig = new ETLPlugin("TPFSParquet",
+                                           BatchSource.PLUGIN_TYPE,
+                                           ImmutableMap.of(
+                                             "schema", recordSchema.toString(),
+                                             "name", "inputParquet",
+                                             "delay", "0d",
+                                             "duration", "1h"),
+                                           null);
+    ETLPlugin sinkConfig = new ETLPlugin("TPFSParquet",
+                                         BatchSink.PLUGIN_TYPE,
+                                         ImmutableMap.of(
+                                           "schema", recordSchema.toString(),
+                                           "name", "outputParquet"),
+                                         null);
 
     ETLStage source = new ETLStage("source", sourceConfig);
     ETLStage sink = new ETLStage("sink", sinkConfig);
 
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(source)
-      .addSink(sink)
+      .addStage(source)
+      .addStage(sink)
       .addConnection(source.getName(), sink.getName())
       .build();
 

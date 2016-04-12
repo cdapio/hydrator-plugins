@@ -20,10 +20,12 @@ import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
 import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.etl.batch.config.ETLBatchConfig;
+import co.cask.cdap.etl.api.batch.BatchSink;
+import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
-import co.cask.cdap.etl.common.ETLStage;
-import co.cask.cdap.etl.common.Plugin;
+import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
+import co.cask.cdap.etl.proto.v2.ETLPlugin;
+import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.test.ApplicationManager;
@@ -62,30 +64,30 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
     String tableName = "SnapshotInputTable";
     ETLStage source = new ETLStage(
       "source",
-      new Plugin("Table", ImmutableMap.<String, String>builder()
+      new ETLPlugin("Table", BatchSource.PLUGIN_TYPE, ImmutableMap.<String, String>builder()
         .put("name", tableName)
         .put("schema", SCHEMA.toString())
         .put("schema.row.field", "id")
-        .build()));
+        .build(), null));
 
     ETLStage sink1 = new ETLStage(
       "sink1",
-      new Plugin("SnapshotParquet", ImmutableMap.<String, String>builder()
+      new ETLPlugin("SnapshotParquet", BatchSink.PLUGIN_TYPE, ImmutableMap.<String, String>builder()
         .put("name", "snapshotParquet1")
         .put("schema", SCHEMA.toString())
-        .build()));
+        .build(), null));
 
     ETLStage sink2 = new ETLStage(
       "sink2",
-      new Plugin("SnapshotAvro", ImmutableMap.<String, String>builder()
+      new ETLPlugin("SnapshotAvro", BatchSink.PLUGIN_TYPE, ImmutableMap.<String, String>builder()
         .put("name", "snapshotParquet2")
         .put("schema", SCHEMA.toString())
-        .build()));
+        .build(), null));
 
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(source)
-      .addSink(sink1)
-      .addSink(sink2)
+      .addStage(source)
+      .addStage(sink1)
+      .addStage(sink2)
       .addConnection(source.getName(), sink1.getName())
       .addConnection(source.getName(), sink2.getName())
       .build();
@@ -145,22 +147,22 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
     // run another pipeline that reads from avro dataset
     ETLStage source = new ETLStage(
       "source",
-      new Plugin("SnapshotParquet", ImmutableMap.<String, String>builder()
+      new ETLPlugin("SnapshotParquet", BatchSource.PLUGIN_TYPE, ImmutableMap.<String, String>builder()
         .put("name", sourceName)
         .put("schema", SCHEMA.toString())
-        .build()));
+        .build(), null));
 
     String outputName = sourceName + "Output";
     ETLStage sink = new ETLStage(
       "sink",
-      new Plugin("SnapshotParquet", ImmutableMap.<String, String>builder()
+      new ETLPlugin("SnapshotParquet", BatchSink.PLUGIN_TYPE, ImmutableMap.<String, String>builder()
         .put("name", outputName)
         .put("schema", SCHEMA.toString())
-        .build()));
+        .build(), null));
 
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(source)
-      .addSink(sink)
+      .addStage(source)
+      .addStage(sink)
       .addConnection(source.getName(), sink.getName())
       .build();
 

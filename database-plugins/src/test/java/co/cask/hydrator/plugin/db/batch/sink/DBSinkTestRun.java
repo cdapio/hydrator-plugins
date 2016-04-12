@@ -16,26 +16,21 @@
 
 package co.cask.hydrator.plugin.db.batch.sink;
 
-import co.cask.cdap.api.common.Bytes;
-import co.cask.cdap.api.dataset.table.Put;
+import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.etl.batch.config.ETLBatchConfig;
-import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
-import co.cask.cdap.etl.common.ETLStage;
-import co.cask.cdap.etl.common.Plugin;
-import co.cask.cdap.proto.ProgramRunStatus;
-import co.cask.cdap.proto.RunRecord;
-import co.cask.cdap.proto.artifact.AppRequest;
-import co.cask.cdap.proto.id.ApplicationId;
-import co.cask.cdap.proto.id.NamespaceId;
+import co.cask.cdap.etl.api.batch.BatchSink;
+import co.cask.cdap.etl.api.batch.BatchSource;
+import co.cask.cdap.etl.mock.batch.MockSource;
+import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
-import co.cask.cdap.test.MapReduceManager;
+import co.cask.hydrator.plugin.DBConfig;
 import co.cask.hydrator.plugin.DatabasePluginTestBase;
-import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.db.batch.source.DBSource;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -44,9 +39,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.Set;
 
 /**
  * Test for ETL using databases.
@@ -55,35 +51,34 @@ public class DBSinkTestRun extends DatabasePluginTestBase {
 
   @Test
   public void testDBSink() throws Exception {
+    String inputDatasetName = "input-dbsinktest";
+
     String cols = "ID, NAME, SCORE, GRADUATED, TINY, SMALL, BIG, FLOAT_COL, REAL_COL, NUMERIC_COL, DECIMAL_COL, " +
       "BIT_COL, DATE_COL, TIME_COL, TIMESTAMP_COL, BINARY_COL, BLOB_COL, CLOB_COL";
-    Plugin sourceConfig = new Plugin("Table",
-                                     ImmutableMap.of(
-                                       Properties.BatchReadableWritable.NAME, "DBInputTable",
-                                       Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ID",
-                                       Properties.Table.PROPERTY_SCHEMA, schema.toString(),
-                                       Properties.DB.USER, "emptyPwdUser"));
-    Plugin sinkConfig = new Plugin("Database",
-                                   ImmutableMap.of(Properties.DB.CONNECTION_STRING, getConnectionURL(),
-                                                   Properties.DB.TABLE_NAME, "MY_DEST_TABLE",
-                                                   Properties.DB.COLUMNS, cols,
-                                                   Properties.DB.JDBC_PLUGIN_NAME, "hypersql"
-                                   ));
+    ETLPlugin sourceConfig = MockSource.getPlugin(inputDatasetName);
+    ETLPlugin sinkConfig = new ETLPlugin("Database",
+                                         BatchSink.PLUGIN_TYPE,
+                                         ImmutableMap.of(DBConfig.CONNECTION_STRING, getConnectionURL(),
+                                                         DBSink.DBSinkConfig.TABLE_NAME, "MY_DEST_TABLE",
+                                                         DBSink.DBSinkConfig.COLUMNS, cols,
+                                                         DBConfig.JDBC_PLUGIN_NAME, "hypersql"),
+                                         null);
     ApplicationManager appManager = deployETL(sourceConfig, sinkConfig);
-
-    createInputData();
+    createInputData(inputDatasetName);
 
     runETLOnce(appManager);
 
     try (Connection conn = getConnection();
          Statement stmt = conn.createStatement()) {
       stmt.execute("SELECT * FROM \"MY_DEST_TABLE\"");
+      Set<String> users = new HashSet<>();
       try (ResultSet resultSet = stmt.getResultSet()) {
         Assert.assertTrue(resultSet.next());
-        Assert.assertEquals("user1", resultSet.getString("NAME"));
+        users.add(resultSet.getString("NAME"));
         Assert.assertTrue(resultSet.next());
-        Assert.assertEquals("user2", resultSet.getString("NAME"));
+        users.add(resultSet.getString("NAME"));
         Assert.assertFalse(resultSet.next());
+        Assert.assertEquals(ImmutableSet.of("user1", "user2"), users);
       }
     }
   }
@@ -94,58 +89,82 @@ public class DBSinkTestRun extends DatabasePluginTestBase {
     String importQuery = "SELECT A, B, C FROM INPUT WHERE $CONDITIONS";
     String boundingQuery = "SELECT MIN(A),MAX(A) from INPUT";
     String splitBy = "A";
-    Plugin sourceConfig = new Plugin(
+    ETLPlugin sourceConfig = new ETLPlugin(
       "Database",
+      BatchSource.PLUGIN_TYPE,
       ImmutableMap.<String, String>builder()
-        .put(Properties.DB.CONNECTION_STRING, getConnectionURL())
-        .put(Properties.DB.TABLE_NAME, "INPUT")
-        .put(Properties.DB.IMPORT_QUERY, importQuery)
+        .put(DBConfig.CONNECTION_STRING, getConnectionURL())
+        .put(DBSource.DBSourceConfig.IMPORT_QUERY, importQuery)
         .put(DBSource.DBSourceConfig.BOUNDING_QUERY, boundingQuery)
         .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
-        .put(Properties.DB.JDBC_PLUGIN_NAME, "hypersql")
-        .build()
+        .put(DBConfig.JDBC_PLUGIN_NAME, "hypersql")
+        .build(),
+      null
     );
-    Plugin sinkConfig = new Plugin(
+    ETLPlugin sinkConfig = new ETLPlugin(
       "Database",
+      BatchSink.PLUGIN_TYPE,
       ImmutableMap.of(
-        Properties.DB.CONNECTION_STRING, getConnectionURL(),
-        Properties.DB.TABLE_NAME, "OUTPUT",
-        Properties.DB.COLUMNS, "A, B, C",
-        Properties.DB.JDBC_PLUGIN_NAME, "hypersql")
+        DBConfig.CONNECTION_STRING, getConnectionURL(),
+        DBSink.DBSinkConfig.TABLE_NAME, "OUTPUT",
+        DBSink.DBSinkConfig.COLUMNS, "A, B, C",
+        DBConfig.JDBC_PLUGIN_NAME, "hypersql"),
+      null
     );
     ApplicationManager appManager = deployETL(sourceConfig, sinkConfig);
     // if nulls are not handled correctly, the MR program will fail with an NPE
     runETLOnce(appManager);
   }
 
-  private void createInputData() throws Exception {
+  private void createInputData(String inputDatasetName) throws Exception {
     // add some data to the input table
-    DataSetManager<Table> inputManager = getDataset("DBInputTable");
-    Table inputTable = inputManager.get();
+    DataSetManager<Table> inputManager = getDataset(inputDatasetName);
+    Schema schema = Schema.recordOf(
+      "dbRecord",
+      Schema.Field.of("ID", Schema.of(Schema.Type.INT)),
+      Schema.Field.of("NAME", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("SCORE", Schema.of(Schema.Type.FLOAT)),
+      Schema.Field.of("GRADUATED", Schema.of(Schema.Type.BOOLEAN)),
+      Schema.Field.of("TINY", Schema.of(Schema.Type.INT)),
+      Schema.Field.of("SMALL", Schema.of(Schema.Type.INT)),
+      Schema.Field.of("BIG", Schema.of(Schema.Type.LONG)),
+      Schema.Field.of("FLOAT_COL", Schema.of(Schema.Type.FLOAT)),
+      Schema.Field.of("REAL_COL", Schema.of(Schema.Type.FLOAT)),
+      Schema.Field.of("NUMERIC_COL", Schema.of(Schema.Type.DOUBLE)),
+      Schema.Field.of("DECIMAL_COL", Schema.of(Schema.Type.DOUBLE)),
+      Schema.Field.of("BIT_COL", Schema.of(Schema.Type.BOOLEAN)),
+      Schema.Field.of("DATE_COL", Schema.of(Schema.Type.LONG)),
+      Schema.Field.of("TIME_COL", Schema.of(Schema.Type.LONG)),
+      Schema.Field.of("TIMESTAMP_COL", Schema.of(Schema.Type.LONG)),
+      Schema.Field.of("BINARY_COL", Schema.of(Schema.Type.BYTES)),
+      Schema.Field.of("BLOB_COL", Schema.of(Schema.Type.BYTES)),
+      Schema.Field.of("CLOB_COL", Schema.of(Schema.Type.STRING))
+    );
+    List<StructuredRecord> inputRecords = new ArrayList<>();
     for (int i = 1; i <= 2; i++) {
-      Put put = new Put(Bytes.toBytes("row" + i));
       String name = "user" + i;
-      put.add("ID", i);
-      put.add("NAME", name);
-      put.add("SCORE", 3.451);
-      put.add("GRADUATED", (i % 2 == 0));
-      put.add("TINY", i + 1);
-      put.add("SMALL", i + 2);
-      put.add("BIG", 3456987L);
-      put.add("FLOAT_COL", 3.456f);
-      put.add("REAL_COL", 3.457f);
-      put.add("NUMERIC_COL", 3.458);
-      put.add("DECIMAL_COL", 3.459);
-      put.add("BIT_COL", (i % 2 == 1));
-      put.add("DATE_COL", CURRENT_TS);
-      put.add("TIME_COL", CURRENT_TS);
-      put.add("TIMESTAMP_COL", CURRENT_TS);
-      put.add("BINARY_COL", name.getBytes(Charsets.UTF_8));
-      put.add("BLOB_COL", name.getBytes(Charsets.UTF_8));
-      put.add("CLOB_COL", CLOB_DATA);
-      inputTable.put(put);
-      inputManager.flush();
+      inputRecords.add(StructuredRecord.builder(schema)
+        .set("ID", i)
+        .set("NAME", name)
+        .set("SCORE", 3.451)
+        .set("GRADUATED", (i % 2 == 0))
+        .set("TINY", i + 1)
+        .set("SMALL", i + 2)
+        .set("BIG", 3456987L)
+        .set("FLOAT_COL", 3.456f)
+        .set("REAL_COL", 3.457f)
+        .set("NUMERIC_COL", 3.458)
+        .set("DECIMAL_COL", 3.459)
+        .set("BIT_COL", (i % 2 == 1))
+        .set("DATE_COL", CURRENT_TS)
+        .set("TIME_COL", CURRENT_TS)
+        .set("TIMESTAMP_COL", CURRENT_TS)
+        .set("BINARY_COL", name.getBytes(Charsets.UTF_8))
+        .set("BLOB_COL", name.getBytes(Charsets.UTF_8))
+        .set("CLOB_COL", CLOB_DATA)
+        .build());
     }
+    MockSource.writeInput(inputManager, inputRecords);
   }
 
   private void prepareInputAndOutputTables() throws SQLException {

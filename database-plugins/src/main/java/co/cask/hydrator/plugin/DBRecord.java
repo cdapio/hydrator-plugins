@@ -174,9 +174,12 @@ public class DBRecord implements Writable, DBWritable {
           Clob clob = (Clob) original;
           try {
             try (BufferedReader br = new BufferedReader(clob.getCharacterStream(1, (int) clob.length()))) {
-              while ((s = br.readLine()) != null) {
+              if ((s = br.readLine()) != null) {
                 sbf.append(s);
+              }
+              while ((s = br.readLine()) != null) {
                 sbf.append(System.getProperty("line.separator"));
+                sbf.append(s);
               }
             }
           } catch (IOException e) {

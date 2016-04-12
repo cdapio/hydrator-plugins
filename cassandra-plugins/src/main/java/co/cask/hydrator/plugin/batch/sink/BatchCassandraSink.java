@@ -48,7 +48,7 @@ import javax.annotation.Nullable;
  * This {@link BatchCassandraSink} takes a {@link StructuredRecord} in,
  * converts it to columns, and writes it to the Cassandra server.
  */
-@Plugin(type = "batchsink")
+@Plugin(type = BatchSink.PLUGIN_TYPE)
 @Name("Cassandra")
 @Description("CDAP Cassandra Batch Sink takes the structured record from the input source " +
   "and converts each field to a byte buffer, then puts it in the keyspace and column family specified by the user.")
