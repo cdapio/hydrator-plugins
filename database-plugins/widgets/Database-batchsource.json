@@ -61,7 +61,9 @@
             "rows": "4"
           },
           "plugin-function": {
-            "method": "getSchema"
+            "method": "POST",
+            "endpoint": "getSchema",
+            "output-property": "schema"
           }
         },
         {
