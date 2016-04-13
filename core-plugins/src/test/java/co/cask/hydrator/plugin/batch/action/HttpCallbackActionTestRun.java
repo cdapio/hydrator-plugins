@@ -112,7 +112,6 @@ public class HttpCallbackActionTestRun extends ETLBatchTestBase {
     manager.start();
     manager.waitForFinish(5, TimeUnit.MINUTES);
 
-
     URL url = new URL(baseURL + "/feeds/users");
     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
     conn.setRequestMethod(HttpMethod.GET);

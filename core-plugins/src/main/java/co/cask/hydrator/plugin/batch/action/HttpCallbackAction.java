@@ -49,9 +49,9 @@ import javax.annotation.Nullable;
 @Description("Makes an HTTP call at the end of a pipeline run.")
 public class HttpCallbackAction extends PostAction {
   private static final Logger LOG = LoggerFactory.getLogger(HttpCallbackAction.class);
-  private final Conf conf;
+  private final HttpRequestConf conf;
 
-  public HttpCallbackAction(Conf conf) {
+  public HttpCallbackAction(HttpRequestConf conf) {
     this.conf = conf;
   }
 
@@ -76,7 +76,7 @@ public class HttpCallbackAction extends PostAction {
         for (Map.Entry<String, List<String>> propertyEntry : headers.entrySet()) {
           String propertyKey = propertyEntry.getKey();
           for (String propertyValue : propertyEntry.getValue()) {
-            conn.setRequestProperty(propertyKey, propertyValue);
+            conn.addRequestProperty(propertyKey, propertyValue);
           }
         }
         if (conf.body != null) {
@@ -109,7 +109,7 @@ public class HttpCallbackAction extends PostAction {
   /**
    * Config for the http callback action.
    */
-  public static final class Conf extends PluginConfig {
+  public static final class HttpRequestConf extends PluginConfig {
     private static final Gson GSON = new Gson();
     private static final Type MAP_TYPE = new TypeToken<Map<String, String>>() { }.getType();
 
@@ -138,7 +138,7 @@ public class HttpCallbackAction extends PostAction {
       "For example: {\"Accept-Language\", \"en-US,en;q=0.5\"}.")
     private String requestProperties;
 
-    public Conf() {
+    public HttpRequestConf() {
       this.url = null;
       this.method = null;
       this.connectTimeoutMillis = 0;

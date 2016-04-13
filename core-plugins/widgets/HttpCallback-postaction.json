@@ -56,7 +56,7 @@
           "name": "numRetries"
         },
         {
-          "widget-type": "textbox",
+          "widget-type": "json-editor",
           "label": "Request Properties",
           "name": "requestProperties"
         }
