@@ -30,6 +30,7 @@ This example filters out any records whose ``'count'`` field contains a value gr
 
     {
         "name": "ScriptFilter",
+        "type": "transform",
         "properties": {
             "script": "function shouldFilter(input, context) {
                 if (input.count < 0) {

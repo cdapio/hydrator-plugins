@@ -24,8 +24,9 @@ This example reads from a KeyValueTable named 'items':
 
     {
         "name": "KVTable",
+        "type": "batchsource",
         "properties": {
-            "name": "items",
+            "name": "items"
         }
     }
 

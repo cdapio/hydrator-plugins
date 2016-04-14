@@ -41,6 +41,7 @@ files are in Avro format:
 
     {
         "name": "TPFSAvro",
+        "type": "batchsource",
         "properties": {
             "name": "webactivity",
             "duration": "5m",

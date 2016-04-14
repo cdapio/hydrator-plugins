@@ -38,6 +38,7 @@ be read:
 
     {
         "name": "SnapshotAvro",
+        "type": "batchsource",
         "properties": {
             "name": "users",
             "schema": "{

@@ -36,6 +36,7 @@ run midnight on new years day 2016, the pipeline would write to ``/etc/accesslog
 
     {
         "name": "HDFS",
+        "type": "batchsink",
         "properties": {
             "path": "hdfs://mycluster.net:8020/etl/accesslogs",
             "suffix": "YYYY-MM-dd-HH-mm"

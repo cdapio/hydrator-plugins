@@ -52,6 +52,7 @@ fields:
 
     {
         "name": "Script",
+        "type": "transform",
         "properties": {
             "script": "function transform(input, context) {
                    var tax = input.subtotal * 0.0975;

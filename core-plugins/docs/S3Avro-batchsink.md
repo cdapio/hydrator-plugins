@@ -43,6 +43,7 @@ corresponding to the start time in ``yyyy-MM-dd-HH-mm`` format:
 
     {
         "name": "S3Avro",
+        "type": "batchsink",
         "properties": {
             "accessKey": "key",
             "accessID": "ID",

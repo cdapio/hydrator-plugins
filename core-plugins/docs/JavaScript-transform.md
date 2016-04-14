@@ -57,6 +57,7 @@ Example
 
     {
         "name": "JavaScript",
+        "type": "transform",
         "properties": {
             "script": "function transform(input, emitter, context) {
                    var tax = input.subtotal * 0.0975;

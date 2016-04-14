@@ -50,6 +50,7 @@ configure Hadoop to use one mapper per MB:
 
     {
         "name": "S3",
+        "type": "batchsource",
         "properties": {
             "accessKey": "key",
             "accessID": "ID",

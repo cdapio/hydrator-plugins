@@ -52,6 +52,7 @@ Example
 
     {
         "name": "Twitter",
+        "type": "realtimesource",
         "properties": {
             "AccessToken": "GetAccessTokenFromTwitter",
             "AccessTokenSecret": "GetAccessTokenSecretFromTwitter",
