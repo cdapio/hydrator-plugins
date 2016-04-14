@@ -32,7 +32,7 @@
   <dependencies>
     <dependency>
       <groupId>co.cask.cdap</groupId>
-      <artifactId>cdap-unit-test</artifactId>
+      <artifactId>hydrator-test</artifactId>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>

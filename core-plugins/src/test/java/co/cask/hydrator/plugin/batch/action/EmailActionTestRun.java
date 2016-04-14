@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch;
+package co.cask.hydrator.plugin.batch.action;
 
 import co.cask.cdap.common.utils.Networks;
 import co.cask.cdap.etl.api.batch.BatchSink;
@@ -27,7 +27,7 @@ import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.WorkflowManager;
-import co.cask.hydrator.plugin.batch.action.EmailAction;
+import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
 import com.dumbster.smtp.SimpleSmtpServer;
 import com.dumbster.smtp.SmtpMessage;
 import com.google.common.collect.ImmutableMap;
@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Test for {@link EmailAction}
  */
-public class ETLEmailActionTestRun extends ETLBatchTestBase {
+public class EmailActionTestRun extends ETLBatchTestBase {
 
   private SimpleSmtpServer server;
   private int port;
