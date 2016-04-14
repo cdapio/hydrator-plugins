@@ -28,10 +28,9 @@ import co.cask.cdap.etl.api.realtime.SourceState;
 import co.cask.hydrator.plugin.realtime.config.UrlFetchRealtimeSourceConfig;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
-import com.google.common.io.ByteStreams;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.google.common.io.CharStreams;
 
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
@@ -47,12 +46,14 @@ import javax.annotation.Nullable;
 @Name("URLFetch")
 @Description("Fetch data from an external URL at a regular interval.")
 public class UrlFetchRealtimeSource extends RealtimeSource<StructuredRecord> {
-  private static final Logger LOG = LoggerFactory.getLogger(UrlFetchRealtimeSource.class);
-
-  private static final Schema DEFAULT_SCHEMA = Schema.recordOf(
+  private static final int TIMEOUT = 60 * 1000;
+  private static final String METHOD = "GET";
+  private static final String POLL_TIME_STATE_KEY = "lastPollTime";
+  private static final Schema SCHEMA = Schema.recordOf(
     "event",
     Schema.Field.of("ts", Schema.of(Schema.Type.LONG)),
     Schema.Field.of("url", Schema.of(Schema.Type.STRING)),
+    Schema.Field.of("responseCode", Schema.of(Schema.Type.INT)),
     Schema.Field.of("headers", Schema.mapOf(Schema.of(Schema.Type.STRING), Schema.of(Schema.Type.STRING))),
     Schema.Field.of("body", Schema.of(Schema.Type.STRING))
   );
@@ -66,43 +67,64 @@ public class UrlFetchRealtimeSource extends RealtimeSource<StructuredRecord> {
   @Nullable
   @Override
   public SourceState poll(Emitter<StructuredRecord> writer, SourceState currentState) throws Exception {
-    URL url = new URL(config.getUrl());
-    String response;
-    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+    byte[] lastPollTimeBytes = currentState.getState(POLL_TIME_STATE_KEY);
+    if (lastPollTimeBytes != null) {
+      long lastPollTime = Bytes.toLong(lastPollTimeBytes);
+      long currentPollTime = System.currentTimeMillis() / 1000;
+      long diff = currentPollTime - lastPollTime;
+      if (config.getIntervalInSeconds() - diff > 0) {
+        TimeUnit.SECONDS.sleep(1L);
+        return currentState;
+      }
+    }
     try {
-      if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-        response = Bytes.toString(ByteStreams.toByteArray(connection.getInputStream()));
-      } else if (connection.getResponseCode() == HttpURLConnection.HTTP_BAD_REQUEST) {
-        response = Bytes.toString(ByteStreams.toByteArray(connection.getErrorStream()));
-      } else {
-        throw new Exception("Invalid response code returned: " + connection.getResponseCode());
+      URL url = new URL(config.getUrl());
+      String response = "";
+      HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+      connection.setRequestMethod(METHOD);
+      connection.setConnectTimeout(TIMEOUT);
+      connection.setInstanceFollowRedirects(config.shouldFollowRedirects());
+      if (config.hasCustomRequestHeaders()) {
+        // Set additional request headers if needed
+        for (Map.Entry<String, String> requestHeader : config.getRequestHeadersMap().entrySet()) {
+          connection.setRequestProperty(requestHeader.getKey(), requestHeader.getValue());
+        }
       }
-    } finally {
-      connection.disconnect();
-    }
+      try {
+        if (connection.getResponseCode() >= 400 && connection.getErrorStream() != null) {
+          response = CharStreams.toString(new InputStreamReader(connection.getErrorStream(), config.getCharset()));
+        } else if (connection.getInputStream() != null) {
+          response = CharStreams.toString(new InputStreamReader(connection.getInputStream(), config.getCharset()));
+        }
+      } finally {
+        connection.disconnect();
+      }
 
-    Map<String, List<String>> headers = connection.getHeaderFields();
-    Map<String, String> flattenedHeaders = new HashMap<>();
-    for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
-      if (!Strings.isNullOrEmpty(entry.getKey())) {
-        // If multiple values for the same header exist, concatenate them
-        flattenedHeaders.put(entry.getKey(), Joiner.on(',').skipNulls().join(entry.getValue()));
+      Map<String, List<String>> headers = connection.getHeaderFields();
+      Map<String, String> flattenedHeaders = new HashMap<>();
+      for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
+        if (!Strings.isNullOrEmpty(entry.getKey())) {
+          // If multiple values for the same header exist, concatenate them
+          flattenedHeaders.put(entry.getKey(), Joiner.on(',').skipNulls().join(entry.getValue()));
+        }
       }
+      writer.emit(createStructuredRecord(response, flattenedHeaders, connection.getResponseCode()));
+      return currentState;
+    } finally {
+      currentState.setState(POLL_TIME_STATE_KEY, Bytes.toBytes(System.currentTimeMillis() / 1000));
     }
-    writeDefaultRecords(writer, response, flattenedHeaders);
-    TimeUnit.SECONDS.sleep(config.getIntervalInSeconds());
-    return currentState;
   }
 
-  private void writeDefaultRecords(Emitter<StructuredRecord> writer,
-                                   String response,
-                                   Map<String, String> headerFields) {
-    StructuredRecord.Builder recordBuilder = StructuredRecord.builder(DEFAULT_SCHEMA);
+  private StructuredRecord createStructuredRecord(String response,
+                                                  Map<String, String> headerFields,
+                                                  int responseCode) {
+    StructuredRecord.Builder recordBuilder = StructuredRecord.builder(SCHEMA);
     recordBuilder
       .set("ts", System.currentTimeMillis())
       .set("url", config.getUrl())
+      .set("responseCode", responseCode)
       .set("headers", headerFields)
       .set("body", response);
-    writer.emit(recordBuilder.build());
+    return recordBuilder.build();
   }
 }

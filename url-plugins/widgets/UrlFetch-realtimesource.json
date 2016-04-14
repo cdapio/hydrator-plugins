@@ -16,7 +16,46 @@
           "label": "Interval",
           "name": "interval",
           "widget-attributes" : {
-            "default": "3600"
+            "default": "3600",
+            "min": "1"
+          }
+        },
+        {
+          "widget-type": "keyvalue",
+          "label": "Request Headers",
+          "name": "headers",
+          "widget-attributes" : {
+            "showDelimiter": "false",
+            "kv-delimiter" : ":",
+            "delimiter" : "\n"
+          }
+        },
+        {
+          "widget-type": "select",
+          "label": "Charset",
+          "name": "charset",
+          "widget-attributes" : {
+            "values": [
+              "US-ASCII",
+              "ISO-8859-1",
+              "UTF-8",
+              "UTF-16BE",
+              "UTF-16LE",
+              "UTF-16"
+            ],
+            "default": "UTF-8"
+          }
+        },
+        {
+          "widget-type": "select",
+          "label": "Should Follow Redirects",
+          "name": "followRedirects",
+          "widget-attributes" : {
+            "values": [
+              "true",
+              "false"
+            ],
+            "default": "true"
           }
         }
       ]
@@ -28,6 +67,7 @@
       "schema": {
         "ts": "long",
         "url": "string",
+        "responseCode": "int",
         "headers": "map<string, string>",
         "body": "string"
       }

@@ -54,13 +54,6 @@ public class UrlFetchTest extends TestBase {
       .addHttpHandlers(ImmutableList.of(new PingHandler()))
       .build();
     service.startAndWait();
-
-    UrlFetchRealtimeSourceConfig config = new UrlFetchRealtimeSourceConfig(
-      String.format("http://%s:%s/ping",
-                    service.getBindAddress().getHostName(),
-                    service.getBindAddress().getPort()),
-      1L
-    );
   }
 
   @After
@@ -74,8 +67,7 @@ public class UrlFetchTest extends TestBase {
       String.format("http://%s:%s/ping",
                     service.getBindAddress().getHostName(),
                     service.getBindAddress().getPort()),
-      1L
-    );
+      1L);
     UrlFetchRealtimeSource source = new UrlFetchRealtimeSource(config);
     source.initialize(new MockRealtimeContext());
 
@@ -92,7 +84,79 @@ public class UrlFetchTest extends TestBase {
     Assert.assertEquals("OK", urlData.get("body"));
     Assert.assertNotNull(urlData.get("headers"));
     Assert.assertEquals("2", ((Map) urlData.get("headers")).get("Content-Length"));
+    Assert.assertNotNull(urlData.get("responseCode"));
+    Assert.assertEquals(200, urlData.get("responseCode"));
+  }
 
+  @Test
+  public void testRequestHeaders() throws Exception {
+    UrlFetchRealtimeSourceConfig config = new UrlFetchRealtimeSourceConfig(
+      String.format("http://%s:%s/useragent",
+                    service.getBindAddress().getHostName(),
+                    service.getBindAddress().getPort()),
+      1L,
+      "User-Agent:Test User Agent");
+    UrlFetchRealtimeSource source = new UrlFetchRealtimeSource(config);
+    source.initialize(new MockRealtimeContext());
+
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    SourceState state = new SourceState();
+
+    source.poll(emitter, state);
+    Assert.assertEquals(1, emitter.getEmitted().size());
+    StructuredRecord urlData = emitter.getEmitted().get(0);
+    Assert.assertNotNull(urlData);
+    Assert.assertNotNull(urlData.get("url"));
+    Assert.assertEquals("http://localhost:7777/useragent", urlData.get("url"));
+    Assert.assertNotNull(urlData.get("body"));
+    Assert.assertEquals("Test User Agent", urlData.get("body"));
+    Assert.assertNotNull(urlData.get("responseCode"));
+    Assert.assertEquals(200, urlData.get("responseCode"));
+  }
+
+  @Test
+  public void test404() throws Exception {
+    UrlFetchRealtimeSourceConfig config = new UrlFetchRealtimeSourceConfig(
+      String.format("http://%s:%s/does-not-exist",
+                    service.getBindAddress().getHostName(),
+                    service.getBindAddress().getPort()),
+      1L);
+    UrlFetchRealtimeSource source = new UrlFetchRealtimeSource(config);
+    source.initialize(new MockRealtimeContext());
+
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    SourceState state = new SourceState();
+
+    source.poll(emitter, state);
+    Assert.assertEquals(1, emitter.getEmitted().size());
+    StructuredRecord urlData = emitter.getEmitted().get(0);
+    Assert.assertNotNull(urlData);
+    Assert.assertNotNull(urlData.get("url"));
+    Assert.assertEquals("http://localhost:7777/does-not-exist", urlData.get("url"));
+    Assert.assertNotNull(urlData.get("body"));
+    Assert.assertEquals("Problem accessing: /does-not-exist. Reason: Not Found", urlData.get("body"));
+    Assert.assertNotNull(urlData.get("responseCode"));
+    Assert.assertEquals(404, urlData.get("responseCode"));
+  }
+
+  @Test
+  public void testMultiplePolls() throws Exception {
+    UrlFetchRealtimeSourceConfig config = new UrlFetchRealtimeSourceConfig(
+      String.format("http://%s:%s/ping",
+                    service.getBindAddress().getHostName(),
+                    service.getBindAddress().getPort()),
+      2L);
+    UrlFetchRealtimeSource source = new UrlFetchRealtimeSource(config);
+    source.initialize(new MockRealtimeContext());
+
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    SourceState state = new SourceState();
+    long start = System.currentTimeMillis();
+    while (emitter.getEmitted().size() < 4) {
+      source.poll(emitter, state);
+    }
+    long end = System.currentTimeMillis();
+    Assert.assertTrue(end - start > 3 * 2 * 1000);
   }
 
   // Simple service for testing connection to URL
@@ -101,6 +165,12 @@ public class UrlFetchTest extends TestBase {
     @Path("/ping")
     public void testGet(HttpRequest request, HttpResponder responder) {
       responder.sendString(HttpResponseStatus.OK, "OK");
+    }
+
+    @GET
+    @Path("/useragent")
+    public void testUserAgent(HttpRequest request, HttpResponder responder) {
+      responder.sendString(HttpResponseStatus.OK, request.getHeader("User-Agent"));
     }
   }
 }
