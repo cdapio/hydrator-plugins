@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.file.sink;
+package co.cask.hydrator.plugin.batch.sink;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
@@ -31,7 +31,7 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.hydrator.common.HiveSchemaConverter;
-import co.cask.hydrator.plugin.batch.file.StructuredToAvroTransformer;
+import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
 import org.apache.avro.generic.GenericRecord;
 import parquet.avro.AvroParquetInputFormat;
 import parquet.avro.AvroParquetOutputFormat;
