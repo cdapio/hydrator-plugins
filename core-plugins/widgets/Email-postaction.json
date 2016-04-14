@@ -38,7 +38,7 @@
           "name": "subject"
         },
         {
-          "widget-type": "textbox",
+          "widget-type": "textarea",
           "label": "Message",
           "name": "message"
         },
