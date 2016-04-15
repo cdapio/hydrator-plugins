@@ -98,8 +98,6 @@ public class TimeParser {
     // if this in an expression like '-5d'
     if (idx == 0) {
       return new ValueNode(parseDuration(expression));
-      /*long dur = parseDuration(expression);
-      return operator == '-' ? new ValueNode(0 - dur) : new ValueNode(dur);*/
     }
 
     MathNode left = parseExpression(expression.substring(0, idx));

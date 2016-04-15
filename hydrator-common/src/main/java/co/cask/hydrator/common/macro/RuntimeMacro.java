@@ -34,7 +34,10 @@ import javax.annotation.Nullable;
  * Otherwise, the format is expected to be a SimpleDateFormat that will be used to format the runtime.
  * The offset can be used to specify some amount of time to subtract from the runtime before formatting it.
  * The offset must be parse-able by {@link TimeParser}, which allows some simple math expressions.
- * For example, 1d-4h means 20 hours before the runtime.
+ * For example, suppose the logical start time of the run is 2016-01-01T00:00:00 and we have macro
+ * ${runtime(yyyy-MM-dd'T'HH-mm-ss,1d-4h)}. The format is yyyy-MM-dd'T'HH-mm-ss and the offset is 1d-4h+30m.
+ * This means the macro will be replaced with 2015-12-31T03:30:00, since the offset translates to 20.5 hours, so
+ * the whole macro evaluates to 20.5 hours before midnight of new years 2016.
  */
 public class RuntimeMacro implements Macro {
 

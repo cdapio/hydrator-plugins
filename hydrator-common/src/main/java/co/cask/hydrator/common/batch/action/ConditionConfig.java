@@ -19,6 +19,7 @@ package co.cask.hydrator.common.batch.action;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.batch.BatchActionContext;
+import co.cask.hydrator.common.macro.MacroConfig;
 import com.google.common.base.Joiner;
 
 import javax.annotation.Nullable;
@@ -26,7 +27,7 @@ import javax.annotation.Nullable;
 /**
  * Base plugin config for post actions that contain a setting for when the action should run.
  */
-public class ConditionConfig extends PluginConfig {
+public class ConditionConfig extends MacroConfig {
 
   @Nullable
   @Description("When to run the action. Must be 'completion', 'success', or 'failure'. Defaults to 'completion'. " +

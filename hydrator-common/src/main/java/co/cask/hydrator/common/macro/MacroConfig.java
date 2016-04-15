@@ -46,9 +46,11 @@ public abstract class MacroConfig extends PluginConfig {
   @Nullable
   @Description("The timezone to use for macro substitution. See Java's TimeZone class for more information about " +
     "time zone codes. If the specified time zone is unknown, GMT will be used. " +
-    "Macros are of the format ${runtime:format}, " +
-    "where format is a date format as described by Java's SimpleDateFormat. " +
-    "For example, ${runtime:yyyy} will be replaced by the runtime year.")
+    "Macros are of the format ${runtime(format,offset)}, " +
+    "where format is a date format as described by Java's SimpleDateFormat, and offset is a duration to subtract " +
+    "from the logical start time of the run." +
+    "For example, if the logical start time of the run is midnight of 2016-01-01, " +
+    "then the macro ${runtime(yyyy-MM-dd,1d)} will be replaced 2015-12-31.")
   protected String macroTimeZone;
 
   public TimeZone getTimeZone() {
