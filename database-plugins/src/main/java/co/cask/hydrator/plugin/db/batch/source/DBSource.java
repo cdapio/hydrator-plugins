@@ -111,8 +111,12 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
     public String password;
     public String jdbcPluginName;
     @Nullable
-    public String jdbcPluginType = "jdbc";
+    public String jdbcPluginType;
     public String query;
+
+    private String getJDBCPluginType() {
+      return jdbcPluginType == null ? "jdbc" : jdbcPluginType;
+    }
   }
 
   /**
@@ -149,11 +153,12 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
   private DriverCleanup loadPluginClassAndGetDriver(GetSchemaRequest request, EndpointPluginContext pluginContext)
     throws IllegalAccessException, InstantiationException, SQLException {
     Class<? extends Driver> driverClass =
-      pluginContext.loadPluginClass(request.jdbcPluginType, request.jdbcPluginName, PluginProperties.builder().build());
+      pluginContext.loadPluginClass(request.getJDBCPluginType(),
+                                    request.jdbcPluginName, PluginProperties.builder().build());
 
     try {
       return DBUtils.ensureJDBCDriverIsAvailable(driverClass, request.connectionString,
-                                                 request.jdbcPluginType, request.jdbcPluginName);
+                                                 request.getJDBCPluginType(), request.jdbcPluginName);
     } catch (IllegalAccessException | InstantiationException | SQLException e) {
       LOG.error("Unable to load or register driver {}", driverClass, e);
       throw e;
