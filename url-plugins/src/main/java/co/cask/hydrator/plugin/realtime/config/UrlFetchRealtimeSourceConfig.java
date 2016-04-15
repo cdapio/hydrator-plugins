@@ -139,11 +139,11 @@ public class UrlFetchRealtimeSourceConfig extends PluginConfig {
     }
     if (connectTimeout < 0) {
       throw new IllegalArgumentException(String.format(
-        "Invalid connectTimeout %d. Timeout must be a positive number.", connectTimeout));
+        "Invalid connectTimeout %d. Timeout must be 0 or a positive number.", connectTimeout));
     }
     if (readTimeout < 0) {
       throw new IllegalArgumentException(String.format(
-        "Invalid readTimeout %d. Interval must be a positive number.", readTimeout));
+        "Invalid readTimeout %d. Timeout must be 0 or a positive number.", readTimeout));
     }
     try {
       if (!Strings.isNullOrEmpty(charsetString)) {
@@ -152,25 +152,18 @@ public class UrlFetchRealtimeSourceConfig extends PluginConfig {
     } catch (UnsupportedCharsetException e) {
       throw new IllegalArgumentException(String.format("Invalid charset string %s.", charsetString));
     }
-    try {
-      convertHeadersToMap(requestHeadersString);
-    } catch (Exception e) {
-      throw new IllegalArgumentException(String.format("Could not parse requestHeadersString string due to: '%s'.",
-                                                       e.getMessage()));
-    }
+    convertHeadersToMap(requestHeadersString);
   }
 
   private Map<String, String> convertHeadersToMap(String headersString) {
     Map<String, String> headersMap = new HashMap<>();
     if (!Strings.isNullOrEmpty(headersString)) {
-      List<String> headerChunks = Arrays.asList(headersString.split(DELIMITER));
-      for (String chunk : headerChunks) {
-        List<String> keyValueList = Arrays.asList(chunk.split(KV_DELIMITER));
-        if (keyValueList.size() >= 2) {
-          headersMap.put(keyValueList.get(0),
-                         Joiner.on(KV_DELIMITER).join(keyValueList.subList(1, keyValueList.size())));
+      for (String chunk : headersString.split(DELIMITER)) {
+        String[] keyValue = chunk.split(KV_DELIMITER, 2);
+        if (keyValue.length == 2) {
+          headersMap.put(keyValue[0],keyValue[1]);
         } else {
-          throw new IllegalArgumentException(String.format("Missing value in key-value pair %s.", chunk));
+          throw new IllegalArgumentException(String.format("Unable to parse key-value pair '%s'.", chunk));
         }
       }
     }
