@@ -64,9 +64,8 @@ import org.apache.cassandra.thrift.CqlResult;
 import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.hadoop.conf.Configuration;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -91,8 +90,8 @@ public class ETLCassandraTest extends HydratorTestBase {
     Schema.Field.of("num", Schema.of(Schema.Type.INT)),
     Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
 
-  private Cassandra.Client client;
-  private int rpcPort;
+  private static Cassandra.Client client;
+  private static int rpcPort;
 
   @ClassRule
   public static TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -130,10 +129,7 @@ public class ETLCassandraTest extends HydratorTestBase {
                       BatchCassandraSink.class, BatchCassandraSource.class,
                       CqlInputFormat.class, CqlOutputFormat.class, ColumnFamilySplit.class,
                       RealtimeCassandraSink.class);
-  }
 
-  @Before
-  public void beforeTest() throws Exception {
     rpcPort = 9160;
     EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra210.yaml", 30 * 1000);
 
@@ -153,8 +149,8 @@ public class ETLCassandraTest extends HydratorTestBase {
       Compression.NONE, ConsistencyLevel.ALL);
   }
 
-  @After
-  public void afterTest() throws Exception {
+  @AfterClass
+  public static void cleanup() throws Exception {
     EmbeddedCassandraServerHelper.cleanEmbeddedCassandra();
   }
 
