@@ -57,6 +57,24 @@
             ],
             "default": "true"
           }
+        },
+        {
+          "widget-type": "number",
+          "label": "Connect Timeout",
+          "name": "connectTimeout",
+          "widget-attributes" : {
+            "default": "6000",
+            "min": "1"
+          }
+        },
+        {
+          "widget-type": "number",
+          "label": "Read Timeout",
+          "name": "readTimeout",
+          "widget-attributes" : {
+            "default": "6000",
+            "min": "1"
+          }
         }
       ]
     }

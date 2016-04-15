@@ -20,6 +20,7 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.plugin.PluginConfig;
 import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 
 import java.nio.charset.Charset;
@@ -34,6 +35,8 @@ import javax.annotation.Nullable;
  */
 public class UrlFetchRealtimeSourceConfig extends PluginConfig {
   private static final Charset DEFAULT_CHARSET = Charsets.UTF_8;
+  private static final int DEFAULT_CONNECT_TIMEOUT = 60 * 1000;
+  private static final int DEFAULT_READ_TIMEOUT = 60 * 1000;
   // Used for parsing requestHeadersString into map<string, string>
   // Should be the same as the widgets json config
   private static final String KV_DELIMITER = ":";
@@ -55,11 +58,24 @@ public class UrlFetchRealtimeSourceConfig extends PluginConfig {
 
   @Name("charset")
   @Description("The charset used to decode the response. Defaults to UTF-8.")
+  @Nullable
   private String charsetString;
 
   @Name("followRedirects")
   @Description("Set true to follow redirects automatically.")
-  private boolean followRedirects = true;
+  @Nullable
+  private Boolean followRedirects = true;
+
+  @Name("connectTimeout")
+  @Description("Sets the connection timeout in milliseconds. Default is 6000 (1 minute).")
+  @Nullable
+  private Integer connectTimeout = DEFAULT_CONNECT_TIMEOUT;
+
+  @Name("readTimeout")
+  @Description("Sets the read timeout in milliseconds. Default is 6000 (1 minute).")
+  @Nullable
+  private Integer readTimeout = DEFAULT_READ_TIMEOUT;
+
 
   public UrlFetchRealtimeSourceConfig(String url,
                                       long intervalInSeconds) {
@@ -79,10 +95,14 @@ public class UrlFetchRealtimeSourceConfig extends PluginConfig {
                                       long intervalInSeconds,
                                       String requestHeaders,
                                       Charset charset,
-                                      boolean followRedirects) {
+                                      boolean followRedirects,
+                                      int connectTimeout,
+                                      int readTimeout) {
     this.url = url;
     this.intervalInSeconds = intervalInSeconds;
     this.requestHeadersString = requestHeaders;
+    this.connectTimeout = connectTimeout;
+    this.readTimeout = readTimeout;
     this.charsetString = charset.toString();
     this.followRedirects = followRedirects;
   }
@@ -111,13 +131,22 @@ public class UrlFetchRealtimeSourceConfig extends PluginConfig {
     return (Strings.isNullOrEmpty(charsetString)) ? DEFAULT_CHARSET : Charset.forName(charsetString);
   }
 
+  public int getConnectTimeout() {
+    return connectTimeout;
+  }
+
+  public int getReadTimeout() {
+    return readTimeout;
+  }
+
   private Map<String, String> convertHeadersToMap(String headersString) {
     Map<String, String> headersMap = new HashMap<>();
     if (!Strings.isNullOrEmpty(headersString)) {
       List<String> headerChunks = Arrays.asList(headersString.split(DELIMITER));
       for (String chunk : headerChunks) {
-        String[] keyValue = chunk.split(KV_DELIMITER);
-        headersMap.put(keyValue[0], keyValue[1]);
+        List<String> keyValueList = Arrays.asList(chunk.split(KV_DELIMITER));
+        headersMap.put(keyValueList.get(0),
+                       Joiner.on(KV_DELIMITER).join(keyValueList.subList(1, keyValueList.size())));
       }
     }
     return headersMap;

@@ -95,7 +95,7 @@ public class UrlFetchTest extends TestBase {
                     service.getBindAddress().getHostName(),
                     service.getBindAddress().getPort()),
       1L,
-      "User-Agent:Test User Agent");
+      "User-Agent:T:est Us:er A:gent\nAccept:application/json");
     UrlFetchRealtimeSource source = new UrlFetchRealtimeSource(config);
     source.initialize(new MockRealtimeContext());
 
@@ -109,7 +109,7 @@ public class UrlFetchTest extends TestBase {
     Assert.assertNotNull(urlData.get("url"));
     Assert.assertEquals("http://localhost:7777/useragent", urlData.get("url"));
     Assert.assertNotNull(urlData.get("body"));
-    Assert.assertEquals("Test User Agent", urlData.get("body"));
+    Assert.assertEquals("T:est Us:er A:gent", urlData.get("body"));
     Assert.assertNotNull(urlData.get("responseCode"));
     Assert.assertEquals(200, urlData.get("responseCode"));
   }

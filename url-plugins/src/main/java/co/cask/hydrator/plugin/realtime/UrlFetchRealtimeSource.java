@@ -31,6 +31,7 @@ import com.google.common.base.Strings;
 import com.google.common.io.CharStreams;
 
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
@@ -70,9 +71,11 @@ public class UrlFetchRealtimeSource extends RealtimeSource<StructuredRecord> {
     byte[] lastPollTimeBytes = currentState.getState(POLL_TIME_STATE_KEY);
     if (lastPollTimeBytes != null) {
       long lastPollTime = Bytes.toLong(lastPollTimeBytes);
-      long currentPollTime = System.currentTimeMillis() / 1000;
-      long diff = currentPollTime - lastPollTime;
-      if (config.getIntervalInSeconds() - diff > 0) {
+      long currentPollTime = System.currentTimeMillis();
+      long diffInSeconds = (currentPollTime - lastPollTime) / 1000;
+      if (config.getIntervalInSeconds() - diffInSeconds > 0) {
+        // This is a little bit of a workaround since clicking the stop button
+        // in the UI will not interrupt a sleep. See: CDAP-5631
         TimeUnit.SECONDS.sleep(1L);
         return currentState;
       }
@@ -82,7 +85,8 @@ public class UrlFetchRealtimeSource extends RealtimeSource<StructuredRecord> {
       String response = "";
       HttpURLConnection connection = (HttpURLConnection) url.openConnection();
       connection.setRequestMethod(METHOD);
-      connection.setConnectTimeout(TIMEOUT);
+      connection.setConnectTimeout(config.getConnectTimeout());
+      connection.setReadTimeout(config.getReadTimeout());
       connection.setInstanceFollowRedirects(config.shouldFollowRedirects());
       if (config.hasCustomRequestHeaders()) {
         // Set additional request headers if needed
@@ -90,11 +94,16 @@ public class UrlFetchRealtimeSource extends RealtimeSource<StructuredRecord> {
           connection.setRequestProperty(requestHeader.getKey(), requestHeader.getValue());
         }
       }
+      int responseCode = connection.getResponseCode();
       try {
-        if (connection.getResponseCode() >= 400 && connection.getErrorStream() != null) {
-          response = CharStreams.toString(new InputStreamReader(connection.getErrorStream(), config.getCharset()));
+        if (connection.getErrorStream() != null) {
+          try (Reader reader = new InputStreamReader(connection.getErrorStream(), config.getCharset())) {
+            response = CharStreams.toString(reader);
+          }
         } else if (connection.getInputStream() != null) {
-          response = CharStreams.toString(new InputStreamReader(connection.getInputStream(), config.getCharset()));
+          try (Reader reader = new InputStreamReader(connection.getInputStream(), config.getCharset())) {
+            response = CharStreams.toString(reader);
+          }
         }
       } finally {
         connection.disconnect();
@@ -108,11 +117,11 @@ public class UrlFetchRealtimeSource extends RealtimeSource<StructuredRecord> {
           flattenedHeaders.put(entry.getKey(), Joiner.on(',').skipNulls().join(entry.getValue()));
         }
       }
-      writer.emit(createStructuredRecord(response, flattenedHeaders, connection.getResponseCode()));
-      return currentState;
+      writer.emit(createStructuredRecord(response, flattenedHeaders, responseCode));
     } finally {
-      currentState.setState(POLL_TIME_STATE_KEY, Bytes.toBytes(System.currentTimeMillis() / 1000));
+      currentState.setState(POLL_TIME_STATE_KEY, Bytes.toBytes(System.currentTimeMillis()));
     }
+    return currentState;
   }
 
   private StructuredRecord createStructuredRecord(String response,

@@ -22,22 +22,25 @@ Properties
 **headers:** Optional A string of header values to send in each request where the keys and values are
 delimited by : and each pair is delimited by a newline (\n).
 
-**charset:** The charset of the content returned by the URL. Defaults to UTF-8.
+**charset:** Optional The charset of the content returned by the URL. Defaults to UTF-8.
 
-**followRedirects:** Set to true to follow redirects automatically. Defaults to true.
+**followRedirects:** Optional Set to true to follow redirects automatically. Defaults to true.
+
+**connectTimeout:** Optional The time in milliseconds to wait for a connection. Defaults to 6000 (1 minute).
+
+**readTimeout:** Optional The time in milliseconds to wait for a read. Defaults to 6000 (1 minute).
 
 Example
 -------
 This example fetches data from a url every hour using a custom user agent:
 
     {
+        "type": "realtimesource",
         "name": "UrlFetch",
         "properties": {
             "url": "http://api.example.com/sampleEndpoint",
             "interval": "60",
-            "headers": "User-Agent:HydratorPipeline\nAccept:application/json",
-            "charset": "UTF-8",
-            "followRedirects" : "true"
+            "headers": "User-Agent:HydratorPipeline\nAccept:application/json"
         }
     }
 

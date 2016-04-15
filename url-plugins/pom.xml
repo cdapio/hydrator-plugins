@@ -32,14 +32,7 @@
   <name>Url Plugins</name>
 
   <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <!-- properties for script build step that creates the config files for the artifacts -->
-    <widgets.dir>widgets</widgets.dir>
-    <docs.dir>docs</docs.dir>
     <etl.versionRange>system:cdap-etl-realtime[3.4.0,3.6.0-SNAPSHOT)</etl.versionRange>
-    <!-- this is here because project.basedir evaluates to null in the script build step -->
-    <main.basedir>${project.basedir}</main.basedir>
-    <cdap.version>3.5.0-SNAPSHOT</cdap.version>
   </properties>
 
   <repositories>
@@ -78,7 +71,7 @@
     <dependency>
       <groupId>co.cask.hydrator</groupId>
       <artifactId>hydrator-common</artifactId>
-      <version>${parent.version}</version>
+      <version>${project.parent.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
