@@ -26,9 +26,9 @@ delimited by : and each pair is delimited by a newline (\n).
 
 **followRedirects:** Optional Set to true to follow redirects automatically. Defaults to true.
 
-**connectTimeout:** Optional The time in milliseconds to wait for a connection. Defaults to 6000 (1 minute).
+**connectTimeout:** Optional The time in milliseconds to wait for a connection. Defaults to 60000 (1 minute).
 
-**readTimeout:** Optional The time in milliseconds to wait for a read. Defaults to 6000 (1 minute).
+**readTimeout:** Optional The time in milliseconds to wait for a read. Defaults to 60000 (1 minute).
 
 Example
 -------

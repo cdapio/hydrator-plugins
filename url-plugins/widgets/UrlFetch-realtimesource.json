@@ -63,7 +63,7 @@
           "label": "Connect Timeout",
           "name": "connectTimeout",
           "widget-attributes" : {
-            "default": "6000",
+            "default": "60000",
             "min": "1"
           }
         },
@@ -72,7 +72,7 @@
           "label": "Read Timeout",
           "name": "readTimeout",
           "widget-attributes" : {
-            "default": "6000",
+            "default": "60000",
             "min": "1"
           }
         }
