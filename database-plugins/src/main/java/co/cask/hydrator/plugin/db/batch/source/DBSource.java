@@ -175,7 +175,6 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
                 "boundingQuery = {}",
               sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName,
               sourceConfig.connectionString, sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery());
-
     Job job = Job.getInstance();
     Configuration hConf = job.getConfiguration();
     hConf.clear();

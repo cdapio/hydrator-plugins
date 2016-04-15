@@ -99,12 +99,7 @@ public abstract class TimePartitionedFileSetSource<KEY, VALUE> extends BatchSour
 
   @Override
   public final void prepareRun(BatchSourceContext context) {
-    Map<String, String> runtimeArgs = context.getRuntimeArguments();
     long runtime = context.getLogicalStartTime();
-    if (runtimeArgs.containsKey("runtime")) {
-      runtime = Long.parseLong(runtimeArgs.get("runtime"));
-    }
-
     long duration = ETLUtils.parseDuration(config.duration);
     long delay = Strings.isNullOrEmpty(config.delay) ? 0 : ETLUtils.parseDuration(config.delay);
     long endTime = runtime - delay;

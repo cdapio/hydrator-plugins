@@ -39,6 +39,10 @@ public class ConditionConfig extends PluginConfig {
     this.runCondition = Condition.COMPLETION.name();
   }
 
+  public ConditionConfig(String runCondition) {
+    this.runCondition = runCondition;
+  }
+
   @SuppressWarnings("ConstantConditions")
   public void validate() {
     try {
