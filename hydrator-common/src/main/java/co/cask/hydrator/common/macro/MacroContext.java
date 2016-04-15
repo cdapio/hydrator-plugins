@@ -25,10 +25,19 @@ import javax.annotation.Nullable;
  */
 public interface MacroContext {
 
+  /**
+   * @return the logical start time of the pipeline run.
+   */
   long getLogicalStartTime();
 
+  /**
+   * @return the user specified timezone for time based macros. Null if none was specified.
+   */
   @Nullable
   TimeZone getTimeZone();
 
+  /**
+   * @return runtime arguments of the pipeline run.
+   */
   Map<String, String> getRuntimeArguments();
 }

@@ -32,6 +32,8 @@ public class RuntimeMacroTest {
     MacroContext macroContext = new DefaultMacroContext(0, TimeZone.getTimeZone("UTC"));
 
     Assert.assertEquals("1970-01-01", runtimeMacro.getValue("yyyy-MM-dd", macroContext));
+    Assert.assertEquals("1969-12-31", runtimeMacro.getValue("yyyy-MM-dd,1d", macroContext));
+    Assert.assertEquals("1969-12-31", runtimeMacro.getValue("yyyy-MM-dd,+1d", macroContext));
     Assert.assertEquals("1970-01-02", runtimeMacro.getValue("yyyy-MM-dd,-1d", macroContext));
 
     macroContext = new DefaultMacroContext(1451606400000L, TimeZone.getTimeZone("UTC"));
