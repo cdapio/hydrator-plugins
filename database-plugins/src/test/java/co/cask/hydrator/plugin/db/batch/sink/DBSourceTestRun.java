@@ -28,6 +28,7 @@ import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
+import co.cask.hydrator.plugin.ConnectionConfig;
 import co.cask.hydrator.plugin.DBConfig;
 import co.cask.hydrator.plugin.DatabasePluginTestBase;
 import co.cask.hydrator.plugin.db.batch.source.DBSource;
@@ -53,22 +54,20 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     String importQuery = "SELECT * FROM \"my_table\" WHERE DATE_COL <= '${runtime(yyyy-MM-dd,1d)}' AND $CONDITIONS";
     String boundingQuery = "SELECT MIN(ID),MAX(ID) from \"my_table\"";
     String splitBy = "ID";
-    Plugin sourceConfig = new Plugin(
+    ETLPlugin sourceConfig = new ETLPlugin(
       "Database",
+      BatchSource.PLUGIN_TYPE,
       ImmutableMap.<String, String>builder()
-        .put(Properties.DB.CONNECTION_STRING, getConnectionURL())
-        .put(Properties.DB.TABLE_NAME, "my_table")
-        .put(Properties.DB.IMPORT_QUERY, importQuery)
+        .put(ConnectionConfig.CONNECTION_STRING, getConnectionURL())
+        .put(DBSource.DBSourceConfig.IMPORT_QUERY, importQuery)
         .put(DBSource.DBSourceConfig.BOUNDING_QUERY, boundingQuery)
         .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
-        .put(Properties.DB.JDBC_PLUGIN_NAME, "hypersql")
-        .build()
+        .put(ConnectionConfig.JDBC_PLUGIN_NAME, "hypersql")
+        .build(),
+      null
     );
 
-    Plugin sinkConfig = new Plugin("Table", ImmutableMap.of(
-      "name", "macroOutputTable",
-      Properties.Table.PROPERTY_SCHEMA, schema.toString(),
-      Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ID"));
+    ETLPlugin sinkConfig = MockSink.getPlugin("macroOutputTable");
 
     ApplicationManager appManager = deployETL(sourceConfig, sinkConfig);
 
@@ -77,8 +76,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     runETLOnce(appManager, arguments);
 
     DataSetManager<Table> outputManager = getDataset("macroOutputTable");
-    Table outputTable = outputManager.get();
-    Assert.assertNull(outputTable.scan(null, null).next());
+    Assert.assertTrue(MockSink.readOutput(outputManager).isEmpty());
   }
 
   @Test
