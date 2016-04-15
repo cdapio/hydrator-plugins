@@ -18,7 +18,7 @@ package co.cask.hydrator.plugin.batch.sink;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.plugin.PluginConfig;
-import co.cask.hydrator.common.ETLUtils;
+import co.cask.hydrator.common.TimeParser;
 import com.google.common.base.Strings;
 
 import java.util.concurrent.TimeUnit;
@@ -84,10 +84,10 @@ public abstract class TPFSSinkConfig extends PluginConfig {
       throw new IllegalArgumentException("The filePathFormat setting must be set in order to set timeZone.");
     }
     if (partitionOffset != null) {
-      ETLUtils.parseDuration(partitionOffset);
+      TimeParser.parseDuration(partitionOffset);
     }
     if (cleanPartitionsOlderThan != null) {
-      long oldTime = ETLUtils.parseDuration(cleanPartitionsOlderThan);
+      long oldTime = TimeParser.parseDuration(cleanPartitionsOlderThan);
       if (oldTime < TimeUnit.MINUTES.toMillis(1)) {
         throw new IllegalArgumentException("Cannot clean partitions from less than 1 minute ago.");
       }
