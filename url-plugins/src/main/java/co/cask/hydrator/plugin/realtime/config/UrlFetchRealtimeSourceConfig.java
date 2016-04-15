@@ -70,12 +70,12 @@ public class UrlFetchRealtimeSourceConfig extends PluginConfig {
   private Boolean followRedirects = true;
 
   @Name("connectTimeout")
-  @Description("Sets the connection timeout in milliseconds. Default is 60000 (1 minute).")
+  @Description("Sets the connection timeout in milliseconds. Set to 0 for infinite. Default is 60000 (1 minute).")
   @Nullable
   private Integer connectTimeout = DEFAULT_CONNECT_TIMEOUT;
 
   @Name("readTimeout")
-  @Description("Sets the read timeout in milliseconds. Default is 60000 (1 minute).")
+  @Description("Sets the read timeout in milliseconds. Set to 0 for infinite. Default is 60000 (1 minute).")
   @Nullable
   private Integer readTimeout = DEFAULT_READ_TIMEOUT;
 
