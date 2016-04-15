@@ -23,6 +23,7 @@ import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.realtime.RealtimeContext;
 import co.cask.cdap.etl.api.realtime.RealtimeSource;
 import co.cask.cdap.etl.api.realtime.SourceState;
 import co.cask.hydrator.plugin.realtime.config.UrlFetchRealtimeSourceConfig;
@@ -63,6 +64,11 @@ public class UrlFetchRealtimeSource extends RealtimeSource<StructuredRecord> {
 
   public UrlFetchRealtimeSource(UrlFetchRealtimeSourceConfig config) {
     this.config = config;
+  }
+
+  @Override
+  public void initialize(RealtimeContext context) throws Exception {
+    config.validate();
   }
 
   @Nullable

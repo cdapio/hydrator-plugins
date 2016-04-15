@@ -64,7 +64,7 @@
           "name": "connectTimeout",
           "widget-attributes" : {
             "default": "60000",
-            "min": "1"
+            "min": "0"
           }
         },
         {
@@ -73,7 +73,7 @@
           "name": "readTimeout",
           "widget-attributes" : {
             "default": "60000",
-            "min": "1"
+            "min": "0"
           }
         }
       ]

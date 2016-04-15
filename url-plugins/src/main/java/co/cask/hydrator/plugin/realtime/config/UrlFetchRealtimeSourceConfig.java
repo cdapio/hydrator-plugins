@@ -23,7 +23,10 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.charset.UnsupportedCharsetException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -91,22 +94,6 @@ public class UrlFetchRealtimeSourceConfig extends PluginConfig {
     this.requestHeadersString = requestHeaders;
   }
 
-  public UrlFetchRealtimeSourceConfig(String url,
-                                      long intervalInSeconds,
-                                      String requestHeaders,
-                                      Charset charset,
-                                      boolean followRedirects,
-                                      int connectTimeout,
-                                      int readTimeout) {
-    this.url = url;
-    this.intervalInSeconds = intervalInSeconds;
-    this.requestHeadersString = requestHeaders;
-    this.connectTimeout = connectTimeout;
-    this.readTimeout = readTimeout;
-    this.charsetString = charset.toString();
-    this.followRedirects = followRedirects;
-  }
-
   public String getUrl() {
     return url;
   }
@@ -139,17 +126,54 @@ public class UrlFetchRealtimeSourceConfig extends PluginConfig {
     return readTimeout;
   }
 
+  @SuppressWarnings("ConstantConditions")
+  public void validate() {
+    try {
+      new URL(url);
+    } catch (MalformedURLException e) {
+      throw new IllegalArgumentException(String.format("URL '%s' is malformed: %s", url, e.getMessage()), e);
+    }
+    if (intervalInSeconds <= 0) {
+      throw new IllegalArgumentException(String.format(
+        "Invalid intervalInSeconds %d. Interval must be greater than 0.", intervalInSeconds));
+    }
+    if (connectTimeout < 0) {
+      throw new IllegalArgumentException(String.format(
+        "Invalid connectTimeout %d. Timeout must be a positive number.", connectTimeout));
+    }
+    if (readTimeout < 0) {
+      throw new IllegalArgumentException(String.format(
+        "Invalid readTimeout %d. Interval must be a positive number.", readTimeout));
+    }
+    try {
+      if (!Strings.isNullOrEmpty(charsetString)) {
+        Charset.forName(charsetString);
+      }
+    } catch (UnsupportedCharsetException e) {
+      throw new IllegalArgumentException(String.format("Invalid charset string %s.", charsetString));
+    }
+    try {
+      convertHeadersToMap(requestHeadersString);
+    } catch (Exception e) {
+      throw new IllegalArgumentException(String.format("Could not parse requestHeadersString string due to: '%s'.",
+                                                       e.getMessage()));
+    }
+  }
+
   private Map<String, String> convertHeadersToMap(String headersString) {
     Map<String, String> headersMap = new HashMap<>();
     if (!Strings.isNullOrEmpty(headersString)) {
       List<String> headerChunks = Arrays.asList(headersString.split(DELIMITER));
       for (String chunk : headerChunks) {
         List<String> keyValueList = Arrays.asList(chunk.split(KV_DELIMITER));
-        headersMap.put(keyValueList.get(0),
-                       Joiner.on(KV_DELIMITER).join(keyValueList.subList(1, keyValueList.size())));
+        if (keyValueList.size() >= 2) {
+          headersMap.put(keyValueList.get(0),
+                         Joiner.on(KV_DELIMITER).join(keyValueList.subList(1, keyValueList.size())));
+        } else {
+          throw new IllegalArgumentException(String.format("Missing value in key-value pair %s.", chunk));
+        }
       }
     }
     return headersMap;
   }
-
 }
