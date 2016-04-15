@@ -161,7 +161,7 @@ public class UrlFetchRealtimeSourceConfig extends PluginConfig {
       for (String chunk : headersString.split(DELIMITER)) {
         String[] keyValue = chunk.split(KV_DELIMITER, 2);
         if (keyValue.length == 2) {
-          headersMap.put(keyValue[0],keyValue[1]);
+          headersMap.put(keyValue[0], keyValue[1]);
         } else {
           throw new IllegalArgumentException(String.format("Unable to parse key-value pair '%s'.", chunk));
         }
