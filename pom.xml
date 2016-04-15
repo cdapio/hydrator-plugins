@@ -33,7 +33,6 @@
     <module>cassandra-plugins</module>
     <module>database-plugins</module>
     <module>elasticsearch-plugins</module>
-    <module>fileset-plugins-parquet</module>
     <module>hbase-plugins</module>
     <module>hdfs-plugins</module>
     <module>hive-plugins</module>

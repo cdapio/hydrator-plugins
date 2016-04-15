@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.file.source;
+package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
@@ -28,8 +28,8 @@ import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.hydrator.common.HiveSchemaConverter;
-import co.cask.hydrator.plugin.batch.file.AvroToStructuredTransformer;
-import co.cask.hydrator.plugin.batch.file.SnapshotFileSetConfig;
+import co.cask.hydrator.plugin.common.AvroToStructuredTransformer;
+import co.cask.hydrator.plugin.common.SnapshotFileSetConfig;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import org.apache.avro.generic.GenericRecord;

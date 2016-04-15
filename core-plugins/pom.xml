@@ -191,7 +191,9 @@
               co.cask.hydrator.plugin.realtime.*;
               co.cask.hydrator.plugin.transform.*;
               co.cask.hydrator.plugin.validator.*;
-              co.cask.hydrator.plugin.common
+              co.cask.hydrator.plugin.common;
+              parquet.avro.*;
+              parquet.hadoop.*
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>

@@ -35,15 +35,20 @@ import co.cask.hydrator.plugin.batch.aggregator.GroupByAggregator;
 import co.cask.hydrator.plugin.batch.sink.BatchCubeSink;
 import co.cask.hydrator.plugin.batch.sink.KVTableSink;
 import co.cask.hydrator.plugin.batch.sink.S3AvroBatchSink;
+import co.cask.hydrator.plugin.batch.sink.S3ParquetBatchSink;
 import co.cask.hydrator.plugin.batch.sink.SnapshotFileBatchAvroSink;
+import co.cask.hydrator.plugin.batch.sink.SnapshotFileBatchParquetSink;
 import co.cask.hydrator.plugin.batch.sink.TableSink;
 import co.cask.hydrator.plugin.batch.sink.TimePartitionedFileSetDatasetAvroSink;
+import co.cask.hydrator.plugin.batch.sink.TimePartitionedFileSetDatasetParquetSink;
 import co.cask.hydrator.plugin.batch.source.FTPBatchSource;
 import co.cask.hydrator.plugin.batch.source.KVTableSource;
 import co.cask.hydrator.plugin.batch.source.SnapshotFileBatchAvroSource;
+import co.cask.hydrator.plugin.batch.source.SnapshotFileBatchParquetSource;
 import co.cask.hydrator.plugin.batch.source.StreamBatchSource;
 import co.cask.hydrator.plugin.batch.source.TableSource;
 import co.cask.hydrator.plugin.batch.source.TimePartitionedFileSetDatasetAvroSource;
+import co.cask.hydrator.plugin.batch.source.TimePartitionedFileSetDatasetParquetSource;
 import co.cask.hydrator.plugin.transform.JavaScriptTransform;
 import co.cask.hydrator.plugin.transform.ProjectionTransform;
 import co.cask.hydrator.plugin.transform.PythonEvaluator;
@@ -64,6 +69,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.twill.filesystem.Location;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import parquet.avro.AvroParquetInputFormat;
+import parquet.avro.AvroParquetOutputFormat;
 import parquet.avro.AvroParquetReader;
 
 import java.io.IOException;
@@ -124,11 +131,13 @@ public class ETLBatchTestBase extends TestBase {
     addPluginArtifact(NamespaceId.DEFAULT.artifact("core-plugins", "1.0.0"), parents,
                       KVTableSource.class, StreamBatchSource.class, TableSource.class,
                       TimePartitionedFileSetDatasetAvroSource.class,
+                      TimePartitionedFileSetDatasetParquetSource.class, AvroParquetInputFormat.class,
                       BatchCubeSink.class, KVTableSink.class, TableSink.class,
                       TimePartitionedFileSetDatasetAvroSink.class, AvroKeyOutputFormat.class, AvroKey.class,
-                      SnapshotFileBatchAvroSink.class,
-                      SnapshotFileBatchAvroSource.class,
-                      S3AvroBatchSink.class,
+                      TimePartitionedFileSetDatasetParquetSink.class, AvroParquetOutputFormat.class,
+                      SnapshotFileBatchAvroSink.class, SnapshotFileBatchParquetSink.class,
+                      SnapshotFileBatchAvroSource.class, SnapshotFileBatchParquetSource.class,
+                      S3AvroBatchSink.class, S3ParquetBatchSink.class,
                       FTPBatchSource.class,
                       ProjectionTransform.class, ScriptFilterTransform.class,
                       ValidatorTransform.class, CoreValidator.class,
