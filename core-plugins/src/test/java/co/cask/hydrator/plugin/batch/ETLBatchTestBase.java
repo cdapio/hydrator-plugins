@@ -26,8 +26,8 @@ import co.cask.cdap.etl.batch.ETLBatchApplication;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.ArtifactRange;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
+import co.cask.cdap.proto.id.ArtifactId;
 import co.cask.cdap.proto.id.NamespaceId;
-import co.cask.cdap.proto.id.NamespacedArtifactId;
 import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.hydrator.plugin.batch.action.EmailAction;
@@ -85,8 +85,8 @@ public class ETLBatchTestBase extends TestBase {
   @ClassRule
   public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", true);
 
-  protected static final NamespacedArtifactId ETLBATCH_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("etlbatch", "3.2.0");
-  protected static final NamespacedArtifactId DATAPIPELINE_ARTIFACT_ID =
+  protected static final ArtifactId ETLBATCH_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("etlbatch", "3.2.0");
+  protected static final ArtifactId DATAPIPELINE_ARTIFACT_ID =
     NamespaceId.DEFAULT.artifact("data-pipeline", "3.2.0");
   protected static final ArtifactSummary ETLBATCH_ARTIFACT = new ArtifactSummary("etlbatch", "3.2.0");
   protected static final ArtifactSummary DATAPIPELINE_ARTIFACT = new ArtifactSummary("data-pipeline", "3.2.0");
