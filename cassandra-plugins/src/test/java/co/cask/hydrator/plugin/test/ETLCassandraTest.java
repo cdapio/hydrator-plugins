@@ -39,8 +39,8 @@ import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactRange;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
+import co.cask.cdap.proto.id.ArtifactId;
 import co.cask.cdap.proto.id.NamespaceId;
-import co.cask.cdap.proto.id.NamespacedArtifactId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
@@ -101,12 +101,12 @@ public class ETLCassandraTest extends HydratorTestBase {
 
   private static final ArtifactVersion CURRENT_VERSION = new ArtifactVersion("3.2.0");
 
-  private static final NamespacedArtifactId BATCH_APP_ARTIFACT_ID =
+  private static final ArtifactId BATCH_APP_ARTIFACT_ID =
     NamespaceId.DEFAULT.artifact("etlbatch", CURRENT_VERSION.getVersion());
   private static final ArtifactSummary ETLBATCH_ARTIFACT =
     new ArtifactSummary(BATCH_APP_ARTIFACT_ID.getArtifact(), BATCH_APP_ARTIFACT_ID.getVersion());
 
-  private static final NamespacedArtifactId REALTIME_APP_ARTIFACT_ID =
+  private static final ArtifactId REALTIME_APP_ARTIFACT_ID =
     NamespaceId.DEFAULT.artifact("etlrealtime", CURRENT_VERSION.getVersion());
   private static final ArtifactSummary REALTIME_APP_ARTIFACT =
     new ArtifactSummary(REALTIME_APP_ARTIFACT_ID.getArtifact(), REALTIME_APP_ARTIFACT_ID.getVersion());
