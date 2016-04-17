@@ -40,9 +40,11 @@ import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.DatumReader;
+import org.apache.hadoop.fs.Path;
 import org.apache.twill.filesystem.Location;
 import org.junit.Assert;
 import org.junit.Test;
+import parquet.avro.AvroParquetReader;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -76,16 +78,16 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
       "sink1",
       new ETLPlugin("SnapshotAvro", BatchSink.PLUGIN_TYPE,
                     ImmutableMap.<String, String>builder()
-                      .put(Properties.SnapshotFileSetSink.NAME, "testAvro1")
+                      .put(Properties.SnapshotFileSetSink.NAME, "testAvro")
                       .put("schema", SCHEMA.toString())
                       .build(),
                     null));
 
     ETLStage sink2 = new ETLStage(
       "sink2",
-      new ETLPlugin("SnapshotAvro", BatchSink.PLUGIN_TYPE,
+      new ETLPlugin("SnapshotParquet", BatchSink.PLUGIN_TYPE,
                     ImmutableMap.<String, String>builder()
-                      .put(Properties.SnapshotFileSetSink.NAME, "testAvro2")
+                      .put(Properties.SnapshotFileSetSink.NAME, "testParquet")
                       .put("schema", SCHEMA.toString())
                       .build(),
                     null));
@@ -107,9 +109,9 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
     inputManager.get().put(Bytes.toBytes("id123"), Bytes.toBytes("price"), Bytes.toBytes(777));
     inputManager.flush();
 
-    DataSetManager<PartitionedFileSet> avroFiles1 = getDataset("testAvro1");
-    DataSetManager<PartitionedFileSet> avroFiles2 = getDataset("testAvro2");
-    List<DataSetManager<PartitionedFileSet>> fileSetManagers = ImmutableList.of(avroFiles1, avroFiles2);
+    DataSetManager<PartitionedFileSet> avroFiles = getDataset("testAvro");
+    DataSetManager<PartitionedFileSet> parquetFiles = getDataset("testParquet");
+    List<DataSetManager<PartitionedFileSet>> fileSetManagers = ImmutableList.of(avroFiles, parquetFiles);
 
     MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
     mrManager.start();
@@ -145,7 +147,8 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
     }
 
     // test snapshot sources
-    testSource("SnapshotAvro", "testAvro1", expected);
+    testSource("SnapshotAvro", "testAvro", expected);
+    testSource("SnapshotParquet", "testParquet", expected);
   }
 
   // deploys a pipeline that reads using a snapshot source and checks that it writes the expected records.
@@ -206,6 +209,14 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
           contents.put(record.get("id").toString(), (Integer) record.get("price"));
         }
         fileStream.close();
+      } else if (fileName.endsWith(".parquet")) {
+        Path parquetFile = new Path(file.toString());
+        AvroParquetReader<GenericRecord> reader = new AvroParquetReader<>(parquetFile);
+        GenericRecord record = reader.read();
+        while (record != null) {
+          contents.put(record.get("id").toString(), (Integer) record.get("price"));
+          record = reader.read();
+        }
       }
     }
     return contents;

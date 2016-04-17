@@ -440,7 +440,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
                                              Properties.TimePartitionedFileSetDataset.TPFS_NAME, "fileSink1"),
                              null));
     ETLStage sink2 = new ETLStage(
-      "sink2", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
+      "sink2", new ETLPlugin("TPFSParquet", BatchSink.PLUGIN_TYPE,
                              ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA,
                                              FileBatchSource.DEFAULT_SCHEMA.toString(),
                                              Properties.TimePartitionedFileSetDataset.TPFS_NAME, "fileSink2"),

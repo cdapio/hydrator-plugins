@@ -31,8 +31,8 @@ import co.cask.cdap.proto.RunRecord;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
 import co.cask.cdap.proto.id.ApplicationId;
+import co.cask.cdap.proto.id.ArtifactId;
 import co.cask.cdap.proto.id.NamespaceId;
-import co.cask.cdap.proto.id.NamespacedArtifactId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestConfiguration;
@@ -64,7 +64,9 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.sql.rowset.serial.SerialBlob;
@@ -73,7 +75,7 @@ import javax.sql.rowset.serial.SerialBlob;
  * Database Plugin Tests setup.
  */
 public class DatabasePluginTestBase extends HydratorTestBase {
-  protected static final NamespacedArtifactId APP_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("etlbatch", "3.2.0");
+  protected static final ArtifactId APP_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("etlbatch", "3.2.0");
   protected static final ArtifactSummary ETLBATCH_ARTIFACT = new ArtifactSummary("etlbatch", "3.2.0");
   protected static final String CLOB_DATA =
     "this is a long string with line separators \n that can be used as \n a clob";
@@ -268,8 +270,13 @@ public class DatabasePluginTestBase extends HydratorTestBase {
   }
 
   protected void runETLOnce(ApplicationManager appManager) throws TimeoutException, InterruptedException {
+    runETLOnce(appManager, new HashMap<String, String>());
+  }
+
+  protected void runETLOnce(ApplicationManager appManager,
+                            Map<String, String> arguments) throws TimeoutException, InterruptedException {
     MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
+    mrManager.start(arguments);
     mrManager.waitForFinish(5, TimeUnit.MINUTES);
     List<RunRecord> runRecords = mrManager.getHistory();
     Assert.assertEquals(ProgramRunStatus.COMPLETED, runRecords.get(0).getStatus());

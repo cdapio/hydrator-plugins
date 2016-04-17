@@ -19,13 +19,14 @@ package co.cask.hydrator.plugin;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.plugin.PluginConfig;
+import co.cask.hydrator.common.macro.MacroConfig;
 
 import javax.annotation.Nullable;
 
 /**
  * Defines a base {@link PluginConfig} that Database source, sink, and action can all re-use.
  */
-public class ConnectionConfig extends PluginConfig {
+public class ConnectionConfig extends MacroConfig {
   public static final String CONNECTION_STRING = "connectionString";
   public static final String USER = "user";
   public static final String PASSWORD = "password";

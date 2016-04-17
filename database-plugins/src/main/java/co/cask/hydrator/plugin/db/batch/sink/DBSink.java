@@ -29,6 +29,7 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
+import co.cask.hydrator.common.macro.DefaultMacroContext;
 import co.cask.hydrator.plugin.DBConfig;
 import co.cask.hydrator.plugin.DBManager;
 import co.cask.hydrator.plugin.DBRecord;
@@ -80,11 +81,13 @@ public class DBSink extends BatchSink<StructuredRecord, DBRecord, NullWritable> 
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    dbSinkConfig.validate();
     dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId());
   }
 
   @Override
   public void prepareRun(BatchSinkContext context) {
+    dbSinkConfig.substituteMacros(context);
     LOG.debug("tableName = {}; pluginType = {}; pluginName = {}; connectionString = {}; columns = {}",
               dbSinkConfig.tableName, dbSinkConfig.jdbcPluginType, dbSinkConfig.jdbcPluginName,
               dbSinkConfig.connectionString, dbSinkConfig.columns);

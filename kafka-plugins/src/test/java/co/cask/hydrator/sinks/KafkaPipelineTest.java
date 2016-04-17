@@ -30,8 +30,8 @@ import co.cask.cdap.etl.realtime.ETLWorker;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
+import co.cask.cdap.proto.id.ArtifactId;
 import co.cask.cdap.proto.id.NamespaceId;
-import co.cask.cdap.proto.id.NamespacedArtifactId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkerManager;
@@ -63,7 +63,7 @@ import java.util.concurrent.TimeUnit;
 /**
  */
 public class KafkaPipelineTest extends HydratorTestBase {
-  private static final NamespacedArtifactId APP_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("etlrealtime", "3.2.0");
+  private static final ArtifactId APP_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("etlrealtime", "3.2.0");
   private static final ArtifactSummary APP_ARTIFACT =
     new ArtifactSummary(APP_ARTIFACT_ID.getArtifact(), APP_ARTIFACT_ID.getVersion());
   private static final int PARTITIONS = 1;

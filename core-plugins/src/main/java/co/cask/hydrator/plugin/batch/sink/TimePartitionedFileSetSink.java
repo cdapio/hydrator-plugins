@@ -23,7 +23,7 @@ import co.cask.cdap.api.dataset.lib.TimePartitionedFileSetArguments;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
-import co.cask.hydrator.common.ETLUtils;
+import co.cask.hydrator.common.TimeParser;
 import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +56,7 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
     Map<String, String> sinkArgs = getAdditionalTPFSArguments();
     long outputPartitionTime = context.getLogicalStartTime();
     if (tpfsSinkConfig.partitionOffset != null) {
-      outputPartitionTime -= ETLUtils.parseDuration(tpfsSinkConfig.partitionOffset);
+      outputPartitionTime -= TimeParser.parseDuration(tpfsSinkConfig.partitionOffset);
     }
     LOG.info("Writing to output partition of time {}.", outputPartitionTime);
     TimePartitionedFileSetArguments.setOutputPartitionTime(sinkArgs, outputPartitionTime);
@@ -78,7 +78,8 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
   @Override
   public void onRunFinish(boolean succeeded, BatchSinkContext context) {
     if (succeeded && tpfsSinkConfig.cleanPartitionsOlderThan != null) {
-      long cutoffTime = context.getLogicalStartTime() - ETLUtils.parseDuration(tpfsSinkConfig.cleanPartitionsOlderThan);
+      long cutoffTime =
+        context.getLogicalStartTime() - TimeParser.parseDuration(tpfsSinkConfig.cleanPartitionsOlderThan);
       TimePartitionedFileSet tpfs = context.getDataset(tpfsSinkConfig.name);
       for (TimePartitionDetail timePartitionDetail : tpfs.getPartitionsByTime(0, cutoffTime)) {
         LOG.info("Cleaning up old partition for timestamp {}", timePartitionDetail.getTime());

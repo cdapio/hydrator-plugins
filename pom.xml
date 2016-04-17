@@ -14,10 +14,9 @@
   License for the specific language governing permissions and limitations under
   the License.
   -->
-
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+<modelVersion>4.0.0</modelVersion>
 
   <groupId>co.cask.hydrator</groupId>
   <artifactId>hydrator-plugins</artifactId>
@@ -33,7 +32,6 @@
     <module>cassandra-plugins</module>
     <module>database-plugins</module>
     <module>elasticsearch-plugins</module>
-    <module>fileset-plugins-parquet</module>
     <module>hbase-plugins</module>
     <module>hdfs-plugins</module>
     <module>hive-plugins</module>
@@ -41,6 +39,7 @@
     <module>mongodb-plugins</module>
     <module>spark-plugins</module>
     <module>transform-plugins</module>
+    <module>url-plugins</module>
   </modules>
 
   <licenses>

@@ -20,8 +20,8 @@ import co.cask.cdap.etl.api.PipelineConfigurable;
 import co.cask.cdap.etl.api.realtime.RealtimeSource;
 import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
+import co.cask.cdap.proto.id.ArtifactId;
 import co.cask.cdap.proto.id.NamespaceId;
-import co.cask.cdap.proto.id.NamespacedArtifactId;
 import co.cask.cdap.test.TestBase;
 import co.cask.hydrator.plugin.realtime.sink.RealtimeCubeSink;
 import co.cask.hydrator.plugin.realtime.sink.RealtimeTableSink;
@@ -45,7 +45,7 @@ import org.python.util.PythonInterpreter;
  */
 public class ETLRealtimeTestBase extends TestBase {
 
-  protected static final NamespacedArtifactId APP_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("etlrealtime", "3.2.0");
+  protected static final ArtifactId APP_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("etlrealtime", "3.2.0");
   protected static final ArtifactSummary APP_ARTIFACT =
     new ArtifactSummary(APP_ARTIFACT_ID.getArtifact(), APP_ARTIFACT_ID.getVersion());
 
