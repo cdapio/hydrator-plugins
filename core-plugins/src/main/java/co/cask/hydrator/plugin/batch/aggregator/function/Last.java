@@ -24,9 +24,10 @@ import co.cask.cdap.api.data.schema.Schema;
  *
  * @param <T> type of aggregate value
  */
-public class Last<T> implements AggregateFunction<T> {
+public class Last<T> implements RecordAggregateFunction<T> {
   private final String fieldName;
   private final Schema fieldSchema;
+  private StructuredRecord lastRecord;
   private T last;
 
   public Last(String fieldName, Schema fieldSchema) {
@@ -37,11 +38,13 @@ public class Last<T> implements AggregateFunction<T> {
   @Override
   public void beginAggregate() {
     last = null;
+    lastRecord = null;
   }
 
   @Override
   public void update(StructuredRecord record) {
     last = record.get(fieldName);
+    lastRecord = record;
   }
 
   @Override
@@ -52,5 +55,10 @@ public class Last<T> implements AggregateFunction<T> {
   @Override
   public Schema getOutputSchema() {
     return fieldSchema;
+  }
+
+  @Override
+  public StructuredRecord getChosenRecord() {
+    return lastRecord;
   }
 }

@@ -24,10 +24,11 @@ import co.cask.cdap.api.data.schema.Schema;
  *
  * @param <T> type of aggregate value
  */
-public class First<T> implements AggregateFunction<T> {
+public class First<T> implements RecordAggregateFunction<T> {
   private final String fieldName;
   private final Schema fieldSchema;
   private boolean isFirst;
+  private StructuredRecord firstRecord;
   private T first;
 
   public First(String fieldName, Schema fieldSchema) {
@@ -39,12 +40,14 @@ public class First<T> implements AggregateFunction<T> {
   public void beginAggregate() {
     isFirst = true;
     first = null;
+    firstRecord = null;
   }
 
   @Override
   public void update(StructuredRecord record) {
     if (isFirst) {
       first = record.get(fieldName);
+      firstRecord = record;
       isFirst = false;
     }
   }
@@ -57,5 +60,10 @@ public class First<T> implements AggregateFunction<T> {
   @Override
   public Schema getOutputSchema() {
     return fieldSchema;
+  }
+
+  @Override
+  public StructuredRecord getChosenRecord() {
+    return firstRecord;
   }
 }
