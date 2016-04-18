@@ -31,18 +31,20 @@ import co.cask.hydrator.plugin.batch.aggregator.function.RecordAggregateFunction
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.Path;
 
 /**
- * Distinct aggregator.
+ * Deduplicate aggregator.
  */
 @Plugin(type = BatchAggregator.PLUGIN_TYPE)
-@Name("Dedup")
-@Description("Deduplicates input records so that all output records are distinct. " +
-  "Can optionally take a list of fields on just those fields.")
+@Name("Deduplicate")
+@Description("Deduplicates input records so that all output records are distinct.")
 public class DedupAggregator extends RecordAggregator {
   private final DedupConfig dedupConfig;
   private List<String> uniqueFields;
-  private DedupConfig.RecordAggregationFunctionInfo filterFunction;
+  private DedupConfig.DedupFunctionInfo filterFunction;
   private RecordAggregateFunction recordAggregateFunction;
 
   public DedupAggregator(DedupConfig dedupConfig) {
@@ -52,6 +54,9 @@ public class DedupAggregator extends RecordAggregator {
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    List<String> uniqueFields = dedupConfig.getUniqueFields();
+    DedupConfig.DedupFunctionInfo functionInfo = dedupConfig.getFilter();
+
     StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
     Schema inputSchema = stageConfigurer.getInputSchema();
     // if null, the input schema is unknown, or its multiple schemas.
@@ -61,8 +66,7 @@ public class DedupAggregator extends RecordAggregator {
     }
 
     // otherwise, we have a constant input schema. Get the output schema and propagate the schema
-    stageConfigurer.setOutputSchema(inputSchema);
-    // TODO : Validate whether unique fields and filter function field are present in the input schema
+    stageConfigurer.setOutputSchema(getOuputSchema(inputSchema, uniqueFields, functionInfo));
   }
 
   @Override
@@ -105,7 +109,32 @@ public class DedupAggregator extends RecordAggregator {
       }
 
       recordAggregateFunction.finishAggregate();
-      emitter.emit(recordAggregateFunction.getChosenRecord());
+      Schema outputSchema = getOuputSchema(firstVal.getSchema(), uniqueFields, filterFunction);
+      StructuredRecord outputRecord = recordAggregateFunction.getChosenRecord();
+      StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
+      for (Schema.Field field : outputRecord.getSchema().getFields()) {
+        if (filterFunction != null && Objects.equals(field.getName(), filterFunction.getField())) {
+          builder.set(filterFunction.getName(), outputRecord.get(field.getName()));
+        } else {
+          builder.set(field.getName(), outputRecord.get(field.getName()));
+        }
+      }
+      emitter.emit(builder.build());
+    }
+  }
+
+  @Path("outputSchema")
+  public Schema getOutputSchema(GetSchemaRequest request) {
+    Schema inputSchema;
+    try {
+      inputSchema = Schema.parseJson(request.inputSchema);
+    } catch (Exception e) {
+      throw new BadRequestException("Could not parse input schema " + request.inputSchema);
+    }
+    try {
+      return getOuputSchema(inputSchema, request.getUniqueFields(), request.getFilter());
+    } catch (IllegalArgumentException e) {
+      throw new BadRequestException(e.getMessage(), e);
     }
   }
 
@@ -120,5 +149,53 @@ public class DedupAggregator extends RecordAggregator {
       fields.add(field);
     }
     return Schema.recordOf(inputSchema.getRecordName() + ".distinct", fields);
+  }
+
+  private Schema getOuputSchema(Schema inputSchema, List<String> uniqueFields,
+                                DedupConfig.DedupFunctionInfo functionInfo) {
+    List<AggregatorConfig.FunctionInfo> functionInfos = new ArrayList<>();
+    if (functionInfo != null) {
+      functionInfos.add(functionInfo);
+    }
+    validateSchema(inputSchema, uniqueFields, functionInfos);
+
+    List<Schema.Field> outputFields = new ArrayList<>(inputSchema.getFields().size());
+    for (Schema.Field field : inputSchema.getFields()) {
+      if (functionInfo != null && Objects.equals(field.getName(), functionInfo.getField())) {
+        outputFields.add(Schema.Field.of(functionInfo.getName(), field.getSchema()));
+      } else {
+        outputFields.add(field);
+      }
+    }
+    return Schema.recordOf(inputSchema.getRecordName() + ".unique", outputFields);
+  }
+
+  /**
+   * Endpoint request for output schema.
+   */
+  public static class GetSchemaRequest extends DedupConfig {
+    private String inputSchema;
+  }
+
+  private void validateSchema(Schema inputSchema, List<String> uniqueFields,
+                              List<AggregatorConfig.FunctionInfo> functionInfos) {
+    for (String uniqueField : uniqueFields) {
+      Schema.Field field = inputSchema.getField(uniqueField);
+      if (field == null) {
+        throw new IllegalArgumentException(String.format("Cannot do an unique on field '%s' because it does " +
+                                                           "not exist in inputSchema '%s'", uniqueField, inputSchema));
+      }
+    }
+
+    for (AggregatorConfig.FunctionInfo functionInfo : functionInfos) {
+      if (functionInfo != null) {
+        Schema.Field field = inputSchema.getField(functionInfo.getField());
+        if (field == null) {
+          throw new IllegalArgumentException(String.format(
+            "Invalid filter %s(%s): Field '%s' does not exist in input schema '%s'",
+            functionInfo.getFunction(), functionInfo.getField(), functionInfo.getField(), inputSchema));
+        }
+      }
+    }
   }
 }

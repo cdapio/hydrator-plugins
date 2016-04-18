@@ -46,7 +46,7 @@ import javax.ws.rs.Path;
 public class GroupByAggregator extends RecordAggregator {
   private final GroupByConfig conf;
   private List<String> groupByFields;
-  private List<GroupByConfig.FunctionInfo> functionInfos;
+  private List<GroupByConfig.GroupByFunctionInfo> functionInfos;
   private Schema outputSchema;
   private Map<String, AggregateFunction> aggregateFunctions;
 
@@ -58,7 +58,7 @@ public class GroupByAggregator extends RecordAggregator {
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     List<String> groupByFields = conf.getGroupByFields();
-    List<GroupByConfig.FunctionInfo> aggregates = conf.getAggregates();
+    List<GroupByConfig.GroupByFunctionInfo> aggregates = conf.getAggregates();
 
     StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
     Schema inputSchema = stageConfigurer.getInputSchema();
@@ -131,7 +131,7 @@ public class GroupByAggregator extends RecordAggregator {
   }
 
   private Schema getOutputSchema(Schema inputSchema, List<String> groupByFields,
-                                 List<GroupByConfig.FunctionInfo> aggregates) {
+                                 List<GroupByConfig.GroupByFunctionInfo> aggregates) {
     // Check that all the group by fields exist in the input schema,
     List<Schema.Field> outputFields = new ArrayList<>(groupByFields.size() + aggregates.size());
     for (String groupByField : groupByFields) {
@@ -145,7 +145,7 @@ public class GroupByAggregator extends RecordAggregator {
     }
 
     // check that all fields needed by aggregate functions exist in the input schema.
-    for (GroupByConfig.FunctionInfo functionInfo : aggregates) {
+    for (GroupByConfig.GroupByFunctionInfo functionInfo : aggregates) {
       // special case count(*) because we don't have to check that the input field exists
       if (functionInfo.getField().equals("*")) {
         AggregateFunction aggregateFunction = functionInfo.getAggregateFunction(null);
@@ -178,7 +178,7 @@ public class GroupByAggregator extends RecordAggregator {
     }
 
     aggregateFunctions = new HashMap<>();
-    for (GroupByConfig.FunctionInfo functionInfo : functionInfos) {
+    for (GroupByConfig.GroupByFunctionInfo functionInfo : functionInfos) {
       Schema.Field inputField = valueSchema.getField(functionInfo.getField());
       Schema fieldSchema = inputField == null ? null : inputField.getSchema();
       AggregateFunction aggregateFunction = functionInfo.getAggregateFunction(fieldSchema);

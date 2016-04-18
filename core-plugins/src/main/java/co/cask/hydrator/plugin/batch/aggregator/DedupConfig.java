@@ -19,14 +19,14 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.plugin.batch.aggregator.function.First;
 import co.cask.hydrator.plugin.batch.aggregator.function.Last;
+import co.cask.hydrator.plugin.batch.aggregator.function.Max;
+import co.cask.hydrator.plugin.batch.aggregator.function.Min;
 import co.cask.hydrator.plugin.batch.aggregator.function.RecordAggregateFunction;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import javax.annotation.Nullable;
 
 /**
@@ -43,6 +43,11 @@ public class DedupConfig extends AggregatorConfig {
   @Nullable
   private String filterField;
 
+  public DedupConfig() {
+    this.uniqueFields = "";
+    this.filterField = "";
+  }
+
   @VisibleForTesting
   DedupConfig(String uniqueFields, String filterField) {
     this.uniqueFields = uniqueFields;
@@ -58,110 +63,39 @@ public class DedupConfig extends AggregatorConfig {
   }
 
   @Nullable
-  RecordAggregationFunctionInfo getFilter() {
+  DedupFunctionInfo getFilter() {
     if (filterField == null) {
       return null;
     }
 
-    int colonIdx = filterField.indexOf(':');
-    if (colonIdx < 0) {
-      throw new IllegalArgumentException(String.format("Could not find ':' separating aggregate name from its" +
-                                                         "function in '%s'", filterField));
+    List<FunctionInfo> aggregates = parseAggregation(filterField);
+    if (aggregates.size() != 1) {
+      throw new IllegalArgumentException("Only one filter field is allowed!");
     }
-
-    String functionAndField = filterField.substring(colonIdx + 1).trim();
-    int leftParanIdx = functionAndField.indexOf('(');
-    if (leftParanIdx < 0) {
-      throw new IllegalArgumentException(String.format(
-        "Could not find '(' in function '%s'. Functions must be specified as function(field).",
-        functionAndField));
-    }
-
-    String functionStr = functionAndField.substring(0, leftParanIdx).trim();
-    Function function;
-    try {
-      function = Function.valueOf(functionStr.toUpperCase());
-    } catch (IllegalArgumentException e) {
-      throw new IllegalArgumentException(String.format(
-        "Invalid function '%s'. Must be one of %s.", functionStr, Joiner.on(',').join(Function.values())));
-    }
-
-    if (!functionAndField.endsWith(")")) {
-      throw new IllegalArgumentException(String.format(
-        "Could not find closing ')' in function '%s'. Functions must be specified as function(field).",
-        functionAndField));
-    }
-    String field = functionAndField.substring(leftParanIdx + 1, functionAndField.length() - 1).trim();
-    if (field.isEmpty()) {
-      throw new IllegalArgumentException(String.format(
-        "Invalid function '%s'. A field must be given as an argument.", functionAndField));
-    }
-
-    return new RecordAggregationFunctionInfo(filterField, field, function);
+    FunctionInfo aggregate = aggregates.get(0);
+    return new DedupFunctionInfo(aggregate.getName(), aggregate.getField(), aggregate.getFunction());
   }
 
-  static class RecordAggregationFunctionInfo {
-    private final String name;
-    private final String field;
-    private final Function function;
+  static class DedupFunctionInfo extends FunctionInfo {
 
-    public RecordAggregationFunctionInfo(String name, String field, Function function) {
-      this.name = name;
-      this.field = field;
-      this.function = function;
+    public DedupFunctionInfo(String name, String field, Function function) {
+      super(name, field, function);
     }
 
-    public String getName() {
-      return name;
-    }
-
-    public String getField() {
-      return field;
-    }
-
-    public RecordAggregateFunction getAggregateFunction(Schema fieldSchema) {
-      switch (function) {
+    public RecordAggregateFunction getAggregateFunction(Schema recordSchema) {
+      Schema.Field recordField = recordSchema.getField(getField());
+      Schema fieldSchema = recordField.getSchema();
+      switch (getFunction()) {
+        case MAX:
+          return new Max(getField(), fieldSchema);
+        case MIN:
+          return new Min(getField(), fieldSchema);
         case FIRST:
-          return new First(field, fieldSchema);
+          return new First(getField(), fieldSchema);
         case LAST:
-          return new Last(field, fieldSchema);
+          return new Last(getField(), fieldSchema);
       }
-      throw new IllegalStateException("Unknown or Unsupported function type " + function);
+      throw new IllegalStateException("Unknown or Unsupported function type " + getFunction());
     }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-
-      RecordAggregationFunctionInfo that = (RecordAggregationFunctionInfo) o;
-
-      return Objects.equals(name, that.name) &&
-        Objects.equals(field, that.field) &&
-        Objects.equals(function, that.function);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(name, field, function);
-    }
-
-    @Override
-    public String toString() {
-      return "RecordAggregationFunctionInfo{" +
-        "name='" + name + '\'' +
-        ", field='" + field + '\'' +
-        ", function=" + function +
-        '}';
-    }
-  }
-
-  enum Function {
-    FIRST,
-    LAST
   }
 }

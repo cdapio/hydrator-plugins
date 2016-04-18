@@ -18,6 +18,8 @@ package co.cask.hydrator.plugin.batch.aggregator.function;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 
+import javax.annotation.Nullable;
+
 /**
  *
  * @param <T> type of aggregate value
@@ -27,5 +29,6 @@ public interface RecordAggregateFunction<T> extends AggregateFunction<T> {
   /**
    * @return {@link StructuredRecord} that is chosen based on the aggregate function.
    */
+  @Nullable
   StructuredRecord getChosenRecord();
 }

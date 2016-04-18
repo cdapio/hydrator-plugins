@@ -54,23 +54,27 @@ public class Max extends NumberFunction {
   }
 
   @Override
-  protected void updateInt(int val) {
+  protected Integer updateInt(int val) {
     maxInt = maxInt == null ? val : Math.max(maxInt, val);
+    return maxInt;
   }
 
   @Override
-  protected void updateLong(long val) {
+  protected Long updateLong(long val) {
     maxLong = maxLong == null ? val : Math.max(maxLong, val);
+    return maxLong;
   }
 
   @Override
-  protected void updateFloat(float val) {
+  protected Float updateFloat(float val) {
     maxFloat = maxFloat == null ? val : Math.max(maxFloat, val);
+    return maxFloat;
   }
 
   @Override
-  protected void updateDouble(double val) {
+  protected Double updateDouble(double val) {
     maxDouble = maxDouble == null ? val : Math.max(maxDouble, val);
+    return maxDouble;
   }
 
   @Override

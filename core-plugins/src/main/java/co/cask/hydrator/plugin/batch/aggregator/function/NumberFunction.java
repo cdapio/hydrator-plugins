@@ -28,8 +28,9 @@ import javax.annotation.Nullable;
  * if {@link #updateInt(int)} is called, only {@link #updateInt(int)} will be called until {@link #finishInt()}
  * is called.
  */
-public abstract class NumberFunction implements AggregateFunction<Number> {
+public abstract class NumberFunction implements RecordAggregateFunction<Number> {
   private final AggregateFunction<? extends Number> typedDelegate;
+  private StructuredRecord chosenRecord;
 
   public NumberFunction(final String fieldName, @Nullable Schema fieldSchema) {
     // if schema is not known before we start getting records, just use doubles.
@@ -44,7 +45,10 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
         public void update(StructuredRecord record) {
           Number val = record.get(fieldName);
           if (val != null) {
-            updateDouble(val.doubleValue());
+            Double updateDouble = updateDouble(val.doubleValue());
+            if (val.doubleValue() == updateDouble) {
+              chosenRecord = record;
+            }
           }
         }
 
@@ -75,7 +79,10 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
           public void update(StructuredRecord record) {
             Integer val = record.get(fieldName);
             if (val != null) {
-              updateInt(val);
+              Integer updatedInt = updateInt(val);
+              if (val.intValue() == updatedInt) {
+                chosenRecord = record;
+              }
             }
           }
 
@@ -101,7 +108,10 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
           public void update(StructuredRecord record) {
             Long val = record.get(fieldName);
             if (val != null) {
-              updateLong(val);
+              Long updatedLong = updateLong(val);
+              if (val.longValue() == updatedLong) {
+                chosenRecord = record;
+              }
             }
           }
 
@@ -127,7 +137,10 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
           public void update(StructuredRecord record) {
             Float val = record.get(fieldName);
             if (val != null) {
-              updateFloat(val);
+              Float updatedFloat = updateFloat(val);
+              if (val.floatValue() == updatedFloat) {
+                chosenRecord = record;
+              }
             }
           }
 
@@ -153,7 +166,10 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
           public void update(StructuredRecord record) {
             Double val = record.get(fieldName);
             if (val != null) {
-              updateDouble(val);
+              Double updatedDouble = updateDouble(val);
+              if (val.doubleValue() == updatedDouble) {
+                chosenRecord = record;
+              }
             }
           }
 
@@ -202,13 +218,13 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
 
   protected abstract void startDouble();
 
-  protected abstract void updateInt(int val);
+  protected abstract Integer updateInt(int val);
 
-  protected abstract void updateLong(long val);
+  protected abstract Long updateLong(long val);
 
-  protected abstract void updateFloat(float val);
+  protected abstract Float updateFloat(float val);
 
-  protected abstract void updateDouble(double val);
+  protected abstract Double updateDouble(double val);
 
   @Nullable
   protected abstract Integer finishInt();
@@ -221,4 +237,10 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
 
   @Nullable
   protected abstract Double finishDouble();
+
+  @Override
+  @Nullable
+  public StructuredRecord getChosenRecord() {
+    return chosenRecord;
+  }
 }

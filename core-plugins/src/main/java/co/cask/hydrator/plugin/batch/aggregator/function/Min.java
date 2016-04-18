@@ -54,23 +54,27 @@ public class Min extends NumberFunction {
   }
 
   @Override
-  protected void updateInt(int val) {
+  protected Integer updateInt(int val) {
     minInt = minInt == null ? val : Math.min(minInt, val);
+    return minInt;
   }
 
   @Override
-  protected void updateLong(long val) {
+  protected Long updateLong(long val) {
     minLong = minLong == null ? val : Math.min(minLong, val);
+    return minLong;
   }
 
   @Override
-  protected void updateFloat(float val) {
+  protected Float updateFloat(float val) {
     minFloat = minFloat == null ? val : Math.min(minFloat, val);
+    return minFloat;
   }
 
   @Override
-  protected void updateDouble(double val) {
+  protected Double updateDouble(double val) {
     minDouble = minDouble == null ? val : Math.min(minDouble, val);
+    return minDouble;
   }
 
   @Override

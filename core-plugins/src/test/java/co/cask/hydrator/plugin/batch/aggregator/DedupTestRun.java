@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.aggregator.function;
+package co.cask.hydrator.plugin.batch.aggregator;
 
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Put;
@@ -63,17 +63,17 @@ public class DedupTestRun extends ETLBatchTestBase {
                                                         Properties.Table.PROPERTY_SCHEMA, purchaseSchema.toString()),
                                           null));
     ETLStage dedupStage = new ETLStage("dedupStage", new ETLPlugin(
-      "Dedup", BatchAggregator.PLUGIN_TYPE, ImmutableMap.of("uniqueFields", "fname,lname",
-                                                            "filterField", "newTs:last(ts)"), null));
+      "Deduplicate", BatchAggregator.PLUGIN_TYPE, ImmutableMap.of("uniqueFields", "fname,lname",
+                                                            "filterField", "maxTs:max(ts)"), null));
 
     Schema sinkSchema = Schema.recordOf("sinkSchema", Schema.Field.of("fname", Schema.of(Schema.Type.STRING)),
                                         Schema.Field.of("lname", Schema.of(Schema.Type.STRING)),
-                                        Schema.Field.of("newTs", Schema.of(Schema.Type.INT)),
+                                        Schema.Field.of("maxTs", Schema.of(Schema.Type.INT)),
                                         Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
     ETLStage sinkStage = new ETLStage("tableSink", new ETLPlugin(
       "Table", BatchSink.PLUGIN_TYPE, ImmutableMap.of(Properties.BatchReadableWritable.NAME, sinkDatasetName,
                                                       Properties.Table.PROPERTY_SCHEMA, sinkSchema.toString(),
-                                                      Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "newTs"), null));
+                                                      Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "maxTs"), null));
 
     ETLBatchConfig config = ETLBatchConfig.builder("* * * * *")
       .addStage(purchaseStage)
@@ -90,8 +90,8 @@ public class DedupTestRun extends ETLBatchTestBase {
     // write input data
     // 1: samuel, goel, 10, 100.31
     // 2: samuel, goel, 11, 200.43
-    // 3: john, desai, 5, 300
-    // 4: john, desai, 1, 400
+    // 3: john, desai, 5, 300.45
+    // 4: john, desai, 1, 400.12
 
     DataSetManager<Table> purchaseManager = getDataset(purchasesDatasetName);
     Table purchaseTable = purchaseManager.get();
@@ -112,33 +112,35 @@ public class DedupTestRun extends ETLBatchTestBase {
     put.add("fname", "john");
     put.add("lname", "desai");
     put.add("ts", 5);
-    put.add("price", 300);
+    put.add("price", 300.45);
     purchaseTable.put(put);
     put = new Put(Bytes.toBytes(4));
     put.add("fname", "john");
     put.add("lname", "desai");
     put.add("ts", 1);
-    put.add("price", 400);
+    put.add("price", 400.12);
     purchaseTable.put(put);
+    purchaseManager.flush();
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
     workflowManager.waitForFinish(5, TimeUnit.MINUTES);
 
     DataSetManager<Table> sinkManager = getDataset(sinkDatasetName);
-    Table sinkTable = sinkManager.get();
+    try (Table sinkTable = sinkManager.get()) {
 
-    // table should have:
-    // 11 : samuel, goel, 200.43
-    // 5 : john, desai, 300
-    Row row = sinkTable.get(Bytes.toBytes(11));
-    Assert.assertEquals("samuel", row.getString("fname"));
-    Assert.assertEquals("goel", row.getString("lname"));
-    Assert.assertEquals(200.43, row.getDouble("price"), 0.0001);
+      // table should have:
+      // 11 : samuel, goel, 200.43
+      // 5 : john, desai, 300.45
+      Row row = sinkTable.get(Bytes.toBytes(11));
+      Assert.assertEquals("samuel", row.getString("fname"));
+      Assert.assertEquals("goel", row.getString("lname"));
+      Assert.assertEquals(200.43, row.getDouble("price"), 0.0001);
 
-    row = sinkTable.get(Bytes.toBytes(5));
-    Assert.assertEquals("john", row.getString("fname"));
-    Assert.assertEquals("desai", row.getString("lname"));
-    Assert.assertEquals(300, row.getDouble("price"), 0.0001);
+      row = sinkTable.get(Bytes.toBytes(5));
+      Assert.assertEquals("john", row.getString("fname"));
+      Assert.assertEquals("desai", row.getString("lname"));
+      Assert.assertEquals(300.45, row.getDouble("price"), 0.0001);
+    }
   }
 }
