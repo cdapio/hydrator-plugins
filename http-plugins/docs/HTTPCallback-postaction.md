@@ -24,15 +24,16 @@ If set to 'failure', the action will only be executed if the pipeline run failed
 
 **method:** The http request method.
 
-**body:** The optional request body.
+**body:** Optional request body.
 
-**connectionTimeoutMillis:** The connect timeout in milliseconds for the http request. Defaults to 0.
-A timeout of 0 is interpreted as an infinite timeout.
+**followRedirects:** Whether to automatically follow redirects. Defaults to true.
+
+**connectTimeout:** The time in milliseconds to wait for a connection. Set to 0 for infinite. Defaults to 60000 (1 minute).
 
 **numRetries:** The number of times the request should be retried if the request fails. Defaults to 0.
 
-**requestProperties:** Properties to add to the request. Should be a JSONObject of string key values.
-For example: {\"Accept-Language\", \"en-US,en;q=0.5\"}.
+**requestHeaders:** An optional string of header values to send in each request where the keys and values are
+delimited by : and each pair is delimited by a newline (\n).
 
 Example
 -------

@@ -19,28 +19,28 @@ Properties
 
 **interval:** Required The time to wait between fetching data from the URL in seconds.
 
-**headers:** Optional A string of header values to send in each request where the keys and values are
+**requestHeaders:** An optional string of header values to send in each request where the keys and values are
 delimited by : and each pair is delimited by a newline (\n).
 
-**charset:** Optional The charset of the content returned by the URL. Defaults to UTF-8.
+**charset:** The charset of the content returned by the URL. Defaults to UTF-8.
 
-**followRedirects:** Optional Set to true to follow redirects automatically. Defaults to true.
+**followRedirects:** Whether to automatically follow redirects. Defaults to true.
 
-**connectTimeout:** Optional The time in milliseconds to wait for a connection. Defaults to 60000 (1 minute).
+**connectTimeout:** The time in milliseconds to wait for a connection. Set to 0 for infinite. Defaults to 60000 (1 minute).
 
-**readTimeout:** Optional The time in milliseconds to wait for a read. Defaults to 60000 (1 minute).
+**readTimeout:** The time in milliseconds to wait for a read. Set to 0 for infinite. Defaults to 60000 (1 minute).
 
 Example
 -------
 This example fetches data from a url every hour using a custom user agent:
 
     {
+        "name": "HTTPPoller",
         "type": "realtimesource",
-        "name": "UrlFetch",
         "properties": {
             "url": "http://api.example.com/sampleEndpoint",
             "interval": "60",
-            "headers": "User-Agent:HydratorPipeline\nAccept:application/json"
+            "requestHeaders": "User-Agent:HydratorPipeline\nAccept:application/json"
         }
     }
 

@@ -24,7 +24,7 @@ import co.cask.http.HttpResponder;
 import co.cask.http.NettyHttpService;
 import co.cask.hydrator.common.test.MockEmitter;
 import co.cask.hydrator.common.test.MockRealtimeContext;
-import co.cask.hydrator.plugin.realtime.config.UrlFetchRealtimeSourceConfig;
+import co.cask.hydrator.plugin.realtime.config.HTTPPollConfig;
 import com.google.common.collect.ImmutableList;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
@@ -39,10 +39,10 @@ import javax.ws.rs.Path;
 
 /**
  * <p>
- *  Unit test for {@link UrlFetchRealtimeSource} ETL realtime source class.
+ *  Unit test for {@link HTTPPollerRealtimeSource} ETL realtime source class.
  * </p>
  */
-public class UrlFetchTest extends TestBase {
+public class HTTPPollTest extends TestBase {
   private NettyHttpService service;
 
   @Before
@@ -63,12 +63,12 @@ public class UrlFetchTest extends TestBase {
 
   @Test
   public void testUrlFetch() throws Exception {
-    UrlFetchRealtimeSourceConfig config = new UrlFetchRealtimeSourceConfig(
+    HTTPPollConfig config = new HTTPPollConfig(
       String.format("http://%s:%s/ping",
                     service.getBindAddress().getHostName(),
                     service.getBindAddress().getPort()),
       1L);
-    UrlFetchRealtimeSource source = new UrlFetchRealtimeSource(config);
+    HTTPPollerRealtimeSource source = new HTTPPollerRealtimeSource(config);
     source.initialize(new MockRealtimeContext());
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
@@ -90,13 +90,13 @@ public class UrlFetchTest extends TestBase {
 
   @Test
   public void testRequestHeaders() throws Exception {
-    UrlFetchRealtimeSourceConfig config = new UrlFetchRealtimeSourceConfig(
+    HTTPPollConfig config = new HTTPPollConfig(
       String.format("http://%s:%s/useragent",
                     service.getBindAddress().getHostName(),
                     service.getBindAddress().getPort()),
       1L,
       "User-Agent:T:est Us:er A:gent\nAccept:application/json");
-    UrlFetchRealtimeSource source = new UrlFetchRealtimeSource(config);
+    HTTPPollerRealtimeSource source = new HTTPPollerRealtimeSource(config);
     source.initialize(new MockRealtimeContext());
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
@@ -116,12 +116,12 @@ public class UrlFetchTest extends TestBase {
 
   @Test
   public void test404() throws Exception {
-    UrlFetchRealtimeSourceConfig config = new UrlFetchRealtimeSourceConfig(
+    HTTPPollConfig config = new HTTPPollConfig(
       String.format("http://%s:%s/does-not-exist",
                     service.getBindAddress().getHostName(),
                     service.getBindAddress().getPort()),
       1L);
-    UrlFetchRealtimeSource source = new UrlFetchRealtimeSource(config);
+    HTTPPollerRealtimeSource source = new HTTPPollerRealtimeSource(config);
     source.initialize(new MockRealtimeContext());
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
@@ -141,12 +141,12 @@ public class UrlFetchTest extends TestBase {
 
   @Test
   public void testMultiplePolls() throws Exception {
-    UrlFetchRealtimeSourceConfig config = new UrlFetchRealtimeSourceConfig(
+    HTTPPollConfig config = new HTTPPollConfig(
       String.format("http://%s:%s/ping",
                     service.getBindAddress().getHostName(),
                     service.getBindAddress().getPort()),
       2L);
-    UrlFetchRealtimeSource source = new UrlFetchRealtimeSource(config);
+    HTTPPollerRealtimeSource source = new HTTPPollerRealtimeSource(config);
     source.initialize(new MockRealtimeContext());
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();

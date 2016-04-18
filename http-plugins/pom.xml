@@ -17,34 +17,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
   <parent>
     <artifactId>hydrator-plugins</artifactId>
     <groupId>co.cask.hydrator</groupId>
     <version>1.3.0-SNAPSHOT</version>
   </parent>
 
-  <groupId>co.cask.hydrator.plugin</groupId>
-  <artifactId>url-plugins</artifactId>
-  <version>1.0-SNAPSHOT</version>
-  <packaging>jar</packaging>
-
-  <name>Url Plugins</name>
-
-  <properties>
-    <etl.versionRange>system:cdap-etl-realtime[3.4.0,3.6.0-SNAPSHOT)</etl.versionRange>
-  </properties>
-
-  <repositories>
-    <repository>
-      <id>sonatype</id>
-      <url>https://oss.sonatype.org/content/groups/public</url>
-    </repository>
-    <repository>
-      <id>sonatype-snapshots</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    </repository>
-  </repositories>
+  <name>HTTP Plugins</name>
+  <artifactId>http-plugins</artifactId>
+  <modelVersion>4.0.0</modelVersion>
 
   <dependencies>
     <dependency>
@@ -64,10 +45,17 @@
       <artifactId>cdap-etl-realtime</artifactId>
     </dependency>
     <dependency>
+      <groupId>co.cask.cdap</groupId>
+      <artifactId>cdap-etl-batch</artifactId>
+    </dependency>
+    <dependency>
       <groupId>co.cask.hydrator</groupId>
       <artifactId>hydrator-common</artifactId>
       <version>${project.parent.version}</version>
-      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>co.cask.cdap</groupId>
+      <artifactId>hydrator-test</artifactId>
     </dependency>
   </dependencies>
 
@@ -80,7 +68,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Export-Package>co.cask.hydrator.plugin.realtime</Export-Package>
+            <_exportcontents>co.cask.hydrator.plugin.*</_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
             <Embed-Directory>lib</Embed-Directory>

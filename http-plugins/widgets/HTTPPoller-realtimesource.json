@@ -23,7 +23,7 @@
         {
           "widget-type": "keyvalue",
           "label": "Request Headers",
-          "name": "headers",
+          "name": "requestHeaders",
           "widget-attributes" : {
             "showDelimiter": "false",
             "kv-delimiter" : ":",

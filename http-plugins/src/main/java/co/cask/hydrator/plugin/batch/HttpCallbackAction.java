@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.action;
+package co.cask.hydrator.plugin.batch;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
@@ -22,30 +22,30 @@ import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchActionContext;
 import co.cask.cdap.etl.api.batch.PostAction;
+import co.cask.hydrator.common.batch.action.Condition;
 import co.cask.hydrator.common.batch.action.ConditionConfig;
+import co.cask.hydrator.plugin.config.HTTPConfig;
 import com.google.common.base.Charsets;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import org.jboss.netty.handler.codec.http.HttpMethod;
+import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.OutputStream;
-import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nullable;
+import javax.ws.rs.HttpMethod;
 
 /**
  * Makes an HTTP call at the end of a pipeline run.
  */
 @Plugin(type = PostAction.PLUGIN_TYPE)
-@Name("HttpCallback")
+@Name("HTTPCallback")
 @Description("Makes an HTTP call at the end of a pipeline run.")
 public class HttpCallbackAction extends PostAction {
   private static final Logger LOG = LoggerFactory.getLogger(HttpCallbackAction.class);
@@ -72,17 +72,14 @@ public class HttpCallbackAction extends PostAction {
     Exception exception = null;
     do {
       HttpURLConnection conn = null;
-      Map<String, List<String>> headers = conf.parseRequestProperties();
+      Map<String, String> headers = conf.getRequestHeadersMap();
       try {
-        URL url = new URL(conf.url);
+        URL url = new URL(conf.getUrl());
         conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod(conf.method);
-        conn.setConnectTimeout(conf.connectTimeoutMillis);
-        for (Map.Entry<String, List<String>> propertyEntry : headers.entrySet()) {
-          String propertyKey = propertyEntry.getKey();
-          for (String propertyValue : propertyEntry.getValue()) {
-            conn.addRequestProperty(propertyKey, propertyValue);
-          }
+        conn.setRequestMethod(conf.method.toUpperCase());
+        conn.setConnectTimeout(conf.getConnectTimeout());
+        for (Map.Entry<String, String> propertyEntry : headers.entrySet()) {
+          conn.addRequestProperty(propertyEntry.getKey(), propertyEntry.getValue());
         }
         if (conf.body != null) {
           conn.setDoOutput(true);
@@ -90,13 +87,13 @@ public class HttpCallbackAction extends PostAction {
             outputStream.write(conf.body.getBytes(Charsets.UTF_8));
           }
         }
-        LOG.info("Request to {} resulted in response code {}.", conf.url, conn.getResponseCode());
+        LOG.info("Request to {} resulted in response code {}.", conf.getUrl(), conn.getResponseCode());
         break;
       } catch (MalformedURLException | ProtocolException e) {
         // these should never happen because the url and request method are checked at configure time
         throw new IllegalStateException("Error opening url connection. Reason: " + e.getMessage(), e);
       } catch (Exception e) {
-        LOG.warn("Error making {} request to url {} with headers {}.", conf.method, conf.url, headers);
+        LOG.warn("Error making {} request to url {} with headers {}.", conf.method, conf.getUrl(), headers);
         exception = e;
       } finally {
         if (conn != null) {
@@ -114,14 +111,18 @@ public class HttpCallbackAction extends PostAction {
   /**
    * Config for the http callback action.
    */
-  public static final class HttpRequestConf extends ConditionConfig {
-    private static final Gson GSON = new Gson();
-    private static final Type MAP_TYPE = new TypeToken<Map<String, String>>() { }.getType();
-
-    @Description("The URL to call.")
-    private String url;
+  public static final class HttpRequestConf extends HTTPConfig {
+    private static final Set<String> METHODS = ImmutableSet.of(HttpMethod.GET, HttpMethod.HEAD, HttpMethod.OPTIONS,
+                                                               HttpMethod.PUT, HttpMethod.POST, HttpMethod.DELETE);
 
     @Nullable
+    @Description("When to run the action. Must be 'completion', 'success', or 'failure'. Defaults to 'completion'. " +
+      "If set to 'completion', the action will be executed regardless of whether " +
+      "the pipeline run succeeded or failed." +
+      "If set to 'success', the action will only be executed if the pipeline run succeeded. " +
+      "If set to 'failure', the action will only be executed if the pipeline run failed.")
+    public String runCondition;
+
     @Description("The http request method.")
     private String method;
 
@@ -130,53 +131,34 @@ public class HttpCallbackAction extends PostAction {
     private String body;
 
     @Nullable
-    @Description("The connect timeout in milliseconds for the http request. Defaults to 0. " +
-      "A timeout of 0 is interpreted as an infinite timeout.")
-    private Integer connectTimeoutMillis;
-
-    @Nullable
     @Description("The number of times the request should be retried if the request fails. Defaults to 0.")
     private Integer numRetries;
 
-    @Nullable
-    @Description("Properties to add to the request. Should be a JSONObject of string key values. " +
-      "For example: {\"Accept-Language\", \"en-US,en;q=0.5\"}.")
-    private String requestProperties;
-
     public HttpRequestConf() {
-      this.url = null;
-      this.method = null;
-      this.connectTimeoutMillis = 0;
-      this.numRetries = 0;
-      this.requestProperties = null;
+      super();
+      numRetries = 0;
+      runCondition = Condition.COMPLETION.name();
     }
 
-    public Map<String, List<String>> parseRequestProperties() {
-      // noinspection unchecked
-      return requestProperties == null ?
-        new HashMap<String, List<String>>() : (Map<String, List<String>>) GSON.fromJson(requestProperties, MAP_TYPE);
+    public HttpRequestConf(String url) {
+      super(url);
     }
 
     @SuppressWarnings("ConstantConditions")
     public void validate() {
-      try {
-        HttpMethod.valueOf(method);
-      } catch (IllegalArgumentException e) {
-        throw new IllegalArgumentException(String.format("Invalid request method %s.", method));
-      }
-      if (connectTimeoutMillis < 0) {
-        throw new IllegalArgumentException(String.format(
-          "Invalid connectTimeoutMillis %d. Timeout cannot be a negative number.", connectTimeoutMillis));
+      super.validate();
+      if (!METHODS.contains(method.toUpperCase())) {
+        throw new IllegalArgumentException(String.format("Invalid request method %s, must be one of %s.",
+                                                         method, Joiner.on(',').join(METHODS)));
       }
       if (numRetries < 0) {
         throw new IllegalArgumentException(String.format(
           "Invalid numRetries %d. Retries cannot be a negative number.", numRetries));
       }
-      try {
-        new URL(url);
-      } catch (MalformedURLException e) {
-        throw new IllegalArgumentException(String.format("URL '%s' is malformed: %s", url, e.getMessage()), e);
-      }
+    }
+
+    public boolean shouldRun(BatchActionContext context) {
+      return new ConditionConfig(runCondition).shouldRun(context);
     }
   }
 }

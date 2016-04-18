@@ -35,11 +35,11 @@
     <module>hbase-plugins</module>
     <module>hdfs-plugins</module>
     <module>hive-plugins</module>
+    <module>http-plugins</module>
     <module>kafka-plugins</module>
     <module>mongodb-plugins</module>
     <module>spark-plugins</module>
     <module>transform-plugins</module>
-    <module>url-plugins</module>
   </modules>
 
   <licenses>

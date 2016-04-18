@@ -26,7 +26,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.realtime.RealtimeContext;
 import co.cask.cdap.etl.api.realtime.RealtimeSource;
 import co.cask.cdap.etl.api.realtime.SourceState;
-import co.cask.hydrator.plugin.realtime.config.UrlFetchRealtimeSourceConfig;
+import co.cask.hydrator.plugin.realtime.config.HTTPPollConfig;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.io.CharStreams;
@@ -42,13 +42,12 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 /**
- * Real Time Source to fetch data from a url.
+ * Real Time Source to poll and fetch data from a url.
  */
 @Plugin(type = RealtimeSource.PLUGIN_TYPE)
-@Name("URLFetch")
-@Description("Fetch data from an external URL at a regular interval.")
-public class UrlFetchRealtimeSource extends RealtimeSource<StructuredRecord> {
-  private static final int TIMEOUT = 60 * 1000;
+@Name("HTTPPoller")
+@Description("Fetch data by performing an HTTP request at a regular interval.")
+public class HTTPPollerRealtimeSource extends RealtimeSource<StructuredRecord> {
   private static final String METHOD = "GET";
   private static final String POLL_TIME_STATE_KEY = "lastPollTime";
   private static final Schema SCHEMA = Schema.recordOf(
@@ -60,9 +59,9 @@ public class UrlFetchRealtimeSource extends RealtimeSource<StructuredRecord> {
     Schema.Field.of("body", Schema.of(Schema.Type.STRING))
   );
 
-  private final UrlFetchRealtimeSourceConfig config;
+  private final HTTPPollConfig config;
 
-  public UrlFetchRealtimeSource(UrlFetchRealtimeSourceConfig config) {
+  public HTTPPollerRealtimeSource(HTTPPollConfig config) {
     this.config = config;
   }
 
@@ -79,7 +78,7 @@ public class UrlFetchRealtimeSource extends RealtimeSource<StructuredRecord> {
       long lastPollTime = Bytes.toLong(lastPollTimeBytes);
       long currentPollTime = System.currentTimeMillis();
       long diffInSeconds = (currentPollTime - lastPollTime) / 1000;
-      if (config.getIntervalInSeconds() - diffInSeconds > 0) {
+      if (config.getInterval() - diffInSeconds > 0) {
         // This is a little bit of a workaround since clicking the stop button
         // in the UI will not interrupt a sleep. See: CDAP-5631
         TimeUnit.SECONDS.sleep(1L);
@@ -94,11 +93,9 @@ public class UrlFetchRealtimeSource extends RealtimeSource<StructuredRecord> {
       connection.setConnectTimeout(config.getConnectTimeout());
       connection.setReadTimeout(config.getReadTimeout());
       connection.setInstanceFollowRedirects(config.shouldFollowRedirects());
-      if (config.hasCustomRequestHeaders()) {
-        // Set additional request headers if needed
-        for (Map.Entry<String, String> requestHeader : config.getRequestHeadersMap().entrySet()) {
-          connection.setRequestProperty(requestHeader.getKey(), requestHeader.getValue());
-        }
+      // Set additional request headers
+      for (Map.Entry<String, String> requestHeader : config.getRequestHeadersMap().entrySet()) {
+        connection.setRequestProperty(requestHeader.getKey(), requestHeader.getValue());
       }
       int responseCode = connection.getResponseCode();
       try {
