@@ -139,6 +139,7 @@ public class EmailAction extends PostAction {
     if (!config.shouldRun(context)) {
       return;
     }
+    config.substituteMacros(context);
 
     Authenticator authenticator = null;
 

@@ -80,15 +80,14 @@ public class HttpCallbackActionTestRun extends ETLBatchTestBase {
   }
 
   @Test
-  public void testEmailAction() throws Exception {
-
+  public void testHttpCallbackAction() throws Exception {
     String body = "samuel jackson, dwayne johnson, christopher walken";
     ETLStage action = new ETLStage(
       "http",
       new ETLPlugin("HttpCallback", PostAction.PLUGIN_TYPE,
                     ImmutableMap.of("url", baseURL + "/feeds/users",
                                     "method", "PUT",
-                                    "body", body),
+                                    "body", "${runtime(yyyy-MM-dd,0s,UTC)}: " + body),
                     null));
 
     ETLStage source = new ETLStage("source",
@@ -109,7 +108,7 @@ public class HttpCallbackActionTestRun extends ETLBatchTestBase {
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     WorkflowManager manager = appManager.getWorkflowManager("ETLWorkflow");
-    manager.start();
+    manager.start(ImmutableMap.of("logical.start.time", "0"));
     manager.waitForFinish(5, TimeUnit.MINUTES);
 
     URL url = new URL(baseURL + "/feeds/users");
@@ -117,7 +116,7 @@ public class HttpCallbackActionTestRun extends ETLBatchTestBase {
     conn.setRequestMethod(HttpMethod.GET);
     Assert.assertEquals(200, conn.getResponseCode());
     try (Reader responseReader = new InputStreamReader(conn.getInputStream(), Charsets.UTF_8)) {
-      Assert.assertEquals(body, CharStreams.toString(responseReader));
+      Assert.assertEquals("1970-01-01: " + body, CharStreams.toString(responseReader));
     }
   }
 

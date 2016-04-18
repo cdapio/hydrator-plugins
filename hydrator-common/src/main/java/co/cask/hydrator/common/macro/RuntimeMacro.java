@@ -20,6 +20,8 @@ import co.cask.hydrator.common.TimeParser;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -29,6 +31,7 @@ import javax.annotation.Nullable;
  * empty string
  * format
  * format,offset
+ * format,offset,timezone
  *
  * If no format is given, the runtime in milliseconds will be used.
  * Otherwise, the format is expected to be a SimpleDateFormat that will be used to format the runtime.
@@ -48,20 +51,27 @@ public class RuntimeMacro implements Macro {
       return String.valueOf(runtime);
     }
 
+    int timezoneComma = arguments.lastIndexOf(',');
+    int offsetComma = timezoneComma < 0 ? -1 : arguments.lastIndexOf(',', timezoneComma - 1);
+
+    SimpleDateFormat dateFormat;
     long offset = 0;
-    String format = arguments;
-    int commaIndex = arguments.lastIndexOf(',');
-    if (commaIndex > 0) {
+    TimeZone timeZone = TimeZone.getDefault();
+
+    if (timezoneComma > 0) {
+      timeZone = TimeZone.getTimeZone(arguments.substring(timezoneComma + 1).trim());
+    }
+    if (offsetComma > 0) {
       TimeParser timeParser = new TimeParser(runtime);
-      offset = timeParser.parseRuntime(arguments.substring(commaIndex + 1));
-      format = arguments.substring(0, commaIndex);
+      int endIndex = timezoneComma < 0 ? arguments.length() : timezoneComma;
+      offset = timeParser.parseRuntime(arguments.substring(offsetComma + 1, endIndex).trim());
     }
 
+    dateFormat = offsetComma < 0 ?
+      new SimpleDateFormat(arguments) : new SimpleDateFormat(arguments.substring(0, offsetComma).trim());
+    dateFormat.setTimeZone(timeZone);
+
     Date date = new Date(runtime - offset);
-    SimpleDateFormat simpleDateFormat = new SimpleDateFormat(format);
-    if (context.getTimeZone() != null) {
-      simpleDateFormat.setTimeZone(context.getTimeZone());
-    }
-    return simpleDateFormat.format(date);
+    return dateFormat.format(date);
   }
 }
