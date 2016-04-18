@@ -1,0 +1,46 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "XML Source Properties",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Path(s)",
+          "name": "paths"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "File Pattern",
+          "name": "pattern"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Maximum Split Size",
+          "name": "maxSplitSize"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "XML Start Tag",
+          "name": "startTag"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "XML End Tag",
+          "name": "endTag"
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "widget-type": "non-editable-schema-editor",
+      "schema": {
+        "offset": "long",
+        "body": "string"
+      }
+    }
+  ]
+}
