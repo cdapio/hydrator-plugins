@@ -19,10 +19,10 @@ package co.cask.hydrator.plugin.batch.action;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchActionContext;
 import co.cask.cdap.etl.api.batch.PostAction;
+import co.cask.hydrator.common.batch.action.ConditionConfig;
 import com.google.common.base.Charsets;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -63,6 +63,11 @@ public class HttpCallbackAction extends PostAction {
   @SuppressWarnings("ConstantConditions")
   @Override
   public void run(BatchActionContext batchActionContext) throws Exception {
+    if (!conf.shouldRun(batchActionContext)) {
+      return;
+    }
+    conf.substituteMacros(batchActionContext);
+
     int retries = 0;
     Exception exception = null;
     do {
@@ -109,7 +114,7 @@ public class HttpCallbackAction extends PostAction {
   /**
    * Config for the http callback action.
    */
-  public static final class HttpRequestConf extends PluginConfig {
+  public static final class HttpRequestConf extends ConditionConfig {
     private static final Gson GSON = new Gson();
     private static final Type MAP_TYPE = new TypeToken<Map<String, String>>() { }.getType();
 

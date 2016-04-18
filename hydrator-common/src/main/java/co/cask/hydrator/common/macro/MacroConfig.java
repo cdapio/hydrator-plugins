@@ -16,16 +16,15 @@
 
 package co.cask.hydrator.common.macro;
 
-import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.batch.BatchContext;
+import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.TimeZone;
 import javax.annotation.Nullable;
 
 /**
@@ -42,21 +41,6 @@ import javax.annotation.Nullable;
  * If this gets any more complicated, could look into using some grammar and parser
  */
 public abstract class MacroConfig extends PluginConfig {
-
-  @Nullable
-  @Description("The timezone to use for macro substitution. See Java's TimeZone class for more information about " +
-    "time zone codes. If the specified time zone is unknown, GMT will be used. " +
-    "Macros are of the format ${runtime(format,offset)}, " +
-    "where format is a date format as described by Java's SimpleDateFormat, and offset is a duration to subtract " +
-    "from the logical start time of the run." +
-    "For example, if the logical start time of the run is midnight of 2016-01-01, " +
-    "then the macro ${runtime(yyyy-MM-dd,1d)} will be replaced 2015-12-31.")
-  protected String macroTimeZone;
-
-  public TimeZone getTimeZone() {
-    return macroTimeZone == null ? TimeZone.getDefault() : TimeZone.getTimeZone(macroTimeZone);
-  }
-
   /**
    * Validate that macros can be substituted.
    */
@@ -68,8 +52,22 @@ public abstract class MacroConfig extends PluginConfig {
    * Validate that macros can be substituted and that there is no invalid macro syntax.
    */
   public void validate(boolean isLenient) {
-    MacroContext macroContext = new DefaultMacroContext(0, getTimeZone());
+    MacroContext macroContext = new DefaultMacroContext(0);
     substituteMacros(macroContext, isLenient);
+  }
+
+  /**
+   * Performs macro substitution on all non-static string fields.
+   *
+   * @param batchRuntimeContext runtime context for batch etl plugins
+   * @param fields the fields to perform macro substitution on. If nothing is given, every field will
+   *               be substituted.
+   * @throws InvalidMacroException if any macro is invalid
+   */
+  public void substituteMacros(BatchRuntimeContext batchRuntimeContext, String... fields) {
+    MacroContext macroContext = new DefaultMacroContext(batchRuntimeContext.getLogicalStartTime(),
+                                                        batchRuntimeContext.getRuntimeArguments());
+    substituteMacros(macroContext, true, fields);
   }
 
   /**
@@ -82,7 +80,6 @@ public abstract class MacroConfig extends PluginConfig {
    */
   public void substituteMacros(BatchContext batchContext, String... fields) {
     MacroContext macroContext = new DefaultMacroContext(batchContext.getLogicalStartTime(),
-                                                        getTimeZone(),
                                                         batchContext.getRuntimeArguments());
     substituteMacros(macroContext, true, fields);
   }

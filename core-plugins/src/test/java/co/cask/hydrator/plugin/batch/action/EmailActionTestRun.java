@@ -60,7 +60,7 @@ public class EmailActionTestRun extends ETLBatchTestBase {
       new ETLPlugin("Email", PostAction.PLUGIN_TYPE,
                     ImmutableMap.of("recipients", "to@test.com",
                                     "sender", "from@test.com",
-                                    "message", "testing body",
+                                    "message", "Run for ${runtime(yyyy-MM-dd,0m,UTC)} completed.",
                                     "subject", "Test",
                                     "port", Integer.toString(port)),
                     null));
@@ -83,7 +83,7 @@ public class EmailActionTestRun extends ETLBatchTestBase {
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     WorkflowManager manager = appManager.getWorkflowManager("ETLWorkflow");
-    manager.start();
+    manager.start(ImmutableMap.of("logical.start.time", "0"));
     manager.waitForFinish(5, TimeUnit.MINUTES);
 
     server.stop();
@@ -92,7 +92,7 @@ public class EmailActionTestRun extends ETLBatchTestBase {
     Iterator emailIter = server.getReceivedEmail();
     SmtpMessage email = (SmtpMessage) emailIter.next();
     Assert.assertEquals("Test", email.getHeaderValue("Subject"));
-    Assert.assertTrue(email.getBody().startsWith("testing body"));
+    Assert.assertTrue(email.getBody().startsWith("Run for 1970-01-01 completed."));
     Assert.assertFalse(emailIter.hasNext());
   }
 }
