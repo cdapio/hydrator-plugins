@@ -16,8 +16,8 @@
 
 package co.cask.hydrator.plugin.batch;
 
-import co.cask.hydrator.plugin.batch.aggregator.GroupByTestRun;
 import co.cask.hydrator.plugin.batch.aggregator.DedupTestRun;
+import co.cask.hydrator.plugin.batch.aggregator.GroupByTestRun;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 

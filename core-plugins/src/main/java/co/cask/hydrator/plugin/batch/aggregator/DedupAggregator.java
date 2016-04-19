@@ -45,7 +45,6 @@ public class DedupAggregator extends RecordAggregator {
   private final DedupConfig dedupConfig;
   private List<String> uniqueFields;
   private DedupConfig.DedupFunctionInfo filterFunction;
-  private SelectionFunction recordAggregateFunction;
 
   public DedupAggregator(DedupConfig dedupConfig) {
     super(dedupConfig.numPartitions);
@@ -58,7 +57,7 @@ public class DedupAggregator extends RecordAggregator {
     DedupConfig.DedupFunctionInfo functionInfo = dedupConfig.getFilter();
     if (functionInfo != null) {
       // Invoke to validate whether the function used is supported
-      functionInfo.getSelectionFunction();
+      functionInfo.getSelectionFunction(null);
     }
 
     StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
@@ -102,18 +101,22 @@ public class DedupAggregator extends RecordAggregator {
       return;
     }
 
+    SelectionFunction selectionFunction;
     if (filterFunction == null) {
       emitter.emit(iterator.next());
     } else {
-      recordAggregateFunction = filterFunction.getSelectionFunction();
-      recordAggregateFunction.beginFunction();
+      StructuredRecord firstRecord = iterator.next();
+      Schema.Field firstField = firstRecord.getSchema().getField(filterFunction.getField());
+      selectionFunction = filterFunction.getSelectionFunction(firstField.getSchema());
+      selectionFunction.beginFunction();
+      selectionFunction.operateOn(firstRecord);
 
       while (iterator.hasNext()) {
-        recordAggregateFunction.operateOn(iterator.next());
+        selectionFunction.operateOn(iterator.next());
       }
 
-      recordAggregateFunction.finishFunction();
-      List<StructuredRecord> outputRecords = recordAggregateFunction.getSelectedRecords();
+      selectionFunction.finishFunction();
+      List<StructuredRecord> outputRecords = selectionFunction.getSelectedRecords();
       for (StructuredRecord outputRecord : outputRecords) {
         Schema outputSchema = getOutputSchema(outputRecord.getSchema());
         validateSchema(outputSchema, uniqueFields, filterFunction);
