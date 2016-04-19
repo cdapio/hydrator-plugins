@@ -32,17 +32,20 @@ public class LastTest {
 
     Assert.assertEquals(Schema.of(Schema.Type.INT), last.getOutputSchema());
 
-    last.beginAggregate();
-    last.update(StructuredRecord.builder(schema).set("x", 1).build());
-    last.update(StructuredRecord.builder(schema).set("x", 2).build());
-    last.update(StructuredRecord.builder(schema).set("x", 3).build());
-    Assert.assertEquals(3, last.finishAggregate());
+    last.beginFunction();
+    last.operateOn(StructuredRecord.builder(schema).set("x", 1).build());
+    last.operateOn(StructuredRecord.builder(schema).set("x", 2).build());
+    last.operateOn(StructuredRecord.builder(schema).set("x", 3).build());
+    last.finishFunction();
+    Assert.assertEquals(3, last.getAggregate());
 
-    last.beginAggregate();
-    last.update(StructuredRecord.builder(schema).set("x", 3).build());
-    Assert.assertEquals(3, last.finishAggregate());
+    last.beginFunction();
+    last.operateOn(StructuredRecord.builder(schema).set("x", 3).build());
+    last.finishFunction();
+    Assert.assertEquals(3, last.getAggregate());
 
-    last.beginAggregate();
-    Assert.assertNull(last.finishAggregate());
+    last.beginFunction();
+    last.finishFunction();
+    Assert.assertNull(last.getAggregate());
   }
 }

@@ -52,46 +52,42 @@ public class Sum extends NumberFunction {
   }
 
   @Override
-  protected Integer updateInt(int val) {
+  protected void updateInt(int val) {
     intSum += val;
-    return intSum;
   }
 
   @Override
-  protected Long updateLong(long val) {
+  protected void updateLong(long val) {
     longSum += val;
-    return longSum;
   }
 
   @Override
-  protected Float updateFloat(float val) {
+  protected void updateFloat(float val) {
     floatSum += val;
-    return floatSum;
   }
 
   @Override
-  protected Double updateDouble(double val) {
+  protected void updateDouble(double val) {
     doubleSum += val;
-    return doubleSum;
   }
 
   @Override
-  protected Integer finishInt() {
+  protected Integer getInt() {
     return intSum;
   }
 
   @Override
-  protected Long finishLong() {
+  protected Long getLong() {
     return longSum;
   }
 
   @Override
-  protected Float finishFloat() {
+  protected Float getFloat() {
     return floatSum;
   }
 
   @Override
-  protected Double finishDouble() {
+  protected Double getDouble() {
     return doubleSum;
   }
 }

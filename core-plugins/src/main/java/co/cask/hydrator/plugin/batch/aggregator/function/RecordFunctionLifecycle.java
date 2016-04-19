@@ -17,18 +17,28 @@
 package co.cask.hydrator.plugin.batch.aggregator.function;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
-
-import javax.annotation.Nullable;
+import co.cask.cdap.etl.api.Aggregator;
 
 /**
- *
- * @param <T> type of aggregate value
+ * Methods to manage lifecycle functions performed on group of {@link StructuredRecord}, typically used in the
+ * {@link Aggregator#aggregate} stage.
  */
-public interface RecordAggregateFunction<T> extends AggregateFunction<T> {
+public interface RecordFunctionLifecycle {
 
   /**
-   * @return {@link StructuredRecord} that is chosen based on the aggregate function.
+   * Called once to start the function.
    */
-  @Nullable
-  StructuredRecord getChosenRecord();
+  void beginFunction();
+
+  /**
+   * Called once for each {@link StructuredRecord} to operate up on. Calls to this method are made after the call to
+   * {@link #beginFunction}
+   * @param record {@link StructuredRecord} input record
+   */
+  void operateOn(StructuredRecord record);
+
+  /**
+   * Called once when the operation is complete.
+   */
+  void finishFunction();
 }

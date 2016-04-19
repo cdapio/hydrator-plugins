@@ -19,12 +19,15 @@ package co.cask.hydrator.plugin.batch.aggregator.function;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Return the first element in the group.
+ * Return the first element in a group of {@link StructuredRecord}s.
  *
  * @param <T> type of aggregate value
  */
-public class First<T> implements RecordAggregateFunction<T> {
+public class First<T> implements SelectionFunction, AggregateFunction<T> {
   private final String fieldName;
   private final Schema fieldSchema;
   private boolean isFirst;
@@ -37,14 +40,14 @@ public class First<T> implements RecordAggregateFunction<T> {
   }
 
   @Override
-  public void beginAggregate() {
+  public void beginFunction() {
     isFirst = true;
     first = null;
     firstRecord = null;
   }
 
   @Override
-  public void update(StructuredRecord record) {
+  public void operateOn(StructuredRecord record) {
     if (isFirst) {
       first = record.get(fieldName);
       firstRecord = record;
@@ -53,7 +56,12 @@ public class First<T> implements RecordAggregateFunction<T> {
   }
 
   @Override
-  public T finishAggregate() {
+  public void finishFunction() {
+    // no-op
+  }
+
+  @Override
+  public T getAggregate() {
     return first;
   }
 
@@ -63,7 +71,11 @@ public class First<T> implements RecordAggregateFunction<T> {
   }
 
   @Override
-  public StructuredRecord getChosenRecord() {
-    return firstRecord;
+  public List<StructuredRecord> getSelectedRecords() {
+    List<StructuredRecord> recordList = new ArrayList<>();
+    if (firstRecord != null) {
+      recordList.add(firstRecord);
+    }
+    return recordList;
   }
 }

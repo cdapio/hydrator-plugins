@@ -28,10 +28,9 @@ public class DedupConfigTest {
   @Test
   public void testParsing() {
     DedupConfig config = new DedupConfig(" user, item, price ",
-                                         "maxPrice : max(price)");
+                                         " max (  price )   ");
     Assert.assertEquals(ImmutableList.of("user", "item", "price"), config.getUniqueFields());
-    DedupConfig.DedupFunctionInfo expected = new DedupConfig.DedupFunctionInfo("maxPrice", "price",
-                                                                               AggregatorConfig.Function.MAX);
+    DedupConfig.DedupFunctionInfo expected = new DedupConfig.DedupFunctionInfo("price", DedupConfig.Function.MAX);
     Assert.assertEquals(expected, config.getFilter());
   }
 }

@@ -19,12 +19,15 @@ package co.cask.hydrator.plugin.batch.aggregator.function;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Return the last element in the group.
  *
  * @param <T> type of aggregate value
  */
-public class Last<T> implements RecordAggregateFunction<T> {
+public class Last<T> implements SelectionFunction, AggregateFunction<T> {
   private final String fieldName;
   private final Schema fieldSchema;
   private StructuredRecord lastRecord;
@@ -36,19 +39,24 @@ public class Last<T> implements RecordAggregateFunction<T> {
   }
 
   @Override
-  public void beginAggregate() {
+  public void beginFunction() {
     last = null;
     lastRecord = null;
   }
 
   @Override
-  public void update(StructuredRecord record) {
+  public void operateOn(StructuredRecord record) {
     last = record.get(fieldName);
     lastRecord = record;
   }
 
   @Override
-  public T finishAggregate() {
+  public void finishFunction() {
+    // no-op
+  }
+
+  @Override
+  public T getAggregate() {
     return last;
   }
 
@@ -58,7 +66,11 @@ public class Last<T> implements RecordAggregateFunction<T> {
   }
 
   @Override
-  public StructuredRecord getChosenRecord() {
-    return lastRecord;
+  public List<StructuredRecord> getSelectedRecords() {
+    List<StructuredRecord> recordList = new ArrayList<>();
+    if (lastRecord != null) {
+      recordList.add(lastRecord);
+    }
+    return recordList;
   }
 }

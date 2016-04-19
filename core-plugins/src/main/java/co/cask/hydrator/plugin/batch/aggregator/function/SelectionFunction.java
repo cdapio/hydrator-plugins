@@ -17,43 +17,18 @@
 package co.cask.hydrator.plugin.batch.aggregator.function;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
+
+import java.util.List;
 
 /**
- * Counts the number of times a specific column has a non-null value.
+ * Peforms selection. To perform selection on a group of {@link StructuredRecord}, {@link #beginFunction} is first
+ * called, followed by calls to {@link #operateOn}. Finally the {@link #finishFunction} should be invoked before getting
+ * the selected records from {@link #getSelectedRecords}.
  */
-public class Count implements AggregateFunction<Long> {
-  private final String fieldName;
-  private long count;
+public interface SelectionFunction extends RecordFunctionLifecycle {
 
-  public Count(String fieldName) {
-    this.fieldName = fieldName;
-  }
-
-  @Override
-  public void beginFunction() {
-    count = 0;
-  }
-
-  @Override
-  public void operateOn(StructuredRecord record) {
-    if (record.get(fieldName) != null) {
-      count++;
-    }
-  }
-
-  @Override
-  public void finishFunction() {
-    // no-op
-  }
-
-  @Override
-  public Long getAggregate() {
-    return count;
-  }
-
-  @Override
-  public Schema getOutputSchema() {
-    return Schema.of(Schema.Type.LONG);
-  }
+  /**
+   * @return {@link StructuredRecord} that is chosen based on the aggregate function.
+   */
+  List<StructuredRecord> getSelectedRecords();
 }

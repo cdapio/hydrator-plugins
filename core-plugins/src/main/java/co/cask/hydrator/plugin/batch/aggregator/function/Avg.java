@@ -41,13 +41,13 @@ public class Avg implements AggregateFunction<Double> {
   }
 
   @Override
-  public void beginAggregate() {
+  public void beginFunction() {
     avg = 0d;
     count = 0d;
   }
 
   @Override
-  public void update(StructuredRecord record) {
+  public void operateOn(StructuredRecord record) {
     Object val = record.get(fieldName);
     if (val == null) {
       return;
@@ -57,7 +57,12 @@ public class Avg implements AggregateFunction<Double> {
   }
 
   @Override
-  public Double finishAggregate() {
+  public void finishFunction() {
+    // no-op
+  }
+
+  @Override
+  public Double getAggregate() {
     if (count == 0) {
       // only happens if the field value was always null
       return null;

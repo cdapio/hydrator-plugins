@@ -61,19 +61,19 @@ public class DedupTestRun extends ETLBatchTestBase {
     ETLStage purchaseStage = new ETLStage("purchases", new ETLPlugin(
       "Table", BatchSource.PLUGIN_TYPE, ImmutableMap.of(Properties.BatchReadableWritable.NAME, purchasesDatasetName,
                                                         Properties.Table.PROPERTY_SCHEMA, purchaseSchema.toString()),
-                                          null));
+      null));
     ETLStage dedupStage = new ETLStage("dedupStage", new ETLPlugin(
       "Deduplicate", BatchAggregator.PLUGIN_TYPE, ImmutableMap.of("uniqueFields", "fname,lname",
-                                                            "filterField", "maxTs:max(ts)"), null));
+                                                                  "filterOperation", "first(ts)"), null));
 
     Schema sinkSchema = Schema.recordOf("sinkSchema", Schema.Field.of("fname", Schema.of(Schema.Type.STRING)),
                                         Schema.Field.of("lname", Schema.of(Schema.Type.STRING)),
-                                        Schema.Field.of("maxTs", Schema.of(Schema.Type.INT)),
+                                        Schema.Field.of("ts", Schema.of(Schema.Type.INT)),
                                         Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
     ETLStage sinkStage = new ETLStage("tableSink", new ETLPlugin(
       "Table", BatchSink.PLUGIN_TYPE, ImmutableMap.of(Properties.BatchReadableWritable.NAME, sinkDatasetName,
                                                       Properties.Table.PROPERTY_SCHEMA, sinkSchema.toString(),
-                                                      Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "maxTs"), null));
+                                                      Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ts"), null));
 
     ETLBatchConfig config = ETLBatchConfig.builder("* * * * *")
       .addStage(purchaseStage)

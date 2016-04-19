@@ -16,86 +16,151 @@
 package co.cask.hydrator.plugin.batch.aggregator;
 
 import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.plugin.batch.aggregator.function.First;
 import co.cask.hydrator.plugin.batch.aggregator.function.Last;
-import co.cask.hydrator.plugin.batch.aggregator.function.Max;
-import co.cask.hydrator.plugin.batch.aggregator.function.Min;
-import co.cask.hydrator.plugin.batch.aggregator.function.RecordAggregateFunction;
+import co.cask.hydrator.plugin.batch.aggregator.function.SelectionFunction;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import javax.annotation.Nullable;
 
 /**
- * Plugin Configuration
+ * Deduplicate Plugin Configuration.
  */
 public class DedupConfig extends AggregatorConfig {
 
-  @Description("Optional comma-separated list of fields to perform the distinct on. If none is given, each record " +
-    "will be taken as is. Otherwise, only fields in this list will be considered.")
+  @Description("Optional comma-separated list of fields to perform the deduplication on. If none is given, each " +
+    "record will be considered as a whole for deduplication. For example, if the input contains the records : " +
+    "'fname, lname, item, cost' and if we want to deduplicate the records by name, then this property should be set " +
+    "to 'fname,lname'")
   @Nullable
   private String uniqueFields;
 
-  @Description("Optional field that can be used to choose ")
+  @Description("Optional property that can be set to predictably choose one or more records from the set of records " +
+    "that needs to be de-duplicated. This property takes in a field name and the logical operation that needs to be " +
+    "performed on that field on the set of records. The syntax is 'function(field)'. For example, if we want to " +
+    "choose the record with maximum cost for the records with schema 'fname, lname, item, cost', then this field " +
+    "should be set as 'max(cost)'. Note, only one pair of field and function is allowed.")
   @Nullable
-  private String filterField;
+  private String filterOperation;
 
   public DedupConfig() {
     this.uniqueFields = "";
-    this.filterField = "";
+    this.filterOperation = "";
   }
 
   @VisibleForTesting
-  DedupConfig(String uniqueFields, String filterField) {
+  DedupConfig(String uniqueFields, String filterOperation) {
     this.uniqueFields = uniqueFields;
-    this.filterField = filterField;
+    this.filterOperation = filterOperation;
   }
 
   List<String> getUniqueFields() {
     List<String> uniqueFieldList = new ArrayList<>();
-    for (String field : Splitter.on(',').trimResults().split(uniqueFields)) {
-      uniqueFieldList.add(field);
+    if (!Strings.isNullOrEmpty(uniqueFields)) {
+      for (String field : Splitter.on(',').trimResults().split(uniqueFields)) {
+        uniqueFieldList.add(field);
+      }
     }
     return uniqueFieldList;
   }
 
   @Nullable
   DedupFunctionInfo getFilter() {
-    if (filterField == null) {
+    if (Strings.isNullOrEmpty(filterOperation)) {
       return null;
     }
 
-    List<FunctionInfo> aggregates = parseAggregation(filterField);
-    if (aggregates.size() != 1) {
-      throw new IllegalArgumentException("Only one filter field is allowed!");
+    int leftParanIdx = filterOperation.indexOf('(');
+    if (leftParanIdx < 0) {
+      throw new IllegalArgumentException(
+        String.format("Could not find '(' in the filterOperation property '%s'. Function must be specified as " +
+                        "function(field)", filterOperation));
     }
-    FunctionInfo aggregate = aggregates.get(0);
-    return new DedupFunctionInfo(aggregate.getName(), aggregate.getField(), aggregate.getFunction());
+
+    int rightParanIdx = filterOperation.indexOf(')', leftParanIdx + 1);
+    if (rightParanIdx < 0) {
+      throw new IllegalArgumentException(
+        String.format("Could not find ')' in the filterOperation property '%s'. Function must be specified as " +
+                        "function(field)", filterOperation));
+    }
+
+    String functionStr = filterOperation.substring(0, leftParanIdx).trim();
+    String field = filterOperation.substring(leftParanIdx + 1, rightParanIdx).trim();
+
+    Function function;
+    try {
+      function = Function.valueOf(functionStr.toUpperCase());
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException(String.format("Invalid function '%s'. Must be one of %s.",
+                                                       functionStr, Joiner.on(',').join(Function.values())));
+    }
+    return new DedupFunctionInfo(field, function);
   }
 
-  static class DedupFunctionInfo extends FunctionInfo {
+  static class DedupFunctionInfo {
+    private final String field;
+    private final Function function;
 
-    public DedupFunctionInfo(String name, String field, Function function) {
-      super(name, field, function);
+    public DedupFunctionInfo(String field, Function function) {
+      this.field = field;
+      this.function = function;
     }
 
-    public RecordAggregateFunction getAggregateFunction(Schema recordSchema) {
-      Schema.Field recordField = recordSchema.getField(getField());
-      Schema fieldSchema = recordField.getSchema();
-      switch (getFunction()) {
-        case MAX:
-          return new Max(getField(), fieldSchema);
-        case MIN:
-          return new Min(getField(), fieldSchema);
+    public String getField() {
+      return field;
+    }
+
+    public Function getFunction() {
+      return function;
+    }
+
+    public SelectionFunction getSelectionFunction() {
+      switch (function) {
         case FIRST:
-          return new First(getField(), fieldSchema);
+          return new First(field, null);
         case LAST:
-          return new Last(getField(), fieldSchema);
+          return new Last(field, null);
       }
-      throw new IllegalStateException("Unknown or Unsupported function type " + getFunction());
+      throw new IllegalStateException("Unknown function type " + function);
     }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+
+      DedupFunctionInfo that = (DedupFunctionInfo) o;
+      return Objects.equals(field, that.field) && Objects.equals(function, that.function);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(field, function);
+    }
+
+    @Override
+    public String toString() {
+      return "DedupFunctionInfo{" +
+        "field='" + field + '\'' +
+        ", function=" + function +
+        '}';
+    }
+  }
+
+  enum Function {
+    FIRST,
+    LAST,
+    MIN,
+    MAX
   }
 }

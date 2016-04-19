@@ -30,14 +30,16 @@ public class FirstTest {
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
     First count = new First("x", Schema.of(Schema.Type.INT));
 
-    count.beginAggregate();
-    count.update(StructuredRecord.builder(schema).set("x", 1).build());
-    count.update(StructuredRecord.builder(schema).set("x", 2).build());
-    count.update(StructuredRecord.builder(schema).set("x", 3).build());
-    Assert.assertEquals(1, count.finishAggregate());
+    count.beginFunction();
+    count.operateOn(StructuredRecord.builder(schema).set("x", 1).build());
+    count.operateOn(StructuredRecord.builder(schema).set("x", 2).build());
+    count.operateOn(StructuredRecord.builder(schema).set("x", 3).build());
+    count.finishFunction();
+    Assert.assertEquals(1, count.getAggregate());
 
-    count.beginAggregate();
-    count.update(StructuredRecord.builder(schema).set("x", 3).build());
-    Assert.assertEquals(3, count.finishAggregate());
+    count.beginFunction();
+    count.operateOn(StructuredRecord.builder(schema).set("x", 3).build());
+    count.finishFunction();
+    Assert.assertEquals(3, count.getAggregate());
   }
 }

@@ -30,17 +30,20 @@ public class CountAllTest {
     CountAll count = new CountAll();
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
 
-    count.beginAggregate();
-    count.update(StructuredRecord.builder(schema).set("x", 1).build());
-    Assert.assertEquals(1L, count.finishAggregate().longValue());
+    count.beginFunction();
+    count.operateOn(StructuredRecord.builder(schema).set("x", 1).build());
+    count.finishFunction();
+    Assert.assertEquals(1L, count.getAggregate().longValue());
 
-    count.beginAggregate();
-    Assert.assertEquals(0L, count.finishAggregate().longValue());
+    count.beginFunction();
+    count.finishFunction();
+    Assert.assertEquals(0L, count.getAggregate().longValue());
 
-    count.beginAggregate();
-    count.update(StructuredRecord.builder(schema).set("x", 1).build());
-    count.update(StructuredRecord.builder(schema).set("x", 1).build());
-    count.update(StructuredRecord.builder(schema).set("x", 1).build());
-    Assert.assertEquals(3L, count.finishAggregate().longValue());
+    count.beginFunction();
+    count.operateOn(StructuredRecord.builder(schema).set("x", 1).build());
+    count.operateOn(StructuredRecord.builder(schema).set("x", 1).build());
+    count.operateOn(StructuredRecord.builder(schema).set("x", 1).build());
+    count.finishFunction();
+    Assert.assertEquals(3L, count.getAggregate().longValue());
   }
 }

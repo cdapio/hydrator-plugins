@@ -39,15 +39,15 @@ public class GroupByAggregatorConfigTest {
                                                "smallestPurchase:min( price) , " +
                                                "largestPurchase :max(price ) ");
     Assert.assertEquals(ImmutableList.of("user", "item", "email"), config.getGroupByFields());
-    List<GroupByConfig.GroupByFunctionInfo> expected = ImmutableList.of(
-      new GroupByConfig.GroupByFunctionInfo("avgPrice", "price", GroupByConfig.Function.AVG),
-      new GroupByConfig.GroupByFunctionInfo("numPurchases", "*", GroupByConfig.Function.COUNT),
-      new GroupByConfig.GroupByFunctionInfo("numCoupons", "coupon", GroupByConfig.Function.COUNT),
-      new GroupByConfig.GroupByFunctionInfo("totalSpent", "price", GroupByConfig.Function.SUM),
-      new GroupByConfig.GroupByFunctionInfo("firstItem", "item", GroupByConfig.Function.FIRST),
-      new GroupByConfig.GroupByFunctionInfo("lastItem", "item", GroupByConfig.Function.LAST),
-      new GroupByConfig.GroupByFunctionInfo("smallestPurchase", "price", GroupByConfig.Function.MIN),
-      new GroupByConfig.GroupByFunctionInfo("largestPurchase", "price", GroupByConfig.Function.MAX)
+    List<GroupByConfig.FunctionInfo> expected = ImmutableList.of(
+      new GroupByConfig.FunctionInfo("avgPrice", "price", GroupByConfig.Function.AVG),
+      new GroupByConfig.FunctionInfo("numPurchases", "*", GroupByConfig.Function.COUNT),
+      new GroupByConfig.FunctionInfo("numCoupons", "coupon", GroupByConfig.Function.COUNT),
+      new GroupByConfig.FunctionInfo("totalSpent", "price", GroupByConfig.Function.SUM),
+      new GroupByConfig.FunctionInfo("firstItem", "item", GroupByConfig.Function.FIRST),
+      new GroupByConfig.FunctionInfo("lastItem", "item", GroupByConfig.Function.LAST),
+      new GroupByConfig.FunctionInfo("smallestPurchase", "price", GroupByConfig.Function.MIN),
+      new GroupByConfig.FunctionInfo("largestPurchase", "price", GroupByConfig.Function.MAX)
     );
     Assert.assertEquals(expected, config.getAggregates());
   }
