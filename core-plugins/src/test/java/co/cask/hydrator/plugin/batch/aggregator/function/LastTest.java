@@ -36,16 +36,13 @@ public class LastTest {
     last.operateOn(StructuredRecord.builder(schema).set("x", 1).build());
     last.operateOn(StructuredRecord.builder(schema).set("x", 2).build());
     last.operateOn(StructuredRecord.builder(schema).set("x", 3).build());
-    last.finishFunction();
     Assert.assertEquals(3, last.getAggregate());
 
     last.beginFunction();
     last.operateOn(StructuredRecord.builder(schema).set("x", 3).build());
-    last.finishFunction();
     Assert.assertEquals(3, last.getAggregate());
 
     last.beginFunction();
-    last.finishFunction();
     Assert.assertNull(last.getAggregate());
   }
 }

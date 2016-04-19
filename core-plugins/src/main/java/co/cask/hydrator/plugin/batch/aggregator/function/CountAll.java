@@ -36,11 +36,6 @@ public class CountAll implements AggregateFunction<Long> {
   }
 
   @Override
-  public void finishFunction() {
-    // no-op
-  }
-
-  @Override
   public Long getAggregate() {
     return count;
   }

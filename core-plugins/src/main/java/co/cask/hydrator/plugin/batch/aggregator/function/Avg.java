@@ -57,11 +57,6 @@ public class Avg implements AggregateFunction<Double> {
   }
 
   @Override
-  public void finishFunction() {
-    // no-op
-  }
-
-  @Override
   public Double getAggregate() {
     if (count == 0) {
       // only happens if the field value was always null

@@ -26,8 +26,7 @@ import javax.annotation.Nullable;
  * Base class for number based selection functions.
  * Allows subclasses to implement typed methods instead of implementing their own casting logic.
  * Guarantees that only methods for one type will be called for each aggregate. For example,
- * if {@link #operateOn(StructuredRecord)} is called, only {@link #operateOnInt(StructuredRecord)} will be called until
- * {@link #finishInt()} is called.
+ * if {@link #operateOn(StructuredRecord)} is called, only {@link #operateOnInt(int, StructuredRecord)} will be called.
  */
 public abstract class NumberSelection implements SelectionFunction {
   private final SelectionFunction delegate;
@@ -50,12 +49,10 @@ public abstract class NumberSelection implements SelectionFunction {
 
         @Override
         public void operateOn(StructuredRecord record) {
-          operateOnDouble(record);
-        }
-
-        @Override
-        public void finishFunction() {
-          finishDouble();
+          Number number = record.get(fieldName);
+          if (number != null) {
+            operateOnDouble(number.doubleValue(), record);
+          }
         }
       };
       return;
@@ -78,12 +75,10 @@ public abstract class NumberSelection implements SelectionFunction {
 
           @Override
           public void operateOn(StructuredRecord record) {
-            operateOnInt(record);
-          }
-
-          @Override
-          public void finishFunction() {
-            finishInt();
+            Integer value = record.get(fieldName);
+            if (value != null) {
+              operateOnInt(value, record);
+            }
           }
         };
         break;
@@ -101,12 +96,10 @@ public abstract class NumberSelection implements SelectionFunction {
 
           @Override
           public void operateOn(StructuredRecord record) {
-            operateOnLong(record);
-          }
-
-          @Override
-          public void finishFunction() {
-            finishLong();
+            Long value = record.get(fieldName);
+            if (value != null) {
+              operateOnLong(value, record);
+            }
           }
         };
         break;
@@ -124,12 +117,10 @@ public abstract class NumberSelection implements SelectionFunction {
 
           @Override
           public void operateOn(StructuredRecord record) {
-            operateOnFloat(record);
-          }
-
-          @Override
-          public void finishFunction() {
-            finishFloat();
+            Float value = record.get(fieldName);
+            if (value != null) {
+              operateOnFloat(value, record);
+            }
           }
         };
         break;
@@ -147,12 +138,10 @@ public abstract class NumberSelection implements SelectionFunction {
 
           @Override
           public void operateOn(StructuredRecord record) {
-            operateOnDouble(record);
-          }
-
-          @Override
-          public void finishFunction() {
-            finishDouble();
+            Double value = record.get(fieldName);
+            if (value != null) {
+              operateOnDouble(value, record);
+            }
           }
         };
         break;
@@ -173,11 +162,6 @@ public abstract class NumberSelection implements SelectionFunction {
   }
 
   @Override
-  public void finishFunction() {
-    delegate.finishFunction();
-  }
-
-  @Override
   public List<StructuredRecord> getSelectedRecords() {
     return delegate.getSelectedRecords();
   }
@@ -194,29 +178,13 @@ public abstract class NumberSelection implements SelectionFunction {
 
   protected abstract void startDouble();
 
-  protected abstract void operateOnInt(StructuredRecord record);
+  protected abstract void operateOnInt(int val, StructuredRecord record);
 
-  protected abstract void operateOnLong(StructuredRecord record);
+  protected abstract void operateOnLong(long val, StructuredRecord record);
 
-  protected abstract void operateOnFloat(StructuredRecord record);
+  protected abstract void operateOnFloat(float val, StructuredRecord record);
 
-  protected abstract void operateOnDouble(StructuredRecord record);
-
-  protected void finishDouble() {
-    // no-op
-  }
-
-  protected void finishInt() {
-    // no-op
-  }
-
-  protected void finishLong() {
-    // no-op
-  }
-
-  protected void finishFloat() {
-    // no-op
-  }
+  protected abstract void operateOnDouble(double val, StructuredRecord record);
 
   protected abstract List<StructuredRecord> getRecords();
 }

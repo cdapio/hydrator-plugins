@@ -51,11 +51,6 @@ public class Last<T> implements SelectionFunction, AggregateFunction<T> {
   }
 
   @Override
-  public void finishFunction() {
-    // no-op
-  }
-
-  @Override
   public T getAggregate() {
     return last;
   }

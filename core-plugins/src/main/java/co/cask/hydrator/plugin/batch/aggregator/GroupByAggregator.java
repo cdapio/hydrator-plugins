@@ -110,7 +110,6 @@ public class GroupByAggregator extends RecordAggregator {
     }
 
     for (Map.Entry<String, AggregateFunction> aggregateFunction : aggregateFunctions.entrySet()) {
-      aggregateFunction.getValue().finishFunction();
       builder.set(aggregateFunction.getKey(), aggregateFunction.getValue().getAggregate());
     }
     emitter.emit(builder.build());
@@ -118,14 +117,8 @@ public class GroupByAggregator extends RecordAggregator {
 
   @Path("outputSchema")
   public Schema getOutputSchema(GetSchemaRequest request) {
-    Schema inputSchema;
     try {
-      inputSchema = Schema.parseJson(request.inputSchema);
-    } catch (Exception e) {
-      throw new BadRequestException("Could not parse input schema " + request.inputSchema);
-    }
-    try {
-      return getOutputSchema(inputSchema, request.getGroupByFields(), request.getAggregates());
+      return getOutputSchema(request.inputSchema, request.getGroupByFields(), request.getAggregates());
     } catch (IllegalArgumentException e) {
       throw new BadRequestException(e.getMessage());
     }
@@ -208,6 +201,6 @@ public class GroupByAggregator extends RecordAggregator {
    * Endpoint request for output schema.
    */
   public static class GetSchemaRequest extends GroupByConfig {
-    private String inputSchema;
+    private Schema inputSchema;
   }
 }

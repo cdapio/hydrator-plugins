@@ -34,12 +34,10 @@ public class FirstTest {
     count.operateOn(StructuredRecord.builder(schema).set("x", 1).build());
     count.operateOn(StructuredRecord.builder(schema).set("x", 2).build());
     count.operateOn(StructuredRecord.builder(schema).set("x", 3).build());
-    count.finishFunction();
     Assert.assertEquals(1, count.getAggregate());
 
     count.beginFunction();
     count.operateOn(StructuredRecord.builder(schema).set("x", 3).build());
-    count.finishFunction();
     Assert.assertEquals(3, count.getAggregate());
   }
 }

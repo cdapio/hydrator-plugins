@@ -35,12 +35,10 @@ public class CountTest {
     count.beginFunction();
     count.operateOn(StructuredRecord.builder(schema).set("x", "abc").set("y", 5).build());
     count.operateOn(StructuredRecord.builder(schema).set("y", 3).build());
-    count.finishFunction();
     Assert.assertEquals(1L, count.getAggregate().longValue());
 
     count.beginFunction();
     count.operateOn(StructuredRecord.builder(schema).set("y", 1).build());
-    count.finishFunction();
     Assert.assertEquals(0L, count.getAggregate().longValue());
   }
 }

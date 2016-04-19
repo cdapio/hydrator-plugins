@@ -29,7 +29,6 @@ public class NumberTest {
     for (Number num : inputs) {
       func.operateOn(StructuredRecord.builder(schema).set("x", num).build());
     }
-    func.finishFunction();
     if (expected instanceof Float) {
       Assert.assertTrue(Math.abs((float) expected - (float) func.getAggregate()) < 0.000001f);
     } else if (expected instanceof Double) {

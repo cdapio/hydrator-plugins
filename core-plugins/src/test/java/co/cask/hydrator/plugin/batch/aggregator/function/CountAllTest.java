@@ -32,18 +32,15 @@ public class CountAllTest {
 
     count.beginFunction();
     count.operateOn(StructuredRecord.builder(schema).set("x", 1).build());
-    count.finishFunction();
     Assert.assertEquals(1L, count.getAggregate().longValue());
 
     count.beginFunction();
-    count.finishFunction();
     Assert.assertEquals(0L, count.getAggregate().longValue());
 
     count.beginFunction();
     count.operateOn(StructuredRecord.builder(schema).set("x", 1).build());
     count.operateOn(StructuredRecord.builder(schema).set("x", 1).build());
     count.operateOn(StructuredRecord.builder(schema).set("x", 1).build());
-    count.finishFunction();
     Assert.assertEquals(3L, count.getAggregate().longValue());
   }
 }

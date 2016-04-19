@@ -64,7 +64,7 @@ public class DedupTestRun extends ETLBatchTestBase {
       null));
     ETLStage dedupStage = new ETLStage("dedupStage", new ETLPlugin(
       "Deduplicate", BatchAggregator.PLUGIN_TYPE, ImmutableMap.of("uniqueFields", "fname,lname",
-                                                                  "filterOperation", "max(ts)"), null));
+                                                                  "filterOperation", "ts:max"), null));
 
     Schema sinkSchema = Schema.recordOf("sinkSchema", Schema.Field.of("fname", Schema.of(Schema.Type.STRING)),
                                         Schema.Field.of("lname", Schema.of(Schema.Type.STRING)),

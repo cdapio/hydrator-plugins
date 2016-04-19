@@ -36,9 +36,4 @@ public interface RecordFunctionLifecycle {
    * @param record {@link StructuredRecord} input record
    */
   void operateOn(StructuredRecord record);
-
-  /**
-   * Called once when the operation is complete.
-   */
-  void finishFunction();
 }

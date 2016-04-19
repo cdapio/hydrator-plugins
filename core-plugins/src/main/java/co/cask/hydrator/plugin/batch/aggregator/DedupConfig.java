@@ -45,9 +45,11 @@ public class DedupConfig extends AggregatorConfig {
 
   @Description("Optional property that can be set to predictably choose one or more records from the set of records " +
     "that needs to be de-duplicated. This property takes in a field name and the logical operation that needs to be " +
-    "performed on that field on the set of records. The syntax is 'function(field)'. For example, if we want to " +
+    "performed on that field on the set of records. The syntax is 'field:function'. For example, if we want to " +
     "choose the record with maximum cost for the records with schema 'fname, lname, item, cost', then this field " +
-    "should be set as 'max(cost)'. Note, only one pair of field and function is allowed.")
+    "should be set as 'cost:max'. Supported functions are - first, last, max, min. Note, only one pair of field " +
+    "and function is allowed. If this property is not set, one random record will be chosen from the group of " +
+    "'duplicate' records")
   @Nullable
   private String filterOperation;
 
@@ -78,31 +80,26 @@ public class DedupConfig extends AggregatorConfig {
       return null;
     }
 
-    int leftParanIdx = filterOperation.indexOf('(');
-    if (leftParanIdx < 0) {
-      throw new IllegalArgumentException(
-        String.format("Could not find '(' in the filterOperation property '%s'. Function must be specified as " +
-                        "function(field)", filterOperation));
+    List<String> filterParts = new ArrayList<>();
+    for(String filterPart : Splitter.on(':').trimResults().split(filterOperation)) {
+      filterParts.add(filterPart);
     }
 
-    int rightParanIdx = filterOperation.indexOf(')', leftParanIdx + 1);
-    if (rightParanIdx < 0) {
-      throw new IllegalArgumentException(
-        String.format("Could not find ')' in the filterOperation property '%s'. Function must be specified as " +
-                        "function(field)", filterOperation));
+    if (filterParts.size() != 2) {
+      throw new IllegalArgumentException(String.format("Invalid filter operation. It should be of format " +
+                                                         "'fieldName:functionName'. But got : %s", filterOperation));
     }
-
-    String functionStr = filterOperation.substring(0, leftParanIdx).trim();
-    String field = filterOperation.substring(leftParanIdx + 1, rightParanIdx).trim();
 
     Function function;
+    String fieldName = filterParts.get(0);
+    String functionStr = filterParts.get(1);
     try {
       function = Function.valueOf(functionStr.toUpperCase());
     } catch (IllegalArgumentException e) {
       throw new IllegalArgumentException(String.format("Invalid function '%s'. Must be one of %s.",
                                                        functionStr, Joiner.on(',').join(Function.values())));
     }
-    return new DedupFunctionInfo(field, function);
+    return new DedupFunctionInfo(fieldName, function);
   }
 
   static class DedupFunctionInfo {

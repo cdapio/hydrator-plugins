@@ -59,8 +59,7 @@ public class MinSelection extends NumberSelection {
   }
 
   @Override
-  protected void operateOnInt(StructuredRecord record) {
-    Integer current = record.get(getFieldName());
+  protected void operateOnInt(int current, StructuredRecord record) {
     minInt = minInt == null ? current : Math.min(minInt, current);
     if (Objects.equals(minInt, current)) {
       minRecord = record;
@@ -68,8 +67,7 @@ public class MinSelection extends NumberSelection {
   }
 
   @Override
-  protected void operateOnLong(StructuredRecord record) {
-    Long current = record.get(getFieldName());
+  protected void operateOnLong(long current, StructuredRecord record) {
     minLong = minLong == null ? current : Math.min(minLong, current);
     if (Objects.equals(minLong, current)) {
       minRecord = record;
@@ -77,8 +75,7 @@ public class MinSelection extends NumberSelection {
   }
 
   @Override
-  protected void operateOnFloat(StructuredRecord record) {
-    Float current = record.get(getFieldName());
+  protected void operateOnFloat(float current, StructuredRecord record) {
     minFloat = minFloat == null ? current : Math.min(minFloat, current);
     if (Objects.equals(minFloat, current)) {
       minRecord = record;
@@ -86,8 +83,7 @@ public class MinSelection extends NumberSelection {
   }
 
   @Override
-  protected void operateOnDouble(StructuredRecord record) {
-    Double current = record.get(getFieldName());
+  protected void operateOnDouble(double current, StructuredRecord record) {
     minDouble = minDouble == null ? current : Math.min(minDouble, current);
     if (Objects.equals(minDouble, current)) {
       minRecord = record;

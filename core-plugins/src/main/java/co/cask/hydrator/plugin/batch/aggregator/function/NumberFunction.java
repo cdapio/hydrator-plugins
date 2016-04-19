@@ -25,8 +25,7 @@ import javax.annotation.Nullable;
  * Base class for number based aggregate functions.
  * Allows subclasses to implement typed methods instead of implementing their own casting logic.
  * Guarantees that only methods for one type will be called for each aggregate. For example,
- * if {@link #updateInt(int)} is called, only {@link #updateInt(int)} will be called until {@link #finishInt()}
- * is called.
+ * if {@link #updateInt(int)} is called, only {@link #updateInt(int)} will be called.
  */
 public abstract class NumberFunction implements AggregateFunction<Number> {
   private final AggregateFunction<? extends Number> typedDelegate;
@@ -46,11 +45,6 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
           if (val != null) {
             updateDouble(val.doubleValue());
           }
-        }
-
-        @Override
-        public void finishFunction() {
-          finishDouble();
         }
 
         @Override
@@ -85,11 +79,6 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
           }
 
           @Override
-          public void finishFunction() {
-            finishInt();
-          }
-
-          @Override
           public Integer getAggregate() {
             return getInt();
           }
@@ -113,11 +102,6 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
             if (val != null) {
               updateLong(val);
             }
-          }
-
-          @Override
-          public void finishFunction() {
-            finishLong();
           }
 
           @Override
@@ -147,11 +131,6 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
           }
 
           @Override
-          public void finishFunction() {
-            finishFloat();
-          }
-
-          @Override
           public Float getAggregate() {
             return getFloat();
           }
@@ -175,11 +154,6 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
             if (val != null) {
               updateDouble(val);
             }
-          }
-
-          @Override
-          public void finishFunction() {
-            finishDouble();
           }
 
           @Override
@@ -210,11 +184,6 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
   }
 
   @Override
-  public void finishFunction() {
-    typedDelegate.finishFunction();
-  }
-
-  @Override
   public Number getAggregate() {
     return typedDelegate.getAggregate();
   }
@@ -239,22 +208,6 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
   protected abstract void updateFloat(float val);
 
   protected abstract void updateDouble(double val);
-
-  protected void finishDouble() {
-    // no-op
-  }
-
-  protected void finishInt() {
-    // no-op
-  }
-
-  protected void finishLong() {
-    // no-op
-  }
-
-  protected void finishFloat() {
-    // no-op
-  }
 
   @Nullable
   protected abstract Integer getInt();

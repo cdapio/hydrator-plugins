@@ -59,8 +59,7 @@ public class MaxSelection extends NumberSelection {
   }
 
   @Override
-  protected void operateOnInt(StructuredRecord record) {
-    Integer current = record.get(getFieldName());
+  protected void operateOnInt(int current, StructuredRecord record) {
     maxInt = maxInt == null ? current : Math.max(maxInt, current);
     if (Objects.equals(maxInt, current)) {
       maxRecord = record;
@@ -68,8 +67,7 @@ public class MaxSelection extends NumberSelection {
   }
 
   @Override
-  protected void operateOnLong(StructuredRecord record) {
-    Long current = record.get(getFieldName());
+  protected void operateOnLong(long current, StructuredRecord record) {
     maxLong = maxLong == null ? current : Math.max(maxLong, current);
     if (Objects.equals(maxLong, current)) {
       maxRecord = record;
@@ -77,8 +75,7 @@ public class MaxSelection extends NumberSelection {
   }
 
   @Override
-  protected void operateOnFloat(StructuredRecord record) {
-    Float current = record.get(getFieldName());
+  protected void operateOnFloat(float current, StructuredRecord record) {
     maxFloat = maxFloat == null ? current : Math.max(maxFloat, current);
     if (Objects.equals(maxFloat, current)) {
       maxRecord = record;
@@ -86,8 +83,7 @@ public class MaxSelection extends NumberSelection {
   }
 
   @Override
-  protected void operateOnDouble(StructuredRecord record) {
-    Double current = record.get(getFieldName());
+  protected void operateOnDouble(double current, StructuredRecord record) {
     maxDouble = maxDouble == null ? current : Math.max(maxDouble, current);
     if (Objects.equals(maxDouble, current)) {
       maxRecord = record;

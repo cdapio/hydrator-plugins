@@ -115,11 +115,9 @@ public class DedupAggregator extends RecordAggregator {
         selectionFunction.operateOn(iterator.next());
       }
 
-      selectionFunction.finishFunction();
       List<StructuredRecord> outputRecords = selectionFunction.getSelectedRecords();
       for (StructuredRecord outputRecord : outputRecords) {
         Schema outputSchema = getOutputSchema(outputRecord.getSchema());
-        validateSchema(outputSchema, uniqueFields, filterFunction);
         StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
         for (Schema.Field field : outputRecord.getSchema().getFields()) {
           builder.set(field.getName(), outputRecord.get(field.getName()));
@@ -131,14 +129,8 @@ public class DedupAggregator extends RecordAggregator {
 
   @Path("outputSchema")
   public Schema getOutputSchema(GetSchemaRequest request) {
-    Schema inputSchema;
     try {
-      inputSchema = Schema.parseJson(request.inputSchema);
-    } catch (Exception e) {
-      throw new BadRequestException("Could not parse input schema " + request.inputSchema);
-    }
-    try {
-      return getOutputSchema(inputSchema);
+      return getOutputSchema(request.inputSchema);
     } catch (IllegalArgumentException e) {
       throw new BadRequestException(e.getMessage(), e);
     }
@@ -165,7 +157,7 @@ public class DedupAggregator extends RecordAggregator {
    * Endpoint request for output schema.
    */
   public static class GetSchemaRequest extends DedupConfig {
-    private String inputSchema;
+    private Schema inputSchema;
   }
 
   private void validateSchema(Schema inputSchema, List<String> uniqueFields, DedupConfig.DedupFunctionInfo function) {

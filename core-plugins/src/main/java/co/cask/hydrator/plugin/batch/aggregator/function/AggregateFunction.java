@@ -22,8 +22,7 @@ import co.cask.cdap.api.data.schema.Schema;
 /**
  * Performs an aggregation. For each group that needs an aggregate to be calculated, the {@link #beginFunction()}
  * method is called first. After that, one or more calls to {@link #operateOn(StructuredRecord)} are made, one call for
- * each value in the group. Finally, {@link #finishFunction()} is called to finish the operation and
- * {@link #getAggregate()} can be used to retrieve the aggregate.
+ * each value in the group. Finally, {@link #getAggregate()} is called to retrieve the aggregate.
  *
  * todo: convert this to a plugin
  *
