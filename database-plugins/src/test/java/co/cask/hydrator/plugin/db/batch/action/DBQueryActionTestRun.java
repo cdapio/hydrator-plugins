@@ -46,24 +46,24 @@ public class DBQueryActionTestRun extends DatabasePluginTestBase {
     // create a table that the action will truncate at the end of the run
     try (Connection connection = getConnection()) {
       try (Statement statement = connection.createStatement()) {
-        statement.execute("create table \"actionTest\" (x int)");
+        statement.execute("create table \"actionTest\" (x int, day varchar(10))");
       }
       try (Statement statement = connection.createStatement()) {
-        statement.execute("insert into \"actionTest\" values (1)");
+        statement.execute("insert into \"actionTest\" values (1, '1970-01-01')");
       }
     }
 
     ETLStage source = new ETLStage("source", MockSource.getPlugin("actionInput"));
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin("actionOutput"));
-    ETLStage action = new ETLStage("action",
-                                   new ETLPlugin("DatabaseQuery",
-                                                 PostAction.PLUGIN_TYPE,
-                                                 ImmutableMap.<String, String>builder()
-                                                   .put("connectionString", getConnectionURL())
-                                                   .put("jdbcPluginName", "hypersql")
-                                                   .put("query", "truncate table \"actionTest\"")
-                                                   .build(),
-                                                 null));
+    ETLStage action = new ETLStage("action", new ETLPlugin(
+      "DatabaseQuery",
+      PostAction.PLUGIN_TYPE,
+      ImmutableMap.<String, String>builder()
+        .put("connectionString", getConnectionURL())
+        .put("jdbcPluginName", "hypersql")
+        .put("query", "delete from \"actionTest\" where day = '${runtime(yyyy-MM-dd,0m,UTC)}'")
+        .build(),
+      null));
 
     ETLBatchConfig config = ETLBatchConfig.builder("* * * * *")
       .addStage(source)
@@ -77,7 +77,7 @@ public class DBQueryActionTestRun extends DatabasePluginTestBase {
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(ETLWorkflow.NAME);
-    workflowManager.start();
+    workflowManager.start(ImmutableMap.of("logical.start.time", "0"));
     workflowManager.waitForFinish(5, TimeUnit.MINUTES);
 
     try (Connection connection = getConnection()) {

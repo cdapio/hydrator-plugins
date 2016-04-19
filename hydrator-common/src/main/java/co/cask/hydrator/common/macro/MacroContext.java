@@ -17,8 +17,6 @@
 package co.cask.hydrator.common.macro;
 
 import java.util.Map;
-import java.util.TimeZone;
-import javax.annotation.Nullable;
 
 /**
  * Context for macro substitution.
@@ -29,12 +27,6 @@ public interface MacroContext {
    * @return the logical start time of the pipeline run.
    */
   long getLogicalStartTime();
-
-  /**
-   * @return the user specified timezone for time based macros. Null if none was specified.
-   */
-  @Nullable
-  TimeZone getTimeZone();
 
   /**
    * @return runtime arguments of the pipeline run.

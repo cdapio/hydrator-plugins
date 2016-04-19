@@ -19,8 +19,6 @@ package co.cask.hydrator.common.macro;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.TimeZone;
-
 /**
  */
 public class MacroConfigTest {
@@ -28,7 +26,7 @@ public class MacroConfigTest {
 
   @Test
   public void testNoOp() throws InvalidMacroException {
-    MacroContext macroContext = new DefaultMacroContext(0, TimeZone.getTimeZone("UTC"));
+    MacroContext macroContext = new DefaultMacroContext(0);
     String value = "abc123";
     TestConfig testConfig = new TestConfig(value);
     testConfig.substituteMacros(macroContext);
@@ -39,28 +37,28 @@ public class MacroConfigTest {
 
   @Test
   public void testSubstitution() throws InvalidMacroException {
-    MacroContext macroContext = new DefaultMacroContext(0, TimeZone.getTimeZone("UTC"));
+    MacroContext macroContext = new DefaultMacroContext(0);
 
-    TestConfig testConfig = new TestConfig("${runtime(yyyy-MM-dd'T'HH:mm:ss)}");
+    TestConfig testConfig = new TestConfig("${runtime(yyyy-MM-dd'T'HH:mm:ss,0s,UTC)}");
     testConfig.substituteMacros(macroContext);
     Assert.assertEquals("1970-01-01T00:00:00", testConfig.stringField);
 
-    testConfig = new TestConfig("${runtime(yyyy)}${runtime(MM)}");
+    testConfig = new TestConfig("${runtime(yyyy,0s,UTC)}${runtime(MM,0s,UTC)}");
     testConfig.substituteMacros(macroContext);
     Assert.assertEquals("197001", testConfig.stringField);
 
-    testConfig = new TestConfig("abc-${runtime(yyyy)}-123");
+    testConfig = new TestConfig("abc-${runtime(yyyy,0s,UTC)}-123");
     testConfig.substituteMacros(macroContext);
     Assert.assertEquals("abc-1970-123", testConfig.stringField);
 
-    testConfig = new TestConfig("$${{}}{${runtime(yyyy)}}}{}$$");
+    testConfig = new TestConfig("$${{}}{${runtime(yyyy,0s,UTC)}}}{}$$");
     testConfig.substituteMacros(macroContext);
     Assert.assertEquals("$${{}}{1970}}{}$$", testConfig.stringField);
   }
 
   @Test
   public void testUnenclosedMacro() throws InvalidMacroException {
-    MacroContext macroContext = new DefaultMacroContext(0, TimeZone.getTimeZone("UTC"));
+    MacroContext macroContext = new DefaultMacroContext(0);
 
     TestConfig testConfig = new TestConfig("${runtime(yyyy-MM-dd'T'HH:mm:ss)");
     testConfig.substituteMacros(macroContext);
@@ -69,7 +67,7 @@ public class MacroConfigTest {
 
   @Test(expected = InvalidMacroException.class)
   public void testInvalidPattern() throws InvalidMacroException {
-    MacroContext macroContext = new DefaultMacroContext(0, TimeZone.getTimeZone("UTC"));
+    MacroContext macroContext = new DefaultMacroContext(0);
 
     TestConfig testConfig = new TestConfig("${runtime(asdf)}");
     testConfig.substituteMacros(macroContext);
@@ -77,7 +75,7 @@ public class MacroConfigTest {
 
   @Test
   public void testNullValueOK() throws InvalidMacroException {
-    MacroContext macroContext = new DefaultMacroContext(0, TimeZone.getTimeZone("UTC"));
+    MacroContext macroContext = new DefaultMacroContext(0);
 
     TestConfig testConfig = new TestConfig(null);
     testConfig.substituteMacros(macroContext);
@@ -86,11 +84,11 @@ public class MacroConfigTest {
 
   @Test
   public void testFieldSelection() throws InvalidMacroException {
-    MacroContext macroContext = new DefaultMacroContext(0, TimeZone.getTimeZone("UTC"));
+    MacroContext macroContext = new DefaultMacroContext(0);
 
-    TestConfig testConfig = new TestConfig("${runtime(yyyy-MM-dd'T'HH:mm:ss)}");
+    TestConfig testConfig = new TestConfig("${runtime(yyyy-MM-dd'T'HH:mm:ss,0m,UTC)}");
     testConfig.substituteMacros(macroContext, "nonexistant");
-    Assert.assertEquals("${runtime(yyyy-MM-dd'T'HH:mm:ss)}", testConfig.stringField);
+    Assert.assertEquals("${runtime(yyyy-MM-dd'T'HH:mm:ss,0m,UTC)}", testConfig.stringField);
     testConfig.substituteMacros(macroContext, "stringField");
     Assert.assertEquals("1970-01-01T00:00:00", testConfig.stringField);
   }

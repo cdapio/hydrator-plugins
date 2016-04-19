@@ -17,9 +17,12 @@
 package co.cask.hydrator.common.macro;
 
 import co.cask.hydrator.common.TimeParser;
+import com.google.common.annotations.VisibleForTesting;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -29,6 +32,7 @@ import javax.annotation.Nullable;
  * empty string
  * format
  * format,offset
+ * format,offset,timezone
  *
  * If no format is given, the runtime in milliseconds will be used.
  * Otherwise, the format is expected to be a SimpleDateFormat that will be used to format the runtime.
@@ -40,6 +44,17 @@ import javax.annotation.Nullable;
  * the whole macro evaluates to 20.5 hours before midnight of new years 2016.
  */
 public class RuntimeMacro implements Macro {
+  private static final Pattern COMMA = Pattern.compile(",");
+  private final TimeZone defaultTimeZone;
+
+  public RuntimeMacro() {
+    this(TimeZone.getDefault());
+  }
+
+  @VisibleForTesting
+  RuntimeMacro(TimeZone defaultTimeZone) {
+    this.defaultTimeZone = defaultTimeZone;
+  }
 
   @Override
   public String getValue(@Nullable String arguments, MacroContext context) {
@@ -48,20 +63,28 @@ public class RuntimeMacro implements Macro {
       return String.valueOf(runtime);
     }
 
+
+    SimpleDateFormat dateFormat;
     long offset = 0;
-    String format = arguments;
-    int commaIndex = arguments.lastIndexOf(',');
-    if (commaIndex > 0) {
-      TimeParser timeParser = new TimeParser(runtime);
-      offset = timeParser.parseRuntime(arguments.substring(commaIndex + 1));
-      format = arguments.substring(0, commaIndex);
+    TimeZone timeZone = defaultTimeZone;
+    String[] args = COMMA.split(arguments);
+
+    if (args.length > 3) {
+      throw new IllegalArgumentException("runtime macro supports at most 3 arguments - format, offset, and timezone. " +
+                                           "Formats containing a comma are not supported.");
     }
 
-    Date date = new Date(runtime - offset);
-    SimpleDateFormat simpleDateFormat = new SimpleDateFormat(format);
-    if (context.getTimeZone() != null) {
-      simpleDateFormat.setTimeZone(context.getTimeZone());
+    dateFormat = new SimpleDateFormat(args[0]);
+    if (args.length > 1) {
+      TimeParser timeParser = new TimeParser(runtime);
+      offset = timeParser.parseRuntime(args[1].trim());
+      if (args.length > 2) {
+        timeZone = TimeZone.getTimeZone(args[2].trim());
+      }
     }
-    return simpleDateFormat.format(date);
+    dateFormat.setTimeZone(timeZone);
+
+    Date date = new Date(runtime - offset);
+    return dateFormat.format(date);
   }
 }

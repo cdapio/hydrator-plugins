@@ -19,36 +19,26 @@ package co.cask.hydrator.common.macro;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.TimeZone;
-import javax.annotation.Nullable;
 
 /**
  * Default implementation of MacroContext.
  */
 public class DefaultMacroContext implements MacroContext {
   private final long logicalStartTime;
-  private final TimeZone timeZone;
   private final Map<String, String> runtimeArguments;
 
-  public DefaultMacroContext(long logicalStartTime, TimeZone timeZone) {
-    this(logicalStartTime, timeZone, new HashMap<String, String>());
+  public DefaultMacroContext(long logicalStartTime) {
+    this(logicalStartTime, new HashMap<String, String>());
   }
 
-  public DefaultMacroContext(long logicalStartTime, TimeZone timeZone, Map<String, String> runtimeArguments) {
+  public DefaultMacroContext(long logicalStartTime, Map<String, String> runtimeArguments) {
     this.logicalStartTime = logicalStartTime;
-    this.timeZone = timeZone;
     this.runtimeArguments = Collections.unmodifiableMap(runtimeArguments);
   }
 
   @Override
   public long getLogicalStartTime() {
     return logicalStartTime;
-  }
-
-  @Nullable
-  @Override
-  public TimeZone getTimeZone() {
-    return timeZone;
   }
 
   @Override
