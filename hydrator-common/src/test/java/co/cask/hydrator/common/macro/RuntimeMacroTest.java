@@ -28,7 +28,7 @@ public class RuntimeMacroTest {
 
   @Test
   public void testSubstitution() {
-    RuntimeMacro runtimeMacro = new RuntimeMacro();
+    RuntimeMacro runtimeMacro = new RuntimeMacro(TimeZone.getTimeZone("UTC"));
     MacroContext macroContext = new DefaultMacroContext(0);
 
     Assert.assertEquals("1970-01-01", runtimeMacro.getValue("yyyy-MM-dd", macroContext));
@@ -46,10 +46,17 @@ public class RuntimeMacroTest {
   }
 
   @Test
-  public void testTimeZone() {
-    RuntimeMacro runtimeMacro = new RuntimeMacro();
+  public void testOffset() {
+    RuntimeMacro runtimeMacro = new RuntimeMacro(TimeZone.getTimeZone("UTC"));
     MacroContext macroContext = new DefaultMacroContext(0);
-    Assert.assertEquals("1969-12-31,15:30:00", runtimeMacro.getValue("yyyy-MM-dd','HH:mm:ss ,30m, PST ", macroContext));
+    Assert.assertEquals("1969-12-31T23:30:00", runtimeMacro.getValue("yyyy-MM-dd'T'HH:mm:ss,30m", macroContext));
+  }
+
+  @Test
+  public void testTimeZone() {
+    RuntimeMacro runtimeMacro = new RuntimeMacro(TimeZone.getTimeZone("PST"));
+    MacroContext macroContext = new DefaultMacroContext(0);
+    Assert.assertEquals("1969-12-31T15:30:00", runtimeMacro.getValue("yyyy-MM-dd'T'HH:mm:ss,30m, PST ", macroContext));
   }
 
 }
