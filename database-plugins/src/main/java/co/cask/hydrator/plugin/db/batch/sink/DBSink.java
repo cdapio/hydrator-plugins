@@ -29,7 +29,6 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
-import co.cask.hydrator.common.macro.DefaultMacroContext;
 import co.cask.hydrator.plugin.DBConfig;
 import co.cask.hydrator.plugin.DBManager;
 import co.cask.hydrator.plugin.DBRecord;
@@ -214,8 +213,10 @@ public class DBSink extends BatchSink<StructuredRecord, DBRecord, NullWritable> 
       conf.put(ETLDBOutputFormat.AUTO_COMMIT_ENABLED, String.valueOf(dbSinkConfig.getEnableAutoCommit()));
       conf.put(DBConfiguration.DRIVER_CLASS_PROPERTY, driverClass.getName());
       conf.put(DBConfiguration.URL_PROPERTY, dbSinkConfig.connectionString);
-      if (dbSinkConfig.user != null && dbSinkConfig.password != null) {
+      if (dbSinkConfig.user != null) {
         conf.put(DBConfiguration.USERNAME_PROPERTY, dbSinkConfig.user);
+      }
+      if (dbSinkConfig.password != null) {
         conf.put(DBConfiguration.PASSWORD_PROPERTY, dbSinkConfig.password);
       }
       conf.put(DBConfiguration.OUTPUT_TABLE_NAME_PROPERTY, dbSinkConfig.tableName);
