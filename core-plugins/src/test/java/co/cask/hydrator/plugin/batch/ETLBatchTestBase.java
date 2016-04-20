@@ -130,7 +130,9 @@ public class ETLBatchTestBase extends TestBase {
     );
     // add artifact for batch sources and sinks
     addPluginArtifact(NamespaceId.DEFAULT.artifact("core-plugins", "1.0.0"), parents,
-                      KVTableSource.class, StreamBatchSource.class, TableSource.class,
+                      KVTableSource.class,
+                      StreamBatchSource.class,
+                      TableSource.class,
                       TimePartitionedFileSetDatasetAvroSource.class,
                       TimePartitionedFileSetDatasetParquetSource.class, AvroParquetInputFormat.class,
                       BatchCubeSink.class, KVTableSink.class, TableSink.class,
