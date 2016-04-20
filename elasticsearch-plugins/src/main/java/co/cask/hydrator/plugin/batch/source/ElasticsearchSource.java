@@ -19,15 +19,18 @@ package co.cask.hydrator.plugin.batch.source;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
-import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
+import co.cask.hydrator.common.ReferenceBatchSource;
+import co.cask.hydrator.common.ReferencePluginConfig;
+import co.cask.hydrator.common.SourceInputFormatProvider;
 import co.cask.hydrator.plugin.batch.ESProperties;
 import co.cask.hydrator.plugin.batch.RecordWritableConverter;
 import org.apache.hadoop.conf.Configuration;
@@ -50,7 +53,7 @@ import java.io.IOException;
 @Name("Elasticsearch")
 @Description("Elasticsearch Batch Source pulls documents from Elasticsearch " +
   "according to the query specified by the user and converts each document to a structured record ")
-public class ElasticsearchSource extends BatchSource<Text, MapWritable, StructuredRecord> {
+public class ElasticsearchSource extends ReferenceBatchSource<Text, MapWritable, StructuredRecord> {
   private static final String INDEX_DESCRIPTION = "The name of the index to query.";
   private static final String TYPE_DESCRIPTION = "The name of the type where the data is stored.";
   private static final String QUERY_DESCRIPTION = "The query to use to import data from the specified index. " +
@@ -63,6 +66,7 @@ public class ElasticsearchSource extends BatchSource<Text, MapWritable, Structur
   private Schema schema;
 
   public ElasticsearchSource(ESConfig config) {
+    super(config);
     this.config = config;
   }
 
@@ -87,15 +91,16 @@ public class ElasticsearchSource extends BatchSource<Text, MapWritable, Structur
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
-    Job job = context.getHadoopJob();
-    job.setSpeculativeExecution(false);
+    Job job = Job.getInstance();
     Configuration conf = job.getConfiguration();
+    conf.clear();
+    job.setSpeculativeExecution(false);
     conf.set("es.nodes", config.hostname);
     conf.set("es.resource", getResource());
     conf.set("es.query", config.query);
-    job.setInputFormatClass(EsInputFormat.class);
     job.setMapOutputKeyClass(Text.class);
     job.setMapOutputValueClass(MapWritable.class);
+    context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(EsInputFormat.class, conf)));
   }
 
   @Override
@@ -114,7 +119,7 @@ public class ElasticsearchSource extends BatchSource<Text, MapWritable, Structur
   /**
    * Config class for Batch {@link ElasticsearchSource}.
    */
-  public static class ESConfig extends PluginConfig {
+  public static class ESConfig extends ReferencePluginConfig {
     @Name(ESProperties.HOST)
     @Description(HOST_DESCRIPTION)
     private String hostname;
@@ -135,7 +140,8 @@ public class ElasticsearchSource extends BatchSource<Text, MapWritable, Structur
     @Description(SCHEMA_DESCRIPTION)
     private String schema;
 
-    public ESConfig(String hostname, String index, String type, String query, String schema) {
+    public ESConfig(String referenceName, String hostname, String index, String type, String query, String schema) {
+      super(referenceName);
       this.hostname = hostname;
       this.index = index;
       this.type = type;

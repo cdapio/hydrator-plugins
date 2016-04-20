@@ -20,13 +20,14 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.api.plugin.PluginProperties;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.realtime.RealtimeContext;
 import co.cask.cdap.etl.api.realtime.RealtimeSource;
 import co.cask.cdap.etl.api.realtime.SourceState;
+import co.cask.hydrator.common.ReferencePluginConfig;
+import co.cask.hydrator.common.ReferenceRealtimeSource;
 import co.cask.hydrator.plugin.realtime.jms.JmsProvider;
 import co.cask.hydrator.plugin.realtime.jms.JndiBasedJmsProvider;
 import com.google.common.base.Preconditions;
@@ -60,7 +61,7 @@ import javax.naming.Context;
 @Plugin(type = "realtimesource")
 @Name("JMS")
 @Description("JMS real-time source: emits a record with a field 'message' of type String.")
-public class JmsSource extends RealtimeSource<StructuredRecord> {
+public class JmsSource extends ReferenceRealtimeSource<StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(JmsSource.class);
 
   private static final Gson GSON = new Gson();
@@ -102,6 +103,7 @@ public class JmsSource extends RealtimeSource<StructuredRecord> {
    * @param config The configuration needed for the JMS source.
    */
   public JmsSource(JmsPluginConfig config) {
+    super(config);
     this.config = config;
   }
 
@@ -327,7 +329,7 @@ public class JmsSource extends RealtimeSource<StructuredRecord> {
   /**
    * Config class for {@link JmsSource}.
    */
-  public static class JmsPluginConfig extends PluginConfig {
+  public static class JmsPluginConfig extends ReferencePluginConfig {
     @Name(JMS_DESTINATION_NAME)
     @Description("Name of the destination from which to retrieve messages.")
     private String destinationName;
@@ -370,13 +372,14 @@ public class JmsSource extends RealtimeSource<StructuredRecord> {
     public String customProperties;
 
     public JmsPluginConfig() {
-      this(null, null, null, 50, DEFAULT_CONNECTION_FACTORY, Context.INITIAL_CONTEXT_FACTORY, JMS_PROVIDER, null);
+      this("", null, null, null, 50, DEFAULT_CONNECTION_FACTORY, Context.INITIAL_CONTEXT_FACTORY, JMS_PROVIDER, null);
     }
 
-    public JmsPluginConfig(String destinationName, String initialContextFactory, String providerUrl,
-                           @Nullable Integer messagesToReceive, @Nullable String connectionFactoryName,
-                           @Nullable String jmsPluginName, @Nullable String jmsPluginType,
-                           @Nullable String customProperties) {
+    public JmsPluginConfig(String referenceName, String destinationName, String initialContextFactory,
+                           String providerUrl, @Nullable Integer messagesToReceive,
+                           @Nullable String connectionFactoryName, @Nullable String jmsPluginName,
+                           @Nullable String jmsPluginType, @Nullable String customProperties) {
+      super(referenceName);
       this.destinationName = destinationName;
       if (messagesToReceive != null) {
         this.messagesToReceive = messagesToReceive;

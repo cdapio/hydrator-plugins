@@ -19,15 +19,18 @@ package co.cask.hydrator.plugin.batch.source;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
-import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
+import co.cask.hydrator.common.ReferenceBatchSource;
+import co.cask.hydrator.common.ReferencePluginConfig;
+import co.cask.hydrator.common.SourceInputFormatProvider;
 import co.cask.hydrator.plugin.BSONConverter;
 import com.google.common.base.Strings;
 import com.mongodb.hadoop.MongoInputFormat;
@@ -35,7 +38,6 @@ import com.mongodb.hadoop.splitter.MongoSplitter;
 import com.mongodb.hadoop.splitter.StandaloneMongoSplitter;
 import com.mongodb.hadoop.util.MongoConfigUtil;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapreduce.Job;
 import org.bson.BSONObject;
 
 import java.io.IOException;
@@ -49,12 +51,13 @@ import javax.annotation.Nullable;
 @Name("MongoDB")
 @Description("MongoDB Batch Source will read documents from MongoDB and convert each document " +
   "into a StructuredRecord with the help of the specified Schema. ")
-public class MongoDBBatchSource extends BatchSource<Object, BSONObject, StructuredRecord> {
+public class MongoDBBatchSource extends ReferenceBatchSource<Object, BSONObject, StructuredRecord> {
 
   private final MongoDBConfig config;
   private BSONConverter bsonConverter;
 
   public MongoDBBatchSource(MongoDBConfig config) {
+    super(config);
     this.config = config;
   }
 
@@ -71,8 +74,8 @@ public class MongoDBBatchSource extends BatchSource<Object, BSONObject, Structur
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
-    Job job = context.getHadoopJob();
-    Configuration conf = job.getConfiguration();
+    Configuration conf = new Configuration();
+    conf.clear();
     MongoConfigUtil.setInputFormat(conf, MongoInputFormat.class);
     MongoConfigUtil.setInputURI(conf, config.connectionString);
     if (!Strings.isNullOrEmpty(config.inputQuery)) {
@@ -91,7 +94,8 @@ public class MongoDBBatchSource extends BatchSource<Object, BSONObject, Structur
         className).asSubclass(MongoSplitter.class);
       MongoConfigUtil.setSplitterClass(conf, klass);
     }
-    job.setInputFormatClass(MongoConfigUtil.getInputFormat(conf));
+    context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(MongoConfigUtil.getInputFormat(conf),
+                                                                                  conf)));
   }
 
   @Override
@@ -109,7 +113,7 @@ public class MongoDBBatchSource extends BatchSource<Object, BSONObject, Structur
   /**
    * Config class for {@link MongoDBBatchSource}.
    */
-  public static class MongoDBConfig extends PluginConfig {
+  public static class MongoDBConfig extends ReferencePluginConfig {
 
     @Name(Properties.CONNECTION_STRING)
     @Description("MongoDB Connection String (see http://docs.mongodb.org/manual/reference/connection-string); " +
@@ -156,6 +160,17 @@ public class MongoDBBatchSource extends BatchSource<Object, BSONObject, Structur
     @Description("The name of the Splitter class to use. If left empty, the MongoDB Hadoop Connector will attempt " +
       "to make a best guess as to what Splitter to use.")
     private String splitterClass;
+
+    public MongoDBConfig(String referenceName, String connectionString, String authConnectionString,
+                         String schema, String inputQuery, String inputFields, String splitterClass) {
+      super(referenceName);
+      this.connectionString = connectionString;
+      this.authConnectionString = authConnectionString;
+      this.schema = schema;
+      this.inputQuery = inputQuery;
+      this.inputFields = inputFields;
+      this.splitterClass = splitterClass;
+    }
   }
 
   /**

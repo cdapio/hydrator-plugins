@@ -19,14 +19,16 @@ package co.cask.hydrator.plugin.batch.sink;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.data.batch.Output;
 import co.cask.cdap.api.data.batch.OutputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.lib.KeyValue;
-import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.cdap.format.StructuredRecordStringConverter;
+import co.cask.hydrator.common.ReferenceBatchSink;
+import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.plugin.batch.ESProperties;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
@@ -52,7 +54,7 @@ import java.util.Map;
 @Name("Elasticsearch")
 @Description("Elasticsearch Batch Sink takes the structured record from the input source and converts it " +
   "to a JSON string, then indexes it in Elasticsearch using the index, type, and id specified by the user.")
-public class BatchElasticsearchSink extends BatchSink<StructuredRecord, Writable, Writable> {
+public class BatchElasticsearchSink extends ReferenceBatchSink<StructuredRecord, Writable, Writable> {
   private static final String INDEX_DESCRIPTION = "The name of the index where the data will be stored. " +
     "If the index does not already exist, it will be created using Elasticsearch's default properties.";
   private static final String TYPE_DESCRIPTION = "The name of the type where the data will be stored. " +
@@ -64,6 +66,7 @@ public class BatchElasticsearchSink extends BatchSink<StructuredRecord, Writable
   private final ESConfig config;
 
   public BatchElasticsearchSink(ESConfig config) {
+    super(config);
     this.config = config;
   }
 
@@ -71,7 +74,8 @@ public class BatchElasticsearchSink extends BatchSink<StructuredRecord, Writable
   public void prepareRun(BatchSinkContext context) {
     Job job = context.getHadoopJob();
     job.setSpeculativeExecution(false);
-    context.addOutput(config.index, new ElasticSearchOutputFormatProvider(config));
+    context.addOutput(Output.of(config.referenceName, new ElasticSearchOutputFormatProvider(config))
+                        .alias(config.index));
   }
 
   @Override
@@ -83,7 +87,7 @@ public class BatchElasticsearchSink extends BatchSink<StructuredRecord, Writable
   /**
    * Config class for BatchElasticsearchSink.java
    */
-  public static class ESConfig extends PluginConfig {
+  public static class ESConfig extends ReferencePluginConfig {
     @Name(ESProperties.HOST)
     @Description(HOST_DESCRIPTION)
     private String hostname;
@@ -100,7 +104,8 @@ public class BatchElasticsearchSink extends BatchSink<StructuredRecord, Writable
     @Description(ID_DESCRIPTION)
     private String idField;
 
-    public ESConfig(String hostname, String index, String type, String idField) {
+    public ESConfig(String referenceName, String hostname, String index, String type, String idField) {
+      super(referenceName);
       this.hostname = hostname;
       this.index = index;
       this.type = type;

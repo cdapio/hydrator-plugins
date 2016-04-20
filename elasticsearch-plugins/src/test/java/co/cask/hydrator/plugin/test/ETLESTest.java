@@ -47,6 +47,7 @@ import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkerManager;
+import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.batch.ESProperties;
 import co.cask.hydrator.plugin.batch.sink.BatchElasticsearchSink;
 import co.cask.hydrator.plugin.batch.source.ElasticsearchSource;
@@ -177,7 +178,8 @@ public class ETLESTest extends HydratorTestBase {
                       InetAddress.getLocalHost().getHostName() + ":" + httpPort,
                       ESProperties.INDEX_NAME, "batch",
                       ESProperties.TYPE_NAME, "testing",
-                      ESProperties.ID_FIELD, "ticker"),
+                      ESProperties.ID_FIELD, "ticker",
+                      Constants.Reference.REFERENCE_NAME, "BatchESSinkTest"),
       null));
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
       .addStage(source)
@@ -219,12 +221,13 @@ public class ETLESTest extends HydratorTestBase {
     ETLStage source = new ETLStage("Elasticsearch", new ETLPlugin(
       "Elasticsearch",
       BatchSource.PLUGIN_TYPE,
-      ImmutableMap.of(ESProperties.HOST,
-                      InetAddress.getLocalHost().getHostName() + ":" + httpPort,
-                      ESProperties.INDEX_NAME, "batch",
-                      ESProperties.TYPE_NAME, "testing",
-                      ESProperties.QUERY, "?q=*",
-                      ESProperties.SCHEMA, TICKER_SCHEMA.toString()),
+      ImmutableMap.<String, String>builder()
+        .put(ESProperties.HOST, InetAddress.getLocalHost().getHostName() + ":" + httpPort)
+        .put(ESProperties.INDEX_NAME, "batch")
+        .put(ESProperties.TYPE_NAME, "testing")
+        .put(ESProperties.QUERY, "?q=*")
+        .put(ESProperties.SCHEMA, TICKER_SCHEMA.toString())
+        .put(Constants.Reference.REFERENCE_NAME, "ESSourceTest").build(),
       null));
     String outputDatasetName = "output-batchsourcetest";
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
@@ -279,12 +282,14 @@ public class ETLESTest extends HydratorTestBase {
     ETLStage sink = new ETLStage("Elasticsearch", new ETLPlugin(
       "Elasticsearch",
       RealtimeSink.PLUGIN_TYPE,
-      ImmutableMap.of(ESProperties.TRANSPORT_ADDRESSES,
-                      InetAddress.getLocalHost().getHostName() + ":" + transportPort,
-                      ESProperties.CLUSTER, "testcluster",
-                      ESProperties.INDEX_NAME, "realtime",
-                      ESProperties.TYPE_NAME, "testing",
-                      ESProperties.ID_FIELD, "name"),
+      ImmutableMap.<String, String>builder()
+        .put(ESProperties.TRANSPORT_ADDRESSES, InetAddress.getLocalHost().getHostName() + ":" + transportPort)
+        .put(ESProperties.CLUSTER, "testcluster")
+        .put(ESProperties.INDEX_NAME, "realtime")
+        .put(ESProperties.TYPE_NAME, "testing")
+        .put(ESProperties.ID_FIELD, "name")
+        .put(Constants.Reference.REFERENCE_NAME, "ESSinkTest")
+        .build(),
       null));
     ETLRealtimeConfig etlConfig = ETLRealtimeConfig.builder()
       .addStage(source)

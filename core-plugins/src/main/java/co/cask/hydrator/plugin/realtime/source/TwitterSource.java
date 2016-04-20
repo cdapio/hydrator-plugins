@@ -21,12 +21,13 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.realtime.RealtimeContext;
 import co.cask.cdap.etl.api.realtime.RealtimeSource;
 import co.cask.cdap.etl.api.realtime.SourceState;
+import co.cask.hydrator.common.ReferencePluginConfig;
+import co.cask.hydrator.common.ReferenceRealtimeSource;
 import com.google.common.collect.Queues;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +51,7 @@ import javax.annotation.Nullable;
 @Plugin(type = "realtimesource")
 @Name("Twitter")
 @Description("Samples tweets in real-time")
-public class TwitterSource extends RealtimeSource<StructuredRecord> {
+public class TwitterSource extends ReferenceRealtimeSource<StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(TwitterSource.class);
   private static final String CONSUMER_KEY = "ConsumerKey";
   private static final String CONSUMER_SECRET = "ConsumerSecret";
@@ -87,14 +88,14 @@ public class TwitterSource extends RealtimeSource<StructuredRecord> {
   private final TwitterConfig twitterConfig;
 
   public TwitterSource(TwitterConfig twitterConfig) {
+    super(twitterConfig);
     this.twitterConfig = twitterConfig;
   }
 
   /**
    * Config class for TwitterSource.
    */
-  public static class TwitterConfig extends PluginConfig {
-
+  public static class TwitterConfig extends ReferencePluginConfig {
     @Name(CONSUMER_KEY)
     @Description("Consumer Key")
     private String consumerKey;
@@ -111,7 +112,9 @@ public class TwitterSource extends RealtimeSource<StructuredRecord> {
     @Description("Access Token Secret")
     private String accessTokenSecret;
 
-    public TwitterConfig(String consumerKey, String consumeSecret, String accessToken, String accessTokenSecret) {
+    public TwitterConfig(String referenceName, String consumerKey, String consumeSecret, String accessToken,
+                         String accessTokenSecret) {
+      super(referenceName);
       this.consumerKey = consumerKey;
       this.consumeSecret = consumeSecret;
       this.accessToken = accessToken;

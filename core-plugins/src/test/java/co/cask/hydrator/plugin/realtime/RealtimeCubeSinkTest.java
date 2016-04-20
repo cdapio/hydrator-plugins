@@ -33,6 +33,7 @@ import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkerManager;
+import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.realtime.source.DataGeneratorSource;
 import com.google.common.collect.ImmutableMap;
@@ -56,7 +57,8 @@ public class RealtimeCubeSinkTest extends ETLRealtimeTestBase {
   @Test
   public void test() throws Exception {
     ETLPlugin source = new ETLPlugin("DataGenerator", RealtimeSource.PLUGIN_TYPE,
-                                     ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE, DataGeneratorSource.TABLE_TYPE),
+                                     ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE, DataGeneratorSource.TABLE_TYPE,
+                                                     Constants.Reference.REFERENCE_NAME, "DG"),
                                      null);
     // single aggregation
     String aggregationGroup = "byName:name";

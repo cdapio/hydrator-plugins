@@ -28,6 +28,7 @@ import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
+import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.ConnectionConfig;
 import co.cask.hydrator.plugin.DBConfig;
 import co.cask.hydrator.plugin.DatabasePluginTestBase;
@@ -63,6 +64,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
         .put(DBSource.DBSourceConfig.BOUNDING_QUERY, boundingQuery)
         .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
         .put(ConnectionConfig.JDBC_PLUGIN_NAME, "hypersql")
+        .put(Constants.Reference.REFERENCE_NAME, "DBMacroTest")
         .build(),
       null
     );
@@ -96,6 +98,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
         .put(DBSource.DBSourceConfig.BOUNDING_QUERY, boundingQuery)
         .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
         .put(DBConfig.JDBC_PLUGIN_NAME, "hypersql")
+        .put(Constants.Reference.REFERENCE_NAME, "DBSourceTest")
         .build(),
       null
     );
@@ -178,6 +181,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
         .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
         .put(DBConfig.JDBC_PLUGIN_NAME, "hypersql")
         .put(DBConfig.COLUMN_NAME_CASE, "lower")
+        .put(Constants.Reference.REFERENCE_NAME, "DBLowerCaseTest")
         .build(),
       null
     );
@@ -220,6 +224,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
         .put(DBSource.DBSourceConfig.BOUNDING_QUERY, boundingQuery)
         .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
         .put(DBConfig.JDBC_PLUGIN_NAME, "hypersql")
+        .put(Constants.Reference.REFERENCE_NAME, "DBMultipleTest")
         .build(),
       null
     );
@@ -258,6 +263,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
       .put(DBSource.DBSourceConfig.IMPORT_QUERY, importQuery)
       .put(DBSource.DBSourceConfig.BOUNDING_QUERY, boundingQuery)
       .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
+      .put(Constants.Reference.REFERENCE_NAME, "UserPassDBTest")
       .build();
 
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbTest");
@@ -320,6 +326,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
         .put(DBSource.DBSourceConfig.BOUNDING_QUERY, boundingQuery)
         .put(DBConfig.JDBC_PLUGIN_NAME, "hypersql")
         .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
+        .put(Constants.Reference.REFERENCE_NAME, "DBNonExistentTest")
         .build(),
       null);
     ETLStage sink = new ETLStage("sink", sinkConfig);
@@ -345,6 +352,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
         .put(DBSource.DBSourceConfig.BOUNDING_QUERY, boundingQuery)
         .put(DBConfig.JDBC_PLUGIN_NAME, "hypersql")
         .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
+        .put(Constants.Reference.REFERENCE_NAME, "HSQLDBTest")
         .build(),
       null);
     ETLStage sourceBadConn = new ETLStage("sourceBadConn", sourceBadConnConfig);

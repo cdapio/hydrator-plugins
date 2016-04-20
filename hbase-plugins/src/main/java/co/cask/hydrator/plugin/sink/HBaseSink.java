@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.sink;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.data.batch.Output;
 import co.cask.cdap.api.data.batch.OutputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
@@ -27,9 +28,9 @@ import co.cask.cdap.api.dataset.table.Put;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
-import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.cdap.format.RecordPutTransformer;
+import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.SchemaValidator;
 import co.cask.hydrator.plugin.HBaseConfig;
 import com.google.common.base.Preconditions;
@@ -55,12 +56,13 @@ import javax.annotation.Nullable;
 @Plugin(type = "batchsink")
 @Name("HBase")
 @Description("HBase Batch Sink")
-public class HBaseSink extends BatchSink<StructuredRecord, NullWritable, Mutation> {
+public class HBaseSink extends ReferenceBatchSink<StructuredRecord, NullWritable, Mutation> {
 
   private HBaseSinkConfig config;
   private RecordPutTransformer recordPutTransformer;
 
   public HBaseSink(HBaseSinkConfig config) {
+    super(config);
     this.config = config;
   }
 
@@ -68,7 +70,8 @@ public class HBaseSink extends BatchSink<StructuredRecord, NullWritable, Mutatio
   public void prepareRun(BatchSinkContext context) throws Exception {
     Job job = context.getHadoopJob();
     Configuration conf = job.getConfiguration();
-    context.addOutput(config.columnFamily, new HBaseOutputFormatProvider(config, conf));
+    context.addOutput(Output.of(config.referenceName, new HBaseOutputFormatProvider(config, conf))
+                        .alias(config.columnFamily));
     HBaseConfiguration.addHbaseResources(conf);
   }
 
@@ -146,7 +149,11 @@ public class HBaseSink extends BatchSink<StructuredRecord, NullWritable, Mutatio
     private String zkNodeParent;
 
     public HBaseSinkConfig(String tableName, String rowField, @Nullable String schema) {
-      super(tableName, rowField, schema);
+      super(String.format("HBase_%s", tableName), tableName, rowField, schema);
+    }
+
+    public HBaseSinkConfig(String referenceName, String tableName, String rowField, @Nullable String schema) {
+      super(referenceName, tableName, rowField, schema);
     }
   }
 }

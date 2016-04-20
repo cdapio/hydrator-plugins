@@ -122,6 +122,7 @@ public class KafkaPipelineTest extends HydratorTestBase {
                                        .put(KafkaSource.FORMAT, "csv")
                                        .put(KafkaSource.SCHEMA, schema.toString())
                                        .put(KafkaSource.KAFKA_PARTITIONS, Integer.toString(PARTITIONS))
+                                       .put(co.cask.hydrator.common.Constants.Reference.REFERENCE_NAME, "KafkaTest")
                                        .build(),
                                      null
     );

@@ -25,6 +25,7 @@ import co.cask.cdap.etl.mock.batch.MockSource;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
+import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.DBConfig;
 import co.cask.hydrator.plugin.DatabasePluginTestBase;
 import co.cask.hydrator.plugin.db.batch.source.DBSource;
@@ -61,7 +62,8 @@ public class DBSinkTestRun extends DatabasePluginTestBase {
                                          ImmutableMap.of(DBConfig.CONNECTION_STRING, getConnectionURL(),
                                                          DBSink.DBSinkConfig.TABLE_NAME, "MY_DEST_TABLE",
                                                          DBSink.DBSinkConfig.COLUMNS, cols,
-                                                         DBConfig.JDBC_PLUGIN_NAME, "hypersql"),
+                                                         DBConfig.JDBC_PLUGIN_NAME, "hypersql",
+                                                         Constants.Reference.REFERENCE_NAME, "DBTest"),
                                          null);
     ApplicationManager appManager = deployETL(sourceConfig, sinkConfig);
     createInputData(inputDatasetName);
@@ -98,6 +100,7 @@ public class DBSinkTestRun extends DatabasePluginTestBase {
         .put(DBSource.DBSourceConfig.BOUNDING_QUERY, boundingQuery)
         .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
         .put(DBConfig.JDBC_PLUGIN_NAME, "hypersql")
+        .put(Constants.Reference.REFERENCE_NAME, "DBTestSource")
         .build(),
       null
     );
@@ -108,7 +111,8 @@ public class DBSinkTestRun extends DatabasePluginTestBase {
         DBConfig.CONNECTION_STRING, getConnectionURL(),
         DBSink.DBSinkConfig.TABLE_NAME, "OUTPUT",
         DBSink.DBSinkConfig.COLUMNS, "A, B, C",
-        DBConfig.JDBC_PLUGIN_NAME, "hypersql"),
+        DBConfig.JDBC_PLUGIN_NAME, "hypersql",
+        Constants.Reference.REFERENCE_NAME, "DBTestSink"),
       null
     );
     ApplicationManager appManager = deployETL(sourceConfig, sinkConfig);

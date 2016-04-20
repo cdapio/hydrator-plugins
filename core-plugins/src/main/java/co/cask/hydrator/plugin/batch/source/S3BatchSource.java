@@ -45,10 +45,9 @@ public class S3BatchSource extends FileBatchSource {
 
   public S3BatchSource(S3BatchConfig config) {
     // update fileSystemProperties with S3 properties, so FileBatchSource.prepareRun can use them
-    super(new FileBatchConfig(config.path, config.fileRegex, config.timeTable, config.inputFormatClass,
-                              updateFileSystemProperties(
-                                config.fileSystemProperties, config.accessID, config.accessKey
-                              ),
+    super(new FileBatchConfig(config.referenceName, config.path, config.fileRegex, config.timeTable,
+                              config.inputFormatClass, updateFileSystemProperties(
+                                config.fileSystemProperties, config.accessID, config.accessKey),
                               config.maxSplitSize));
     this.config = config;
   }
@@ -76,14 +75,14 @@ public class S3BatchSource extends FileBatchSource {
     @Description(ACCESS_KEY_DESCRIPTION)
     private final String accessKey;
 
-    public S3BatchConfig(String accessID, String accessKey, String path) {
-      this(accessID, accessKey, path, null, null, null, null, null);
+    public S3BatchConfig(String referenceName, String accessID, String accessKey, String path) {
+      this(referenceName, accessID, accessKey, path, null, null, null, null, null);
     }
 
-    public S3BatchConfig(String accessID, String accessKey, String path, @Nullable String regex,
+    public S3BatchConfig(String referenceName, String accessID, String accessKey, String path, @Nullable String regex,
                          @Nullable String timeTable, @Nullable String inputFormatClass,
                          @Nullable String fileSystemProperties, @Nullable Long maxSplitSize) {
-      super(path, regex, timeTable, inputFormatClass,
+      super(referenceName, path, regex, timeTable, inputFormatClass,
             updateFileSystemProperties(fileSystemProperties, accessID, accessKey), maxSplitSize);
       this.accessID = accessID;
       this.accessKey = accessKey;

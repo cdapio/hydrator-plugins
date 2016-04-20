@@ -26,6 +26,8 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.realtime.RealtimeContext;
 import co.cask.cdap.etl.api.realtime.RealtimeSource;
 import co.cask.cdap.etl.api.realtime.SourceState;
+import co.cask.hydrator.common.ReferencePluginConfig;
+import co.cask.hydrator.common.ReferenceRealtimeSource;
 import co.cask.hydrator.plugin.realtime.config.HTTPPollConfig;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
@@ -47,7 +49,7 @@ import javax.annotation.Nullable;
 @Plugin(type = RealtimeSource.PLUGIN_TYPE)
 @Name("HTTPPoller")
 @Description("Fetch data by performing an HTTP request at a regular interval.")
-public class HTTPPollerRealtimeSource extends RealtimeSource<StructuredRecord> {
+public class HTTPPollerRealtimeSource extends ReferenceRealtimeSource<StructuredRecord> {
   private static final String METHOD = "GET";
   private static final String POLL_TIME_STATE_KEY = "lastPollTime";
   private static final Schema SCHEMA = Schema.recordOf(
@@ -62,11 +64,13 @@ public class HTTPPollerRealtimeSource extends RealtimeSource<StructuredRecord> {
   private final HTTPPollConfig config;
 
   public HTTPPollerRealtimeSource(HTTPPollConfig config) {
+    super(new ReferencePluginConfig(config.referenceName));
     this.config = config;
   }
 
   @Override
   public void initialize(RealtimeContext context) throws Exception {
+    super.initialize(context);
     config.validate();
   }
 

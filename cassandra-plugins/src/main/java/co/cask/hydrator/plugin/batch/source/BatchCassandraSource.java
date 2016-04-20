@@ -19,14 +19,17 @@ package co.cask.hydrator.plugin.batch.source;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
-import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
+import co.cask.hydrator.common.ReferenceBatchSource;
+import co.cask.hydrator.common.ReferencePluginConfig;
+import co.cask.hydrator.common.SourceInputFormatProvider;
 import com.datastax.driver.core.Row;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
@@ -36,7 +39,6 @@ import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.hadoop.cql3.CqlConfigHelper;
 import org.apache.cassandra.hadoop.cql3.CqlInputFormat;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapreduce.Job;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -57,7 +59,7 @@ import javax.annotation.Nullable;
 @Name("Cassandra")
 @Description("CDAP Cassandra Batch Source will select the rows returned by the user's query " +
   "and convert each row to a structured record using the schema specified by the user. ")
-public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecord> {
+public class BatchCassandraSource extends ReferenceBatchSource<Long, Row, StructuredRecord> {
   private static final Map<Schema.Type, Class<?>> TYPE_CLASS_MAP = new ImmutableMap.Builder<Schema.Type, Class<?>>()
                                                                     .put(Schema.Type.BOOLEAN, boolean.class)
                                                                     .put(Schema.Type.BYTES, ByteBuffer.class)
@@ -70,6 +72,7 @@ public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecor
   private final CassandraSourceConfig config;
 
   public BatchCassandraSource(CassandraSourceConfig config) {
+    super(config);
     this.config = config;
   }
 
@@ -87,9 +90,8 @@ public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecor
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
-    Job job = context.getHadoopJob();
-    Configuration conf = job.getConfiguration();
-
+    Configuration conf = new Configuration();
+    conf.clear();
     ConfigHelper.setInputColumnFamily(conf, config.keyspace, config.columnFamily);
     ConfigHelper.setInputInitialAddress(conf, config.initialAddress);
     ConfigHelper.setInputPartitioner(conf, config.partitioner);
@@ -110,8 +112,7 @@ public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecor
       }
     }
     CqlConfigHelper.setInputCql(conf, config.query);
-
-    job.setInputFormatClass(CqlInputFormat.class);
+    context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(CqlInputFormat.class, conf)));
   }
 
   @Override
@@ -170,7 +171,7 @@ public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecor
   /**
    * Config class for Batch Cassandra Config
    */
-  public static class CassandraSourceConfig extends PluginConfig {
+  public static class CassandraSourceConfig extends ReferencePluginConfig {
     @Name(Cassandra.PARTITIONER)
     @Description("The partitioner for the keyspace")
     private String partitioner;
@@ -234,9 +235,10 @@ public class BatchCassandraSource extends BatchSource<Long, Row, StructuredRecor
     @Nullable
     private String properties;
 
-    public CassandraSourceConfig(String partitioner, Integer port, String columnFamily, String schema,
-                                 String keyspace, String initialAddress, String query, @Nullable String properties,
-                                 @Nullable String username, @Nullable String password) {
+    public CassandraSourceConfig(String referenceName, String partitioner, Integer port, String columnFamily,
+                                 String schema, String keyspace, String initialAddress, String query,
+                                 @Nullable String properties, @Nullable String username, @Nullable String password) {
+      super(referenceName);
       this.partitioner = partitioner;
       this.initialAddress = initialAddress;
       this.port = port;
