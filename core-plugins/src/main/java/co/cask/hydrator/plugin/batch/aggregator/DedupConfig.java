@@ -81,7 +81,7 @@ public class DedupConfig extends AggregatorConfig {
     }
 
     List<String> filterParts = new ArrayList<>();
-    for(String filterPart : Splitter.on(':').trimResults().split(filterOperation)) {
+    for (String filterPart : Splitter.on(':').trimResults().split(filterOperation)) {
       filterParts.add(filterPart);
     }
 
