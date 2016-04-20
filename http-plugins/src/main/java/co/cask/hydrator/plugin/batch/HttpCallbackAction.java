@@ -47,11 +47,11 @@ import javax.ws.rs.HttpMethod;
 @Plugin(type = PostAction.PLUGIN_TYPE)
 @Name("HTTPCallback")
 @Description("Makes an HTTP call at the end of a pipeline run.")
-public class HttpCallbackAction extends PostAction {
-  private static final Logger LOG = LoggerFactory.getLogger(HttpCallbackAction.class);
+public class HTTPCallbackAction extends PostAction {
+  private static final Logger LOG = LoggerFactory.getLogger(HTTPCallbackAction.class);
   private final HttpRequestConf conf;
 
-  public HttpCallbackAction(HttpRequestConf conf) {
+  public HTTPCallbackAction(HttpRequestConf conf) {
     this.conf = conf;
   }
 
@@ -118,7 +118,7 @@ public class HttpCallbackAction extends PostAction {
     @Nullable
     @Description("When to run the action. Must be 'completion', 'success', or 'failure'. Defaults to 'completion'. " +
       "If set to 'completion', the action will be executed regardless of whether " +
-      "the pipeline run succeeded or failed." +
+      "the pipeline run succeeded or failed. " +
       "If set to 'success', the action will only be executed if the pipeline run succeeded. " +
       "If set to 'failure', the action will only be executed if the pipeline run failed.")
     public String runCondition;

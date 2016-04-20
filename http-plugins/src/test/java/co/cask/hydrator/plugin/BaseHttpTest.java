@@ -28,7 +28,7 @@ import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.http.HttpHandler;
 import co.cask.http.NettyHttpService;
-import co.cask.hydrator.plugin.batch.HttpCallbackAction;
+import co.cask.hydrator.plugin.batch.HTTPCallbackAction;
 import co.cask.hydrator.plugin.mock.MockFeedHandler;
 import co.cask.hydrator.plugin.realtime.HTTPPollerRealtimeSource;
 import com.google.common.base.Charsets;
@@ -85,7 +85,7 @@ public class BaseHttpTest extends HydratorTestBase {
                                   new ArtifactVersion(REALTIME_ARTIFACT.getVersion()), true));
     addPluginArtifact(NamespaceId.DEFAULT.artifact("http-plugins", "1.0.0"), parents,
                       HTTPPollerRealtimeSource.class,
-                      HttpCallbackAction.class);
+                      HTTPCallbackAction.class);
 
 
     List<HttpHandler> handlers = new ArrayList<>();

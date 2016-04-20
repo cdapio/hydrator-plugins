@@ -38,7 +38,7 @@ This example fetches data from a url every hour using a custom user agent:
         "name": "HTTPPoller",
         "type": "realtimesource",
         "properties": {
-            "url": "http://api.example.com/sampleEndpoint",
+            "url": "http://example.com/sampleEndpoint",
             "interval": "60",
             "requestHeaders": "User-Agent:HydratorPipeline\nAccept:application/json"
         }

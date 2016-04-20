@@ -28,7 +28,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
- * Config class for URL Fetch plugin.
+ * Base config class for HTTP plugins.
  */
 @SuppressWarnings("ConstantConditions")
 public class HTTPConfig extends MacroConfig {
@@ -44,7 +44,6 @@ public class HTTPConfig extends MacroConfig {
   @Nullable
   private String requestHeaders;
 
-  @Name("followRedirects")
   @Description("Whether to automatically follow redirects. Defaults to true.")
   @Nullable
   private Boolean followRedirects;
