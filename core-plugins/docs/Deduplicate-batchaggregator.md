@@ -14,8 +14,8 @@ The aggregator is used when you want to filter out duplicates in the input in a 
 Properties
 ----------
 **uniqueFields:** Comma-separated list of fields on which to perform the deduplication. If none given, each record will be
-considered as a whole for deduplication. For example, if the input contain records with fields `fname`, `lname`, `item`, and `cost`,
-and we want to deduplicate the records by name, then this property should be set to `fname,lname`.
+considered as a whole for deduplication. For example, if the input contain records with fields `fname`, `lname`, `item`, 
+and `cost`, and we want to deduplicate the records by name, then this property should be set to `fname,lname`.
 
 **filterOperation:** An optional property that can be set to predictably choose one or more records from the set of records
 that needs to be deduplicated. This property takes in a field name and the logical operation that needs to be performed
