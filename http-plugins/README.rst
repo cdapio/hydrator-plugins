@@ -5,31 +5,30 @@ URL Plugins
 Introduction
 ============
 
-A Hydrator Real Time Plugin that allows data to be fetched from a given URL at a specified interval.
+A Hydrator real-time plugin that allows data to be fetched from a given URL at a specified interval.
 
 Getting Started
 ===============
 
 Prerequisites
 -------------
-
 To use this plugin, you must have CDAP version 3.4.0 or later.
 
 Build
 -----
-To build your plugins::
+To build this plugin::
 
   mvn clean package -DskipTests
 
 The build will create a .jar and .json file under the ``target`` directory.
-These files can be used to deploy your plugins.
+These files can be used to deploy the plugin.
 
 UI Integration
 --------------
 The Cask Hydrator UI displays each plugin property as a simple textbox. To customize how the plugin properties
 are displayed in the UI, you can place a configuration file in the ``widgets`` directory.
 The file must be named following a convention of ``[plugin-name]-[plugin-type].json``.
-See [Plugin Widget Configuration](http://docs.cdap.io/cdap/current/en/cdap-apps/hydrator/custom.html#plugin-configuration-json)
+See `Plugin Widget Configuration <http://docs.cdap.io/cdap/current/en/cdap-apps/hydrator/custom.html#plugin-configuration-json>`__
 for details on the configuration file.
 The UI will also display a reference doc for your plugin if you place a file in the ``docs`` directory
 that follows the convention of ``[plugin-name]-[plugin-type].md``.
