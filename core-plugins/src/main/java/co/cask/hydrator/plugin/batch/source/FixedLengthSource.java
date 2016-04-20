@@ -19,8 +19,14 @@ package co.cask.hydrator.plugin.batch.source;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.lib.KeyValue;
+import co.cask.cdap.etl.api.Emitter;
 import co.cask.hydrator.common.SourceInputFormatProvider;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.io.BytesWritable;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.lib.input.FixedLengthInputFormat;
 
 import javax.annotation.Nullable;
@@ -35,6 +41,13 @@ import javax.annotation.Nullable;
 public class FixedLengthSource extends FileSource {
   private FixedLengthConfig config;
 
+  // Specifies the output schema of this file source.
+  public static final Schema OUTPUT_SCHEMA = Schema.recordOf(
+    "event",
+    Schema.Field.of("offset", Schema.of(Schema.Type.LONG)),
+    Schema.Field.of("body", Schema.of(Schema.Type.BYTES))
+  );
+
   public FixedLengthSource(FixedLengthConfig config) {
     super(config);
     this.config = config;
@@ -47,13 +60,23 @@ public class FixedLengthSource extends FileSource {
 
   @Override
   protected SourceInputFormatProvider setInputFormatProvider(Configuration configuration) {
-    return new SourceInputFormatProvider("org.apache.hadoop.mapred.FixedLengthInputFormat", configuration);
+    return new SourceInputFormatProvider(FixedLengthInputFormat.class.getName(), configuration);
+  }
+
+  @Override
+  public void transform(KeyValue<LongWritable, Object> input, Emitter<StructuredRecord> emitter) throws Exception {
+    StructuredRecord output = StructuredRecord.builder(OUTPUT_SCHEMA)
+      .set("offset", input.getKey().get())
+      .set("body", ((BytesWritable) input.getValue()).getBytes())
+        .build();
+    emitter.emit(output);
   }
 
   /**
    * Fixed Length Source config.
    */
   public class FixedLengthConfig extends FileSource.FileSourceConfig {
+    @Name("record.length")
     @Description("Specifies the length of the record")
     public Long recordLength;
 

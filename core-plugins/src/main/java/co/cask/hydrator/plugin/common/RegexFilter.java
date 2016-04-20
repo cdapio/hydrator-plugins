@@ -16,12 +16,14 @@
 
 package co.cask.hydrator.plugin.common;
 
+import co.cask.hydrator.plugin.batch.source.FileSource;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 
-import java.util.regex.Matcher;
+import java.io.IOException;
 import java.util.regex.Pattern;
 
 /**
@@ -29,18 +31,31 @@ import java.util.regex.Pattern;
  */
 public class RegexFilter extends Configured implements PathFilter {
   private Pattern pattern;
+  private FileSystem fs;
+  private Configuration conf;
 
   @Override
   public boolean accept(Path path) {
-    Matcher m = pattern.matcher(path.toString());
-    return m.matches();
+    try {
+      if (fs.isDirectory(path)) {
+        return true;  
+      }
+      return pattern.matcher(path.toString()).matches();
+    } catch (IOException e) {
+      return false;
+    }
   }
 
   @Override
   public void setConf(Configuration conf) {
+    this.conf = conf;
     if (conf == null) {
       return;
     }
-    pattern = Pattern.compile(conf.get("file.pattern"));
+    try {
+      fs = FileSystem.get(conf);
+      pattern = Pattern.compile(conf.get(FileSource.FILE_PATTERN));
+    } catch (IOException e) {
+    }
   }
 }

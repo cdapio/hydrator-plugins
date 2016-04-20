@@ -30,6 +30,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.XMLReader;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -37,17 +38,17 @@ import java.nio.charset.Charset;
 /**
  * Reads records that are delimited by a specific begin/end tag.
  */
-public class XmlInputFormat extends TextInputFormat {
+public class TagDelimitedInputFormat extends TextInputFormat {
 
-  private static final Logger log = LoggerFactory.getLogger(XmlInputFormat.class);
+  private static final Logger log = LoggerFactory.getLogger(TagDelimitedInputFormat.class);
 
-  public static final String START_TAG_KEY = "xmlinput.start";
-  public static final String END_TAG_KEY = "xmlinput.end";
+  public static final String START_TAG_KEY = "input.tag.start";
+  public static final String END_TAG_KEY = "input.tag.end";
 
   @Override
   public RecordReader<LongWritable, Text> createRecordReader(InputSplit split, TaskAttemptContext context) {
     try {
-      return new XmlRecordReader((FileSplit) split, context.getConfiguration());
+      return new TagDelimitedRecordReader((FileSplit) split, context.getConfiguration());
     } catch (IOException ioe) {
       log.warn("Error while creating XmlRecordReader", ioe);
       return null;
@@ -55,11 +56,10 @@ public class XmlInputFormat extends TextInputFormat {
   }
 
   /**
-   * XMLRecordReader class to read through a given xml document to output xml blocks as records as specified
+   * TagDelimitedRecordReader class to read through a given xml document to output xml blocks as records as specified
    * by the start tag and end tag
-   *
    */
-  public static class XmlRecordReader extends RecordReader<LongWritable, Text> {
+  public static class TagDelimitedRecordReader extends RecordReader<LongWritable, Text> {
 
     private final byte[] startTag;
     private final byte[] endTag;
@@ -70,16 +70,19 @@ public class XmlInputFormat extends TextInputFormat {
     private LongWritable currentKey;
     private Text currentValue;
 
-    public XmlRecordReader(FileSplit split, Configuration conf) throws IOException {
+    public TagDelimitedRecordReader(FileSplit split, Configuration conf) throws IOException {
       startTag = conf.get(START_TAG_KEY).getBytes(Charset.forName("UTF-8"));
       endTag = conf.get(END_TAG_KEY).getBytes(Charset.forName("UTF-8"));
-                                                              
 
       // open the file and seek to the start of the split
       start = split.getStart();
       end = start + split.getLength();
+      
+      // get the path to file. 
       Path file = split.getPath();
       FileSystem fs = file.getFileSystem(conf);
+
+      // Open the file. 
       fsin = fs.open(split.getPath());
       fsin.seek(start);
     }

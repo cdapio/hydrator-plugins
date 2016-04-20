@@ -20,34 +20,51 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.hydrator.common.SourceInputFormatProvider;
-import co.cask.hydrator.plugin.common.XmlInputFormat;
+import co.cask.hydrator.plugin.common.TagDelimitedInputFormat;
 import org.apache.hadoop.conf.Configuration;
 
 import javax.annotation.Nullable;
 
 /**
- * Xml Source.
+ * An XML Source plugin that reads a split XML file(s). 
+ * This plugin requires one to describe the start and end tag of XML that defines 
+ * a record. It uses the {@link TagDelimitedInputFormat} to read the record defined
+ * between start tag and end tag.  
  */
 @Plugin(type = "batchsource")
 @Name("Xml")
-@Description("Reads XML File")
-public class XmlSource extends FileSource {
+@Description("Reads XML file(s) and returns XML record based on start and end tags.")
+public final class XmlSource extends FileSource {
+  // XML Configuration extended from File Source config.
   private final XmlConfig config;
 
+  /**
+   * Constructor for XmlSource
+   * @param config Plugin configuration.
+   */
   public XmlSource(XmlConfig config) {
     super(config);
     this.config = config;
   }
-  
+
+  /**
+   * Sets the right configurations required for {@link TagDelimitedInputFormat}.
+   * @param configuration Hadoop configuration instance. 
+   */
   @Override
   protected void setFileInputFormatProperties(Configuration configuration) {
-    configuration.set(XmlInputFormat.START_TAG_KEY, config.startTag);
-    configuration.set(XmlInputFormat.END_TAG_KEY, config.endTag);
+    configuration.set(TagDelimitedInputFormat.START_TAG_KEY, config.startTag);
+    configuration.set(TagDelimitedInputFormat.END_TAG_KEY, config.endTag);
   }
 
+  /**
+   * Returns a instance of {@link SourceInputFormatProvider} that knows of type {@link TagDelimitedInputFormat}
+   * @param configuration Hadoop configuration instance.
+   * @return {@link TagDelimitedInputFormat}
+   */
   @Override
   protected SourceInputFormatProvider setInputFormatProvider(Configuration configuration) {
-    return new SourceInputFormatProvider(XmlInputFormat.class.getName(), configuration);
+    return new SourceInputFormatProvider(TagDelimitedInputFormat.class.getName(), configuration);
   }
 
   /**

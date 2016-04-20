@@ -17,9 +17,9 @@
         {
           "widget-type": "keyvalue",
           "label": "XPath Map",
-          "name": "pathMap",
+          "name": "pathmap",
           "widget-attributes": {
-            "showDelimiter": "true"
+            "showDelimiter": "false"
           }
         }
       ]

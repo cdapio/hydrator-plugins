@@ -50,11 +50,16 @@ import javax.annotation.Nullable;
  *  
  */
 @Plugin(type = "batchsource")
-@Name("FileSource")
-@Description("Batch source for File Systems")
+@Name("Text")
+@Description("File source ")
 public class FileSource extends BatchSource<LongWritable, Object, StructuredRecord> {
+  public static final String FILE_PATTERN = "file.source.pattern";
   private FileSourceConfig config;
-  
+
+  /**
+   * Constructor with configurations.
+   * @param config plugin config.
+   */
   public FileSource(FileSourceConfig config) {
     this.config = config;
   }
@@ -67,7 +72,6 @@ public class FileSource extends BatchSource<LongWritable, Object, StructuredReco
   );
   
   protected void setFileInputFormatProperties(Configuration configuration) {
-    configuration.set("file.pattern", config.pattern);
   }
   
   protected SourceInputFormatProvider setInputFormatProvider(Configuration configuration) {
@@ -89,11 +93,16 @@ public class FileSource extends BatchSource<LongWritable, Object, StructuredReco
     Job job = Job.getInstance();
     Configuration configuration = job.getConfiguration();
     configuration.clear();
-    
-    // Set correct filter if pattern is set else look for all files.
-    configuration.set("file.pattern", ".*");
 
-    // Sets configuration.
+    // Set correct filter if pattern is set else look for all files.
+    // This is the first level of filter that is being applied.
+    if (config.pattern == null || config.pattern.isEmpty()) {
+      configuration.set(FILE_PATTERN, ".*");
+    } else {
+      configuration.set(FILE_PATTERN, config.pattern);
+    }
+
+    // Sets configuration for this plugin in Hadoop configuration.
     setFileInputFormatProperties(configuration);
     
     // Sets the input path(s).
@@ -134,7 +143,7 @@ public class FileSource extends BatchSource<LongWritable, Object, StructuredReco
     @Nullable
     @Description("Specifies the pattern of files to considered for processing.")
     public String pattern;
-    
+
     public FileSourceConfig(String paths, @Nullable Long maxSplitSize, @Nullable String pattern) {
       this.paths = paths;
       this.maxSplitSize = maxSplitSize;
