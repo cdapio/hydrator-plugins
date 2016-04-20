@@ -53,6 +53,7 @@ configure Hadoop to use more than one mapper:
 
     {
         "name": "FileBatchSource",
+        "type": "batchsource",
         "properties": {
             "fileSystem": "S3",
             "fileSystemProperties": "{

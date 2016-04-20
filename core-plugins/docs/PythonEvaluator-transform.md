@@ -32,9 +32,10 @@ else, it calculates the ``'tax'`` and ``'total'`` fields based on the ``'subtota
 as a Python dictionary containing those three fields, with the error records written to the configured error dataset:
 
     {
-      "name": "PythonEvaluator",
-      "properties": {
-        "script": "def transform(record, emitter, context):
+        "name": "PythonEvaluator",
+        "type": "transform",
+        "properties": {
+            "script": "def transform(record, emitter, context):
                      if (record['subtotal'] < 0):
                        emitter.emitError({
                          'errorCode': 10,
@@ -51,16 +52,16 @@ as a Python dictionary containing those three fields, with the error records wri
                          'total': record['subtotal'] + tax,
                        })
                   ",
-        "schema": "{
-          \"type\":\"record\",
-          \"name\":\"expanded\",
-          \"fields\":[
-            {\"name\":\"subtotal\",\"type\":\"double\"},
-            {\"name\":\"tax\",\"type\":\"double\"},
-            {\"name\":\"total\",\"type\":\"double\"}
-          ]
-        }"
-      }
+            "schema": "{
+                \"type\":\"record\",
+                \"name\":\"expanded\",
+                \"fields\":[
+                    {\"name\":\"subtotal\",\"type\":\"double\"},
+                    {\"name\":\"tax\",\"type\":\"double\"},
+                    {\"name\":\"total\",\"type\":\"double\"}
+                ]
+            }"
+        }
     }
 
 

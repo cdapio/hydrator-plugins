@@ -27,5 +27,6 @@ Example
 
     {
         "name": "StructuredRecordToGenericRecord",
+        "type": "transform",
         "properties": { }
     }

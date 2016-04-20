@@ -34,6 +34,7 @@ in the record. Each run, the documents will be updated if they are still present
 
     {
         "name": "Elasticsearch",
+        "type": "batchsink",
         "properties": {
             "es.host": "localhost:9200",
             "es.index": "megacorp",

@@ -1,0 +1,86 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Email Properties",
+      "properties": [
+        {
+          "widget-type": "select",
+          "label": "Run Condition",
+          "name": "runCondition",
+          "widget-attributes": {
+            "values": [
+              "completion",
+              "success",
+              "failure"
+            ],
+            "default": "completion"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Sender",
+          "name": "sender"
+        },
+        {
+          "widget-type": "csv",
+          "label": "Recipients",
+          "name": "recipients",
+          "widget-attributes": {
+            "delimiter": ","
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Subject",
+          "name": "subject"
+        },
+        {
+          "widget-type": "textarea",
+          "label": "Message",
+          "name": "message"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Username",
+          "name": "username"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Password",
+          "name": "password"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Protocol",
+          "name": "protocol"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Host",
+          "name": "host"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Port",
+          "name": "port"
+        },
+        {
+          "widget-type": "select",
+          "label": "Include Workflow Token",
+          "name": "includeWorkflowToken",
+          "widget-attributes": {
+            "values": [
+              "true",
+              "false"
+            ],
+            "default": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}

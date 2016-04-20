@@ -32,7 +32,7 @@
   <dependencies>
     <dependency>
       <groupId>co.cask.cdap</groupId>
-      <artifactId>cdap-unit-test</artifactId>
+      <artifactId>hydrator-test</artifactId>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
@@ -50,10 +50,6 @@
       <groupId>co.cask.hydrator</groupId>
       <artifactId>hydrator-common</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>co.cask.cdap</groupId>
-      <artifactId>cdap-etl-core</artifactId>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
@@ -133,6 +129,16 @@
       <version>0.6.3</version>
     </dependency>
     <!-- End for SQS -->
+    <!-- EMail action -->
+    <dependency>
+      <groupId>dumbster</groupId>
+      <artifactId>dumbster</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>javax.mail</groupId>
+      <artifactId>mail</artifactId>
+    </dependency>
+    <!-- End for EMail -->
     <dependency>
       <groupId>com.twitter</groupId>
       <artifactId>parquet-avro</artifactId>
@@ -185,7 +191,9 @@
               co.cask.hydrator.plugin.realtime.*;
               co.cask.hydrator.plugin.transform.*;
               co.cask.hydrator.plugin.validator.*;
-              co.cask.hydrator.plugin.common
+              co.cask.hydrator.plugin.common;
+              parquet.avro.*;
+              parquet.hadoop.*
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>

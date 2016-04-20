@@ -33,6 +33,7 @@ All data from the index will be read on each run:
 
     {
         "name": "Elasticsearch",
+        "type": "batchsource",
         "properties": {
             "es.host": "localhost:9200",
             "es.index": "megacorp",

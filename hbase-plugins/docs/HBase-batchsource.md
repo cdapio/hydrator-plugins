@@ -46,6 +46,7 @@ This example reads from the 'attr' column family of an HBase table named 'users'
 
     {
         "name": "HBase",
+        "type": "batchsource",
         "properties": {
             "tableName": "users",
             "columnFamily": "attr",

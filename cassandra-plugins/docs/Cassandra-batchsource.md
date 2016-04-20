@@ -50,6 +50,7 @@ All data from the column family will be read on each run:
 
     {
         "name": "Cassandra",
+        "type": "batchsource",
         "properties": {
             "initialAddress": "localhost",
             "port": "9160",

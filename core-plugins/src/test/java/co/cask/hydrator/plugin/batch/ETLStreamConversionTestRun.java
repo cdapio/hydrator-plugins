@@ -20,11 +20,14 @@ import co.cask.cdap.api.data.format.Formats;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.common.utils.Tasks;
+import co.cask.cdap.etl.api.Transform;
+import co.cask.cdap.etl.api.batch.BatchSink;
+import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
-import co.cask.cdap.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
-import co.cask.cdap.etl.common.ETLStage;
-import co.cask.cdap.etl.common.Plugin;
+import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
+import co.cask.cdap.etl.proto.v2.ETLPlugin;
+import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
@@ -65,6 +68,11 @@ public class ETLStreamConversionTestRun extends ETLBatchTestBase {
     Schema.Field.of("ticker", Schema.of(Schema.Type.STRING)),
     Schema.Field.of("num", Schema.of(Schema.Type.INT)),
     Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
+
+  @Test
+  public void testStreamConversionTPFSParquetSink() throws Exception {
+    testSink("TPFSParquet");
+  }
 
   @Test
   public void testStreamConversionTPFSAvroSink() throws Exception {
@@ -115,26 +123,33 @@ public class ETLStreamConversionTestRun extends ETLBatchTestBase {
   }
 
   private ETLBatchConfig constructETLBatchConfig(String streamName, String fileSetName, String sinkType) {
-    Plugin sourceConfig = new Plugin("Stream", ImmutableMap.<String, String>builder()
-      .put(Properties.Stream.NAME, streamName)
-      .put(Properties.Stream.DURATION, "10m")
-      .put(Properties.Stream.DELAY, "0d")
-      .put(Properties.Stream.FORMAT, Formats.CSV)
-      .put(Properties.Stream.SCHEMA, BODY_SCHEMA.toString())
-      .put("format.setting.delimiter", "|")
-      .build());
+    ETLPlugin sourceConfig = new ETLPlugin(
+      "Stream",
+      BatchSource.PLUGIN_TYPE,
+      ImmutableMap.<String, String>builder()
+        .put(Properties.Stream.NAME, streamName)
+        .put(Properties.Stream.DURATION, "10m")
+        .put(Properties.Stream.DELAY, "0d")
+        .put(Properties.Stream.FORMAT, Formats.CSV)
+        .put(Properties.Stream.SCHEMA, BODY_SCHEMA.toString())
+        .put("format.setting.delimiter", "|")
+        .build(),
+      null);
     ETLStage source  = new ETLStage("source", sourceConfig);
-    Plugin sinkConfig = new Plugin(sinkType,
-                                   ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA,
-                                                   EVENT_SCHEMA.toString(),
-                                                   Properties.TimePartitionedFileSetDataset.TPFS_NAME, fileSetName));
+    ETLPlugin sinkConfig = new ETLPlugin(
+      sinkType,
+      BatchSink.PLUGIN_TYPE,
+      ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA, EVENT_SCHEMA.toString(),
+                      Properties.TimePartitionedFileSetDataset.TPFS_NAME, fileSetName),
+      null);
     ETLStage sink = new ETLStage("sink", sinkConfig);
-    Plugin transformConfig = new Plugin("Projection", ImmutableMap.<String, String>of());
+    ETLPlugin transformConfig = new ETLPlugin("Projection", Transform.PLUGIN_TYPE,
+                                              ImmutableMap.<String, String>of(), null);
     ETLStage transform = new ETLStage("transforms", transformConfig);
     return ETLBatchConfig.builder("* * * * *")
-      .setSource(source)
-      .addSink(sink)
-      .addTransform(transform)
+      .addStage(source)
+      .addStage(sink)
+      .addStage(transform)
       .addConnection(source.getName(), transform.getName())
       .addConnection(transform.getName(), sink.getName())
       .build();

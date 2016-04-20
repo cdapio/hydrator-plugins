@@ -36,10 +36,11 @@ in the record:
 
     {
         "name": "Elasticsearch",
-            "properties": {
-                "es.transportAddresses": "localhost:9300",
-                "es.index": "logs",
-                "es.type": "cdap",
-                "es.idField": "ts"
-            }
+        "type": "batchsink",
+        "properties": {
+            "es.transportAddresses": "localhost:9300",
+            "es.index": "logs",
+            "es.type": "cdap",
+            "es.idField": "ts"
+        }
     }

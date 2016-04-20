@@ -33,6 +33,7 @@ The example writes to a Table named 'users':
 
     {
         "name": "Table",
+        "type": "realtimesink",
         "properties": {
             "name": "users",
             "schema": "{

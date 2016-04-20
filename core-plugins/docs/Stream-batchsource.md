@@ -54,6 +54,7 @@ This example reads from a stream named 'accesslogs':
 
     {
         "name": "Stream",
+        "type": "batchsource",
         "properties": {
             "name": "accesslogs",
             "duration": "10m",

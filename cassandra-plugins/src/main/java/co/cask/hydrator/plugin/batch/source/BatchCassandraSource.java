@@ -53,7 +53,7 @@ import javax.annotation.Nullable;
 // The issue of each token creating one mapper is documented in this Cassandra JIRA:
 // https://issues.apache.org/jira/browse/CASSANDRA-6091
 
-@Plugin(type = "batchsource")
+@Plugin(type = BatchSource.PLUGIN_TYPE)
 @Name("Cassandra")
 @Description("CDAP Cassandra Batch Source will select the rows returned by the user's query " +
   "and convert each row to a structured record using the schema specified by the user. ")

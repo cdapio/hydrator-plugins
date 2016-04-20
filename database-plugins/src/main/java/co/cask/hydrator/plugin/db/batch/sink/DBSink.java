@@ -80,11 +80,13 @@ public class DBSink extends BatchSink<StructuredRecord, DBRecord, NullWritable> 
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    dbSinkConfig.validate();
     dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId());
   }
 
   @Override
   public void prepareRun(BatchSinkContext context) {
+    dbSinkConfig.substituteMacros(context);
     LOG.debug("tableName = {}; pluginType = {}; pluginName = {}; connectionString = {}; columns = {}",
               dbSinkConfig.tableName, dbSinkConfig.jdbcPluginType, dbSinkConfig.jdbcPluginName,
               dbSinkConfig.connectionString, dbSinkConfig.columns);
@@ -189,9 +191,14 @@ public class DBSink extends BatchSink<StructuredRecord, DBRecord, NullWritable> 
    * {@link PluginConfig} for {@link DBSink}
    */
   public static class DBSinkConfig extends DBConfig {
+    public static final String COLUMNS = "columns";
+    public static final String TABLE_NAME = "tableName";
+
+    @Name(COLUMNS)
     @Description("Comma-separated list of columns in the specified table to export to.")
     public String columns;
 
+    @Name(TABLE_NAME)
     @Description("Name of the database table to write to.")
     public String tableName;
 
@@ -206,8 +213,10 @@ public class DBSink extends BatchSink<StructuredRecord, DBRecord, NullWritable> 
       conf.put(ETLDBOutputFormat.AUTO_COMMIT_ENABLED, String.valueOf(dbSinkConfig.getEnableAutoCommit()));
       conf.put(DBConfiguration.DRIVER_CLASS_PROPERTY, driverClass.getName());
       conf.put(DBConfiguration.URL_PROPERTY, dbSinkConfig.connectionString);
-      if (dbSinkConfig.user != null && dbSinkConfig.password != null) {
+      if (dbSinkConfig.user != null) {
         conf.put(DBConfiguration.USERNAME_PROPERTY, dbSinkConfig.user);
+      }
+      if (dbSinkConfig.password != null) {
         conf.put(DBConfiguration.PASSWORD_PROPERTY, dbSinkConfig.password);
       }
       conf.put(DBConfiguration.OUTPUT_TABLE_NAME_PROPERTY, dbSinkConfig.tableName);

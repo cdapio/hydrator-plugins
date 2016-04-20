@@ -48,6 +48,7 @@ Example
 
     {
         "name": "DataGenerator",
+        "type": "realtimesource",
         "properties": {
             "type": "table"
         }

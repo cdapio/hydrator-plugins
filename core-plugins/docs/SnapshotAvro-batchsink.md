@@ -38,6 +38,7 @@ a new partition in the PartitionedFileSet:
 
     {
         "name": "SnapshotAvro",
+        "type": "batchsink",
         "properties": {
             "name": "users",
             "schema": "{
