@@ -12,6 +12,11 @@
           "widget-attributes": {
             "default": "function transform(input, emitter, context) {\n  emitter.emit(input);\n}"
           }
+        },
+        {
+          "widget-type": "json-editor",
+          "label": "Lookup",
+          "name": "lookup"
         }
       ]
     }
