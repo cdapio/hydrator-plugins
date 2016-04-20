@@ -7,9 +7,17 @@
       "label": "Log Parser Transform",
       "properties": [
         {
-          "widget-type": "textbox",
+          "widget-type": "select",
           "label": "Log Format",
-          "name": "logFormat"
+          "name": "logFormat",
+          "widget-attributes": {
+            "values": [
+              "CLF",
+              "S3",
+              "Cloudfront"
+            ],
+            "default": "CLF"
+          }
         },
         {
           "widget-type": "textbox",

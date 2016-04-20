@@ -34,6 +34,7 @@ property is not set:
 
     {
         "name": "Stream",
+        "type": "realtimesink",
         "properties": {
             "name": "purchases",
             "body.field": "message"

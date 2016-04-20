@@ -36,6 +36,7 @@ specified directory. This example uses the 'hydrator' container at
 
     {
         "name": "AzureBlobStore",
+        "type": "batchsource",
         "properties": {
             "path": "/path/to/input",
             "account": "hydratorstorage.blob.core.windows.net",

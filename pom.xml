@@ -14,10 +14,9 @@
   License for the specific language governing permissions and limitations under
   the License.
   -->
-
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+<modelVersion>4.0.0</modelVersion>
 
   <groupId>co.cask.hydrator</groupId>
   <artifactId>hydrator-plugins</artifactId>
@@ -33,7 +32,6 @@
     <module>cassandra-plugins</module>
     <module>database-plugins</module>
     <module>elasticsearch-plugins</module>
-    <module>fileset-plugins-parquet</module>
     <module>hbase-plugins</module>
     <module>hdfs-plugins</module>
     <module>hive-plugins</module>
@@ -41,6 +39,7 @@
     <module>mongodb-plugins</module>
     <module>spark-plugins</module>
     <module>transform-plugins</module>
+    <module>url-plugins</module>
   </modules>
 
   <licenses>
@@ -101,6 +100,7 @@
     <commons-httpclient.version>3.1</commons-httpclient.version>
     <cdap.version>3.5.0-SNAPSHOT</cdap.version>
     <datastax.version>2.0.5</datastax.version>
+    <dumbster.version>1.6</dumbster.version>
     <es.version>1.6.0</es.version>
     <es-hadoop.version>2.1.0</es-hadoop.version>
     <fastutil.version>6.6.1</fastutil.version>
@@ -109,6 +109,7 @@
     <hadoop.version>2.3.0</hadoop.version>
     <hsql.version>2.2.4</hsql.version>
     <cdh.hive.version>1.1.0-cdh5.5.1</cdh.hive.version>
+    <javamail.version>1.4.1</javamail.version>
     <junit.version>4.11</junit.version>
     <kafka.version>0.8.2.2</kafka.version>
     <mockftp.version>2.6</mockftp.version>
@@ -182,7 +183,7 @@
       </dependency>
       <dependency>
         <groupId>co.cask.cdap</groupId>
-        <artifactId>cdap-etl-core</artifactId>
+        <artifactId>hydrator-test</artifactId>
         <version>${cdap.version}</version>
         <scope>test</scope>
       </dependency>
@@ -561,6 +562,27 @@
         <groupId>org.python</groupId>
         <artifactId>jython-standalone</artifactId>
         <version>${jython.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>dumbster</groupId>
+        <artifactId>dumbster</artifactId>
+        <version>${dumbster.version}</version>
+        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>javax.mail</groupId>
+            <artifactId>mail</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>javax.activation</groupId>
+            <artifactId>activation</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>javax.mail</groupId>
+        <artifactId>mail</artifactId>
+        <version>${javamail.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

@@ -16,6 +16,7 @@
 
 package co.cask.hydrator.plugin;
 
+import co.cask.hydrator.plugin.db.batch.action.DBQueryActionTestRun;
 import co.cask.hydrator.plugin.db.batch.sink.DBSinkTestRun;
 import co.cask.hydrator.plugin.db.batch.sink.DBSourceTestRun;
 import org.junit.AfterClass;
@@ -29,7 +30,8 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
   DBSinkTestRun.class,
-  DBSourceTestRun.class
+  DBSourceTestRun.class,
+  DBQueryActionTestRun.class
 })
 public class DatabasePluginTestSuite extends DatabasePluginTestBase {
 

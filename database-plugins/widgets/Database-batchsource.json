@@ -59,6 +59,11 @@
           "name": "importQuery",
           "widget-attributes": {
             "rows": "4"
+          },
+          "plugin-function": {
+            "method": "POST",
+            "endpoint": "getSchema",
+            "output-property": "schema"
           }
         },
         {

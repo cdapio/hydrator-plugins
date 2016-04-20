@@ -51,6 +51,7 @@ This example writes to the 'attr' column family of an HBase table named 'users':
 
     {
         "name": "Table",
+        "type": "batchsink",
         "properties": {
             "tableName": "users",
             "columnFamily": "attr",

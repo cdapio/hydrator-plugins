@@ -30,6 +30,7 @@ HTTP status code, and timestamp:
 
     {
         "name": "LogParser",
+        "type": "transform",
         "properties": {
             "logFormat": "CLF",
             "inputName": "body"

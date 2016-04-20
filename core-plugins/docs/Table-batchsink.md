@@ -33,6 +33,7 @@ This example writes to a Table named 'users':
 
     {
         "name": "Table",
+        "type": "batchsink",
         "properties": {
             "name": "users",
             "schema": "{

@@ -31,6 +31,7 @@ import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.common.SourceInputFormatProvider;
+import co.cask.hydrator.common.macro.DefaultMacroContext;
 import co.cask.hydrator.plugin.DBConfig;
 import co.cask.hydrator.plugin.DBManager;
 import co.cask.hydrator.plugin.DBRecord;
@@ -78,6 +79,8 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    // validate macro syntax
+    sourceConfig.validate();
     dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId());
     boolean hasOneSplit = false;
     if (sourceConfig.numSplits != null) {
@@ -111,8 +114,12 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
     public String password;
     public String jdbcPluginName;
     @Nullable
-    public String jdbcPluginType = "jdbc";
+    public String jdbcPluginType;
     public String query;
+
+    private String getJDBCPluginType() {
+      return jdbcPluginType == null ? "jdbc" : jdbcPluginType;
+    }
   }
 
   /**
@@ -149,11 +156,12 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
   private DriverCleanup loadPluginClassAndGetDriver(GetSchemaRequest request, EndpointPluginContext pluginContext)
     throws IllegalAccessException, InstantiationException, SQLException {
     Class<? extends Driver> driverClass =
-      pluginContext.loadPluginClass(request.jdbcPluginType, request.jdbcPluginName, PluginProperties.builder().build());
+      pluginContext.loadPluginClass(request.getJDBCPluginType(),
+                                    request.jdbcPluginName, PluginProperties.builder().build());
 
     try {
       return DBUtils.ensureJDBCDriverIsAvailable(driverClass, request.connectionString,
-                                                 request.jdbcPluginType, request.jdbcPluginName);
+                                                 request.getJDBCPluginType(), request.jdbcPluginName);
     } catch (IllegalAccessException | InstantiationException | SQLException e) {
       LOG.error("Unable to load or register driver {}", driverClass, e);
       throw e;
@@ -171,11 +179,11 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
+    sourceConfig.substituteMacros(context);
     LOG.debug("pluginType = {}; pluginName = {}; connectionString = {}; importQuery = {}; " +
                 "boundingQuery = {}",
               sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName,
               sourceConfig.connectionString, sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery());
-
     Job job = Job.getInstance();
     Configuration hConf = job.getConfiguration();
     hConf.clear();
@@ -191,7 +199,9 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
     DataDrivenETLDBInputFormat.setInput(hConf, DBRecord.class,
                                         sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery(),
                                         sourceConfig.getEnableAutoCommit());
-    hConf.set(DBConfiguration.INPUT_ORDER_BY_PROPERTY, sourceConfig.splitBy);
+    if (sourceConfig.numSplits == null || sourceConfig.numSplits != 1) {
+      hConf.set(DBConfiguration.INPUT_ORDER_BY_PROPERTY, sourceConfig.splitBy);
+    }
     if (sourceConfig.numSplits != null) {
       hConf.setInt(MRJobConfig.NUM_MAPS, sourceConfig.numSplits);
     }
@@ -227,9 +237,12 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
    * {@link PluginConfig} for {@link DBSource}
    */
   public static class DBSourceConfig extends DBConfig {
+    public static final String IMPORT_QUERY = "importQuery";
     public static final String BOUNDING_QUERY = "boundingQuery";
     public static final String SPLIT_BY = "splitBy";
+    public static final String NUM_SPLITS = "numSplits";
 
+    @Name(IMPORT_QUERY)
     @Description("The SELECT query to use to import data from the specified table. " +
       "You can specify an arbitrary number of columns to import, or import all columns using *. " +
       "The Query should contain the '$CONDITIONS' string unless numSplits is set to one. " +

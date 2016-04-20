@@ -46,10 +46,6 @@
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
-      <artifactId>cdap-etl-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-unit-test</artifactId>
     </dependency>
     <dependency>

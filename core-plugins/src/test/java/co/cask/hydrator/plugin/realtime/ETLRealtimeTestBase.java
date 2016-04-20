@@ -19,8 +19,9 @@ package co.cask.hydrator.plugin.realtime;
 import co.cask.cdap.etl.api.PipelineConfigurable;
 import co.cask.cdap.etl.api.realtime.RealtimeSource;
 import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
-import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
+import co.cask.cdap.proto.id.ArtifactId;
+import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.TestBase;
 import co.cask.hydrator.plugin.realtime.sink.RealtimeCubeSink;
 import co.cask.hydrator.plugin.realtime.sink.RealtimeTableSink;
@@ -44,8 +45,9 @@ import org.python.util.PythonInterpreter;
  */
 public class ETLRealtimeTestBase extends TestBase {
 
-  protected static final Id.Artifact APP_ARTIFACT_ID = Id.Artifact.from(Id.Namespace.DEFAULT, "etlrealtime", "3.2.0");
-  protected static final ArtifactSummary APP_ARTIFACT = ArtifactSummary.from(APP_ARTIFACT_ID);
+  protected static final ArtifactId APP_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("etlrealtime", "3.2.0");
+  protected static final ArtifactSummary APP_ARTIFACT =
+    new ArtifactSummary(APP_ARTIFACT_ID.getArtifact(), APP_ARTIFACT_ID.getVersion());
 
   @BeforeClass
   public static void setupTests() throws Exception {
@@ -54,7 +56,7 @@ public class ETLRealtimeTestBase extends TestBase {
                    RealtimeSource.class.getPackage().getName(),
                    PipelineConfigurable.class.getPackage().getName());
 
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "core-plugins", "1.0.0"), APP_ARTIFACT_ID,
+    addPluginArtifact(NamespaceId.DEFAULT.artifact("core-plugins", "1.0.0"), APP_ARTIFACT_ID,
                       DataGeneratorSource.class, JmsSource.class,
                       TwitterSource.class, SqsSource.class,
                       RealtimeCubeSink.class, RealtimeTableSink.class,

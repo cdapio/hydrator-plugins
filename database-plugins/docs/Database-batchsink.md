@@ -55,6 +55,7 @@ the record will be written to the 'id' column of that row.
 
     {
         "name": "Database",
+        "type": "batchsink",
         "properties": {
             "tableName": "users",
             "columns": "id,name,email,phone",
