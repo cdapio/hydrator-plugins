@@ -17,31 +17,23 @@
 package co.cask.hydrator.plugin.batch.aggregator.function;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.etl.api.Aggregator;
 
 /**
- * Counts the number of records in a group. This is the function for count(*).
+ * Methods to manage lifecycle functions performed on group of {@link StructuredRecord}, typically used in the
+ * {@link Aggregator#aggregate} stage.
  */
-public class CountAll implements AggregateFunction<Long> {
-  private long count;
+public interface RecordFunctionLifecycle {
 
-  @Override
-  public void beginFunction() {
-    count = 0;
-  }
+  /**
+   * Called once to start the function.
+   */
+  void beginFunction();
 
-  @Override
-  public void operateOn(StructuredRecord record) {
-    count++;
-  }
-
-  @Override
-  public Long getAggregate() {
-    return count;
-  }
-
-  @Override
-  public Schema getOutputSchema() {
-    return Schema.of(Schema.Type.LONG);
-  }
+  /**
+   * Called once for each {@link StructuredRecord} to operate up on. Calls to this method are made after the call to
+   * {@link #beginFunction}
+   * @param record {@link StructuredRecord} input record
+   */
+  void operateOn(StructuredRecord record);
 }

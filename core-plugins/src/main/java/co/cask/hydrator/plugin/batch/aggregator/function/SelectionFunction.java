@@ -17,31 +17,18 @@
 package co.cask.hydrator.plugin.batch.aggregator.function;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
+
+import java.util.List;
 
 /**
- * Counts the number of records in a group. This is the function for count(*).
+ * Peforms selection. To perform selection on a group of {@link StructuredRecord}, {@link #beginFunction} is first
+ * called, followed by calls to {@link #operateOn}. Finally the {@link #finishFunction} should be invoked before getting
+ * the selected records from {@link #getSelectedRecords}.
  */
-public class CountAll implements AggregateFunction<Long> {
-  private long count;
+public interface SelectionFunction extends RecordFunctionLifecycle {
 
-  @Override
-  public void beginFunction() {
-    count = 0;
-  }
-
-  @Override
-  public void operateOn(StructuredRecord record) {
-    count++;
-  }
-
-  @Override
-  public Long getAggregate() {
-    return count;
-  }
-
-  @Override
-  public Schema getOutputSchema() {
-    return Schema.of(Schema.Type.LONG);
-  }
+  /**
+   * @return {@link StructuredRecord} that is chosen based on the aggregate function.
+   */
+  List<StructuredRecord> getSelectedRecords();
 }
