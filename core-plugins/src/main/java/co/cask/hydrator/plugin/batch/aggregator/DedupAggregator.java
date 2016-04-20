@@ -39,7 +39,7 @@ import javax.ws.rs.Path;
  */
 @Plugin(type = BatchAggregator.PLUGIN_TYPE)
 @Name("Deduplicate")
-@Description("Deduplicates input records, optionally restricted to one or more fields. Also takes in an optional " +
+@Description("Deduplicates input records, optionally restricted to one or more fields. Takes an optional " +
   "filter function to choose one or more records based on a specific field and a selection function.")
 public class DedupAggregator extends RecordAggregator {
   private final DedupConfig dedupConfig;

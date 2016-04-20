@@ -36,20 +36,20 @@ import javax.annotation.Nullable;
  */
 public class DedupConfig extends AggregatorConfig {
 
-  @Description("Optional comma-separated list of fields to perform the deduplication on. If none is given, each " +
-    "record will be considered as a whole for deduplication. For example, if the input contains the records : " +
-    "'fname, lname, item, cost' and if we want to deduplicate the records by name, then this property should be set " +
-    "to 'fname,lname'")
+  @Description("Optional comma-separated list of fields on which to perform the deduplication. If none given, each " +
+    "record will be considered as a whole for deduplication. For example, if the input contains records with fields " +
+    "'fname', 'lname', 'item', and 'cost' and we want to deduplicate the records by name, then this property should " +
+    "be set to 'fname,lname'.")
   @Nullable
   private String uniqueFields;
 
   @Description("Optional property that can be set to predictably choose one or more records from the set of records " +
-    "that needs to be de-duplicated. This property takes in a field name and the logical operation that needs to be " +
+    "that needs to be deduplicated. This property takes in a field name and the logical operation that needs to be " +
     "performed on that field on the set of records. The syntax is 'field:function'. For example, if we want to " +
-    "choose the record with maximum cost for the records with schema 'fname, lname, item, cost', then this field " +
-    "should be set as 'cost:max'. Supported functions are - first, last, max, min. Note, only one pair of field " +
-    "and function is allowed. If this property is not set, one random record will be chosen from the group of " +
-    "'duplicate' records")
+    "choose the record with maximum cost for the records with schema 'fname', 'lname', 'item', 'cost', then this " +
+    "field should be set as 'cost:max'. Supported functions are first, last, max, and min. Note that only one pair " +
+    "of field and function is allowed. If this property is not set, one random record will be chosen from the " +
+    "group of 'duplicate' records.")
   @Nullable
   private String filterOperation;
 
