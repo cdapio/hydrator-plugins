@@ -62,8 +62,9 @@
           },
           "plugin-function": {
             "method": "POST",
-            "endpoint": "getSchema",
-            "output-property": "schema"
+            "widget": "getSchema",
+            "output-property": "schema",
+            "plugin-method": "getSchema"
           }
         },
         {
