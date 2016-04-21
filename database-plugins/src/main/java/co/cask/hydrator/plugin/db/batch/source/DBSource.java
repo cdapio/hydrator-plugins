@@ -136,20 +136,24 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
    */
   @Path("getSchema")
   public Schema getSchema(GetSchemaRequest request,
-                          EndpointPluginContext pluginContext)
-    throws SQLException, InstantiationException, IllegalAccessException, BadRequestException {
-    DriverCleanup driverCleanup = loadPluginClassAndGetDriver(request, pluginContext);
+                          EndpointPluginContext pluginContext) throws IllegalAccessException,
+    SQLException, InstantiationException, BadRequestException {
+    DriverCleanup driverCleanup;
     try {
+      driverCleanup = loadPluginClassAndGetDriver(request, pluginContext);
       try (Connection connection = getConnection(request.connectionString, request.user, request.password)) {
         Statement statement = connection.createStatement();
         statement.setMaxRows(1);
         ResultSet resultSet = statement.executeQuery(request.query);
         return Schema.recordOf("outputSchema", DBUtils.getSchemaFields(resultSet));
+      } catch (SQLSyntaxErrorException e) {
+        throw new BadRequestException(e.getMessage());
+      } finally {
+        driverCleanup.destroy();
       }
-    } catch (SQLSyntaxErrorException e) {
-      throw new BadRequestException(e.getMessage());
-    } finally {
-      driverCleanup.destroy();
+    } catch (Exception e) {
+      LOG.error("Exception while performing getSchema", e);
+      throw e;
     }
   }
 
