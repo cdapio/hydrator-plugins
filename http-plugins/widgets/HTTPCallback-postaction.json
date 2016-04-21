@@ -76,7 +76,7 @@
             "kv-delimiter" : ":",
             "delimiter" : "\n"
           }
-        },
+        }
       ]
     }
   ],
