@@ -53,17 +53,18 @@ public class HTTPConfig extends MacroConfig {
   private Integer connectTimeout;
 
   public HTTPConfig() {
-    followRedirects = true;
-    connectTimeout = 60 * 1000;
+    this(null);
   }
 
   public HTTPConfig(String url) {
-    this.url = url;
+    this(null, null);
   }
 
   public HTTPConfig(String url, String requestHeaders) {
     this.url = url;
     this.requestHeaders = requestHeaders;
+    this.followRedirects = true;
+    this.connectTimeout = 60 * 1000;
   }
 
   public String getUrl() {

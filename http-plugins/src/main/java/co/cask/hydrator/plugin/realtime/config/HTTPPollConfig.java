@@ -41,9 +41,7 @@ public class HTTPPollConfig extends HTTPConfig {
   private Integer readTimeout;
 
   public HTTPPollConfig() {
-    super();
-    charset = Charsets.UTF_8.name();
-    readTimeout = 60 * 1000;
+    this(null, 60);
   }
 
   public HTTPPollConfig(String url, long interval) {
@@ -53,6 +51,8 @@ public class HTTPPollConfig extends HTTPConfig {
   public HTTPPollConfig(String url, long interval, String requestHeaders) {
     super(url, requestHeaders);
     this.interval = interval;
+    this.charset = Charsets.UTF_8.name();
+    this.readTimeout = 60 * 1000;
   }
 
   public long getInterval() {
