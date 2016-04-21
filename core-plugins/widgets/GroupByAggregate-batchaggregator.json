@@ -13,6 +13,14 @@
           "name": "groupByFields",
           "widget-attributes": {
             "delimiter": ","
+          },
+          "plugin-function": {
+            "method": "POST",
+            "widget": "outputSchema",
+            "output-property": "schema",
+            "plugin-method": "outputSchema",
+            "required-fields": ["groupByFields", "aggregates"],
+            "missing-required-fields-message": "'Group By Fields' & 'Aggregates' properties are required to fetch schema."
           }
         },
         {
