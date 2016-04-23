@@ -15,6 +15,8 @@ used to fetch Atom or RSS feeds regularly, or to fetch the status of an external
 
 Properties
 ----------
+**referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
+
 **url:** Required The URL to fetch data from.
 
 **interval:** Required The time to wait between fetching data from the URL in seconds.

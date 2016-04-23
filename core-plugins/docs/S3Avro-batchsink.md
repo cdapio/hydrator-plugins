@@ -17,6 +17,8 @@ specified file. The output of the run will be stored in a directory with suffix
 
 Properties
 ----------
+**referenceName:** This will be used to uniquely identify this sink for lineage, annotating metadata, etc.
+
 **accessID:** Access ID of the Amazon S3 instance to connect to.
 
 **accessKey:** Access Key of the Amazon S3 instance to connect to.

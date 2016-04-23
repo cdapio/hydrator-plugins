@@ -8,6 +8,8 @@ Takes a StructuredRecord from a previous node, converts it into a BSONDocument a
 
 Configuration
 -------------
+**referenceName:** This will be used to uniquely identify this sink for lineage, annotating metadata, etc.
+
 **connectionString:** MongoDB connection string. Example: `mongodb://localhost:27017/analytics.users`
 [Reference](http://docs.mongodb.org/manual/reference/connection-string)
 

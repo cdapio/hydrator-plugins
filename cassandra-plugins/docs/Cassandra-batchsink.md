@@ -17,6 +17,8 @@ which you can achieve with a stream batch source and Cassandra as a sink.
 
 Properties
 ----------
+**referenceName:** This will be used to uniquely identify this sink for lineage, annotating metadata, etc.
+
 **initialAddress:** The initial address to connect to.
 
 **port:** The RPC port for Cassandra.

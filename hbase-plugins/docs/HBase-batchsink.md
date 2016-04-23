@@ -17,6 +17,8 @@ you may want to periodically dump the contents of a relational database into an 
 
 Properties
 ----------
+**referenceName:** This will be used to uniquely identify this sink for lineage, annotating metadata, etc.
+
 **tableName:** The name of the table to write to. **Note:** Prior to running the pipeline,
 this table should already exist.
 
