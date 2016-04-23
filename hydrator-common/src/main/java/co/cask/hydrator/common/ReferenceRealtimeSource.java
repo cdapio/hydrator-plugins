@@ -16,13 +16,19 @@
 
 package co.cask.hydrator.common;
 
+import co.cask.cdap.api.TxRunnable;
+import co.cask.cdap.api.data.DatasetContext;
 import co.cask.cdap.api.dataset.DatasetProperties;
+import co.cask.cdap.api.worker.WorkerContext;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.realtime.RealtimeContext;
 import co.cask.cdap.etl.api.realtime.RealtimeSource;
 import co.cask.cdap.proto.id.DatasetId;
 import co.cask.cdap.proto.id.NamespaceId;
-import com.google.common.collect.ImmutableMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.reflect.Field;
 
 /**
  * A {@link RealtimeSource} that verifies referenceName property and creates an externalDataset.
@@ -30,6 +36,7 @@ import com.google.common.collect.ImmutableMap;
  * @param <T> Type of object that the source emits
  */
 public abstract class ReferenceRealtimeSource<T> extends RealtimeSource<T> {
+  private static final Logger LOG = LoggerFactory.getLogger(ReferenceRealtimeSource.class);
   private final ReferencePluginConfig config;
 
   public ReferenceRealtimeSource(ReferencePluginConfig config) {
@@ -48,11 +55,22 @@ public abstract class ReferenceRealtimeSource<T> extends RealtimeSource<T> {
   @Override
   public void initialize(RealtimeContext context) throws Exception {
     super.initialize(context);
+    // CDAP-5759 - Remove reflection once we have a clean way to register external dataset usage
+    Field workerContextField;
     try {
-      context.provide(config.referenceName, ImmutableMap.<String, String>of());
-    } catch (Throwable t) {
-      // Safe to ignore since this is an hack to register lineage and we know that externalDataset will not be of
-      // type KeyValueTable
+      workerContextField = context.getClass().getDeclaredField("context");
+    } catch (NoSuchFieldException e) {
+      // Should not happen, except in test cases which might invoke initialize methods and pass in mock contexts
+      LOG.warn("Cannot register externalDataset usage for lineage purposes", e);
+      return;
     }
+    workerContextField.setAccessible(true);
+    WorkerContext workerContext = (WorkerContext) workerContextField.get(context);
+    workerContext.execute(new TxRunnable() {
+      @Override
+      public void run(DatasetContext datasetContext) throws Exception {
+        datasetContext.getDataset(config.referenceName);
+      }
+    });
   }
 }
