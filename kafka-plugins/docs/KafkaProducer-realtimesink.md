@@ -11,6 +11,8 @@ can also be configured to operate in either sync or async mode.
 
 Configuration
 -------------
+**referenceName:** This will be used to uniquely identify this sink for lineage, annotating metadata, etc.
+
 **brokers:** Specifies a list of brokers to connect to.
 
 **async:** Specifies whether writing the events to broker is *Asynchronous* or *Synchronous*.

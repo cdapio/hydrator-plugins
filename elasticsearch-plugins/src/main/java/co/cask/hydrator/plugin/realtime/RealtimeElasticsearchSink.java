@@ -20,11 +20,12 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.realtime.DataWriter;
 import co.cask.cdap.etl.api.realtime.RealtimeContext;
 import co.cask.cdap.etl.api.realtime.RealtimeSink;
 import co.cask.cdap.format.StructuredRecordStringConverter;
+import co.cask.hydrator.common.ReferencePluginConfig;
+import co.cask.hydrator.common.ReferenceRealtimeSink;
 import co.cask.hydrator.plugin.batch.ESProperties;
 import com.google.common.base.Strings;
 import org.elasticsearch.action.bulk.BulkItemResponse;
@@ -56,7 +57,7 @@ import javax.annotation.Nullable;
 @Name("Elasticsearch")
 @Description("CDAP Elasticsearch Realtime Sink takes the structured record from the input source and converts it " +
   "to a JSON string, then indexes it in Elasticsearch using the index, type, and id specified by the user.")
-public class RealtimeElasticsearchSink extends RealtimeSink<StructuredRecord> {
+public class RealtimeElasticsearchSink extends ReferenceRealtimeSink<StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(RealtimeElasticsearchSink.class);
   private static final String INDEX_DESCRIPTION = "The name of the index where the data will be stored. " +
     "If the index does not already exist, it will be created using Elasticsearch's default properties.";
@@ -74,11 +75,13 @@ public class RealtimeElasticsearchSink extends RealtimeSink<StructuredRecord> {
   private TransportClient client;
 
   public RealtimeElasticsearchSink(RealtimeESSinkConfig realtimeESSinkConfig) {
+    super(realtimeESSinkConfig);
     this.realtimeESSinkConfig = realtimeESSinkConfig;
   }
 
   @Override
-  public void initialize(RealtimeContext context) {
+  public void initialize(RealtimeContext context) throws Exception {
+    super.initialize(context);
     realtimeESSinkConfig.cluster = Strings.isNullOrEmpty(realtimeESSinkConfig.cluster) ?
       "elasticsearch" : realtimeESSinkConfig.cluster;
 
@@ -97,7 +100,6 @@ public class RealtimeElasticsearchSink extends RealtimeSink<StructuredRecord> {
   @Override
   public int write(Iterable<StructuredRecord> structuredRecords, DataWriter dataWriter) throws Exception {
     int numRecordsWritten = 0;
-
     BulkRequestBuilder bulkRequest = client.prepareBulk();
     for (StructuredRecord structuredRecord : structuredRecords) {
       if (Strings.isNullOrEmpty(realtimeESSinkConfig.idField)) {
@@ -135,7 +137,7 @@ public class RealtimeElasticsearchSink extends RealtimeSink<StructuredRecord> {
   /**
    * Config class for RealtimeElasticsearchSink.
    */
-  public static class RealtimeESSinkConfig extends PluginConfig {
+  public static class RealtimeESSinkConfig extends ReferencePluginConfig {
 
     @Name(ESProperties.INDEX_NAME)
     @Description(INDEX_DESCRIPTION)
@@ -159,8 +161,9 @@ public class RealtimeElasticsearchSink extends RealtimeSink<StructuredRecord> {
     @Nullable
     private String cluster;
 
-    public RealtimeESSinkConfig(String index, String type, @Nullable String idField,
+    public RealtimeESSinkConfig(String referenceName, String index, String type, @Nullable String idField,
                                 String transportAddresses, @Nullable String cluster) {
+      super(referenceName);
       this.index = index;
       this.type = type;
       this.idField = idField;

@@ -19,15 +19,16 @@ package co.cask.hydrator.plugin;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.data.batch.Output;
 import co.cask.cdap.api.data.batch.OutputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
-import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
-import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
+import co.cask.hydrator.common.ReferenceBatchSink;
+import co.cask.hydrator.common.ReferencePluginConfig;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import org.apache.hadoop.io.NullWritable;
@@ -48,10 +49,11 @@ import javax.annotation.Nullable;
 @Plugin(type = "batchsink")
 @Name("HDFS")
 @Description("Batch HDFS Sink")
-public class HDFSSink extends BatchSink<StructuredRecord, Text, NullWritable> {
+public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWritable> {
   private HDFSSinkConfig config;
 
   public HDFSSink(HDFSSinkConfig config) {
+    super(config);
     this.config = config;
   }
 
@@ -66,7 +68,8 @@ public class HDFSSink extends BatchSink<StructuredRecord, Text, NullWritable> {
 
   @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
-    context.addOutput(config.path, new SinkOutputFormatProvider(config, context));
+    context.addOutput(Output.of(config.referenceName, new SinkOutputFormatProvider(config, context))
+                        .alias(config.path));
   }
 
   @Override
@@ -112,7 +115,7 @@ public class HDFSSink extends BatchSink<StructuredRecord, Text, NullWritable> {
   /**
    * Config for HDFSSinkConfig.
    */
-  public static class HDFSSinkConfig extends PluginConfig {
+  public static class HDFSSinkConfig extends ReferencePluginConfig {
 
     @Name("path")
     @Description("HDFS Destination Path Prefix. For example, 'hdfs://mycluster.net:8020/output")
@@ -124,7 +127,8 @@ public class HDFSSink extends BatchSink<StructuredRecord, Text, NullWritable> {
     @Nullable
     private String timeSufix;
 
-    public HDFSSinkConfig(String path, String suffix, String outputFormat) {
+    public HDFSSinkConfig(String referenceName, String path, String suffix, String outputFormat) {
+      super(referenceName);
       this.path = path;
       this.timeSufix = suffix;
     }

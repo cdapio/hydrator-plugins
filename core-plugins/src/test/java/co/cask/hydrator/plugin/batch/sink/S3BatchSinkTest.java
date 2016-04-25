@@ -39,7 +39,7 @@ public class S3BatchSinkTest {
     String schema = "schema";
     // Test default properties
     S3AvroBatchSink.S3AvroSinkConfig s3AvroSinkConfig =
-      new S3AvroBatchSink.S3AvroSinkConfig(path, schema, accessID, accessKey, null, null);
+      new S3AvroBatchSink.S3AvroSinkConfig("s3test", path, schema, accessID, accessKey, null, null);
     S3AvroBatchSink s3AvroBatchSink = new S3AvroBatchSink(s3AvroSinkConfig);
     S3BatchSink.S3BatchSinkConfig s3BatchSinkConfig = s3AvroBatchSink.getConfig();
     Map<String, String> fsProperties = GSON.fromJson(s3BatchSinkConfig.fileSystemProperties, MAP_STRING_STRING_TYPE);

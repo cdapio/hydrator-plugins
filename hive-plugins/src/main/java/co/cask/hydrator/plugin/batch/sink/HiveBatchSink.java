@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.batch.sink;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.data.batch.Output;
 import co.cask.cdap.api.data.batch.OutputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
@@ -28,8 +29,8 @@ import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
-import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
+import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.plugin.batch.commons.HiveSchemaConverter;
 import co.cask.hydrator.plugin.batch.commons.HiveSchemaStore;
 import com.google.common.collect.MapDifference;
@@ -65,7 +66,7 @@ import java.util.Map;
 @Plugin(type = "batchsink")
 @Name("Hive")
 @Description("Batch Sink to write to external Hive tables.")
-public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCatRecord> {
+public class HiveBatchSink extends ReferenceBatchSink<StructuredRecord, NullWritable, HCatRecord> {
 
   private static final Gson GSON = new Gson();
   private static final Type STRING_MAP_TYPE = new TypeToken<Map<String, String>>() {
@@ -74,8 +75,14 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
   private HiveSinkConfig config;
   private RecordToHCatRecordTransformer recordToHCatRecordTransformer;
 
+  public HiveBatchSink(HiveSinkConfig config) {
+    super(config);
+    this.config = config;
+  }
+
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
     //TODO CDAP-4132: remove this way of storing Hive schema once we can share info between prepareRun and initialize
     // stage.
     pipelineConfigurer.createDataset(HiveSchemaStore.HIVE_TABLE_SCHEMA_STORE, KeyValueTable.class,
@@ -88,7 +95,7 @@ public class HiveBatchSink extends BatchSink<StructuredRecord, NullWritable, HCa
     HiveSinkOutputFormatProvider sinkOutputFormatProvider = new HiveSinkOutputFormatProvider(job, config);
     HCatSchema hiveSchema = sinkOutputFormatProvider.getHiveSchema();
     HiveSchemaStore.storeHiveSchema(context, config.dbName, config.tableName, hiveSchema);
-    context.addOutput(config.tableName, sinkOutputFormatProvider);
+    context.addOutput(Output.of(config.referenceName, sinkOutputFormatProvider).alias(config.tableName));
   }
 
   public void initialize(BatchRuntimeContext context) throws Exception {

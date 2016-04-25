@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.db.batch.source;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
@@ -28,10 +29,10 @@ import co.cask.cdap.api.plugin.PluginProperties;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
-import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
+import co.cask.hydrator.common.ReferenceBatchSource;
+import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.common.SourceInputFormatProvider;
-import co.cask.hydrator.common.macro.DefaultMacroContext;
 import co.cask.hydrator.plugin.DBConfig;
 import co.cask.hydrator.plugin.DBManager;
 import co.cask.hydrator.plugin.DBRecord;
@@ -65,7 +66,7 @@ import javax.ws.rs.Path;
 @Name("Database")
 @Description("Reads from a database table(s) using a configurable SQL query." +
   " Outputs one record for each row returned by the query.")
-public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredRecord> {
+public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(DBSource.class);
 
   private final DBSourceConfig sourceConfig;
@@ -73,12 +74,14 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
   private Class<? extends Driver> driverClass;
 
   public DBSource(DBSourceConfig sourceConfig) {
+    super(new ReferencePluginConfig(sourceConfig.referenceName));
     this.sourceConfig = sourceConfig;
     this.dbManager = new DBManager(sourceConfig);
   }
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
     // validate macro syntax
     sourceConfig.validate();
     dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId());
@@ -209,7 +212,8 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
     if (sourceConfig.numSplits != null) {
       hConf.setInt(MRJobConfig.NUM_MAPS, sourceConfig.numSplits);
     }
-    context.setInput(new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf));
+    context.setInput(Input.of(sourceConfig.referenceName,
+                              new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf)));
   }
 
   @Override

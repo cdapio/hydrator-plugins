@@ -35,6 +35,7 @@ import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
+import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.batch.source.FileBatchSource;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
@@ -376,6 +377,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
       "source",
       new ETLPlugin("S3", BatchSource.PLUGIN_TYPE,
                     ImmutableMap.<String, String>builder()
+                      .put(Constants.Reference.REFERENCE_NAME, "S3TestSource")
                       .put(Properties.S3.ACCESS_KEY, "key")
                       .put(Properties.S3.ACCESS_ID, "ID")
                       .put(Properties.S3.PATH, testPath)
@@ -428,6 +430,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     ETLStage source = new ETLStage(
       "source", new ETLPlugin("File", BatchSource.PLUGIN_TYPE,
                               ImmutableMap.<String, String>builder()
+                                .put(Constants.Reference.REFERENCE_NAME, "TestFile")
                                 .put(Properties.File.FILESYSTEM, "Text")
                                 .put(Properties.File.PATH, filePath)
                                 .build(),

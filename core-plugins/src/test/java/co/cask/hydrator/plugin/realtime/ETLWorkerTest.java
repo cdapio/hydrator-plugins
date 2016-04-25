@@ -76,7 +76,8 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
   public void testEmptyProperties() throws Exception {
     // Set properties to null to test if ETLTemplate can handle it.
     ETLPlugin sourceConfig = new ETLPlugin("DataGenerator", RealtimeSource.PLUGIN_TYPE,
-                                           ImmutableMap.<String, String>of(), null);
+                                           ImmutableMap.of(co.cask.hydrator.common.Constants.Reference.REFERENCE_NAME,
+                                                           "DG"), null);
     ETLPlugin sinkConfig = new ETLPlugin("Stream", RealtimeSink.PLUGIN_TYPE,
                                          ImmutableMap.of(Properties.Stream.NAME, "testS"), null);
     ETLStage source = new ETLStage("source", sourceConfig);
@@ -104,8 +105,8 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
   public void testStreamSinks() throws Exception {
     ETLPlugin sourceConfig = new ETLPlugin(
       "DataGenerator", RealtimeSource.PLUGIN_TYPE,
-      ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE, DataGeneratorSource.STREAM_TYPE),
-      null);
+      ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE, DataGeneratorSource.STREAM_TYPE,
+                      co.cask.hydrator.common.Constants.Reference.REFERENCE_NAME, "DG"), null);
 
     ETLStage source = new ETLStage("source", sourceConfig);
     ETLRealtimeConfig etlConfig = ETLRealtimeConfig.builder()
@@ -167,7 +168,8 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
                                      binaryNameField, timeField);
 
     ETLPlugin source = new ETLPlugin("DataGenerator", RealtimeSource.PLUGIN_TYPE,
-                                     ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE, DataGeneratorSource.TABLE_TYPE),
+                                     ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE, DataGeneratorSource.TABLE_TYPE,
+                                                     co.cask.hydrator.common.Constants.Reference.REFERENCE_NAME, "DG"),
                                      null);
     ETLPlugin transform = new ETLPlugin(
       "Script",
@@ -231,7 +233,8 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
                                      binaryNameField, timeField);
 
     ETLPlugin source = new ETLPlugin("DataGenerator", RealtimeSource.PLUGIN_TYPE,
-                                     ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE, DataGeneratorSource.TABLE_TYPE),
+                                     ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE, DataGeneratorSource.TABLE_TYPE,
+                                                     co.cask.hydrator.common.Constants.Reference.REFERENCE_NAME, "DG"),
                                      null);
     ETLPlugin sink = new ETLPlugin("Table", RealtimeSink.PLUGIN_TYPE,
                                    ImmutableMap.of(Properties.Table.NAME, "table1",
@@ -289,7 +292,9 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
                                      binaryNameField, timeField);
 
     ETLPlugin source = new ETLPlugin("DataGenerator", RealtimeSource.PLUGIN_TYPE,
-                                     ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE, DataGeneratorSource.TABLE_TYPE),
+                                     ImmutableMap.of(
+                                       DataGeneratorSource.PROPERTY_TYPE, DataGeneratorSource.TABLE_TYPE,
+                                       co.cask.hydrator.common.Constants.Reference.REFERENCE_NAME, "DG"),
                                      null);
 
     ETLPlugin sinkConfig1 = new ETLPlugin("Table", RealtimeSink.PLUGIN_TYPE,

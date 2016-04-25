@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.db.batch.sink;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.data.batch.Output;
 import co.cask.cdap.api.data.batch.OutputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
@@ -27,8 +28,9 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
-import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
+import co.cask.hydrator.common.ReferenceBatchSink;
+import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.plugin.DBConfig;
 import co.cask.hydrator.plugin.DBManager;
 import co.cask.hydrator.plugin.DBRecord;
@@ -60,7 +62,7 @@ import java.util.Map;
 @Plugin(type = "batchsink")
 @Name("Database")
 @Description("Writes records to a database table. Each record will be written to a row in the table.")
-public class DBSink extends BatchSink<StructuredRecord, DBRecord, NullWritable> {
+public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullWritable> {
   private static final Logger LOG = LoggerFactory.getLogger(DBSink.class);
 
   private final DBSinkConfig dbSinkConfig;
@@ -70,6 +72,7 @@ public class DBSink extends BatchSink<StructuredRecord, DBRecord, NullWritable> 
   private List<String> columns;
 
   public DBSink(DBSinkConfig dbSinkConfig) {
+    super(new ReferencePluginConfig(dbSinkConfig.referenceName));
     this.dbSinkConfig = dbSinkConfig;
     this.dbManager = new DBManager(dbSinkConfig);
   }
@@ -80,6 +83,7 @@ public class DBSink extends BatchSink<StructuredRecord, DBRecord, NullWritable> 
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
     dbSinkConfig.validate();
     dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId());
   }
@@ -103,8 +107,8 @@ public class DBSink extends BatchSink<StructuredRecord, DBRecord, NullWritable> 
     } finally {
       DBUtils.cleanup(driverClass);
     }
-
-    context.addOutput(dbSinkConfig.tableName, new DBOutputFormatProvider(dbSinkConfig, driverClass));
+    context.addOutput(Output.of(dbSinkConfig.referenceName, new DBOutputFormatProvider(dbSinkConfig, driverClass))
+                        .alias(dbSinkConfig.tableName));
   }
 
   @Override

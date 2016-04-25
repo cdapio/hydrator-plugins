@@ -17,6 +17,8 @@
 package co.cask.hydrator.plugin.realtime.config;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Name;
+import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.config.HTTPConfig;
 import com.google.common.base.Charsets;
 
@@ -28,6 +30,9 @@ import javax.annotation.Nullable;
  * Config class for HTTP Poll plugin.
  */
 public class HTTPPollConfig extends HTTPConfig {
+  @Name(Constants.Reference.REFERENCE_NAME)
+  @Description(Constants.Reference.REFERENCE_NAME_DESCRIPTION)
+  public String referenceName;
 
   @Description("The amount of time to wait between each poll in seconds.")
   private long interval;
@@ -41,18 +46,19 @@ public class HTTPPollConfig extends HTTPConfig {
   private Integer readTimeout;
 
   public HTTPPollConfig() {
-    this(null, 60);
+    this("", null, 60);
   }
 
-  public HTTPPollConfig(String url, long interval) {
-    this(url, interval, null);
+  public HTTPPollConfig(String referenceName, String url, long interval) {
+    this(referenceName, url, interval, null);
   }
 
-  public HTTPPollConfig(String url, long interval, String requestHeaders) {
+  public HTTPPollConfig(String referenceName, String url, long interval, String requestHeaders) {
     super(url, requestHeaders);
     this.interval = interval;
     this.charset = Charsets.UTF_8.name();
     this.readTimeout = 60 * 1000;
+    this.referenceName = referenceName;
   }
 
   public long getInterval() {

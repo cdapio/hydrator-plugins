@@ -20,6 +20,8 @@ then dumps the contents onto a Hadoop FileSystem.
 
 Properties
 ----------
+**referenceName:** This will be used to uniquely identify this sink for lineage, annotating metadata, etc.
+
 **path:** The directory to write to. For example, ``hdfs://mycluster.net:8020/my/desired/location``.
 
 **suffix:** Time suffix to append to the path for each run of the pipeline. For example,

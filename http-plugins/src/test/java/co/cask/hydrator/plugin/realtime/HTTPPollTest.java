@@ -64,6 +64,7 @@ public class HTTPPollTest extends TestBase {
   @Test
   public void testUrlFetch() throws Exception {
     HTTPPollConfig config = new HTTPPollConfig(
+      "TestURLFetch",
       String.format("http://%s:%s/ping",
                     service.getBindAddress().getHostName(),
                     service.getBindAddress().getPort()),
@@ -91,6 +92,7 @@ public class HTTPPollTest extends TestBase {
   @Test
   public void testRequestHeaders() throws Exception {
     HTTPPollConfig config = new HTTPPollConfig(
+      "TestRequestHeaders",
       String.format("http://%s:%s/useragent",
                     service.getBindAddress().getHostName(),
                     service.getBindAddress().getPort()),
@@ -117,6 +119,7 @@ public class HTTPPollTest extends TestBase {
   @Test
   public void test404() throws Exception {
     HTTPPollConfig config = new HTTPPollConfig(
+      "Test404",
       String.format("http://%s:%s/does-not-exist",
                     service.getBindAddress().getHostName(),
                     service.getBindAddress().getPort()),
@@ -142,6 +145,7 @@ public class HTTPPollTest extends TestBase {
   @Test
   public void testMultiplePolls() throws Exception {
     HTTPPollConfig config = new HTTPPollConfig(
+      "TestMultiplePolls",
       String.format("http://%s:%s/ping",
                     service.getBindAddress().getHostName(),
                     service.getBindAddress().getPort()),

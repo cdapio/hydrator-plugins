@@ -19,6 +19,8 @@ package co.cask.hydrator.plugin.source;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.data.batch.Input;
+import co.cask.cdap.api.data.batch.InputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
@@ -26,8 +28,8 @@ import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
-import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
+import co.cask.hydrator.common.ReferenceBatchSource;
 import co.cask.hydrator.plugin.HBaseConfig;
 import com.google.common.base.Strings;
 import org.apache.hadoop.conf.Configuration;
@@ -38,6 +40,10 @@ import org.apache.hadoop.hbase.mapreduce.MutationSerialization;
 import org.apache.hadoop.hbase.mapreduce.ResultSerialization;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.util.StringUtils;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
@@ -45,24 +51,50 @@ import org.apache.hadoop.mapreduce.Job;
 @Plugin(type = "batchsource")
 @Name("HBase")
 @Description("Read from an HBase table in batch")
-public class HBaseSource extends BatchSource<ImmutableBytesWritable, Result, StructuredRecord> {
+public class HBaseSource extends ReferenceBatchSource<ImmutableBytesWritable, Result, StructuredRecord> {
   private RowRecordTransformer rowRecordTransformer;
   private HBaseConfig config;
+
+  public HBaseSource(HBaseConfig config) {
+    super(config);
+    this.config = config;
+  }
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
     Job job = context.getHadoopJob();
     Configuration conf = job.getConfiguration();
-    job.setInputFormatClass(TableInputFormat.class);
-    conf.set(TableInputFormat.INPUT_TABLE, config.tableName);
-    conf.set(TableInputFormat.SCAN_COLUMN_FAMILY, config.columnFamily);
-    String zkQuorum = !Strings.isNullOrEmpty(config.zkQuorum) ? config.zkQuorum : "localhost";
-    String zkClientPort = !Strings.isNullOrEmpty(config.zkClientPort) ? config.zkClientPort : "2181";
-    conf.set("hbase.zookeeper.quorum", zkQuorum);
-    conf.set("hbase.zookeeper.property.clientPort", zkClientPort);
-    conf.setStrings("io.serializations", conf.get("io.serializations"),
-                    MutationSerialization.class.getName(), ResultSerialization.class.getName(),
-                    KeyValueSerialization.class.getName());
+    context.setInput(Input.of(config.referenceName, new HBaseInputFormatProvider(config, conf)));
+  }
+
+  private class HBaseInputFormatProvider implements InputFormatProvider {
+    private final Map<String, String> conf;
+
+    public HBaseInputFormatProvider(HBaseConfig config, Configuration configuration) {
+      this.conf = new HashMap<>();
+      conf.put(TableInputFormat.INPUT_TABLE, config.tableName);
+      conf.put(TableInputFormat.SCAN_COLUMN_FAMILY, config.columnFamily);
+      String zkQuorum = !Strings.isNullOrEmpty(config.zkQuorum) ? config.zkQuorum : "localhost";
+      String zkClientPort = !Strings.isNullOrEmpty(config.zkClientPort) ? config.zkClientPort : "2181";
+      conf.put("hbase.zookeeper.quorum", zkQuorum);
+      conf.put("hbase.zookeeper.property.clientPort", zkClientPort);
+      String[] serializationClasses = {
+        configuration.get("io.serializations"),
+        MutationSerialization.class.getName(),
+        ResultSerialization.class.getName(),
+        KeyValueSerialization.class.getName() };
+      conf.put("io.serializations", StringUtils.arrayToString(serializationClasses));
+    }
+
+    @Override
+    public String getInputFormatClassName() {
+      return TableInputFormat.class.getName();
+    }
+
+    @Override
+    public Map<String, String> getInputFormatConfiguration() {
+      return conf;
+    }
   }
 
   @Override

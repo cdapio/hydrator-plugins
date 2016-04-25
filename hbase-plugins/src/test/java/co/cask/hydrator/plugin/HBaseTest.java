@@ -40,6 +40,7 @@ import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestConfiguration;
+import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.sink.HBaseSink;
 import co.cask.hydrator.plugin.source.HBaseSource;
 import com.google.common.collect.ImmutableList;
@@ -161,6 +162,7 @@ public class HBaseTest extends HydratorTestBase {
     hBaseProps.put("schema", BODY_SCHEMA.toString());
     hBaseProps.put("zkNodeParent", testUtil.getConfiguration().get("zookeeper.znode.parent"));
     hBaseProps.put("rowField", "ticker");
+    hBaseProps.put(Constants.Reference.REFERENCE_NAME, "HBaseSinkTest");
     ETLStage sink = new ETLStage("HBase", new ETLPlugin("HBase", BatchSink.PLUGIN_TYPE, hBaseProps, null));
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
       .addStage(source)
@@ -207,6 +209,7 @@ public class HBaseTest extends HydratorTestBase {
     hBaseProps.put("zkClientPort", Integer.toString(testUtil.getZkCluster().getClientPort()));
     hBaseProps.put("schema", BODY_SCHEMA.toString());
     hBaseProps.put("rowField", "ticker");
+    hBaseProps.put(Constants.Reference.REFERENCE_NAME, "HBaseSourceTest");
 
     ETLStage source = new ETLStage("HBase", new ETLPlugin("HBase", BatchSource.PLUGIN_TYPE, hBaseProps, null));
     String outputDatasetName = "output-hbasesourcetest";

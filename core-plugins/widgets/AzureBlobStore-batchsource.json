@@ -8,6 +8,11 @@
       "properties": [
         {
           "widget-type": "textbox",
+          "label": "Reference Name",
+          "name": "referenceName"
+        },
+        {
+          "widget-type": "textbox",
           "label": "Azure Blob Store Path",
           "name": "path"
         },

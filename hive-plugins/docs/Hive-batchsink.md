@@ -8,6 +8,8 @@ Converts a StructuredRecord to a HCatRecord and then writes it to an existing Hi
 
 Configuration
 -------------
+**referenceName:** This will be used to uniquely identify this sink for lineage, annotating metadata, etc.
+
 **metastoreURI:** The URI of Hive metastore in the format ``thrift://<hostname>:<port>``.
 Example: ``thrift://somehost.net:9083``.
 

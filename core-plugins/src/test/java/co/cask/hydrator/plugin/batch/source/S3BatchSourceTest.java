@@ -34,11 +34,13 @@ public class S3BatchSourceTest {
 
   @Test
   public void testFileSystemProperties() {
+    String referenceName = "s3source";
     String accessID = "accessID";
     String accessKey = "accessKey";
     String path = "/path";
     // Test default properties
-    S3BatchSource.S3BatchConfig s3BatchConfig = new S3BatchSource.S3BatchConfig(accessID, accessKey, path);
+    S3BatchSource.S3BatchConfig s3BatchConfig = new S3BatchSource.S3BatchConfig(referenceName, accessID, accessKey,
+                                                                                path);
     S3BatchSource s3BatchSource = new S3BatchSource(s3BatchConfig);
     FileBatchSource.FileBatchConfig fileBatchConfig = s3BatchSource.getConfig();
     Map<String, String> fsProperties = GSON.fromJson(fileBatchConfig.fileSystemProperties, MAP_STRING_STRING_TYPE);
@@ -48,7 +50,7 @@ public class S3BatchSourceTest {
     Assert.assertEquals(accessKey, fsProperties.get("fs.s3n.awsSecretAccessKey"));
 
     // Test extra properties
-    s3BatchConfig = new S3BatchSource.S3BatchConfig(accessID, accessKey, path, null, null, null,
+    s3BatchConfig = new S3BatchSource.S3BatchConfig(referenceName, accessID, accessKey, path, null, null, null,
                                                     GSON.toJson(ImmutableMap.of("s3.compression", "gzip")), null);
     s3BatchSource = new S3BatchSource(s3BatchConfig);
     fileBatchConfig = s3BatchSource.getConfig();
