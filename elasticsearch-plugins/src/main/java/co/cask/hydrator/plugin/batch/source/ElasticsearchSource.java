@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -31,6 +31,7 @@ import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.common.ReferenceBatchSource;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.common.SourceInputFormatProvider;
+import co.cask.hydrator.common.batch.JobUtils;
 import co.cask.hydrator.plugin.batch.ESProperties;
 import co.cask.hydrator.plugin.batch.RecordWritableConverter;
 import org.apache.hadoop.conf.Configuration;
@@ -91,16 +92,17 @@ public class ElasticsearchSource extends ReferenceBatchSource<Text, MapWritable,
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
-    Job job = Job.getInstance();
+    Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();
-    conf.clear();
+
     job.setSpeculativeExecution(false);
     conf.set("es.nodes", config.hostname);
     conf.set("es.resource", getResource());
     conf.set("es.query", config.query);
     job.setMapOutputKeyClass(Text.class);
     job.setMapOutputValueClass(MapWritable.class);
-    context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(EsInputFormat.class, conf)));
+    context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(EsInputFormat.class, conf))
+                       .alias(config.index));
   }
 
   @Override

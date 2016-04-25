@@ -33,6 +33,7 @@ import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.common.ReferenceBatchSource;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.common.SourceInputFormatProvider;
+import co.cask.hydrator.common.batch.JobUtils;
 import co.cask.hydrator.plugin.common.BatchFileFilter;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
@@ -131,9 +132,8 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
     cal.set(Calendar.MILLISECOND, 0);
     prevHour = cal.getTime();
 
-    Job job = Job.getInstance();
+    Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();
-    conf.clear();
 
     Map<String, String> properties = GSON.fromJson(config.fileSystemProperties, MAP_STRING_STRING_TYPE);
     //noinspection ConstantConditions

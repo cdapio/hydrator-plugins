@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -31,6 +31,7 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.common.ReferenceBatchSink;
+import co.cask.hydrator.common.batch.JobUtils;
 import co.cask.hydrator.plugin.batch.commons.HiveSchemaConverter;
 import co.cask.hydrator.plugin.batch.commons.HiveSchemaStore;
 import com.google.common.collect.MapDifference;
@@ -43,6 +44,7 @@ import org.apache.hadoop.hive.thrift.DelegationTokenSelector;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.security.token.TokenIdentifier;
@@ -91,7 +93,9 @@ public class HiveBatchSink extends ReferenceBatchSink<StructuredRecord, NullWrit
 
   @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
-    Job job = context.getHadoopJob();
+    Job job = JobUtils.createInstance();
+    Configuration conf = job.getConfiguration();
+
     HiveSinkOutputFormatProvider sinkOutputFormatProvider = new HiveSinkOutputFormatProvider(job, config);
     HCatSchema hiveSchema = sinkOutputFormatProvider.getHiveSchema();
     HiveSchemaStore.storeHiveSchema(context, config.dbName, config.tableName, hiveSchema);

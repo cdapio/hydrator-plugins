@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -76,6 +76,7 @@ public class MongoDBBatchSource extends ReferenceBatchSource<Object, BSONObject,
   public void prepareRun(BatchSourceContext context) throws Exception {
     Configuration conf = new Configuration();
     conf.clear();
+
     MongoConfigUtil.setInputFormat(conf, MongoInputFormat.class);
     MongoConfigUtil.setInputURI(conf, config.connectionString);
     if (!Strings.isNullOrEmpty(config.inputQuery)) {
@@ -94,8 +95,9 @@ public class MongoDBBatchSource extends ReferenceBatchSource<Object, BSONObject,
         className).asSubclass(MongoSplitter.class);
       MongoConfigUtil.setSplitterClass(conf, klass);
     }
-    context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(MongoConfigUtil.getInputFormat(conf),
-                                                                                  conf)));
+
+    context.setInput(Input.of(config.referenceName,
+                              new SourceInputFormatProvider(MongoConfigUtil.getInputFormat(conf), conf)));
   }
 
   @Override
