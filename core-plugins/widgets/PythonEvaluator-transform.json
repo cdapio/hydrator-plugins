@@ -10,7 +10,7 @@
           "label": "script",
           "name": "script",
           "widget-attributes": {
-            "default": "def transform(record, emitter, context):\n    emitter.emit(record)\n"
+            "default": "def transform(record, emitter, context):\n  emitter.emit(record)\n"
           }
         }
       ]
