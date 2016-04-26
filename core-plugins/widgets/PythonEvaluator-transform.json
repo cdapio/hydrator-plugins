@@ -7,7 +7,7 @@
       "properties": [
         {
           "widget-type": "python-editor",
-          "label": "script",
+          "label": "Script",
           "name": "script",
           "widget-attributes": {
             "default": "def transform(record, emitter, context):\n  emitter.emit(record)\n"
