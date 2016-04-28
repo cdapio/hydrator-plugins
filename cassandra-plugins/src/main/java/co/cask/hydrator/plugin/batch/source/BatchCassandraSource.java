@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -92,6 +92,7 @@ public class BatchCassandraSource extends ReferenceBatchSource<Long, Row, Struct
   public void prepareRun(BatchSourceContext context) throws Exception {
     Configuration conf = new Configuration();
     conf.clear();
+
     ConfigHelper.setInputColumnFamily(conf, config.keyspace, config.columnFamily);
     ConfigHelper.setInputInitialAddress(conf, config.initialAddress);
     ConfigHelper.setInputPartitioner(conf, config.partitioner);

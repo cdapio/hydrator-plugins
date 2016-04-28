@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -27,6 +27,7 @@ import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
+import co.cask.hydrator.common.batch.JobUtils;
 import co.cask.hydrator.plugin.common.AvroToStructuredTransformer;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -107,9 +108,8 @@ public class TimePartitionedFileSetDatasetAvroSource extends
   @Override
   protected void addInputFormatConfiguration(Map<String, String> config) {
     try {
-      Job job = Job.getInstance();
+      Job job = JobUtils.createInstance();
       Configuration hConf = job.getConfiguration();
-      hConf.clear();
 
       Schema avroSchema = new Schema.Parser().parse(tpfsAvroConfig.schema);
       AvroJob.setInputKeySchema(job, avroSchema);

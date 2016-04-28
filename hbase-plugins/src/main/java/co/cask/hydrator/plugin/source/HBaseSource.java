@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -20,7 +20,6 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.batch.Input;
-import co.cask.cdap.api.data.batch.InputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
@@ -30,6 +29,7 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.common.ReferenceBatchSource;
+import co.cask.hydrator.common.SourceInputFormatProvider;
 import co.cask.hydrator.plugin.HBaseConfig;
 import com.google.common.base.Strings;
 import org.apache.hadoop.conf.Configuration;
@@ -39,11 +39,6 @@ import org.apache.hadoop.hbase.mapreduce.KeyValueSerialization;
 import org.apache.hadoop.hbase.mapreduce.MutationSerialization;
 import org.apache.hadoop.hbase.mapreduce.ResultSerialization;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
-import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.util.StringUtils;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  *
@@ -62,39 +57,21 @@ public class HBaseSource extends ReferenceBatchSource<ImmutableBytesWritable, Re
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
-    Job job = context.getHadoopJob();
-    Configuration conf = job.getConfiguration();
-    context.setInput(Input.of(config.referenceName, new HBaseInputFormatProvider(config, conf)));
-  }
+    Configuration conf = new Configuration();
+    String ioSerializations = conf.get("io.serializations");
+    conf.clear();
 
-  private class HBaseInputFormatProvider implements InputFormatProvider {
-    private final Map<String, String> conf;
-
-    public HBaseInputFormatProvider(HBaseConfig config, Configuration configuration) {
-      this.conf = new HashMap<>();
-      conf.put(TableInputFormat.INPUT_TABLE, config.tableName);
-      conf.put(TableInputFormat.SCAN_COLUMN_FAMILY, config.columnFamily);
-      String zkQuorum = !Strings.isNullOrEmpty(config.zkQuorum) ? config.zkQuorum : "localhost";
-      String zkClientPort = !Strings.isNullOrEmpty(config.zkClientPort) ? config.zkClientPort : "2181";
-      conf.put("hbase.zookeeper.quorum", zkQuorum);
-      conf.put("hbase.zookeeper.property.clientPort", zkClientPort);
-      String[] serializationClasses = {
-        configuration.get("io.serializations"),
-        MutationSerialization.class.getName(),
-        ResultSerialization.class.getName(),
-        KeyValueSerialization.class.getName() };
-      conf.put("io.serializations", StringUtils.arrayToString(serializationClasses));
-    }
-
-    @Override
-    public String getInputFormatClassName() {
-      return TableInputFormat.class.getName();
-    }
-
-    @Override
-    public Map<String, String> getInputFormatConfiguration() {
-      return conf;
-    }
+    conf.set(TableInputFormat.INPUT_TABLE, config.tableName);
+    conf.set(TableInputFormat.SCAN_COLUMN_FAMILY, config.columnFamily);
+    String zkQuorum = !Strings.isNullOrEmpty(config.zkQuorum) ? config.zkQuorum : "localhost";
+    String zkClientPort = !Strings.isNullOrEmpty(config.zkClientPort) ? config.zkClientPort : "2181";
+    conf.set("hbase.zookeeper.quorum", zkQuorum);
+    conf.set("hbase.zookeeper.property.clientPort", zkClientPort);
+    conf.setStrings(ioSerializations,
+                    MutationSerialization.class.getName(), ResultSerialization.class.getName(),
+                    KeyValueSerialization.class.getName());
+    context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(TableInputFormat.class, conf))
+                       .alias(config.columnFamily));
   }
 
   @Override

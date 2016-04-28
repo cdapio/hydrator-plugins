@@ -42,7 +42,6 @@ import co.cask.hydrator.plugin.FieldCase;
 import co.cask.hydrator.plugin.StructuredRecordUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.lib.db.DBConfiguration;
 import org.slf4j.Logger;
@@ -191,8 +190,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
                 "boundingQuery = {}",
               sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName,
               sourceConfig.connectionString, sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery());
-    Job job = Job.getInstance();
-    Configuration hConf = job.getConfiguration();
+    Configuration hConf = new Configuration();
     hConf.clear();
 
     // Load the plugin class to make sure it is available.

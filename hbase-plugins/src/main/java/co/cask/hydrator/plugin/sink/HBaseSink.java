@@ -32,6 +32,7 @@ import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.cdap.format.RecordPutTransformer;
 import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.SchemaValidator;
+import co.cask.hydrator.common.batch.JobUtils;
 import co.cask.hydrator.plugin.HBaseConfig;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -68,11 +69,12 @@ public class HBaseSink extends ReferenceBatchSink<StructuredRecord, NullWritable
 
   @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
-    Job job = context.getHadoopJob();
+    Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();
+
+    HBaseConfiguration.addHbaseResources(conf);
     context.addOutput(Output.of(config.referenceName, new HBaseOutputFormatProvider(config, conf))
                         .alias(config.columnFamily));
-    HBaseConfiguration.addHbaseResources(conf);
   }
 
   @Override
