@@ -46,6 +46,7 @@ import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkerManager;
+import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.batch.sink.BatchCassandraSink;
 import co.cask.hydrator.plugin.batch.source.BatchCassandraSource;
 import co.cask.hydrator.plugin.realtime.RealtimeCassandraSink;
@@ -168,6 +169,7 @@ public class ETLCassandraTest extends HydratorTestBase {
       "Cassandra",
       BatchSink.PLUGIN_TYPE,
       new ImmutableMap.Builder<String, String>()
+        .put(Constants.Reference.REFERENCE_NAME, "TestCass")
         .put(RealtimeCassandraSink.Cassandra.ADDRESSES, "localhost:9042,invalid:abcd")
         .put(RealtimeCassandraSink.Cassandra.KEYSPACE, "testkeyspace")
         .put(RealtimeCassandraSink.Cassandra.COLUMN_FAMILY, "testtablerealtime")
@@ -197,6 +199,7 @@ public class ETLCassandraTest extends HydratorTestBase {
     ETLStage source = new ETLStage("source", MockSource.getPlugin(inputDatasetName));
 
     Map<String, String> sinkProperties = new ImmutableMap.Builder<String, String>()
+        .put(Constants.Reference.REFERENCE_NAME, "TestCass")
         .put(BatchCassandraSink.Cassandra.INITIAL_ADDRESS, "localhost")
         .put(BatchCassandraSink.Cassandra.PORT, Integer.toString(rpcPort))
         .put(BatchCassandraSink.Cassandra.PARTITIONER, "org.apache.cassandra.dht.Murmur3Partitioner")
@@ -253,6 +256,7 @@ public class ETLCassandraTest extends HydratorTestBase {
 
   private void testCassandraSource() throws Exception {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
+      .put(Constants.Reference.REFERENCE_NAME, "TestCass")
       .put(BatchCassandraSource.Cassandra.INITIAL_ADDRESS, "localhost")
       .put(BatchCassandraSource.Cassandra.PARTITIONER,
            "org.apache.cassandra.dht.Murmur3Partitioner")
@@ -321,6 +325,7 @@ public class ETLCassandraTest extends HydratorTestBase {
       "Cassandra",
       RealtimeSink.PLUGIN_TYPE,
       new ImmutableMap.Builder<String, String>()
+        .put(Constants.Reference.REFERENCE_NAME, "TestCass")
         .put(RealtimeCassandraSink.Cassandra.ADDRESSES, "localhost:9042")
         .put(RealtimeCassandraSink.Cassandra.KEYSPACE, "testkeyspace")
         .put(RealtimeCassandraSink.Cassandra.COLUMN_FAMILY, "testtablerealtime")

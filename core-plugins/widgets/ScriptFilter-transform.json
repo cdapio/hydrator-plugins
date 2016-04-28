@@ -13,6 +13,11 @@
           "widget-attributes": {
             "default": "function shouldFilter(input, context) {\n  return false;\n}"
           }
+        },
+        {
+          "widget-type": "json-editor",
+          "label": "Lookup",
+          "name": "lookup"
         }
       ]
     }

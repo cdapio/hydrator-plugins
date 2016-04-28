@@ -14,6 +14,8 @@ to be able to search on them.
 
 Configuration
 -------------
+**referenceName:** This will be used to uniquely identify this sink for lineage, annotating metadata, etc.
+
 **es.cluster:** The name of the cluster to connect to; defaults to ``'elasticsearch'``.
 
 **es.transportAddresses:** The addresses for nodes; specify the address for at least one node,

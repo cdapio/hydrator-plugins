@@ -74,22 +74,22 @@ public class Min extends NumberFunction {
   }
 
   @Override
-  protected Integer finishInt() {
+  protected Integer getInt() {
     return minInt;
   }
 
   @Override
-  protected Long finishLong() {
+  protected Long getLong() {
     return minLong;
   }
 
   @Override
-  protected Float finishFloat() {
+  protected Float getFloat() {
     return minFloat;
   }
 
   @Override
-  protected Double finishDouble() {
+  protected Double getDouble() {
     return minDouble;
   }
 }

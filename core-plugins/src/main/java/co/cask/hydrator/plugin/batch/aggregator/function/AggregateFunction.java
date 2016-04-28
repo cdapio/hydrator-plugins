@@ -20,38 +20,26 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 
 /**
- * Performs an aggregation. For each group that needs an aggregate to be calculated, the {@link #beginAggregate()}
- * method is called first. After that, one or more calls to {@link #update(StructuredRecord)} are made, one call for
- * each value in the group. Finally, {@link #finishAggregate()} is called to retrieve the final aggregate value.
+ * Performs an aggregation. For each group that needs an aggregate to be calculated, the {@link #beginFunction()}
+ * method is called first. After that, one or more calls to {@link #operateOn(StructuredRecord)} are made, one call for
+ * each value in the group. Finally, {@link #getAggregate()} is called to retrieve the aggregate.
  *
  * todo: convert this to a plugin
  *
  * @param <T> type of aggregate value
  */
-public interface AggregateFunction<T> {
+public interface AggregateFunction<T> extends RecordFunctionLifecycle {
 
   /**
-   * Called once to start calculation of an aggregate.
-   */
-  void beginAggregate();
-
-  /**
-   * Called once for each record to aggregate. Calls to update are made after the call to {@link #beginAggregate()}.
-   *
-   * @param record the record to aggregate
-   */
-  void update(StructuredRecord record);
-
-  /**
-   * Called once when an aggregate should be fetched. Called after all calls to {@link #update(StructuredRecord)}
+   * Called once when an aggregate should be fetched. Called after all calls to {@link #operateOn(StructuredRecord)}
    * for an aggregate have been made.
    *
    * @return the aggregate value
    */
-  T finishAggregate();
+  T getAggregate();
 
   /**
-   * @return the schema of the aggregate values returned by this function.
+   * @return the schema of the aggregate value returned by this function.
    */
   Schema getOutputSchema();
 }

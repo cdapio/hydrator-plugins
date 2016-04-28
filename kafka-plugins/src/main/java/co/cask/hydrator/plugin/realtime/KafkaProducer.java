@@ -21,12 +21,12 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.realtime.DataWriter;
 import co.cask.cdap.etl.api.realtime.RealtimeContext;
-import co.cask.cdap.etl.api.realtime.RealtimeSink;
 import co.cask.cdap.format.StructuredRecordStringConverter;
+import co.cask.hydrator.common.ReferencePluginConfig;
+import co.cask.hydrator.common.ReferenceRealtimeSink;
 import com.google.common.collect.Lists;
 import kafka.producer.ProducerConfig;
 import org.apache.commons.csv.CSVFormat;
@@ -52,7 +52,7 @@ import java.util.Properties;
 @Plugin(type = "realtimesink")
 @Name("KafkaProducer")
 @Description("Real-time Kafka producer")
-public class KafkaProducer extends RealtimeSink<StructuredRecord> {
+public class KafkaProducer extends ReferenceRealtimeSink<StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(KafkaProducer.class);
 
   // Configuration for the plugin.
@@ -83,9 +83,9 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
   // List of Kafka topics.
   private String[] topics;
 
-  
   // required for testing.
   public KafkaProducer(Config kafkaConfig) {
+    super(kafkaConfig);
     this.producerConfig = kafkaConfig;
   }
 
@@ -127,7 +127,6 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
   @Override
   public int write(Iterable<StructuredRecord> objects, final DataWriter dataWriter) throws Exception {
     int count = 0;
-
     List<Schema.Field> fields;
     
     // For each object
@@ -245,7 +244,7 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
   /**
    * Kafka Producer Configuration.
    */
-  public static class Config extends PluginConfig {
+  public static class Config extends ReferencePluginConfig {
     
     @Name("brokers")
     @Description("Specifies the connection string where Producer can find one or more brokers to " +
@@ -275,6 +274,7 @@ public class KafkaProducer extends RealtimeSink<StructuredRecord> {
     
     public Config(String brokers, String async, String partitionField, String key, String topics,
                   String format) {
+      super(String.format("Kafka_%s", topics));
       this.brokers = brokers;
       this.async = async;
       this.partitionField = partitionField;

@@ -15,6 +15,8 @@ the logs in a TimePartitionedFileSet.
 
 Properties
 ----------
+**referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
+
 **fileSystem:** Distributed file system to read in from.
 
 **fileSystemProperties:** A JSON string representing a map of properties

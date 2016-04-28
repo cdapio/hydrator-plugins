@@ -30,6 +30,8 @@ be accessed by your data scientists to perform experiments.
 
 Properties
 ----------
+**referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
+
 See the [Twitter OAuth documentation] for more information on obtaining
 your access token and access token secret. The consumer key and secret
 are specific to your Twitter app. Login, view [your apps], then click on

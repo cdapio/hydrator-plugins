@@ -25,8 +25,7 @@ import javax.annotation.Nullable;
  * Base class for number based aggregate functions.
  * Allows subclasses to implement typed methods instead of implementing their own casting logic.
  * Guarantees that only methods for one type will be called for each aggregate. For example,
- * if {@link #updateInt(int)} is called, only {@link #updateInt(int)} will be called until {@link #finishInt()}
- * is called.
+ * if {@link #updateInt(int)} is called, only {@link #updateInt(int)} will be called.
  */
 public abstract class NumberFunction implements AggregateFunction<Number> {
   private final AggregateFunction<? extends Number> typedDelegate;
@@ -36,12 +35,12 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
     if (fieldSchema == null) {
       typedDelegate = new AggregateFunction<Double>() {
         @Override
-        public void beginAggregate() {
+        public void beginFunction() {
           startDouble();
         }
 
         @Override
-        public void update(StructuredRecord record) {
+        public void operateOn(StructuredRecord record) {
           Number val = record.get(fieldName);
           if (val != null) {
             updateDouble(val.doubleValue());
@@ -49,8 +48,8 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
         }
 
         @Override
-        public Double finishAggregate() {
-          return finishDouble();
+        public Double getAggregate() {
+          return getDouble();
         }
 
         @Override
@@ -67,12 +66,12 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
       case INT:
         typedDelegate = new AggregateFunction<Integer>() {
           @Override
-          public void beginAggregate() {
+          public void beginFunction() {
             startInt();
           }
 
           @Override
-          public void update(StructuredRecord record) {
+          public void operateOn(StructuredRecord record) {
             Integer val = record.get(fieldName);
             if (val != null) {
               updateInt(val);
@@ -80,8 +79,8 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
           }
 
           @Override
-          public Integer finishAggregate() {
-            return finishInt();
+          public Integer getAggregate() {
+            return getInt();
           }
 
           @Override
@@ -93,12 +92,12 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
       case LONG:
         typedDelegate = new AggregateFunction<Long>() {
           @Override
-          public void beginAggregate() {
+          public void beginFunction() {
             startLong();
           }
 
           @Override
-          public void update(StructuredRecord record) {
+          public void operateOn(StructuredRecord record) {
             Long val = record.get(fieldName);
             if (val != null) {
               updateLong(val);
@@ -106,8 +105,8 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
           }
 
           @Override
-          public Long finishAggregate() {
-            return finishLong();
+          public Long getAggregate() {
+            return getLong();
           }
 
           @Override
@@ -119,12 +118,12 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
       case FLOAT:
         typedDelegate = new AggregateFunction<Float>() {
           @Override
-          public void beginAggregate() {
+          public void beginFunction() {
             startFloat();
           }
 
           @Override
-          public void update(StructuredRecord record) {
+          public void operateOn(StructuredRecord record) {
             Float val = record.get(fieldName);
             if (val != null) {
               updateFloat(val);
@@ -132,8 +131,8 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
           }
 
           @Override
-          public Float finishAggregate() {
-            return finishFloat();
+          public Float getAggregate() {
+            return getFloat();
           }
 
           @Override
@@ -145,12 +144,12 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
       case DOUBLE:
         typedDelegate = new AggregateFunction<Double>() {
           @Override
-          public void beginAggregate() {
+          public void beginFunction() {
             startDouble();
           }
 
           @Override
-          public void update(StructuredRecord record) {
+          public void operateOn(StructuredRecord record) {
             Double val = record.get(fieldName);
             if (val != null) {
               updateDouble(val);
@@ -158,8 +157,8 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
           }
 
           @Override
-          public Double finishAggregate() {
-            return finishDouble();
+          public Double getAggregate() {
+            return getDouble();
           }
 
           @Override
@@ -175,18 +174,18 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
   }
 
   @Override
-  public void beginAggregate() {
-    typedDelegate.beginAggregate();
+  public void beginFunction() {
+    typedDelegate.beginFunction();
   }
 
   @Override
-  public void update(StructuredRecord record) {
-    typedDelegate.update(record);
+  public void operateOn(StructuredRecord record) {
+    typedDelegate.operateOn(record);
   }
 
   @Override
-  public Number finishAggregate() {
-    return typedDelegate.finishAggregate();
+  public Number getAggregate() {
+    return typedDelegate.getAggregate();
   }
 
   @Override
@@ -211,14 +210,14 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
   protected abstract void updateDouble(double val);
 
   @Nullable
-  protected abstract Integer finishInt();
+  protected abstract Integer getInt();
 
   @Nullable
-  protected abstract Long finishLong();
+  protected abstract Long getLong();
 
   @Nullable
-  protected abstract Float finishFloat();
+  protected abstract Float getFloat();
 
   @Nullable
-  protected abstract Double finishDouble();
+  protected abstract Double getDouble();
 }

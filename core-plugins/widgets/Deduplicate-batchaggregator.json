@@ -1,0 +1,43 @@
+{
+  "metadata": {
+    "spec-version": "1.1",
+    "label": "Deduplicate Aggregator"
+  },
+  "configuration-groups": [
+    {
+      "label": "General",
+      "properties": [
+        {
+          "widget-type": "csv",
+          "label": "Unique Fields",
+          "name": "uniqueFields",
+          "widget-attributes": {
+            "delimiter": ","
+          }
+        },
+        {
+          "widget-type": "keyvalue-dropdown",
+          "label": "Filter Operation",
+          "name": "filterOperation",
+          "widget-attributes": {
+            "showDelimiter": "false",
+            "kv-delimiter" : ":",
+            "delimiter" : ";",
+            "dropdownOptions": [
+              "Min",
+              "Max",
+              "First",
+              "Last"
+            ]
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Number of Partitions",
+          "name": "numPartitions"
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}

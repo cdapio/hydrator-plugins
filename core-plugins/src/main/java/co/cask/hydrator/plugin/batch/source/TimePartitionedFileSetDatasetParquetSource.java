@@ -29,6 +29,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.hydrator.common.HiveSchemaConverter;
+import co.cask.hydrator.common.batch.JobUtils;
 import co.cask.hydrator.plugin.common.AvroToStructuredTransformer;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -115,9 +116,8 @@ public class TimePartitionedFileSetDatasetParquetSource extends
   @Override
   protected void addInputFormatConfiguration(Map<String, String> config) {
     try {
-      Job job = Job.getInstance();
+      Job job = JobUtils.createInstance();
       Configuration hConf = job.getConfiguration();
-      hConf.clear();
 
       Schema avroSchema = new Schema.Parser().parse(tpfsParquetConfig.schema.toLowerCase());
       AvroParquetInputFormat.setAvroReadSchema(job, avroSchema);

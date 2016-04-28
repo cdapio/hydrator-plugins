@@ -19,8 +19,8 @@ package co.cask.hydrator.plugin.batch.source;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.batch.BatchSource;
+import co.cask.hydrator.common.ReferencePluginConfig;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
@@ -44,7 +44,7 @@ public class FTPBatchSource extends FileBatchSource {
   private final FTPBatchSourceConfig config;
 
   public FTPBatchSource(FTPBatchSourceConfig config) {
-    super(new FileBatchConfig(config.path, config.fileRegex, null, config.inputFormatClassName,
+    super(new FileBatchConfig(config.referenceName, config.path, config.fileRegex, null, config.inputFormatClassName,
                               limitSplits(config.fileSystemProperties), null));
     this.config = config;
   }
@@ -64,8 +64,7 @@ public class FTPBatchSource extends FileBatchSource {
   /**
    * Config class that contains all the properties needed for FTP Batch Source.
    */
-  public static class FTPBatchSourceConfig extends PluginConfig {
-
+  public static class FTPBatchSourceConfig extends ReferencePluginConfig {
     @Description(FileBatchSource.PATH_DESCRIPTION)
     public String path;
 
@@ -81,8 +80,9 @@ public class FTPBatchSource extends FileBatchSource {
     @Nullable
     public String inputFormatClassName;
 
-    public FTPBatchSourceConfig(String path, @Nullable String fileSystemProperties, @Nullable String fileRegex,
-                                @Nullable String inputFormatClassName) {
+    public FTPBatchSourceConfig(String referenceName, String path, @Nullable String fileSystemProperties,
+                                @Nullable String fileRegex, @Nullable String inputFormatClassName) {
+      super(referenceName);
       this.path = path;
       this.fileSystemProperties = fileSystemProperties;
       this.fileRegex = fileRegex;

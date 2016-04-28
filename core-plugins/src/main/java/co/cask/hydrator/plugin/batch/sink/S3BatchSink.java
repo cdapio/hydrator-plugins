@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -18,11 +18,13 @@ package co.cask.hydrator.plugin.batch.sink;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
+import co.cask.cdap.api.data.batch.Output;
 import co.cask.cdap.api.data.batch.OutputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.plugin.PluginConfig;
-import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
+import co.cask.hydrator.common.ReferenceBatchSink;
+import co.cask.hydrator.common.ReferencePluginConfig;
+import co.cask.hydrator.common.batch.sink.SinkOutputFormatProvider;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.reflect.TypeToken;
@@ -38,7 +40,7 @@ import javax.annotation.Nullable;
  * @param <KEY_OUT> the type of key the sink outputs
  * @param <VAL_OUT> the type of value the sink outputs
  */
-public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends BatchSink<StructuredRecord, KEY_OUT, VAL_OUT> {
+public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<StructuredRecord, KEY_OUT, VAL_OUT> {
 
   public static final String PATH_DESC = "The S3 path where the data is stored. Example: 's3n://logs'.";
   private static final String ACCESS_ID_DESCRIPTION = "Access ID of the Amazon S3 instance to connect to.";
@@ -54,6 +56,7 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends BatchSink<Structured
 
   private final S3BatchSinkConfig config;
   protected S3BatchSink(S3BatchSinkConfig config) {
+    super(config);
     this.config = config;
     // update fileSystemProperties to include accessID and accessKey, so prepareRun can only set fileSystemProperties
     // in configuration, and not deal with accessID and accessKey separately
@@ -70,8 +73,8 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends BatchSink<Structured
       Map<String, String> properties = GSON.fromJson(config.fileSystemProperties, MAP_STRING_STRING_TYPE);
       outputConfig.putAll(properties);
     }
-    context.addOutput(config.basePath, new SinkOutputFormatProvider(outputFormatProvider.getOutputFormatClassName(),
-                                                                    outputConfig));
+    context.addOutput(Output.of(config.referenceName, new SinkOutputFormatProvider(
+      outputFormatProvider.getOutputFormatClassName(), outputConfig)).alias(config.basePath));
   }
 
   /**
@@ -100,7 +103,7 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends BatchSink<Structured
   /**
    * S3 Sink configuration.
    */
-  public static class S3BatchSinkConfig extends PluginConfig {
+  public static class S3BatchSinkConfig extends ReferencePluginConfig {
 
     @Name(Properties.S3BatchSink.BASE_PATH)
     @Description(PATH_DESC)
@@ -125,12 +128,14 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends BatchSink<Structured
 
     public S3BatchSinkConfig() {
       // Set default value for Nullable properties.
+      super("");
       this.pathFormat = DEFAULT_PATH_FORMAT;
       this.fileSystemProperties = updateFileSystemProperties(null, accessID, accessKey);
     }
 
-    public S3BatchSinkConfig(String basePath, String accessID, String accessKey, @Nullable String pathFormat,
-                             @Nullable String fileSystemProperties) {
+    public S3BatchSinkConfig(String referenceName, String basePath, String accessID, String accessKey,
+                             @Nullable String pathFormat, @Nullable String fileSystemProperties) {
+      super(referenceName);
       this.basePath = basePath;
       this.pathFormat = pathFormat == null || pathFormat.isEmpty() ? DEFAULT_PATH_FORMAT : pathFormat;
       this.accessID = accessID;

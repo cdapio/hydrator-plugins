@@ -8,13 +8,18 @@
       "properties": [
         {
           "widget-type": "textbox",
+          "label": "Reference Name",
+          "name": "referenceName"
+        },
+        {
+          "widget-type": "textbox",
           "label": "HDFS Path",
           "name": "path"
         },
         {
           "widget-type": "textbox",
           "label": "Time Suffix Format",
-          "name": "timeSuffix"
+          "name": "suffix"
         }
       ]
     }

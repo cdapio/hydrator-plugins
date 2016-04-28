@@ -31,19 +31,19 @@ public class Count implements AggregateFunction<Long> {
   }
 
   @Override
-  public void beginAggregate() {
+  public void beginFunction() {
     count = 0;
   }
 
   @Override
-  public void update(StructuredRecord record) {
+  public void operateOn(StructuredRecord record) {
     if (record.get(fieldName) != null) {
       count++;
     }
   }
 
   @Override
-  public Long finishAggregate() {
+  public Long getAggregate() {
     return count;
   }
 

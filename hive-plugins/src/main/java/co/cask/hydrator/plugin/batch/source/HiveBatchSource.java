@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.batch.source;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.DatasetProperties;
@@ -27,8 +28,10 @@ import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
-import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
+import co.cask.hydrator.common.ReferenceBatchSource;
+import co.cask.hydrator.common.SourceInputFormatProvider;
+import co.cask.hydrator.common.batch.JobUtils;
 import co.cask.hydrator.plugin.batch.commons.HiveSchemaConverter;
 import co.cask.hydrator.plugin.batch.commons.HiveSchemaStore;
 import org.apache.hadoop.conf.Configuration;
@@ -51,14 +54,20 @@ import org.slf4j.LoggerFactory;
 @Plugin(type = "batchsource")
 @Name("Hive")
 @Description("Batch source to read from external Hive table")
-public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord, StructuredRecord> {
+public class HiveBatchSource extends ReferenceBatchSource<WritableComparable, HCatRecord, StructuredRecord> {
 
   private static final Logger LOG = LoggerFactory.getLogger(HiveBatchSource.class);
   private HiveSourceConfig config;
   private HCatRecordTransformer hCatRecordTransformer;
 
+  public HiveBatchSource(HiveSourceConfig config) {
+    super(config);
+    this.config = config;
+  }
+
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
     //TODO CDAP-4132: remove this way of storing Hive schema once we can share info between prepareRun and initialize
     // stage.
     pipelineConfigurer.createDataset(HiveSchemaStore.HIVE_TABLE_SCHEMA_STORE, KeyValueTable.class,
@@ -77,13 +86,14 @@ public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord,
     // This line is to load VersionInfo class here to make it available in the HCatInputFormat.setInput call. This is
     // needed to support CDAP 3.2 where we were just exposing the classes of the plugin jar and not the resources.
     LOG.trace("Hadoop version: {}", VersionInfo.getVersion());
-    Job job = context.getHadoopJob();
-    Configuration configuration = job.getConfiguration();
-    job.setInputFormatClass(HCatInputFormat.class);
-    configuration.set(HiveConf.ConfVars.METASTOREURIS.varname, config.metaStoreURI);
+    Job job = JobUtils.createInstance();
+    Configuration conf = job.getConfiguration();
+
+    conf.set(HiveConf.ConfVars.METASTOREURIS.varname, config.metaStoreURI);
+
     if (UserGroupInformation.isSecurityEnabled()) {
-      configuration.set(HiveConf.ConfVars.METASTORE_USE_THRIFT_SASL.varname, "true");
-      configuration.set("hive.metastore.token.signature", HiveAuthFactory.HS2_CLIENT_TOKEN);
+      conf.set(HiveConf.ConfVars.METASTORE_USE_THRIFT_SASL.varname, "true");
+      conf.set("hive.metastore.token.signature", HiveAuthFactory.HS2_CLIENT_TOKEN);
     }
     // Use the current thread's classloader to ensure that when setInput is called it can access VersionInfo class
     // loaded above. This is needed to support CDAP 3.2 where we were just exposing classes to plugin jars and not
@@ -91,12 +101,12 @@ public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord,
     ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
     try {
       Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
-      HCatInputFormat.setInput(job, config.dbName, config.tableName, config.partitions);
+      HCatInputFormat.setInput(conf, config.dbName, config.tableName, config.partitions);
     } finally {
       Thread.currentThread().setContextClassLoader(classLoader);
     }
 
-    HCatSchema hCatSchema = HCatInputFormat.getTableSchema(configuration);
+    HCatSchema hCatSchema = HCatInputFormat.getTableSchema(conf);
     if (config.schema != null) {
       // if the user provided a schema then we should use that schema to read the table. This will allow user to
       // drop non-primitive types and read the table.
@@ -104,6 +114,7 @@ public class HiveBatchSource extends BatchSource<WritableComparable, HCatRecord,
       HCatInputFormat.setOutputSchema(job, hCatSchema);
     }
     HiveSchemaStore.storeHiveSchema(context, config.dbName, config.tableName, hCatSchema);
+    context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(HCatInputFormat.class, conf)));
   }
 
   @Override

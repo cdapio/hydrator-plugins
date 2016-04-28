@@ -31,6 +31,8 @@ import co.cask.cdap.etl.api.realtime.RealtimeContext;
 import co.cask.cdap.etl.api.realtime.RealtimeSource;
 import co.cask.cdap.etl.api.realtime.SourceState;
 import co.cask.cdap.format.RecordFormats;
+import co.cask.hydrator.common.ReferencePluginConfig;
+import co.cask.hydrator.common.ReferenceRealtimeSource;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
@@ -54,7 +56,7 @@ import javax.annotation.Nullable;
 @Name("Kafka")
 @Description("Kafka real-time source: emits a record with the schema specified by the user. " +
   "If no schema is specified, it will emit a record with two fields: 'key' (nullable string) and 'message' (bytes).")
-public class KafkaSource extends RealtimeSource<StructuredRecord> {
+public class KafkaSource extends ReferenceRealtimeSource<StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(KafkaSource.class);
   private static final int EXCEPTION_SLEEP_IN_SEC = 1;
 
@@ -85,6 +87,7 @@ public class KafkaSource extends RealtimeSource<StructuredRecord> {
    * @param config
    */
   public KafkaSource (KafkaPluginConfig config) {
+    super(config);
     this.config = config;
   }
 
@@ -183,7 +186,7 @@ public class KafkaSource extends RealtimeSource<StructuredRecord> {
   /**
    * Helper class to provide {@link PluginConfig} for {@link KafkaSource}.
    */
-  public static class KafkaPluginConfig extends PluginConfig {
+  public static class KafkaPluginConfig extends ReferencePluginConfig {
 
     @Name(KAFKA_PARTITIONS)
     @Description("Number of partitions.")
@@ -227,6 +230,7 @@ public class KafkaSource extends RealtimeSource<StructuredRecord> {
 
     public KafkaPluginConfig(String zkConnect, String brokers, Integer partitions, String topic,
                              Long defaultOffset, @Nullable String format, @Nullable String schema) {
+      super(String.format("Kafka_%s", topic));
       this.zkConnect = zkConnect;
       this.kafkaBrokers = brokers;
       this.partitions = partitions;

@@ -14,6 +14,8 @@ from an Apache ActiveMQ queue and write to a stream.
 
 Properties
 ----------
+**referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
+
 **jms.destination.name:** Name of the destination from which to retrieve messages.
 
 **jms.messages.receive:** Maximum number of messages that should be retrieved per poll.
