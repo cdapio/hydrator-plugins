@@ -42,6 +42,11 @@
               "Last"
             ]
           }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Number of Partitions",
+          "name": "numPartitions"
         }
       ]
     }

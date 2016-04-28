@@ -19,7 +19,7 @@
         {
           "widget-type": "textbox",
           "label": "Time Suffix Format",
-          "name": "timeSuffix"
+          "name": "suffix"
         }
       ]
     }
