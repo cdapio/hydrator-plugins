@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -19,22 +19,25 @@ package co.cask.hydrator.plugin.batch.sink;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.data.batch.OutputFormatProvider;
+import co.cask.cdap.api.data.batch.Output;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.lib.KeyValue;
-import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.cdap.format.StructuredRecordStringConverter;
+import co.cask.hydrator.common.ReferenceBatchSink;
+import co.cask.hydrator.common.ReferencePluginConfig;
+import co.cask.hydrator.common.batch.JobUtils;
+import co.cask.hydrator.common.batch.sink.SinkOutputFormatProvider;
 import co.cask.hydrator.plugin.batch.ESProperties;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.Job;
 import org.elasticsearch.hadoop.mr.EsOutputFormat;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.io.IOException;
 
 /**
  * A {@link BatchSink} that writes data to a Elasticsearch.
@@ -52,7 +55,7 @@ import java.util.Map;
 @Name("Elasticsearch")
 @Description("Elasticsearch Batch Sink takes the structured record from the input source and converts it " +
   "to a JSON string, then indexes it in Elasticsearch using the index, type, and id specified by the user.")
-public class BatchElasticsearchSink extends BatchSink<StructuredRecord, Writable, Writable> {
+public class BatchElasticsearchSink extends ReferenceBatchSink<StructuredRecord, Writable, Writable> {
   private static final String INDEX_DESCRIPTION = "The name of the index where the data will be stored. " +
     "If the index does not already exist, it will be created using Elasticsearch's default properties.";
   private static final String TYPE_DESCRIPTION = "The name of the type where the data will be stored. " +
@@ -64,14 +67,24 @@ public class BatchElasticsearchSink extends BatchSink<StructuredRecord, Writable
   private final ESConfig config;
 
   public BatchElasticsearchSink(ESConfig config) {
+    super(config);
     this.config = config;
   }
 
   @Override
-  public void prepareRun(BatchSinkContext context) {
-    Job job = context.getHadoopJob();
+  public void prepareRun(BatchSinkContext context) throws IOException {
+    Job job = JobUtils.createInstance();
+    Configuration conf = job.getConfiguration();
+
     job.setSpeculativeExecution(false);
-    context.addOutput(config.index, new ElasticSearchOutputFormatProvider(config));
+
+    conf.set("es.nodes", config.hostname);
+    conf.set("es.resource", String.format("%s/%s", config.index, config.type));
+    conf.set("es.input.json", "yes");
+    conf.set("es.mapping.id", config.idField);
+
+    context.addOutput(Output.of(config.referenceName, new SinkOutputFormatProvider(EsOutputFormat.class, conf))
+                        .alias(config.index));
   }
 
   @Override
@@ -83,7 +96,7 @@ public class BatchElasticsearchSink extends BatchSink<StructuredRecord, Writable
   /**
    * Config class for BatchElasticsearchSink.java
    */
-  public static class ESConfig extends PluginConfig {
+  public static class ESConfig extends ReferencePluginConfig {
     @Name(ESProperties.HOST)
     @Description(HOST_DESCRIPTION)
     private String hostname;
@@ -100,34 +113,12 @@ public class BatchElasticsearchSink extends BatchSink<StructuredRecord, Writable
     @Description(ID_DESCRIPTION)
     private String idField;
 
-    public ESConfig(String hostname, String index, String type, String idField) {
+    public ESConfig(String referenceName, String hostname, String index, String type, String idField) {
+      super(referenceName);
       this.hostname = hostname;
       this.index = index;
       this.type = type;
       this.idField = idField;
-    }
-  }
-
-  private static class ElasticSearchOutputFormatProvider implements OutputFormatProvider {
-    private final Map<String, String> conf;
-
-    public ElasticSearchOutputFormatProvider(ESConfig config) {
-      this.conf = new HashMap<>();
-
-      conf.put("es.nodes", config.hostname);
-      conf.put("es.resource", String.format("%s/%s", config.index, config.type));
-      conf.put("es.input.json", "yes");
-      conf.put("es.mapping.id", config.idField);
-    }
-
-    @Override
-    public String getOutputFormatClassName() {
-      return EsOutputFormat.class.getName();
-    }
-
-    @Override
-    public Map<String, String> getOutputFormatConfiguration() {
-      return conf;
     }
   }
 }

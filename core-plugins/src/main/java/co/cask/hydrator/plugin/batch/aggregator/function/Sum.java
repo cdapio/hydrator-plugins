@@ -72,22 +72,22 @@ public class Sum extends NumberFunction {
   }
 
   @Override
-  protected Integer finishInt() {
+  protected Integer getInt() {
     return intSum;
   }
 
   @Override
-  protected Long finishLong() {
+  protected Long getLong() {
     return longSum;
   }
 
   @Override
-  protected Float finishFloat() {
+  protected Float getFloat() {
     return floatSum;
   }
 
   @Override
-  protected Double finishDouble() {
+  protected Double getDouble() {
     return doubleSum;
   }
 }

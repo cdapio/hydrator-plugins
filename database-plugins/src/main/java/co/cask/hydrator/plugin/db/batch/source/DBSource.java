@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.db.batch.source;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
@@ -28,10 +29,10 @@ import co.cask.cdap.api.plugin.PluginProperties;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
-import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
+import co.cask.hydrator.common.ReferenceBatchSource;
+import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.common.SourceInputFormatProvider;
-import co.cask.hydrator.common.macro.DefaultMacroContext;
 import co.cask.hydrator.plugin.DBConfig;
 import co.cask.hydrator.plugin.DBManager;
 import co.cask.hydrator.plugin.DBRecord;
@@ -41,7 +42,6 @@ import co.cask.hydrator.plugin.FieldCase;
 import co.cask.hydrator.plugin.StructuredRecordUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.lib.db.DBConfiguration;
 import org.slf4j.Logger;
@@ -65,7 +65,7 @@ import javax.ws.rs.Path;
 @Name("Database")
 @Description("Reads from a database table(s) using a configurable SQL query." +
   " Outputs one record for each row returned by the query.")
-public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredRecord> {
+public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(DBSource.class);
 
   private final DBSourceConfig sourceConfig;
@@ -73,12 +73,14 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
   private Class<? extends Driver> driverClass;
 
   public DBSource(DBSourceConfig sourceConfig) {
+    super(new ReferencePluginConfig(sourceConfig.referenceName));
     this.sourceConfig = sourceConfig;
     this.dbManager = new DBManager(sourceConfig);
   }
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
     // validate macro syntax
     sourceConfig.validate();
     dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId());
@@ -136,20 +138,24 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
    */
   @Path("getSchema")
   public Schema getSchema(GetSchemaRequest request,
-                          EndpointPluginContext pluginContext)
-    throws SQLException, InstantiationException, IllegalAccessException, BadRequestException {
-    DriverCleanup driverCleanup = loadPluginClassAndGetDriver(request, pluginContext);
+                          EndpointPluginContext pluginContext) throws IllegalAccessException,
+    SQLException, InstantiationException, BadRequestException {
+    DriverCleanup driverCleanup;
     try {
+      driverCleanup = loadPluginClassAndGetDriver(request, pluginContext);
       try (Connection connection = getConnection(request.connectionString, request.user, request.password)) {
         Statement statement = connection.createStatement();
         statement.setMaxRows(1);
         ResultSet resultSet = statement.executeQuery(request.query);
         return Schema.recordOf("outputSchema", DBUtils.getSchemaFields(resultSet));
+      } catch (SQLSyntaxErrorException e) {
+        throw new BadRequestException(e.getMessage());
+      } finally {
+        driverCleanup.destroy();
       }
-    } catch (SQLSyntaxErrorException e) {
-      throw new BadRequestException(e.getMessage());
-    } finally {
-      driverCleanup.destroy();
+    } catch (Exception e) {
+      LOG.error("Exception while performing getSchema", e);
+      throw e;
     }
   }
 
@@ -184,8 +190,7 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
                 "boundingQuery = {}",
               sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName,
               sourceConfig.connectionString, sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery());
-    Job job = Job.getInstance();
-    Configuration hConf = job.getConfiguration();
+    Configuration hConf = new Configuration();
     hConf.clear();
 
     // Load the plugin class to make sure it is available.
@@ -205,7 +210,8 @@ public class DBSource extends BatchSource<LongWritable, DBRecord, StructuredReco
     if (sourceConfig.numSplits != null) {
       hConf.setInt(MRJobConfig.NUM_MAPS, sourceConfig.numSplits);
     }
-    context.setInput(new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf));
+    context.setInput(Input.of(sourceConfig.referenceName,
+                              new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf)));
   }
 
   @Override

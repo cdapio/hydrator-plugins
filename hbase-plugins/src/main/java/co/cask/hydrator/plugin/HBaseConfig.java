@@ -17,7 +17,7 @@
 package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.plugin.PluginConfig;
+import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.plugin.sink.HBaseSink;
 import co.cask.hydrator.plugin.source.HBaseSource;
 
@@ -26,7 +26,7 @@ import javax.annotation.Nullable;
 /**
 * Base HBase Config for use in {@link HBaseSource} and {@link HBaseSink}.
 */
-public class HBaseConfig extends PluginConfig {
+public class HBaseConfig extends ReferencePluginConfig {
   @Description("Name of the HBase Table")
   public String tableName;
 
@@ -47,7 +47,8 @@ public class HBaseConfig extends PluginConfig {
   @Nullable
   public String zkClientPort;
 
-  public HBaseConfig(String tableName, String rowField, @Nullable String schema) {
+  public HBaseConfig(String referenceName, String tableName, String rowField, @Nullable String schema) {
+    super(referenceName);
     this.tableName = tableName;
     this.rowField = rowField;
     this.schema = schema;

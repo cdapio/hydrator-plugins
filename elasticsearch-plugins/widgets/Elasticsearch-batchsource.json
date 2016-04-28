@@ -8,6 +8,11 @@
       "properties": [
         {
           "widget-type": "textbox",
+          "label": "Reference Name",
+          "name": "referenceName"
+        },
+        {
+          "widget-type": "textbox",
           "label": "Elasticsearch Host",
           "name": "es.host"
         },

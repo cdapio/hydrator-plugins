@@ -17,6 +17,8 @@ into a Cube.
 
 Properties
 ----------
+**referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
+
 **region:** Region where the queue is located.
 
 **accessKey:** Access Key of the AWS (Amazon Web Services) account to use.

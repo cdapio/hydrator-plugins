@@ -74,22 +74,22 @@ public class Max extends NumberFunction {
   }
 
   @Override
-  protected Integer finishInt() {
+  protected Integer getInt() {
     return maxInt;
   }
 
   @Override
-  protected Long finishLong() {
+  protected Long getLong() {
     return maxLong;
   }
 
   @Override
-  protected Float finishFloat() {
+  protected Float getFloat() {
     return maxFloat;
   }
 
   @Override
-  protected Double finishDouble() {
+  protected Double getDouble() {
     return maxDouble;
   }
 }

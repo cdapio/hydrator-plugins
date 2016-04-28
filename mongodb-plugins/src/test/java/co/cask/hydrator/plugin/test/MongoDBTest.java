@@ -45,6 +45,7 @@ import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.WorkerManager;
+import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.batch.sink.MongoDBBatchSink;
 import co.cask.hydrator.plugin.batch.source.MongoDBBatchSource;
 import co.cask.hydrator.plugin.realtime.sink.MongoDBRealtimeSink;
@@ -175,7 +176,8 @@ public class MongoDBTest extends HydratorTestBase {
       ImmutableMap.of(MongoDBRealtimeSink.Properties.CONNECTION_STRING,
                       String.format("mongodb://localhost:%d", mongoPort),
                       MongoDBRealtimeSink.Properties.DB_NAME, "cdap",
-                      MongoDBRealtimeSink.Properties.COLLECTION_NAME, "real"),
+                      MongoDBRealtimeSink.Properties.COLLECTION_NAME, "real",
+                      Constants.Reference.REFERENCE_NAME, "MongoDBTest"),
       null));
     ETLRealtimeConfig etlConfig = ETLRealtimeConfig.builder()
       .addStage(source)
@@ -211,7 +213,8 @@ public class MongoDBTest extends HydratorTestBase {
       new ImmutableMap.Builder<String, String>()
         .put(MongoDBBatchSink.Properties.CONNECTION_STRING,
              String.format("mongodb://localhost:%d/%s.%s",
-                           mongoPort, MONGO_DB, MONGO_SINK_COLLECTIONS)).build(),
+                           mongoPort, MONGO_DB, MONGO_SINK_COLLECTIONS))
+        .put(Constants.Reference.REFERENCE_NAME, "MongoTestDBSink").build(),
       null));
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
       .addStage(source)
@@ -262,8 +265,8 @@ public class MongoDBTest extends HydratorTestBase {
              String.format("mongodb://localhost:%d/%s.%s",
                            mongoPort, MONGO_DB, MONGO_SOURCE_COLLECTIONS))
         .put(MongoDBBatchSource.Properties.SCHEMA, SOURCE_BODY_SCHEMA.toString())
-        .put(MongoDBBatchSource.Properties.SPLITTER_CLASS,
-             StandaloneMongoSplitter.class.getSimpleName()).build(),
+        .put(MongoDBBatchSource.Properties.SPLITTER_CLASS, StandaloneMongoSplitter.class.getSimpleName())
+        .put(Constants.Reference.REFERENCE_NAME, "MongoMongoTest").build(),
       null));
 
     ETLStage sink = new ETLStage("MongoDBSink", new ETLPlugin(
@@ -272,7 +275,8 @@ public class MongoDBTest extends HydratorTestBase {
       new ImmutableMap.Builder<String, String>()
         .put(MongoDBBatchSink.Properties.CONNECTION_STRING,
              String.format("mongodb://localhost:%d/%s.%s",
-                           mongoPort, MONGO_DB, MONGO_SINK_COLLECTIONS)).build(),
+                           mongoPort, MONGO_DB, MONGO_SINK_COLLECTIONS))
+        .put(Constants.Reference.REFERENCE_NAME, "MongoToMongoTest").build(),
       null));
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
       .addStage(source)
@@ -321,7 +325,8 @@ public class MongoDBTest extends HydratorTestBase {
                            mongoPort, MONGO_DB, MONGO_SOURCE_COLLECTIONS))
         .put(MongoDBBatchSource.Properties.SCHEMA, SOURCE_BODY_SCHEMA.toString())
         .put(MongoDBBatchSource.Properties.SPLITTER_CLASS,
-             StandaloneMongoSplitter.class.getSimpleName()).build(),
+             StandaloneMongoSplitter.class.getSimpleName())
+        .put(Constants.Reference.REFERENCE_NAME, "SimpleMongoTest").build(),
       null));
     String outputDatasetName = "output-batchsourcetest";
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));

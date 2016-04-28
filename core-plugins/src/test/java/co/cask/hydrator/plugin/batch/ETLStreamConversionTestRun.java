@@ -19,22 +19,21 @@ package co.cask.hydrator.plugin.batch;
 import co.cask.cdap.api.data.format.Formats;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
-import co.cask.cdap.common.utils.Tasks;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
-import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
+import co.cask.cdap.etl.batch.ETLWorkflow;
+import co.cask.cdap.etl.proto.Engine;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.proto.Id;
-import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
-import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.StreamManager;
+import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
@@ -45,7 +44,6 @@ import org.junit.Test;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -71,37 +69,32 @@ public class ETLStreamConversionTestRun extends ETLBatchTestBase {
 
   @Test
   public void testStreamConversionTPFSParquetSink() throws Exception {
-    testSink("TPFSParquet");
+    testSink(Engine.MAPREDUCE, "TPFSParquet");
+    testSink(Engine.SPARK, "TPFSParquet");
   }
 
   @Test
   public void testStreamConversionTPFSAvroSink() throws Exception {
-    testSink("TPFSAvro");
+    testSink(Engine.MAPREDUCE, "TPFSAvro");
+    testSink(Engine.SPARK, "TPFSAvro");
   }
 
-  private void testSink(String sinkType) throws Exception {
-    String streamName = String.format("stream_%s", sinkType);
-    String filesetName = String.format("converted_%s", sinkType);
+  private void testSink(Engine engine, String sinkType) throws Exception {
+    String streamName = String.format("stream_%s_%s", sinkType, engine.name());
+    String filesetName = String.format("converted_%s_%s", sinkType, engine.name());
     StreamManager streamManager = getStreamManager(streamName);
     streamManager.createStream();
     streamManager.send(ImmutableMap.of("header1", "bar"), "AAPL|10|500.32");
 
-    ETLBatchConfig etlConfig = constructETLBatchConfig(streamName, filesetName, sinkType);
+    ETLBatchConfig etlConfig = constructETLBatchConfig(engine, streamName, filesetName, sinkType);
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, String.format("app_%s", sinkType));
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
-    final MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(4, TimeUnit.MINUTES);
-
-    Tasks.waitFor(1, new Callable<Integer>() {
-      @Override
-      public Integer call() throws Exception {
-        return mrManager.getHistory(ProgramRunStatus.COMPLETED).size();
-      }
-    }, 5, TimeUnit.SECONDS);
+    final WorkflowManager workflowManager = appManager.getWorkflowManager(ETLWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForFinish(4, TimeUnit.MINUTES);
 
     // get the output fileset, and read the parquet/avro files it output.
     DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset(filesetName);
@@ -122,7 +115,8 @@ public class ETLStreamConversionTestRun extends ETLBatchTestBase {
     }
   }
 
-  private ETLBatchConfig constructETLBatchConfig(String streamName, String fileSetName, String sinkType) {
+  private ETLBatchConfig constructETLBatchConfig(Engine engine, String streamName,
+                                                 String fileSetName, String sinkType) {
     ETLPlugin sourceConfig = new ETLPlugin(
       "Stream",
       BatchSource.PLUGIN_TYPE,
@@ -147,6 +141,7 @@ public class ETLStreamConversionTestRun extends ETLBatchTestBase {
                                               ImmutableMap.<String, String>of(), null);
     ETLStage transform = new ETLStage("transforms", transformConfig);
     return ETLBatchConfig.builder("* * * * *")
+      .setEngine(engine)
       .addStage(source)
       .addStage(sink)
       .addStage(transform)

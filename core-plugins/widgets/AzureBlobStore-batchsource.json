@@ -8,6 +8,11 @@
       "properties": [
         {
           "widget-type": "textbox",
+          "label": "Reference Name",
+          "name": "referenceName"
+        },
+        {
+          "widget-type": "textbox",
           "label": "Azure Blob Store Path",
           "name": "path"
         },
@@ -25,6 +30,31 @@
           "widget-type": "textbox",
           "label": "Azure Blob Store Storage Key",
           "name": "storageKey"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Maximum Split Size",
+          "name": "maxSplitSize"
+        },
+        {
+          "widget-type": "json-editor",
+          "label": "File System Properties",
+          "name": "fileSystemProperties"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "File Regex",
+          "name": "fileRegex"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Input Format Class",
+          "name": "inputFormatClass"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Time Table",
+          "name": "timeTable"
         }
       ]
     }

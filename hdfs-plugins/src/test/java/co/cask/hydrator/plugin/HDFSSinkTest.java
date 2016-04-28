@@ -37,6 +37,7 @@ import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestConfiguration;
+import co.cask.hydrator.common.Constants;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.conf.Configuration;
@@ -133,6 +134,7 @@ public class HDFSSinkTest extends HydratorTestBase {
       BatchSink.PLUGIN_TYPE,
       ImmutableMap.<String, String>builder()
         .put("path", outputDir.toUri().toString())
+        .put(Constants.Reference.REFERENCE_NAME, "HDFSinkTest")
         .build(),
       null));
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")

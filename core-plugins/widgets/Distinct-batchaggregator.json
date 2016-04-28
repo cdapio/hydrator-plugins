@@ -10,6 +10,11 @@
           "widget-type": "textbox",
           "label": "Fields",
           "name": "fields"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Number of Partitions",
+          "name": "numPartitions"
         }
       ]
     }

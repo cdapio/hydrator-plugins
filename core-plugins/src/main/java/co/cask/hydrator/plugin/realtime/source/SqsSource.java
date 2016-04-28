@@ -21,12 +21,12 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.realtime.RealtimeContext;
-import co.cask.cdap.etl.api.realtime.RealtimeSource;
 import co.cask.cdap.etl.api.realtime.SourceState;
+import co.cask.hydrator.common.ReferencePluginConfig;
+import co.cask.hydrator.common.ReferenceRealtimeSource;
 import com.amazon.sqs.javamessaging.SQSConnection;
 import com.amazon.sqs.javamessaging.SQSConnectionFactory;
 import com.amazonaws.regions.Region;
@@ -47,7 +47,7 @@ import javax.jms.TextMessage;
 @Plugin(type = "realtimesource")
 @Name("AmazonSQS")
 @Description("Amazon Simple Queue Service real-time source: emits a record with a field 'body' of type String.")
-public class SqsSource extends RealtimeSource<StructuredRecord> {
+public class SqsSource extends ReferenceRealtimeSource<StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(SqsSource.class);
   private static final String REGION_DESCRIPTION = "Region where the queue is located.";
   private static final String ACCESSKEY_DESCRIPTION = "Access Key of the AWS (Amazon Web Services) account to use.";
@@ -68,6 +68,7 @@ public class SqsSource extends RealtimeSource<StructuredRecord> {
   private SQSConnection connection;
 
   public SqsSource(SqsConfig config) {
+    super(config);
     this.config = config;
   }
 
@@ -150,7 +151,8 @@ public class SqsSource extends RealtimeSource<StructuredRecord> {
   /**
    * Config class for {@link SqsSource}
    */
-  public static class SqsConfig extends PluginConfig {
+  public static class SqsConfig extends ReferencePluginConfig {
+
     @Name("region")
     @Description(REGION_DESCRIPTION)
     private String region;
@@ -172,7 +174,9 @@ public class SqsSource extends RealtimeSource<StructuredRecord> {
     @Description(ENDPOINT_DESCRIPTION)
     private String endpoint;
 
-    public SqsConfig(String region, String accessKey, String accessID, String queueName, @Nullable String endpoint) {
+    public SqsConfig(String referenceName, String region, String accessKey, String accessID, String queueName,
+                     @Nullable String endpoint) {
+      super(referenceName);
       this.region = region;
       this.accessID = accessID;
       this.accessKey = accessKey;

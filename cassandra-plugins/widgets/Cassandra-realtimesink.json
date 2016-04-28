@@ -7,6 +7,11 @@
       "label": "Cassandra Configuration",
       "properties": [
         {
+          "widget-type": "textbox",
+          "label": "Reference Name",
+          "name": "referenceName"
+        },
+        {
           "widget-type": "csv",
           "label": "Addresses",
           "name": "addresses",

@@ -25,16 +25,16 @@ import org.junit.Assert;
 public class NumberTest {
   
   protected void testFunction(AggregateFunction func, Schema schema, Number expected, Number... inputs) {
-    func.beginAggregate();
+    func.beginFunction();
     for (Number num : inputs) {
-      func.update(StructuredRecord.builder(schema).set("x", num).build());
+      func.operateOn(StructuredRecord.builder(schema).set("x", num).build());
     }
     if (expected instanceof Float) {
-      Assert.assertTrue(Math.abs((float) expected - (float) func.finishAggregate()) < 0.000001f);
+      Assert.assertTrue(Math.abs((float) expected - (float) func.getAggregate()) < 0.000001f);
     } else if (expected instanceof Double) {
-      Assert.assertTrue(Math.abs((double) expected - (double) func.finishAggregate()) < 0.000001d);
+      Assert.assertTrue(Math.abs((double) expected - (double) func.getAggregate()) < 0.000001d);
     } else {
-      Assert.assertEquals(expected, func.finishAggregate());
+      Assert.assertEquals(expected, func.getAggregate());
     }
   }
 }

@@ -110,21 +110,15 @@ public class GroupByAggregator extends RecordAggregator {
     }
 
     for (Map.Entry<String, AggregateFunction> aggregateFunction : aggregateFunctions.entrySet()) {
-      builder.set(aggregateFunction.getKey(), aggregateFunction.getValue().finishAggregate());
+      builder.set(aggregateFunction.getKey(), aggregateFunction.getValue().getAggregate());
     }
     emitter.emit(builder.build());
   }
 
   @Path("outputSchema")
   public Schema getOutputSchema(GetSchemaRequest request) {
-    Schema inputSchema;
     try {
-      inputSchema = Schema.parseJson(request.inputSchema);
-    } catch (Exception e) {
-      throw new BadRequestException("Could not parse input schema " + request.inputSchema);
-    }
-    try {
-      return getOutputSchema(inputSchema, request.getGroupByFields(), request.getAggregates());
+      return getOutputSchema(request.inputSchema, request.getGroupByFields(), request.getAggregates());
     } catch (IllegalArgumentException e) {
       throw new BadRequestException(e.getMessage());
     }
@@ -167,7 +161,7 @@ public class GroupByAggregator extends RecordAggregator {
 
   private void updateAggregates(StructuredRecord groupVal) {
     for (AggregateFunction aggregateFunction : aggregateFunctions.values()) {
-      aggregateFunction.update(groupVal);
+      aggregateFunction.operateOn(groupVal);
     }
   }
 
@@ -182,7 +176,7 @@ public class GroupByAggregator extends RecordAggregator {
       Schema.Field inputField = valueSchema.getField(functionInfo.getField());
       Schema fieldSchema = inputField == null ? null : inputField.getSchema();
       AggregateFunction aggregateFunction = functionInfo.getAggregateFunction(fieldSchema);
-      aggregateFunction.beginAggregate();
+      aggregateFunction.beginFunction();
       outputFields.add(Schema.Field.of(functionInfo.getName(), aggregateFunction.getOutputSchema()));
       aggregateFunctions.put(functionInfo.getName(), aggregateFunction);
     }
@@ -207,6 +201,6 @@ public class GroupByAggregator extends RecordAggregator {
    * Endpoint request for output schema.
    */
   public static class GetSchemaRequest extends GroupByConfig {
-    private String inputSchema;
+    private Schema inputSchema;
   }
 }

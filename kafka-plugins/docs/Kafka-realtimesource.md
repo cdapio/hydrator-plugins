@@ -16,6 +16,8 @@ from Kafka and write them to a stream.
 
 Properties
 ----------
+**referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
+
 **kafka.partitions:** Number of partitions.
 
 **kafka.topic:** Topic of the messages.

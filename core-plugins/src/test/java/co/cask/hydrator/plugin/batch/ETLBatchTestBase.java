@@ -31,6 +31,7 @@ import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.hydrator.plugin.batch.action.EmailAction;
+import co.cask.hydrator.plugin.batch.aggregator.DedupAggregator;
 import co.cask.hydrator.plugin.batch.aggregator.GroupByAggregator;
 import co.cask.hydrator.plugin.batch.sink.BatchCubeSink;
 import co.cask.hydrator.plugin.batch.sink.KVTableSink;
@@ -129,7 +130,9 @@ public class ETLBatchTestBase extends TestBase {
     );
     // add artifact for batch sources and sinks
     addPluginArtifact(NamespaceId.DEFAULT.artifact("core-plugins", "1.0.0"), parents,
-                      KVTableSource.class, StreamBatchSource.class, TableSource.class,
+                      KVTableSource.class,
+                      StreamBatchSource.class,
+                      TableSource.class,
                       TimePartitionedFileSetDatasetAvroSource.class,
                       TimePartitionedFileSetDatasetParquetSource.class, AvroParquetInputFormat.class,
                       BatchCubeSink.class, KVTableSink.class, TableSink.class,
@@ -145,6 +148,7 @@ public class ETLBatchTestBase extends TestBase {
                       JavaScriptTransform.class,
                       PythonEvaluator.class,
                       GroupByAggregator.class,
+                      DedupAggregator.class,
                       EmailAction.class);
   }
 

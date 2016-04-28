@@ -42,14 +42,15 @@ public class TwitterSourceTest {
     // NOTE: To get the valid credentials for testing please visit
     // https://dev.twitter.com/oauth/reference/post/oauth2/token
     // to get OAuth Consumer Key, Consumer Secret, Access Token and Access Token Secret
-
+    String referenceName = "dummy";
     String consumerKey = "dummy";
     String consumerSecret = "dummy";
     String accessToken = "dummy";
     String accessTokenSecret = "dummy";
 
-    TwitterSource.TwitterConfig twitterConfig = new TwitterSource.TwitterConfig(consumerKey, consumerSecret,
-                                                                                accessToken, accessTokenSecret);
+    TwitterSource.TwitterConfig twitterConfig = new TwitterSource.TwitterConfig(referenceName, consumerKey,
+                                                                                consumerSecret, accessToken,
+                                                                                accessTokenSecret);
     Map<String, String> args = Maps.newHashMap();
     args.put("ConsumerKey", consumerKey);
     args.put("ConsumerSecret", consumerSecret);

@@ -18,14 +18,14 @@ package co.cask.hydrator.plugin.batch;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
-import co.cask.cdap.api.plugin.PluginConfig;
+import co.cask.hydrator.common.ReferencePluginConfig;
 
 import javax.annotation.Nullable;
 
 /**
  * Configurations for Hive batch plugins
  */
-public class HiveConfig extends PluginConfig {
+public class HiveConfig extends ReferencePluginConfig {
 
   @Name(Hive.METASTORE_URI)
   @Description("The URI of Hive metastore in the following format: thrift://<hostname>:<port>. " +
@@ -42,6 +42,7 @@ public class HiveConfig extends PluginConfig {
   public String tableName;
 
   public HiveConfig() {
+    super(String.format("Hive"));
     dbName = "default";
   }
 

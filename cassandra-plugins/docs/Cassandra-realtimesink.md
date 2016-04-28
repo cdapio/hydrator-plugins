@@ -17,6 +17,8 @@ and store them in Cassandra for later access.
 
 Properties
 ----------
+**referenceName:** This will be used to uniquely identify this sink for lineage, annotating metadata, etc.
+
 **addresses:** A comma-separated list of address(es) to connect to.
 
 **keyspace:** The keyspace to inject data into.

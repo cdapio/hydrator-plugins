@@ -16,6 +16,8 @@ a TimePartitionedFileSet.
 
 Properties
 ----------
+**referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
+
 **importQuery:** The SELECT query to use to import data from the specified table.
 You can specify an arbitrary number of columns to import, or import all columns using \*. The Query should
 contain the '$CONDITIONS' string. For example, 'SELECT * FROM table WHERE $CONDITIONS'.

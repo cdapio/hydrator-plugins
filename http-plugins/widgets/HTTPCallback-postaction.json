@@ -1,0 +1,84 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "HTTP Callback Properties",
+      "properties": [
+        {
+          "widget-type": "select",
+          "label": "Run Condition",
+          "name": "runCondition",
+          "widget-attributes": {
+            "values": [
+              "completion",
+              "success",
+              "failure"
+            ],
+            "default": "completion"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "URL",
+          "name": "url"
+        },
+        {
+          "widget-type": "select",
+          "label": "HTTP Method",
+          "name": "method",
+          "widget-attributes": {
+            "values": [
+              "GET",
+              "PUT",
+              "POST",
+              "HEAD",
+              "OPTIONS",
+              "DELETE"
+            ],
+            "default": "POST"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Request Body",
+          "name": "body"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Connection Timeout (milliseconds)",
+          "name": "connectTimeoutMillis"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Number of Retries",
+          "name": "numRetries"
+        },
+        {
+          "widget-type": "select",
+          "label": "Should Follow Redirects",
+          "name": "followRedirects",
+          "widget-attributes" : {
+            "values": [
+              "true",
+              "false"
+            ],
+            "default": "true"
+          }
+        },
+        {
+          "widget-type": "keyvalue",
+          "label": "Request Headers",
+          "name": "requestHeaders",
+          "widget-attributes" : {
+            "showDelimiter": "false",
+            "kv-delimiter" : ":",
+            "delimiter" : "\n"
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}

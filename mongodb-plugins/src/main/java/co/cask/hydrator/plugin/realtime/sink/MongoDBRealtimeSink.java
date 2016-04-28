@@ -21,10 +21,10 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.realtime.DataWriter;
 import co.cask.cdap.etl.api.realtime.RealtimeContext;
-import co.cask.cdap.etl.api.realtime.RealtimeSink;
+import co.cask.hydrator.common.ReferencePluginConfig;
+import co.cask.hydrator.common.ReferenceRealtimeSink;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.MongoCollection;
@@ -41,17 +41,19 @@ import java.util.List;
 @Name("MongoDB")
 @Description("CDAP MongoDB Realtime Sink takes StructuredRecord from the previous stage and converts it to " +
   "BSONDocument and then writes to MongoDB")
-public class MongoDBRealtimeSink extends RealtimeSink<StructuredRecord> {
+public class MongoDBRealtimeSink extends ReferenceRealtimeSink<StructuredRecord> {
   private final MongoDBConfig config;
   private MongoClient mongoClient;
   private MongoDatabase mongoDatabase;
 
   public MongoDBRealtimeSink(MongoDBConfig config) {
+    super(config);
     this.config = config;
   }
 
   @Override
   public void initialize(RealtimeContext context) throws Exception {
+    super.initialize(context);
     MongoClientURI clientURI = new MongoClientURI(config.connectionString);
     mongoClient = new MongoClient(clientURI);
     mongoDatabase = mongoClient.getDatabase(config.dbName);
@@ -77,7 +79,7 @@ public class MongoDBRealtimeSink extends RealtimeSink<StructuredRecord> {
   /**
    * Config class for {@link MongoDBRealtimeSink}.
    */
-  public static class MongoDBConfig extends PluginConfig {
+  public static class MongoDBConfig extends ReferencePluginConfig {
     @Name(Properties.CONNECTION_STRING)
     @Description("MongoDB Connection String (see http://docs.mongodb.org/manual/reference/connection-string); " +
       "Example: 'mongodb://localhost:27017/analytics.users'.")
@@ -90,6 +92,13 @@ public class MongoDBRealtimeSink extends RealtimeSink<StructuredRecord> {
     @Name(Properties.COLLECTION_NAME)
     @Description("MongoDB Collection Name")
     private String collectionName;
+
+    public MongoDBConfig(String referenceName, String connectionString, String dbName, String collectionName) {
+      super(referenceName);
+      this.connectionString = connectionString;
+      this.dbName = dbName;
+      this.collectionName = collectionName;
+    }
   }
 
   /**
