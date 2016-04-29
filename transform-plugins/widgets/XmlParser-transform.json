@@ -1,0 +1,42 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "XML Parser",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Input field to Parse as XML Record",
+          "name": "field",
+          "widget-attributes": {
+            "width": "large"
+          }
+        },
+        {
+          "widget-type": "keyvalue",
+          "label": "XPath Map",
+          "name": "pathmap",
+          "widget-attributes": {
+            "showDelimiter": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "label": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "string"
+        ],
+        "schema-default-type": "string",
+        "property-watch": "pathMap"
+      }
+    }
+  ]
+}
