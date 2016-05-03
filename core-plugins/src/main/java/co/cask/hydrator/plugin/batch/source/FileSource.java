@@ -24,11 +24,11 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.common.SourceInputFormatProvider;
 import co.cask.hydrator.plugin.common.RegexFilter;
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.io.LongWritable;
@@ -37,7 +37,6 @@ import org.apache.hadoop.mapreduce.lib.input.CombineTextInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
 import javax.annotation.Nullable;
-
 
 /**
  * Abstract class for defining different File sources that can exist within Hadoop. 
@@ -72,6 +71,7 @@ public class FileSource extends BatchSource<LongWritable, Object, StructuredReco
   );
   
   protected void setFileInputFormatProperties(Configuration configuration) {
+    /** nothing to be done here in default mode. */
   }
   
   protected SourceInputFormatProvider setInputFormatProvider(Configuration configuration) {
@@ -85,6 +85,11 @@ public class FileSource extends BatchSource<LongWritable, Object, StructuredReco
    */
   protected Class<? extends PathFilter> setPathFilter(Configuration configuration) {
     return RegexFilter.class;
+  }
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
   }
 
   @Override
@@ -121,6 +126,11 @@ public class FileSource extends BatchSource<LongWritable, Object, StructuredReco
   }
 
   @Override
+  public void onRunFinish(boolean succeeded, BatchSourceContext context) {
+    super.onRunFinish(succeeded, context);
+  }
+
+  @Override
   public void transform(KeyValue<LongWritable, Object> input, Emitter<StructuredRecord> emitter) throws Exception {
     StructuredRecord output = StructuredRecord.builder(OUTPUT_SCHEMA)
       .set("offset", input.getKey().get())
@@ -141,7 +151,7 @@ public class FileSource extends BatchSource<LongWritable, Object, StructuredReco
     public Long maxSplitSize;
     
     @Nullable
-    @Description("Specifies the pattern of files to considered for processing.")
+    @Description("Specifies the pattern of files to considered for processing. Default is '.*'")
     public String pattern;
 
     public FileSourceConfig(String paths, @Nullable Long maxSplitSize, @Nullable String pattern) {

@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Transform;
+import co.cask.cdap.format.StructuredRecordStringConverter;
 import co.cask.hydrator.common.MockPipelineConfigurer;
 import co.cask.hydrator.common.test.MockEmitter;
 import org.junit.Assert;
@@ -41,6 +42,17 @@ public class CloneRecordTest {
     Transform<StructuredRecord, StructuredRecord> transform = new CloneRecord(config);
     transform.initialize(null);
 
+
+    StructuredRecord r1 = StructuredRecord.builder(Schema.parseJson(INPUT.toString()))
+      .set("a", "1")
+      .set("b", "2")
+      .set("c", "3")
+      .set("d", "4")
+      .set("e", "5").build();
+    String s1 = StructuredRecordStringConverter.toJsonString(r1);
+
+
+
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(StructuredRecord.builder(INPUT)
                           .set("a", "1")
@@ -61,4 +73,5 @@ public class CloneRecordTest {
     transform.configurePipeline(mockPipelineConfigurer);
     Assert.assertEquals(INPUT, mockPipelineConfigurer.getOutputSchema());
   }
+
 }

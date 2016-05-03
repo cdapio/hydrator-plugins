@@ -164,6 +164,7 @@ public class EmailAction extends PostAction {
     Session session = Session.getInstance(javaMailProperties, authenticator);
     session.setDebug(true);
 
+
     try {
       Message msg = new MimeMessage(session);
       msg.setFrom(new InternetAddress(config.sender));
