@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.batch.InputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
@@ -26,13 +27,11 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
-import co.cask.hydrator.common.SourceInputFormatProvider;
 import co.cask.hydrator.common.TimeParser;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 
-import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -49,6 +48,7 @@ public abstract class TimePartitionedFileSetSource<KEY, VALUE> extends BatchSour
   /**
    * Config for TimePartitionedFileSetDatasetAvroSource
    */
+  @SuppressWarnings("unused")
   public static class TPFSConfig extends PluginConfig {
     @Description("Name of the TimePartitionedFileSet to read.")
     private String name;
@@ -106,11 +106,8 @@ public abstract class TimePartitionedFileSetSource<KEY, VALUE> extends BatchSour
     Map<String, String> sourceArgs = Maps.newHashMap();
     TimePartitionedFileSetArguments.setInputStartTime(sourceArgs, startTime);
     TimePartitionedFileSetArguments.setInputEndTime(sourceArgs, endTime);
-    TimePartitionedFileSet source = context.getDataset(config.name, sourceArgs);
-
-    Map<String, String> config = new HashMap<>(source.getInputFormatConfiguration());
-    addInputFormatConfiguration(config);
-    context.setInput(new SourceInputFormatProvider(source.getInputFormatClassName(), config));
+    addInputFormatConfiguration(sourceArgs);
+    context.setInput(Input.ofDataset(config.name, sourceArgs));
   }
 
   /**

@@ -19,11 +19,11 @@ package co.cask.hydrator.plugin.batch.source;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.FormatSpecification;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.data.stream.Stream;
-import co.cask.cdap.api.data.stream.StreamBatchReadable;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.flow.flowlet.StreamEvent;
 import co.cask.cdap.api.plugin.PluginConfig;
@@ -120,13 +120,9 @@ public class StreamBatchSource extends BatchSource<Object, Object, StructuredRec
 
     FormatSpecification formatSpec = streamBatchConfig.getFormatSpec();
 
-    StreamBatchReadable stream;
-    if (formatSpec == null) {
-      stream = new StreamBatchReadable(streamBatchConfig.name, startTime, endTime);
-    } else {
-      stream = new StreamBatchReadable(streamBatchConfig.name, startTime, endTime, formatSpec);
-    }
-    context.setInput(stream);
+    Input input = formatSpec == null ? Input.ofStream(streamBatchConfig.name, startTime, endTime) :
+      Input.ofStream(streamBatchConfig.name, startTime, endTime, formatSpec);
+    context.setInput(input);
   }
 
   @Override
