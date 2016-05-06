@@ -74,7 +74,7 @@ public class ValueMapperTest {
   @Test
   public void testSimple() throws Exception {
 
-    String mapping = "{\"mapping\" : [{\"mapperField\" : \"booleanField\",\"mappingField\" : \"booleanFieldName\"," +
+    String mapping = "{\"mapping\" : [{\"sourceField\" : \"booleanField\",\"targetField\" : \"booleanFieldName\"," +
             "\"lookup\":{\"tables\":{\"designationlookup\":{\"type\":\"DATASET\"," +
             "\"datasetProperties\":{\"dataset_argument1\":\"foo\",\"dataset_argument2\":\"bar\"}}}}}]}";
 

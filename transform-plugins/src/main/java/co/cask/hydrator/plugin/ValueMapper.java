@@ -35,28 +35,24 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
  * Transforms records using custom mapping provided by the config.
  */
-@Plugin(type = "transform")
+@Plugin(type = Transform.PLUGIN_TYPE)
 @Name("ValueMapper")
-@Description("Maps and convert record values from input sources using a mapping dataset")
+@Description("Maps and converts record values using a mapping dataset")
 public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
 
-  private static final Gson GSON = new GsonBuilder().create();
-  private static final Logger LOG = LoggerFactory.getLogger(ValueMapper.class);
+  private static final Gson GSON = new Gson();
   private final Config config;
   private final Map<Schema, Schema> schemaCache = Maps.newHashMap();
   private final Map<String, String> fieldsMapping = Maps.newHashMap();
-  private final Map<String, ValueMapperLookUp> datasetMapping =
-          Maps.newHashMap();
-  private JsonArray mappingArray;
+  private final Map<String, ValueMapperLookUp> datasetMapping = new HashMap<>();
 
   // for unit tests, otherwise config is injected by plugin framework.
   public ValueMapper(Config config) {
@@ -65,65 +61,39 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
 
   @Override
   public void transform(StructuredRecord input, Emitter<StructuredRecord> emitter) throws Exception {
-    LOG.debug("in transform start :" + input.get("name"));
     Schema outputSchema = getOutputSchema(input.getSchema());
-    StructuredRecord.Builder builder = createOutputRecords(input, outputSchema);
-    StructuredRecord ss = builder.build();
-    LOG.debug("in transform end :" + ss.get("designationName"));
-    emitter.emit(ss);
-  }
-
-  /**
-   * Creates output structure record using mapping dataset and set them to builder.
-   */
-  private StructuredRecord.Builder createOutputRecords(StructuredRecord input, Schema outputSchema) {
 
     StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
     for (Schema.Field sourceField : input.getSchema().getFields()) {
 
-      LOG.debug("in createOutputRecords :" + input.get(sourceField.getName()
-      ).toString());
       if (!input.get(sourceField.getName()).equals("NULL") &&
               !input.get(sourceField.getName()).equals("EMPTY") &&
               fieldsMapping.containsKey(sourceField.getName())) {
-        builder = lookUpAndSetValues(input, sourceField, builder);
-        LOG.debug("in createOutputRecords after :" + builder);
+
+        if (datasetMapping.containsKey(sourceField.getName())) {
+          ValueMapperLookUp valueMapperLookUp = datasetMapping.get(sourceField.getName());
+
+          if (valueMapperLookUp.lookup(input.get(sourceField.getName()).toString()) != null &&
+                  valueMapperLookUp.lookup(input.get(sourceField.getName()).toString()).toString().trim().length() > 0) {
+
+            builder.set(fieldsMapping.get(sourceField.getName()),
+                    valueMapperLookUp.lookup(input.get(sourceField.getName()).toString()));
+          } else {
+            builder.set(fieldsMapping.get(sourceField.getName()), "Empty");
+          }
+        } else {
+          // for those source field whose mapping is not present
+          builder.set(fieldsMapping.get(sourceField.getName()), "Empty");
+        }
+
       } else {
         // for those source field whose values are either NULL or EMPTY
-        builder.set(sourceField.getName(), "" + input.get(sourceField.getName()
+        builder.set(sourceField.getName(), input.get(sourceField.getName()
         ).toString());
       }
     }
-    LOG.debug("in createOutputRecords end :" + builder);
-    return builder;
-  }
 
-  /**
-   * Sets target fields and values from mapping dataset
-   */
-  private StructuredRecord.Builder lookUpAndSetValues(StructuredRecord input, Schema.Field sourceField,
-                                                      StructuredRecord.Builder builder) {
-    if (datasetMapping.containsKey(sourceField.getName())) {
-      ValueMapperLookUp valueMapperLookUp = datasetMapping.get(sourceField.getName());
-      LOG.debug("in lookUpAndSetValues:" + sourceField.getName());
-
-      if (valueMapperLookUp.lookup(input.get(sourceField.getName()).toString()) != null &&
-              valueMapperLookUp.lookup(input.get(sourceField.getName()).toString()).toString().trim().length() > 0) {
-        LOG.debug("in lookUpAndSetValues lookup value:" + valueMapperLookUp.lookup(input.get(sourceField
-                .getName
-                        ())
-                .toString()));
-        builder.set(fieldsMapping.get(sourceField.getName()),
-                valueMapperLookUp.lookup(input.get(sourceField.getName()).toString()));
-      } else {
-        builder.set(fieldsMapping.get(sourceField.getName()), "Empty");
-      }
-    } else {
-      // for those source field whose mapping is not present
-      builder.set(fieldsMapping.get(sourceField.getName()), "Empty");
-    }
-
-    return builder;
+    emitter.emit(builder.build());
   }
 
   /**
@@ -137,7 +107,8 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
     List<Schema.Field> outputFields = Lists.newArrayList();
     for (Schema.Field inputField : inputSchema.getFields()) {
       if (inputField.getSchema().getType() != Schema.Type.STRING) {
-        throw new IllegalArgumentException("Input field type should be String");
+        throw new IllegalArgumentException("Input field "
+                + inputField.getName() + " type should be String");
       } else {
         if (fieldsMapping.containsKey(inputField.getName())) {
           outputFields.add(Schema.Field.of(fieldsMapping.get(inputField.getName()),
@@ -156,14 +127,13 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
    * Parse configuration provided by user
    */
   public void parseConfiguration(String mapping, TransformContext context) {
-    LOG.debug("in parseConfiguration:" + mapping);
+
     JsonParser jsonParser = new JsonParser();
     JsonElement jsonMapping = jsonParser.parse(mapping);
-    LOG.debug("in parseConfiguration:" + jsonMapping.toString());
-    mappingArray = jsonMapping.getAsJsonObject().get("mapping").getAsJsonArray();
+    JsonArray mappingArray = jsonMapping.getAsJsonObject().get("mapping").getAsJsonArray();
     for (JsonElement mappingElement : mappingArray) {
-      String sourceField = mappingElement.getAsJsonObject().get("mapperField").getAsString();
-      String targetField = mappingElement.getAsJsonObject().get("mappingField").getAsString();
+      String sourceField = mappingElement.getAsJsonObject().get("sourceField").getAsString();
+      String targetField = mappingElement.getAsJsonObject().get("targetField").getAsString();
       fieldsMapping.put(sourceField, targetField);
       ValueMapperLookUp lookUpTable = init(context, mappingElement.getAsJsonObject().get("lookup").toString());
       datasetMapping.put(sourceField, lookUpTable);
@@ -175,7 +145,6 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
    */
   private ValueMapperLookUp init(LookupProvider context, String lookUp) throws IllegalArgumentException {
 
-    LOG.debug("in init:" + lookUp);
     LookupConfig lookUpConfig;
     try {
       lookUpConfig = GSON.fromJson(lookUp, LookupConfig.class);
