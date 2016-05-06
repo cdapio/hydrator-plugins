@@ -35,7 +35,7 @@ Getting Started
 
 Prerequisites
 -------------
-To use the 1.4.x version of Hydrator plugins, you must have CDAP version 3.4.x or higher. Prerequisites for the various
+To use the 1.4.x version of Hydrator plugins, you must have CDAP version 3.5.x or higher. Prerequisites for the various
 sources, sinks, and transforms are included in their individual README files.
   
 Building Plugins
