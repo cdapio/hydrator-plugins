@@ -21,21 +21,15 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
-import co.cask.cdap.etl.api.LookupConfig;
-import co.cask.cdap.etl.api.LookupProvider;
+import co.cask.cdap.etl.api.Lookup;
+import co.cask.cdap.etl.api.LookupTableConfig;
+import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
-
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,74 +42,90 @@ import java.util.Map;
 @Description("Maps and converts record values using a mapping dataset")
 public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
 
-  private static final Gson GSON = new Gson();
   private final Config config;
-  private final Map<Schema, Schema> schemaCache = Maps.newHashMap();
-  private final Map<String, String> fieldsMapping = Maps.newHashMap();
-  private final Map<String, ValueMapperLookUp> datasetMapping = new HashMap<>();
+  private final Map<Schema, Schema> schemaCache = new HashMap<>();
+  private static final Map<String, ValueMapping> mappingValues = new HashMap<>();
 
-  // for unit tests, otherwise config is injected by plugin framework.
+  //for unit tests, otherwise config is injected by plugin framework.
   public ValueMapper(Config config) {
     this.config = config;
-  }
-
-  @Override
-  public void transform(StructuredRecord input, Emitter<StructuredRecord> emitter) throws Exception {
-    Schema outputSchema = getOutputSchema(input.getSchema());
-
-    StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
-    for (Schema.Field sourceField : input.getSchema().getFields()) {
-
-      if (!input.get(sourceField.getName()).equals("NULL") &&
-              !input.get(sourceField.getName()).equals("EMPTY") &&
-              fieldsMapping.containsKey(sourceField.getName())) {
-
-        if (datasetMapping.containsKey(sourceField.getName())) {
-          ValueMapperLookUp valueMapperLookUp = datasetMapping.get(sourceField.getName());
-
-          if (valueMapperLookUp.lookup(input.get(sourceField.getName()).toString()) != null &&
-                  valueMapperLookUp.lookup(input.get(sourceField.getName()).toString()).toString().trim().length() > 0) {
-
-            builder.set(fieldsMapping.get(sourceField.getName()),
-                    valueMapperLookUp.lookup(input.get(sourceField.getName()).toString()));
-          } else {
-            builder.set(fieldsMapping.get(sourceField.getName()), "Empty");
-          }
-        } else {
-          // for those source field whose mapping is not present
-          builder.set(fieldsMapping.get(sourceField.getName()), "Empty");
-        }
-
-      } else {
-        // for those source field whose values are either NULL or EMPTY
-        builder.set(sourceField.getName(), input.get(sourceField.getName()
-        ).toString());
-      }
-    }
-
-    emitter.emit(builder.build());
+    this.config.parseConfiguration();
   }
 
   /**
-   * Creates output schema record using source and destination field mapping provided by user.
+   * Configuration for the ValueMapper transform.
+   */
+  public static class Config extends PluginConfig {
+
+    @Name("mapping")
+    @Description("Specify the source and target field mapping and lookup dataset name." +
+            "Format is <source-field>:<lookup-table-name>:<target-field>" +
+            "[,<source-field>:<lookup-table-name>:<target-field>]*" +
+            "Source and target field can only of type string." +
+            "For eg: lang_code:language_code_lookup:lang_desc,country_code:country_lookup:country_name")
+    private final String mapping;
+
+    @Name("defaults")
+    @Description("Specify the defaults for source fields if the lookup does not exist or inputs are NULL or EMPTY. " +
+            "Format is <source-field>:<default-value>[,<source-field>:<default-value>]*" +
+            "lang_code:English,country_code:Britain")
+    private final String defaults;
+
+    public Config(String mapping, String defaults) {
+      this.mapping = mapping;
+      this.defaults = defaults;
+    }
+
+    /**
+     * This method is meant to parse input configuration.
+     * It is required to use in configurePiperline as well as transform method.
+     * Hence this is implemented as a part of Config class to set configuration once and make it available for
+     * subsequent methods.
+     */
+    private void parseConfiguration() {
+      Map<String, String> defaultsMapping = new HashMap<>();
+      if (!defaults.isEmpty()) {
+        String[] defaultsList = this.defaults.split(",");
+        for (String defaultValue : defaultsList) {
+          String[] defaultsArray = defaultValue.split(":");
+          defaultsMapping.put(defaultsArray[0], defaultsArray[1]);
+        }
+      }
+      String[] mappingArray = this.mapping.split(",");
+      for (String mapping : mappingArray) {
+        String[] mappingValueArray = mapping.split(":");
+        ValueMapping valueMapping = new ValueMapping();
+        valueMapping.setTargetField(mappingValueArray[2]);
+        valueMapping.setLookupTableName(mappingValueArray[1]);
+
+        if (defaultsMapping.containsKey(mappingValueArray[0])) {
+          valueMapping.setDefaultValue(defaultsMapping.get(mappingValueArray[0]));
+        }
+        mappingValues.put(mappingValueArray[0], valueMapping);
+      }
+    }
+  }
+
+  /**
+   * Creates output schema with the help of input schema and mapping
    */
   private Schema getOutputSchema(Schema inputSchema) throws IllegalArgumentException {
     Schema outputSchema = schemaCache.get(inputSchema);
     if (outputSchema != null) {
       return outputSchema;
     }
-    List<Schema.Field> outputFields = Lists.newArrayList();
+
+    List<Schema.Field> outputFields = new ArrayList<>();
     for (Schema.Field inputField : inputSchema.getFields()) {
-      if (inputField.getSchema().getType() != Schema.Type.STRING) {
-        throw new IllegalArgumentException("Input field "
-                + inputField.getName() + " type should be String");
-      } else {
-        if (fieldsMapping.containsKey(inputField.getName())) {
-          outputFields.add(Schema.Field.of(fieldsMapping.get(inputField.getName()),
-                  Schema.of(Schema.Type.STRING)));
+      if (mappingValues.containsKey(inputField.getName())) {
+        if (inputField.getSchema().getType() != Schema.Type.STRING && !inputField.getSchema().isNullable()) {
+          throw new IllegalArgumentException("Input field " + inputField.getName() + " type should be String");
         } else {
-          outputFields.add(inputField);
-        }
+          outputFields.add(Schema.Field.of(mappingValues.get(inputField.getName()).getTargetField(),
+                                           inputField.getSchema()));
+          }
+      } else {
+        outputFields.add(inputField);
       }
     }
     outputSchema = Schema.recordOf(inputSchema.getRecordName() + ".formatted", outputFields);
@@ -124,74 +134,118 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
   }
 
   /**
-   * Parse configuration provided by user
+   * retrieve lookup table from table name
    */
-  public void parseConfiguration(String mapping, TransformContext context) {
-
-    JsonParser jsonParser = new JsonParser();
-    JsonElement jsonMapping = jsonParser.parse(mapping);
-    JsonArray mappingArray = jsonMapping.getAsJsonObject().get("mapping").getAsJsonArray();
-    for (JsonElement mappingElement : mappingArray) {
-      String sourceField = mappingElement.getAsJsonObject().get("sourceField").getAsString();
-      String targetField = mappingElement.getAsJsonObject().get("targetField").getAsString();
-      fieldsMapping.put(sourceField, targetField);
-      ValueMapperLookUp lookUpTable = init(context, mappingElement.getAsJsonObject().get("lookup").toString());
-      datasetMapping.put(sourceField, lookUpTable);
+  private void setLookup(TransformContext context) {
+    for (String key :mappingValues.keySet()) {
+      ValueMapping mapping = mappingValues.get(key);
+      LookupTableConfig tableConfig = new LookupTableConfig(LookupTableConfig.TableType.DATASET);
+      DatasetProperties arguments = DatasetProperties.builder().addAll(tableConfig.getDatasetProperties()).build();
+      Lookup<String> lookupTable = context.provide(mapping.getLookupTableName(), arguments.getProperties());
+      mapping.setLookupTable(lookupTable);
     }
   }
 
-  /**
-   * Creates a look up table
-   */
-  private ValueMapperLookUp init(LookupProvider context, String lookUp) throws IllegalArgumentException {
+  @Override
+  public void transform(StructuredRecord input, Emitter<StructuredRecord> emitter) throws Exception {
 
-    LookupConfig lookUpConfig;
-    try {
-      lookUpConfig = GSON.fromJson(lookUp, LookupConfig.class);
-    } catch (JsonSyntaxException e) {
-      throw new IllegalArgumentException("Invalid lookup config. Expected map of string to string", e);
+    StructuredRecord.Builder builder = StructuredRecord.builder(getOutputSchema(input.getSchema()));
+
+    for (Schema.Field sourceField : input.getSchema().getFields()) {
+      if (mappingValues.containsKey(sourceField.getName())) {
+        ValueMapping mapping = mappingValues.get(sourceField.getName());
+        if (input.get(sourceField.getName()) == null || input.get(sourceField.getName()).toString().isEmpty()) {
+          if (mapping.getDefaultValue() != null) {
+            builder.set(mapping.getTargetField(), mapping.getDefaultValue());
+          } else {
+            builder.set(mapping.getTargetField(), input.get(sourceField.getName()));
+          }
+        } else {
+          // for those source field whose values are neither NULL nor EMPTY
+          Lookup<String> valueMapperLookUp = mapping.getLookupTable();
+          String lookupValue = valueMapperLookUp.lookup(input.get(sourceField.getName()).toString());
+          if (lookupValue != null && !lookupValue.isEmpty()) {
+            builder.set(mapping.getTargetField(), lookupValue);
+          } else {
+            builder.set(mapping.getTargetField(), mapping.getDefaultValue());
+          }
+        }
+      } else {
+        // for the fields except source fields
+        builder.set(sourceField.getName(), input.get(sourceField.getName()));
+      }
     }
 
-    ValueMapperLookupProvider valueMapperLookupProvider = new ValueMapperLookupProvider(context, lookUpConfig);
-    String lookUpTable = parseLookUpTableName(lookUp);
-
-    ValueMapperLookUp lookupTable = valueMapperLookupProvider.provide(lookUpTable);
-    return lookupTable;
-  }
-
-  /**
-   * parse lookup table name from lookup object
-   */
-  private String parseLookUpTableName(String lookUp) {
-    String tableName = null;
-    JsonParser jsonParser = new JsonParser();
-    JsonElement jsonMapping = jsonParser.parse(lookUp);
-    JsonElement table = jsonMapping.getAsJsonObject().get("tables");
-    for (Map.Entry entry : table.getAsJsonObject().entrySet()) {
-      tableName = entry.getKey().toString();
-      break;
-    }
-    return tableName;
+    emitter.emit(builder.build());
   }
 
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
-    parseConfiguration(config.mapping, context);
+    setLookup(context);
   }
 
   /**
-   * Configuration for the ValueMapper transform.
+   * @param pipelineConfigurer
+   * @throws IllegalArgumentException when source field is other than String type
    */
-  public static class Config extends PluginConfig {
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
+    super.configurePipeline(pipelineConfigurer);
+    Schema outputSchema = null;
+    Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
+    if (inputSchema != null) {
+      outputSchema = getOutputSchema(inputSchema);
+    }
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
 
-    //TODO input parameters may be changed after having three different input params from UI
-    @Name("mapping")
-    @Description("Specify the source and target field mapping and lookup dataset name.")
-    private final String mapping;
+  }
 
-    public Config(String mapping) {
-      this.mapping = mapping;
+  /**
+   * Object used to keep input mapping corresponding to each source field
+   */
+
+  public static class ValueMapping {
+
+    private Lookup<String> lookupTable;
+    private String targetField;
+    private String lookupTableName;
+    private String defaultValue;
+
+    public ValueMapping(){
+    }
+
+    public Lookup<String> getLookupTable() {
+      return lookupTable;
+    }
+
+    public void setLookupTable(Lookup<String> lookupTable) {
+      this.lookupTable = lookupTable;
+    }
+
+    public String getTargetField() {
+      return targetField;
+    }
+
+    public void setTargetField(String targetField) {
+      this.targetField = targetField;
+    }
+
+    public String getLookupTableName() {
+      return lookupTableName;
+    }
+
+    public void setLookupTableName(String lookupTableName) {
+      this.lookupTableName = lookupTableName;
+    }
+
+    public String getDefaultValue() {
+      return defaultValue;
+    }
+
+    public void setDefaultValue(String defaultValue) {
+      this.defaultValue = defaultValue;
     }
   }
+
 }

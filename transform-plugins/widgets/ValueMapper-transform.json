@@ -9,6 +9,11 @@
           "widget-type": "textbox",
           "label": "mapping",
           "name": "mapping"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "defaults",
+          "name": "defaults"
         }
       ]
     }
