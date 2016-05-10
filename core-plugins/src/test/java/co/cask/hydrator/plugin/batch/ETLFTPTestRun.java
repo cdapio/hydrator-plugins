@@ -29,7 +29,7 @@ import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
-import co.cask.hydrator.plugin.batch.source.FileBatchSource;
+import co.cask.hydrator.plugin.batch.source.StructuredRecordFileInputFormat;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
 import org.apache.avro.generic.GenericRecord;
@@ -113,7 +113,7 @@ public class ETLFTPTestRun extends ETLBatchTestBase {
       "TPFSAvro",
       BatchSink.PLUGIN_TYPE,
       ImmutableMap.<String, String>builder()
-        .put(Properties.TimePartitionedFileSetDataset.SCHEMA, FileBatchSource.DEFAULT_SCHEMA.toString())
+        .put(Properties.TimePartitionedFileSetDataset.SCHEMA, StructuredRecordFileInputFormat.SCHEMA.toString())
         .put(Properties.TimePartitionedFileSetDataset.TPFS_NAME, "fileSink").build(),
       null));
 
@@ -133,7 +133,7 @@ public class ETLFTPTestRun extends ETLBatchTestBase {
 
     DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset("fileSink");
     try (TimePartitionedFileSet fileSet = fileSetManager.get()) {
-      List<GenericRecord> records = readOutput(fileSet, FileBatchSource.DEFAULT_SCHEMA);
+      List<GenericRecord> records = readOutput(fileSet, StructuredRecordFileInputFormat.SCHEMA);
       Assert.assertEquals(1, records.size());
       GenericRecord record = records.get(0);
       Assert.assertEquals(TEST_STRING, record.get("body").toString());

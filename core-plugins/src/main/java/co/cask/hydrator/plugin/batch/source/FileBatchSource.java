@@ -22,7 +22,6 @@ import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
@@ -43,10 +42,10 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.lib.input.CombineTextInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 
 import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
@@ -64,18 +63,13 @@ import javax.annotation.Nullable;
 @Plugin(type = "batchsource")
 @Name("File")
 @Description("Batch source for File Systems")
-public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, StructuredRecord> {
+public class FileBatchSource extends ReferenceBatchSource<NullWritable, StructuredRecord, StructuredRecord> {
 
   public static final String INPUT_NAME_CONFIG = "input.path.name";
   public static final String INPUT_REGEX_CONFIG = "input.path.regex";
   public static final String LAST_TIME_READ = "last.time.read";
   public static final String CUTOFF_READ_TIME = "cutoff.read.time";
   public static final String USE_TIMEFILTER = "timefilter";
-  public static final Schema DEFAULT_SCHEMA = Schema.recordOf(
-    "event",
-    Schema.Field.of("offset", Schema.of(Schema.Type.LONG)),
-    Schema.Field.of("body", Schema.of(Schema.Type.STRING))
-  );
   protected static final String MAX_SPLIT_SIZE_DESCRIPTION = "Maximum split-size for each mapper in the MapReduce " +
     "Job. Defaults to 128MB.";
   protected static final String PATH_DESCRIPTION = "Path to file(s) to be read. If a directory is specified, " +
@@ -83,7 +77,7 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
   protected static final String TABLE_DESCRIPTION = "Name of the Table that keeps track of the last time files " +
     "were read in. If this is null or empty, the Regex is used to filter filenames.";
   protected static final String INPUT_FORMAT_CLASS_DESCRIPTION = "Name of the input format class, which must be a " +
-    "subclass of FileInputFormat. Defaults to CombineTextInputFormat.";
+    "subclass of FileInputFormat. Defaults to TextInputFormat.";
   protected static final String REGEX_DESCRIPTION = "Regex to filter out filenames in the path. " +
     "To use the TimeFilter, input \"timefilter\". The TimeFilter assumes that it " +
     "is reading in files with the File log naming convention of 'YYYY-MM-DD-HH-mm-SS-Tag'. The TimeFilter " +
@@ -115,11 +109,12 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
     if (config.timeTable != null) {
       pipelineConfigurer.createDataset(config.timeTable, KeyValueTable.class, DatasetProperties.EMPTY);
     }
-    pipelineConfigurer.getStageConfigurer().setOutputSchema(DEFAULT_SCHEMA);
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(StructuredRecordFileInputFormat.SCHEMA);
   }
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
+    config.substituteMacros(context);
     //SimpleDateFormat needs to be local because it is not threadsafe
     SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH");
 
@@ -165,16 +160,15 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
     if (config.maxSplitSize != null) {
       FileInputFormat.setMaxInputSplitSize(job, config.maxSplitSize);
     }
-    context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(config.inputFormatClass, conf)));
+    conf.set(StructuredRecordFileInputFormat.INPUT_FORMAT_CLASS, config.inputFormatClass);
+    context.setInput(Input.of(config.referenceName,
+                              new SourceInputFormatProvider(StructuredRecordFileInputFormat.class.getName(), conf)));
   }
 
   @Override
-  public void transform(KeyValue<LongWritable, Object> input, Emitter<StructuredRecord> emitter) throws Exception {
-    StructuredRecord output = StructuredRecord.builder(DEFAULT_SCHEMA)
-      .set("offset", input.getKey().get())
-      .set("body", input.getValue().toString())
-      .build();
-    emitter.emit(output);
+  public void transform(KeyValue<NullWritable, StructuredRecord> input,
+                        Emitter<StructuredRecord> emitter) throws Exception {
+    emitter.emit(input.getValue());
   }
 
   @Override
@@ -228,7 +222,7 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
       super("");
       this.fileSystemProperties = GSON.toJson(ImmutableMap.<String, String>of());
       this.fileRegex = ".*";
-      this.inputFormatClass = CombineTextInputFormat.class.getName();
+      this.inputFormatClass = TextInputFormat.class.getName();
       this.maxSplitSize = DEFAULT_MAX_SPLIT_SIZE;
     }
 
@@ -242,7 +236,7 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
       this.fileRegex = fileRegex == null ? ".*" : fileRegex;
       // There is no default for timeTable, the code handles nulls
       this.timeTable = timeTable;
-      this.inputFormatClass = inputFormatClass == null ? CombineTextInputFormat.class.getName() : inputFormatClass;
+      this.inputFormatClass = inputFormatClass == null ? TextInputFormat.class.getName() : inputFormatClass;
       this.maxSplitSize = maxSplitSize == null ? DEFAULT_MAX_SPLIT_SIZE : maxSplitSize;
     }
   }
