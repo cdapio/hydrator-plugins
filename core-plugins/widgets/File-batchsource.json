@@ -48,8 +48,9 @@
     {
       "widget-type": "non-editable-schema-editor",
       "schema": {
-        "offset": "long",
-        "body": "string"
+        "offset": ["long", "null"],
+        "body": ["string", "null"],
+        "path": ["string", "null"]
       }
     }
   ]

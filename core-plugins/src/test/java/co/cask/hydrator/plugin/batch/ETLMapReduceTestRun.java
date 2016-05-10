@@ -36,7 +36,7 @@ import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
 import co.cask.hydrator.common.Constants;
-import co.cask.hydrator.plugin.batch.source.FileBatchSource;
+import co.cask.hydrator.plugin.batch.source.StructuredRecordFileInputFormat;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
 import org.apache.avro.generic.GenericRecord;
@@ -387,7 +387,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     ETLStage sink = new ETLStage(
       "sink", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
                             ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA,
-                                            FileBatchSource.DEFAULT_SCHEMA.toString(),
+                                            StructuredRecordFileInputFormat.SCHEMA.toString(),
                                             Properties.TimePartitionedFileSetDataset.TPFS_NAME, "TPFSsink"),
                             null));
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
@@ -406,11 +406,12 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
 
     DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset("TPFSsink");
     try (TimePartitionedFileSet fileSet = fileSetManager.get()) {
-      List<GenericRecord> records = readOutput(fileSet, FileBatchSource.DEFAULT_SCHEMA);
+      List<GenericRecord> records = readOutput(fileSet, StructuredRecordFileInputFormat.SCHEMA);
       // Two input files, each with one input record were specified. However, only one file matches the regex,
       // so only one record should be found in the output.
       Assert.assertEquals(1, records.size());
       Assert.assertEquals(testData1, records.get(0).get("body").toString());
+      Assert.assertEquals(testPath + testFile2, records.get(0).get("path").toString());
     }
   }
 
@@ -439,13 +440,13 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     ETLStage sink1 = new ETLStage(
       "sink1", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
                              ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA,
-                                             FileBatchSource.DEFAULT_SCHEMA.toString(),
+                                             StructuredRecordFileInputFormat.SCHEMA.toString(),
                                              Properties.TimePartitionedFileSetDataset.TPFS_NAME, "fileSink1"),
                              null));
     ETLStage sink2 = new ETLStage(
       "sink2", new ETLPlugin("TPFSParquet", BatchSink.PLUGIN_TYPE,
                              ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA,
-                                             FileBatchSource.DEFAULT_SCHEMA.toString(),
+                                             StructuredRecordFileInputFormat.SCHEMA.toString(),
                                              Properties.TimePartitionedFileSetDataset.TPFS_NAME, "fileSink2"),
                              null));
 
@@ -468,9 +469,10 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     for (String sinkName : new String[] { "fileSink1", "fileSink2" }) {
       DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset(sinkName);
       try (TimePartitionedFileSet fileSet = fileSetManager.get()) {
-        List<GenericRecord> records = readOutput(fileSet, FileBatchSource.DEFAULT_SCHEMA);
+        List<GenericRecord> records = readOutput(fileSet, StructuredRecordFileInputFormat.SCHEMA);
         Assert.assertEquals(1, records.size());
         Assert.assertEquals(testData, records.get(0).get("body").toString());
+        Assert.assertEquals("file:/tmp/test/text.txt", records.get(0).get("path").toString());
       }
     }
   }
@@ -489,14 +491,14 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     ETLStage sink1 = new ETLStage(
       "sink", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
                             ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA,
-                                            FileBatchSource.DEFAULT_SCHEMA.toString(),
+                                            StructuredRecordFileInputFormat.SCHEMA.toString(),
                                             Properties.TimePartitionedFileSetDataset.TPFS_NAME, "fileSink1"),
                             null));
     // duplicate name for 2nd sink, should throw exception
     ETLStage sink2 = new ETLStage(
       "sink", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
                             ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA,
-                                            FileBatchSource.DEFAULT_SCHEMA.toString(),
+                                            StructuredRecordFileInputFormat.SCHEMA.toString(),
                                             Properties.TimePartitionedFileSetDataset.TPFS_NAME, "fileSink2"),
                             null));
 

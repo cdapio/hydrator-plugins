@@ -19,12 +19,13 @@ package co.cask.hydrator.common;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.plugin.PluginConfig;
+import co.cask.hydrator.common.macro.MacroConfig;
 
 /**
  * {@link PluginConfig} that contains a referenceName property that is used to create an external Dataset for
  * metadata, lineage purposes.
  */
-public class ReferencePluginConfig extends PluginConfig {
+public class ReferencePluginConfig extends MacroConfig {
 
   @Name(Constants.Reference.REFERENCE_NAME)
   @Description(Constants.Reference.REFERENCE_NAME_DESCRIPTION)
