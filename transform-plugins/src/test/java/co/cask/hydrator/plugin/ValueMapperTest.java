@@ -49,7 +49,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,7 +57,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * Test case for {@link ValueMapper}.
  */
-
 public class ValueMapperTest extends HydratorTestBase {
 
   private static final Schema SOURCE_SCHEMA =
@@ -99,242 +97,20 @@ public class ValueMapperTest extends HydratorTestBase {
   }
 
   @Test
-  public void testSimpleFlow() throws Exception {
-
-    Schema inputSchema = Schema.recordOf("sourceRecord",
-                                           Schema.Field.of(ID, Schema.of(Schema.Type.STRING)),
-                                           Schema.Field.of(NAME, Schema.of(Schema.Type.STRING)),
-                                           Schema.Field.of(SALARY, Schema.of(Schema.Type.STRING)),
-                                           Schema.Field.of(DESIGNATIONID, Schema.of(Schema.Type.STRING)));
-
-    String inputTable = "input_table";
-
-    ETLStage source = new ETLStage("source", MockSource.getPlugin(inputTable));
-
-    Map<String, String> sourceproperties = new ImmutableMap.Builder<String, String>()
-      .put("mapping", "designationid:designation_lookup_table:designationName")
-      .put("defaults", "designationid:DEFAULTID")
-      .put("name", "FlowPlugin").build();
-
-    ETLStage transform = new ETLStage("transform",
-                                      new ETLPlugin("ValueMapper", Transform.PLUGIN_TYPE, sourceproperties, null));
-
-    String sinkTable = "output_table";
-    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(sinkTable));
-
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(source)
-      .addStage(transform)
-      .addStage(sink)
-      .addConnection(source.getName(), transform.getName())
-      .addConnection(transform.getName(), sink.getName())
-      .build();
-
-
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "valuemappertest");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-
-    addDatasetInstance(KeyValueTable.class.getName(), "designation_lookup_table");
-    DataSetManager<KeyValueTable> dataSetManager = getDataset("designation_lookup_table");
-    KeyValueTable keyValueTable = dataSetManager.get();
-    keyValueTable.write("1".getBytes(Charsets.UTF_8), "SE".getBytes(Charsets.UTF_8));
-    keyValueTable.write("2".getBytes(Charsets.UTF_8), "SSE".getBytes(Charsets.UTF_8));
-    keyValueTable.write("3".getBytes(Charsets.UTF_8), "ML".getBytes(Charsets.UTF_8));
-    dataSetManager.flush();
-
-    DataSetManager<Table> inputManager = getDataset(inputTable);
-    List<StructuredRecord> input = ImmutableList.of(
-      StructuredRecord.builder(inputSchema).set(ID, "100").set(NAME, "John").set(SALARY, "1000").set
-        (DESIGNATIONID, "1").build(),
-      StructuredRecord.builder(inputSchema).set(ID, "101").set(NAME, "Kerry").set(SALARY, "1030").set
-        (DESIGNATIONID, "2").build(),
-      StructuredRecord.builder(inputSchema).set(ID, "102").set(NAME, "Mathew").set(SALARY, "1230").set
-        (DESIGNATIONID, "3").build()
-    );
-    MockSource.writeInput(inputManager, input);
-
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(5, TimeUnit.MINUTES);
-
-    DataSetManager<Table> outputManager = getDataset(sinkTable);
-    List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);
-
-    Map<String, String> nameDesignationMap = new HashMap<String, String>();
-    nameDesignationMap.put("John", "SE");
-    nameDesignationMap.put("Kerry", "SSE");
-    nameDesignationMap.put("Mathew", "ML");
-
-    Assert.assertEquals(3, outputRecords.size());
-    Assert.assertEquals(nameDesignationMap.get(outputRecords.get(0).get(NAME)), outputRecords.get(0).
-      get(DESIGNATIONNAME));
-    Assert.assertEquals(nameDesignationMap.get(outputRecords.get(1).get(NAME)), outputRecords.get(1).
-      get(DESIGNATIONNAME));
-    Assert.assertEquals(nameDesignationMap.get(outputRecords.get(2).get(NAME)), outputRecords.get(2).
-      get(DESIGNATIONNAME));
-
-  }
-
-  @Test
-  public void testNull() throws Exception {
-
-    String inputTable = "input_table_one";
-
-    ETLStage source = new ETLStage("source", MockSource.getPlugin(inputTable));
-
-    Map<String, String> sourceproperties = new ImmutableMap.Builder<String, String>()
-      .put("mapping", "designationid:designation_lookup_table_one:designationName")
-      .put("defaults", "designationid:DEFAULTID")
-      .put("name", "FlowPlugin").build();
-
-    ETLStage transform = new ETLStage("transform",
-                                      new ETLPlugin("ValueMapper", Transform.PLUGIN_TYPE, sourceproperties, null));
-
-    String sinkTable = "output_table_one";
-    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(sinkTable));
-
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(source)
-      .addStage(transform)
-      .addStage(sink)
-      .addConnection(source.getName(), transform.getName())
-      .addConnection(transform.getName(), sink.getName())
-      .build();
-
-
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "valuemappertest_one");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-
-    addDatasetInstance(KeyValueTable.class.getName(), "designation_lookup_table_one");
-    DataSetManager<KeyValueTable> dataSetManager = getDataset("designation_lookup_table_one");
-    KeyValueTable keyValueTable = dataSetManager.get();
-    keyValueTable.write("1".getBytes(Charsets.UTF_8), "SE".getBytes(Charsets.UTF_8));
-    keyValueTable.write("2".getBytes(Charsets.UTF_8), "SSE".getBytes(Charsets.UTF_8));
-    keyValueTable.write("3".getBytes(Charsets.UTF_8), "ML".getBytes(Charsets.UTF_8));
-    dataSetManager.flush();
-
-    DataSetManager<Table> inputManager = getDataset(inputTable);
-    List<StructuredRecord> input = ImmutableList.of(
-      StructuredRecord.builder(SOURCE_SCHEMA).set(ID, "100").set(NAME, "John").set(SALARY, "1000").
-        set(DESIGNATIONID, "1").build(),
-      StructuredRecord.builder(SOURCE_SCHEMA).set(ID, "101").set(NAME, "Kerry").set(SALARY, "1030").
-        set(DESIGNATIONID, "2").build(),
-      StructuredRecord.builder(SOURCE_SCHEMA).set(ID, "102").set(NAME, "Mathew").set(SALARY, "1230").
-        set(DESIGNATIONID, null).build()
-    );
-    MockSource.writeInput(inputManager, input);
-
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(5, TimeUnit.MINUTES);
-
-    DataSetManager<Table> outputManager = getDataset(sinkTable);
-    List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);
-    Map<String, String> nameDesignationMap = new HashMap<String, String>();
-    nameDesignationMap.put("John", "SE");
-    nameDesignationMap.put("Kerry", "SSE");
-    nameDesignationMap.put("Mathew", "DEFAULTID");
-
-    Assert.assertEquals(3, outputRecords.size());
-    Assert.assertEquals(nameDesignationMap.get(outputRecords.get(0).get(NAME)), outputRecords.get(0).
-      get(DESIGNATIONNAME));
-    Assert.assertEquals(nameDesignationMap.get(outputRecords.get(1).get(NAME)), outputRecords.get(1).
-      get(DESIGNATIONNAME));
-    Assert.assertEquals(nameDesignationMap.get(outputRecords.get(2).get(NAME)), outputRecords.get(2).
-      get(DESIGNATIONNAME));
-
-  }
-
-  @Test
-  public void testEmpty() throws Exception {
-
-    String inputTable = "input_table_two";
-
-    ETLStage source = new ETLStage("source", MockSource.getPlugin(inputTable));
-
-    Map<String, String> sourceproperties = new ImmutableMap.Builder<String, String>()
-      .put("mapping", "designationid:designation_lookup_table_two:designationName")
-      .put("defaults", "designationid:DEFAULTID")
-      .put("name", "FlowPlugin").build();
-
-    ETLStage transform = new ETLStage("transform",
-                                      new ETLPlugin("ValueMapper", Transform.PLUGIN_TYPE, sourceproperties, null));
-
-    String sinkTable = "output_table_two";
-    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(sinkTable));
-
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(source)
-      .addStage(transform)
-      .addStage(sink)
-      .addConnection(source.getName(), transform.getName())
-      .addConnection(transform.getName(), sink.getName())
-      .build();
-
-
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "valuemappertest_two");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-
-    addDatasetInstance(KeyValueTable.class.getName(), "designation_lookup_table_two");
-    DataSetManager<KeyValueTable> dataSetManager = getDataset("designation_lookup_table_two");
-    KeyValueTable keyValueTable = dataSetManager.get();
-    keyValueTable.write("1".getBytes(Charsets.UTF_8), "SE".getBytes(Charsets.UTF_8));
-    keyValueTable.write("2".getBytes(Charsets.UTF_8), "SSE".getBytes(Charsets.UTF_8));
-    keyValueTable.write("3".getBytes(Charsets.UTF_8), "ML".getBytes(Charsets.UTF_8));
-    dataSetManager.flush();
-
-    DataSetManager<Table> inputManager = getDataset(inputTable);
-    List<StructuredRecord> input = ImmutableList.of(
-      StructuredRecord.builder(SOURCE_SCHEMA).set(ID, "100").set(NAME, "John").set(SALARY, "1000").
-        set(DESIGNATIONID, "1").build(),
-      StructuredRecord.builder(SOURCE_SCHEMA).set(ID, "101").set(NAME, "Kerry").set(SALARY, "1030").
-        set(DESIGNATIONID, "2").build(),
-      StructuredRecord.builder(SOURCE_SCHEMA).set(ID, "102").set(NAME, "Mathew").set(SALARY, "1230").
-        set(DESIGNATIONID, "").build()
-    );
-    MockSource.writeInput(inputManager, input);
-
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(5, TimeUnit.MINUTES);
-
-    DataSetManager<Table> outputManager = getDataset(sinkTable);
-    List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);
-    Map<String, String> nameDesignationMap = new HashMap<String, String>();
-    nameDesignationMap.put("John", "SE");
-    nameDesignationMap.put("Kerry", "SSE");
-    nameDesignationMap.put("Mathew", "DEFAULTID");
-
-    Assert.assertEquals(3, outputRecords.size());
-    Assert.assertEquals(nameDesignationMap.get(outputRecords.get(0).get(NAME)), outputRecords.get(0).
-      get(DESIGNATIONNAME));
-    Assert.assertEquals(nameDesignationMap.get(outputRecords.get(1).get(NAME)), outputRecords.get(1).
-      get(DESIGNATIONNAME));
-    Assert.assertEquals(nameDesignationMap.get(outputRecords.get(2).get(NAME)), outputRecords.get(2).
-      get(DESIGNATIONNAME));
-
-  }
-
-
-  @Test
   public void testEmptyAndNull() throws Exception {
 
-    String inputTable = "input_table_three";
-
+    String inputTable = "input_table_test_Empty_Null";
     ETLStage source = new ETLStage("source", MockSource.getPlugin(inputTable));
 
     Map<String, String> sourceproperties = new ImmutableMap.Builder<String, String>()
-      .put("mapping", "designationid:designation_lookup_table_three:designationName")
+      .put("mapping", "designationid:designation_lookup_table_test_Empty_Null:designationName")
       .put("defaults", "designationid:DEFAULTID")
-      .put("name", "FlowPlugin").build();
+      .build();
 
     ETLStage transform = new ETLStage("transform",
                                       new ETLPlugin("ValueMapper", Transform.PLUGIN_TYPE, sourceproperties, null));
 
-    String sinkTable = "output_table_three";
+    String sinkTable = "output_table_test_Empty_Null";
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(sinkTable));
 
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
@@ -345,13 +121,12 @@ public class ValueMapperTest extends HydratorTestBase {
       .addConnection(transform.getName(), sink.getName())
       .build();
 
-
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "valuemappertest_three");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "valuemappertest_test_Empty_Null");
+    ApplicationManager appManager =  deployApplication(appId, appRequest);
 
-    addDatasetInstance(KeyValueTable.class.getName(), "designation_lookup_table_three");
-    DataSetManager<KeyValueTable> dataSetManager = getDataset("designation_lookup_table_three");
+    addDatasetInstance(KeyValueTable.class.getName(), "designation_lookup_table_test_Empty_Null");
+    DataSetManager<KeyValueTable> dataSetManager = getDataset("designation_lookup_table_test_Empty_Null");
     KeyValueTable keyValueTable = dataSetManager.get();
     keyValueTable.write("1".getBytes(Charsets.UTF_8), "SE".getBytes(Charsets.UTF_8));
     keyValueTable.write("2".getBytes(Charsets.UTF_8), "SSE".getBytes(Charsets.UTF_8));
@@ -360,12 +135,14 @@ public class ValueMapperTest extends HydratorTestBase {
 
     DataSetManager<Table> inputManager = getDataset(inputTable);
     List<StructuredRecord> input = ImmutableList.of(
-      StructuredRecord.builder(SOURCE_SCHEMA).set(ID, "100").set(NAME, "John").set(SALARY, "1000").
-        set(DESIGNATIONID, null).build(),
-      StructuredRecord.builder(SOURCE_SCHEMA).set(ID, "101").set(NAME, "Kerry").set(SALARY, "1030").
-        set(DESIGNATIONID, "2").build(),
-      StructuredRecord.builder(SOURCE_SCHEMA).set(ID, "102").set(NAME, "Mathew").set(SALARY, "1230").
-        set(DESIGNATIONID, "").build()
+      StructuredRecord.builder(SOURCE_SCHEMA).set(ID, "100").set(NAME, "John").set(SALARY, "1000")
+        .set(DESIGNATIONID, null).build(),
+      StructuredRecord.builder(SOURCE_SCHEMA).set(ID, "101").set(NAME, "Kerry").set(SALARY, "1030")
+        .set(DESIGNATIONID, "2").build(),
+      StructuredRecord.builder(SOURCE_SCHEMA).set(ID, "102").set(NAME, "Mathew").set(SALARY, "1230")
+        .set(DESIGNATIONID, "").build(),
+      StructuredRecord.builder(SOURCE_SCHEMA).set(ID, "103").set(NAME, "Allie").set(SALARY, "2000")
+        .set(DESIGNATIONID, "4").build()
     );
 
     MockSource.writeInput(inputManager, input);
@@ -380,34 +157,35 @@ public class ValueMapperTest extends HydratorTestBase {
     nameDesignationMap.put("John", "DEFAULTID");
     nameDesignationMap.put("Kerry", "SSE");
     nameDesignationMap.put("Mathew", "DEFAULTID");
+    nameDesignationMap.put("Allie", "DEFAULTID");
 
-    Assert.assertEquals(3, outputRecords.size());
-    Assert.assertEquals(nameDesignationMap.get(outputRecords.get(0).get(NAME)), outputRecords.get(0).
-      get(DESIGNATIONNAME));
-    Assert.assertEquals(nameDesignationMap.get(outputRecords.get(1).get(NAME)), outputRecords.get(1).
-      get(DESIGNATIONNAME));
-    Assert.assertEquals(nameDesignationMap.get(outputRecords.get(2).get(NAME)), outputRecords.get(2).
-      get(DESIGNATIONNAME));
+    Assert.assertEquals(4, outputRecords.size());
+    Assert.assertEquals(nameDesignationMap.get(outputRecords.get(0).get(NAME)), outputRecords.get(0)
+      .get(DESIGNATIONNAME));
+    Assert.assertEquals(nameDesignationMap.get(outputRecords.get(1).get(NAME)), outputRecords.get(1)
+      .get(DESIGNATIONNAME));
+    Assert.assertEquals(nameDesignationMap.get(outputRecords.get(2).get(NAME)), outputRecords.get(2)
+      .get(DESIGNATIONNAME));
+    Assert.assertEquals(nameDesignationMap.get(outputRecords.get(3).get(NAME)), outputRecords.get(3)
+      .get(DESIGNATIONNAME));
 
   }
-
 
   @Test
   public void testWithNoDefaults() throws Exception {
 
-    String inputTable = "input_table_four";
-
+    String inputTable = "input_table_without_defaults";
     ETLStage source = new ETLStage("source", MockSource.getPlugin(inputTable));
 
     Map<String, String> sourceproperties = new ImmutableMap.Builder<String, String>()
-      .put("mapping", "designationid:designation_lookup_table_four:designationName")
+      .put("mapping", "designationid:designation_lookup_table_without_defaults:designationName")
       .put("defaults", "")
-      .put("name", "FlowPlugin").build();
+      .build();
 
     ETLStage transform = new ETLStage("transform",
                                       new ETLPlugin("ValueMapper", Transform.PLUGIN_TYPE, sourceproperties, null));
 
-    String sinkTable = "output_table_four";
+    String sinkTable = "output_table_without_defaults";
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(sinkTable));
 
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
@@ -418,17 +196,17 @@ public class ValueMapperTest extends HydratorTestBase {
       .addConnection(transform.getName(), sink.getName())
       .build();
 
-
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "valuemappertest_four");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "valuemappertest_without_defaults");
+    ApplicationManager appManager =  deployApplication(appId, appRequest);
 
-    addDatasetInstance(KeyValueTable.class.getName(), "designation_lookup_table_four");
-    DataSetManager<KeyValueTable> dataSetManager = getDataset("designation_lookup_table_four");
+    addDatasetInstance(KeyValueTable.class.getName(), "designation_lookup_table_without_defaults");
+    DataSetManager<KeyValueTable> dataSetManager = getDataset("designation_lookup_table_without_defaults");
     KeyValueTable keyValueTable = dataSetManager.get();
     keyValueTable.write("1".getBytes(Charsets.UTF_8), "SE".getBytes(Charsets.UTF_8));
     keyValueTable.write("2".getBytes(Charsets.UTF_8), "SSE".getBytes(Charsets.UTF_8));
     keyValueTable.write("3".getBytes(Charsets.UTF_8), "ML".getBytes(Charsets.UTF_8));
+    keyValueTable.write("4".getBytes(Charsets.UTF_8), "TL".getBytes(Charsets.UTF_8));
     dataSetManager.flush();
 
     DataSetManager<Table> inputManager = getDataset(inputTable);
@@ -438,8 +216,9 @@ public class ValueMapperTest extends HydratorTestBase {
       StructuredRecord.builder(SOURCE_SCHEMA).set(ID, "101").set(NAME, "Kerry").set(SALARY, "1030")
         .set(DESIGNATIONID, "2").build(),
       StructuredRecord.builder(SOURCE_SCHEMA).set(ID, "102").set(NAME, "Mathew").set(SALARY, "1230")
-        .set(DESIGNATIONID, "").build()
-    );
+        .set(DESIGNATIONID, "").build(),
+      StructuredRecord.builder(SOURCE_SCHEMA).set(ID, "103").set(NAME, "Allie").set(SALARY, "2000")
+        .set(DESIGNATIONID, "4").build());
     MockSource.writeInput(inputManager, input);
 
     MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
@@ -452,104 +231,51 @@ public class ValueMapperTest extends HydratorTestBase {
     nameDesignationMap.put("John", null);
     nameDesignationMap.put("Kerry", "SSE");
     nameDesignationMap.put("Mathew", "");
+    nameDesignationMap.put("Allie", "TL");
 
-    Assert.assertEquals(3, outputRecords.size());
+    Map<String, String> nameSalaryMap = new HashMap<String, String>();
+    nameSalaryMap.put("John", "1000");
+    nameSalaryMap.put("Kerry", "1030");
+    nameSalaryMap.put("Mathew", "1230");
+    nameSalaryMap.put("Allie", "2000");
+
+    Assert.assertEquals(4, outputRecords.size());
     Assert.assertEquals(nameDesignationMap.get(outputRecords.get(0).get(NAME)), outputRecords.get(0)
       .get(DESIGNATIONNAME));
     Assert.assertEquals(nameDesignationMap.get(outputRecords.get(1).get(NAME)), outputRecords.get(1)
       .get(DESIGNATIONNAME));
     Assert.assertEquals(nameDesignationMap.get(outputRecords.get(2).get(NAME)), outputRecords.get(2)
       .get(DESIGNATIONNAME));
-
-  }
-
-  @Test
-  public void testWithNoLookupValue() throws Exception {
-
-    String inputTable = "input_table_five";
-
-    ETLStage source = new ETLStage("source", MockSource.getPlugin(inputTable));
-
-    Map<String, String> sourceproperties = new ImmutableMap.Builder<String, String>()
-      .put("mapping", "designationid:designation_lookup_table_five:designationName")
-      .put("defaults", "designationid:DefaultID")
-      .put("name", "FlowPlugin").build();
-
-    ETLStage transform = new ETLStage("transform",
-                                      new ETLPlugin("ValueMapper", Transform.PLUGIN_TYPE, sourceproperties, null));
-
-    String sinkTable = "output_table_five";
-    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(sinkTable));
-
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(source)
-      .addStage(transform)
-      .addStage(sink)
-      .addConnection(source.getName(), transform.getName())
-      .addConnection(transform.getName(), sink.getName())
-      .build();
-
-
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "valuemappertest_five");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-
-    addDatasetInstance(KeyValueTable.class.getName(), "designation_lookup_table_five");
-    DataSetManager<KeyValueTable> dataSetManager = getDataset("designation_lookup_table_five");
-    KeyValueTable keyValueTable = dataSetManager.get();
-    keyValueTable.write("1".getBytes(Charsets.UTF_8), "SE".getBytes(Charsets.UTF_8));
-    keyValueTable.write("2".getBytes(Charsets.UTF_8), "SSE".getBytes(Charsets.UTF_8));
-    dataSetManager.flush();
-
-    DataSetManager<Table> inputManager = getDataset(inputTable);
-    List<StructuredRecord> input = ImmutableList.of(
-      StructuredRecord.builder(SOURCE_SCHEMA).set(ID, "100").set(NAME, "John").set(SALARY, "1000")
-        .set(DESIGNATIONID, "1").build(),
-      StructuredRecord.builder(SOURCE_SCHEMA).set(ID, "101").set(NAME, "Kerry").set(SALARY, "1030")
-        .set(DESIGNATIONID, "2").build(),
-      StructuredRecord.builder(SOURCE_SCHEMA).set(ID, "102").set(NAME, "Mathew").set(SALARY, "1230")
-        .set(DESIGNATIONID, "3").build()
-    );
-    MockSource.writeInput(inputManager, input);
-
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(5, TimeUnit.MINUTES);
-
-    DataSetManager<Table> outputManager = getDataset(sinkTable);
-    List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);
-    Map<String, String> nameDesignationMap = new HashMap<String, String>();
-    nameDesignationMap.put("John", "SE");
-    nameDesignationMap.put("Kerry", "SSE");
-    nameDesignationMap.put("Mathew", "DefaultID");
-
-    Assert.assertEquals(3, outputRecords.size());
-    Assert.assertEquals(nameDesignationMap.get(outputRecords.get(0).get(NAME)), outputRecords.get(0)
+    Assert.assertEquals(nameDesignationMap.get(outputRecords.get(3).get(NAME)), outputRecords.get(3)
       .get(DESIGNATIONNAME));
-    Assert.assertEquals(nameDesignationMap.get(outputRecords.get(1).get(NAME)), outputRecords.get(1)
-      .get(DESIGNATIONNAME));
-    Assert.assertEquals(nameDesignationMap.get(outputRecords.get(2).get(NAME)), outputRecords.get(2)
-      .get(DESIGNATIONNAME));
+
+    Assert.assertEquals(nameSalaryMap.get(outputRecords.get(0).get(NAME)), outputRecords.get(0)
+      .get(SALARY));
+    Assert.assertEquals(nameSalaryMap.get(outputRecords.get(1).get(NAME)), outputRecords.get(1)
+      .get(SALARY));
+    Assert.assertEquals(nameSalaryMap.get(outputRecords.get(2).get(NAME)), outputRecords.get(2)
+      .get(SALARY));
+    Assert.assertEquals(nameSalaryMap.get(outputRecords.get(3).get(NAME)), outputRecords.get(3)
+      .get(SALARY));
 
   }
 
   @Test
   public void testWithMultipleMapping() throws Exception {
 
-    String inputTable = "input_table_six";
-
+    String inputTable = "input_table_with_multi_mapping";
     ETLStage source = new ETLStage("source", MockSource.getPlugin(inputTable));
 
     Map<String, String> sourceproperties = new ImmutableMap.Builder<String, String>()
-      .put("mapping", "designationid:designation_lookup_table_six:designationName," +
+      .put("mapping", "designationid:designation_lookup_table_with_multi_mapping:designationName," +
         "salary:salary_lookup_table:salaryDesc")
       .put("defaults", "designationid:DefaultID")
-      .put("name", "FlowPlugin").build();
+      .build();
 
     ETLStage transform = new ETLStage("transform",
                                       new ETLPlugin("ValueMapper", Transform.PLUGIN_TYPE, sourceproperties, null));
 
-    String sinkTable = "output_table_six";
+    String sinkTable = "output_table_with_multi_mapping";
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(sinkTable));
 
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
@@ -560,13 +286,12 @@ public class ValueMapperTest extends HydratorTestBase {
       .addConnection(transform.getName(), sink.getName())
       .build();
 
-
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "valuemappertest_six");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "valuemappertest_with_multi_mapping");
+    ApplicationManager appManager =  deployApplication(appId, appRequest);
 
-    addDatasetInstance(KeyValueTable.class.getName(), "designation_lookup_table_six");
-    DataSetManager<KeyValueTable> dataSetManager = getDataset("designation_lookup_table_six");
+    addDatasetInstance(KeyValueTable.class.getName(), "designation_lookup_table_with_multi_mapping");
+    DataSetManager<KeyValueTable> dataSetManager = getDataset("designation_lookup_table_with_multi_mapping");
     KeyValueTable keyValueTable = dataSetManager.get();
     keyValueTable.write("1".getBytes(Charsets.UTF_8), "SE".getBytes(Charsets.UTF_8));
     keyValueTable.write("2".getBytes(Charsets.UTF_8), "SSE".getBytes(Charsets.UTF_8));
@@ -604,16 +329,12 @@ public class ValueMapperTest extends HydratorTestBase {
     nameDesignationMap.put("Kerry", "SSE");
     nameDesignationMap.put("Mathew", "ML");
 
-    StructuredRecord recordOne = outputRecords.get(0);
-    StructuredRecord recordTwo = outputRecords.get(1);
-    StructuredRecord recordThree = outputRecords.get(2);
-
     Assert.assertEquals(3, outputRecords.size());
-    Assert.assertEquals(nameDesignationMap.get(recordOne.get(NAME)), outputRecords.get(0)
+    Assert.assertEquals(nameDesignationMap.get(outputRecords.get(0).get(NAME)), outputRecords.get(0)
       .get(DESIGNATIONNAME));
-    Assert.assertEquals(nameDesignationMap.get(recordTwo.get(NAME)), outputRecords.get(1)
+    Assert.assertEquals(nameDesignationMap.get(outputRecords.get(1).get(NAME)), outputRecords.get(1)
       .get(DESIGNATIONNAME));
-    Assert.assertEquals(nameDesignationMap.get(recordThree.get(NAME)), outputRecords.get(2)
+    Assert.assertEquals(nameDesignationMap.get(outputRecords.get(2).get(NAME)), outputRecords.get(2)
       .get(DESIGNATIONNAME));
 
     Map<String, String> nameSalaryMap = new HashMap<String, String>();
@@ -621,77 +342,12 @@ public class ValueMapperTest extends HydratorTestBase {
     nameSalaryMap.put("Kerry", "Medium");
     nameSalaryMap.put("Mathew", "High");
 
-
-    Assert.assertEquals(nameSalaryMap.get(recordOne.get(NAME)), outputRecords.get(0)
+    Assert.assertEquals(nameSalaryMap.get(outputRecords.get(0).get(NAME)), outputRecords.get(0)
       .get(SALARYDESC));
-    Assert.assertEquals(nameSalaryMap.get(recordTwo.get(NAME)), outputRecords.get(1)
+    Assert.assertEquals(nameSalaryMap.get(outputRecords.get(1).get(NAME)), outputRecords.get(1)
       .get(SALARYDESC));
-    Assert.assertEquals(nameSalaryMap.get(recordThree.get(NAME)), outputRecords.get(2)
+    Assert.assertEquals(nameSalaryMap.get(outputRecords.get(2).get(NAME)), outputRecords.get(2)
       .get(SALARYDESC));
-
-  }
-
-  @Test
-  public void testTargetSchemaValidation() throws Exception {
-
-    String inputTable = "input_table_seven";
-
-    ETLStage source = new ETLStage("source", MockSource.getPlugin(inputTable));
-
-    Map<String, String> sourceproperties = new ImmutableMap.Builder<String, String>()
-      .put("mapping", "designationid:designation_lookup_table_seven:designationName")
-      .put("defaults", "designationid:DefaultID")
-      .put("name", "FlowPlugin").build();
-
-    ETLStage transform = new ETLStage("transform",
-                                      new ETLPlugin("ValueMapper", Transform.PLUGIN_TYPE, sourceproperties, null));
-
-    String sinkTable = "output_table_seven";
-    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(sinkTable));
-
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(source)
-      .addStage(transform)
-      .addStage(sink)
-      .addConnection(source.getName(), transform.getName())
-      .addConnection(transform.getName(), sink.getName())
-      .build();
-
-
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "valuemappertest_seven");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-
-    addDatasetInstance(KeyValueTable.class.getName(), "designation_lookup_table_seven");
-    DataSetManager<KeyValueTable> dataSetManager = getDataset("designation_lookup_table_seven");
-    KeyValueTable keyValueTable = dataSetManager.get();
-    keyValueTable.write("1".getBytes(Charsets.UTF_8), "SE".getBytes(Charsets.UTF_8));
-    keyValueTable.write("2".getBytes(Charsets.UTF_8), "SSE".getBytes(Charsets.UTF_8));
-    keyValueTable.write("3".getBytes(Charsets.UTF_8), "ML".getBytes(Charsets.UTF_8));
-    dataSetManager.flush();
-
-    DataSetManager<Table> inputManager = getDataset(inputTable);
-    List<StructuredRecord> input = ImmutableList.of(
-      StructuredRecord.builder(SOURCE_SCHEMA).set(ID, "100").set(NAME, "John").set(SALARY, "1000").set
-        (DESIGNATIONID, "1").build(),
-      StructuredRecord.builder(SOURCE_SCHEMA).set(ID, "101").set(NAME, "Kerry").set(SALARY, "1030").set
-        (DESIGNATIONID, "2").build(),
-      StructuredRecord.builder(SOURCE_SCHEMA).set(ID, "102").set(NAME, "Mathew").set(SALARY, "1230").set
-        (DESIGNATIONID, "3").build()
-    );
-    MockSource.writeInput(inputManager, input);
-
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(5, TimeUnit.MINUTES);
-
-    DataSetManager<Table> outputManager = getDataset(sinkTable);
-    List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);
-    Map<String, String> nameDesignationMap = new HashMap<String, String>();
-    nameDesignationMap.put("John", "SE");
-
-    Assert.assertEquals(Schema.unionOf(Schema.of(Schema.Type.STRING), Schema.of(Schema.Type.NULL)).getType(),
-                        outputRecords.get(0).getSchema().getField(DESIGNATIONNAME).getSchema().getType());
 
   }
 
@@ -705,6 +361,49 @@ public class ValueMapperTest extends HydratorTestBase {
                                            Schema.Field.of(DESIGNATIONID, Schema.of(Schema.Type.INT)));
 
     ValueMapper.Config config = new ValueMapper.Config("designationid:designation_lookup_table:designationName",
+                                                       "designationid:DEFAULTID");
+
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
+    new ValueMapper(config).configurePipeline(configurer);
+
+  }
+
+  @Test
+  public void testSchemaHandling() throws Exception {
+
+    Schema inputSchema = Schema.recordOf("sourceRecord",
+                                         Schema.Field.of(ID, Schema.of(Schema.Type.STRING)),
+                                         Schema.Field.of(NAME, Schema.of(Schema.Type.STRING)),
+                                         Schema.Field.of(SALARY, Schema.of(Schema.Type.STRING)),
+                                         Schema.Field.of(DESIGNATIONID, Schema.unionOf(Schema.of(Schema.Type.STRING),
+                                                                                       Schema.of(Schema.Type.NULL))));
+
+    ValueMapper.Config config = new ValueMapper.Config("designationid:designation_lookup_table:designationName",
+                                                       "designationid:DEFAULTID");
+
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
+    new ValueMapper(config).configurePipeline(configurer);
+    Schema outputSchema = configurer.getOutputSchema();
+
+
+    Assert.assertEquals(Schema.of(Schema.Type.STRING).getType(),
+                        outputSchema.getField(DESIGNATIONNAME).getSchema().getType());
+
+    Assert.assertEquals(Schema.of(Schema.Type.STRING).getType(),
+                        outputSchema.getField(SALARY).getSchema().getType());
+
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testMappingValidation() throws Exception {
+
+    Schema inputSchema = Schema.recordOf("sourceRecord",
+                                         Schema.Field.of(ID, Schema.of(Schema.Type.STRING)),
+                                         Schema.Field.of(NAME, Schema.of(Schema.Type.STRING)),
+                                         Schema.Field.of(SALARY, Schema.of(Schema.Type.STRING)),
+                                         Schema.Field.of(DESIGNATIONID, Schema.of(Schema.Type.STRING)));
+
+    ValueMapper.Config config = new ValueMapper.Config("designationid:designation_lookup_table",
                                                        "designationid:DEFAULTID");
 
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);

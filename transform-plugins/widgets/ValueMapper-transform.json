@@ -11,9 +11,12 @@
           "name": "mapping"
         },
         {
-          "widget-type": "textbox",
+          "widget-type": "keyvalue",
           "label": "defaults",
-          "name": "defaults"
+          "name": "defaults",
+          "widget-attributes": {
+            "showDelimiter": "false"
+          }
         }
       ]
     }

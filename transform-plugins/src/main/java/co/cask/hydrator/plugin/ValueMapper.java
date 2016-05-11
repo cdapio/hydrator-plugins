@@ -21,7 +21,6 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.Lookup;
@@ -45,6 +44,8 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
   private final Config config;
   private final Map<Schema, Schema> schemaCache = new HashMap<>();
   private static final Map<String, ValueMapping> mappingValues = new HashMap<>();
+  private static Map<String, String> defaultsMapping = new HashMap<>();
+  private Map<String, Lookup<String>> lookupTableCache = new HashMap<String, Lookup<String>>();
 
   //for unit tests, otherwise config is injected by plugin framework.
   public ValueMapper(Config config) {
@@ -68,7 +69,7 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
     @Name("defaults")
     @Description("Specify the defaults for source fields if the lookup does not exist or inputs are NULL or EMPTY. " +
             "Format is <source-field>:<default-value>[,<source-field>:<default-value>]*" +
-            "lang_code:English,country_code:Britain")
+            "For eg: lang_code:English,country_code:Britain")
     private final String defaults;
 
     public Config(String mapping, String defaults) {
@@ -83,25 +84,39 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
      * subsequent methods.
      */
     private void parseConfiguration() {
-      Map<String, String> defaultsMapping = new HashMap<>();
       if (!defaults.isEmpty()) {
         String[] defaultsList = this.defaults.split(",");
         for (String defaultValue : defaultsList) {
           String[] defaultsArray = defaultValue.split(":");
-          defaultsMapping.put(defaultsArray[0], defaultsArray[1]);
+          if (defaultsArray.length != 2) {
+            throw new IllegalArgumentException("Defaults should contain source field and its corresponding default " +
+                                                 "value in the format: " +
+                                                 "<source-field>:<default-value>[,<source-field>:<default-value>]*" +
+                                                 "For eg: lang_code:English,country_code:Britain");
+          } else {
+            defaultsMapping.put(defaultsArray[0], defaultsArray[1]);
+          }
         }
       }
       String[] mappingArray = this.mapping.split(",");
       for (String mapping : mappingArray) {
         String[] mappingValueArray = mapping.split(":");
-        ValueMapping valueMapping = new ValueMapping();
-        valueMapping.setTargetField(mappingValueArray[2]);
-        valueMapping.setLookupTableName(mappingValueArray[1]);
+        if (mappingValueArray.length != 3) {
+          throw new IllegalArgumentException("Mapping should contain source field, lookup table name and target " +
+                                               "field in the format: " +
+                                               "<source-field>:<lookup-table-name>:<target-field>" +
+                                               "[,<source-field>:<lookup-table-name>:<target-field>]*" +
+                                               "For eg: lang_code:language_code_lookup:lang_desc," +
+                                               "country_code:country_lookup:country_name");
+        } else {
+          String defaultValue = null;
+          if (defaultsMapping.containsKey(mappingValueArray[0])) {
+            defaultValue = defaultsMapping.get(mappingValueArray[0]);
+          }
+          ValueMapping valueMapping = new ValueMapping(mappingValueArray[2], mappingValueArray[1], defaultValue);
 
-        if (defaultsMapping.containsKey(mappingValueArray[0])) {
-          valueMapping.setDefaultValue(defaultsMapping.get(mappingValueArray[0]));
+          mappingValues.put(mappingValueArray[0], valueMapping);
         }
-        mappingValues.put(mappingValueArray[0], valueMapping);
       }
     }
   }
@@ -117,12 +132,24 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
 
     List<Schema.Field> outputFields = new ArrayList<>();
     for (Schema.Field inputField : inputSchema.getFields()) {
-      if (mappingValues.containsKey(inputField.getName())) {
-        if (inputField.getSchema().getType() != Schema.Type.STRING && !inputField.getSchema().isNullable()) {
-          throw new IllegalArgumentException("Input field " + inputField.getName() + " type should be String");
+      String inputFieldName = inputField.getName();
+      if (mappingValues.containsKey(inputFieldName)) {
+        Schema fieldSchema = inputField.getSchema();
+        Schema.Type fieldType = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema
+          .getType();
+        if (fieldType != Schema.Type.STRING) {
+          throw new IllegalArgumentException("Input field " + inputFieldName + " must be of type string, but is" +
+                                               " of type" + inputField.getSchema().getType().name());
         } else {
-          outputFields.add(Schema.Field.of(mappingValues.get(inputField.getName()).getTargetField(),
-                                           inputField.getSchema()));
+          //Checks whether user has provided default value for source field
+          if (defaultsMapping.containsKey(inputFieldName)) {
+            outputFields.add(Schema.Field.of(mappingValues.get(inputFieldName).getTargetField(),
+                                             Schema.of(Schema.Type.STRING)));
+          } else {
+            outputFields.add(Schema.Field.of(mappingValues.get(inputFieldName).getTargetField(),
+                                             Schema.unionOf(Schema.of(Schema.Type.STRING),
+                                                            Schema.of(Schema.Type.NULL))));
+          }
           }
       } else {
         outputFields.add(inputField);
@@ -136,34 +163,36 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
   /**
    * retrieve lookup table from table name
    */
-  private void setLookup(TransformContext context) {
-    for (String key :mappingValues.keySet()) {
+  private void createLookupTableData(TransformContext context) {
+    for (String key : mappingValues.keySet()) {
       ValueMapping mapping = mappingValues.get(key);
-      LookupTableConfig tableConfig = new LookupTableConfig(LookupTableConfig.TableType.DATASET);
-      DatasetProperties arguments = DatasetProperties.builder().addAll(tableConfig.getDatasetProperties()).build();
-      Lookup<String> lookupTable = context.provide(mapping.getLookupTableName(), arguments.getProperties());
-      mapping.setLookupTable(lookupTable);
+      String lookupTableName = mapping.getLookupTableName();
+      if (!lookupTableCache.containsKey(lookupTableName)) {
+        LookupTableConfig tableConfig = new LookupTableConfig(LookupTableConfig.TableType.DATASET);
+        Lookup<String> lookupTable = context.provide(lookupTableName, tableConfig.getDatasetProperties());
+        lookupTableCache.put(lookupTableName, lookupTable);
+      }
     }
   }
 
   @Override
   public void transform(StructuredRecord input, Emitter<StructuredRecord> emitter) throws Exception {
-
     StructuredRecord.Builder builder = StructuredRecord.builder(getOutputSchema(input.getSchema()));
-
     for (Schema.Field sourceField : input.getSchema().getFields()) {
-      if (mappingValues.containsKey(sourceField.getName())) {
-        ValueMapping mapping = mappingValues.get(sourceField.getName());
-        if (input.get(sourceField.getName()) == null || input.get(sourceField.getName()).toString().isEmpty()) {
+      String sourceFieldName = sourceField.getName();
+      if (mappingValues.containsKey(sourceFieldName)) {
+        ValueMapping mapping = mappingValues.get(sourceFieldName);
+        String sourceVal = input.get(sourceFieldName);
+        if (sourceVal == null || sourceVal.isEmpty()) {
           if (mapping.getDefaultValue() != null) {
             builder.set(mapping.getTargetField(), mapping.getDefaultValue());
           } else {
-            builder.set(mapping.getTargetField(), input.get(sourceField.getName()));
+            builder.set(mapping.getTargetField(), sourceVal);
           }
         } else {
           // for those source field whose values are neither NULL nor EMPTY
-          Lookup<String> valueMapperLookUp = mapping.getLookupTable();
-          String lookupValue = valueMapperLookUp.lookup(input.get(sourceField.getName()).toString());
+          Lookup<String> valueMapperLookUp = lookupTableCache.get(mapping.getLookupTableName());
+          String lookupValue = valueMapperLookUp.lookup(sourceVal);
           if (lookupValue != null && !lookupValue.isEmpty()) {
             builder.set(mapping.getTargetField(), lookupValue);
           } else {
@@ -172,7 +201,7 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
         }
       } else {
         // for the fields except source fields
-        builder.set(sourceField.getName(), input.get(sourceField.getName()));
+        builder.set(sourceFieldName, input.get(sourceFieldName));
       }
     }
 
@@ -182,7 +211,7 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
-    setLookup(context);
+    createLookupTableData(context);
   }
 
   /**
@@ -198,53 +227,33 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
       outputSchema = getOutputSchema(inputSchema);
     }
     pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
-
   }
 
   /**
    * Object used to keep input mapping corresponding to each source field
    */
-
   public static class ValueMapping {
 
-    private Lookup<String> lookupTable;
     private String targetField;
     private String lookupTableName;
     private String defaultValue;
 
-    public ValueMapping(){
-    }
-
-    public Lookup<String> getLookupTable() {
-      return lookupTable;
-    }
-
-    public void setLookupTable(Lookup<String> lookupTable) {
-      this.lookupTable = lookupTable;
+    public ValueMapping(String targetField, String lookupTableName, String defaultValue) {
+      this.targetField = targetField;
+      this.lookupTableName = lookupTableName;
+      this.defaultValue = defaultValue;
     }
 
     public String getTargetField() {
       return targetField;
     }
 
-    public void setTargetField(String targetField) {
-      this.targetField = targetField;
-    }
-
     public String getLookupTableName() {
       return lookupTableName;
     }
 
-    public void setLookupTableName(String lookupTableName) {
-      this.lookupTableName = lookupTableName;
-    }
-
     public String getDefaultValue() {
       return defaultValue;
-    }
-
-    public void setDefaultValue(String defaultValue) {
-      this.defaultValue = defaultValue;
     }
   }
 
