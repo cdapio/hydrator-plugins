@@ -90,6 +90,7 @@ public class EmailAction extends PostAction {
     private Boolean includeWorkflowToken;
 
     public Config() {
+      super();
       host = "localhost";
       port = 587;
       protocol = "smtp";

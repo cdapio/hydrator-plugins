@@ -22,6 +22,7 @@ import co.cask.hydrator.common.batch.action.Condition;
 import co.cask.hydrator.common.batch.action.ConditionConfig;
 import co.cask.hydrator.plugin.ConnectionConfig;
 
+import java.io.IOException;
 import javax.annotation.Nullable;
 
 /**
@@ -49,7 +50,7 @@ public class QueryConfig extends ConnectionConfig {
     new ConditionConfig(runCondition).validate();
   }
 
-  public boolean shouldRun(BatchActionContext actionContext) {
+  public boolean shouldRun(BatchActionContext actionContext) throws IOException {
     return new ConditionConfig(runCondition).shouldRun(actionContext);
   }
 }

@@ -15,10 +15,15 @@ the run failed for any reason.
 
 Properties
 ----------
-**runCondition:**" When to run the action. Must be 'completion', 'success', or 'failure'. Defaults to 'completion'.
+**runCondition:**" When to run the action. Must be 'completion', 'success', 'failure',
+or partitionHasData(dataset[,offset]). Defaults to 'completion'.
 If set to 'completion', the action will be executed regardless of whether the pipeline run succeeded or failed.
 If set to 'success', the action will only be executed if the pipeline run succeeded.
 If set to 'failure', the action will only be executed if the pipeline run failed.
+If set to 'partitionHasData(dataset[,offset])', the action will only be executed if a time partition for the specified
+TimePartitionedFileSet exists and has data. The partition that is checked is the partition for the logical start time
+of the run minus the specified offset. For example, 'partitionExists(errors,1h)' will check for the existence of the
+partition of the 'errors' TimePartitionedFileSet for one hour before the logical start time.
 
 **recipients:** Comma separated list of addresses to send the email to.
 

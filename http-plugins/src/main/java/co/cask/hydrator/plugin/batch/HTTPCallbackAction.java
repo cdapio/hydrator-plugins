@@ -31,6 +31,7 @@ import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -157,7 +158,7 @@ public class HTTPCallbackAction extends PostAction {
       }
     }
 
-    public boolean shouldRun(BatchActionContext context) {
+    public boolean shouldRun(BatchActionContext context) throws IOException {
       return new ConditionConfig(runCondition).shouldRun(context);
     }
   }

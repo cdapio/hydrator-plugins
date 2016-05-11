@@ -22,5 +22,6 @@ package co.cask.hydrator.common.batch.action;
 public enum Condition {
   COMPLETION,
   SUCCESS,
-  FAILURE
+  FAILURE,
+  PARTITION_EXISTS
 }

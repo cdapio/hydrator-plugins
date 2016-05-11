@@ -25,17 +25,9 @@
           }
         },
         {
-          "widget-type": "select",
+          "widget-type": "textbox",
           "label": "Run Condition",
-          "name": "runCondition",
-          "widget-attributes": {
-            "values": [
-              "completion",
-              "success",
-              "failure"
-            ],
-            "default": "success"
-          }
+          "name": "runCondition"
         }
       ]
     },

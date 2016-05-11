@@ -16,6 +16,8 @@
 
 package co.cask.hydrator.plugin.batch.action;
 
+import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.common.utils.Networks;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
@@ -26,8 +28,10 @@ import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.test.ApplicationManager;
+import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
+import co.cask.hydrator.plugin.batch.source.KVTableSource;
 import com.dumbster.smtp.SimpleSmtpServer;
 import com.dumbster.smtp.SmtpMessage;
 import com.google.common.collect.ImmutableMap;
@@ -36,6 +40,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -55,21 +60,28 @@ public class EmailActionTestRun extends ETLBatchTestBase {
   @Test
   public void testEmailAction() throws Exception {
 
-    ETLStage action = new ETLStage(
-      "email",
-      new ETLPlugin("Email", PostAction.PLUGIN_TYPE,
-                    ImmutableMap.of("recipients", "to@test.com",
-                                    "sender", "from@test.com",
-                                    "message", "Run for ${runtime(yyyy-MM-dd,0m,UTC)} completed.",
-                                    "subject", "Test",
-                                    "port", Integer.toString(port)),
-                    null));
+    String outputName = "emailTestSink";
+
+    Map<String, String> properties = ImmutableMap.<String, String>builder()
+      .put("runCondition", String.format("partitionHasData(%s,1h)", outputName))
+      .put("recipients", "to@test.com")
+      .put("sender", "from@test.com")
+      .put("message", "Run for ${runtime(yyyy-MM-dd,0m,UTC)} completed.")
+      .put("subject", "Test")
+      .put("port", Integer.toString(port))
+      .build();
+    ETLStage action = new ETLStage("email", new ETLPlugin("Email", PostAction.PLUGIN_TYPE, properties, null));
 
     ETLStage source = new ETLStage("source",
                                    new ETLPlugin("KVTable", BatchSource.PLUGIN_TYPE,
                                                  ImmutableMap.of("name", "emailTestSource"), null));
-    ETLStage sink = new ETLStage("sink", new ETLPlugin("KVTable", BatchSink.PLUGIN_TYPE,
-                                                       ImmutableMap.of("name", "emailTestSink"), null));
+
+    ETLStage sink = new ETLStage("sink",
+                                 new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
+                                               ImmutableMap.of("name", outputName,
+                                                               "schema", KVTableSource.SCHEMA.toString(),
+                                                               "partitionOffset", "1h"),
+                                               null));
 
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
       .addStage(source)
@@ -81,6 +93,7 @@ public class EmailActionTestRun extends ETLBatchTestBase {
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "actionTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
+
 
     WorkflowManager manager = appManager.getWorkflowManager("ETLWorkflow");
     manager.start(ImmutableMap.of("logical.start.time", "0"));
@@ -95,4 +108,5 @@ public class EmailActionTestRun extends ETLBatchTestBase {
     Assert.assertTrue(email.getBody().startsWith("Run for 1970-01-01 completed."));
     Assert.assertFalse(emailIter.hasNext());
   }
+
 }

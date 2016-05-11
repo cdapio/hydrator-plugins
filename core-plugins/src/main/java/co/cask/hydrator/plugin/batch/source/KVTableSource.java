@@ -39,7 +39,7 @@ import java.util.Map;
 @Description("Reads the entire contents of a KeyValueTable. Outputs records with a 'key' field and a 'value' field. " +
   "Both fields are of type bytes.")
 public class KVTableSource extends BatchReadableSource<byte[], byte[], StructuredRecord> {
-  private static final Schema SCHEMA = Schema.recordOf(
+  public static final Schema SCHEMA = Schema.recordOf(
     "keyValue",
     Schema.Field.of("key", Schema.of(Schema.Type.BYTES)),
     Schema.Field.of("value", Schema.of(Schema.Type.BYTES))
