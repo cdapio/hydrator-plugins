@@ -24,17 +24,12 @@
         {
           "widget-type": "textbox",
           "label": "Input Format Class",
-          "name": "inputFormatClass"
+          "name": "inputFormatClassName"
         },
         {
           "widget-type": "json-editor",
           "label": "File System Properties",
           "name": "fileSystemProperties"
-        },
-        {
-          "widget-type": "textbox",
-          "label": "Input Format Class Name",
-          "name": "inputFormatClassName"
         }
       ]
     }
