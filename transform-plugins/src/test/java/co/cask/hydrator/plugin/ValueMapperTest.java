@@ -65,7 +65,7 @@ public class ValueMapperTest extends HydratorTestBase {
                     Schema.Field.of(ValueMapperTest.NAME, Schema.of(Schema.Type.STRING)),
                     Schema.Field.of(ValueMapperTest.SALARY, Schema.of(Schema.Type.STRING)),
                     Schema.Field.of(ValueMapperTest.DESIGNATIONID,
-                                    Schema.unionOf(Schema.of(Schema.Type.STRING), Schema.of(Schema.Type.NULL))));
+                                    Schema.nullableOf(Schema.of(Schema.Type.STRING))));
 
   private static final String ID = "id";
   private static final String NAME = "name";
@@ -123,7 +123,7 @@ public class ValueMapperTest extends HydratorTestBase {
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "valuemappertest_test_Empty_Null");
-    ApplicationManager appManager =  deployApplication(appId, appRequest);
+    ApplicationManager appManager = deployApplication(appId, appRequest);
 
     addDatasetInstance(KeyValueTable.class.getName(), "designation_lookup_table_test_Empty_Null");
     DataSetManager<KeyValueTable> dataSetManager = getDataset("designation_lookup_table_test_Empty_Null");
@@ -198,7 +198,7 @@ public class ValueMapperTest extends HydratorTestBase {
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "valuemappertest_without_defaults");
-    ApplicationManager appManager =  deployApplication(appId, appRequest);
+    ApplicationManager appManager = deployApplication(appId, appRequest);
 
     addDatasetInstance(KeyValueTable.class.getName(), "designation_lookup_table_without_defaults");
     DataSetManager<KeyValueTable> dataSetManager = getDataset("designation_lookup_table_without_defaults");
@@ -288,7 +288,7 @@ public class ValueMapperTest extends HydratorTestBase {
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "valuemappertest_with_multi_mapping");
-    ApplicationManager appManager =  deployApplication(appId, appRequest);
+    ApplicationManager appManager = deployApplication(appId, appRequest);
 
     addDatasetInstance(KeyValueTable.class.getName(), "designation_lookup_table_with_multi_mapping");
     DataSetManager<KeyValueTable> dataSetManager = getDataset("designation_lookup_table_with_multi_mapping");
@@ -375,8 +375,8 @@ public class ValueMapperTest extends HydratorTestBase {
                                          Schema.Field.of(ID, Schema.of(Schema.Type.STRING)),
                                          Schema.Field.of(NAME, Schema.of(Schema.Type.STRING)),
                                          Schema.Field.of(SALARY, Schema.of(Schema.Type.STRING)),
-                                         Schema.Field.of(DESIGNATIONID, Schema.unionOf(Schema.of(Schema.Type.STRING),
-                                                                                       Schema.of(Schema.Type.NULL))));
+                                         Schema.Field.of(DESIGNATIONID,
+                                                         Schema.nullableOf(Schema.of(Schema.Type.STRING))));
 
     ValueMapper.Config config = new ValueMapper.Config("designationid:designation_lookup_table:designationName",
                                                        "designationid:DEFAULTID");
@@ -385,12 +385,13 @@ public class ValueMapperTest extends HydratorTestBase {
     new ValueMapper(config).configurePipeline(configurer);
     Schema outputSchema = configurer.getOutputSchema();
 
+    Schema expectedOutputSchema = Schema.recordOf("sourceRecord.formatted",
+                                         Schema.Field.of(ID, Schema.of(Schema.Type.STRING)),
+                                         Schema.Field.of(NAME, Schema.of(Schema.Type.STRING)),
+                                         Schema.Field.of(SALARY, Schema.of(Schema.Type.STRING)),
+                                         Schema.Field.of(DESIGNATIONNAME, Schema.of(Schema.Type.STRING)));
 
-    Assert.assertEquals(Schema.of(Schema.Type.STRING).getType(),
-                        outputSchema.getField(DESIGNATIONNAME).getSchema().getType());
-
-    Assert.assertEquals(Schema.of(Schema.Type.STRING).getType(),
-                        outputSchema.getField(SALARY).getSchema().getType());
+    Assert.assertEquals(expectedOutputSchema, outputSchema);
 
   }
 

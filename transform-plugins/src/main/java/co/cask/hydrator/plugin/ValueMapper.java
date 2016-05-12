@@ -63,13 +63,13 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
             "Format is <source-field>:<lookup-table-name>:<target-field>" +
             "[,<source-field>:<lookup-table-name>:<target-field>]*" +
             "Source and target field can only of type string." +
-            "For eg: lang_code:language_code_lookup:lang_desc,country_code:country_lookup:country_name")
+            "For example: lang_code:language_code_lookup:lang_desc,country_code:country_lookup:country_name")
     private final String mapping;
 
     @Name("defaults")
     @Description("Specify the defaults for source fields if the lookup does not exist or inputs are NULL or EMPTY. " +
             "Format is <source-field>:<default-value>[,<source-field>:<default-value>]*" +
-            "For eg: lang_code:English,country_code:Britain")
+            "For example: lang_code:English,country_code:Britain")
     private final String defaults;
 
     public Config(String mapping, String defaults) {
@@ -89,10 +89,10 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
         for (String defaultValue : defaultsList) {
           String[] defaultsArray = defaultValue.split(":");
           if (defaultsArray.length != 2) {
-            throw new IllegalArgumentException("Defaults should contain source field and its corresponding default " +
-                                                 "value in the format: " +
+            throw new IllegalArgumentException("Invalid default " + defaultValue + ". Defaults should contain source" +
+                                                 " field and its corresponding default value in the format: " +
                                                  "<source-field>:<default-value>[,<source-field>:<default-value>]*" +
-                                                 "For eg: lang_code:English,country_code:Britain");
+                                                 "For example: lang_code:English,country_code:Britain");
           } else {
             defaultsMapping.put(defaultsArray[0], defaultsArray[1]);
           }
@@ -102,11 +102,11 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
       for (String mapping : mappingArray) {
         String[] mappingValueArray = mapping.split(":");
         if (mappingValueArray.length != 3) {
-          throw new IllegalArgumentException("Mapping should contain source field, lookup table name and target " +
-                                               "field in the format: " +
+          throw new IllegalArgumentException("Invalid mapping " + mapping + ". Mapping should contain source field, " +
+                                               "lookup table name and target field in the format: " +
                                                "<source-field>:<lookup-table-name>:<target-field>" +
                                                "[,<source-field>:<lookup-table-name>:<target-field>]*" +
-                                               "For eg: lang_code:language_code_lookup:lang_desc," +
+                                               "For example: lang_code:language_code_lookup:lang_desc," +
                                                "country_code:country_lookup:country_name");
         } else {
           String defaultValue = null;
@@ -147,10 +147,9 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
                                              Schema.of(Schema.Type.STRING)));
           } else {
             outputFields.add(Schema.Field.of(mappingValues.get(inputFieldName).getTargetField(),
-                                             Schema.unionOf(Schema.of(Schema.Type.STRING),
-                                                            Schema.of(Schema.Type.NULL))));
+                                             Schema.nullableOf(Schema.of(Schema.Type.STRING))));
           }
-          }
+        }
       } else {
         outputFields.add(inputField);
       }
