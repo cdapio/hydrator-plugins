@@ -1,0 +1,58 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "CopyBookReader Configuration",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Reference Name",
+          "name": "referenceName"
+        },
+        {
+          "widget-type": "textarea",
+          "label": "Cobol Copybook",
+          "name": "copybookContents",
+          "widget-attributes": {
+            "rows": "4"
+          },
+          "plugin-function": {
+            "method": "POST",
+            "endpoint": "getSchema",
+            "output-property": "schema"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "BinaryFile Path",
+          "name": "binaryFilePath"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Input File Structure",
+          "name": "fileStructure"
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "boolean",
+          "int",
+          "long",
+          "float",
+          "double",
+          "bytes",
+          "string"
+        ],
+        "schema-default-type": "string"
+      }
+    }
+  ]
+}
