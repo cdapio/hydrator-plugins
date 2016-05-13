@@ -39,6 +39,7 @@
               "Min",
               "Max",
               "First",
+              "Concat",
               "Last"
             ]
           }
