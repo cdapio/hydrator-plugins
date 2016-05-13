@@ -18,6 +18,7 @@ package co.cask.hydrator.plugin.batch.aggregator;
 
 import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.api.dataset.table.Put;
 import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Table;
@@ -53,10 +54,13 @@ public class GroupByTestRun extends ETLBatchTestBase {
                                   |--> group by user, totalPurchases:count(*), totalSpent:sum(price) --> user table
         <ts, user, item, price> --|
                                   |--> group by item, totalPurchases:count(user), latestPurchase:max(ts) --> item table
+                                  |
+                                  | --> group by item, users:concat(user) ---> itemlookup table
      */
     String purchasesDatasetName = "purchases-groupbytest";
     String usersDatasetName = "users-groupbytest";
     String itemsDatasetName = "items-groupbytest";
+    String itemLookupDatasetName = "itemslookup-groupbytest";
 
     Schema purchaseSchema = Schema.recordOf(
       "purchase",
@@ -103,6 +107,18 @@ public class GroupByTestRun extends ETLBatchTestBase {
                                    Properties.Table.PROPERTY_SCHEMA, itemSchema.toString()),
                                  null));
 
+
+
+    ETLStage itemsLookupSinkStage =
+      new ETLStage("itemLookup",
+                   new ETLPlugin("KVTable",
+                                 BatchSink.PLUGIN_TYPE,
+                                 ImmutableMap.of(
+                                   Properties.BatchReadableWritable.NAME, itemLookupDatasetName,
+                                   Properties.KeyValueTable.KEY_FIELD, "item",
+                                   Properties.KeyValueTable.VALUE_FIELD, "result"),
+                                   null));
+
     ETLStage userGroupStage =
       new ETLStage("userGroup",
                    new ETLPlugin("GroupByAggregate",
@@ -120,16 +136,31 @@ public class GroupByTestRun extends ETLBatchTestBase {
                                    "aggregates", "totalPurchases:count(user), latestPurchase:max(ts)"),
                                  null));
 
+
+    ETLStage itemsLookupGroupStage =
+      new ETLStage("itemsLookupGroup",
+                   new ETLPlugin("GroupByAggregate",
+                                 BatchAggregator.PLUGIN_TYPE,
+                                 ImmutableMap.of(
+                                   "groupByFields", "item",
+                                   "aggregates", "result:concat(user)"),
+                                 null));
+
     ETLBatchConfig config = ETLBatchConfig.builder("* * * * *")
       .addStage(purchaseStage)
       .addStage(userSinkStage)
       .addStage(itemSinkStage)
+      .addStage(itemsLookupSinkStage)
       .addStage(userGroupStage)
       .addStage(itemGroupStage)
+      .addStage(itemsLookupGroupStage)
       .addConnection(purchaseStage.getName(), userGroupStage.getName())
       .addConnection(purchaseStage.getName(), itemGroupStage.getName())
+      .addConnection(purchaseStage.getName(), itemsLookupGroupStage.getName())
       .addConnection(userGroupStage.getName(), userSinkStage.getName())
       .addConnection(itemGroupStage.getName(), itemSinkStage.getName())
+      .addConnection(itemsLookupGroupStage.getName(), itemsLookupSinkStage.getName())
+
       .build();
     AppRequest<ETLBatchConfig> request = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "groupby-test");
@@ -208,6 +239,11 @@ public class GroupByTestRun extends ETLBatchTestBase {
     row = itemsTable.get(Bytes.toBytes("shirt"));
     Assert.assertEquals(row.getLong("totalPurchases").longValue(), 2L);
     Assert.assertEquals(row.getLong("latestPurchase").longValue(), 1234567890003L);
+
+    DataSetManager<KeyValueTable> itemsLookupManager = getDataset(itemLookupDatasetName);
+    KeyValueTable kvTable = itemsLookupManager.get();
+    String result = Bytes.toString(kvTable.read("shirt"));
+    Assert.assertEquals(result, "john|samuel");
   }
 
 }
