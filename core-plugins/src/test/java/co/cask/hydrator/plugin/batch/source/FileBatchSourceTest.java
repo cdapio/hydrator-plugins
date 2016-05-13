@@ -18,7 +18,7 @@ package co.cask.hydrator.plugin.batch.source;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
-import org.apache.hadoop.mapreduce.lib.input.CombineTextInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -33,7 +33,7 @@ public class FileBatchSourceTest {
     FileBatchSource.FileBatchConfig fileBatchConfig = fileBatchSource.getConfig();
     Assert.assertEquals(new Gson().toJson(ImmutableMap.<String, String>of()), fileBatchConfig.fileSystemProperties);
     Assert.assertEquals(".*", fileBatchConfig.fileRegex);
-    Assert.assertEquals(CombineTextInputFormat.class.getName(), fileBatchConfig.inputFormatClass);
+    Assert.assertEquals(TextInputFormat.class.getName(), fileBatchConfig.inputFormatClass);
     Assert.assertNotNull(fileBatchConfig.maxSplitSize);
     Assert.assertEquals(FileBatchSource.DEFAULT_MAX_SPLIT_SIZE, (long) fileBatchConfig.maxSplitSize);
   }
