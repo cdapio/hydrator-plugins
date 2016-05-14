@@ -69,23 +69,10 @@ public class HBaseSink extends ReferenceBatchSink<StructuredRecord, NullWritable
 
   @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
-    Job job;
-    ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
-    // Switch the context classloader to plugin class' classloader (PluginClassLoader) so that
-    // when Job/Configuration is created, it uses PluginClassLoader to load resources (hbase-default.xml)
-    // which is present in the plugin jar and is not visible in the CombineClassLoader (which is what oldClassLoader
-    // points to).
-    Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
-    try {
-      job = JobUtils.createInstance();
-    } finally {
-      // Switch back to the original
-      Thread.currentThread().setContextClassLoader(oldClassLoader);
-    }
-
+    Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();
-    HBaseConfiguration.addHbaseResources(conf);
 
+    HBaseConfiguration.addHbaseResources(conf);
     context.addOutput(Output.of(config.referenceName, new HBaseOutputFormatProvider(config, conf))
                         .alias(config.columnFamily));
   }
