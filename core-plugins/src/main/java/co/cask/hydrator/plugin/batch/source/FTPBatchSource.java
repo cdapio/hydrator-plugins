@@ -31,15 +31,12 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
- * {@link BatchSource} that reads from an FTP or SFTP server.
+ * {@link BatchSource} that reads from a FTP server
  */
 @Plugin(type = "batchsource")
 @Name("FTP")
-@Description("Batch source for an FTP or SFTP source. Prefix of the path ('ftp://...' or 'sftp://...') determines " +
-  "the source server type, either FTP or SFTP.")
+@Description("Batch source for FTP source")
 public class FTPBatchSource extends FileBatchSource {
-  private static final String PATH_DESCRIPTION = "Path to file(s) to be read. Path is expected to be of the form " +
-    "'prefix://username:password@hostname:port/path'";
   private static final Gson GSON = new Gson();
   private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
 
@@ -68,7 +65,7 @@ public class FTPBatchSource extends FileBatchSource {
    * Config class that contains all the properties needed for FTP Batch Source.
    */
   public static class FTPBatchSourceConfig extends ReferencePluginConfig {
-    @Description(PATH_DESCRIPTION)
+    @Description(FileBatchSource.PATH_DESCRIPTION)
     public String path;
 
     @Description(FileBatchSource.FILESYSTEM_PROPERTIES_DESCRIPTION)
