@@ -5,10 +5,16 @@
   "configuration-groups": [
     {
       "properties": [
-        {
-          "widget-type": "textbox",
+	  {
+          "name": "mapping",
           "label": "mapping",
-          "name": "mapping"
+          "widget-type": "ds-multiplevalues",
+          "widget-attributes": {
+            "delimiter": ",",
+            "values-delimiter": ":",
+            "numValues": "3",
+            "placeholders": ["Source field", "Lookup table name", "Target field"]
+          }
         },
         {
           "widget-type": "keyvalue",
