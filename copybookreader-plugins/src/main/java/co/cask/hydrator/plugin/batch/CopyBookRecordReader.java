@@ -37,18 +37,18 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import static co.cask.hydrator.plugin.batch.CopyBookSource.COPYBOOK_INPUTFORMAT_CBL_CONTENTS;
-import static co.cask.hydrator.plugin.batch.CopyBookSource.COPYBOOK_INPUTFORMAT_DATA_HDFS_PATH;
-import static co.cask.hydrator.plugin.batch.CopyBookSource.COPYBOOK_INPUTFORMAT_FILE_STRUCTURE;
-import static co.cask.hydrator.plugin.batch.CopyBookSource.DEFAULT_FILE_STRUCTURE;
+import static co.cask.hydrator.plugin.batch.CopybookSource.COPYBOOK_INPUTFORMAT_CBL_CONTENTS;
+import static co.cask.hydrator.plugin.batch.CopybookSource.COPYBOOK_INPUTFORMAT_DATA_HDFS_PATH;
+import static co.cask.hydrator.plugin.batch.CopybookSource.COPYBOOK_INPUTFORMAT_FILE_STRUCTURE;
+import static co.cask.hydrator.plugin.batch.CopybookSource.DEFAULT_FILE_STRUCTURE;
 
 /**
- * Record Reader for CopyBookReader plugin.
+ * Record Reader for CopybookReader plugin.
  * <p>
- * This will return the field name and value using the binary data and copybook contents, to be used as the transform
+ * This will return the field name and value using the binary data and Copybook contents, to be used as the transform
  * method input
  */
-public class CopyBookRecordReader extends RecordReader<LongWritable, Map<String, String>> {
+public class CopybookRecordReader extends RecordReader<LongWritable, Map<String, String>> {
 
   private AbstractLineReader reader;
   private ExternalRecord externalRecord;
@@ -67,12 +67,12 @@ public class CopyBookRecordReader extends RecordReader<LongWritable, Map<String,
                                                   Integer.toString(DEFAULT_FILE_STRUCTURE)));
     Path path = new Path(conf.get(COPYBOOK_INPUTFORMAT_DATA_HDFS_PATH));
     FileSystem fs = FileSystem.get(path.toUri(), conf);
-    //create input stream for the cobol copybook contents
+    //create input stream for the cobol Copybook contents
     InputStream inputStream = IOUtils.toInputStream(conf.get(COPYBOOK_INPUTFORMAT_CBL_CONTENTS), "UTF-8");
     BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
     try {
-      externalRecord = CopyBookIOUtils.getExternalRecord(bufferedInputStream);
-      recordByteLength = CopyBookIOUtils.getRecordLength(externalRecord, fileStructure);
+      externalRecord = CopybookIOUtils.getExternalRecord(bufferedInputStream);
+      recordByteLength = CopybookIOUtils.getRecordLength(externalRecord, fileStructure);
       org.apache.hadoop.mapreduce.lib.input.FileSplit fileSplit =
         (org.apache.hadoop.mapreduce.lib.input.FileSplit) split;
 
@@ -86,7 +86,7 @@ public class CopyBookRecordReader extends RecordReader<LongWritable, Map<String,
         position = start - (start % recordByteLength) + recordByteLength;
         fileIn.skip(position);
       }
-      reader = CopyBookIOUtils.getAndOpenLineReader(fileIn, fileStructure, externalRecord);
+      reader = CopybookIOUtils.getAndOpenLineReader(fileIn, fileStructure, externalRecord);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

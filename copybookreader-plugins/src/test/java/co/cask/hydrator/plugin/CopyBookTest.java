@@ -38,7 +38,7 @@ import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.hydrator.common.Constants;
-import co.cask.hydrator.plugin.batch.CopyBookSource;
+import co.cask.hydrator.plugin.batch.CopybookSource;
 import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.FileInputFormat;
@@ -54,9 +54,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Unit test for {@link CopyBookSource} classes.
+ * Unit test for {@link CopybookSource} classes.
  */
-public class CopyBookTest extends HydratorTestBase {
+public class CopybookTest extends HydratorTestBase {
 
   @ClassRule
   public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
@@ -93,7 +93,7 @@ public class CopyBookTest extends HydratorTestBase {
 
     // add artifact for batch sources and sinks
     addPluginArtifact(NamespaceId.DEFAULT.artifact("copybookreader-plugins", "1.0.0"), BATCH_APP_ARTIFACT_ID,
-                      CopyBookSource.class);
+                      CopybookSource.class);
 
     FileInputFormat.setInputPaths(new JobConf(), new Path("src/test/resources"));
   }
@@ -117,8 +117,8 @@ public class CopyBookTest extends HydratorTestBase {
       .put("fileStructure", "")
       .build();
 
-    ETLStage source = new ETLStage("CopyBookReader", new ETLPlugin("CopyBookReader", BatchSource.PLUGIN_TYPE,
-                                                        sourceProperties, null));
+    ETLStage source = new ETLStage("CopybookReader", new ETLPlugin("CopybookReader", BatchSource.PLUGIN_TYPE,
+                                                                   sourceProperties, null));
 
     String outputDatasetName = "output-batchsourcetest";
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
@@ -154,7 +154,7 @@ public class CopyBookTest extends HydratorTestBase {
       .put("copybookContents", cblContents)
       .build();
 
-    ETLStage source = new ETLStage("CopyBookReader", new ETLPlugin("CopyBookReader", BatchSource.PLUGIN_TYPE,
+    ETLStage source = new ETLStage("CopybookReader", new ETLPlugin("CopybookReader", BatchSource.PLUGIN_TYPE,
                                                                    sourceProperties, null));
 
     String outputDatasetName = "output-batchsourcetest-wihtout-schema";
@@ -190,7 +190,7 @@ public class CopyBookTest extends HydratorTestBase {
       .put("fileStructure", "")
       .build();
 
-    ETLStage source = new ETLStage("CopyBookReader", new ETLPlugin("CopyBookReader", BatchSource.PLUGIN_TYPE,
+    ETLStage source = new ETLStage("CopybookReader", new ETLPlugin("CopybookReader", BatchSource.PLUGIN_TYPE,
                                                                    sourceProperties, null));
 
     String outputDatasetName = "output-batchsourcetest-wrong-schema";
@@ -215,9 +215,9 @@ public class CopyBookTest extends HydratorTestBase {
   @Test
   public void testDefaults() {
 
-    CopyBookSource.CopyBookSourceConfig copyBookSourceConfig = new CopyBookSource.CopyBookSourceConfig();
+    CopybookSource.CopybookSourceConfig copybookSourceConfig = new CopybookSource.CopybookSourceConfig();
     Assert.assertEquals(Integer.toString(net.sf.JRecord.Common.Constants.IO_FIXED_LENGTH),
-                        copyBookSourceConfig.getFileStructure());
+                        copybookSourceConfig.getFileStructure());
   }
 }
 

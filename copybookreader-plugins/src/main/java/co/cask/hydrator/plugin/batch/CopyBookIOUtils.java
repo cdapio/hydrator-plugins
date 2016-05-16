@@ -35,12 +35,13 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Utility class to parse and read COBOL CopyBook and binary data file contents
+ * Utility class to parse and read COBOL Copybook and binary data file contents
  */
-public class CopyBookIOUtils {
+public class CopybookIOUtils {
   /**
-   * Get the schema properties from the copybook contents
-   * @param cblIs Input stream for COBOL CopyBook contents
+   * Get the schema properties from the Copybook contents
+   *
+   * @param cblIs Input stream for COBOL Copybook contents
    * @return ExternalRecord object defining the schema fields and their properties
    * @throws RecordException
    */
@@ -54,8 +55,9 @@ public class CopyBookIOUtils {
 
   /**
    * Get record length for each line
+   *
    * @param externalRecord ExternalRecord object defining the schema fields and their properties
-   * @param fileStructure File structure of the data file
+   * @param fileStructure  File structure of the data file
    * @return each record length
    */
   public static int getRecordLength(ExternalRecord externalRecord, int fileStructure) {
@@ -71,8 +73,9 @@ public class CopyBookIOUtils {
 
   /**
    * Get the AbstractLine reader object to read each field value from the binary file
-   * @param is Input stream containing binary data file contents
-   * @param fileStructure File structure of the data file
+   *
+   * @param is             Input stream containing binary data file contents
+   * @param fileStructure  File structure of the data file
    * @param externalRecord ExternalRecord object defining the schema fields and their properties
    * @return
    * @throws RecordException
@@ -84,8 +87,8 @@ public class CopyBookIOUtils {
 
     LineProvider lineProvider = LineIOProvider.getInstance().getLineProvider(fileStructure, "cp037");
     AbstractLineReader reader = LineIOProvider.getInstance().getLineReader(fileStructure, lineProvider);
-    LayoutDetail copyBook = ToLayoutDetail.getInstance().getLayout(externalRecord);
-    reader.open(is, copyBook);
+    LayoutDetail copybook = ToLayoutDetail.getInstance().getLayout(externalRecord);
+    reader.open(is, copybook);
     return reader;
   }
 }

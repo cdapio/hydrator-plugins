@@ -4,7 +4,7 @@
   },
   "configuration-groups": [
     {
-      "label": "CopyBookReader Configuration",
+      "label": "CopybookReader Configuration",
       "properties": [
         {
           "widget-type": "textbox",

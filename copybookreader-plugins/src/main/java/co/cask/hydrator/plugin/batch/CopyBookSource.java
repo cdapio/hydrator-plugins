@@ -44,22 +44,22 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Batch Source to poll fixed length flat files that can be parsed using CobolCopyBook.
- * The plugin will accept the copybook contents in a textbox and a bianry data file.
+ * Batch Source to poll fixed length flat files that can be parsed using CobolCopybook.
+ * The plugin will accept the Copybook contents in a textbox and a bianry data file.
  * <p>
- * It produces structured record based on the schema as defined either by the copybook contents or as defined by user
+ * It produces structured record based on the schema as defined either by the Copybook contents or as defined by user
  * <p>
  * For the first implementation it will only accept binary fixed length flat files without any nesting
  */
 @Plugin(type = BatchSource.PLUGIN_TYPE)
-@Name("CopyBookReader")
-@Description("Batch Source to read COBOL copybook fixed length flat files")
-public class CopyBookSource extends BatchSource<LongWritable, Map<String, String>, StructuredRecord> {
+@Name("CopybookReader")
+@Description("Batch Source to read COBOL Copybook fixed length flat files")
+public class CopybookSource extends BatchSource<LongWritable, Map<String, String>, StructuredRecord> {
 
   @Description("If no file type is mentioned, by default it will be considered as a fixed length flat file")
   public static final int DEFAULT_FILE_STRUCTURE = net.sf.JRecord.Common.Constants.IO_FIXED_LENGTH;
 
-  @Description("Copybook file type supported. For the current implementation the copybook reader will accept only " +
+  @Description("Copybook file type supported. For the current implementation the Copybook reader will accept only " +
     "fixed flat files")
   public static final List<Integer> SUPPORTED_FILE_STRUCTURES = Lists.newArrayList(
     net.sf.JRecord.Common.Constants.IO_FIXED_LENGTH
@@ -71,10 +71,10 @@ public class CopyBookSource extends BatchSource<LongWritable, Map<String, String
   public static final String COPYBOOK_INPUTFORMAT_FILE_STRUCTURE = "copybook.inputformat.input.filestructure";
   public static final String COPYBOOK_INPUTFORMAT_DATA_HDFS_PATH = "copybook.inputformat.data.hdfs.path";
 
-  private final CopyBookSourceConfig config;
+  private final CopybookSourceConfig config;
 
-  public CopyBookSource(CopyBookSourceConfig copyBookConfig) {
-    this.config = copyBookConfig;
+  public CopybookSource(CopybookSourceConfig copybookConfig) {
+    this.config = copybookConfig;
   }
 
   @Override
@@ -86,7 +86,7 @@ public class CopyBookSource extends BatchSource<LongWritable, Map<String, String
   }
 
   @VisibleForTesting
-  final CopyBookSourceConfig getConfig() {
+  final CopybookSourceConfig getConfig() {
     return config;
   }
 
@@ -100,8 +100,8 @@ public class CopyBookSource extends BatchSource<LongWritable, Map<String, String
     }
     conf.set(COPYBOOK_INPUTFORMAT_DATA_HDFS_PATH, config.binaryFilePath);
     //set the input file path for job
-    CopyBookInputFormat.setInputPaths(job, config.binaryFilePath);
-    context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(CopyBookInputFormat.class, conf)));
+    CopybookInputFormat.setInputPaths(job, config.binaryFilePath);
+    context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(CopybookInputFormat.class, conf)));
   }
 
   @Override
@@ -160,113 +160,12 @@ public class CopyBookSource extends BatchSource<LongWritable, Map<String, String
   }
 
   /**
-   * Create schema from list field names retrieved from CopyBookFiles
+   * Create schema from list field names retrieved from CopybookFiles
    *
-   * @param filedsSet set of field names extracted from copybook
+   * @param filedsSet set of field names extracted from Copybook
    * @return output schema fields
    */
   private Schema getSchema(Set<String> filedsSet) {
-    //TODO : check int value for data types returned by jrecord to match java data types and create schema accrodindly
-  /*found the below solution to map data from copybook to java data types
-  Need confirmation to incorporate it.
-      *//*data type values and type names references from -
-    https://github.com/svn2github/jrecord/blob/00be9a1ff10e57175d3b1ffffdb9b585c55686eb/Source/JRecord_Common/src/net
-    /sf/JRecord/External/Def/BasicConversion.java
-    https://github.com/svn2github/jrecord/blob/3526120755c77f49985d8ce24dcb980fa79023bb/Source/JRecord_Common/src/net
-     /sf/JRecord/Types/Type.java
-     Array elements not handled
-     *//*
-    //date will be of the format yyyy-MM-dd for all cases
-
-    private Object getValues(AbstractFieldValue filedValue) throws ParseException {
-      int type = filedValue.getFieldDetail().getType();
-
-      SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-      SimpleDateFormat simpleDateFormat;
-      switch (type) {
-      //convert char, char just right , char null terminated, char null paded to string
-        case 0:
-        case 1:
-        case 2:
-        case 3:
-        case 71:
-          return filedValue.asString();
-          //extract hex value from filed
-        case 4:
-          return filedValue.asHex();
-          //convert nu, left justified, num right justified , num zero padded to integer
-        case 5:
-        case 6:
-        case 7:
-          return filedValue.asInt();
-          //extract binary int, binary int positive, positive binary int as integer using the BASE64 encoding
-        case 15:
-        case 16:
-        case 23:
-          return Integer.parseInt(Base64.decodeBase64(Base64.encodeBase64(filedValue.toString().getBytes())).
-          toString());
-
-        case 17:
-          return filedValue.asFloat();
-        case 18:
-          return filedValue.asDouble();
-          //extract decimal, Mainframe Packed Decimal, Mainframe Packed Decimal, Mainframe Zoned Numeric as BigDecimal
-        case 8:
-        case 11:
-        case 19:
-        case 20:
-        case 22:
-        case 24:
-        case 25:
-        case 26:
-        case 27:
-        case 28:
-        case 29:
-        case 31:
-        case 32:
-        case 33:
-          return filedValue.asBigDecimal();
-          //extract Binary Integer Big Edian (Mainframe, AIX etc)-  Binary Integer Big Endian (Mainframe?),
-          Binary Integer Big Endian (only +ve),Positive Integer Big Endian as BigInt using the BASE64 encoding
-        case 35:
-        case 36:
-        case 39:
-          return Base64.decodeInteger(Base64.encodeInteger(filedValue.asBigInteger()));
-          //convert date to format "yyyy-MM-dd" and return as string
-        case 72:
-          simpleDateFormat = new SimpleDateFormat("YYMMDD");
-          return dateFormat.format(simpleDateFormat.parse(filedValue.toString()));
-        case 73:
-          simpleDateFormat = new SimpleDateFormat("YYYYMMDD");
-          return dateFormat.format(simpleDateFormat.parse(filedValue.toString()));
-        case 74:
-          simpleDateFormat = new SimpleDateFormat("DDMMYY");
-          return dateFormat.format(simpleDateFormat.parse(filedValue.toString()));
-        case 75:
-          simpleDateFormat = new SimpleDateFormat("DDMMYYYY");
-          return dateFormat.format(simpleDateFormat.parse(filedValue.toString()));
-        // return boolean values for checkbox
-        case 111:
-          if (filedValue.toString().toLowerCase().contains("y")) {
-            return true;
-          } else {
-            return false;
-          }
-        case 112:
-          if (filedValue.toString().toLowerCase().contains("t")) {
-            return true;
-          } else {
-            return false;
-          }
-        case 114:
-          return filedValue.asBoolean();
-          //if the tyoe does not match any of the above mentioned types , convert to string and return
-        default:
-          return filedValue.toString();
-      }
-    }
-      */
-
     List<Schema.Field> fields = Lists.newArrayList();
     for (String field : filedsSet) {
       fields.add(Schema.Field.of(field, Schema.nullableOf(Schema.of(Schema.Type.STRING))));
@@ -275,9 +174,9 @@ public class CopyBookSource extends BatchSource<LongWritable, Map<String, String
   }
 
   /**
-   * Config class for CopyBookSource.
+   * Config class for CopybookSource.
    */
-  public static class CopyBookSourceConfig extends ReferencePluginConfig {
+  public static class CopybookSourceConfig extends ReferencePluginConfig {
 
     @Name("binaryFilePath")
     @Description("Complete path of the .bin to be read(Eg : hdfs://10.222.41.31:9000/test/DTAR020_FB.bin, " +
@@ -307,11 +206,11 @@ public class CopyBookSource extends BatchSource<LongWritable, Map<String, String
 
     @Name("fileStructure")
     @Nullable
-    @Description("CopyBook file structure")
+    @Description("Copybook file structure")
     private String fileStructure;
 
     @Name("copybookContents")
-    @Description("Contents of the cobol copybook file which will contain " +
+    @Description("Contents of the cobol Copybook file which will contain " +
       "the data structure. Eg: \n" +
       "000100*                                                                         \n" +
       "000200*   DTAR020 IS THE OUTPUT FROM DTAB020 FROM THE IML                       \n" +
@@ -327,7 +226,7 @@ public class CopyBookSource extends BatchSource<LongWritable, Map<String, String
       "001200        03  DTAR020-DATE               PIC S9(07)   COMP-3. ")
     private String copybookContents;
 
-    public CopyBookSourceConfig(String referenceName, String copybookContents, String binaryFilePath, String schema,
+    public CopybookSourceConfig(String referenceName, String copybookContents, String binaryFilePath, String schema,
                                 String fileStructure) {
       super(referenceName);
       this.copybookContents = copybookContents;
@@ -336,8 +235,8 @@ public class CopyBookSource extends BatchSource<LongWritable, Map<String, String
       this.fileStructure = fileStructure;
     }
 
-    public CopyBookSourceConfig() {
-      super(String.format("CopyBookReader"));
+    public CopybookSourceConfig() {
+      super(String.format("CopybookReader"));
       fileStructure = Integer.toString(DEFAULT_FILE_STRUCTURE);
     }
 

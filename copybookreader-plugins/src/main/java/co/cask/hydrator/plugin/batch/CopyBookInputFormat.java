@@ -35,18 +35,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static co.cask.hydrator.plugin.batch.CopyBookSource.COPYBOOK_INPUTFORMAT_DATA_HDFS_PATH;
+import static co.cask.hydrator.plugin.batch.CopybookSource.COPYBOOK_INPUTFORMAT_DATA_HDFS_PATH;
 
 /**
  * InputFormat class for CopybookReader plugin
  */
-public class CopyBookInputFormat extends FileInputFormat<LongWritable, Map<String, String>> {
+public class CopybookInputFormat extends FileInputFormat<LongWritable, Map<String, String>> {
 
   @Override
   public RecordReader<LongWritable, Map<String, String>> createRecordReader(InputSplit split,
                                                                             TaskAttemptContext context)
     throws IOException, InterruptedException {
-    return new CopyBookRecordReader();
+    return new CopybookRecordReader();
   }
 
   @Override
