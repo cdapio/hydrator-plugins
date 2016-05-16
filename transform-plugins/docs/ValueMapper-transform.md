@@ -3,9 +3,8 @@
 
 Description
 -----------
-Value Mapper is a type of transform that maps string values of a field in the input record to another value.
-Mappings are usually stored in another KeyValue dataset. This provides you a simple alternative for mapping data in the
-record.
+Value Mapper is a transform plugin that maps string values of a field in the input record to mapping value using mapping dataset.
+Mappings are usually stored in KeyValue dataset. Value Mapper provides you a simple alternative for manipulating the input data by using mapping dataset
 
 
 Use Case
@@ -19,18 +18,21 @@ Suppose, If you want to replace language codes in the input record field to lang
 
 Properties
 ----------
-**mapping:** Contains three fields as **source field, lookup table name, target field**. Defines mapping of source
-field to target field and lookup table name for the specified source field. Here **source field** support only of STRING type.
+**mapping:** Defines mapping of source field to target field and mapping table name for the specified source field.
+Contains three fields separated by ":" as **source field, mapping table name, target field**.
+Here **source field** support only of STRING type.
 
-**defaults:** Contains a key value pair of source field and its default value in case if the input value is
-NULL/EMPTY or if the lookup value is not present. If no default value has been provided, then the current input field
-value will be assigned to the target field. Value accepted is of STRING NULLABLE type only.
+**defaults:** Contains a key value pair of source field and its default value in case if the source field value is
+NULL/EMPTY or if the mapping value is not present. If no default value has been provided, then the source field value will be mapped to target field.
+Value accepted is of STRING NULLABLE type only.
 
 
 Example
 -------
-Suppose that user takes the input data(employee details) through the csv file or any other source and wants to apply
-value mapper on certain field
+Suppose user takes the input data(employee details) through stream and wants to apply
+value mapper transform plugin on designation field
+
+Plugin JSON Representation will be:
 
     {
         "name": "ValueMapper",
@@ -42,7 +44,7 @@ value mapper on certain field
     }
 
 
-For example, if the transform receives this input record:
+If the transform receives following input record:
 
     +=========================================================+
     | field name | type                | value                |
@@ -64,7 +66,7 @@ Sample structure for Mapping/Lookup Dataset
     +=======================+
 
 After the transformations from ValueMapper plugin, output will have below structure.
-Here destination column values replaced with destinationName by using Lookup Dataset (Key-Value pair):
+Here destination column values will be replaced in destinationName by using Mapping Dataset (Key-Value pair):
 
     +=========================================================+
     | field name      | type                | value           |
@@ -74,4 +76,7 @@ Here destination column values replaced with destinationName by using Lookup Dat
     | salary          | int                 | 9000            |
     | designationName | string              | "SSE"           |
     +=========================================================+
+
+
+
 
