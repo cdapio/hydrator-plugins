@@ -14,6 +14,7 @@
 	  "values-delimiter": ":",
 	  "numValues": "3",
 	  "placeholders": ["Source field", "Lookup table name", "Target field"]
+	}
 	},
 	{
           "widget-type": "keyvalue",
