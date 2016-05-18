@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -177,8 +177,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
       List<CSVRecord> records = parser.getRecords();
       for (CSVRecord record : records) {
         if (fields.size() == record.size()) {
-          StructuredRecord sRecord = createStructuredRecord(record);
-          emitter.emit(sRecord);
+          emitter.emit(createStructuredRecord(record));
         } else {
           LOG.warn("Skipping record as output schema specified has '{}' fields, while CSV record has '{}'",
                    fields.size(), record.size());
@@ -194,7 +193,25 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
     StructuredRecord.Builder builder = StructuredRecord.builder(outSchema);
     int i = 0;
     for (Field field : fields) {
-      builder.set(field.getName(), TypeConvertor.get(record.get(i), field.getSchema().getType()));
+      String val = record.get(i);
+      Schema fieldSchema = field.getSchema();
+
+      if (val.isEmpty()) {
+        boolean isNullable = fieldSchema.isNullable();
+        Schema.Type fieldType = isNullable ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
+        // if the field is a string or a nullable string, set the value to the empty string
+        if (fieldType == Schema.Type.STRING) {
+          builder.set(field.getName(), "");
+        } else if (!isNullable) {
+          // otherwise, error out
+          throw new IllegalArgumentException(String.format(
+            "Field #%d (named '%s') is of non-nullable type '%s', " +
+              "but was parsed as an empty string for CSV record '%s'",
+            i, field.getName(), field.getSchema().getType(), record));
+        }
+      } else {
+        builder.convertAndSet(field.getName(), val);
+      }
       ++i;
     }
     return builder.build();
