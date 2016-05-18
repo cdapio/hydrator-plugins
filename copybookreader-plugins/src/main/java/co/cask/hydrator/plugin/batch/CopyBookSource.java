@@ -24,6 +24,7 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
+import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.common.ReferencePluginConfig;
@@ -33,6 +34,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import net.sf.JRecord.Common.AbstractFieldValue;
 import org.apache.avro.reflect.Nullable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
@@ -44,38 +46,25 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Batch Source to poll fixed length flat files that can be parsed using CobolCopybook.
- * The plugin will accept the Copybook contents in a textbox and a bianry data file.
+ * Batch source to poll fixed-length flat files that can be parsed using a COBOL copybook.
  * <p>
- * It produces structured record based on the schema as defined either by the Copybook contents or as defined by user
+ * The plugin will accept the copybook contents in a textbox and a binary data file.
+ * It produces structured records based on the schema as defined either by the copybook contents or the user.
  * <p>
- * For the first implementation it will only accept binary fixed length flat files without any nesting
+ * For this first implementation, it will only accept binary fixed-length flat files without any nesting.
  */
 @Plugin(type = BatchSource.PLUGIN_TYPE)
 @Name("CopybookReader")
-@Description("Batch Source to read COBOL Copybook fixed length flat files")
-public class CopybookSource extends BatchSource<LongWritable, Map<String, String>, StructuredRecord> {
-
-  @Description("If no file type is mentioned, by default it will be considered as a fixed length flat file")
-  public static final int DEFAULT_FILE_STRUCTURE = net.sf.JRecord.Common.Constants.IO_FIXED_LENGTH;
-
-  @Description("Copybook file type supported. For the current implementation the Copybook reader will accept only " +
-    "fixed flat files")
-  public static final List<Integer> SUPPORTED_FILE_STRUCTURES = Lists.newArrayList(
-    net.sf.JRecord.Common.Constants.IO_FIXED_LENGTH
-  );
-  public static final String COPYBOOK_INPUTFORMAT_CBL_CONTENTS = "copybook.inputformat.cbl.contents";
-  /* For the initial implementation only fixed length binary files will be accepted.
-   This will not handle complex nested structures of COBOL copybook
-   Also this will not handle Redefines or iterators in the structure*/
-  public static final String COPYBOOK_INPUTFORMAT_FILE_STRUCTURE = "copybook.inputformat.input.filestructure";
-  public static final String COPYBOOK_INPUTFORMAT_DATA_HDFS_PATH = "copybook.inputformat.data.hdfs.path";
+@Description("Batch Source to read COBOL Copybook fixed-length flat files")
+public class CopybookSource extends BatchSource<LongWritable, Map<String, AbstractFieldValue>, StructuredRecord> {
 
   private final CopybookSourceConfig config;
+  private Schema outputSchema;
 
   public CopybookSource(CopybookSourceConfig copybookConfig) {
     this.config = copybookConfig;
   }
+
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
@@ -85,34 +74,40 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, String
 
   }
 
-  @VisibleForTesting
-  final CopybookSourceConfig getConfig() {
-    return config;
+  @Override
+  public void initialize(BatchRuntimeContext context) throws Exception {
+    super.initialize(context);
+    if (config.schema != null) {
+      outputSchema = config.parseSchema();
+    }
   }
 
   @Override
   public void prepareRun(BatchSourceContext context) throws IOException {
     Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();
-    conf.set(COPYBOOK_INPUTFORMAT_CBL_CONTENTS, config.copybookContents);
-    if (!(config.fileStructure.isEmpty())) {
-      conf.set(COPYBOOK_INPUTFORMAT_FILE_STRUCTURE, config.fileStructure);
-    }
-    conf.set(COPYBOOK_INPUTFORMAT_DATA_HDFS_PATH, config.binaryFilePath);
-    //set the input file path for job
+    conf.set(CopybookConstants.COPYBOOK_INPUTFORMAT_CBL_CONTENTS, config.copybookContents);
+    conf.setInt(CopybookConstants.COPYBOOK_INPUTFORMAT_FILE_STRUCTURE, config.fileStructure);
+    conf.set(CopybookConstants.COPYBOOK_INPUTFORMAT_DATA_HDFS_PATH, config.binaryFilePath);
+
+    // Set the input file path for the job
     CopybookInputFormat.setInputPaths(job, config.binaryFilePath);
+
+    if (config.maxSplitSize != null) {
+      conf.setLong(CopybookConstants.MAX_SPLIT_SIZE_DESCRIPTION, config.maxSplitSize);
+      CopybookInputFormat.setMaxInputSplitSize(job, conf.getLong(CopybookConstants.MAX_SPLIT_SIZE_DESCRIPTION,
+                                                                 CopybookConstants.DEFAULT_MAX_SPLIT_SIZE));
+    }
     context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(CopybookInputFormat.class, conf)));
   }
 
   @Override
-  public void transform(KeyValue<LongWritable, Map<String, String>> input, Emitter<StructuredRecord> emitter)
+  public void transform(KeyValue<LongWritable, Map<String, AbstractFieldValue>> input,
+                        Emitter<StructuredRecord> emitter)
     throws Exception {
-    Map<String, String> value = input.getValue();
-    Schema outputSchema;
-    if (config.schema == null) {
+    Map<String, AbstractFieldValue> value = input.getValue();
+    if (outputSchema == null) {
       outputSchema = getSchema(value.keySet());
-    } else {
-      outputSchema = config.parseSchema();
     }
     StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
     for (Schema.Field field : outputSchema.getFields()) {
@@ -132,28 +127,26 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, String
    * @return value casted to the required data type
    * @throws IOException
    */
-  private Object parseValue(Schema.Field field, String value) throws IOException {
-    Schema.Type fieldType = field.getSchema().getType();
-    if (fieldType.equals(Schema.Type.UNION)) {
-      fieldType = field.getSchema().getUnionSchema(0).getType();
-    }
+  private Object parseValue(Schema.Field field, AbstractFieldValue value) throws IOException {
+    Schema fieldSchema = field.getSchema();
+    Schema.Type fieldType = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema
+      .getType();
+
     switch (fieldType) {
       case NULL:
         return null;
       case INT:
-        return Integer.parseInt(value);
+        return value.asInt();
       case DOUBLE:
-        return Double.parseDouble(value);
+        return value.asDouble();
       case BOOLEAN:
-        return Boolean.parseBoolean(value);
+        return value.asBoolean();
       case LONG:
-        return Long.parseLong(value);
+        return value.asLong();
       case FLOAT:
-        return Float.parseFloat(value);
-      case BYTES:
-        return value.getBytes();
+        return value.asFloat();
       case STRING:
-        return value;
+        return value.asString();
     }
     throw new IOException(String.format("Unsupported schema: %s for field: \'%s\'",
                                         field.getSchema(), field.getName()));
@@ -162,12 +155,12 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, String
   /**
    * Create schema from list field names retrieved from CopybookFiles
    *
-   * @param filedsSet set of field names extracted from Copybook
+   * @param fieldsSet set of field names extracted from Copybook
    * @return output schema fields
    */
-  private Schema getSchema(Set<String> filedsSet) {
+  private Schema getSchema(Set<String> fieldsSet) {
     List<Schema.Field> fields = Lists.newArrayList();
-    for (String field : filedsSet) {
+    for (String field : fieldsSet) {
       fields.add(Schema.Field.of(field, Schema.nullableOf(Schema.of(Schema.Type.STRING))));
     }
     return Schema.recordOf("record", fields);
@@ -178,11 +171,14 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, String
    */
   public static class CopybookSourceConfig extends ReferencePluginConfig {
 
+    @Nullable
+    @Description(CopybookConstants.MAX_SPLIT_SIZE_DESCRIPTION)
+    public Long maxSplitSize;
     @Name("binaryFilePath")
-    @Description("Complete path of the .bin to be read(Eg : hdfs://10.222.41.31:9000/test/DTAR020_FB.bin, " +
-      "file:///home/cdap/cdap/DTAR020_FB.bin).\n This will be a fixed length binary format file," +
-      " that macthes the copybook." +
-      "\n(This is done to accept files present on remote hdfs location)")
+    @Description("Complete path of the .bin to be read; for example: 'hdfs://10.222.41.31:9000/test/DTAR020_FB.bin' " +
+      "or file:///home/cdap/DTAR020_FB.bin'.\n " +
+      "This will be a fixed-length binary format file that matches the copybook.\n" +
+      "(This is done to accept files present on a remote HDFS location.)")
     private String binaryFilePath;
 
     @Name("schema")
@@ -204,14 +200,11 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, String
       "}")
     private String schema;
 
-    @Name("fileStructure")
     @Nullable
-    @Description("Copybook file structure")
-    private String fileStructure;
+    private Integer fileStructure;
 
     @Name("copybookContents")
-    @Description("Contents of the cobol Copybook file which will contain " +
-      "the data structure. Eg: \n" +
+    @Description("Contents of the COBOL copybook file which will contain the data structure. Eg: \n" +
       "000100*                                                                         \n" +
       "000200*   DTAR020 IS THE OUTPUT FROM DTAB020 FROM THE IML                       \n" +
       "000300*   CENTRAL REPORTING SYSTEM                                              \n" +
@@ -226,25 +219,25 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, String
       "001200        03  DTAR020-DATE               PIC S9(07)   COMP-3. ")
     private String copybookContents;
 
-    public CopybookSourceConfig(String referenceName, String copybookContents, String binaryFilePath, String schema,
-                                String fileStructure) {
+    public CopybookSourceConfig(String referenceName, String copybookContents, String binaryFilePath,
+                                @Nullable String schema, @Nullable Integer fileStructure, @Nullable Long maxSplitSize) {
       super(referenceName);
       this.copybookContents = copybookContents;
       this.binaryFilePath = binaryFilePath;
       this.schema = schema;
-      this.fileStructure = fileStructure;
+      this.fileStructure = fileStructure == null ? CopybookConstants.DEFAULT_FILE_STRUCTURE : fileStructure;
+      this.maxSplitSize = maxSplitSize == null ? CopybookConstants.DEFAULT_MAX_SPLIT_SIZE : maxSplitSize;
     }
 
     public CopybookSourceConfig() {
       super(String.format("CopybookReader"));
-      fileStructure = Integer.toString(DEFAULT_FILE_STRUCTURE);
+      fileStructure = CopybookConstants.DEFAULT_FILE_STRUCTURE;
     }
 
     @VisibleForTesting
-    public final String getFileStructure() {
+    public final int getFileStructure() {
       return fileStructure;
     }
-
     /**
      * Validate the configuration parameters required
      */
@@ -254,24 +247,23 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, String
       }
       //check the file extension
       if (binaryFilePath.length() < 4) {
-        throw new IllegalArgumentException("Invalid binary file path: " + binaryFilePath);
-      } else {
-        if (!(binaryFilePath.substring(binaryFilePath.length() - 4).equals(".bin"))) {
-          throw new IllegalArgumentException("Invalid binary file path: " + binaryFilePath);
-        }
+        throw new IllegalArgumentException("Invalid binary file path: " + binaryFilePath +
+                                             ".The plugin reads binary file as input");
+      } else if (!(binaryFilePath.substring(binaryFilePath.length() - 4).equals(".bin"))) {
+        throw new IllegalArgumentException("Invalid binary file path: " + binaryFilePath +
+                                             ".The plugin reads binary file as input");
       }
-      if (!fileStructure.isEmpty()) {
-        try {
+      try {
+        if (fileStructure != null) {
           Preconditions.checkArgument(
-            SUPPORTED_FILE_STRUCTURES.contains(Integer.parseInt(fileStructure)),
-            "Supported file structures: " + SUPPORTED_FILE_STRUCTURES);
-        } catch (NumberFormatException e) {
-          throw new IllegalArgumentException("File structure should be integer values. Invalid value for file " +
-                                               "structure : " + fileStructure);
+            CopybookConstants.SUPPORTED_FILE_STRUCTURES.contains(fileStructure),
+            "Supported file structures: " + CopybookConstants.SUPPORTED_FILE_STRUCTURES);
         }
+      } catch (NumberFormatException e) {
+        throw new IllegalArgumentException("File structure should be integer values. Invalid value for file " +
+                                             "structure : " + fileStructure);
       }
     }
-
     /**
      * Parse the output schema passed by the user
      *

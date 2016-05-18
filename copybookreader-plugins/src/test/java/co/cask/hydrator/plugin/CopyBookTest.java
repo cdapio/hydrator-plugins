@@ -110,11 +110,10 @@ public class CopybookTest extends HydratorTestBase {
       Schema.Field.of("DTAR020-SALE-PRICE", Schema.of(Schema.Type.DOUBLE)));
 
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
-      .put(Constants.Reference.REFERENCE_NAME, "TestCass")
+      .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put("binaryFilePath", "src/test/resources/DTAR020_FB.bin")
       .put("copybookContents", cblContents)
       .put("schema", schema.toString())
-      .put("fileStructure", "")
       .build();
 
     ETLStage source = new ETLStage("CopybookReader", new ETLPlugin("CopybookReader", BatchSource.PLUGIN_TYPE,
@@ -141,7 +140,7 @@ public class CopybookTest extends HydratorTestBase {
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
     StructuredRecord record = output.get(0);
     Assert.assertEquals("Expected schema", schema, record.getSchema());
-    Assert.assertEquals("Expected records ", 5, output.size());
+    Assert.assertEquals("Expected records", 5, output.size());
     Assert.assertEquals("Expected schema", null, record.get("DATE"));
   }
 
@@ -149,7 +148,7 @@ public class CopybookTest extends HydratorTestBase {
   public void testCopybookReaderWithoutOutputSchema() throws Exception {
 
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
-      .put(Constants.Reference.REFERENCE_NAME, "TestCass")
+      .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put("binaryFilePath", "src/test/resources/DTAR020_FB.bin")
       .put("copybookContents", cblContents)
       .build();
@@ -157,7 +156,7 @@ public class CopybookTest extends HydratorTestBase {
     ETLStage source = new ETLStage("CopybookReader", new ETLPlugin("CopybookReader", BatchSource.PLUGIN_TYPE,
                                                                    sourceProperties, null));
 
-    String outputDatasetName = "output-batchsourcetest-wihtout-schema";
+    String outputDatasetName = "output-batchsource-test-wihtout-schema";
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
@@ -177,23 +176,23 @@ public class CopybookTest extends HydratorTestBase {
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
 
-    Assert.assertEquals("Expected records ", 5, output.size());
+    Assert.assertEquals("Expected records", 5, output.size());
   }
 
   @Test
   public void testInvalidCopybookReaderSource() throws Exception {
 
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
-      .put(Constants.Reference.REFERENCE_NAME, "TestCass")
+      .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put("binaryFilePath", "src/test/resources/DTAR020_FB.txt")
       .put("copybookContents", cblContents)
-      .put("fileStructure", "")
+      .put("fileStructure", "0")
       .build();
 
     ETLStage source = new ETLStage("CopybookReader", new ETLPlugin("CopybookReader", BatchSource.PLUGIN_TYPE,
                                                                    sourceProperties, null));
 
-    String outputDatasetName = "output-batchsourcetest-wrong-schema";
+    String outputDatasetName = "output-batchsource-test-incorrect-schema";
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")

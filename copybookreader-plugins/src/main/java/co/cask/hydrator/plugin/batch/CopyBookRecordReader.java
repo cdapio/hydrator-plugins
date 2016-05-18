@@ -21,7 +21,6 @@ import net.sf.JRecord.Details.AbstractLine;
 import net.sf.JRecord.External.Def.ExternalField;
 import net.sf.JRecord.External.ExternalRecord;
 import net.sf.JRecord.IO.AbstractLineReader;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -37,18 +36,11 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import static co.cask.hydrator.plugin.batch.CopybookSource.COPYBOOK_INPUTFORMAT_CBL_CONTENTS;
-import static co.cask.hydrator.plugin.batch.CopybookSource.COPYBOOK_INPUTFORMAT_DATA_HDFS_PATH;
-import static co.cask.hydrator.plugin.batch.CopybookSource.COPYBOOK_INPUTFORMAT_FILE_STRUCTURE;
-import static co.cask.hydrator.plugin.batch.CopybookSource.DEFAULT_FILE_STRUCTURE;
-
 /**
- * Record Reader for CopybookReader plugin.
- * <p>
- * This will return the field name and value using the binary data and Copybook contents, to be used as the transform
- * method input
+ * This will return the field name and value using the binary data and copybook contents, to be used as the
+ * transform method input.
  */
-public class CopybookRecordReader extends RecordReader<LongWritable, Map<String, String>> {
+public class CopybookRecordReader extends RecordReader<LongWritable, Map<String, AbstractFieldValue>> {
 
   private AbstractLineReader reader;
   private ExternalRecord externalRecord;
@@ -57,18 +49,19 @@ public class CopybookRecordReader extends RecordReader<LongWritable, Map<String,
   private long position;
   private long end;
   private LongWritable key = null;
-  private Map<String, String> value = null;
+  private Map<String, AbstractFieldValue> value = null;
 
   @Override
   public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
     // Get configuration
     Configuration conf = context.getConfiguration();
-    int fileStructure = Integer.parseInt(conf.get(COPYBOOK_INPUTFORMAT_FILE_STRUCTURE,
-                                                  Integer.toString(DEFAULT_FILE_STRUCTURE)));
-    Path path = new Path(conf.get(COPYBOOK_INPUTFORMAT_DATA_HDFS_PATH));
+    int fileStructure = conf.getInt(CopybookConstants.COPYBOOK_INPUTFORMAT_FILE_STRUCTURE,
+                                    CopybookConstants.DEFAULT_FILE_STRUCTURE);
+    Path path = new Path(conf.get(CopybookConstants.COPYBOOK_INPUTFORMAT_DATA_HDFS_PATH));
     FileSystem fs = FileSystem.get(path.toUri(), conf);
-    //create input stream for the cobol Copybook contents
-    InputStream inputStream = IOUtils.toInputStream(conf.get(COPYBOOK_INPUTFORMAT_CBL_CONTENTS), "UTF-8");
+    // Create input stream for the COBOL copybook contents
+    InputStream inputStream = IOUtils.toInputStream(conf.get(CopybookConstants.COPYBOOK_INPUTFORMAT_CBL_CONTENTS),
+                                                    "UTF-8");
     BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
     try {
       externalRecord = CopybookIOUtils.getExternalRecord(bufferedInputStream);
@@ -80,8 +73,8 @@ public class CopybookRecordReader extends RecordReader<LongWritable, Map<String,
       end = start + fileSplit.getLength();
 
       BufferedInputStream fileIn = new BufferedInputStream(fs.open(fileSplit.getPath()));
-      /* Jump to the point in the split at which the first
-       whole record of split starts if not the first InputSplit*/
+      // Jump to the point in the split at which the first complete record of the split starts,
+      // if not the first InputSplit
       if (start != 0) {
         position = start - (start % recordByteLength) + recordByteLength;
         fileIn.skip(position);
@@ -108,17 +101,12 @@ public class CopybookRecordReader extends RecordReader<LongWritable, Map<String,
     position += recordByteLength;
     key.set(position);
     for (ExternalField field : externalRecord.getRecordFields()) {
-      /*check if field is binary
-       in case of binary fields encode using Base64 format to preseve data consistency*/
-      // TODO : check int value for data types returned by jrecord to match java data types
-      // and create schema accrodindly
-      AbstractFieldValue filedValue = line.getFieldValue(field.getName());
-      if (filedValue.isBinary()) {
-        value.put(field.getName(), new String(Base64.decodeBase64(Base64.encodeBase64String(
-          filedValue.toString().getBytes()))));
-      } else {
-        value.put(field.getName(), filedValue.toString());
-      }
+      // Check if the field is binary.
+      // In the case of binary fields, encode using Base64 format to preseve data consistency.
+      //TODO: Check int value for data types returned by jrecord to match Java data types and create schema accordingly.
+      AbstractFieldValue fieldValue = line.getFieldValue(field.getName());
+      value.put(field.getName(), fieldValue);
+
     }
     key.set(position);
     return true;
@@ -130,7 +118,7 @@ public class CopybookRecordReader extends RecordReader<LongWritable, Map<String,
   }
 
   @Override
-  public Map<String, String> getCurrentValue() throws IOException, InterruptedException {
+  public Map<String, AbstractFieldValue> getCurrentValue() throws IOException, InterruptedException {
     return value;
   }
 

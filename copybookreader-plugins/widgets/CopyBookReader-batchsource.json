@@ -13,7 +13,7 @@
         },
         {
           "widget-type": "textarea",
-          "label": "Cobol Copybook",
+          "label": "COBOL Copybook Contents",
           "name": "copybookContents",
           "widget-attributes": {
             "rows": "4"

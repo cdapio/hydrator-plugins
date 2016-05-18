@@ -35,9 +35,12 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Utility class to parse and read COBOL Copybook and binary data file contents
+ * Utility class to parse and read COBOL Copybook and binary data file contents.
  */
 public class CopybookIOUtils {
+
+  private static final String FONT = "cp037";
+
   /**
    * Get the schema properties from the Copybook contents
    *
@@ -48,7 +51,7 @@ public class CopybookIOUtils {
   public static ExternalRecord getExternalRecord(InputStream cblIs) throws RecordException {
     CommonBits.setDefaultCobolTextFormat(Cb2xmlConstants.USE_STANDARD_COLUMNS);
     CobolCopybookLoader copybookInt = new CobolCopybookLoader();
-    ExternalRecord record = copybookInt.loadCopyBook(cblIs, "", CopybookLoader.SPLIT_NONE, 0, "cp037",
+    ExternalRecord record = copybookInt.loadCopyBook(cblIs, "", CopybookLoader.SPLIT_NONE, 0, FONT,
                                                      Convert.FMT_MAINFRAME, 0, null);
     return record;
   }
@@ -58,7 +61,7 @@ public class CopybookIOUtils {
    *
    * @param externalRecord ExternalRecord object defining the schema fields and their properties
    * @param fileStructure  File structure of the data file
-   * @return each record length
+   * @return the record length of each line
    */
   public static int getRecordLength(ExternalRecord externalRecord, int fileStructure) {
     int recordByteLength = 0;
@@ -85,7 +88,7 @@ public class CopybookIOUtils {
                                                         ExternalRecord externalRecord)
     throws RecordException, IOException {
 
-    LineProvider lineProvider = LineIOProvider.getInstance().getLineProvider(fileStructure, "cp037");
+    LineProvider lineProvider = LineIOProvider.getInstance().getLineProvider(fileStructure, FONT);
     AbstractLineReader reader = LineIOProvider.getInstance().getLineReader(fileStructure, lineProvider);
     LayoutDetail copybook = ToLayoutDetail.getInstance().getLayout(externalRecord);
     reader.open(is, copybook);

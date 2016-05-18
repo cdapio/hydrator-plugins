@@ -16,8 +16,8 @@
 
 package co.cask.hydrator.plugin.batch;
 
+import net.sf.JRecord.Common.AbstractFieldValue;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.compress.CompressionCodec;
@@ -28,23 +28,19 @@ import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
-import static co.cask.hydrator.plugin.batch.CopybookSource.COPYBOOK_INPUTFORMAT_DATA_HDFS_PATH;
 
 /**
- * InputFormat class for CopybookReader plugin
+ * InputFormat class for CopybookReader plugin.
  */
-public class CopybookInputFormat extends FileInputFormat<LongWritable, Map<String, String>> {
+public class CopybookInputFormat extends FileInputFormat<LongWritable, Map<String, AbstractFieldValue>> {
 
   @Override
-  public RecordReader<LongWritable, Map<String, String>> createRecordReader(InputSplit split,
-                                                                            TaskAttemptContext context)
+  public RecordReader<LongWritable, Map<String, AbstractFieldValue>> createRecordReader(InputSplit split,
+                                                                                        TaskAttemptContext context)
     throws IOException, InterruptedException {
     return new CopybookRecordReader();
   }
@@ -52,19 +48,8 @@ public class CopybookInputFormat extends FileInputFormat<LongWritable, Map<Strin
   @Override
   protected boolean isSplitable(JobContext context, Path file) {
     Configuration conf = context.getConfiguration();
-    Path path = new Path(conf.get(COPYBOOK_INPUTFORMAT_DATA_HDFS_PATH));
+    Path path = new Path(conf.get(CopybookConstants.COPYBOOK_INPUTFORMAT_DATA_HDFS_PATH));
     final CompressionCodec codec = new CompressionCodecFactory(context.getConfiguration()).getCodec(path);
     return (null == codec) ? true : codec instanceof SplittableCompressionCodec;
-  }
-
-  @Override
-  public List<InputSplit> getSplits(JobContext job) throws IOException {
-    Configuration conf = job.getConfiguration();
-    Path path = new Path(conf.get(COPYBOOK_INPUTFORMAT_DATA_HDFS_PATH));
-    FileSystem fs = FileSystem.get(path.toUri(), conf);
-    FileSplit split = new FileSplit(path, 0, fs.getFileStatus(path).getLen(), null);
-    List<InputSplit> fileSplits = new ArrayList<InputSplit>();
-    fileSplits.add(split);
-    return fileSplits;
   }
 }
