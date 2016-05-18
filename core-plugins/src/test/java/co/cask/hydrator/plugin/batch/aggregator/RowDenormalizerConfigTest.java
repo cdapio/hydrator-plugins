@@ -17,8 +17,9 @@
 package co.cask.hydrator.plugin.batch.aggregator;
 
 import co.cask.cdap.api.data.schema.Schema;
-import com.google.common.collect.ImmutableList;
+import co.cask.hydrator.plugin.transform.MockPipelineConfigurer;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -26,46 +27,49 @@ import org.junit.Test;
  * Test cases for {@link RowDenormalizerConfig}.
  */
 public class RowDenormalizerConfigTest {
-  Schema outputSchema = Schema.recordOf(
-    "denormalizedRecord",
-    Schema.Field.of("KeyField", Schema.of(Schema.Type.STRING)),
-    Schema.Field.of("Firstname", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
-    Schema.Field.of("lname", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
-    Schema.Field.of("addr", Schema.nullableOf(Schema.of(Schema.Type.STRING)))
-  );
 
-  @Test
+  @Test(expected = NullPointerException.class)
   public void testDenormalizerConfig() {
     RowDenormalizerConfig config = new RowDenormalizerConfig("KeyField", "FieldName", "FieldValue", "Firstname:," +
-      "Lastname:lname," + "Address:addr", outputSchema.toString());
+      "Lastname:lname,Address:addr");
 
-    Assert.assertEquals(ImmutableList.of("Firstname", "lname", "addr"), config.getOutputFields());
-    Assert.assertEquals(ImmutableMap.of("Firstname", RowDenormalizerConfig.CHECK_ALIAS, "Lastname", "lname",
+    Assert.assertEquals(ImmutableSet.of("Firstname", "lname", "addr"), config.getOutputFields());
+    Assert.assertEquals(ImmutableMap.of("Firstname", null, "Lastname", "lname",
                                         "Address", "addr"), config.getOutputFieldMappings());
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void testDormalizerConfWithNoKeyField() {
     RowDenormalizerConfig config = new RowDenormalizerConfig("", "FieldName", "FieldValue", "Firstname:," +
-      "Lastname:lname," + "Address:addr", outputSchema.toString());
+      "Lastname:lname,Address:addr");
     config.validate();
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void testDormalizerConfWithNoFieldName() {
     RowDenormalizerConfig config = new RowDenormalizerConfig("KeyField", "", "FieldValue", "Firstname:," +
-      "Lastname:lname," + "Address:addr", outputSchema.toString());
+      "Lastname:lname,Address:addr");
     config.validate();
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void testDormalizerConfWithNoFieldValue() {
     RowDenormalizerConfig config = new RowDenormalizerConfig("KeyField", "FieldName", "", "Firstname:," +
-      "Lastname:lname," + "Address:addr", outputSchema.toString());
+      "Lastname:lname,Address:addr");
     config.validate();
   }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testDenormalizerWithWrongKeyFieldName() throws Exception {
+    Schema inputSchema = Schema.recordOf(
+      "record",
+      Schema.Field.of("KeyField", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("FieldName", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("FieldValue", Schema.of(Schema.Type.STRING)));
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
+    RowDenormalizerConfig config = new RowDenormalizerConfig("WrongKeyField", "FieldName", "FieldValue", "Firstname:" +
+      ",Lastname:lname,Address:addr");
+    RowDenormalizerAggregator aggregator = new RowDenormalizerAggregator(config);
+    aggregator.configurePipeline(configurer);
+  }
 }
-
-
-
-

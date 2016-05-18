@@ -36,222 +36,29 @@ import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Test cases for {@link RowDenormalizerAggregator}.
  */
 public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
-  private Schema inputSchema = Schema.recordOf(
+
+  private static final Schema inputSchema = Schema.recordOf(
     "record",
     Schema.Field.of("KeyField", Schema.of(Schema.Type.STRING)),
     Schema.Field.of("FieldName", Schema.of(Schema.Type.STRING)),
     Schema.Field.of("FieldValue", Schema.of(Schema.Type.STRING)));
 
   @Test
-  public void testDenormalizerWithAllFields() throws Exception {
-    String inputDatasetName = "denormalizer_input";
-    String outputDatasetName = "denormalizer-output";
-
-    ETLStage sourceStage = new ETLStage(
-      "records", new ETLPlugin("Table", BatchSource.PLUGIN_TYPE,
-                               ImmutableMap.of(
-                                 Properties.BatchReadableWritable.NAME, inputDatasetName,
-                                 Properties.Table.PROPERTY_SCHEMA, inputSchema.toString()),
-                               null));
-
-    Schema outputSchema = Schema.recordOf(
-      "denormalizedRecord",
-      Schema.Field.of("KeyField", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("Firstname", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
-      Schema.Field.of("Lastname", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
-      Schema.Field.of("Address", Schema.nullableOf(Schema.of(Schema.Type.STRING)))
-    );
-
-    Map<String, String> configMap = new ImmutableMap.Builder<String, String>()
-      .put("keyField", "KeyField")
-      .put("fieldName", "FieldName")
-      .put("fieldValue", "FieldValue")
-      .put("outputFields", "Firstname:," + "Lastname:," + "Address:")
-      .put("schema", outputSchema.toString())
-      .build();
-
-    ETLStage aggregateStage = new ETLStage(
-      "aggregate", new ETLPlugin("RowDenormalizer", BatchAggregator.PLUGIN_TYPE, configMap, null));
-
-
-    ETLStage sinkStage = new ETLStage(
-      "sink", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
-                            ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA, outputSchema.toString(),
-                                            Properties.TimePartitionedFileSetDataset.TPFS_NAME, outputDatasetName),
-                            null));
-
-    ETLBatchConfig config = ETLBatchConfig.builder("* * * * *")
-      .addStage(sourceStage)
-      .addStage(aggregateStage)
-      .addStage(sinkStage)
-      .addConnection(sourceStage.getName(), aggregateStage.getName())
-      .addConnection(aggregateStage.getName(), sinkStage.getName())
-      .build();
-    AppRequest<ETLBatchConfig> request = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "denormalize-test");
-    ApplicationManager appManager = deployApplication(appId, request);
-
-    // write input data
-    DataSetManager<Table> inputManager = getDataset(inputDatasetName);
-    Table inputTable = inputManager.get();
-    Put put = new Put(Bytes.toBytes(1));
-    put.add("KeyField", "A");
-    put.add("FieldName", "Firstname");
-    put.add("FieldValue", "ABC");
-    inputTable.put(put);
-    put = new Put(Bytes.toBytes(2));
-    put.add("KeyField", "A");
-    put.add("FieldName", "Lastname");
-    put.add("FieldValue", "XYZ");
-    inputTable.put(put);
-    put = new Put(Bytes.toBytes(3));
-    put.add("KeyField", "A");
-    put.add("FieldName", "Address");
-    put.add("FieldValue", "PQR place near XYZ");
-    inputTable.put(put);
-    inputManager.flush();
-
-    // run the pipeline
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
-
-    DataSetManager<TimePartitionedFileSet> outputManager = getDataset(outputDatasetName);
-    TimePartitionedFileSet fileSet = outputManager.get();
-    List<GenericRecord> outputRecords = readOutput(fileSet, outputSchema);
-
-    Set<String> key = new HashSet<>();
-    Set<String> firstName = new HashSet<>();
-    Set<String> lastName = new HashSet<>();
-    Set<String> address = new HashSet<>();
-
-    for (GenericRecord record : outputRecords) {
-      key.add(record.get("KeyField").toString());
-      firstName.add(record.get("Firstname").toString());
-      lastName.add(record.get("Lastname").toString());
-      address.add(record.get("Address").toString());
-    }
-
-    Assert.assertEquals(1, outputRecords.size());
-    Assert.assertEquals(ImmutableSet.of("A"), key);
-    Assert.assertEquals(ImmutableSet.of("ABC"), firstName);
-    Assert.assertEquals(ImmutableSet.of("XYZ"), lastName);
-    Assert.assertEquals(ImmutableSet.of("PQR place near XYZ"), address);
-  }
-
-  @Test
-  public void testDenormalizerWithSelectedAlias() throws Exception {
-    String inputDatasetName = "denormalizer_input3";
-    String outputDatasetName = "denormalizer-output3";
-
-    ETLStage sourceStage = new ETLStage(
-      "records", new ETLPlugin("Table", BatchSource.PLUGIN_TYPE,
-                               ImmutableMap.of(
-                                 Properties.BatchReadableWritable.NAME, inputDatasetName,
-                                 Properties.Table.PROPERTY_SCHEMA, inputSchema.toString()),
-                               null));
-
-    Schema outputSchema = Schema.recordOf(
-      "denormalizedRecord",
-      Schema.Field.of("KeyField", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("Firstname", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
-      Schema.Field.of("addr", Schema.nullableOf(Schema.of(Schema.Type.STRING)))
-    );
-
-    Map<String, String> configMap = new ImmutableMap.Builder<String, String>()
-      .put("keyField", "KeyField")
-      .put("fieldName", "FieldName")
-      .put("fieldValue", "FieldValue")
-      .put("outputFields", "Firstname:," + "Address:addr")
-      .put("schema", outputSchema.toString())
-      .build();
-
-    ETLStage aggregateStage = new ETLStage(
-      "aggregate", new ETLPlugin("RowDenormalizer", BatchAggregator.PLUGIN_TYPE, configMap, null));
-
-
-    ETLStage sinkStage = new ETLStage(
-      "sink", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
-                            ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA, outputSchema.toString(),
-                                            Properties.TimePartitionedFileSetDataset.TPFS_NAME, outputDatasetName),
-                            null));
-
-    ETLBatchConfig config = ETLBatchConfig.builder("* * * * *")
-      .addStage(sourceStage)
-      .addStage(aggregateStage)
-      .addStage(sinkStage)
-      .addConnection(sourceStage.getName(), aggregateStage.getName())
-      .addConnection(aggregateStage.getName(), sinkStage.getName())
-      .build();
-    AppRequest<ETLBatchConfig> request = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "denormalize-test");
-    ApplicationManager appManager = deployApplication(appId, request);
-
-    // write input data
-    DataSetManager<Table> inputManager = getDataset(inputDatasetName);
-    Table inputTable = inputManager.get();
-    Put put = new Put(Bytes.toBytes(1));
-    put.add("KeyField", "A");
-    put.add("FieldName", "Firstname");
-    put.add("FieldValue", "ABC");
-    inputTable.put(put);
-    put = new Put(Bytes.toBytes(2));
-    put.add("KeyField", "A");
-    put.add("FieldName", "Lastname");
-    put.add("FieldValue", "XYZ");
-    inputTable.put(put);
-    put = new Put(Bytes.toBytes(3));
-    put.add("KeyField", "A");
-    put.add("FieldName", "Address");
-    put.add("FieldValue", "PQR place near XYZ");
-    inputTable.put(put);
-    inputManager.flush();
-
-    // run the pipeline
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
-
-    DataSetManager<TimePartitionedFileSet> outputManager = getDataset(outputDatasetName);
-    TimePartitionedFileSet fileSet = outputManager.get();
-    List<GenericRecord> outputRecords = readOutput(fileSet, outputSchema);
-
-    Set<String> key = new HashSet<>();
-    Set<String> firstName = new HashSet<>();
-    Set<String> lastName = new HashSet<>();
-    Set<String> address = new HashSet<>();
-
-    for (GenericRecord record : outputRecords) {
-      key.add(record.get("KeyField").toString());
-      firstName.add(record.get("Firstname").toString());
-      address.add(record.get("addr").toString());
-    }
-
-    Assert.assertEquals(1, outputRecords.size());
-    Assert.assertEquals(ImmutableSet.of("A"), key);
-    Assert.assertEquals(ImmutableSet.of("ABC"), firstName);
-    Assert.assertEquals(ImmutableSet.of("PQR place near XYZ"), address);
-  }
-
-  @Test
   public void testDenormalizerWithMultipleKeyFieldValues() throws Exception {
-    String inputDatasetName = "denormalizer_input4";
-    String outputDatasetName = "denormalizer-output4";
+    String inputDatasetName = "denormalizer_multiple_key_input";
+    String outputDatasetName = "denormalizer_multiple_key_output";
 
     ETLStage sourceStage = new ETLStage(
       "records", new ETLPlugin("Table", BatchSource.PLUGIN_TYPE,
@@ -271,8 +78,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
       .put("keyField", "KeyField")
       .put("fieldName", "FieldName")
       .put("fieldValue", "FieldValue")
-      .put("outputFields", "Firstname:," + "Address:Addr")
-      .put("schema", outputSchema.toString())
+      .put("outputFields", "Firstname:,Address:Addr")
       .build();
 
     ETLStage aggregateStage = new ETLStage(
@@ -341,76 +147,22 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
     TimePartitionedFileSet fileSet = outputManager.get();
     List<GenericRecord> outputRecords = readOutput(fileSet, outputSchema);
 
-    Set<String> key = new HashSet<>();
-    Set<String> firstName = new HashSet<>();
-    Set<String> address = new HashSet<>();
-
-    for (GenericRecord record : outputRecords) {
-      key.add(record.get("KeyField").toString());
-      firstName.add(record.get("Firstname").toString());
-      address.add(record.get("Addr").toString());
-    }
-
     Assert.assertEquals(2, outputRecords.size());
-    Assert.assertEquals(ImmutableSet.of("A", "B"), key);
-    Assert.assertEquals(ImmutableSet.of("ABC", "ABC1"), firstName);
-    Assert.assertEquals(ImmutableSet.of("PQR place near XYZ", "PQR1 place near XYZ1"), address);
-  }
-
-  @Test(expected = IllegalStateException.class)
-  public void testDenormalizerWithWrongKeyFieldName() throws Exception {
-    String inputDatasetName = "denormalizer_input5";
-    String outputDatasetName = "denormalizer-output5";
-
-    ETLStage sourceStage = new ETLStage(
-      "records", new ETLPlugin("Table", BatchSource.PLUGIN_TYPE,
-                               ImmutableMap.of(
-                                 Properties.BatchReadableWritable.NAME, inputDatasetName,
-                                 Properties.Table.PROPERTY_SCHEMA, inputSchema.toString()),
-                               null));
-
-    Schema outputSchema = Schema.recordOf(
-      "denormalizedRecord",
-      Schema.Field.of("KeyField", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("Firstname", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
-      Schema.Field.of("Lastname", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
-      Schema.Field.of("Address", Schema.nullableOf(Schema.of(Schema.Type.STRING)))
-    );
-
-    Map<String, String> configMap = new ImmutableMap.Builder<String, String>()
-      .put("keyField", "wrongkeyfield")
-      .put("fieldName", "FieldName")
-      .put("fieldValue", "FieldValue")
-      .put("outputFields", "Firstname:," + "Lastname:," + "Address:")
-      .put("schema", outputSchema.toString())
-      .build();
-
-    ETLStage aggregateStage = new ETLStage(
-      "aggregate", new ETLPlugin("RowDenormalizer", BatchAggregator.PLUGIN_TYPE, configMap, null));
-
-
-    ETLStage sinkStage = new ETLStage(
-      "sink", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
-                            ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA, outputSchema.toString(),
-                                            Properties.TimePartitionedFileSetDataset.TPFS_NAME, outputDatasetName),
-                            null));
-
-    ETLBatchConfig config = ETLBatchConfig.builder("* * * * *")
-      .addStage(sourceStage)
-      .addStage(aggregateStage)
-      .addStage(sinkStage)
-      .addConnection(sourceStage.getName(), aggregateStage.getName())
-      .addConnection(aggregateStage.getName(), sinkStage.getName())
-      .build();
-    AppRequest<ETLBatchConfig> request = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "denormalize-test");
-    ApplicationManager appManager = deployApplication(appId, request);
+    for (GenericRecord record : outputRecords) {
+      if ((record.get("KeyField").toString()).equals("A")) {
+        Assert.assertEquals("ABC", record.get("Firstname").toString());
+        Assert.assertEquals("PQR place near XYZ", record.get("Addr").toString());
+      } else if ((record.get("KeyField").toString()).equals("B")) {
+        Assert.assertEquals("ABC1", record.get("Firstname").toString());
+        Assert.assertEquals("PQR1 place near XYZ1", record.get("Addr").toString());
+      }
+    }
   }
 
   @Test
   public void testDenormalizerWithWrongOutputField() throws Exception {
-    String inputDatasetName = "denormalizer_input6";
-    String outputDatasetName = "denormalizer-output6";
+    String inputDatasetName = "denormalizer_wrong_field_input";
+    String outputDatasetName = "denormalizer_wrong_field_output";
 
     ETLStage sourceStage = new ETLStage(
       "records", new ETLPlugin("Table", BatchSource.PLUGIN_TYPE,
@@ -432,8 +184,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
       .put("keyField", "KeyField")
       .put("fieldName", "FieldName")
       .put("fieldValue", "FieldValue")
-      .put("outputFields", "Firstname:," + "Lastname:," + "Address:," + "Salary:")
-      .put("schema", outputSchema.toString())
+      .put("outputFields", "Firstname:,Lastname:,Address:,Salary:")
       .build();
 
     ETLStage aggregateStage = new ETLStage(
@@ -486,24 +237,10 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
     TimePartitionedFileSet fileSet = outputManager.get();
     List<GenericRecord> outputRecords = readOutput(fileSet, outputSchema);
 
-    Set<String> key = new HashSet<>();
-    Set<String> firstName = new HashSet<>();
-    Set<String> lastName = new HashSet<>();
-    Set<String> address = new HashSet<>();
-    Set<String> salary = new HashSet<>();
-
-    for (GenericRecord record : outputRecords) {
-      key.add(record.get("KeyField").toString());
-      firstName.add(record.get("Firstname").toString());
-      lastName.add(record.get("Lastname").toString());
-      address.add(record.get("Address").toString());
-    }
-
     Assert.assertEquals(1, outputRecords.size());
-    Assert.assertEquals(ImmutableSet.of("A"), key);
-    Assert.assertEquals(ImmutableSet.of("ABC"), firstName);
-    Assert.assertEquals(ImmutableSet.of("XYZ"), lastName);
-    Assert.assertEquals(ImmutableSet.of("PQR place near XYZ"), address);
+    Assert.assertEquals("A", outputRecords.get(0).get("KeyField").toString());
+    Assert.assertEquals("ABC", outputRecords.get(0).get("Firstname").toString());
+    Assert.assertEquals("XYZ", outputRecords.get(0).get("Lastname").toString());
+    Assert.assertEquals("PQR place near XYZ", outputRecords.get(0).get("Address").toString());
   }
-
 }

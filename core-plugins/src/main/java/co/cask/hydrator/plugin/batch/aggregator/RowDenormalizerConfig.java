@@ -17,45 +17,49 @@
 package co.cask.hydrator.plugin.batch.aggregator;
 
 import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Name;
-import co.cask.cdap.api.data.schema.Schema;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
-import com.google.common.base.Strings;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
-import javax.annotation.Nullable;
+import java.util.Set;
 
 /**
- * Config for RowDenormalizer Aggregator Plugin
+ * Config for RowDenormalizer Aggregator Plugin.
  */
 public class RowDenormalizerConfig extends AggregatorConfig {
 
-  public static final String CHECK_ALIAS = "NO_ALIAS";
-  @Description("Key Field which will be used to de-normalize the raw data.")
+  @Description("Name of the column in the input record which will be used to group the raw data. For Example: " +
+    "KeyField")
   private final String keyField;
-  @Description("Name of the field in input record that contains output fields to be included in denormalized output.")
+
+  @Description("Name of the column in the input record which contains the names of output schema columns." +
+    "For example:" +
+    "Input Record has columns 'KeyField', 'FieldName', 'FieldValue'" +
+    "'FieldName' contains 'FirstName', 'LastName','Address'" +
+    "So Output Record will have column names as 'FirstName', 'LastName','Address'.")
   private final String fieldName;
-  @Description("Name of the field in input record that contains values for output fields to be included " +
-    "in denormalized output.")
+
+  @Description("Name of the column in the input record which contains the values for output schema columns." +
+    "For example:" +
+    "Input Record has columns 'KeyField', 'FieldName', 'FieldValue' " +
+    "and 'FieldValue' column contains 'John', 'Wagh', 'NE Lakeside'" +
+    "So Output Record will have values for columns 'FirstName', 'LastName','Address' as 'John', 'Wagh', 'NE " +
+    "Lakeside' respectively.")
   private final String fieldValue;
-  @Description("List of the output fields with its alias to be included in denormalized ouptut.")
+
+  @Description("List of the output fields with its alias to be included in denormalized output. This is a comma " +
+    "separated list of key-value pairs, where key-value pairs are separated by a colon ':'. For example: " +
+    "Firstname:fname,Lastname:lname,Address:addr")
   private final String outputFields;
-  @Name("schema")
-  @Nullable
-  private final String schema;
 
   @VisibleForTesting
-  RowDenormalizerConfig(String keyField, String fieldName, String fieldValue, String outputFields, String schema) {
+  RowDenormalizerConfig(String keyField, String fieldName, String fieldValue, String outputFields) {
     this.keyField = keyField;
     this.fieldName = fieldName;
     this.fieldValue = fieldValue;
     this.outputFields = outputFields;
-    this.schema = schema;
   }
 
   /**
@@ -68,7 +72,7 @@ public class RowDenormalizerConfig extends AggregatorConfig {
   }
 
   /**
-   * Returns name of the input field 'FieldName' given as input by user
+   * Returns name of the input field 'FieldName' given as input by user.
    *
    * @return field name
    */
@@ -77,7 +81,7 @@ public class RowDenormalizerConfig extends AggregatorConfig {
   }
 
   /**
-   * Returns name of the input field 'FieldValue' given as input by user
+   * Returns name of the input field 'FieldValue' given as input by user.
    *
    * @return field value
    */
@@ -86,12 +90,12 @@ public class RowDenormalizerConfig extends AggregatorConfig {
   }
 
   /**
-   * Fetches the output fields or output field alias if provided, to build the output schema.
+   * Fetches the output fields (or output field alias, if provided) to build the output schema.
    *
    * @return List of output fields
    */
-  List<String> getOutputFields() {
-    List<String> fields = new ArrayList<String>();
+  Set<String> getOutputFields() {
+    Set<String> fields = new HashSet<String>();
     for (String field : Splitter.on(',').trimResults().split(outputFields)) {
       String[] value = field.split(":");
       if (value.length == 1) {
@@ -104,15 +108,6 @@ public class RowDenormalizerConfig extends AggregatorConfig {
   }
 
   /**
-   * Returns the output schema
-   *
-   * @return schema
-   */
-  String getSchema() {
-    return schema;
-  }
-
-  /**
    * Creates a map for output field and its alias, if present.
    *
    * @return Map of output fields and its alias
@@ -122,7 +117,7 @@ public class RowDenormalizerConfig extends AggregatorConfig {
     for (String field : Splitter.on(',').trimResults().split(outputFields)) {
       String[] value = field.split(":");
       if (value.length == 1) {
-        outputFieldMappings.put(value[0], CHECK_ALIAS);
+        outputFieldMappings.put(value[0], null);
       } else {
         outputFieldMappings.put(value[0], value[1]);
       }
@@ -131,20 +126,7 @@ public class RowDenormalizerConfig extends AggregatorConfig {
   }
 
   /**
-   * Parses whether the schema json is proper or not
-   *
-   * @return schema
-   */
-  Schema parseSchema() {
-    try {
-      return Strings.isNullOrEmpty(schema) ? null : Schema.parseJson(schema);
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Invalid schema: " + e.getMessage());
-    }
-  }
-
-  /**
-   * Validates the config input coming from UI
+   * Validates the config properties set by the user.
    */
   void validate() {
     if (keyField.isEmpty()) {
@@ -158,4 +140,3 @@ public class RowDenormalizerConfig extends AggregatorConfig {
     }
   }
 }
-
