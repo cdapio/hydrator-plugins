@@ -14,15 +14,7 @@
         {
           "widget-type": "textarea",
           "label": "COBOL Copybook Contents",
-          "name": "copybookContents",
-          "widget-attributes": {
-            "rows": "4"
-          },
-          "plugin-function": {
-            "method": "POST",
-            "endpoint": "getSchema",
-            "output-property": "schema"
-          }
+          "name": "copybookContents"
         },
         {
           "widget-type": "textbox",
@@ -31,8 +23,8 @@
         },
         {
           "widget-type": "textbox",
-          "label": "Input File Structure",
-          "name": "fileStructure"
+          "label": "Maximum Split Size",
+          "name": "maxSplitSize"
         }
       ]
     }
@@ -48,7 +40,6 @@
           "long",
           "float",
           "double",
-          "bytes",
           "string"
         ],
         "schema-default-type": "string"

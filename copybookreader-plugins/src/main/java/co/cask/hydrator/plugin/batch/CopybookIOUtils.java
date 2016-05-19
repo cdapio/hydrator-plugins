@@ -17,7 +17,6 @@
 package co.cask.hydrator.plugin.batch;
 
 import net.sf.JRecord.Common.CommonBits;
-import net.sf.JRecord.Common.Constants;
 import net.sf.JRecord.Common.RecordException;
 import net.sf.JRecord.Details.LayoutDetail;
 import net.sf.JRecord.Details.LineProvider;
@@ -68,9 +67,6 @@ public class CopybookIOUtils {
     for (ExternalField field : externalRecord.getRecordFields()) {
       recordByteLength += field.getLen();
     }
-    if (Constants.IO_VB == fileStructure) {
-      recordByteLength += 4;
-    }
     return recordByteLength;
   }
 
@@ -85,8 +81,7 @@ public class CopybookIOUtils {
    * @throws IOException
    */
   public static AbstractLineReader getAndOpenLineReader(InputStream is, int fileStructure,
-                                                        ExternalRecord externalRecord)
-    throws RecordException, IOException {
+    ExternalRecord externalRecord) throws RecordException, IOException {
 
     LineProvider lineProvider = LineIOProvider.getInstance().getLineProvider(fileStructure, FONT);
     AbstractLineReader reader = LineIOProvider.getInstance().getLineReader(fileStructure, lineProvider);

@@ -33,14 +33,15 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.LinkedHashMap;
 
 /**
+ * Record Reader for CopybookReader plugin.
+ * <p>
  * This will return the field name and value using the binary data and copybook contents, to be used as the
  * transform method input.
  */
-public class CopybookRecordReader extends RecordReader<LongWritable, Map<String, AbstractFieldValue>> {
+public class CopybookRecordReader extends RecordReader<LongWritable, LinkedHashMap<String, AbstractFieldValue>> {
 
   private AbstractLineReader reader;
   private ExternalRecord externalRecord;
@@ -49,18 +50,18 @@ public class CopybookRecordReader extends RecordReader<LongWritable, Map<String,
   private long position;
   private long end;
   private LongWritable key = null;
-  private Map<String, AbstractFieldValue> value = null;
+  private LinkedHashMap<String, AbstractFieldValue> value = null;
 
   @Override
   public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
     // Get configuration
     Configuration conf = context.getConfiguration();
-    int fileStructure = conf.getInt(CopybookConstants.COPYBOOK_INPUTFORMAT_FILE_STRUCTURE,
-                                    CopybookConstants.DEFAULT_FILE_STRUCTURE);
-    Path path = new Path(conf.get(CopybookConstants.COPYBOOK_INPUTFORMAT_DATA_HDFS_PATH));
+    int fileStructure = conf.getInt(CopybookInputFormat.COPYBOOK_INPUTFORMAT_FILE_STRUCTURE,
+                                    CopybookInputFormat.DEFAULT_FILE_STRUCTURE);
+    Path path = new Path(conf.get(CopybookInputFormat.COPYBOOK_INPUTFORMAT_DATA_HDFS_PATH));
     FileSystem fs = FileSystem.get(path.toUri(), conf);
     // Create input stream for the COBOL copybook contents
-    InputStream inputStream = IOUtils.toInputStream(conf.get(CopybookConstants.COPYBOOK_INPUTFORMAT_CBL_CONTENTS),
+    InputStream inputStream = IOUtils.toInputStream(conf.get(CopybookInputFormat.COPYBOOK_INPUTFORMAT_CBL_CONTENTS),
                                                     "UTF-8");
     BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
     try {
@@ -97,16 +98,13 @@ public class CopybookRecordReader extends RecordReader<LongWritable, Map<String,
     if (key == null) {
       key = new LongWritable();
     }
-    value = new HashMap();
+    value = new LinkedHashMap<>();
     position += recordByteLength;
     key.set(position);
     for (ExternalField field : externalRecord.getRecordFields()) {
-      // Check if the field is binary.
-      // In the case of binary fields, encode using Base64 format to preseve data consistency.
       //TODO: Check int value for data types returned by jrecord to match Java data types and create schema accordingly.
       AbstractFieldValue fieldValue = line.getFieldValue(field.getName());
       value.put(field.getName(), fieldValue);
-
     }
     key.set(position);
     return true;
@@ -118,7 +116,7 @@ public class CopybookRecordReader extends RecordReader<LongWritable, Map<String,
   }
 
   @Override
-  public Map<String, AbstractFieldValue> getCurrentValue() throws IOException, InterruptedException {
+  public LinkedHashMap<String, AbstractFieldValue> getCurrentValue() throws IOException, InterruptedException {
     return value;
   }
 
