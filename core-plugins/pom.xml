@@ -199,7 +199,6 @@
               co.cask.hydrator.plugin.validator.*;
               co.cask.hydrator.plugin.common;
               parquet.avro.*;
-              parquet.hadoop.*
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
