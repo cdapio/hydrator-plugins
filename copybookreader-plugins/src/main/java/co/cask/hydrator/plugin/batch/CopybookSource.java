@@ -30,10 +30,10 @@ import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.common.SourceInputFormatProvider;
 import co.cask.hydrator.common.batch.JobUtils;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import net.sf.JRecord.Common.AbstractFieldValue;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.Job;
 
@@ -77,24 +77,26 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, Abstra
     if (config.schema != null) {
       outputSchema = config.parseSchema();
     }
+    if (config.maxSplitSize == null) {
+      config.maxSplitSize = DEFAULT_MAX_SPLIT_SIZE;
+    }
   }
 
   @Override
   public void prepareRun(BatchSourceContext context) throws IOException {
     Job job = JobUtils.createInstance();
-    Configuration conf = job.getConfiguration();
     CopybookInputFormat.setCopybookInputformatCblContents(job, config.copybookContents);
     CopybookInputFormat.setBinaryFilePath(job, config.binaryFilePath);
     // Set the input file path for the job
     CopybookInputFormat.setInputPaths(job, config.binaryFilePath);
-    CopybookInputFormat.setMaxInputSplitSize(job, conf.getLong(CopybookInputFormat.MAX_SPLIT_SIZE_DESCRIPTION,
-                                                               DEFAULT_MAX_SPLIT_SIZE));
-    context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(CopybookInputFormat.class, conf)));
+    CopybookInputFormat.setMaxInputSplitSize(job, config.maxSplitSize);
+    context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(CopybookInputFormat.class,
+                                                                                  job.getConfiguration())));
   }
 
   @Override
   public void transform(KeyValue<LongWritable, Map<String, AbstractFieldValue>> input,
-    Emitter<StructuredRecord> emitter)
+                        Emitter<StructuredRecord> emitter)
     throws Exception {
     Map<String, AbstractFieldValue> value = input.getValue();
     if (outputSchema == null) {
@@ -119,7 +121,16 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, Abstra
    * @throws IOException
    */
   private Object parseValue(Schema.Field field, @Nullable AbstractFieldValue value) throws IOException {
-    switch (field.getSchema().getType()) {
+    String fieldName = field.getName();
+    Schema fieldSchema = field.getSchema();
+    if (value == null) {
+      if (!fieldSchema.isNullable()) {
+        throw new IllegalArgumentException("NULL value found for non-nullable field : " + fieldName);
+      }
+      return null;
+    }
+    Schema.Type fieldType = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
+    switch (fieldType) {
       case NULL:
         return null;
       case INT:
@@ -134,17 +145,10 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, Abstra
         return value.asFloat();
       case STRING:
         return value.asString();
-      case UNION:
-        if (field.getSchema().isNullableSimple()) {
-          try {
-            return parseValue(Schema.Field.of(field.getName(), field.getSchema().getNonNullable()), value);
-          } catch (Exception e) {
-            return null;
-          }
-        }
+      default:
+        throw new IOException(String.format("Unsupported schema: %s for field: \'%s\'", field.getSchema(),
+                                            field.getName()));
     }
-    throw new IOException(String.format("Unsupported schema: %s for field: \'%s\'", field.getSchema(),
-                                        field.getName()));
   }
 
   /**
@@ -214,6 +218,7 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, Abstra
       this.maxSplitSize = DEFAULT_MAX_SPLIT_SIZE;
     }
 
+    @VisibleForTesting
     public Long getMaxSplitSize() {
       return maxSplitSize;
     }

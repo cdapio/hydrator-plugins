@@ -38,17 +38,9 @@ import java.util.LinkedHashMap;
  */
 public class CopybookInputFormat extends FileInputFormat<LongWritable, LinkedHashMap<String, AbstractFieldValue>> {
 
-  public static final int DEFAULT_FILE_STRUCTURE = net.sf.JRecord.Common.Constants.IO_FIXED_LENGTH;
-
   public static final String COPYBOOK_INPUTFORMAT_CBL_CONTENTS = "copybook.inputformat.cbl.contents";
-  // For this initial implementation, only fixed-length binary files will be accepted.
-  // This will not handle complex nested structures of the COBOL copybook, or redefines or iterators in the structure.
-  public static final String COPYBOOK_INPUTFORMAT_FILE_STRUCTURE = "copybook.inputformat.input.filestructure";
 
   public static final String COPYBOOK_INPUTFORMAT_DATA_HDFS_PATH = "copybook.inputformat.data.hdfs.path";
-
-  public static final String MAX_SPLIT_SIZE_DESCRIPTION = "Maximum split-size for each mapper in the MapReduce " +
-    "Job. Defaults to 128MB.";
 
   public static void setCopybookInputformatCblContents(Job job, String copybookCOntents) {
     job.getConfiguration().set(COPYBOOK_INPUTFORMAT_CBL_CONTENTS, copybookCOntents);

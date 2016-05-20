@@ -56,8 +56,7 @@ public class CopybookRecordReader extends RecordReader<LongWritable, LinkedHashM
   public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
     // Get configuration
     Configuration conf = context.getConfiguration();
-    int fileStructure = conf.getInt(CopybookInputFormat.COPYBOOK_INPUTFORMAT_FILE_STRUCTURE,
-                                    CopybookInputFormat.DEFAULT_FILE_STRUCTURE);
+    int fileStructure = net.sf.JRecord.Common.Constants.IO_FIXED_LENGTH;
     Path path = new Path(conf.get(CopybookInputFormat.COPYBOOK_INPUTFORMAT_DATA_HDFS_PATH));
     FileSystem fs = FileSystem.get(path.toUri(), conf);
     // Create input stream for the COBOL copybook contents
