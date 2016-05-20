@@ -24,8 +24,8 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchAggregator;
+import co.cask.cdap.etl.api.batch.BatchAggregatorContext;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
-import com.google.common.base.Strings;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -38,12 +38,12 @@ import java.util.Set;
  */
 @Plugin(type = BatchAggregator.PLUGIN_TYPE)
 @Name("RowDenormalizer")
-@Description("This plugin is used to convert raw data into de-normalized data based on a key column." +
+@Description("This plugin is used to convert raw data into denormalized data based on a key column. " +
   "User is able to specify the list of fields that should be used in the denormalized record, with " +
   "an option to use an alias for the output field name. " +
-  "For example:" +
+  "For example, " +
   "'ADDRESS' in the input is mapped to 'addr' in the output schema. The denormalized data is easier to query.")
-public class RowDenormalizerAggregator extends RecordAggregator {
+public class RowDenormalizerAggregator extends BatchAggregator<String, StructuredRecord, StructuredRecord> {
 
   private final RowDenormalizerConfig conf;
   private Map<String, String> outputMappings;
@@ -52,8 +52,14 @@ public class RowDenormalizerAggregator extends RecordAggregator {
   private String keyField;
 
   public RowDenormalizerAggregator(RowDenormalizerConfig conf) {
-    super(conf.numPartitions);
     this.conf = conf;
+  }
+
+  @Override
+  public void prepareRun(BatchAggregatorContext context) throws Exception {
+    if (conf.numPartitions != null) {
+      context.setNumPartitions(conf.numPartitions);
+    }
   }
 
   @Override
@@ -71,28 +77,24 @@ public class RowDenormalizerAggregator extends RecordAggregator {
   }
 
   @Override
-  public void groupBy(StructuredRecord record, Emitter<StructuredRecord> emitter) throws Exception {
-    Schema keyFieldSchema = Schema.recordOf("record", Schema.Field.of(keyField, Schema.of(Schema.Type.STRING)));
-    StructuredRecord.Builder builder = StructuredRecord.builder(keyFieldSchema);
-    builder.set(keyField, record.get(keyField));
-    emitter.emit(builder.build());
+  public void groupBy(StructuredRecord record, Emitter<String> emitter) throws Exception {
+    emitter.emit(record.get(keyField).toString());
   }
 
   @Override
-  public void aggregate(StructuredRecord groupKey, Iterator<StructuredRecord> iterator,
+  public void aggregate(String groupKey, Iterator<StructuredRecord> iterator,
                         Emitter<StructuredRecord> emitter) throws Exception {
     if (!iterator.hasNext()) {
       return;
     }
     StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
-    builder.set(conf.getKeyField(), groupKey.get(groupKey.getSchema().getFields().get(0).getName()));
+    builder.set(conf.getKeyField(), groupKey);
     while (iterator.hasNext()) {
       StructuredRecord record = iterator.next();
       String fieldName = record.get(conf.getFieldName());
+      fieldName = outputMappings.containsKey(fieldName) ? outputMappings.get(fieldName) : fieldName;
       if (outputFields.contains(fieldName)) {
         builder.set(fieldName, record.get(conf.getFieldValue()));
-      } else if ((outputMappings.containsKey(fieldName)) && (!Strings.isNullOrEmpty(outputMappings.get(fieldName)))) {
-        builder.set(outputMappings.get(fieldName), record.get(conf.getFieldValue()));
       }
     }
     emitter.emit(builder.build());

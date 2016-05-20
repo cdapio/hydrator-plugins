@@ -30,27 +30,27 @@ import java.util.Set;
  */
 public class RowDenormalizerConfig extends AggregatorConfig {
 
-  @Description("Name of the column in the input record which will be used to group the raw data. For Example: " +
-    "KeyField")
+  @Description("Name of the column in the input record which will be used to group the raw data. For Example, " +
+    "KeyField.")
   private final String keyField;
 
-  @Description("Name of the column in the input record which contains the names of output schema columns." +
-    "For example:" +
-    "Input Record has columns 'KeyField', 'FieldName', 'FieldValue'" +
-    "'FieldName' contains 'FirstName', 'LastName','Address'" +
-    "So Output Record will have column names as 'FirstName', 'LastName','Address'.")
+  @Description("Name of the column in the input record which contains the names of output schema columns. " +
+    "For example, " +
+    "input records have columns 'KeyField', 'FieldName', 'FieldValue'. " +
+    "'FieldName' contains 'FirstName', 'LastName', 'Address'. " +
+    "So the output record will have column names as 'FirstName', 'LastName', 'Address'.")
   private final String fieldName;
 
-  @Description("Name of the column in the input record which contains the values for output schema columns." +
-    "For example:" +
-    "Input Record has columns 'KeyField', 'FieldName', 'FieldValue' " +
-    "and 'FieldValue' column contains 'John', 'Wagh', 'NE Lakeside'" +
-    "So Output Record will have values for columns 'FirstName', 'LastName','Address' as 'John', 'Wagh', 'NE " +
+  @Description("Name of the column in the input record which contains the values for output schema columns. " +
+    "For example, " +
+    "input records have columns 'KeyField', 'FieldName', 'FieldValue' " +
+    "and the 'FieldValue' column contains 'John', 'Wagh', 'NE Lakeside'. " +
+    "So the output record will have values for columns 'FirstName', 'LastName', 'Address' as 'John', 'Wagh', 'NE " +
     "Lakeside' respectively.")
   private final String fieldValue;
 
   @Description("List of the output fields with its alias to be included in denormalized output. This is a comma " +
-    "separated list of key-value pairs, where key-value pairs are separated by a colon ':'. For example: " +
+    "separated list of key-value pairs, where key-value pairs are separated by a colon ':'. For example, " +
     "Firstname:fname,Lastname:lname,Address:addr")
   private final String outputFields;
 
@@ -116,9 +116,7 @@ public class RowDenormalizerConfig extends AggregatorConfig {
     Map<String, String> outputFieldMappings = new HashMap<String, String>();
     for (String field : Splitter.on(',').trimResults().split(outputFields)) {
       String[] value = field.split(":");
-      if (value.length == 1) {
-        outputFieldMappings.put(value[0], null);
-      } else {
+      if (value.length == 2) {
         outputFieldMappings.put(value[0], value[1]);
       }
     }
@@ -130,13 +128,13 @@ public class RowDenormalizerConfig extends AggregatorConfig {
    */
   void validate() {
     if (keyField.isEmpty()) {
-      throw new IllegalArgumentException("The 'Key Field' property must be set.");
+      throw new IllegalArgumentException("The 'keyField' property must be set.");
     } else if (fieldName.isEmpty()) {
-      throw new IllegalArgumentException("The 'Input Field Name' property must be set.");
+      throw new IllegalArgumentException("The 'fieldName' property must be set.");
     } else if (fieldValue.isEmpty()) {
-      throw new IllegalArgumentException("The 'Input Field Value' property must be set.");
+      throw new IllegalArgumentException("The 'fieldValue' property must be set.");
     } else if (outputFields.isEmpty()) {
-      throw new IllegalArgumentException("The 'OutputFields' property must be set.");
+      throw new IllegalArgumentException("The 'outputFields' property must be set.");
     }
   }
 }

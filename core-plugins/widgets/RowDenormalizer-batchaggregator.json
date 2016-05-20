@@ -1,0 +1,51 @@
+{
+  "metadata": {
+    "spec-version": "1.1",
+    "label": "RowDenormalizer"
+  },
+  "configuration-groups": [
+    {
+      "label": "General",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Key Field",
+          "name": "keyField"
+        },
+		{
+          "widget-type": "textbox",
+          "label": "Input Field Name",
+          "name": "fieldName"
+        },
+		{
+          "widget-type": "textbox",
+          "label": "Input Field Value",
+          "name": "fieldValue"
+        },
+    
+        {
+          "widget-type": "keyvalue",
+          "label": "Output Fields",
+          "name": "outputFields",
+          "widget-attributes": {
+			"showDelimiter": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "label": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "string",
+          "map<string,string>"
+        ],
+        "schema-default-type": "string"
+      }
+    }
+  ]
+}

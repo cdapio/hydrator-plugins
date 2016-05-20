@@ -28,14 +28,13 @@ import org.junit.Test;
  */
 public class RowDenormalizerConfigTest {
 
-  @Test(expected = NullPointerException.class)
+  @Test
   public void testDenormalizerConfig() {
     RowDenormalizerConfig config = new RowDenormalizerConfig("KeyField", "FieldName", "FieldValue", "Firstname:," +
       "Lastname:lname,Address:addr");
 
     Assert.assertEquals(ImmutableSet.of("Firstname", "lname", "addr"), config.getOutputFields());
-    Assert.assertEquals(ImmutableMap.of("Firstname", null, "Lastname", "lname",
-                                        "Address", "addr"), config.getOutputFieldMappings());
+    Assert.assertEquals(ImmutableMap.of("Lastname", "lname", "Address", "addr"), config.getOutputFieldMappings());
   }
 
   @Test(expected = IllegalArgumentException.class)
