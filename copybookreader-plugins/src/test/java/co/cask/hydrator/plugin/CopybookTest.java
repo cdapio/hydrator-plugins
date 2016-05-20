@@ -151,6 +151,7 @@ public class CopybookTest extends HydratorTestBase {
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put("binaryFilePath", "src/test/resources/DTAR020_FB.bin")
       .put("copybookContents", cblContents)
+      .put("maxSplitSize", "5")
       .build();
 
     ETLStage source = new ETLStage("CopybookReader", new ETLPlugin("CopybookReader", BatchSource.PLUGIN_TYPE,
@@ -175,7 +176,6 @@ public class CopybookTest extends HydratorTestBase {
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
-
     Assert.assertEquals("Expected records", 5, output.size());
   }
 
@@ -185,8 +185,6 @@ public class CopybookTest extends HydratorTestBase {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put("binaryFilePath", "src/test/resources/DTAR020_FB.txt")
-      .put("copybookContents", cblContents)
-      .put("fileStructure", "0")
       .build();
 
     ETLStage source = new ETLStage("CopybookReader", new ETLPlugin("CopybookReader", BatchSource.PLUGIN_TYPE,
@@ -213,10 +211,9 @@ public class CopybookTest extends HydratorTestBase {
 
   @Test
   public void testDefaults() {
-
     CopybookSource.CopybookSourceConfig copybookSourceConfig = new CopybookSource.CopybookSourceConfig();
-    Assert.assertEquals(Integer.toString(net.sf.JRecord.Common.Constants.IO_FIXED_LENGTH),
-                        copybookSourceConfig.getFileStructure());
+    Assert.assertEquals(Long.toString(CopybookSource.DEFAULT_MAX_SPLIT_SIZE),
+                        copybookSourceConfig.getMaxSplitSize().toString());
   }
 }
 
