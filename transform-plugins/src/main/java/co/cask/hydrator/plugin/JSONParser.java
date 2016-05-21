@@ -27,8 +27,16 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
 import co.cask.cdap.format.StructuredRecordStringConverter;
+import com.google.common.collect.Maps;
+import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Transform parses a JSON Object into {@link StructuredRecord}.
@@ -37,10 +45,20 @@ import java.io.IOException;
 @Name("JSONParser")
 @Description("Parses JSON Object into a Structured Record.")
 public final class JSONParser extends Transform<StructuredRecord, StructuredRecord> {
+  private static final Logger LOG = LoggerFactory.getLogger(JSONParser.class);
+
   private final Config config;
 
   // Output Schema that specifies the fileds of JSON object. 
   private Schema outSchema;
+
+  // Map of field name to path as specified in the configuration, if none specified then it's direct mapping.
+  private Map<String, String> mapping = Maps.newHashMap();
+
+  private List<Schema.Field> fields;
+
+  // Specifies whether mapping is simple or complex.
+  private boolean isSimple = true;
 
   // Mainly used for testing.
   public JSONParser(Config config) {
@@ -53,6 +71,7 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
     try {
       Schema outputSchema = Schema.parseJson(config.schema);
       pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
+      fields = outputSchema.getFields();
     } catch (IOException e) {
       throw new IllegalArgumentException("Output Schema specified is not a valid JSON. Please check the Schema JSON");
     }
@@ -60,6 +79,21 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
     if (inputSchema != null && inputSchema.getField(config.field) == null) {
       throw new IllegalArgumentException(String.format("Field %s is not present in input schema", config.field));
+    }
+
+    // If there is not config mapping, then we attempt to directly map output schema fields
+    // to JSON directly, but, if there is a mapping specified, then we take the mapping to
+    // populate the output schema fields.
+    // E.g. expensive:$.expensive maps the input Json path from root, field expensive to expensive.
+    if(config.mapping != null && config.mapping.isEmpty()) {
+      isSimple = true;
+    } else {
+      isSimple = false;
+      String[] pathMaps = config.mapping.split(",");
+      for(String pathMap : pathMaps) {
+        String[] fieldAndPath = pathMap.split(":");
+        mapping.put(fieldAndPath[0], fieldAndPath[1]);
+      }
     }
   }
   
@@ -75,7 +109,31 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
   
   @Override
   public void transform(StructuredRecord input, Emitter<StructuredRecord> emitter) throws Exception {
-    emitter.emit(StructuredRecordStringConverter.fromJsonString((String) input.get(config.field), outSchema));
+    // If it's a simple mapping from JSON to output schema, else we use the mapping fields to map the
+    // the JSON using JSON path to fields. This is used for mapping complex JSON schemas.
+    if (isSimple) {
+      emitter.emit(StructuredRecordStringConverter.fromJsonString((String) input.get(config.field), outSchema));
+      return;
+    }
+
+    // When it's not a simple Json to parsed, we use the Json path to map the input Json fields into the
+    // output schema. In order to optimize for reading multiple paths from Json we create a document that
+    // allows the Json to be parsed only once. We then iterate through the output fields and apply the
+    // path.
+    Object document = Configuration.defaultConfiguration().jsonProvider().parse((String) input.get(config.field));
+    StructuredRecord.Builder builder = StructuredRecord.builder(outSchema);
+    for (Schema.Field field : fields) {
+      if (mapping.containsKey(field.getName())) {
+        try {
+          Object value = JsonPath.read(document, mapping.get(field.getName()));
+          builder.set(field.getName(), value);
+        } catch (PathNotFoundException) {
+          LOG.warn("")
+        }
+
+      }
+    }
+    emitter.emit(builder.build());
   }
 
   /**
@@ -86,12 +144,17 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
     @Description("Input Field")
     private String field;
 
+    @Name("mapping")
+    @Description("Mapping complex JSON to fields using JSON Path expressions")
+    private String mapping;
+
     @Name("schema")
     @Description("Output schema")
     private String schema;
 
-    public Config(String field, String schema) {
+    public Config(String field, String mapping, String schema) {
       this.field = field;
+      this.mapping = mapping;
       this.schema = schema;
     }
 
