@@ -81,7 +81,7 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
       throw new IllegalArgumentException(String.format("Field %s is not present in input schema", config.field));
     }
 
-    // If there is not config mapping, then we attempt to directly map output schema fields
+    // If there is no config mapping, then we attempt to directly map output schema fields
     // to JSON directly, but, if there is a mapping specified, then we take the mapping to
     // populate the output schema fields.
     // E.g. expensive:$.expensive maps the input Json path from root, field expensive to expensive.
@@ -116,19 +116,23 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
       return;
     }
 
-    // When it's not a simple Json to parsed, we use the Json path to map the input Json fields into the
-    // output schema. In order to optimize for reading multiple paths from Json we create a document that
+    // When it's not a simple Json to be parsed, we use the Json path to map the input Json fields into the
+    // output schema. In order to optimize for reading multiple paths from the Json we create a document that
     // allows the Json to be parsed only once. We then iterate through the output fields and apply the
-    // path.
+    // path to extract the fields.
     Object document = Configuration.defaultConfiguration().jsonProvider().parse((String) input.get(config.field));
     StructuredRecord.Builder builder = StructuredRecord.builder(outSchema);
     for (Schema.Field field : fields) {
       if (mapping.containsKey(field.getName())) {
+        String name = field.getName();
+        String path = mapping.get(name);
         try {
-          Object value = JsonPath.read(document, mapping.get(field.getName()));
+          Object value = JsonPath.read(document, path);
           builder.set(field.getName(), value);
-        } catch (PathNotFoundException) {
-          LOG.warn("")
+        } catch (PathNotFoundException e) {
+          LOG.error("Json path '" + path + "' specified for the field '" + name + "' doesn't exist. " +
+                      "Fix the issue before proceeding further with processing.");
+          throw e;
         }
 
       }
