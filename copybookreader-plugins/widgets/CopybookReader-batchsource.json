@@ -13,12 +13,12 @@
         },
         {
           "widget-type": "textarea",
-          "label": "COBOL Copybook Contents",
+          "label": "COBOL Copybook",
           "name": "copybookContents"
         },
         {
           "widget-type": "textbox",
-          "label": "BinaryFile Path",
+          "label": "Binary File Path",
           "name": "binaryFilePath"
         },
         {

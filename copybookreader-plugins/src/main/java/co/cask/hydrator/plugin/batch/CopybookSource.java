@@ -56,7 +56,7 @@ import javax.annotation.Nullable;
 @Description("Batch Source to read COBOL Copybook fixed-length flat files")
 public class CopybookSource extends BatchSource<LongWritable, Map<String, AbstractFieldValue>, StructuredRecord> {
 
-  public static final long DEFAULT_MAX_SPLIT_SIZE = 134217728;
+  public static final long DEFAULT_MAX_SPLIT_SIZE_IN_MB = 1;
   private final CopybookSourceConfig config;
   private Schema outputSchema;
 
@@ -78,7 +78,7 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, Abstra
       outputSchema = config.parseSchema();
     }
     if (config.maxSplitSize == null) {
-      config.maxSplitSize = DEFAULT_MAX_SPLIT_SIZE;
+      config.maxSplitSize = DEFAULT_MAX_SPLIT_SIZE_IN_MB * 1024 * 1024;
     }
   }
 
@@ -215,7 +215,7 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, Abstra
 
     public CopybookSourceConfig() {
       super(String.format("CopybookReader"));
-      this.maxSplitSize = DEFAULT_MAX_SPLIT_SIZE;
+      this.maxSplitSize = DEFAULT_MAX_SPLIT_SIZE_IN_MB * 1024 * 1024;
     }
 
     @VisibleForTesting
