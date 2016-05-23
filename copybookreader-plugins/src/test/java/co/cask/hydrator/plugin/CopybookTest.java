@@ -212,7 +212,7 @@ public class CopybookTest extends HydratorTestBase {
   @Test
   public void testDefaults() {
     CopybookSource.CopybookSourceConfig copybookSourceConfig = new CopybookSource.CopybookSourceConfig();
-    Assert.assertEquals(Long.toString(CopybookSource.DEFAULT_MAX_SPLIT_SIZE_IN_MB),
+    Assert.assertEquals(Long.toString(CopybookSource.DEFAULT_MAX_SPLIT_SIZE_IN_MB * 1024 * 1024),
                         copybookSourceConfig.getMaxSplitSize().toString());
   }
 }
