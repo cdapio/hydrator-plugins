@@ -129,8 +129,8 @@ an array.
 
 Configuration
 -------------
-| Field | Description |
-|---------------------|-------------|
+| Config | Description |
+|--------|-------------|
 |**field** | Specifies the input field that should be parsed as a CSV Record.|
 |**mapping** | Mapping specifying output field name to input Json path for extracting the field.|
 |**schema** | Specifies the output schema for the JSON Record.|
