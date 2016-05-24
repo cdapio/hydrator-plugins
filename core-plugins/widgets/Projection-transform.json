@@ -10,7 +10,6 @@
           "widget-type": "keyvalue",
           "label": "Convert",
           "name": "convert",
-          "description": "List of fields to be converted to a different type. The key specifies the name of the field to convert, with its corresponding value specifying the type to convert it to. Only simple types are supported (boolean, int, long, float, double, bytes, string). Any simple type can be converted to bytes or a string. A string can be converted to any simple type, assuming it is the string representation of that type. Otherwise, a type can only be converted to a larger type. For example, an int can be converted to a long, but a long cannot be converted to an int.",
           "widget-attributes": {
             "showDelimiter": "false"
           }
@@ -19,7 +18,6 @@
           "widget-type": "csv",
           "label": "Fields to drop",
           "name": "drop",
-          "description": "List of fields to drop.",
           "widget-attributes": {
             "delimiter": ","
           }
@@ -28,7 +26,6 @@
           "widget-type": "keyvalue",
           "label": "Fields to rename",
           "name": "rename",
-          "description": "List of fields to rename. The key specifies the name of the field to rename, with its corresponding value specifying the new name for that field. Rename occurs after 'drop' and 'convert' have been applied.",
           "widget-attributes": {
             "showDelimiter": "false"
           }
