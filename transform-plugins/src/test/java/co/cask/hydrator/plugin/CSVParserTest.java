@@ -47,6 +47,29 @@ public class CSVParserTest {
                                                         Schema.Field.of("d", Schema.of(Schema.Type.DOUBLE)),
                                                         Schema.Field.of("e", Schema.of(Schema.Type.BOOLEAN)));
 
+  // Input record for pass through.
+  private static final Schema INPUT2 = Schema.recordOf("input2",
+                                                       Schema.Field.of("body", Schema.of(Schema.Type.STRING)),
+                                                       Schema.Field.of("offset", Schema.of(Schema.Type.LONG)));
+
+  // Correct schema type pass through for output schema.
+  private static final Schema OUTPUT3 = Schema.recordOf("output3",
+                                                        Schema.Field.of("a", Schema.of(Schema.Type.LONG)),
+                                                        Schema.Field.of("b", Schema.of(Schema.Type.STRING)),
+                                                        Schema.Field.of("c", Schema.of(Schema.Type.INT)),
+                                                        Schema.Field.of("d", Schema.of(Schema.Type.DOUBLE)),
+                                                        Schema.Field.of("e", Schema.of(Schema.Type.BOOLEAN)),
+                                                        Schema.Field.of("offset", Schema.of(Schema.Type.LONG)));
+
+  // Wrong schema type pass through for output schema.
+  private static final Schema OUTPUT4 = Schema.recordOf("output4",
+                                                        Schema.Field.of("a", Schema.of(Schema.Type.LONG)),
+                                                        Schema.Field.of("b", Schema.of(Schema.Type.STRING)),
+                                                        Schema.Field.of("c", Schema.of(Schema.Type.INT)),
+                                                        Schema.Field.of("d", Schema.of(Schema.Type.DOUBLE)),
+                                                        Schema.Field.of("e", Schema.of(Schema.Type.BOOLEAN)),
+                                                        Schema.Field.of("offset", Schema.of(Schema.Type.INT)));
+
   @Test
   public void testNullableFields() throws Exception {
     Schema schema = Schema.recordOf("nullables",
@@ -224,6 +247,32 @@ public class CSVParserTest {
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT1);
     transform.configurePipeline(mockPipelineConfigurer);
     Assert.assertEquals(OUTPUT1, mockPipelineConfigurer.getOutputSchema());
+  }
+
+  @Test
+  public void testPassThrough() throws Exception {
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    CSVParser.Config config = new CSVParser.Config("DEFAULT", "body", OUTPUT3.toString());
+    Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT2);
+    transform.configurePipeline(mockPipelineConfigurer);
+    transform.initialize(null);
+    transform.transform(StructuredRecord.builder(INPUT2)
+                          .set("body", "10,stringA,3,4.32,true").set("offset", 10).build(), emitter);
+    Assert.assertEquals(10L, emitter.getEmitted().get(0).get("a"));
+    Assert.assertEquals("stringA", emitter.getEmitted().get(0).get("b"));
+    Assert.assertEquals(3, emitter.getEmitted().get(0).get("c"));
+    Assert.assertEquals(4.32, emitter.getEmitted().get(0).get("d"));
+    Assert.assertEquals(true, emitter.getEmitted().get(0).get("e"));
+    Assert.assertEquals(10, emitter.getEmitted().get(0).get("offset")); // Pass through from input.
+  }
+
+  @Test (expected = IllegalArgumentException.class)
+  public void testPassThroughTypeMisMatch() throws Exception {
+    CSVParser.Config config = new CSVParser.Config("DEFAULT", "body", OUTPUT4.toString());
+    Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT2);
+    transform.configurePipeline(mockPipelineConfigurer);
   }
 
 }
