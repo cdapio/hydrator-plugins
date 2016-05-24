@@ -53,12 +53,12 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
   private Schema outSchema;
 
   // Map of field name to path as specified in the configuration, if none specified then it's direct mapping.
-  private Map<String, String> mapping = Maps.newHashMap();
+  private final Map<String, String> mapping = Maps.newHashMap();
 
   private List<Schema.Field> fields;
 
   // Specifies whether mapping is simple or complex.
-  private boolean isSimple = true;
+  private boolean isSimple;
 
   // Mainly used for testing.
   public JSONParser(Config config) {
@@ -81,20 +81,8 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
       throw new IllegalArgumentException(String.format("Field %s is not present in input schema", config.field));
     }
 
-    // If there is no config mapping, then we attempt to directly map output schema fields
-    // to JSON directly, but, if there is a mapping specified, then we take the mapping to
-    // populate the output schema fields.
-    // E.g. expensive:$.expensive maps the input Json path from root, field expensive to expensive.
-    if(config.mapping != null && config.mapping.isEmpty()) {
-      isSimple = true;
-    } else {
-      isSimple = false;
-      String[] pathMaps = config.mapping.split(",");
-      for(String pathMap : pathMaps) {
-        String[] fieldAndPath = pathMap.split(":");
-        mapping.put(fieldAndPath[0], fieldAndPath[1]);
-      }
-    }
+
+
   }
   
   @Override
@@ -102,7 +90,21 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
     super.initialize(context);
     try {
       outSchema = Schema.parseJson(config.schema);
-    } catch (IOException e) {
+      // If there is no config mapping, then we attempt to directly map output schema fields
+      // to JSON directly, but, if there is a mapping specified, then we take the mapping to
+      // populate the output schema fields.
+      // E.g. expensive:$.expensive maps the input Json path from root, field expensive to expensive.
+      if (config.mapping == null || config.mapping.isEmpty()) {
+        isSimple = true;
+      } else {
+        isSimple = false;
+        String[] pathMaps = config.mapping.split(",");
+        for (String pathMap : pathMaps) {
+          String[] fieldAndPath = pathMap.split(":");
+          mapping.put(fieldAndPath[0], fieldAndPath[1]);
+        }
+      }
+      } catch (IOException e) {
       throw new IllegalArgumentException("Output Schema specified is not a valid JSON. Please check the Schema JSON");
     }
   }
@@ -122,20 +124,25 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
     // path to extract the fields.
     Object document = Configuration.defaultConfiguration().jsonProvider().parse((String) input.get(config.field));
     StructuredRecord.Builder builder = StructuredRecord.builder(outSchema);
-    for (Schema.Field field : fields) {
+
+    for (Schema.Field field : outSchema.getFields()) {
       if (mapping.containsKey(field.getName())) {
         String name = field.getName();
         String path = mapping.get(name);
         try {
           Object value = JsonPath.read(document, path);
-          builder.set(field.getName(), value);
+          builder.set(field.getName(), value.toString());
         } catch (PathNotFoundException e) {
-          LOG.error("Json path '" + path + "' specified for the field '" + name + "' doesn't exist. " +
-                      "Fix the issue before proceeding further with processing.");
-          throw e;
+          // if path is not found setting null. This is a valid use-case, not every field need to be present
+          LOG.trace("Json path '" + path + "' specified for the field '" + name + "' doesn't exist. " +
+                      "not setting this field.");
+
         }
 
+      } else {
+        LOG.debug("Missing mapping for field {}", field.getName());
       }
+
     }
     emitter.emit(builder.build());
   }
