@@ -89,20 +89,20 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
   //
   // E.g. expensive:$.expensive maps the input Json path from root, field expensive to expensive.
   private void extractMappings() {
-    if(config.mapping != null && config.mapping.isEmpty()) {
+    if (config.mapping != null && config.mapping.isEmpty()) {
       isSimple = true;
     } else {
       isSimple = false;
       String[] pathMaps = config.mapping.split(",");
-      for(String pathMap : pathMaps) {
+      for (String pathMap : pathMaps) {
         String[] mapParts = pathMap.split(":");
         String field = mapParts[0];
         String expression = mapParts[1];
-        if(field.isEmpty() && !expression.isEmpty()) {
+        if (field.isEmpty() && !expression.isEmpty()) {
           throw new IllegalArgumentException("Json path expression '" + expression +
                   "' has not output field specified");
         }
-        if(expression.isEmpty() && !field.isEmpty()) {
+        if (expression.isEmpty() && !field.isEmpty()) {
           throw new IllegalArgumentException("Field '" + field + "' doesn't have Json path expression.");
         }
         mapping.put(field, expression);
@@ -153,7 +153,7 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
         // We didn't find the field name in the mapping, we will not attempt to see if the field is present
         // int the input, if it's, then we will transfer the input field value to the output field value.
         Object value = input.get(name);
-        if(value != null) {
+        if (value != null) {
           builder.set(name, value);
         }
       }
