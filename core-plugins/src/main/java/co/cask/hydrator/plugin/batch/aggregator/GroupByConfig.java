@@ -20,6 +20,7 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.plugin.batch.aggregator.function.AggregateFunction;
 import co.cask.hydrator.plugin.batch.aggregator.function.Avg;
+import co.cask.hydrator.plugin.batch.aggregator.function.Concat;
 import co.cask.hydrator.plugin.batch.aggregator.function.Count;
 import co.cask.hydrator.plugin.batch.aggregator.function.CountAll;
 import co.cask.hydrator.plugin.batch.aggregator.function.First;
@@ -176,6 +177,8 @@ public class GroupByConfig extends AggregatorConfig {
           return new First(field, fieldSchema);
         case LAST:
           return new Last(field, fieldSchema);
+        case CONCAT:
+          return new Concat(field, fieldSchema);
       }
       // should never happen
       throw new IllegalStateException("Unknown function type " + function);
@@ -219,6 +222,7 @@ public class GroupByConfig extends AggregatorConfig {
     MIN,
     MAX,
     FIRST,
-    LAST
+    LAST,
+    CONCAT
   }
 }
