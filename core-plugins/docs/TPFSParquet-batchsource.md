@@ -41,6 +41,7 @@ files are in Parquet format:
 
     {
         "name": "TPFSParquet",
+        "type": "batchsource",
         "properties": {
             "name": "webactivity",
             "duration": "5m",

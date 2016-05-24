@@ -17,37 +17,21 @@
 package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.plugin.PluginConfig;
+import co.cask.hydrator.common.Constants;
 
 import javax.annotation.Nullable;
 
 /**
  * Defines a base {@link PluginConfig} that Database source and sink can re-use
  */
-public class DBConfig extends PluginConfig {
+public class DBConfig extends ConnectionConfig {
+  @Name(Constants.Reference.REFERENCE_NAME)
+  @Description(Constants.Reference.REFERENCE_NAME_DESCRIPTION)
+  public String referenceName;
 
-  @Description("JDBC connection string including database name.")
-  public String connectionString;
-
-  @Description("User to use to connect to the specified database. Required for databases that " +
-    "need authentication. Optional for databases that do not require authentication.")
-  @Nullable
-  public String user;
-
-  @Description("Password to use to connect to the specified database. Required for databases that " +
-    "need authentication. Optional for databases that do not require authentication.")
-  @Nullable
-  public String password;
-
-  @Description("Name of the JDBC plugin to use. This is the value of the 'name' key defined in the JSON file " +
-    "for the JDBC plugin.")
-  public String jdbcPluginName;
-
-  @Description("Type of the JDBC plugin to use. This is the value of the 'type' key defined in the JSON file " +
-    "for the JDBC plugin. Defaults to 'jdbc'.")
-  @Nullable
-  public String jdbcPluginType;
-
+  @Name(COLUMN_NAME_CASE)
   @Description("Sets the case of the column names returned from the query. " +
     "Possible options are upper or lower. By default or for any other input, the column names are not modified and " +
     "the names returned from the database are used as-is. Note that setting this property provides predictability " +
@@ -55,13 +39,6 @@ public class DBConfig extends PluginConfig {
     "names are the same when the case is ignored.")
   @Nullable
   public String columnNameCase;
-
-  @Description("Whether to enable auto commit for queries run by this source. Defaults to false. " +
-    "This setting should only matter if you are using a jdbc driver that does not support a false value for " +
-    "auto commit, or a driver that does not support the commit call. For example, the Hive jdbc driver will throw " +
-    "an exception whenever a commit is called. For drivers like that, this should be set to true.")
-  @Nullable
-  Boolean enableAutoCommit;
 
   public DBConfig() {
     jdbcPluginType = "jdbc";
@@ -72,8 +49,14 @@ public class DBConfig extends PluginConfig {
     return enableAutoCommit;
   }
 
-  protected String cleanQuery(String query) {
+  protected String cleanQuery(@Nullable String query) {
+    if (query == null) {
+      return null;
+    }
     query = query.trim();
+    if (query.isEmpty()) {
+      return query;
+    }
     // find the last character that is not whitespace or a semicolon
     int idx = query.length() - 1;
     char currChar = query.charAt(idx);

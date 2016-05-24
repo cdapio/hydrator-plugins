@@ -17,6 +17,8 @@ and store the data in an HBase table.
 
 Properties
 ----------
+**referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
+
 **initialAddress:** The initial address to connect to.
 
 **port:** The RPC port for Cassandra.
@@ -50,6 +52,7 @@ All data from the column family will be read on each run:
 
     {
         "name": "Cassandra",
+        "type": "batchsource",
         "properties": {
             "initialAddress": "localhost",
             "port": "9160",

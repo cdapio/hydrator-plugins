@@ -17,6 +17,8 @@ then write the results to a Database table.
 
 Properties
 ----------
+**referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
+
 **tableName:** The name of the table to read from.
 
 **columnFamily:** The name of the column family to read from.
@@ -46,6 +48,7 @@ This example reads from the 'attr' column family of an HBase table named 'users'
 
     {
         "name": "HBase",
+        "type": "batchsource",
         "properties": {
             "tableName": "users",
             "columnFamily": "attr",

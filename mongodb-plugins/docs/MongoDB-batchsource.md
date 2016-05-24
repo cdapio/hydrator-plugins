@@ -9,6 +9,8 @@ of a specified schema. The user can optionally provide input query, input fields
 
 Configuration
 -------------
+**referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
+
 **connectionString:** MongoDB connection string. Example: `mongodb://localhost:27017/analytics.users` 
 [Reference](http://docs.mongodb.org/manual/reference/connection-string)
 

@@ -25,6 +25,16 @@
           "widget-type": "textbox",
           "label": "Time Zone",
           "name": "timeZone"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Partition Offset",
+          "name": "partitionOffset"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Clean Partitions Older Than",
+          "name": "cleanPartitionsOlderThan"
         }
       ]
     }

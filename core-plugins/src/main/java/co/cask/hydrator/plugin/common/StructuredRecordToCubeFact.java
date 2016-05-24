@@ -25,10 +25,7 @@ import co.cask.cdap.api.dataset.lib.cube.Measurement;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
-import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -66,9 +63,6 @@ import javax.annotation.Nullable;
 </pre>
  */
 public class StructuredRecordToCubeFact {
-  private static final Gson GSON = new Gson();
-  private static final Type STRING_MAP_TYPE = new TypeToken<Map<String, String>>() { }.getType();
-
   private final CubeFactBuilder factBuilder;
 
   public StructuredRecordToCubeFact(Map<String, String> properties) {
@@ -89,7 +83,6 @@ public class StructuredRecordToCubeFact {
       Map<String, String> props = new HashMap<>(properties);
       this.timestampResolver = new TimestampResolver(props);
       this.measurementResolvers = Lists.newArrayList();
-      addMeasurementsFromProperty(props);
       for (Map.Entry<String, String> property : props.entrySet()) {
         if (property.getKey().startsWith(Properties.Cube.MEASUREMENT_PREFIX)) {
           measurementResolvers.add(new MeasurementResolver(property.getKey(), property.getValue()));
@@ -99,14 +92,6 @@ public class StructuredRecordToCubeFact {
         throw new IllegalArgumentException("At least one measurement must be specified with " +
                                              Properties.Cube.MEASUREMENT_PREFIX +
                                              "<measurement_name>=<measurement_type>");
-      }
-    }
-
-    // todo: workaround for CDAP-2944: allows specifying custom props via JSON map in a property value
-    private void addMeasurementsFromProperty(Map<String, String> props) {
-      if (props.containsKey(Properties.Cube.MEASUREMENTS)) {
-        Map<String, String> measurements = GSON.fromJson(props.get(Properties.Cube.MEASUREMENTS), STRING_MAP_TYPE);
-        props.putAll(measurements);
       }
     }
 

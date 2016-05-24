@@ -8,7 +8,7 @@
       "properties": [
         {
           "widget-type": "textbox",
-          "label": "Input field.",
+          "label": "Input Field",
           "name": "field",
           "widget-attributes": {
             "width": "large"

@@ -8,6 +8,11 @@
       "properties": [
         {
           "widget-type": "textbox",
+          "label": "Reference Name",
+          "name": "referenceName"
+        },
+        {
+          "widget-type": "textbox",
           "label": "Username",
           "name": "user"
         },
@@ -51,17 +56,39 @@
       ]
     },
     {
-      "label": "Table Properties",
+      "label": "Database Properties",
       "properties": [
         {
-          "widget-type": "textbox",
-          "label": "Import SQL",
-          "name": "importQuery"
+          "widget-type": "textarea",
+          "label": "Import Query",
+          "name": "importQuery",
+          "widget-attributes": {
+            "rows": "4"
+          },
+          "plugin-function": {
+            "method": "POST",
+            "widget": "getSchema",
+            "output-property": "schema",
+            "plugin-method": "getSchema"
+          }
+        },
+        {
+          "widget-type": "textarea",
+          "label": "Bounding Query",
+          "name": "boundingQuery",
+          "widget-attributes": {
+            "rows": "4"
+          }
         },
         {
           "widget-type": "textbox",
-          "label": "Count SQL",
-          "name": "countQuery"
+          "label": "Split-By Field Name",
+          "name": "splitBy"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Number of Splits to Generate",
+          "name": "numSplits"
         },
         {
           "widget-type": "select",
@@ -78,6 +105,5 @@
         }
       ]
     }
-  ],
-  "outputs": []
+  ]
 }

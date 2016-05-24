@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.batch.InputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
@@ -26,13 +27,11 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
-import co.cask.hydrator.common.ETLUtils;
-import co.cask.hydrator.common.SourceInputFormatProvider;
+import co.cask.hydrator.common.TimeParser;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 
-import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -49,6 +48,7 @@ public abstract class TimePartitionedFileSetSource<KEY, VALUE> extends BatchSour
   /**
    * Config for TimePartitionedFileSetDatasetAvroSource
    */
+  @SuppressWarnings("unused")
   public static class TPFSConfig extends PluginConfig {
     @Description("Name of the TimePartitionedFileSet to read.")
     private String name;
@@ -72,10 +72,10 @@ public abstract class TimePartitionedFileSetSource<KEY, VALUE> extends BatchSour
 
     protected void validate() {
       // check duration and delay
-      long durationInMs = ETLUtils.parseDuration(duration);
+      long durationInMs = TimeParser.parseDuration(duration);
       Preconditions.checkArgument(durationInMs > 0, "Duration must be greater than 0");
       if (!Strings.isNullOrEmpty(delay)) {
-        ETLUtils.parseDuration(delay);
+        TimeParser.parseDuration(delay);
       }
     }
   }
@@ -99,24 +99,15 @@ public abstract class TimePartitionedFileSetSource<KEY, VALUE> extends BatchSour
 
   @Override
   public final void prepareRun(BatchSourceContext context) {
-    Map<String, String> runtimeArgs = context.getRuntimeArguments();
-    long runtime = context.getLogicalStartTime();
-    if (runtimeArgs.containsKey("runtime")) {
-      runtime = Long.parseLong(runtimeArgs.get("runtime"));
-    }
-
-    long duration = ETLUtils.parseDuration(config.duration);
-    long delay = Strings.isNullOrEmpty(config.delay) ? 0 : ETLUtils.parseDuration(config.delay);
-    long endTime = runtime - delay;
+    long duration = TimeParser.parseDuration(config.duration);
+    long delay = Strings.isNullOrEmpty(config.delay) ? 0 : TimeParser.parseDuration(config.delay);
+    long endTime = context.getLogicalStartTime() - delay;
     long startTime = endTime - duration;
     Map<String, String> sourceArgs = Maps.newHashMap();
     TimePartitionedFileSetArguments.setInputStartTime(sourceArgs, startTime);
     TimePartitionedFileSetArguments.setInputEndTime(sourceArgs, endTime);
-    TimePartitionedFileSet source = context.getDataset(config.name, sourceArgs);
-
-    Map<String, String> config = new HashMap<>(source.getInputFormatConfiguration());
-    addInputFormatConfiguration(config);
-    context.setInput(new SourceInputFormatProvider(source.getInputFormatClassName(), config));
+    addInputFormatConfiguration(sourceArgs);
+    context.setInput(Input.ofDataset(config.name, sourceArgs));
   }
 
   /**

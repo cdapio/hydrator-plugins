@@ -16,6 +16,8 @@
 
 package co.cask.hydrator.plugin.batch;
 
+import co.cask.hydrator.plugin.batch.aggregator.DedupTestRun;
+import co.cask.hydrator.plugin.batch.aggregator.GroupByTestRun;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -25,11 +27,13 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-  BatchCubeSinkTestRun.class,
   ETLSnapshotTestRun.class,
   ETLStreamConversionTestRun.class,
   ETLTPFSTestRun.class,
-  ETLMapReduceTestRun.class
+  ETLMapReduceTestRun.class,
+  GroupByTestRun.class,
+  DedupTestRun.class,
+  ETLFTPTestRun.class
 })
 public class BatchPluginsTestSuite extends ETLBatchTestBase {
 }

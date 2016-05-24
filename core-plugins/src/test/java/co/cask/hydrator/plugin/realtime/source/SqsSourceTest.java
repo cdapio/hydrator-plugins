@@ -65,8 +65,8 @@ public class SqsSourceTest {
     sqsClient.sendMessage(queueURL, testMsgExists);
     sqsClient.sendMessage(queueURL, testMsgOrder);
 
-    SqsSource sqsSource = new SqsSource(new SqsSource.SqsConfig("us-west-1", SQSServer.AWS_CRED, SQSServer.AWS_CRED,
-                                                                queueName, sqsServer.getURL()));
+    SqsSource sqsSource = new SqsSource(new SqsSource.SqsConfig("sqs", "us-west-1", SQSServer.AWS_CRED,
+                                                                SQSServer.AWS_CRED, queueName, sqsServer.getURL()));
     sqsSource.initialize(new MockRealtimeContext());
 
     MockEmitter emitter = new MockEmitter();

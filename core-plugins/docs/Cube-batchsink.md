@@ -27,14 +27,15 @@ Properties
 **dataset.cube.resolutions:** Aggregation resolutions to be used if a
 new Cube dataset needs to be created. See [Cube dataset configuration details] for more information.
 
-**dataset.cube.properties:** Provides any dataset properties to be used
-if a new Cube dataset needs to be created; provided as a JSON Map. For
-example, if aggregations are desired on fields ``'abc'`` and ``'xyz'``, the
-property should have the value:
-``{"dataset.cube.aggregation.agg1.dimensions":"abc", "dataset.cube.aggregation.agg2.dimensions":"xyz"}``.
+**dataset.cube.aggregations:** Provides cube aggregation dataset properties to be used
+if a new Cube dataset needs to be created; provided as a collection of aggregation-groups.
+Each aggregation group is identified by a unique name and value is a collection of fields.
+example, if aggregations are desired on fields ``abc`` and ``xyz``, the
+property can have the key ``agg1`` and value ``abc,xyz``:
 See [Cube dataset configuration details] for more information.
+[Cube dataset configuration details]: http://docs.cask.co/cdap/current/en/developers-manual/building-blocks/datasets/cube.html
 
-  [Cube dataset configuration details]: http://docs.cask.co/cdap/current/en/developers-manual/building-blocks/datasets/cube.html
+**dataset.cube.properties:** Provides additional cube dataset properties if needed.
 
 **cubeFact.timestamp.field:** Name of the StructuredRecord field that contains the
 timestamp to be used in the CubeFact. If not provided, the current time of the record
@@ -47,10 +48,11 @@ If not provided, the current time of the record processing will be used as a Cub
 ``cubeFact.timestamp.field`` is provided).
 
 **cubeFact.measurements:** Measurements to be extracted from StructuredRecord to be used
-in CubeFact. Provide properties as a JSON Map. For example, to use the 'price' field as a
-measurement of type gauge, and the 'quantity' field as a measurement of type counter, the
-property should have the value: ``{"cubeFact.measurement.price":"GAUGE",
-"cubeFact.measurement.quantity":"COUNTER"}``.
+in CubeFact. Supports collection of measurements and requires at least one measurement to be provided.
+Each measurement has measurement-name and measurement-type. Currently supported measurement types are COUNTER, GAUGE.
+For example, to use the 'price' field as a
+measurement of type gauge, and the 'quantity' field as a measurement of type counter, you would add two measurements
+one measurement with name `price` and type `GAUGE, second measurement with name `quantity` and type `COUNTER`.
 
 
 Example
@@ -61,17 +63,21 @@ doesn't exist; it then configures measurements to aggregate and specifies the ti
 format for facts being written into the Cube:
 
     {
-        "name": "myCube",
-        "dataset.cube.resolutions": "1,60,3600",
-        "dataset.cube.properties": {
-          "dataset.cube.aggregation.byName.dimensions": "name",
-          "dataset.cube.aggregation.byNameByZip.dimensions": "name,zip",
-        },
-        "cubeFact.timestamp.field": "ts",
-        "cubeFact.timestamp.format": "MM/dd/yyyy HH:mm:ss",
-        "cubeFact.measurements": {
-          "cubeFact.measurement.price": "GAUGE"
-          "cubeFact.measurement.quantity": "COUNTER"
+        "name": "Cube",
+        "type": "batchsink",
+        "properties": {
+            "name": "myCube",
+            "dataset.cube.resolutions": "1,60,3600",
+            "dataset.cube.properties": "{
+                \"dataset.cube.aggregation.byName.dimensions\": \"name\",
+                \"dataset.cube.aggregation.byNameByZip.dimensions\": \"name,zip\"
+            }",
+            "cubeFact.timestamp.field": "ts",
+            "cubeFact.timestamp.format": "MM/dd/yyyy HH:mm:ss",
+            "cubeFact.measurements": "{
+                \"cubeFact.measurement.price\": \"GAUGE\",
+                \"cubeFact.measurement.quantity\": \"COUNTER\"
+            }"
         }
     }
 

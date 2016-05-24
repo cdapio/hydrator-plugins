@@ -20,10 +20,12 @@ import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
 import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.etl.batch.config.ETLBatchConfig;
+import co.cask.cdap.etl.api.batch.BatchSink;
+import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
-import co.cask.cdap.etl.common.ETLStage;
-import co.cask.cdap.etl.common.Plugin;
+import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
+import co.cask.cdap.etl.proto.v2.ETLPlugin;
+import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.test.ApplicationManager;
@@ -64,30 +66,36 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
     String tableName = "SnapshotInputTable";
     ETLStage source = new ETLStage(
       "source",
-      new Plugin("Table", ImmutableMap.<String, String>builder()
-        .put(Properties.Table.NAME, tableName)
-        .put(Properties.Table.PROPERTY_SCHEMA, SCHEMA.toString())
-        .put(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "id")
-        .build()));
+      new ETLPlugin("Table", BatchSource.PLUGIN_TYPE,
+                    ImmutableMap.<String, String>builder()
+                      .put(Properties.Table.NAME, tableName)
+                      .put(Properties.Table.PROPERTY_SCHEMA, SCHEMA.toString())
+                      .put(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "id")
+                      .build(),
+                    null));
 
     ETLStage sink1 = new ETLStage(
       "sink1",
-      new Plugin("SnapshotParquet", ImmutableMap.<String, String>builder()
-        .put(Properties.SnapshotFileSetSink.NAME, "testParquet")
-        .put("schema", SCHEMA.toString())
-        .build()));
+      new ETLPlugin("SnapshotAvro", BatchSink.PLUGIN_TYPE,
+                    ImmutableMap.<String, String>builder()
+                      .put(Properties.SnapshotFileSetSink.NAME, "testAvro")
+                      .put("schema", SCHEMA.toString())
+                      .build(),
+                    null));
 
     ETLStage sink2 = new ETLStage(
       "sink2",
-      new Plugin("SnapshotAvro", ImmutableMap.<String, String>builder()
-        .put(Properties.SnapshotFileSetSink.NAME, "testAvro")
-        .put("schema", SCHEMA.toString())
-        .build()));
+      new ETLPlugin("SnapshotParquet", BatchSink.PLUGIN_TYPE,
+                    ImmutableMap.<String, String>builder()
+                      .put(Properties.SnapshotFileSetSink.NAME, "testParquet")
+                      .put("schema", SCHEMA.toString())
+                      .build(),
+                    null));
 
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(source)
-      .addSink(sink1)
-      .addSink(sink2)
+      .addStage(source)
+      .addStage(sink1)
+      .addStage(sink2)
       .addConnection(source.getName(), sink1.getName())
       .addConnection(source.getName(), sink2.getName())
       .build();
@@ -101,9 +109,9 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
     inputManager.get().put(Bytes.toBytes("id123"), Bytes.toBytes("price"), Bytes.toBytes(777));
     inputManager.flush();
 
-    DataSetManager<PartitionedFileSet> parquetFiles = getDataset("testParquet");
     DataSetManager<PartitionedFileSet> avroFiles = getDataset("testAvro");
-    List<DataSetManager<PartitionedFileSet>> fileSetManagers = ImmutableList.of(parquetFiles, avroFiles);
+    DataSetManager<PartitionedFileSet> parquetFiles = getDataset("testParquet");
+    List<DataSetManager<PartitionedFileSet>> fileSetManagers = ImmutableList.of(avroFiles, parquetFiles);
 
     MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
     mrManager.start();
@@ -144,27 +152,31 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
   }
 
   // deploys a pipeline that reads using a snapshot source and checks that it writes the expected records.
-  private void testSource(String sourcePlugin, String sourceName, Map<String, Integer> expected) throws Exception {
+  private void testSource(String sourceETLPlugin, String sourceName, Map<String, Integer> expected) throws Exception {
     // run another pipeline that reads from avro dataset
     ETLStage source = new ETLStage(
       "source",
-      new Plugin(sourcePlugin, ImmutableMap.<String, String>builder()
-        .put(Properties.Table.NAME, sourceName)
-        .put(Properties.Table.PROPERTY_SCHEMA, SCHEMA.toString())
-        .put(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "id")
-        .build()));
+      new ETLPlugin(sourceETLPlugin, BatchSource.PLUGIN_TYPE,
+                    ImmutableMap.<String, String>builder()
+                      .put(Properties.Table.NAME, sourceName)
+                      .put(Properties.Table.PROPERTY_SCHEMA, SCHEMA.toString())
+                      .put(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "id")
+                      .build(),
+                    null));
 
     String outputName = sourceName + "Output";
     ETLStage sink = new ETLStage(
       "sink",
-      new Plugin("SnapshotAvro", ImmutableMap.<String, String>builder()
-        .put(Properties.SnapshotFileSetSink.NAME, outputName)
-        .put("schema", SCHEMA.toString())
-        .build()));
+      new ETLPlugin("SnapshotAvro", BatchSink.PLUGIN_TYPE,
+                    ImmutableMap.<String, String>builder()
+                      .put(Properties.SnapshotFileSetSink.NAME, outputName)
+                      .put("schema", SCHEMA.toString())
+                      .build(),
+                    null));
 
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(source)
-      .addSink(sink)
+      .addStage(source)
+      .addStage(sink)
       .addConnection(source.getName(), sink.getName())
       .build();
 
@@ -197,8 +209,7 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
           contents.put(record.get("id").toString(), (Integer) record.get("price"));
         }
         fileStream.close();
-      }
-      if (fileName.endsWith(".parquet")) {
+      } else if (fileName.endsWith(".parquet")) {
         Path parquetFile = new Path(file.toString());
         AvroParquetReader<GenericRecord> reader = new AvroParquetReader<>(parquetFile);
         GenericRecord record = reader.read();

@@ -14,6 +14,8 @@ with a stream batch source and Elasticsearch as a sink.
 
 Configuration
 -------------
+**referenceName:** This will be used to uniquely identify this sink for lineage, annotating metadata, etc.
+
 **es.host:** The hostname and port for the Elasticsearch instance.
 
 **es.index:** The name of the index where the data will be stored; if the index does not
@@ -34,6 +36,7 @@ in the record. Each run, the documents will be updated if they are still present
 
     {
         "name": "Elasticsearch",
+        "type": "batchsink",
         "properties": {
             "es.host": "localhost:9200",
             "es.index": "megacorp",

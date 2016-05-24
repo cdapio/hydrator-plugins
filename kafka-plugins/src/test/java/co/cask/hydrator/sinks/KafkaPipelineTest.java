@@ -16,29 +16,27 @@
 
 package co.cask.hydrator.sinks;
 
+import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.table.Row;
-import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.common.conf.Constants;
-import co.cask.cdap.common.utils.Tasks;
-import co.cask.cdap.etl.api.PipelineConfigurable;
 import co.cask.cdap.etl.api.realtime.RealtimeSource;
-import co.cask.cdap.etl.common.ETLStage;
-import co.cask.cdap.etl.common.Plugin;
+import co.cask.cdap.etl.mock.realtime.MockSink;
+import co.cask.cdap.etl.mock.test.HydratorTestBase;
+import co.cask.cdap.etl.proto.v2.ETLPlugin;
+import co.cask.cdap.etl.proto.v2.ETLRealtimeConfig;
+import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
 import co.cask.cdap.etl.realtime.ETLWorker;
-import co.cask.cdap.etl.realtime.config.ETLRealtimeConfig;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
+import co.cask.cdap.proto.id.ArtifactId;
+import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
-import co.cask.cdap.test.DataSetManager;
-import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkerManager;
 import co.cask.hydrator.plugin.realtime.KafkaProducer;
 import co.cask.hydrator.plugin.realtime.KafkaSource;
-import co.cask.hydrator.sinks.test.RealtimeTableSink;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -56,27 +54,22 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
-import java.sql.Connection;
-import java.sql.ResultSet;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 /**
  */
-public class KafkaPipelineTest extends TestBase {
-  private static final Id.Artifact APP_ARTIFACT_ID = Id.Artifact.from(Id.Namespace.DEFAULT, "etlrealtime", "3.2.0");
-  private static final ArtifactSummary APP_ARTIFACT = ArtifactSummary.from(APP_ARTIFACT_ID);
+public class KafkaPipelineTest extends HydratorTestBase {
+  private static final ArtifactId APP_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("etlrealtime", "3.2.0");
+  private static final ArtifactSummary APP_ARTIFACT =
+    new ArtifactSummary(APP_ARTIFACT_ID.getArtifact(), APP_ARTIFACT_ID.getVersion());
   private static final int PARTITIONS = 1;
 
   @ClassRule
-  public static final TemporaryFolder TMP_FOLDER = new TemporaryFolder();
-
-  @ClassRule
-  public static final TestConfiguration CONFIG = new TestConfiguration(Constants.Explore.EXPLORE_ENABLED, true);
+  public static final TestConfiguration CONFIG = new TestConfiguration(Constants.Explore.EXPLORE_ENABLED, false);
 
   private static ZKClientService zkClient;
   private static KafkaClientService kafkaClient;
@@ -87,17 +80,11 @@ public class KafkaPipelineTest extends TestBase {
   @BeforeClass
   public static void setupTests() throws Exception {
     //add the artifact for the etl realtime app
-    addAppArtifact(APP_ARTIFACT_ID, ETLRealtimeApplication.class,
-                   RealtimeSource.class.getPackage().getName(),
-                   PipelineConfigurable.class.getPackage().getName());
+    setupRealtimeArtifacts(APP_ARTIFACT_ID, ETLRealtimeApplication.class);
 
     // add artifact for plugins
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "kafka-plugins", "1.0.0"), APP_ARTIFACT_ID,
+    addPluginArtifact(NamespaceId.DEFAULT.artifact("kafka-plugins", "1.0.0"), APP_ARTIFACT_ID,
                       KafkaSource.class, KafkaProducer.class);
-
-    // add artifact for test
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "test-plugins", "1.0.0"), APP_ARTIFACT_ID,
-                      RealtimeTableSink.class);
 
     zkServer = InMemoryZKServer.builder().setDataDir(TMP_FOLDER.newFolder()).build();
     zkServer.startAndWait();
@@ -128,63 +115,48 @@ public class KafkaPipelineTest extends TestBase {
                                     Schema.Field.of("NAME", Schema.of(Schema.Type.STRING)),
                                     Schema.Field.of("ID", Schema.of(Schema.Type.INT)),
                                     Schema.Field.of("AGE", Schema.of(Schema.Type.INT)));
-    Plugin source = new Plugin("Kafka", ImmutableMap.<String, String>builder()
-      .put(KafkaSource.KAFKA_TOPIC, "MyTopic")
-      .put(KafkaSource.KAFKA_ZOOKEEPER, zkServer.getConnectionStr())
-      .put(KafkaSource.FORMAT, "csv")
-      .put(KafkaSource.SCHEMA, schema.toString())
-      .put(KafkaSource.KAFKA_PARTITIONS, Integer.toString(PARTITIONS))
-      .build()
+    ETLPlugin source = new ETLPlugin("Kafka", RealtimeSource.PLUGIN_TYPE,
+                                     ImmutableMap.<String, String>builder()
+                                       .put(KafkaSource.KAFKA_TOPIC, "MyTopic")
+                                       .put(KafkaSource.KAFKA_ZOOKEEPER, zkServer.getConnectionStr())
+                                       .put(KafkaSource.FORMAT, "csv")
+                                       .put(KafkaSource.SCHEMA, schema.toString())
+                                       .put(KafkaSource.KAFKA_PARTITIONS, Integer.toString(PARTITIONS))
+                                       .put(co.cask.hydrator.common.Constants.Reference.REFERENCE_NAME, "KafkaTest")
+                                       .build(),
+                                     null
     );
 
-    Plugin sink = new Plugin("Table", ImmutableMap.of(
-      "name", "outputTable",
-      "schema", schema.toString(),
-      "schema.row.field", "NAME"));
+    File tmpDir = TMP_FOLDER.newFolder();
+    ETLPlugin sink = MockSink.getPlugin(tmpDir);
 
     Map<String, String> message = Maps.newHashMap();
     message.put("1", "Bob,1,3");
     sendMessage("MyTopic", message);
 
-    ETLRealtimeConfig etlConfig = new ETLRealtimeConfig(new ETLStage("source", source), new ETLStage("sink", sink));
+    ETLRealtimeConfig etlConfig = ETLRealtimeConfig.builder()
+      .addStage(new ETLStage("source", source))
+      .addStage(new ETLStage("sink", sink))
+      .addConnection("source", "sink")
+      .build();
 
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testToStream");
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "kafkaSourceTest");
     AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(APP_ARTIFACT, etlConfig);
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     WorkerManager workerManager = appManager.getWorkerManager(ETLWorker.NAME);
 
     workerManager.start();
-    DataSetManager<Table> tableManager = getDataset("outputTable");
-    waitForTableToBePopulated(tableManager);
+    workerManager.waitForStatus(true, 10, 1);
+
+    List<StructuredRecord> written = MockSink.getRecords(tmpDir, 0, 10, TimeUnit.SECONDS);
     workerManager.stop();
 
-    // verify. We need to get the table fresh because it doesn't update otherwise
-    Table table = tableManager.get();
-    Row row = table.get("Bob".getBytes(Charsets.UTF_8));
-
-    Assert.assertEquals(1, (int) row.getInt("ID"));
-    Assert.assertEquals(3, (int) row.getInt("AGE"));
-
-    Connection connection = getQueryClient();
-    ResultSet results = connection.prepareStatement("select NAME,ID,AGE from dataset_outputTable").executeQuery();
-    Assert.assertTrue(results.next());
-    Assert.assertEquals("Bob", results.getString(1));
-    Assert.assertEquals(1, results.getInt(2));
-    Assert.assertEquals(3, results.getInt(3));
-  }
-
-  private void waitForTableToBePopulated(final DataSetManager<Table> tableManager) throws Exception {
-    Tasks.waitFor(true, new Callable<Boolean>() {
-      @Override
-      public Boolean call() throws Exception {
-        tableManager.flush();
-        Table table = tableManager.get();
-        Row row = table.get("Bob".getBytes(Charsets.UTF_8));
-        // need to wait for information to get to the table, not just for the row to be created
-        return row.getColumns().size() != 0;
-      }
-    }, 10, TimeUnit.SECONDS);
+    Assert.assertEquals(1, written.size());
+    StructuredRecord record = written.get(0);
+    Assert.assertEquals("Bob", record.get("NAME"));
+    Assert.assertEquals(1, record.get("ID"));
+    Assert.assertEquals(3, record.get("AGE"));
   }
 
   private static java.util.Properties generateKafkaConfig(String zkConnectStr, int port, File logDir) {

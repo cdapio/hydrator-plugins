@@ -73,6 +73,7 @@ field to a double and renames it ``'price'``.
 
     {
         "name": "Projection",
+        "type": "transform",
         "properties": {
             "drop": "ts,headers",
             "convert": "cost:double",

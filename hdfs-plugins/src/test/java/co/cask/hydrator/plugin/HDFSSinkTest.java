@@ -16,26 +16,29 @@
 
 package co.cask.hydrator.plugin;
 
-import co.cask.StreamBatchSource;
 import co.cask.cdap.api.artifact.ArtifactVersion;
-import co.cask.cdap.api.data.format.Formats;
+import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.etl.api.PipelineConfigurable;
-import co.cask.cdap.etl.api.batch.BatchSource;
+import co.cask.cdap.api.dataset.table.Table;
+import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
-import co.cask.cdap.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
-import co.cask.cdap.etl.common.ETLStage;
-import co.cask.cdap.etl.common.Plugin;
+import co.cask.cdap.etl.mock.batch.MockSource;
+import co.cask.cdap.etl.mock.test.HydratorTestBase;
+import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
+import co.cask.cdap.etl.proto.v2.ETLPlugin;
+import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
+import co.cask.cdap.proto.id.ArtifactId;
+import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
+import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
-import co.cask.cdap.test.StreamManager;
-import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
-import co.cask.hydrator.plugin.common.Properties;
+import co.cask.hydrator.common.Constants;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -64,12 +67,10 @@ import java.util.concurrent.TimeUnit;
 /**
  * Unit test for {@link HDFSSink}.
  */
-public class HDFSSinkTest extends TestBase {
+public class HDFSSinkTest extends HydratorTestBase {
   private static final Logger LOG = LoggerFactory.getLogger(HDFSSinkTest.class);
 
-  private static final String STREAM_NAME = "myStream";
-
-  private static final Schema BODY_SCHEMA = Schema.recordOf(
+  private static final Schema SCHEMA = Schema.recordOf(
     "event",
     Schema.Field.of("ticker", Schema.of(Schema.Type.STRING)),
     Schema.Field.of("num", Schema.of(Schema.Type.INT)),
@@ -83,9 +84,10 @@ public class HDFSSinkTest extends TestBase {
 
   private static final ArtifactVersion CURRENT_VERSION = new ArtifactVersion("3.2.0");
 
-  private static final Id.Artifact BATCH_APP_ARTIFACT_ID = Id.Artifact.from(Id.Namespace.DEFAULT,
-                                                                            "etlbatch", CURRENT_VERSION);
-  private static final ArtifactSummary ETLBATCH_ARTIFACT = ArtifactSummary.from(BATCH_APP_ARTIFACT_ID);
+  private static final ArtifactId BATCH_APP_ARTIFACT_ID =
+    NamespaceId.DEFAULT.artifact("etlbatch", CURRENT_VERSION.getVersion());
+  private static final ArtifactSummary ETLBATCH_ARTIFACT =
+    new ArtifactSummary(BATCH_APP_ARTIFACT_ID.getArtifact(), BATCH_APP_ARTIFACT_ID.getVersion());
 
   private MiniDFSCluster dfsCluster;
   private FileSystem fileSystem;
@@ -93,16 +95,12 @@ public class HDFSSinkTest extends TestBase {
   @BeforeClass
   public static void setupTest() throws Exception {
     // add the artifact for etl batch app
-    addAppArtifact(BATCH_APP_ARTIFACT_ID, ETLBatchApplication.class,
-                   BatchSource.class.getPackage().getName(),
-                   PipelineConfigurable.class.getPackage().getName());
+    setupBatchArtifacts(BATCH_APP_ARTIFACT_ID, ETLBatchApplication.class);
 
     // add artifact for batch sources and sinks
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "batch-plugins", "1.0.0"), BATCH_APP_ARTIFACT_ID,
+    addPluginArtifact(NamespaceId.DEFAULT.artifact("hdfs-plugins", "1.0.0"),
+                      BATCH_APP_ARTIFACT_ID,
                       HDFSSink.class);
-
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "test-plugins", "1.0.0"), BATCH_APP_ARTIFACT_ID,
-                      StreamBatchSource.class);
   }
 
   @Before
@@ -127,37 +125,34 @@ public class HDFSSinkTest extends TestBase {
 
   @Test
   public void testHDFSSink() throws Exception {
-    StreamManager streamManager = getStreamManager(STREAM_NAME);
-    streamManager.createStream();
-    streamManager.send("AAPL|10|400.23");
-    streamManager.send("CDAP|13|123.23");
-
-    ETLStage source = new ETLStage("Stream", new Plugin(
-      "Stream",
-      ImmutableMap.<String, String>builder()
-        .put(Properties.Stream.NAME, STREAM_NAME)
-        .put(Properties.Stream.DURATION, "10m")
-        .put(Properties.Stream.DELAY, "0d")
-        .put(Properties.Stream.FORMAT, Formats.CSV)
-        .put(Properties.Stream.SCHEMA, BODY_SCHEMA.toString())
-        .put("format.setting.delimiter", "|")
-        .build()));
+    String inputDatasetName = "input-hdfssinktest";
+    ETLStage source = new ETLStage("source", MockSource.getPlugin(inputDatasetName));
 
     Path outputDir = dfsCluster.getFileSystem().getHomeDirectory();
-    ETLStage sink = new ETLStage("HDFS", new Plugin(
+    ETLStage sink = new ETLStage("HDFS", new ETLPlugin(
       "HDFS",
+      BatchSink.PLUGIN_TYPE,
       ImmutableMap.<String, String>builder()
         .put("path", outputDir.toUri().toString())
-        .build()));
+        .put(Constants.Reference.REFERENCE_NAME, "HDFSinkTest")
+        .build(),
+      null));
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(source)
-      .addSink(sink)
+      .addStage(source)
+      .addStage(sink)
       .addConnection(source.getName(), sink.getName())
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "HDFSTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
+
+    DataSetManager<Table> inputManager = getDataset(inputDatasetName);
+    List<StructuredRecord> input = ImmutableList.of(
+      StructuredRecord.builder(SCHEMA).set("ticker", "AAPL").set("num", 10).set("price", 400.23).build(),
+      StructuredRecord.builder(SCHEMA).set("ticker", "CDAP").set("num", 13).set("price", 123.23).build()
+    );
+    MockSource.writeInput(inputManager, input);
 
     MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
     mrManager.start();

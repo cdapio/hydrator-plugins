@@ -20,7 +20,7 @@
   <parent>
     <artifactId>hydrator-plugins</artifactId>
     <groupId>co.cask.hydrator</groupId>
-    <version>1.3.0-SNAPSHOT</version>
+    <version>1.4.0-SNAPSHOT</version>
   </parent>
 
   <name>MongoDB Plugins</name>
@@ -33,26 +33,12 @@
       <artifactId>cdap-etl-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>co.cask.hydrator</groupId>
-      <artifactId>core-plugins</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>co.cask.cdap</groupId>
-      <artifactId>cdap-etl-core</artifactId>
-    </dependency>
-    <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-proto</artifactId>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
-      <artifactId>cdap-test</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>co.cask.cdap</groupId>
-      <artifactId>cdap-unit-test</artifactId>
+      <artifactId>hydrator-test</artifactId>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
@@ -117,10 +103,10 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Export-Package>
+            <_exportcontents>
               co.cask.hydrator.plugin.*;
               com.mongodb.hadoop.*;
-            </Export-Package>
+            </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
             <Embed-Directory>lib</Embed-Directory>

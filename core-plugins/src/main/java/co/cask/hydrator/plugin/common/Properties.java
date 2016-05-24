@@ -109,6 +109,7 @@ public final class Properties {
     public static final String DATASET_RESOLUTIONS =
       co.cask.cdap.api.dataset.lib.cube.Cube.PROPERTY_RESOLUTIONS;
     public static final String DATASET_OTHER = "dataset.cube.properties";
+    public static final String AGGREGATIONS = "dataset.cube.aggregations";
 
     public static final String FACT_TS_FIELD = "cubeFact.timestamp.field";
     public static final String FACT_TS_FORMAT = "cubeFact.timestamp.format";

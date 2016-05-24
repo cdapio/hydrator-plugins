@@ -21,7 +21,7 @@
   <parent>
     <artifactId>hydrator-plugins</artifactId>
     <groupId>co.cask.hydrator</groupId>
-    <version>1.3.0-SNAPSHOT</version>
+    <version>1.4.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -33,6 +33,10 @@
     <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-etl-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>co.cask.cdap</groupId>
+      <artifactId>cdap-proto</artifactId>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>

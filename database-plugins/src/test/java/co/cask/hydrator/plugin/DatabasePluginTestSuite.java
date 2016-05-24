@@ -16,8 +16,9 @@
 
 package co.cask.hydrator.plugin;
 
-import co.cask.hydrator.plugin.db.batch.sink.BatchETLDBTestRun;
-import co.cask.hydrator.plugin.teradata.test.TeradataPluginTestRun;
+import co.cask.hydrator.plugin.db.batch.action.DBQueryActionTestRun;
+import co.cask.hydrator.plugin.db.batch.sink.DBSinkTestRun;
+import co.cask.hydrator.plugin.db.batch.sink.DBSourceTestRun;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
@@ -28,8 +29,9 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-  BatchETLDBTestRun.class,
-  TeradataPluginTestRun.class
+  DBSinkTestRun.class,
+  DBSourceTestRun.class,
+  DBQueryActionTestRun.class
 })
 public class DatabasePluginTestSuite extends DatabasePluginTestBase {
 

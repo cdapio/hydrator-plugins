@@ -20,11 +20,12 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.realtime.DataWriter;
 import co.cask.cdap.etl.api.realtime.RealtimeContext;
 import co.cask.cdap.etl.api.realtime.RealtimeSink;
+import co.cask.hydrator.common.ReferencePluginConfig;
+import co.cask.hydrator.common.ReferenceRealtimeSink;
 import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ConsistencyLevel;
@@ -54,10 +55,10 @@ import javax.annotation.Nullable;
  * and writes it to the Cassandra server.
  * </p>
  */
-@Plugin(type = "realtimesink")
+@Plugin(type = RealtimeSink.PLUGIN_TYPE)
 @Name("Cassandra")
 @Description("CDAP Cassandra Realtime Sink.")
-public class RealtimeCassandraSink extends RealtimeSink<StructuredRecord> {
+public class RealtimeCassandraSink extends ReferenceRealtimeSink<StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(RealtimeCassandraSink.class);
   private static final String ADDRESSES_DESCRIPTION =
     "A comma-separated list of address(es) to connect to. For example, \"host1:9042,host2:9042\".";
@@ -69,11 +70,13 @@ public class RealtimeCassandraSink extends RealtimeSink<StructuredRecord> {
   private PreparedStatement statement;
 
   public RealtimeCassandraSink(RealtimeCassandraSinkConfig config) {
+    super(config);
     this.config = config;
   }
 
   @Override
-  public void initialize(RealtimeContext context) {
+  public void initialize(RealtimeContext context) throws Exception {
+    super.initialize(context);
     Collection<InetSocketAddress> addresses = parseAddresses(config.addresses);
     Cluster.Builder builder = new Cluster.Builder().addContactPointsWithPorts(addresses);
     if (!Strings.isNullOrEmpty(config.username)) {
@@ -144,7 +147,7 @@ public class RealtimeCassandraSink extends RealtimeSink<StructuredRecord> {
   /**
    * Config class for Realtime Cassandra Source
    */
-  public static class RealtimeCassandraSinkConfig extends PluginConfig {
+  public static class RealtimeCassandraSinkConfig extends ReferencePluginConfig {
     @Name(Cassandra.COLUMN_FAMILY)
     @Description("The column family to inject data into. Create the column family before starting the application.")
     private String columnFamily;
@@ -182,9 +185,10 @@ public class RealtimeCassandraSink extends RealtimeSink<StructuredRecord> {
     @Description("The string representation of the compression for the query. For example: \"NONE\".")
     private String compression;
 
-    public RealtimeCassandraSinkConfig(String columnFamily, String columns, String compression,
+    public RealtimeCassandraSinkConfig(String referenceName, String columnFamily, String columns, String compression,
                                        String keyspace, String addresses, String consistencyLevel,
                                        @Nullable String username, @Nullable String password) {
+      super(referenceName);
       this.addresses = addresses;
       this.columnFamily = columnFamily;
       this.keyspace = keyspace;

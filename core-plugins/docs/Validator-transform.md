@@ -89,11 +89,12 @@ a value whose length is greater than 10. It has been "pretty-printed" for readab
 uses the ``CoreValidator`` (included using ``"validators": "core"`` ) and references a
 function using its JavaScript name (``coreValidator.maxLength``):
 
-      {
+    {
         "name": "Validator",
+        "type": "transform",
         "properties": {
-          "validators": "core",
-          "validationScript": "function isValid(input, context) {
+            "validators": "core",
+            "validationScript": "function isValid(input, context) {
                                   var coreValidator = context.getValidator(\"coreValidator\");
                                   if (!coreValidator.maxLength(input.body, 10))
                                     {
@@ -103,7 +104,7 @@ function using its JavaScript name (``coreValidator.maxLength``):
                                   return {'isValid' : true};
                                 };"
         }
-      }
+    }
 
 This example uses the key-value dataset ``'blacklist'`` as a lookup table, and sends an
 error code ``'10'`` for any records whose ``'body'`` field exists in the ``'blacklist'``
@@ -111,6 +112,7 @@ dataset. It has been "pretty-printed" for readability:
 
     {
         "name": "Validator",
+        "type": "transform",
         "properties": {
             "lookup": "{
                 \"blacklist\":{
@@ -138,6 +140,7 @@ using their JavaScript names (such as ``coreValidator.isDate``):
 
     {
         "name": "Validator",
+        "type": "transform",
         "properties": {
             "validators": "core",
             "validationScript": "function isValid(input, context) {

@@ -19,15 +19,17 @@ package co.cask.hydrator.plugin.batch.sink;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.data.batch.Output;
 import co.cask.cdap.api.data.batch.OutputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
-import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.cdap.format.StructuredRecordStringConverter;
+import co.cask.hydrator.common.ReferenceBatchSink;
+import co.cask.hydrator.common.ReferencePluginConfig;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import org.apache.cassandra.hadoop.cql3.CqlOutputFormat;
@@ -48,20 +50,23 @@ import javax.annotation.Nullable;
  * This {@link BatchCassandraSink} takes a {@link StructuredRecord} in,
  * converts it to columns, and writes it to the Cassandra server.
  */
-@Plugin(type = "batchsink")
+@Plugin(type = BatchSink.PLUGIN_TYPE)
 @Name("Cassandra")
 @Description("CDAP Cassandra Batch Sink takes the structured record from the input source " +
   "and converts each field to a byte buffer, then puts it in the keyspace and column family specified by the user.")
-public class BatchCassandraSink extends BatchSink<StructuredRecord, Map<String, ByteBuffer>, List<ByteBuffer>> {
+public class BatchCassandraSink
+  extends ReferenceBatchSink<StructuredRecord, Map<String, ByteBuffer>, List<ByteBuffer>> {
   private final CassandraBatchConfig config;
 
   public BatchCassandraSink(CassandraBatchConfig config) {
+    super(config);
     this.config = config;
   }
 
   @Override
   public void prepareRun(BatchSinkContext context) {
-    context.addOutput(config.columnFamily, new CassandraOutputFormatProvider(config));
+    context.addOutput(Output.of(config.referenceName, new CassandraOutputFormatProvider(config))
+                        .alias(config.columnFamily));
   }
 
   @Override
@@ -125,7 +130,7 @@ public class BatchCassandraSink extends BatchSink<StructuredRecord, Map<String, 
   /**
    * Config class for Batch Cassandra
    */
-  public static class CassandraBatchConfig extends PluginConfig {
+  public static class CassandraBatchConfig extends ReferencePluginConfig {
     @Name(Cassandra.PARTITIONER)
     @Description("The partitioner for the keyspace")
     private String partitioner;
@@ -157,8 +162,9 @@ public class BatchCassandraSink extends BatchSink<StructuredRecord, Map<String, 
     @Description("A comma-separated list of primary keys. For example: \"key1,key2\".")
     private String primaryKey;
 
-    public CassandraBatchConfig(String partitioner, @Nullable Integer port, String columnFamily, String keyspace,
-                                String initialAddress, String columns, String primaryKey) {
+    public CassandraBatchConfig(String referenceName, String partitioner, @Nullable Integer port, String columnFamily,
+                                String keyspace, String initialAddress, String columns, String primaryKey) {
+      super(referenceName);
       this.partitioner = partitioner;
       this.initialAddress = initialAddress;
       this.port = port;

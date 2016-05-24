@@ -16,6 +16,8 @@ prevent adding load to other systems.
 
 Properties
 ----------
+**referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
+
 **type:** The type of data to be generated. Currently, only two types -- 'stream' and
 'table' -- are supported. By default, it generates a structured record containing one
 field named 'data' of type String with the value 'Hello'.
@@ -48,6 +50,7 @@ Example
 
     {
         "name": "DataGenerator",
+        "type": "realtimesource",
         "properties": {
             "type": "table"
         }

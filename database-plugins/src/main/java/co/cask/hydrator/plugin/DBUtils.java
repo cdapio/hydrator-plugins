@@ -16,6 +16,10 @@
 
 package co.cask.hydrator.plugin;
 
+import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.data.schema.UnsupportedTypeException;
+import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,8 +28,13 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.sql.Driver;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Types;
 import java.util.Hashtable;
 import java.util.List;
+import javax.annotation.Nullable;
 import javax.management.InstanceNotFoundException;
 import javax.management.IntrospectionException;
 import javax.management.MBeanRegistrationException;
@@ -55,6 +64,122 @@ public final class DBUtils {
     }
     shutDownMySQLAbandonedConnectionCleanupThread(pluginClassLoader);
     unregisterOracleMBean(pluginClassLoader);
+  }
+
+  /**
+   * Ensures that the JDBC Driver specified in configuration is available and can be loaded. Also registers it with
+   * {@link DriverManager} if it is not already registered.
+   */
+  public static DriverCleanup ensureJDBCDriverIsAvailable(Class<? extends Driver> jdbcDriverClass,
+                                                          String connectionString,
+                                                          String jdbcPluginType, String jdbcPluginName)
+    throws IllegalAccessException, InstantiationException, SQLException {
+
+    try {
+      DriverManager.getDriver(connectionString);
+      return new DriverCleanup(null);
+    } catch (SQLException e) {
+      // Driver not found. We will try to register it with the DriverManager.
+      LOG.debug("Plugin Type: {} and Plugin Name: {}; Driver Class: {} not found. Registering JDBC driver via shim {} ",
+                jdbcPluginType, jdbcPluginName, jdbcDriverClass.getName(),
+                JDBCDriverShim.class.getName());
+      final JDBCDriverShim driverShim = new JDBCDriverShim(jdbcDriverClass.newInstance());
+      try {
+        DBUtils.deregisterAllDrivers(jdbcDriverClass);
+      } catch (NoSuchFieldException | ClassNotFoundException e1) {
+        LOG.error("Unable to deregister JDBC Driver class {}", jdbcDriverClass);
+      }
+      DriverManager.registerDriver(driverShim);
+      return new DriverCleanup(driverShim);
+    }
+  }
+
+  /**
+   * Given the result set, get the metadata of the result set and return
+   * list of {@link co.cask.cdap.api.data.schema.Schema.Field},
+   * where name of the field is same as column name and type of the field is obtained using {@link DBUtils#getType(int)}
+   * @param resultSet result set of executed query
+   * @return list of schema fields
+   * @throws SQLException
+   */
+  public static List<Schema.Field> getSchemaFields(ResultSet resultSet) throws SQLException {
+    List<Schema.Field> schemaFields = Lists.newArrayList();
+    ResultSetMetaData metadata = resultSet.getMetaData();
+    // ResultSetMetadata columns are numbered starting with 1
+    for (int i = 1; i <= metadata.getColumnCount(); i++) {
+      String columnName = metadata.getColumnName(i);
+      int columnSqlType = metadata.getColumnType(i);
+      Schema columnSchema = Schema.of(getType(columnSqlType));
+      if (ResultSetMetaData.columnNullable == metadata.isNullable(i)) {
+        columnSchema = Schema.nullableOf(columnSchema);
+      }
+      Schema.Field field = Schema.Field.of(columnName, columnSchema);
+      schemaFields.add(field);
+    }
+    return schemaFields;
+  }
+
+  // given a sql type return schema type
+  private static Schema.Type getType(int sqlType) throws SQLException {
+    // Type.STRING covers sql types - VARCHAR,CHAR,CLOB,LONGNVARCHAR,LONGVARCHAR,NCHAR,NCLOB,NVARCHAR
+    Schema.Type type = Schema.Type.STRING;
+    switch (sqlType) {
+      case Types.NULL:
+        type = Schema.Type.NULL;
+        break;
+
+      case Types.BOOLEAN:
+      case Types.BIT:
+        type = Schema.Type.BOOLEAN;
+        break;
+
+      case Types.TINYINT:
+      case Types.SMALLINT:
+      case Types.INTEGER:
+        type = Schema.Type.INT;
+        break;
+
+      case Types.BIGINT:
+        type = Schema.Type.LONG;
+        break;
+
+      case Types.REAL:
+      case Types.FLOAT:
+        type = Schema.Type.FLOAT;
+        break;
+
+      case Types.NUMERIC:
+      case Types.DECIMAL:
+      case Types.DOUBLE:
+        type = Schema.Type.DOUBLE;
+        break;
+
+      case Types.DATE:
+      case Types.TIME:
+      case Types.TIMESTAMP:
+        type = Schema.Type.LONG;
+        break;
+
+      case Types.BINARY:
+      case Types.VARBINARY:
+      case Types.LONGVARBINARY:
+      case Types.BLOB:
+        type = Schema.Type.BYTES;
+        break;
+
+      case Types.ARRAY:
+      case Types.DATALINK:
+      case Types.DISTINCT:
+      case Types.JAVA_OBJECT:
+      case Types.OTHER:
+      case Types.REF:
+      case Types.ROWID:
+      case Types.SQLXML:
+      case Types.STRUCT:
+        throw new SQLException(new UnsupportedTypeException("Unsupported SQL Type: " + sqlType));
+    }
+
+    return type;
   }
 
   /**

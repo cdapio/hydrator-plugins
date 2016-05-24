@@ -18,9 +18,7 @@ package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.data.schema.UnsupportedTypeException;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.lib.db.DBWritable;
 
@@ -94,19 +92,8 @@ public class DBRecord implements Writable, DBWritable {
    * @param resultSet the {@link ResultSet} to build the {@link StructuredRecord} from
    */
   public void readFields(ResultSet resultSet) throws SQLException {
-    List<Schema.Field> schemaFields = Lists.newArrayList();
     ResultSetMetaData metadata = resultSet.getMetaData();
-    // ResultSetMetadata columns are numbered starting with 1
-    for (int i = 1; i <= metadata.getColumnCount(); i++) {
-      String columnName = metadata.getColumnName(i);
-      int columnSqlType = metadata.getColumnType(i);
-      Schema columnSchema = Schema.of(getType(columnSqlType));
-      if (ResultSetMetaData.columnNullable == metadata.isNullable(i)) {
-        columnSchema = Schema.nullableOf(columnSchema);
-      }
-      Schema.Field field = Schema.Field.of(columnName, columnSchema);
-      schemaFields.add(field);
-    }
+    List<Schema.Field> schemaFields = DBUtils.getSchemaFields(resultSet);
     Schema schema = Schema.recordOf("dbRecord", schemaFields);
     StructuredRecord.Builder recordBuilder = StructuredRecord.builder(schema);
     for (int i = 0; i < schemaFields.size(); i++) {
@@ -122,9 +109,8 @@ public class DBRecord implements Writable, DBWritable {
     List<Schema.Field> schemaFields = recordSchema.getFields();
     for (Schema.Field field : schemaFields) {
       String fieldName = field.getName();
-      Schema.Type fieldType = field.getSchema().getType();
+      Schema.Type fieldType = getNonNullableType(field);
       Object fieldValue = record.get(fieldName);
-      // In JDBC, field indices start with 1
       writeToDataOut(out, fieldType, fieldValue);
     }
   }
@@ -146,68 +132,6 @@ public class DBRecord implements Writable, DBWritable {
     }
   }
 
-  private Schema.Type getType(int sqlType) throws SQLException {
-    // Type.STRING covers sql types - VARCHAR,CHAR,CLOB,LONGNVARCHAR,LONGVARCHAR,NCHAR,NCLOB,NVARCHAR
-    Schema.Type type = Schema.Type.STRING;
-    switch (sqlType) {
-      case Types.NULL:
-        type = Schema.Type.NULL;
-        break;
-
-      case Types.BOOLEAN:
-      case Types.BIT:
-        type = Schema.Type.BOOLEAN;
-        break;
-
-      case Types.TINYINT:
-      case Types.SMALLINT:
-      case Types.INTEGER:
-        type = Schema.Type.INT;
-        break;
-
-      case Types.BIGINT:
-        type = Schema.Type.LONG;
-        break;
-
-      case Types.REAL:
-      case Types.FLOAT:
-        type = Schema.Type.FLOAT;
-        break;
-
-      case Types.NUMERIC:
-      case Types.DECIMAL:
-      case Types.DOUBLE:
-        type = Schema.Type.DOUBLE;
-        break;
-
-      case Types.DATE:
-      case Types.TIME:
-      case Types.TIMESTAMP:
-        type = Schema.Type.LONG;
-        break;
-
-      case Types.BINARY:
-      case Types.VARBINARY:
-      case Types.LONGVARBINARY:
-      case Types.BLOB:
-        type = Schema.Type.BYTES;
-        break;
-
-      case Types.ARRAY:
-      case Types.DATALINK:
-      case Types.DISTINCT:
-      case Types.JAVA_OBJECT:
-      case Types.OTHER:
-      case Types.REF:
-      case Types.ROWID:
-      case Types.SQLXML:
-      case Types.STRUCT:
-        throw new SQLException(new UnsupportedTypeException("Unsupported SQL Type: " + sqlType));
-    }
-
-    return type;
-  }
-
   private Schema.Type getNonNullableType(Schema.Field field) {
     Schema.Type type;
     if (field.getSchema().isNullable()) {
@@ -217,8 +141,8 @@ public class DBRecord implements Writable, DBWritable {
     }
     Preconditions.checkArgument(type.isSimpleType(),
                                 "Only simple types are supported (boolean, int, long, float, double, string, bytes) " +
-                                  "for writing to a Database Sink. Found %s. Please remove this column or " +
-                                  "transform it to a simple type.", type);
+                                  "for writing a DBRecord, but found '%s' as the type for column '%s'. Please " +
+                                  "remove this column or transform it to a simple type.", type, field.getName());
     return type;
   }
 
@@ -250,9 +174,12 @@ public class DBRecord implements Writable, DBWritable {
           Clob clob = (Clob) original;
           try {
             try (BufferedReader br = new BufferedReader(clob.getCharacterStream(1, (int) clob.length()))) {
-              while ((s = br.readLine()) != null) {
+              if ((s = br.readLine()) != null) {
                 sbf.append(s);
+              }
+              while ((s = br.readLine()) != null) {
                 sbf.append(System.getProperty("line.separator"));
+                sbf.append(s);
               }
             }
           } catch (IOException e) {
@@ -266,7 +193,10 @@ public class DBRecord implements Writable, DBWritable {
     return original;
   }
 
-  private void writeToDataOut(DataOutput out, Schema.Type fieldType, Object fieldValue) throws IOException {
+  private void writeToDataOut(DataOutput out, Schema.Type fieldType, @Nullable Object fieldValue) throws IOException {
+    if (fieldValue == null) {
+      return;
+    }
     switch (fieldType) {
       case NULL:
         break;
@@ -300,12 +230,16 @@ public class DBRecord implements Writable, DBWritable {
     }
   }
 
-  private void writeToDB(PreparedStatement stmt, Schema.Type fieldType, Object fieldValue,
+  private void writeToDB(PreparedStatement stmt, Schema.Type fieldType, @Nullable Object fieldValue,
                          int fieldIndex) throws SQLException {
     int sqlIndex = fieldIndex + 1;
+    if (fieldValue == null) {
+      stmt.setNull(sqlIndex, columnTypes[fieldIndex]);
+      return;
+    }
     switch (fieldType) {
       case NULL:
-        stmt.setNull(sqlIndex, fieldIndex);
+        stmt.setNull(sqlIndex, columnTypes[fieldIndex]);
         break;
       case STRING:
         // clob can also be written to as setString

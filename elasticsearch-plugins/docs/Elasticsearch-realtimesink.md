@@ -14,6 +14,8 @@ to be able to search on them.
 
 Configuration
 -------------
+**referenceName:** This will be used to uniquely identify this sink for lineage, annotating metadata, etc.
+
 **es.cluster:** The name of the cluster to connect to; defaults to ``'elasticsearch'``.
 
 **es.transportAddresses:** The addresses for nodes; specify the address for at least one node,
@@ -36,10 +38,11 @@ in the record:
 
     {
         "name": "Elasticsearch",
-            "properties": {
-                "es.transportAddresses": "localhost:9300",
-                "es.index": "logs",
-                "es.type": "cdap",
-                "es.idField": "ts"
-            }
+        "type": "batchsink",
+        "properties": {
+            "es.transportAddresses": "localhost:9300",
+            "es.index": "logs",
+            "es.type": "cdap",
+            "es.idField": "ts"
+        }
     }

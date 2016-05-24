@@ -1,0 +1,46 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "FTP Batch Source Properties",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Reference Name",
+          "name": "referenceName"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Path",
+          "name": "path"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "File Regex",
+          "name": "fileRegex"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Input Format Class",
+          "name": "inputFormatClassName"
+        },
+        {
+          "widget-type": "json-editor",
+          "label": "File System Properties",
+          "name": "fileSystemProperties"
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "widget-type": "non-editable-schema-editor",
+      "schema": {
+        "offset": "long",
+        "body": "string"
+      }
+    }
+  ]
+}

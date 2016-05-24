@@ -14,6 +14,7 @@ then store them in a Microsoft SQL Server Database.
 
 Properties
 ----------
+**referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
 
 **path:** The path on Microsoft Azure Blob Storage to use as input.
 
@@ -36,6 +37,7 @@ specified directory. This example uses the 'hydrator' container at
 
     {
         "name": "AzureBlobStore",
+        "type": "batchsource",
         "properties": {
             "path": "/path/to/input",
             "account": "hydratorstorage.blob.core.windows.net",

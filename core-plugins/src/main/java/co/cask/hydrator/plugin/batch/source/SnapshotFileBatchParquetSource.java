@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -22,6 +22,7 @@ import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.data.schema.UnsupportedTypeException;
+import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
@@ -78,9 +79,11 @@ public class SnapshotFileBatchParquetSource extends SnapshotFileBatchSource<Null
       .setEnableExploreOnCreate(true)
       .setExploreFormat("parquet");
     try {
+      String schema = config.schema.toLowerCase();
       String hiveSchema = HiveSchemaConverter.toHiveSchema(
-        co.cask.cdap.api.data.schema.Schema.parseJson(config.schema.toLowerCase()));
+        co.cask.cdap.api.data.schema.Schema.parseJson(schema));
       propertiesBuilder.setExploreSchema(hiveSchema.substring(1, hiveSchema.length() - 1));
+      propertiesBuilder.add(DatasetProperties.SCHEMA, schema);
     } catch (UnsupportedTypeException e) {
       throw new IllegalArgumentException("schema " + config.schema + " is not supported.", e);
     } catch (Exception e) {

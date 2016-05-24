@@ -9,6 +9,8 @@ of the specified schema (if provided) or the table's schema.
 
 Configuration
 -------------
+**referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
+
 **metastoreURI:** The URI of Hive metastore in the format of ``thrift://<hostname>:<port>``.
 Example: ``thrift://somehost.net:9083``.
 

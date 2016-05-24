@@ -21,29 +21,28 @@ import co.cask.cdap.api.dataset.lib.cube.Cube;
 import co.cask.cdap.api.dataset.lib.cube.CubeQuery;
 import co.cask.cdap.api.dataset.lib.cube.TimeSeries;
 import co.cask.cdap.common.utils.Tasks;
-import co.cask.cdap.data2.dataset2.lib.cube.CubeDatasetDefinition;
-import co.cask.cdap.etl.common.ETLStage;
-import co.cask.cdap.etl.common.Plugin;
+import co.cask.cdap.etl.api.realtime.RealtimeSink;
+import co.cask.cdap.etl.api.realtime.RealtimeSource;
+import co.cask.cdap.etl.proto.v2.ETLPlugin;
+import co.cask.cdap.etl.proto.v2.ETLRealtimeConfig;
+import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.etl.realtime.ETLWorker;
-import co.cask.cdap.etl.realtime.config.ETLRealtimeConfig;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkerManager;
+import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.realtime.source.DataGeneratorSource;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.gson.Gson;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -57,22 +56,24 @@ public class RealtimeCubeSinkTest extends ETLRealtimeTestBase {
 
   @Test
   public void test() throws Exception {
-    Plugin source = new Plugin("DataGenerator",
-                               ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE,
-                                               DataGeneratorSource.TABLE_TYPE));
+    ETLPlugin source = new ETLPlugin("DataGenerator", RealtimeSource.PLUGIN_TYPE,
+                                     ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE, DataGeneratorSource.TABLE_TYPE,
+                                                     Constants.Reference.REFERENCE_NAME, "DG"),
+                                     null);
     // single aggregation
-    Map<String, String> datasetProps = ImmutableMap.of(
-      CubeDatasetDefinition.PROPERTY_AGGREGATION_PREFIX + "byName.dimensions", "name"
-    );
-    Map<String, String> measurementsProps = ImmutableMap.of(
-      Properties.Cube.MEASUREMENT_PREFIX + "score", "GAUGE"
-    );
-    Plugin sink = new Plugin("Cube",
-                             ImmutableMap.of(Properties.Cube.DATASET_NAME, "cube1",
-                                             Properties.Cube.DATASET_OTHER, new Gson().toJson(datasetProps),
-                                             Properties.Cube.MEASUREMENTS, new Gson().toJson(measurementsProps)));
-    ETLRealtimeConfig etlConfig = new ETLRealtimeConfig(new ETLStage("source", source),
-                                                        new ETLStage("sink", sink), Lists.<ETLStage>newArrayList());
+    String aggregationGroup = "byName:name";
+    String measurement = "score:GAUGE";
+
+    ETLPlugin sink = new ETLPlugin("Cube", RealtimeSink.PLUGIN_TYPE,
+                                   ImmutableMap.of(Properties.Cube.DATASET_NAME, "cube1",
+                                                   Properties.Cube.AGGREGATIONS, aggregationGroup,
+                                                   Properties.Cube.MEASUREMENTS, measurement),
+                                   null);
+    ETLRealtimeConfig etlConfig = ETLRealtimeConfig.builder()
+      .addStage(new ETLStage("source", source))
+      .addStage(new ETLStage("sink", sink))
+      .addConnection("source", "sink")
+      .build();
 
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testCubeSink");
     AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(APP_ARTIFACT, etlConfig);

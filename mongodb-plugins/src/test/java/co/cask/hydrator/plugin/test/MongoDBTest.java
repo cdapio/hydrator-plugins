@@ -17,40 +17,39 @@
 package co.cask.hydrator.plugin.test;
 
 import co.cask.cdap.api.artifact.ArtifactVersion;
-import co.cask.cdap.api.data.format.Formats;
+import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.table.Row;
-import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.common.utils.Tasks;
-import co.cask.cdap.etl.api.PipelineConfigurable;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.realtime.RealtimeSink;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
-import co.cask.cdap.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
-import co.cask.cdap.etl.common.ETLStage;
-import co.cask.cdap.etl.common.Plugin;
+import co.cask.cdap.etl.mock.batch.MockSink;
+import co.cask.cdap.etl.mock.batch.MockSource;
+import co.cask.cdap.etl.mock.test.HydratorTestBase;
+import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
+import co.cask.cdap.etl.proto.v2.ETLPlugin;
+import co.cask.cdap.etl.proto.v2.ETLRealtimeConfig;
+import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
 import co.cask.cdap.etl.realtime.ETLWorker;
-import co.cask.cdap.etl.realtime.config.ETLRealtimeConfig;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactRange;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
+import co.cask.cdap.proto.id.ArtifactId;
+import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
-import co.cask.cdap.test.StreamManager;
-import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.WorkerManager;
+import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.batch.sink.MongoDBBatchSink;
 import co.cask.hydrator.plugin.batch.source.MongoDBBatchSource;
-import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.realtime.sink.MongoDBRealtimeSink;
-import co.cask.hydrator.plugin.testclasses.StreamBatchSource;
-import co.cask.hydrator.plugin.testclasses.TableSink;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.mongodb.BasicDBList;
@@ -75,7 +74,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -84,15 +82,19 @@ import java.util.concurrent.TimeUnit;
 /**
  * Unit Tests for {@link MongoDBBatchSource} and {@link MongoDBBatchSink}.
  */
-public class MongoDBTest extends TestBase {
+public class MongoDBTest extends HydratorTestBase {
   private static final ArtifactVersion CURRENT_VERSION = new ArtifactVersion("3.2.0");
-  private static final Id.Artifact BATCH_APP_ARTIFACT_ID = Id.Artifact.from(Id.Namespace.DEFAULT,
-                                                                            "etlbatch", CURRENT_VERSION);
-  private static final Id.Artifact REALTIME_APP_ARTIFACT_ID = Id.Artifact.from(Id.Namespace.DEFAULT,
-                                                                               "etlrealtime", "3.2.0");
 
-  private static final ArtifactSummary ETLBATCH_ARTIFACT = ArtifactSummary.from(BATCH_APP_ARTIFACT_ID);
-  private static final ArtifactSummary ETLREALTIME_ARTIFACT = ArtifactSummary.from(REALTIME_APP_ARTIFACT_ID);
+  private static final ArtifactId BATCH_APP_ARTIFACT_ID =
+    NamespaceId.DEFAULT.artifact("etlbatch", CURRENT_VERSION.getVersion());
+  private static final ArtifactSummary ETLBATCH_ARTIFACT =
+    new ArtifactSummary(BATCH_APP_ARTIFACT_ID.getArtifact(), BATCH_APP_ARTIFACT_ID.getVersion());
+
+  private static final ArtifactId REALTIME_APP_ARTIFACT_ID =
+    NamespaceId.DEFAULT.artifact("etlrealtime", CURRENT_VERSION.getVersion());
+  private static final ArtifactSummary REALTIME_APP_ARTIFACT =
+    new ArtifactSummary(REALTIME_APP_ARTIFACT_ID.getArtifact(), REALTIME_APP_ARTIFACT_ID.getVersion());
+
   private static final ArtifactRange REALTIME_ARTIFACT_RANGE = new ArtifactRange(Id.Namespace.DEFAULT, "etlrealtime",
                                                                                  CURRENT_VERSION, true,
                                                                                  CURRENT_VERSION, true);
@@ -103,8 +105,6 @@ public class MongoDBTest extends TestBase {
   private static final String MONGO_DB = "cdap";
   private static final String MONGO_SOURCE_COLLECTIONS = "stocks";
   private static final String MONGO_SINK_COLLECTIONS = "copy";
-  private static final String STREAM_NAME = "myStream";
-  private static final String TABLE_NAME = "outputTable";
 
   private static final Schema SINK_BODY_SCHEMA = Schema.recordOf(
     "event",
@@ -117,30 +117,22 @@ public class MongoDBTest extends TestBase {
     Schema.Field.of("ticker", Schema.of(Schema.Type.STRING)),
     Schema.Field.of("num", Schema.of(Schema.Type.INT)),
     Schema.Field.of("price", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
-    Schema.Field.of("agents", Schema.nullableOf(Schema.arrayOf(Schema.of(Schema.Type.STRING)))));
+    Schema.Field.of("agents", Schema.nullableOf(Schema.arrayOf(Schema.nullableOf(Schema.of(Schema.Type.STRING))))));
 
   private MongodForTestsFactory factory = null;
   private int mongoPort;
 
   @BeforeClass
   public static void setup() throws Exception {
-    addAppArtifact(BATCH_APP_ARTIFACT_ID, ETLBatchApplication.class, BatchSource.class.getPackage().getName(),
-                   BatchSink.class.getPackage().getName(), PipelineConfigurable.class.getPackage().getName());
-
-    //add the artifact for the etl realtime app
-    addAppArtifact(REALTIME_APP_ARTIFACT_ID, ETLRealtimeApplication.class,
-                   RealtimeSink.class.getPackage().getName(),
-                   PipelineConfigurable.class.getPackage().getName());
+    setupBatchArtifacts(BATCH_APP_ARTIFACT_ID, ETLBatchApplication.class);
+    setupRealtimeArtifacts(REALTIME_APP_ARTIFACT_ID, ETLRealtimeApplication.class);
 
     Set<ArtifactRange> parents = ImmutableSet.of(REALTIME_ARTIFACT_RANGE, BATCH_ARTIFACT_RANGE);
 
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "batch-plugins", "1.0.0"), parents,
+    addPluginArtifact(NamespaceId.DEFAULT.artifact("mongo-plugins", "1.0.0"), parents,
                       MongoDBBatchSource.class, MongoInputFormat.class, MongoSplitter.class, MongoInputSplit.class,
                       MongoDBBatchSink.class,
                       MongoDBRealtimeSink.class);
-
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "realtime-sources", "1.0.0"), parents,
-                      DataGeneratorSource.class, StreamBatchSource.class, TableSink.class);
   }
 
   @Before
@@ -175,23 +167,25 @@ public class MongoDBTest extends TestBase {
 
   @Test
   public void testMongoDBRealtimeSink() throws Exception {
-    ETLStage source = new ETLStage("DataGenerator", new Plugin(
-      "DataGenerator",
-      ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE,
-                      DataGeneratorSource.TABLE_TYPE)));
-    ETLStage sink = new ETLStage("MongoDB", new Plugin(
+    Schema schema = Schema.recordOf("dummy", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
+    List<StructuredRecord> input = ImmutableList.of(StructuredRecord.builder(schema).set("x", 0).build());
+    ETLStage source = new ETLStage("source", co.cask.cdap.etl.mock.realtime.MockSource.getPlugin(input));
+    ETLStage sink = new ETLStage("MongoDB", new ETLPlugin(
       "MongoDB",
+      RealtimeSink.PLUGIN_TYPE,
       ImmutableMap.of(MongoDBRealtimeSink.Properties.CONNECTION_STRING,
                       String.format("mongodb://localhost:%d", mongoPort),
                       MongoDBRealtimeSink.Properties.DB_NAME, "cdap",
-                      MongoDBRealtimeSink.Properties.COLLECTION_NAME, "real")));
+                      MongoDBRealtimeSink.Properties.COLLECTION_NAME, "real",
+                      Constants.Reference.REFERENCE_NAME, "MongoDBTest"),
+      null));
     ETLRealtimeConfig etlConfig = ETLRealtimeConfig.builder()
-      .setSource(source)
-      .addSink(sink)
+      .addStage(source)
+      .addStage(sink)
       .addConnection(source.getName(), sink.getName())
       .build();
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "MongoDBRealtimeSinkTest");
-    AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(ETLREALTIME_ARTIFACT, etlConfig);
+    AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(REALTIME_APP_ARTIFACT, etlConfig);
     ApplicationManager appManager = deployApplication(appId, appRequest);
     WorkerManager workerManager = appManager.getWorkerManager(ETLWorker.class.getSimpleName());
     workerManager.start();
@@ -210,36 +204,33 @@ public class MongoDBTest extends TestBase {
 
   @Test
   public void testMongoDBSink() throws Exception {
-    StreamManager streamManager = getStreamManager(STREAM_NAME);
-    streamManager.createStream();
-    streamManager.send(ImmutableMap.of("header1", "bar"), "AAPL|10|500.32");
-    streamManager.send(ImmutableMap.of("header1", "bar"), "CDAP|13|212.36");
+    String inputDatasetName = "input-batchsinktest";
+    ETLStage source = new ETLStage("source", MockSource.getPlugin(inputDatasetName));
 
-    ETLStage source = new ETLStage("Stream", new Plugin(
-      "Stream",
-      ImmutableMap.<String, String>builder()
-        .put(Properties.Stream.NAME, STREAM_NAME)
-        .put(Properties.Stream.DURATION, "10m")
-        .put(Properties.Stream.DELAY, "0d")
-        .put(Properties.Stream.FORMAT, Formats.CSV)
-        .put(Properties.Stream.SCHEMA, SINK_BODY_SCHEMA.toString())
-        .put("format.setting.delimiter", "|")
-        .build()));
-
-    ETLStage sink = new ETLStage("MongoDB", new Plugin(
+    ETLStage sink = new ETLStage("MongoDB", new ETLPlugin(
       "MongoDB",
+      BatchSink.PLUGIN_TYPE,
       new ImmutableMap.Builder<String, String>()
         .put(MongoDBBatchSink.Properties.CONNECTION_STRING,
              String.format("mongodb://localhost:%d/%s.%s",
-                           mongoPort, MONGO_DB, MONGO_SINK_COLLECTIONS)).build()));
+                           mongoPort, MONGO_DB, MONGO_SINK_COLLECTIONS))
+        .put(Constants.Reference.REFERENCE_NAME, "MongoTestDBSink").build(),
+      null));
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(source)
-      .addSink(sink)
+      .addStage(source)
+      .addStage(sink)
       .addConnection(source.getName(), sink.getName())
       .build();
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "MongoSinkTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
+
+    List<StructuredRecord> inputRecords = ImmutableList.of(
+      StructuredRecord.builder(SINK_BODY_SCHEMA).set("ticker", "AAPL").set("num", 10).set("price", 500.32).build(),
+      StructuredRecord.builder(SINK_BODY_SCHEMA).set("ticker", "CDAP").set("num", 13).set("price", 212.36).build()
+    );
+    DataSetManager<Table> inputManager = getDataset(inputDatasetName);
+    MockSource.writeInput(inputManager, inputRecords);
 
     MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
     mrManager.start();
@@ -266,21 +257,30 @@ public class MongoDBTest extends TestBase {
 
   @Test
   public void testMongoToMongo() throws Exception {
-    ETLStage source = new ETLStage("MongoDBSource", new Plugin("MongoDB", new ImmutableMap.Builder<String, String>()
-      .put(MongoDBBatchSource.Properties.CONNECTION_STRING,
-           String.format("mongodb://localhost:%d/%s.%s",
-                         mongoPort, MONGO_DB, MONGO_SOURCE_COLLECTIONS))
-      .put(MongoDBBatchSource.Properties.SCHEMA, SOURCE_BODY_SCHEMA.toString())
-      .put(MongoDBBatchSource.Properties.SPLITTER_CLASS,
-           StandaloneMongoSplitter.class.getSimpleName()).build()));
+    ETLStage source = new ETLStage("MongoDBSource", new ETLPlugin(
+      "MongoDB",
+      BatchSource.PLUGIN_TYPE,
+      new ImmutableMap.Builder<String, String>()
+        .put(MongoDBBatchSource.Properties.CONNECTION_STRING,
+             String.format("mongodb://localhost:%d/%s.%s",
+                           mongoPort, MONGO_DB, MONGO_SOURCE_COLLECTIONS))
+        .put(MongoDBBatchSource.Properties.SCHEMA, SOURCE_BODY_SCHEMA.toString())
+        .put(MongoDBBatchSource.Properties.SPLITTER_CLASS, StandaloneMongoSplitter.class.getSimpleName())
+        .put(Constants.Reference.REFERENCE_NAME, "MongoMongoTest").build(),
+      null));
 
-    ETLStage sink = new ETLStage("MongoDBSink", new Plugin("MongoDB", new ImmutableMap.Builder<String, String>()
-      .put(MongoDBBatchSink.Properties.CONNECTION_STRING,
-           String.format("mongodb://localhost:%d/%s.%s",
-                         mongoPort, MONGO_DB, MONGO_SINK_COLLECTIONS)).build()));
+    ETLStage sink = new ETLStage("MongoDBSink", new ETLPlugin(
+      "MongoDB",
+      BatchSink.PLUGIN_TYPE,
+      new ImmutableMap.Builder<String, String>()
+        .put(MongoDBBatchSink.Properties.CONNECTION_STRING,
+             String.format("mongodb://localhost:%d/%s.%s",
+                           mongoPort, MONGO_DB, MONGO_SINK_COLLECTIONS))
+        .put(Constants.Reference.REFERENCE_NAME, "MongoToMongoTest").build(),
+      null));
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(source)
-      .addSink(sink)
+      .addStage(source)
+      .addStage(sink)
       .addConnection(source.getName(), sink.getName())
       .build();
 
@@ -316,20 +316,23 @@ public class MongoDBTest extends TestBase {
   @SuppressWarnings("ConstantConditions")
   @Test
   public void testMongoDBSource() throws Exception {
-    ETLStage source = new ETLStage("MongoDB", new Plugin("MongoDB", new ImmutableMap.Builder<String, String>()
-                                              .put(MongoDBBatchSource.Properties.CONNECTION_STRING,
-                                                   String.format("mongodb://localhost:%d/%s.%s",
-                                                                 mongoPort, MONGO_DB, MONGO_SOURCE_COLLECTIONS))
-                                              .put(MongoDBBatchSource.Properties.SCHEMA, SOURCE_BODY_SCHEMA.toString())
-                                              .put(MongoDBBatchSource.Properties.SPLITTER_CLASS,
-                                                   StandaloneMongoSplitter.class.getSimpleName()).build()));
-    ETLStage sink = new ETLStage("Table", new Plugin("Table", ImmutableMap.of(Properties.Table.NAME, TABLE_NAME,
-                                                          Properties.Table.PROPERTY_SCHEMA,
-                                                          SINK_BODY_SCHEMA.toString(),
-                                                          Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ticker")));
+    ETLStage source = new ETLStage("MongoDB", new ETLPlugin(
+      "MongoDB",
+      BatchSource.PLUGIN_TYPE,
+      new ImmutableMap.Builder<String, String>()
+        .put(MongoDBBatchSource.Properties.CONNECTION_STRING,
+             String.format("mongodb://localhost:%d/%s.%s",
+                           mongoPort, MONGO_DB, MONGO_SOURCE_COLLECTIONS))
+        .put(MongoDBBatchSource.Properties.SCHEMA, SOURCE_BODY_SCHEMA.toString())
+        .put(MongoDBBatchSource.Properties.SPLITTER_CLASS,
+             StandaloneMongoSplitter.class.getSimpleName())
+        .put(Constants.Reference.REFERENCE_NAME, "SimpleMongoTest").build(),
+      null));
+    String outputDatasetName = "output-batchsourcetest";
+    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(source)
-      .addSink(sink)
+      .addStage(source)
+      .addStage(sink)
       .addConnection(source.getName(), sink.getName())
       .build();
 
@@ -341,22 +344,18 @@ public class MongoDBTest extends TestBase {
     mrManager.start();
     mrManager.waitForFinish(5, TimeUnit.MINUTES);
 
-    DataSetManager<Table> outputManager = getDataset(TABLE_NAME);
-    Table outputTable = outputManager.get();
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);
+    Assert.assertEquals(2, outputRecords.size());
+    String ticker = outputRecords.get(0).get("ticker");
+    StructuredRecord row1 = "AAPL".equals(ticker) ? outputRecords.get(0) : outputRecords.get(1);
+    StructuredRecord row2 = "AAPL".equals(ticker) ? outputRecords.get(1) : outputRecords.get(0);
 
-    // Scanner to verify the data in the table
-    Scanner scanner = outputTable.scan(null, null);
-    Row row1 = scanner.next();
-    Assert.assertNotNull(row1);
-    scanner.close();
-    Assert.assertArrayEquals("AAPL".getBytes(), row1.getRow());
-    Assert.assertEquals(10, (int) row1.getInt("num"));
-    Assert.assertEquals(23.23, row1.getDouble("price"), 0.00001);
-    Row row2 = scanner.next();
-    Assert.assertNotNull(row2);
-    scanner.close();
-    Assert.assertArrayEquals("ORCL".getBytes(), row2.getRow());
-    Assert.assertEquals(12, (int) row2.getInt("num"));
-    Assert.assertEquals(10.10, row2.getDouble("price"), 0.00001);
+    Assert.assertEquals("AAPL", row1.get("ticker"));
+    Assert.assertEquals(10, (int) row1.get("num"));
+    Assert.assertEquals(23.23, (double) row1.get("price"), 0.00001);
+    Assert.assertEquals("ORCL", row2.get("ticker"));
+    Assert.assertEquals(12, (int) row2.get("num"));
+    Assert.assertEquals(10.10, (double) row2.get("price"), 0.00001);
   }
 }

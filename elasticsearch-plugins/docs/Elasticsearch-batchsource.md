@@ -13,6 +13,8 @@ in an index and type from Elasticsearch and store the data in an HBase table.
 
 Configuration
 -------------
+**referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
+
 **es.host:** The hostname and port for the Elasticsearch instance.
 
 **es.index:** The name of the index to query.
@@ -33,6 +35,7 @@ All data from the index will be read on each run:
 
     {
         "name": "Elasticsearch",
+        "type": "batchsource",
         "properties": {
             "es.host": "localhost:9200",
             "es.index": "megacorp",

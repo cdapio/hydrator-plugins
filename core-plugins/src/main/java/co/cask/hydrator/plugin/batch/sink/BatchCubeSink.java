@@ -24,17 +24,26 @@ import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.cube.Cube;
 import co.cask.cdap.api.dataset.lib.cube.CubeFact;
 import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.hydrator.plugin.common.CubeSinkConfig;
+import co.cask.hydrator.plugin.common.CubeUtils;
 import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.common.StructuredRecordToCubeFact;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -55,9 +64,6 @@ import java.util.Map;
 @Name("Cube")
 @Description("CDAP Cube Dataset Batch Sink")
 public class BatchCubeSink extends BatchWritableSink<StructuredRecord, byte[], CubeFact> {
-  private static final Gson GSON = new Gson();
-  private static final Type STRING_MAP_TYPE = new TypeToken<Map<String, String>>() { }.getType();
-
   private final CubeSinkConfig config;
 
   public BatchCubeSink(CubeSinkConfig config) {
@@ -69,24 +75,44 @@ public class BatchCubeSink extends BatchWritableSink<StructuredRecord, byte[], C
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    transform = new StructuredRecordToCubeFact(context.getPluginProperties().getProperties());
+    transform = new StructuredRecordToCubeFact(getProperties());
   }
 
+  @VisibleForTesting
   @Override
   protected Map<String, String> getProperties() {
-    Map<String, String> properties = new HashMap<>(config.getProperties().getProperties());
-    // todo: workaround for CDAP-2944: allows specifying custom props via JSON map in a property value
-    if (!Strings.isNullOrEmpty(config.getDatasetOther())) {
-      properties.remove(Properties.Cube.DATASET_OTHER);
-      Map<String, String> customProperties = GSON.fromJson(config.getDatasetOther(), STRING_MAP_TYPE);
-      properties.putAll(customProperties);
+    Map<String, String> properties = new HashMap<>();
+    // done only for testing
+    if (config.getProperties() != null) {
+      properties.putAll(config.getProperties().getProperties());
+    }
+    // add aggregations
+    if (!Strings.isNullOrEmpty(config.getAggregations())) {
+      properties.remove(Properties.Cube.AGGREGATIONS);
+      properties.putAll(CubeUtils.parseAndGetProperties(Properties.Cube.AGGREGATIONS,
+                                                        config.getAggregations(), ";", ":",
+                                                        new Function<String, String>() {
+                                                          @Override
+                                                          public String apply(String input) {
+                                                            return "dataset.cube.aggregation." + input + ".dimensions";
+                                                          }
+                                                        }));
+    }
+
+    // add measurements
+    if (!Strings.isNullOrEmpty(config.getMeasurements())) {
+      properties.remove(Properties.Cube.MEASUREMENTS);
+      properties.putAll(CubeUtils.parseAndGetProperties(Properties.Cube.MEASUREMENTS,
+                                                        config.getMeasurements(), ";", ":",
+                                                        new Function<String, String>() {
+                                                          @Override
+                                                          public String apply(String input) {
+                                                            return Properties.Cube.MEASUREMENT_PREFIX + input;
+                                                          }
+                                                        }));
     }
     properties.put(Properties.BatchReadableWritable.NAME, config.getName());
     properties.put(Properties.BatchReadableWritable.TYPE, Cube.class.getName());
-
-    // will invoke validation of properties for mapping to the CubeFact
-    new StructuredRecordToCubeFact(properties);
-
     return properties;
   }
 

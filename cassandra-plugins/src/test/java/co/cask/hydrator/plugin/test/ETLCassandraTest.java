@@ -17,40 +17,40 @@
 package co.cask.hydrator.plugin.test;
 
 import co.cask.cdap.api.artifact.ArtifactVersion;
-import co.cask.cdap.api.data.format.Formats;
+import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.table.Row;
-import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.common.utils.Tasks;
-import co.cask.cdap.etl.api.PipelineConfigurable;
+import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
-import co.cask.cdap.etl.api.realtime.RealtimeSource;
+import co.cask.cdap.etl.api.realtime.RealtimeSink;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
-import co.cask.cdap.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
-import co.cask.cdap.etl.common.ETLStage;
-import co.cask.cdap.etl.common.Plugin;
+import co.cask.cdap.etl.mock.batch.MockSink;
+import co.cask.cdap.etl.mock.batch.MockSource;
+import co.cask.cdap.etl.mock.test.HydratorTestBase;
+import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
+import co.cask.cdap.etl.proto.v2.ETLPlugin;
+import co.cask.cdap.etl.proto.v2.ETLRealtimeConfig;
+import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
 import co.cask.cdap.etl.realtime.ETLWorker;
-import co.cask.cdap.etl.realtime.config.ETLRealtimeConfig;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactRange;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
+import co.cask.cdap.proto.id.ArtifactId;
+import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
-import co.cask.cdap.test.StreamManager;
-import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkerManager;
+import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.batch.sink.BatchCassandraSink;
 import co.cask.hydrator.plugin.batch.source.BatchCassandraSource;
-import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.realtime.RealtimeCassandraSink;
-import co.cask.hydrator.plugin.testclasses.StreamBatchSource;
-import co.cask.hydrator.plugin.testclasses.TableSink;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.apache.cassandra.hadoop.ColumnFamilySplit;
@@ -65,16 +65,17 @@ import org.apache.cassandra.thrift.CqlResult;
 import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.hadoop.conf.Configuration;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -83,18 +84,15 @@ import java.util.concurrent.TimeUnit;
  *  Unit test for {@link BatchCassandraSink}, {@link BatchCassandraSource},
  *  and {@link co.cask.hydrator.plugin.realtime.RealtimeCassandraSink} classes.
  */
-public class ETLCassandraTest extends TestBase {
-  private static final String STREAM_NAME = "myStream";
-  private static final String TABLE_NAME = "outputTable";
-
-  private static final Schema BODY_SCHEMA = Schema.recordOf(
+public class ETLCassandraTest extends HydratorTestBase {
+  private static final Schema SCHEMA = Schema.recordOf(
     "event",
     Schema.Field.of("ticker", Schema.of(Schema.Type.STRING)),
     Schema.Field.of("num", Schema.of(Schema.Type.INT)),
     Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
 
-  private Cassandra.Client client;
-  private int rpcPort;
+  private static Cassandra.Client client;
+  private static int rpcPort;
 
   @ClassRule
   public static TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -104,13 +102,15 @@ public class ETLCassandraTest extends TestBase {
 
   private static final ArtifactVersion CURRENT_VERSION = new ArtifactVersion("3.2.0");
 
-  private static final Id.Artifact BATCH_APP_ARTIFACT_ID = Id.Artifact.from(Id.Namespace.DEFAULT,
-                                                                            "etlbatch", CURRENT_VERSION);
-  private static final ArtifactSummary ETLBATCH_ARTIFACT = ArtifactSummary.from(BATCH_APP_ARTIFACT_ID);
+  private static final ArtifactId BATCH_APP_ARTIFACT_ID =
+    NamespaceId.DEFAULT.artifact("etlbatch", CURRENT_VERSION.getVersion());
+  private static final ArtifactSummary ETLBATCH_ARTIFACT =
+    new ArtifactSummary(BATCH_APP_ARTIFACT_ID.getArtifact(), BATCH_APP_ARTIFACT_ID.getVersion());
 
-  private static final Id.Artifact REALTIME_APP_ARTIFACT_ID = Id.Artifact.from(Id.Namespace.DEFAULT,
-                                                                               "etlrealtime", "3.2.0");
-  private static final ArtifactSummary REALTIME_APP_ARTIFACT = ArtifactSummary.from(REALTIME_APP_ARTIFACT_ID);
+  private static final ArtifactId REALTIME_APP_ARTIFACT_ID =
+    NamespaceId.DEFAULT.artifact("etlrealtime", CURRENT_VERSION.getVersion());
+  private static final ArtifactSummary REALTIME_APP_ARTIFACT =
+    new ArtifactSummary(REALTIME_APP_ARTIFACT_ID.getArtifact(), REALTIME_APP_ARTIFACT_ID.getVersion());
 
   private static final ArtifactRange REALTIME_ARTIFACT_RANGE = new ArtifactRange(Id.Namespace.DEFAULT, "etlrealtime",
                                                                                  CURRENT_VERSION, true,
@@ -120,31 +120,17 @@ public class ETLCassandraTest extends TestBase {
                                                                                  CURRENT_VERSION, true);
   @BeforeClass
   public static void setupTest() throws Exception {
-    // add the artifact for etl batch app
-    addAppArtifact(BATCH_APP_ARTIFACT_ID, ETLBatchApplication.class,
-                   BatchSource.class.getPackage().getName(),
-                   PipelineConfigurable.class.getPackage().getName());
-
-    //add the artifact for the etl realtime app
-    addAppArtifact(REALTIME_APP_ARTIFACT_ID, ETLRealtimeApplication.class,
-                   RealtimeSource.class.getPackage().getName(),
-                   PipelineConfigurable.class.getPackage().getName());
+    setupBatchArtifacts(BATCH_APP_ARTIFACT_ID, ETLBatchApplication.class);
+    setupRealtimeArtifacts(REALTIME_APP_ARTIFACT_ID, ETLRealtimeApplication.class);
 
     Set<ArtifactRange> parents = ImmutableSet.of(REALTIME_ARTIFACT_RANGE, BATCH_ARTIFACT_RANGE);
 
-    // add artifact for cassandra plugins
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "cassandra-plugins", "1.0.0"), parents,
+    addPluginArtifact(NamespaceId.DEFAULT.artifact("cassandra-plugins", "1.0.0"),
+                      parents,
                       BatchCassandraSink.class, BatchCassandraSource.class,
                       CqlInputFormat.class, CqlOutputFormat.class, ColumnFamilySplit.class,
                       RealtimeCassandraSink.class);
 
-    // add artifact for test plugins
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "test-sources", "1.0.0"), parents,
-                      StreamBatchSource.class, TableSink.class, DataGeneratorSource.class);
-  }
-
-  @Before
-  public void beforeTest() throws Exception {
     rpcPort = 9160;
     EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra210.yaml", 30 * 1000);
 
@@ -164,8 +150,8 @@ public class ETLCassandraTest extends TestBase {
       Compression.NONE, ConsistencyLevel.ALL);
   }
 
-  @After
-  public void afterTest() throws Exception {
+  @AfterClass
+  public static void cleanup() throws Exception {
     EmbeddedCassandraServerHelper.cleanEmbeddedCassandra();
   }
 
@@ -178,23 +164,24 @@ public class ETLCassandraTest extends TestBase {
 
   @Test
   public void testInvalidRealtimeCassandraSink() throws Exception {
-    ETLStage source = new ETLStage("DataGenerator", new Plugin(
-      "DataGenerator",
-      ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE,
-                      DataGeneratorSource.TABLE_TYPE)));
-    ETLStage sink = new ETLStage("Cassandra", new Plugin(
+    ETLStage source = new ETLStage("source", MockSource.getPlugin("dummyInput"));
+    ETLStage sink = new ETLStage("Cassandra", new ETLPlugin(
       "Cassandra",
+      BatchSink.PLUGIN_TYPE,
       new ImmutableMap.Builder<String, String>()
+        .put(Constants.Reference.REFERENCE_NAME, "TestCass")
         .put(RealtimeCassandraSink.Cassandra.ADDRESSES, "localhost:9042,invalid:abcd")
         .put(RealtimeCassandraSink.Cassandra.KEYSPACE, "testkeyspace")
         .put(RealtimeCassandraSink.Cassandra.COLUMN_FAMILY, "testtablerealtime")
         .put(RealtimeCassandraSink.Cassandra.COLUMNS, "name,graduated,id,score,time")
         .put(RealtimeCassandraSink.Cassandra.COMPRESSION, "NONE")
         .put(RealtimeCassandraSink.Cassandra.CONSISTENCY_LEVEL, "QUORUM")
-        .build()));
+        .build(),
+      null));
+
     ETLRealtimeConfig etlConfig = ETLRealtimeConfig.builder()
-      .setSource(source)
-      .addSink(sink)
+      .addStage(source)
+      .addStage(sink)
       .addConnection(source.getName(), sink.getName())
       .build();
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testESSink");
@@ -208,25 +195,11 @@ public class ETLCassandraTest extends TestBase {
   }
 
   public void testCassandraSink() throws Exception {
-    StreamManager streamManager = getStreamManager(STREAM_NAME);
-    streamManager.createStream();
-    streamManager.send(ImmutableMap.of("header1", "bar"), "AAPL|10|500.32");
-    streamManager.send(ImmutableMap.of("header1", "bar"), "CDAP|13|212.36");
+    String inputDatasetName = "input-batchsinktest";
+    ETLStage source = new ETLStage("source", MockSource.getPlugin(inputDatasetName));
 
-    ETLStage source = new ETLStage("Stream", new Plugin(
-      "Stream",
-      ImmutableMap.<String, String>builder()
-        .put(Properties.Stream.NAME, STREAM_NAME)
-        .put(Properties.Stream.DURATION, "10m")
-        .put(Properties.Stream.DELAY, "0d")
-        .put(Properties.Stream.FORMAT, Formats.CSV)
-        .put(Properties.Stream.SCHEMA, BODY_SCHEMA.toString())
-        .put("format.setting.delimiter", "|")
-        .build()));
-
-    ETLStage sink = new ETLStage("Cassandra", new Plugin(
-      "Cassandra",
-      new ImmutableMap.Builder<String, String>()
+    Map<String, String> sinkProperties = new ImmutableMap.Builder<String, String>()
+        .put(Constants.Reference.REFERENCE_NAME, "TestCass")
         .put(BatchCassandraSink.Cassandra.INITIAL_ADDRESS, "localhost")
         .put(BatchCassandraSink.Cassandra.PORT, Integer.toString(rpcPort))
         .put(BatchCassandraSink.Cassandra.PARTITIONER, "org.apache.cassandra.dht.Murmur3Partitioner")
@@ -234,17 +207,26 @@ public class ETLCassandraTest extends TestBase {
         .put(BatchCassandraSink.Cassandra.COLUMN_FAMILY, "testtablebatch")
         .put(BatchCassandraSink.Cassandra.COLUMNS, "ticker, num, price")
         .put(BatchCassandraSink.Cassandra.PRIMARY_KEY, "ticker")
-        .build()));
+        .build();
+    ETLStage sink = new ETLStage("sink", new ETLPlugin("Cassandra", BatchSink.PLUGIN_TYPE, sinkProperties, null));
 
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(source)
-      .addSink(sink)
+      .addStage(source)
+      .addStage(sink)
       .addConnection(source.getName(), sink.getName())
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "cassandraSinkTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
+
+    // write input data
+    List<StructuredRecord> input = ImmutableList.of(
+      StructuredRecord.builder(SCHEMA).set("ticker", "AAPL").set("num", 10).set("price", 500.32d).build(),
+      StructuredRecord.builder(SCHEMA).set("ticker", "CDAP").set("num", 13).set("price", 212.36d).build()
+    );
+    DataSetManager<Table> inputManager = getDataset(inputDatasetName);
+    MockSource.writeInput(inputManager, input);
 
     MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
     mrManager.start();
@@ -272,30 +254,28 @@ public class ETLCassandraTest extends TestBase {
     Assert.assertEquals(ByteBufferUtil.bytes(212.36), result.getRows().get(1).getColumns().get(2).bufferForValue());
   }
 
-  @SuppressWarnings("ConstantConditions")
   private void testCassandraSource() throws Exception {
-    ETLStage source = new ETLStage("Cassandra", new Plugin(
-      "Cassandra",
-      new ImmutableMap.Builder<String, String>()
-        .put(BatchCassandraSource.Cassandra.INITIAL_ADDRESS, "localhost")
-        .put(BatchCassandraSource.Cassandra.PARTITIONER,
-             "org.apache.cassandra.dht.Murmur3Partitioner")
-        .put(BatchCassandraSource.Cassandra.KEYSPACE, "testkeyspace")
-        .put(BatchCassandraSource.Cassandra.COLUMN_FAMILY, "testtablebatch")
-        .put(BatchCassandraSource.Cassandra.QUERY, "SELECT * from testtablebatch " +
-          "where token(ticker) > ? " +
-          "and token(ticker) <= ?")
-        .put(BatchCassandraSource.Cassandra.SCHEMA, BODY_SCHEMA.toString())
-        .build()));
-    ETLStage sink = new ETLStage("Table", new Plugin(
-      "Table",
-      ImmutableMap.of(Properties.Table.NAME, TABLE_NAME,
-                      Properties.Table.PROPERTY_SCHEMA, BODY_SCHEMA.toString(),
-                      Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "ticker")));
+    Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
+      .put(Constants.Reference.REFERENCE_NAME, "TestCass")
+      .put(BatchCassandraSource.Cassandra.INITIAL_ADDRESS, "localhost")
+      .put(BatchCassandraSource.Cassandra.PARTITIONER,
+           "org.apache.cassandra.dht.Murmur3Partitioner")
+      .put(BatchCassandraSource.Cassandra.KEYSPACE, "testkeyspace")
+      .put(BatchCassandraSource.Cassandra.COLUMN_FAMILY, "testtablebatch")
+      .put(BatchCassandraSource.Cassandra.QUERY, "SELECT * from testtablebatch " +
+        "where token(ticker) > ? " +
+        "and token(ticker) <= ?")
+      .put(BatchCassandraSource.Cassandra.SCHEMA, SCHEMA.toString())
+      .build();
+    ETLStage source =
+      new ETLStage("source", new ETLPlugin("Cassandra", BatchSource.PLUGIN_TYPE, sourceProperties, null));
+
+    String outputDatasetName = "output-batchsourcetest";
+    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .setSource(source)
-      .addSink(sink)
+      .addStage(source)
+      .addStage(sink)
       .addConnection(source.getName(), sink.getName())
       .build();
 
@@ -307,45 +287,57 @@ public class ETLCassandraTest extends TestBase {
     mrManager.start();
     mrManager.waitForFinish(5, TimeUnit.MINUTES);
 
-    DataSetManager<Table> outputManager = getDataset(TABLE_NAME);
-    Table outputTable = outputManager.get();
-
-    // Scanner to verify number of rows
-    Scanner scanner = outputTable.scan(null, null);
-    Row row1 = scanner.next();
-    Assert.assertNotNull(row1);
-    Row row2 = scanner.next();
-    Assert.assertNotNull(row2);
-    Assert.assertNull(scanner.next());
-    scanner.close();
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> output = MockSink.readOutput(outputManager);
 
     // Verify data
-    Assert.assertEquals(10, (int) row1.getInt("num"));
-    Assert.assertEquals(500.32, row1.getDouble("price"), 0.000001);
-    Assert.assertNull(row1.get("NOT_IMPORTED"));
+    Map<Integer, Double> results = new HashMap<>();
+    StructuredRecord row1 = output.get(0);
+    results.put((Integer) row1.get("num"), (Double) row1.get("price"));
+    StructuredRecord row2 = output.get(1);
+    results.put((Integer) row2.get("num"), (Double) row2.get("price"));
 
-    Assert.assertEquals(13, (int) row2.getInt("num"));
-    Assert.assertEquals(212.36, row2.getDouble("price"), 0.000001);
+    Assert.assertEquals(500.32, results.get(10), 0.000001);
+    Assert.assertEquals(212.36, results.get(13), 0.000001);
   }
 
   private void testCassandraRealtimeSink() throws Exception {
-    ETLStage source = new ETLStage("DataGenerator", new Plugin(
-      "DataGenerator",
-      ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE, DataGeneratorSource.TABLE_TYPE)));
-    ETLStage sink = new ETLStage("Cassandra", new Plugin(
+    Schema schema = Schema.recordOf(
+      "user",
+      Schema.Field.of("name", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("graduated", Schema.of(Schema.Type.BOOLEAN)),
+      Schema.Field.of("id", Schema.of(Schema.Type.INT)),
+      Schema.Field.of("score", Schema.of(Schema.Type.DOUBLE)),
+      Schema.Field.of("time", Schema.of(Schema.Type.LONG))
+    );
+    List<StructuredRecord> input = ImmutableList.of(
+      StructuredRecord.builder(schema)
+        .set("id", 1)
+        .set("name", "Bob")
+        .set("score", 3.4)
+        .set("graduated", false)
+        .set("time", 1234567890000L)
+        .build()
+    );
+
+    ETLStage source = new ETLStage("source", co.cask.cdap.etl.mock.realtime.MockSource.getPlugin(input));
+    ETLStage sink = new ETLStage("Cassandra", new ETLPlugin(
       "Cassandra",
+      RealtimeSink.PLUGIN_TYPE,
       new ImmutableMap.Builder<String, String>()
+        .put(Constants.Reference.REFERENCE_NAME, "TestCass")
         .put(RealtimeCassandraSink.Cassandra.ADDRESSES, "localhost:9042")
         .put(RealtimeCassandraSink.Cassandra.KEYSPACE, "testkeyspace")
         .put(RealtimeCassandraSink.Cassandra.COLUMN_FAMILY, "testtablerealtime")
         .put(RealtimeCassandraSink.Cassandra.COLUMNS, "name, graduated, id, score, time")
         .put(RealtimeCassandraSink.Cassandra.COMPRESSION, "NONE")
         .put(RealtimeCassandraSink.Cassandra.CONSISTENCY_LEVEL, "QUORUM")
-        .build()));
+        .build(),
+      null));
     final String cqlQuery = "select name,graduated,id,score,time from testtablerealtime";
     ETLRealtimeConfig etlConfig = ETLRealtimeConfig.builder()
-      .setSource(source)
-      .addSink(sink)
+      .addStage(source)
+      .addStage(sink)
       .addConnection(source.getName(), sink.getName())
       .build();
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testESSink");
@@ -360,7 +352,7 @@ public class ETLCassandraTest extends TestBase {
       public Boolean call() throws Exception {
         CqlResult result = client.execute_cql3_query(ByteBufferUtil.bytes(cqlQuery),
                                                      Compression.NONE, ConsistencyLevel.ALL);
-        return result.rows.size() >= 2;
+        return result.rows.size() > 0;
       }
     }, 30, TimeUnit.SECONDS, 50, TimeUnit.MILLISECONDS);
     workerManager.stop();
@@ -370,15 +362,10 @@ public class ETLCassandraTest extends TestBase {
     List<Column> columns = result.getRows().get(0).getColumns();
 
     Assert.assertEquals("Bob", ByteBufferUtil.string(columns.get(0).bufferForValue()));
-    byte[] bytes = new byte[1];
-    bytes[0] = 0;
+    byte[] bytes = new byte[] { 0 };
     Assert.assertEquals(ByteBuffer.wrap(bytes), columns.get(1).bufferForValue());
     Assert.assertEquals(1, ByteBufferUtil.toInt(columns.get(2).bufferForValue()));
     Assert.assertEquals(3.4, ByteBufferUtil.toDouble(columns.get(3).bufferForValue()), 0.000001);
-    Assert.assertNotNull(ByteBufferUtil.toLong(columns.get(4).bufferForValue()));
-
-    List<Column> columns2 = result.getRows().get(1).getColumns();
-    Assert.assertNotEquals(ByteBufferUtil.toLong(columns.get(4).bufferForValue()),
-                           ByteBufferUtil.toLong(columns2.get(4).bufferForValue()));
+    Assert.assertEquals(1234567890000L, ByteBufferUtil.toLong(columns.get(4).bufferForValue()));
   }
 }

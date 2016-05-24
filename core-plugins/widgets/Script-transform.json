@@ -12,6 +12,11 @@
           "widget-attributes": {
             "default": "function transform(input, context) {\n  return input;\n}"
           }
+        },
+        {
+          "widget-type": "json-editor",
+          "label": "Lookup",
+          "name": "lookup"
         }
       ]
     }

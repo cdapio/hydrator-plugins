@@ -16,6 +16,8 @@ of the FileSet to a database table where it can be served to your users.
 
 Properties
 ----------
+**referenceName:** This will be used to uniquely identify this sink for lineage, annotating metadata, etc.
+
 **tableName:** Name of the table to export to.
 
 **columns:** Comma-separated list of columns in the specified table to export to.
@@ -55,6 +57,7 @@ the record will be written to the 'id' column of that row.
 
     {
         "name": "Database",
+        "type": "batchsink",
         "properties": {
             "tableName": "users",
             "columns": "id,name,email,phone",

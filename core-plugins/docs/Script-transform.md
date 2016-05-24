@@ -53,6 +53,7 @@ fields:
 
     {
         "name": "Script",
+        "type": "transform",
         "properties": {
             "script": "function transform(input, context) {
                    var tax = input.subtotal * 0.0975;
@@ -78,11 +79,13 @@ fields:
                 ]
             }",
             "lookup": "{
-                \"purchases\":{
-                    \"type\":\"DATASET\",
-                    \"datasetProperties\":{
-                        \"dataset_argument1\":\"foo\",
-                        \"dataset_argument2\":\"bar\"
+                \"tables\":{
+                    \"purchases\":{
+                        \"type\":\"DATASET\",
+                        \"datasetProperties\":{
+                            \"dataset_argument1\":\"foo\",
+                            \"dataset_argument2\":\"bar\"
+                        }
                     }
                 }
             }"

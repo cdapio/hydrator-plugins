@@ -19,28 +19,28 @@ package co.cask.hydrator.plugin;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.plugin.PluginClass;
 import co.cask.cdap.api.plugin.PluginPropertyField;
-import co.cask.cdap.etl.api.PipelineConfigurable;
-import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
-import co.cask.cdap.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
+import co.cask.cdap.etl.mock.test.HydratorTestBase;
+import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
+import co.cask.cdap.etl.proto.v2.ETLPlugin;
+import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.RunRecord;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
+import co.cask.cdap.proto.id.ApplicationId;
+import co.cask.cdap.proto.id.ArtifactId;
+import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.MapReduceManager;
-import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
+import co.cask.hydrator.plugin.db.batch.action.QueryAction;
 import co.cask.hydrator.plugin.db.batch.sink.DBSink;
 import co.cask.hydrator.plugin.db.batch.sink.ETLDBOutputFormat;
 import co.cask.hydrator.plugin.db.batch.source.DBSource;
 import co.cask.hydrator.plugin.db.batch.source.DataDrivenETLDBInputFormat;
-import co.cask.hydrator.plugin.db.batch.source.ETLDBInputFormat;
-import co.cask.hydrator.plugin.teradata.batch.source.TeradataSource;
-import co.cask.hydrator.plugin.test.TableSink;
-import co.cask.hydrator.plugin.test.TableSource;
 import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Sets;
@@ -64,14 +64,18 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import javax.sql.rowset.serial.SerialBlob;
 
 /**
  * Database Plugin Tests setup.
  */
-public class DatabasePluginTestBase extends TestBase {
-  protected static final Id.Artifact APP_ARTIFACT_ID = Id.Artifact.from(Id.Namespace.DEFAULT, "etlbatch", "3.2.0");
+public class DatabasePluginTestBase extends HydratorTestBase {
+  protected static final ArtifactId APP_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("etlbatch", "3.2.0");
   protected static final ArtifactSummary ETLBATCH_ARTIFACT = new ArtifactSummary("etlbatch", "3.2.0");
   protected static final String CLOB_DATA =
     "this is a long string with line separators \n that can be used as \n a clob";
@@ -94,30 +98,18 @@ public class DatabasePluginTestBase extends TestBase {
       return;
     }
 
-    // add the artifact for etl batch app
-    addAppArtifact(APP_ARTIFACT_ID, ETLBatchApplication.class,
-                   BatchSource.class.getPackage().getName(),
-                   PipelineConfigurable.class.getPackage().getName(),
-                   "org.apache.avro.mapred", "org.apache.avro", "org.apache.avro.generic", "org.apache.avro.io",
-                   // these are not real exports for the application, but are required for unit tests.
-                   // the stupid hive-exec jar pulled in by cdap-unit-test contains ParquetInputSplit...
-                   // without this, different classloaders will be used for ParquetInputSplit and we'll see errors
-                   "parquet.hadoop.api", "parquet.hadoop", "parquet.schema", "parquet.io.api");
-
-    // add artifact for tests
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "test-plugins", "1.0.0"), APP_ARTIFACT_ID,
-                      TableSink.class, TableSource.class);
-
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "database-plugins", "1.0.0"), APP_ARTIFACT_ID,
-                      DBSource.class, DBSink.class, DBRecord.class, ETLDBInputFormat.class, ETLDBOutputFormat.class,
-                      TeradataSource.class, DataDrivenETLDBInputFormat.class, DBRecord.class);
+    setupBatchArtifacts(APP_ARTIFACT_ID, ETLBatchApplication.class);
+    addPluginArtifact(NamespaceId.DEFAULT.artifact("database-plugins", "1.0.0"),
+                      APP_ARTIFACT_ID,
+                      DBSource.class, DBSink.class, DBRecord.class, ETLDBOutputFormat.class,
+                      DataDrivenETLDBInputFormat.class, DBRecord.class, QueryAction.class);
 
     // add hypersql 3rd party plugin
     PluginClass hypersql = new PluginClass("jdbc", "hypersql", "hypersql jdbc driver", JDBCDriver.class.getName(),
                                            null, Collections.<String, PluginPropertyField>emptyMap());
-    addPluginArtifact(Id.Artifact.from(Id.Namespace.DEFAULT, "hsql-jdbc", "1.0.0"), APP_ARTIFACT_ID,
+    addPluginArtifact(NamespaceId.DEFAULT.artifact("hsql-jdbc", "1.0.0"),
+                      APP_ARTIFACT_ID,
                       Sets.newHashSet(hypersql), JDBCDriver.class);
-
 
     String hsqlDBDir = temporaryFolder.newFolder("hsqldb").getAbsolutePath();
     hsqlDBServer = new HSQLDBServer(hsqlDBDir, "testdb");
@@ -261,6 +253,33 @@ public class DatabasePluginTestBase extends TestBase {
     for (RunRecord runRecord : mrManager.getHistory()) {
       Assert.assertEquals(failureMessage, ProgramRunStatus.FAILED, runRecord.getStatus());
     }
+  }
+
+  protected ApplicationManager deployETL(ETLPlugin sourcePlugin, ETLPlugin sinkPlugin) throws Exception {
+    ETLStage source = new ETLStage("source", sourcePlugin);
+    ETLStage sink = new ETLStage("sink", sinkPlugin);
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app("dbSinkTest");
+    return deployApplication(appId.toId(), appRequest);
+  }
+
+  protected void runETLOnce(ApplicationManager appManager) throws TimeoutException, InterruptedException {
+    runETLOnce(appManager, new HashMap<String, String>());
+  }
+
+  protected void runETLOnce(ApplicationManager appManager,
+                            Map<String, String> arguments) throws TimeoutException, InterruptedException {
+    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
+    mrManager.start(arguments);
+    mrManager.waitForFinish(5, TimeUnit.MINUTES);
+    List<RunRecord> runRecords = mrManager.getHistory();
+    Assert.assertEquals(ProgramRunStatus.COMPLETED, runRecords.get(0).getStatus());
   }
 
   @AfterClass

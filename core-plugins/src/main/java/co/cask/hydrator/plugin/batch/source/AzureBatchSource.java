@@ -42,10 +42,10 @@ public class AzureBatchSource extends FileBatchSource {
   private final AzureBatchConfig config;
 
   public AzureBatchSource(AzureBatchConfig config) {
-    super(new FileBatchConfig(config.path, config.fileRegex, config.timeTable, config.inputFormatClass,
-                              updateFileSystemProperties(
-                                config.fileSystemProperties, config.account, config.container, config.storageKey
-                              ), config.maxSplitSize));
+    super(new FileBatchConfig(config.referenceName, config.path, config.fileRegex, config.timeTable,
+                              config.inputFormatClass, updateFileSystemProperties(
+                                config.fileSystemProperties, config.account, config.container, config.storageKey),
+                              config.maxSplitSize));
     this.config = config;
   }
 
@@ -78,14 +78,14 @@ public class AzureBatchSource extends FileBatchSource {
       "valid base64 encoded storage key provided by Microsoft Azure.")
     private final String storageKey;
 
-    public AzureBatchConfig(String path, String account, String container, String storageKey) {
-      this(path, account, container, storageKey, null, null, null, null, null);
+    public AzureBatchConfig(String referenceName, String path, String account, String container, String storageKey) {
+      this(referenceName, path, account, container, storageKey, null, null, null, null, null);
     }
 
-    public AzureBatchConfig(String path, String account, String container, String storageKey,
+    public AzureBatchConfig(String referenceName, String path, String account, String container, String storageKey,
                             @Nullable String regex, @Nullable String timeTable, @Nullable String inputFormatClass,
                             @Nullable String fileSystemProperties, @Nullable Long maxSplitSize) {
-      super(path, regex, timeTable, inputFormatClass,
+      super(referenceName, path, regex, timeTable, inputFormatClass,
             updateFileSystemProperties(fileSystemProperties, account, container, storageKey),
             maxSplitSize);
       this.account = account;

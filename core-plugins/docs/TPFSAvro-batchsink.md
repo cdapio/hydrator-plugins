@@ -31,6 +31,17 @@ Defaults to formatting partitions such as ``2015-01-01/20-42.142017372000``.
 **timeZone:** The string ID for the time zone to format the date in. Defaults to using UTC.
 This setting is only used if ``filePathFormat`` is not null.
 
+**partitionOffset:** Amount of time to subtract from the pipeline runtime to determine the output partition. Defaults to 0m.
+The format is expected to be a number followed by an 's', 'm', 'h', or 'd' specifying the time unit,
+with 's' for seconds, 'm' for minutes, 'h' for hours, and 'd' for days.
+For example, if the pipeline is scheduled to run at midnight of January 1, 2016,
+and the offset is set to '1d', data will be written to the partition for midnight Dec 31, 2015."
+
+**cleanPartitionsOlderThan:** Optional property that configures the sink to delete partitions older than a specified date-time after a successful run.
+If set, when a run successfully finishes, the sink will subtract this amount of time from the runtime and delete any delete any partitions for time partitions older than that.
+The format is expected to be a number followed by an 's', 'm', 'h', or 'd' specifying the time unit, with 's' for seconds,
+'m' for minutes, 'h' for hours, and 'd' for days. For example, if the pipeline is scheduled to run at midnight of January 1, 2016,
+and this property is set to 7d, the sink will delete any partitions for time partitions older than midnight Dec 25, 2015.
 
 Example
 -------
@@ -38,6 +49,7 @@ This example will write to a ``TimePartitionedFileSet`` named ``'users'``:
 
     {
         "name": "TPFSAvro",
+        "type": "batchsink",
         "properties": {
             "name": "users",
             "filePathFormat": "yyyy-MM-dd/HH-mm",

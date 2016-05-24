@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -25,7 +25,6 @@ import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
-import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
 import com.google.common.collect.Maps;
 import org.apache.avro.generic.GenericRecord;
@@ -76,7 +75,6 @@ public class S3ParquetBatchSink extends S3BatchSink<Void, GenericRecord> {
    */
   public static class S3ParquetSinkConfig extends S3BatchSinkConfig {
 
-    @Name(Properties.S3BatchSink.SCHEMA)
     @Description(SCHEMA_DESC)
     private String schema;
 
@@ -86,9 +84,9 @@ public class S3ParquetBatchSink extends S3BatchSink<Void, GenericRecord> {
     }
 
     @SuppressWarnings("unused")
-    public S3ParquetSinkConfig(String basePath, String schema, String accessID, String accessKey, String pathFormat,
-                               String fileSystemProperties) {
-      super(basePath, accessID, accessKey, pathFormat, fileSystemProperties);
+    public S3ParquetSinkConfig(String referenceName, String basePath, String schema, String accessID, String accessKey,
+                               String pathFormat, String fileSystemProperties) {
+      super(referenceName, basePath, accessID, accessKey, pathFormat, fileSystemProperties);
       this.schema = schema;
     }
   }

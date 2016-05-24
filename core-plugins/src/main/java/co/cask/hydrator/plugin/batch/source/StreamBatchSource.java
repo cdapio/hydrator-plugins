@@ -19,11 +19,11 @@ package co.cask.hydrator.plugin.batch.source;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.FormatSpecification;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.data.stream.Stream;
-import co.cask.cdap.api.data.stream.StreamBatchReadable;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.flow.flowlet.StreamEvent;
 import co.cask.cdap.api.plugin.PluginConfig;
@@ -32,7 +32,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
-import co.cask.hydrator.common.ETLUtils;
+import co.cask.hydrator.common.TimeParser;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -55,7 +55,7 @@ import javax.annotation.Nullable;
 @Plugin(type = "batchsource")
 @Name("Stream")
 @Description("Batch source for a stream.")
-public class StreamBatchSource extends BatchSource<LongWritable, Object, StructuredRecord> {
+public class StreamBatchSource extends BatchSource<Object, Object, StructuredRecord> {
 
   private static final Logger LOG = LoggerFactory.getLogger(StreamBatchSource.class);
   private static final String FORMAT_SETTING_PREFIX = "format.setting.";
@@ -110,8 +110,9 @@ public class StreamBatchSource extends BatchSource<LongWritable, Object, Structu
 
   @Override
   public void prepareRun(BatchSourceContext context) {
-    long duration = ETLUtils.parseDuration(streamBatchConfig.duration);
-    long delay = Strings.isNullOrEmpty(streamBatchConfig.delay) ? 0 : ETLUtils.parseDuration(streamBatchConfig.delay);
+    long duration = TimeParser.parseDuration(streamBatchConfig.duration);
+    long delay = Strings.isNullOrEmpty(streamBatchConfig.delay) ? 0 : TimeParser.parseDuration(streamBatchConfig
+                                                                                                 .delay);
     long endTime = context.getLogicalStartTime() - delay;
     long startTime = endTime - duration;
 
@@ -119,23 +120,19 @@ public class StreamBatchSource extends BatchSource<LongWritable, Object, Structu
 
     FormatSpecification formatSpec = streamBatchConfig.getFormatSpec();
 
-    StreamBatchReadable stream;
-    if (formatSpec == null) {
-      stream = new StreamBatchReadable(streamBatchConfig.name, startTime, endTime);
-    } else {
-      stream = new StreamBatchReadable(streamBatchConfig.name, startTime, endTime, formatSpec);
-    }
-    context.setInput(stream);
+    Input input = formatSpec == null ? Input.ofStream(streamBatchConfig.name, startTime, endTime) :
+      Input.ofStream(streamBatchConfig.name, startTime, endTime, formatSpec);
+    context.setInput(input);
   }
 
   @Override
-  public void transform(KeyValue<LongWritable, Object> input, Emitter<StructuredRecord> emitter) throws Exception {
+  public void transform(KeyValue<Object, Object> input, Emitter<StructuredRecord> emitter) throws Exception {
     // if not format spec was given, the value is a StreamEvent
     if (Strings.isNullOrEmpty(streamBatchConfig.format)) {
       StreamEvent event = (StreamEvent) input.getValue();
       Map<String, String> headers = Objects.firstNonNull(event.getHeaders(), ImmutableMap.<String, String>of());
       StructuredRecord output = StructuredRecord.builder(DEFAULT_SCHEMA)
-        .set("ts", input.getKey().get())
+        .set("ts", event.getTimestamp())
         .set("headers", headers)
         .set("body", event.getBody())
         .build();
@@ -160,7 +157,10 @@ public class StreamBatchSource extends BatchSource<LongWritable, Object, Structu
       // easier to just deal with an empty map than deal with nullables, so the headers field is non-nullable.
       Map<String, String> headers = Objects.firstNonNull(event.getHeaders(), ImmutableMap.<String, String>of());
       StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
-      builder.set("ts", input.getKey().get());
+      Object key = input.getKey();
+      // today, spark returns a Long while mapreduce returns a LongWritable
+      // TODO: mapreduce should just return a Long instead of a LongWritable.
+      builder.set("ts", key instanceof LongWritable ? ((LongWritable) key).get() : (Long) key);
       builder.set("headers", headers);
 
       for (Schema.Field field : inputSchema.getFields()) {
@@ -200,10 +200,10 @@ public class StreamBatchSource extends BatchSource<LongWritable, Object, Structu
         parseSchema();
       }
       // check duration and delay
-      long durationInMs = ETLUtils.parseDuration(duration);
+      long durationInMs = TimeParser.parseDuration(duration);
       Preconditions.checkArgument(durationInMs > 0, "Duration must be greater than 0");
       if (!Strings.isNullOrEmpty(delay)) {
-        ETLUtils.parseDuration(delay);
+        TimeParser.parseDuration(delay);
       }
     }
 

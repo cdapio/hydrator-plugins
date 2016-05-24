@@ -26,11 +26,14 @@ import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.utils.Tasks;
 import co.cask.cdap.etl.api.LookupConfig;
 import co.cask.cdap.etl.api.LookupTableConfig;
-import co.cask.cdap.etl.common.ETLStage;
-import co.cask.cdap.etl.common.Plugin;
+import co.cask.cdap.etl.api.Transform;
+import co.cask.cdap.etl.api.realtime.RealtimeSink;
+import co.cask.cdap.etl.api.realtime.RealtimeSource;
+import co.cask.cdap.etl.proto.v2.ETLPlugin;
+import co.cask.cdap.etl.proto.v2.ETLRealtimeConfig;
+import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
 import co.cask.cdap.etl.realtime.ETLWorker;
-import co.cask.cdap.etl.realtime.config.ETLRealtimeConfig;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.test.ApplicationManager;
@@ -41,20 +44,17 @@ import co.cask.cdap.test.WorkerManager;
 import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.realtime.source.DataGeneratorSource;
 import com.google.common.base.Charsets;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -70,20 +70,24 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
   private static final Gson GSON = new Gson();
 
   @ClassRule
-  public static final TemporaryFolder TMP_FOLDER = new TemporaryFolder();
-
-  @ClassRule
   public static final TestConfiguration CONFIG = new TestConfiguration(Constants.Explore.EXPLORE_ENABLED, true);
 
   @Test
   public void testEmptyProperties() throws Exception {
     // Set properties to null to test if ETLTemplate can handle it.
-    Plugin sourceConfig = new Plugin("DataGenerator", null);
-    Plugin sinkConfig =
-      new Plugin("Stream", ImmutableMap.of(Properties.Stream.NAME, "testS"));
+    ETLPlugin sourceConfig = new ETLPlugin("DataGenerator", RealtimeSource.PLUGIN_TYPE,
+                                           ImmutableMap.of(co.cask.hydrator.common.Constants.Reference.REFERENCE_NAME,
+                                                           "DG"), null);
+    ETLPlugin sinkConfig = new ETLPlugin("Stream", RealtimeSink.PLUGIN_TYPE,
+                                         ImmutableMap.of(Properties.Stream.NAME, "testS"), null);
     ETLStage source = new ETLStage("source", sourceConfig);
     ETLStage sink = new ETLStage("sink", sinkConfig);
-    ETLRealtimeConfig etlConfig = new ETLRealtimeConfig(2, source, sink, Lists.<ETLStage>newArrayList());
+    ETLRealtimeConfig etlConfig = ETLRealtimeConfig.builder()
+      .setInstances(2)
+      .addStage(source)
+      .addStage(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
 
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testAdap");
     AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(APP_ARTIFACT, etlConfig);
@@ -99,19 +103,24 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
 
   @Test
   public void testStreamSinks() throws Exception {
-    Plugin sourceConfig = new Plugin(
-      "DataGenerator", ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE,
-                                       DataGeneratorSource.STREAM_TYPE));
+    ETLPlugin sourceConfig = new ETLPlugin(
+      "DataGenerator", RealtimeSource.PLUGIN_TYPE,
+      ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE, DataGeneratorSource.STREAM_TYPE,
+                      co.cask.hydrator.common.Constants.Reference.REFERENCE_NAME, "DG"), null);
 
     ETLStage source = new ETLStage("source", sourceConfig);
-    List<ETLStage> sinks = Lists.newArrayList(
-      new ETLStage("sink1", new Plugin("Stream", ImmutableMap.of(Properties.Stream.NAME, "streamA"))),
-      new ETLStage("sink2", new Plugin("Stream", ImmutableMap.of(Properties.Stream.NAME, "streamB"))),
-      new ETLStage("sink3", new Plugin("Stream", ImmutableMap.of(Properties.Stream.NAME, "streamC")))
-    );
-    ETLRealtimeConfig etlConfig = new ETLRealtimeConfig(source, sinks,
-                                                        new ArrayList<ETLStage>(),
-                                                        new ArrayList<co.cask.cdap.etl.common.Connection>());
+    ETLRealtimeConfig etlConfig = ETLRealtimeConfig.builder()
+      .addStage(source)
+      .addStage(new ETLStage("sink1", new ETLPlugin("Stream", RealtimeSink.PLUGIN_TYPE,
+                                                    ImmutableMap.of(Properties.Stream.NAME, "streamA"), null)))
+      .addStage(new ETLStage("sink2", new ETLPlugin("Stream", RealtimeSink.PLUGIN_TYPE,
+                                                    ImmutableMap.of(Properties.Stream.NAME, "streamB"), null)))
+      .addStage(new ETLStage("sink3", new ETLPlugin("Stream", RealtimeSink.PLUGIN_TYPE,
+                                                    ImmutableMap.of(Properties.Stream.NAME, "streamC"), null)))
+      .addConnection(source.getName(), "sink1")
+      .addConnection(source.getName(), "sink2")
+      .addConnection(source.getName(), "sink3")
+      .build();
 
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testToStream");
     AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(APP_ARTIFACT, etlConfig);
@@ -158,23 +167,34 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
     Schema schema =  Schema.recordOf("tableRecord", idField, nameField, scoreField, graduatedField,
                                      binaryNameField, timeField);
 
-    Plugin source = new Plugin("DataGenerator", ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE,
-                                                                DataGeneratorSource.TABLE_TYPE));
-    Plugin transform = new Plugin("Script", ImmutableMap.of(
-      "script", "function transform(x, ctx) { " +
-        "x.name = x.name + '..hi..' + ctx.getLookup('lookupTable').lookup(x.name); return x; }",
-      "lookup", GSON.toJson(new LookupConfig(ImmutableMap.of(
-        "lookupTable", new LookupTableConfig(LookupTableConfig.TableType.DATASET)
-      )))
-    ));
-    Plugin sink =
-      new Plugin("Table", ImmutableMap.of(Properties.Table.NAME, "testScriptLookup_table1",
-                                          Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "binary",
-                                          Properties.Table.PROPERTY_SCHEMA, schema.toString()));
+    ETLPlugin source = new ETLPlugin("DataGenerator", RealtimeSource.PLUGIN_TYPE,
+                                     ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE, DataGeneratorSource.TABLE_TYPE,
+                                                     co.cask.hydrator.common.Constants.Reference.REFERENCE_NAME, "DG"),
+                                     null);
+    ETLPlugin transform = new ETLPlugin(
+      "Script",
+      Transform.PLUGIN_TYPE,
+      ImmutableMap.of(
+        "script", "function transform(x, ctx) { " +
+          "x.name = x.name + '..hi..' + ctx.getLookup('lookupTable').lookup(x.name); return x; }",
+        "lookup", GSON.toJson(new LookupConfig(ImmutableMap.of(
+          "lookupTable", new LookupTableConfig(LookupTableConfig.TableType.DATASET)
+        )))),
+      null);
+    ETLPlugin sink =
+      new ETLPlugin("Table", RealtimeSink.PLUGIN_TYPE,
+                    ImmutableMap.of(Properties.Table.NAME, "testScriptLookup_table1",
+                                    Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "binary",
+                                    Properties.Table.PROPERTY_SCHEMA, schema.toString()),
+                    null);
 
-    ETLRealtimeConfig etlConfig = new ETLRealtimeConfig(new ETLStage("source", source),
-                                                        new ETLStage("sink", sink),
-                                                        Lists.newArrayList(new ETLStage("transform", transform)));
+    ETLRealtimeConfig etlConfig = ETLRealtimeConfig.builder()
+      .addStage(new ETLStage("source", source))
+      .addStage(new ETLStage("sink", sink))
+      .addStage(new ETLStage("transform", transform))
+      .addConnection("source", "transform")
+      .addConnection("transform", "sink")
+      .build();
 
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testToStream");
     AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(APP_ARTIFACT, etlConfig);
@@ -212,13 +232,20 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
     Schema schema =  Schema.recordOf("tableRecord", idField, nameField, scoreField, graduatedField,
                                      binaryNameField, timeField);
 
-    Plugin source = new Plugin("DataGenerator", ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE,
-                                                                DataGeneratorSource.TABLE_TYPE));
-    Plugin sink = new Plugin("Table", ImmutableMap.of(Properties.Table.NAME, "table1",
-                                                      Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "binary",
-                                                      Properties.Table.PROPERTY_SCHEMA, schema.toString()));
-    ETLRealtimeConfig etlConfig = new ETLRealtimeConfig(new ETLStage("source", source),
-                                                        new ETLStage("sink", sink), Lists.<ETLStage>newArrayList());
+    ETLPlugin source = new ETLPlugin("DataGenerator", RealtimeSource.PLUGIN_TYPE,
+                                     ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE, DataGeneratorSource.TABLE_TYPE,
+                                                     co.cask.hydrator.common.Constants.Reference.REFERENCE_NAME, "DG"),
+                                     null);
+    ETLPlugin sink = new ETLPlugin("Table", RealtimeSink.PLUGIN_TYPE,
+                                   ImmutableMap.of(Properties.Table.NAME, "table1",
+                                                   Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "binary",
+                                                   Properties.Table.PROPERTY_SCHEMA, schema.toString()),
+                                   null);
+    ETLRealtimeConfig etlConfig = ETLRealtimeConfig.builder()
+      .addStage(new ETLStage("source", source))
+      .addStage(new ETLStage("sink", sink))
+      .addConnection("source", "sink")
+      .build();
 
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testToStream");
     AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(APP_ARTIFACT, etlConfig);
@@ -264,37 +291,40 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
     Schema schema =  Schema.recordOf("tableRecord", idField, nameField, scoreField, graduatedField,
                                      binaryNameField, timeField);
 
-    Plugin source = new Plugin("DataGenerator", ImmutableMap.of(DataGeneratorSource.PROPERTY_TYPE,
-                                                                DataGeneratorSource.TABLE_TYPE));
+    ETLPlugin source = new ETLPlugin("DataGenerator", RealtimeSource.PLUGIN_TYPE,
+                                     ImmutableMap.of(
+                                       DataGeneratorSource.PROPERTY_TYPE, DataGeneratorSource.TABLE_TYPE,
+                                       co.cask.hydrator.common.Constants.Reference.REFERENCE_NAME, "DG"),
+                                     null);
 
-    Plugin sinkConfig1 = new Plugin("Table", ImmutableMap.of(Properties.Table.NAME, "table1",
-                                                             Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "binary",
-                                                             Properties.Table.PROPERTY_SCHEMA, schema.toString()));
+    ETLPlugin sinkConfig1 = new ETLPlugin("Table", RealtimeSink.PLUGIN_TYPE,
+                                          ImmutableMap.of(Properties.Table.NAME, "table1",
+                                                          Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "binary",
+                                                          Properties.Table.PROPERTY_SCHEMA, schema.toString()),
+                                          null);
 
-    Plugin sinkConfig2 = new Plugin("Table", ImmutableMap.of(Properties.Table.NAME, "table2",
-                                                             Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "binary",
-                                                             Properties.Table.PROPERTY_SCHEMA, schema.toString()));
-
-    List<ETLStage> sinks = ImmutableList.of(new ETLStage("sink1", sinkConfig1),
-                                            new ETLStage("sink2", sinkConfig2));
-
+    ETLPlugin sinkConfig2 = new ETLPlugin("Table", RealtimeSink.PLUGIN_TYPE,
+                                          ImmutableMap.of(Properties.Table.NAME, "table2",
+                                                          Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "binary",
+                                                          Properties.Table.PROPERTY_SCHEMA, schema.toString()),
+                                          null);
 
     String script = "function transform(x, context) {  " +
       "x.name = \"Rob\";" +
       "x.id = 2;" +
       "return x;" +
       "};";
-    Plugin transformConfig = new Plugin("Script", ImmutableMap.of("script", script));
+    ETLPlugin transformConfig = new ETLPlugin("Script", Transform.PLUGIN_TYPE, ImmutableMap.of("script", script), null);
 
-    List<ETLStage> transformList = Lists.newArrayList(new ETLStage("transform", transformConfig));
-
-    List<co.cask.cdap.etl.common.Connection> connections = new ArrayList<>();
-    connections.add(new co.cask.cdap.etl.common.Connection("source", "sink1"));
-    connections.add(new co.cask.cdap.etl.common.Connection("source", "transform"));
-    connections.add(new co.cask.cdap.etl.common.Connection("transform", "sink2"));
-
-    ETLRealtimeConfig etlConfig = new ETLRealtimeConfig(new ETLStage("source", source),
-                                                        sinks, transformList, connections);
+    ETLRealtimeConfig etlConfig = ETLRealtimeConfig.builder()
+      .addStage(new ETLStage("source", source))
+      .addStage(new ETLStage("sink1", sinkConfig1))
+      .addStage(new ETLStage("sink2", sinkConfig2))
+      .addStage(new ETLStage("transform", transformConfig))
+      .addConnection("source", "sink1")
+      .addConnection("source", "transform")
+      .addConnection("transform", "sink2")
+      .build();
 
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testToStream");
     AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(APP_ARTIFACT, etlConfig);

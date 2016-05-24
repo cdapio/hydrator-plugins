@@ -130,7 +130,7 @@ public class SnapshotFileSet {
     try {
       PartitionDetail partition = getLatestPartition();
       if (partition == null) {
-        throw new IllegalArgumentException("Snapshot fileset does not a latest snapshot, so cannot be read.");
+        throw new IllegalArgumentException("Snapshot fileset does not have a latest snapshot, so cannot be read.");
       }
       Map<String, String> args = new HashMap<>();
       args.putAll(otherProperties);
