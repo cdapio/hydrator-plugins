@@ -33,10 +33,10 @@ So, when output schema is specified it should be specified as follows
 
 | Field | Type   | Null |
 |-------|--------|------|
-| id    | int    |      |
-| first | string |      |
-| last  | string |      |
-| email_id | string |   |
+| id    | int    | |
+| first | string | |
+| last  | string | |
+| email_id | string | |
 | address | string | |
 | city | string | | 
 | state | string | | 
