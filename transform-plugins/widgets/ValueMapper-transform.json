@@ -5,7 +5,7 @@
   "configuration-groups": [
     {
       "properties": [
-	  {
+	    {
           "name": "mapping",
           "label": "mapping",
           "widget-type": "ds-multiplevalues",
@@ -13,7 +13,7 @@
             "delimiter": ",",
             "values-delimiter": ":",
             "numValues": "3",
-            "placeholders": ["Source field", "Lookup table name", "Target field"]
+            "placeholders": ["Source Field", "Mapping Table Name", "Target Field"]
           }
         },
         {
