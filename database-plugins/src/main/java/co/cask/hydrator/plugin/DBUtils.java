@@ -48,6 +48,16 @@ import javax.management.ReflectionException;
  */
 public final class DBUtils {
   private static final Logger LOG = LoggerFactory.getLogger(DBUtils.class);
+  // HACK!
+  private static Schema schema;
+
+  /**
+   * This is a terrible hack
+   * @param schema
+   */
+  public static void hackSetSchema(Schema schema) {
+    DBUtils.schema = schema;
+  }
 
   /**
    * Performs any Database related cleanup
@@ -103,6 +113,9 @@ public final class DBUtils {
    * @throws SQLException
    */
   public static List<Schema.Field> getSchemaFields(ResultSet resultSet) throws SQLException {
+    if (schema != null) {
+      return schema.getFields();
+    }
     List<Schema.Field> schemaFields = Lists.newArrayList();
     ResultSetMetaData metadata = resultSet.getMetaData();
     // ResultSetMetadata columns are numbered starting with 1

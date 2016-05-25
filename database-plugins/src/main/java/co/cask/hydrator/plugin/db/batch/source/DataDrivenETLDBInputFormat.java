@@ -16,6 +16,7 @@
 
 package co.cask.hydrator.plugin.db.batch.source;
 
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.plugin.DBUtils;
 import co.cask.hydrator.plugin.JDBCDriverShim;
 import co.cask.hydrator.plugin.db.batch.NoOpCommitConnection;
@@ -42,6 +43,8 @@ import java.sql.SQLException;
  */
 public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
   public static final String AUTO_COMMIT_ENABLED = "co.cask.hydrator.db.autocommit.enabled";
+  // HACK!
+  public static final String OVERRIDE_SCHEMA = "co.cask.hydrator.db.override.schema";
 
   private static final Logger LOG = LoggerFactory.getLogger(DataDrivenETLDBInputFormat.class);
   private Driver driver;
@@ -57,6 +60,10 @@ public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
     dbConf.setInputQuery(inputQuery);
     dbConf.setInputBoundingQuery(inputBoundingQuery);
     conf.setBoolean(AUTO_COMMIT_ENABLED, enableAutoCommit);
+  }
+
+  public static void overrideDBSchema(Configuration conf, Schema schema) {
+    conf.set(OVERRIDE_SCHEMA, schema.toString());
   }
 
   @Override
@@ -109,11 +116,15 @@ public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
   }
 
   @Override
-  protected RecordReader createDBRecordReader(DBInputSplit split, Configuration conf) throws IOException {
+  protected RecordReader createDBRecordReader(DBInputSplit split, final Configuration conf) throws IOException {
     final RecordReader dbRecordReader = super.createDBRecordReader(split, conf);
     return new RecordReader() {
       @Override
       public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
+        String schemaStr = conf.get(OVERRIDE_SCHEMA);
+        if (schemaStr != null) {
+          DBUtils.hackSetSchema(Schema.parseJson(schemaStr));
+        }
         dbRecordReader.initialize(split, context);
       }
 

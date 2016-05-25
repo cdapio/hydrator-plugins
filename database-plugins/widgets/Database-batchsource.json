@@ -105,5 +105,23 @@
         }
       ]
     }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "boolean",
+          "bytes",
+          "int",
+          "long",
+          "float",
+          "double",
+          "string"
+        ],
+        "schema-default-type": "string"
+      }
+    }
   ]
 }
