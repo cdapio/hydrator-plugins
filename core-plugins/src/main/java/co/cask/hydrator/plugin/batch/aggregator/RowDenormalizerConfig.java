@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.Nullable;
 
 /**
  * Config for RowDenormalizer Aggregator Plugin.
@@ -31,35 +32,40 @@ import java.util.Set;
 public class RowDenormalizerConfig extends AggregatorConfig {
 
   @Description("Name of the column in the input record which will be used to group the raw data. For Example, " +
-    "KeyField.")
+    "id.")
   private final String keyField;
 
   @Description("Name of the column in the input record which contains the names of output schema columns. " +
     "For example, " +
-    "input records have columns 'KeyField', 'FieldName', 'FieldValue'. " +
-    "'FieldName' contains 'FirstName', 'LastName', 'Address'. " +
+    "input records have columns 'id', 'attribute', 'value' " +
+    "and the 'attribute' column contains 'FirstName', 'LastName', 'Address'. " +
     "So the output record will have column names as 'FirstName', 'LastName', 'Address'.")
   private final String fieldName;
 
   @Description("Name of the column in the input record which contains the values for output schema columns. " +
     "For example, " +
-    "input records have columns 'KeyField', 'FieldName', 'FieldValue' " +
-    "and the 'FieldValue' column contains 'John', 'Wagh', 'NE Lakeside'. " +
+    "input records have columns 'id', 'attribute', 'value' " +
+    "and the 'value' column contains 'John', 'Wagh', 'NE Lakeside'. " +
     "So the output record will have values for columns 'FirstName', 'LastName', 'Address' as 'John', 'Wagh', 'NE " +
     "Lakeside' respectively.")
   private final String fieldValue;
 
-  @Description("List of the output fields with its alias to be included in denormalized output. This is a comma " +
-    "separated list of key-value pairs, where key-value pairs are separated by a colon ':'. For example, " +
-    "Firstname:fname,Lastname:lname,Address:addr")
+  @Description("List of the output fields to be included in denormalized output.")
   private final String outputFields;
 
+  @Description("List of the output fields to rename. The key specifies the name of the field to rename, with its " +
+    "corresponding value specifying the new name for that field.")
+  @Nullable
+  private final String fieldAliases;
+
   @VisibleForTesting
-  RowDenormalizerConfig(String keyField, String fieldName, String fieldValue, String outputFields) {
+  RowDenormalizerConfig(String keyField, String fieldName, String fieldValue, String outputFields,
+                        String fieldAliases) {
     this.keyField = keyField;
     this.fieldName = fieldName;
     this.fieldValue = fieldValue;
     this.outputFields = outputFields;
+    this.fieldAliases = fieldAliases;
   }
 
   /**
@@ -96,12 +102,12 @@ public class RowDenormalizerConfig extends AggregatorConfig {
    */
   Set<String> getOutputFields() {
     Set<String> fields = new HashSet<String>();
+    Map<String, String> outputFieldMappings = getFieldAliases();
     for (String field : Splitter.on(',').trimResults().split(outputFields)) {
-      String[] value = field.split(":");
-      if (value.length == 1) {
-        fields.add(value[0]);
+      if (outputFieldMappings.containsKey(field)) {
+        fields.add(outputFieldMappings.get(field));
       } else {
-        fields.add(value[1]);
+        fields.add(field);
       }
     }
     return fields;
@@ -112,12 +118,14 @@ public class RowDenormalizerConfig extends AggregatorConfig {
    *
    * @return Map of output fields and its alias
    */
-  Map<String, String> getOutputFieldMappings() {
+  Map<String, String> getFieldAliases() {
     Map<String, String> outputFieldMappings = new HashMap<String, String>();
-    for (String field : Splitter.on(',').trimResults().split(outputFields)) {
-      String[] value = field.split(":");
-      if (value.length == 2) {
-        outputFieldMappings.put(value[0], value[1]);
+    if (fieldAliases != null) {
+      for (String field : Splitter.on(',').trimResults().split(fieldAliases)) {
+        String[] value = field.split(":");
+        if (value.length == 2) {
+          outputFieldMappings.put(value[0], value[1]);
+        }
       }
     }
     return outputFieldMappings;

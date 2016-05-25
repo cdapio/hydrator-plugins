@@ -22,11 +22,18 @@
           "label": "Input Field Value",
           "name": "fieldValue"
         },
-    
+		{
+          "widget-type": "csv",
+          "label": "Output fields to include",
+          "name": "outputFields",
+          "widget-attributes": {
+            "delimiter": ","
+          }
+        },
         {
           "widget-type": "keyvalue",
-          "label": "Output Fields",
-          "name": "outputFields",
+          "label": "Output fields to rename",
+          "name": "fieldAliases",
           "widget-attributes": {
 			"showDelimiter": "false"
           }
@@ -34,18 +41,5 @@
       ]
     }
   ],
-  "outputs": [
-    {
-      "name": "schema",
-      "label": "schema",
-      "widget-type": "schema",
-      "widget-attributes": {
-        "schema-types": [
-          "string",
-          "map<string,string>"
-        ],
-        "schema-default-type": "string"
-      }
-    }
-  ]
+  "outputs": []
 }

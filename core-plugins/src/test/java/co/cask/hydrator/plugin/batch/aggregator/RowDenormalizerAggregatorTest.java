@@ -78,7 +78,8 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
       .put("keyField", "KeyField")
       .put("fieldName", "FieldName")
       .put("fieldValue", "FieldValue")
-      .put("outputFields", "Firstname:,Address:Addr")
+      .put("outputFields", "Firstname,Address")
+      .put("fieldAliases", "Address:Addr")
       .build();
 
     ETLStage aggregateStage = new ETLStage(
@@ -184,7 +185,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
       .put("keyField", "KeyField")
       .put("fieldName", "FieldName")
       .put("fieldValue", "FieldValue")
-      .put("outputFields", "Firstname:,Lastname:,Address:,Salary:")
+      .put("outputFields", "Firstname,Lastname,Address,Salary")
       .build();
 
     ETLStage aggregateStage = new ETLStage(

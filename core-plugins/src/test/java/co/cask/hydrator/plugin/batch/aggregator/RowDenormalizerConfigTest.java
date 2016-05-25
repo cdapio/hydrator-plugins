@@ -30,31 +30,31 @@ public class RowDenormalizerConfigTest {
 
   @Test
   public void testDenormalizerConfig() {
-    RowDenormalizerConfig config = new RowDenormalizerConfig("KeyField", "FieldName", "FieldValue", "Firstname:," +
-      "Lastname:lname,Address:addr");
+    RowDenormalizerConfig config = new RowDenormalizerConfig("KeyField", "FieldName", "FieldValue", "Firstname," +
+      "Lastname,Address", "Lastname:lname,Address:addr");
 
     Assert.assertEquals(ImmutableSet.of("Firstname", "lname", "addr"), config.getOutputFields());
-    Assert.assertEquals(ImmutableMap.of("Lastname", "lname", "Address", "addr"), config.getOutputFieldMappings());
+    Assert.assertEquals(ImmutableMap.of("Lastname", "lname", "Address", "addr"), config.getFieldAliases());
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void testDormalizerConfWithNoKeyField() {
-    RowDenormalizerConfig config = new RowDenormalizerConfig("", "FieldName", "FieldValue", "Firstname:," +
-      "Lastname:lname,Address:addr");
+    RowDenormalizerConfig config = new RowDenormalizerConfig("", "FieldName", "FieldValue", "Firstname," +
+      "Lastname,Address", "Lastname:lname,Address:addr");
     config.validate();
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void testDormalizerConfWithNoFieldName() {
-    RowDenormalizerConfig config = new RowDenormalizerConfig("KeyField", "", "FieldValue", "Firstname:," +
-      "Lastname:lname,Address:addr");
+    RowDenormalizerConfig config = new RowDenormalizerConfig("KeyField", "", "FieldValue", "Firstname," +
+      "Lastname,Address", "Lastname:lname,Address:addr");
     config.validate();
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void testDormalizerConfWithNoFieldValue() {
-    RowDenormalizerConfig config = new RowDenormalizerConfig("KeyField", "FieldName", "", "Firstname:," +
-      "Lastname:lname,Address:addr");
+    RowDenormalizerConfig config = new RowDenormalizerConfig("KeyField", "FieldName", "", "Firstname," +
+      "Lastname,Address", "Lastname:lname,Address:addr");
     config.validate();
   }
 
@@ -66,8 +66,8 @@ public class RowDenormalizerConfigTest {
       Schema.Field.of("FieldName", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("FieldValue", Schema.of(Schema.Type.STRING)));
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
-    RowDenormalizerConfig config = new RowDenormalizerConfig("WrongKeyField", "FieldName", "FieldValue", "Firstname:" +
-      ",Lastname:lname,Address:addr");
+    RowDenormalizerConfig config = new RowDenormalizerConfig("WrongKeyField", "FieldName", "FieldValue", "Firstname," +
+      "Lastname,Address", "Lastname:lname,Address:addr");
     RowDenormalizerAggregator aggregator = new RowDenormalizerAggregator(config);
     aggregator.configurePipeline(configurer);
   }

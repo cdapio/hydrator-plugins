@@ -71,14 +71,17 @@ public class RowDenormalizerAggregator extends BatchAggregator<String, Structure
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     outputFields = conf.getOutputFields();
-    outputMappings = conf.getOutputFieldMappings();
+    outputMappings = conf.getFieldAliases();
     keyField = conf.getKeyField();
     outputSchema = initializeOutputSchema();
   }
 
   @Override
   public void groupBy(StructuredRecord record, Emitter<String> emitter) throws Exception {
-    emitter.emit(record.get(keyField).toString());
+    if (record.get(keyField) == null) {
+      return;
+    }
+    emitter.emit((String) record.get(keyField));
   }
 
   @Override
@@ -114,8 +117,8 @@ public class RowDenormalizerAggregator extends BatchAggregator<String, Structure
   }
 
   /**
-   * @param inputSchema Validates whether the keyfield, fieldname, and fieldvalue entered by the user is present in
-   *                    the input schema or not.
+   * @param inputSchema Validates whether the keyfield, fieldname, and fieldvalue entered by the user is of type
+   *                    String and present in the input schema or not.
    * @return true
    */
   private void validateInputFields(Schema inputSchema) {
@@ -128,6 +131,15 @@ public class RowDenormalizerAggregator extends BatchAggregator<String, Structure
     } else if ((inputSchema.getField(conf.getFieldValue())) == null) {
       throw new IllegalArgumentException(
         String.format("Fieldvalue '%s' does not exist in input schema %s", conf.getFieldValue(), inputSchema));
+    } else if (!inputSchema.getField(conf.getKeyField()).getSchema().getType().equals(Schema.Type.STRING)) {
+      throw new IllegalArgumentException(
+        String.format("Keyfield '%s' must be of type String", conf.getKeyField()));
+    } else if (!inputSchema.getField(conf.getFieldName()).getSchema().getType().equals(Schema.Type.STRING)) {
+      throw new IllegalArgumentException(
+        String.format("Fieldname '%s' must be of type String", conf.getFieldName()));
+    } else if (!inputSchema.getField(conf.getFieldValue()).getSchema().getType().equals(Schema.Type.STRING)) {
+      throw new IllegalArgumentException(
+        String.format("Fieldvalue '%s' must be of type String", conf.getFieldValue()));
     }
   }
 }
