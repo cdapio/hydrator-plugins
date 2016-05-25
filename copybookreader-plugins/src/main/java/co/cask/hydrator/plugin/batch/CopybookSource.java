@@ -31,16 +31,28 @@ import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.common.SourceInputFormatProvider;
 import co.cask.hydrator.common.batch.JobUtils;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import net.sf.JRecord.Common.AbstractFieldValue;
+import net.sf.JRecord.Common.RecordException;
+import net.sf.JRecord.External.Def.ExternalField;
+import net.sf.JRecord.External.ExternalRecord;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.Job;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -57,8 +69,10 @@ import javax.annotation.Nullable;
 public class CopybookSource extends BatchSource<LongWritable, Map<String, AbstractFieldValue>, StructuredRecord> {
 
   public static final long DEFAULT_MAX_SPLIT_SIZE_IN_MB = 1;
+  private static final long CONVERT_TO_BYTES = 1024 * 1024;
   private final CopybookSourceConfig config;
   private Schema outputSchema;
+  private Set<String> fieldsToDrop = new HashSet<String>();
 
   public CopybookSource(CopybookSourceConfig copybookConfig) {
     this.config = copybookConfig;
@@ -67,19 +81,25 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, Abstra
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
-    config.validate();
-    pipelineConfigurer.getStageConfigurer().setOutputSchema(config.parseSchema());
+    outputSchema = getOutputSchema();
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
+
   }
 
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    if (config.schema != null) {
-      outputSchema = config.parseSchema();
+    if (!Strings.isNullOrEmpty(config.drop)) {
+      for (String dropField : Splitter.on(CopybookSourceConfig.fieldDelimiter).split(config.drop)) {
+        fieldsToDrop.add(dropField);
+      }
     }
     if (config.maxSplitSize == null) {
-      config.maxSplitSize = DEFAULT_MAX_SPLIT_SIZE_IN_MB * 1024 * 1024;
+      config.maxSplitSize = DEFAULT_MAX_SPLIT_SIZE_IN_MB * CONVERT_TO_BYTES;
+    } else {
+      config.maxSplitSize = config.maxSplitSize * CONVERT_TO_BYTES;
     }
+    outputSchema = getOutputSchema();
   }
 
   @Override
@@ -99,76 +119,194 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, Abstra
                         Emitter<StructuredRecord> emitter)
     throws Exception {
     Map<String, AbstractFieldValue> value = input.getValue();
-    if (outputSchema == null) {
-      outputSchema = getSchema(value.keySet());
-    }
     StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
     for (Schema.Field field : outputSchema.getFields()) {
       String fieldName = field.getName();
       if (value.containsKey(fieldName)) {
-        builder.set(fieldName, parseValue(field, value.get(fieldName)));
+        builder.set(fieldName, getFieldValue(value.get(fieldName)));
       }
     }
     emitter.emit(builder.build());
   }
 
   /**
-   * Convert each field to data type as specified by user in the output schema
+   * Get the output schema from the COBOL copybook contents specified by the user.
    *
-   * @param field Schema.Field object defining the field name and properties
-   * @param value value of field to be converted to datatype specified by user
-   * @return value casted to the required data type
-   * @throws IOException
+   * @return outputSchema
    */
-  private Object parseValue(Schema.Field field, @Nullable AbstractFieldValue value) throws IOException {
-    String fieldName = field.getName();
-    Schema fieldSchema = field.getSchema();
-    if (value == null) {
-      if (!fieldSchema.isNullable()) {
-        throw new IllegalArgumentException("NULL value found for non-nullable field : " + fieldName);
+  private Schema getOutputSchema() {
+
+    InputStream inputStream = null;
+    ExternalRecord externalRecord = null;
+    List<Schema.Field> fields = Lists.newArrayList();
+    try {
+      inputStream = IOUtils.toInputStream(config.copybookContents, "UTF-8");
+      BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
+      externalRecord = CopybookIOUtils.getExternalRecord(bufferedInputStream);
+
+      String fieldName;
+      for (ExternalField field : externalRecord.getRecordFields()) {
+        fieldName = field.getName();
+        if ((fieldsToDrop.size() > 0 && !fieldsToDrop.contains(fieldName)) || fieldsToDrop.size() == 0) {
+          fields.add(Schema.Field.of(field.getName(),
+                                     Schema.nullableOf(Schema.of(getFieldSchemaType(field.getType())))));
+        }
       }
-      return null;
-    }
-    Schema.Type fieldType = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
-    switch (fieldType) {
-      case NULL:
-        return null;
-      case INT:
-        return value.asInt();
-      case DOUBLE:
-        return value.asDouble();
-      case BOOLEAN:
-        return value.asBoolean();
-      case LONG:
-        return value.asLong();
-      case FLOAT:
-        return value.asFloat();
-      case STRING:
-        return value.asString();
-      default:
-        throw new IOException(String.format("Unsupported schema: %s for field: \'%s\'", field.getSchema(),
-                                            field.getName()));
+      return Schema.recordOf("record", fields);
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Exception while creating input stream for COBOL Copybook. Invalid output " +
+                                           "schema: " + e.getMessage(), e);
+    } catch (RecordException e) {
+      throw new IllegalArgumentException("Exception while creating record from COBOL Copybook. Invalid output " +
+                                           "schema: " + e.getMessage(), e);
     }
   }
 
   /**
-   * Create schema from list field names retrieved from CopybookFiles
+   * Get the field Schema.Type from the copybook data types
    *
-   * @param fieldsSet set of field names extracted from Copybook
-   * @return output schema fields
+   * @param type AbstractFiledValue type to be converted to CDAP Schema.Type
+   * @return CDAP Schema.Type objects
    */
-  private Schema getSchema(Set<String> fieldsSet) {
-    List<Schema.Field> fields = Lists.newArrayList();
-    for (String field : fieldsSet) {
-      fields.add(Schema.Field.of(field, Schema.nullableOf(Schema.of(Schema.Type.STRING))));
+  private Schema.Type getFieldSchemaType(int type) {
+    switch (type) {
+      case 0:
+      case 1:
+      case 2:
+      case 3:
+      case 71:
+      case 72:
+      case 73:
+      case 74:
+      case 75:
+        return Schema.Type.STRING;
+      case 5:
+      case 6:
+      case 7:
+      case 15:
+      case 16:
+      case 23:
+        return Schema.Type.INT;
+      case 8:
+      case 11:
+      case 18:
+      case 19:
+      case 20:
+      case 22:
+      case 24:
+      case 25:
+      case 26:
+      case 27:
+      case 28:
+      case 29:
+      case 31:
+      case 32:
+      case 33:
+        return Schema.Type.DOUBLE;
+      case 17:
+        return Schema.Type.FLOAT;
+      case 4:
+      case 35:
+      case 36:
+      case 39:
+        return Schema.Type.LONG;
+      case 111:
+      case 112:
+      case 114:
+        return Schema.Type.BOOLEAN;
+      default:
+        return Schema.Type.STRING;
     }
-    return Schema.recordOf("record", fields);
+  }
+
+  /**
+   * Get the field values for the fields in the required format.
+   * Date will be returned in the format - "yyyy-MM-dd".
+   *
+   * @param value AbstractFieldValue object to be converted in the JAVA primitive data types
+   * @return data objects supported by CDAP
+   * @throws ParseException
+   */
+  private Object getFieldValue(@Nullable AbstractFieldValue value) throws ParseException {
+    int type = value.getFieldDetail().getType();
+    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    SimpleDateFormat simpleDateFormat;
+    switch (type) {
+      case 0:
+      case 1:
+      case 2:
+      case 3:
+      case 71:
+        return value.asString();
+      case 4:
+        return Long.parseLong(value.asHex(), 16);
+      case 5:
+      case 6:
+      case 7:
+        return value.asInt();
+      case 15:
+      case 16:
+      case 23:
+        return Integer.parseInt(Base64.decodeBase64(Base64.encodeBase64(value.toString().getBytes())).toString());
+      case 8:
+      case 11:
+      case 18:
+      case 19:
+      case 20:
+      case 22:
+      case 24:
+      case 25:
+      case 26:
+      case 27:
+      case 28:
+      case 29:
+      case 31:
+      case 32:
+      case 33:
+        return value.asDouble();
+      case 17:
+        return value.asFloat();
+      case 35:
+      case 36:
+      case 39:
+        return Base64.decodeInteger(Base64.encodeInteger(value.asBigInteger()));
+      case 72:
+        simpleDateFormat = new SimpleDateFormat("YYMMDD");
+        return dateFormat.format(simpleDateFormat.parse(value.toString()));
+      case 73:
+        simpleDateFormat = new SimpleDateFormat("YYYYMMDD");
+        return dateFormat.format(simpleDateFormat.parse(value.toString()));
+      case 74:
+        simpleDateFormat = new SimpleDateFormat("DDMMYY");
+        return dateFormat.format(simpleDateFormat.parse(value.toString()));
+      case 75:
+        simpleDateFormat = new SimpleDateFormat("DDMMYYYY");
+        return dateFormat.format(simpleDateFormat.parse(value.toString()));
+      case 111:
+        if (value.toString().toLowerCase().contains("y")) {
+          return true;
+        } else {
+          return false;
+        }
+      case 112:
+        if (value.toString().toLowerCase().contains("t")) {
+          return true;
+        } else {
+          return false;
+        }
+      case 114:
+        return value.asBoolean();
+      default:
+        return value.toString();
+    }
   }
 
   /**
    * Config class for CopybookSource.
    */
   public static class CopybookSourceConfig extends ReferencePluginConfig {
+
+    private static final Pattern fieldDelimiter = Pattern.compile("\\s*,\\s*");
 
     @Description("Complete path of the .bin to be read; for example: 'hdfs://10.222.41.31:9000/test/DTAR020_FB.bin' " +
       "or 'file:///home/cdap/DTAR020_FB.bin'.\n " +
@@ -192,60 +330,21 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, Abstra
     private String copybookContents;
 
     @Nullable
-    @Description("The schema for the data as it will be formatted in CDAP. Sample schema: " +
-      "{\n" +
-      "    \"type\": \"record\",\n" +
-      "    \"name\": \"schemaBody\",\n" +
-      "    \"fields\": [\n" +
-      "        {\n" +
-      "            \"name\": \"name\",\n" +
-      "            \"type\": \"string\"\n" +
-      "        },\n" +
-      "        {\n" +
-      "            \"name\": \"age\",\n" +
-      "            \"type\": \"int\"\n" +
-      "        }" +
-      "    ]\n" +
-      "}")
-    private String schema;
+    @Description("Comma-separated list of fields to drop. For example: 'field1,field2,field3'.")
+    private String drop;
 
     @Nullable
-    @Description("Maximum split-size for each mapper in the MapReduce. \n Job. Defaults to 128MB.")
+    @Description("Maximum split-size(MB) for each mapper in the MapReduce Job. Defaults to 1MB.")
     private Long maxSplitSize;
 
     public CopybookSourceConfig() {
       super(String.format("CopybookReader"));
-      this.maxSplitSize = DEFAULT_MAX_SPLIT_SIZE_IN_MB * 1024 * 1024;
+      this.maxSplitSize = DEFAULT_MAX_SPLIT_SIZE_IN_MB * CONVERT_TO_BYTES;
     }
 
     @VisibleForTesting
     public Long getMaxSplitSize() {
       return maxSplitSize;
     }
-
-    /**
-     * Validate the configuration parameters required
-     */
-    private void validate() {
-      if (schema != null) {
-        parseSchema();
-      }
-    }
-
-    /**
-     * Parse the output schema passed by the user
-     *
-     * @return schema to be used for setting the output
-     */
-    private Schema parseSchema() {
-      try {
-        return Strings.isNullOrEmpty(schema) ? null : Schema.parseJson(schema);
-      } catch (IOException e) {
-        throw new IllegalArgumentException("Invalid schema: " + e.getMessage());
-      }
-    }
   }
 }
-
-
-

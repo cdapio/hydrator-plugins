@@ -18,7 +18,6 @@ package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.artifact.ArtifactVersion;
 import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
@@ -99,21 +98,13 @@ public class CopybookTest extends HydratorTestBase {
   }
 
   @Test
-  public void testCopybookReaderWithOutputSchema() throws Exception {
-
-    Schema schema = Schema.recordOf(
-      "event",
-      Schema.Field.of("DTAR020-KEYCODE-NO", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("DATE", Schema.nullableOf(Schema.of(Schema.Type.INT))),
-      Schema.Field.of("DTAR020-DEPT-NO", Schema.of(Schema.Type.INT)),
-      Schema.Field.of("DTAR020-QTY-SOLD", Schema.of(Schema.Type.INT)),
-      Schema.Field.of("DTAR020-SALE-PRICE", Schema.of(Schema.Type.DOUBLE)));
+  public void testCopybookReaderWithRequiredFields() throws Exception {
 
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put("binaryFilePath", "src/test/resources/DTAR020_FB.bin")
       .put("copybookContents", cblContents)
-      .put("schema", schema.toString())
+      .put("fieldsToDrop", "DTAR020-STORE-NO")
       .build();
 
     ETLStage source = new ETLStage("CopybookReader", new ETLPlugin("CopybookReader", BatchSource.PLUGIN_TYPE,
@@ -139,13 +130,18 @@ public class CopybookTest extends HydratorTestBase {
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
     StructuredRecord record = output.get(0);
-    Assert.assertEquals("Expected schema", schema, record.getSchema());
+
     Assert.assertEquals("Expected records", 5, output.size());
-    Assert.assertEquals("Expected schema", null, record.get("DATE"));
+    Assert.assertEquals("Output schema", "{\"type\":\"record\",\"name\":\"record\"," +
+      "\"fields\":[{\"name\":\"DTAR020-KEYCODE-NO\",\"type\":[\"string\",\"null\"]},{\"name\":\"DTAR020-STORE-NO\"," +
+      "\"type\":[\"double\",\"null\"]},{\"name\":\"DTAR020-DATE\",\"type\":[\"double\",\"null\"]}," +
+      "{\"name\":\"DTAR020-DEPT-NO\",\"type\":[\"double\",\"null\"]},{\"name\":\"DTAR020-QTY-SOLD\"," +
+      "\"type\":[\"double\",\"null\"]},{\"name\":\"DTAR020-SALE-PRICE\",\"type\":[\"double\",\"null\"]}]}", record
+                          .getSchema().toString());
   }
 
   @Test
-  public void testCopybookReaderWithoutOutputSchema() throws Exception {
+  public void testCopybookReaderWithAllFields() throws Exception {
 
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")

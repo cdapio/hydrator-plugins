@@ -18,9 +18,12 @@ package co.cask.hydrator.plugin.batch;
 
 import net.sf.JRecord.Common.AbstractFieldValue;
 import net.sf.JRecord.Details.AbstractLine;
+import net.sf.JRecord.Details.LayoutDetail;
+import net.sf.JRecord.Details.LineProvider;
 import net.sf.JRecord.External.Def.ExternalField;
 import net.sf.JRecord.External.ExternalRecord;
 import net.sf.JRecord.IO.AbstractLineReader;
+import net.sf.JRecord.IO.LineIOProvider;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -66,6 +69,11 @@ public class CopybookRecordReader extends RecordReader<LongWritable, LinkedHashM
     try {
       externalRecord = CopybookIOUtils.getExternalRecord(bufferedInputStream);
       recordByteLength = CopybookIOUtils.getRecordLength(externalRecord, fileStructure);
+
+      LineProvider lineProvider = LineIOProvider.getInstance().getLineProvider(fileStructure, CopybookIOUtils.FONT);
+      reader = LineIOProvider.getInstance().getLineReader(fileStructure, lineProvider);
+      LayoutDetail copybook = CopybookIOUtils.getLayoutDetail(externalRecord);
+
       org.apache.hadoop.mapreduce.lib.input.FileSplit fileSplit =
         (org.apache.hadoop.mapreduce.lib.input.FileSplit) split;
 
@@ -79,7 +87,8 @@ public class CopybookRecordReader extends RecordReader<LongWritable, LinkedHashM
         position = start - (start % recordByteLength) + recordByteLength;
         fileIn.skip(position);
       }
-      reader = CopybookIOUtils.getAndOpenLineReader(fileIn, fileStructure, externalRecord);
+      reader.open(fileIn, copybook);
+
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -101,7 +110,6 @@ public class CopybookRecordReader extends RecordReader<LongWritable, LinkedHashM
     position += recordByteLength;
     key.set(position);
     for (ExternalField field : externalRecord.getRecordFields()) {
-      //TODO: Check int value for data types returned by jrecord to match Java data types and create schema accordingly.
       AbstractFieldValue fieldValue = line.getFieldValue(field.getName());
       value.put(field.getName(), fieldValue);
     }

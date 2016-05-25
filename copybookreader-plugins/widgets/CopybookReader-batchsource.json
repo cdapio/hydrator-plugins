@@ -22,6 +22,15 @@
           "name": "binaryFilePath"
         },
         {
+          "widget-type": "csv",
+          "label": "Fields to drop",
+          "name": "drop",
+          "description": "List of fields to drop.",
+          "widget-attributes": {
+            "delimiter": ","
+          }
+        },
+        {
           "widget-type": "textbox",
           "label": "Maximum Split Size",
           "name": "maxSplitSize"
@@ -31,18 +40,10 @@
   ],
   "outputs": [
     {
-      "name": "schema",
-      "widget-type": "schema",
-      "widget-attributes": {
-        "schema-types": [
-          "boolean",
-          "int",
-          "long",
-          "float",
-          "double",
-          "string"
-        ],
-        "schema-default-type": "string"
+      "widget-type": "non-editable-schema-editor",
+      "schema": {
+        "offset": "long",
+        "body": "string"
       }
     }
   ]

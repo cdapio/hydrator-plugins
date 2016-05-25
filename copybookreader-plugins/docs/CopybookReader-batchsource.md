@@ -15,6 +15,8 @@ copybook, then applying the copybook, one is able to easily read the file and it
 
 Properties
 ----------
+**referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
+
 **copybookContents:** Contents of the COBOL copybook file which will contain the data structure.
 Users will have to paste the entire contents of the copybook file into the text area. The copybook contents should be
 in sync with the underlying binary data to be read. This first implementation does not handle complex nested structures
@@ -23,17 +25,16 @@ of a COBOL copybook or redefines or iterators in the structure.
 **binaryFilePath:** Complete path of the .bin to be read. This will be a fixed-length binary format file that matches
 the copybook. Supports compressed files using a native compressed codec.
 
-**schema:** The schema for the data as it will be formatted in CDAP.
+**drop:** Comma-separated list of fields to drop. For example: 'field1,field2,field3'.
 
-**maxSplitSize:** Maximum split-size for each mapper in the MapReduce Job. Defaults to 128MB.
+**maxSplitSize:** Maximum split-size(MB) for each mapper in the MapReduce Job. Defaults to 1MB.
 
 Example
 -------
 
-This example reads data from a local binary file "file:///home/cdap/DTAR020_FB.bin" and parses it using the schema
-given in the text area "COBOL Copybook Contents".
-It will generate structured records using either the default schema or with the output schema specified by the user
-in the text area.
+This example reads data from a local binary file "file:///home/cdap/DTAR020_FB.bin"  and parses it using the schema
+given in the text area "COBOL Copybook".
+It will drop field "DTAR020-DATE" and generate structured records with schema as specified in the text area.
 
       {
           "name": "CopybookReader",
@@ -41,32 +42,7 @@ in the text area.
               "name": "CopybookReader",
               "type": "batchsource",
               "properties": {
-                    "schema": "{
-                        \"type\":\"record\",
-                        \"name\":\"etlSchemaBody\",
-                        \"fields\":[
-                           {
-                              \"name\":\"DTAR020-KEYCODE-NO\",
-                              \"type\":\"int\"
-                           },
-                           {
-                              \"name\":\"DATE\",
-                              \"type\":[\"int\",\"null\"]
-                            },
-                            {
-                                \"name\":\"DTAR020-DEPT-NO\",
-                                \"type\":[\"int\",\"null\"]
-                             },
-                             {
-                                \"name\":\"DTAR020-QTY-SOLD\",
-                                \"type\":[\"int\",\"null\"]
-                              },
-                              {
-                                  \"name\":\"DTAR020-SALE-PRICE\",
-                                  \"type\":[\"double\",\"null\"]
-                               }
-                          ]
-                     }",
+                    "drop" : "DTAR020-DATE",
                     "referenceName": "Copybook",
                     "copybookContents":
                         "000100* \n

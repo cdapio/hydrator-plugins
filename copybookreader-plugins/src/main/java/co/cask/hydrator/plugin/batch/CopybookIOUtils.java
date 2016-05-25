@@ -19,14 +19,11 @@ package co.cask.hydrator.plugin.batch;
 import net.sf.JRecord.Common.CommonBits;
 import net.sf.JRecord.Common.RecordException;
 import net.sf.JRecord.Details.LayoutDetail;
-import net.sf.JRecord.Details.LineProvider;
 import net.sf.JRecord.External.CobolCopybookLoader;
 import net.sf.JRecord.External.CopybookLoader;
 import net.sf.JRecord.External.Def.ExternalField;
 import net.sf.JRecord.External.ExternalRecord;
 import net.sf.JRecord.External.ToLayoutDetail;
-import net.sf.JRecord.IO.AbstractLineReader;
-import net.sf.JRecord.IO.LineIOProvider;
 import net.sf.JRecord.Numeric.Convert;
 import net.sf.cb2xml.def.Cb2xmlConstants;
 
@@ -38,7 +35,7 @@ import java.io.InputStream;
  */
 public class CopybookIOUtils {
 
-  private static final String FONT = "cp037";
+  public static final String FONT = "cp037";
 
   /**
    * Get the schema properties from the Copybook contents
@@ -71,22 +68,15 @@ public class CopybookIOUtils {
   }
 
   /**
-   * Get the AbstractLine reader object to read each field value from the binary file
+   * Get the LayoutDetail object to read data
    *
-   * @param is             Input stream containing binary data file contents
-   * @param fileStructure  File structure of the data file
    * @param externalRecord ExternalRecord object defining the schema fields and their properties
    * @return
    * @throws RecordException
    * @throws IOException
    */
-  public static AbstractLineReader getAndOpenLineReader(InputStream is, int fileStructure,
-    ExternalRecord externalRecord) throws RecordException, IOException {
-
-    LineProvider lineProvider = LineIOProvider.getInstance().getLineProvider(fileStructure, FONT);
-    AbstractLineReader reader = LineIOProvider.getInstance().getLineReader(fileStructure, lineProvider);
+  public static LayoutDetail getLayoutDetail(ExternalRecord externalRecord) throws RecordException, IOException {
     LayoutDetail copybook = ToLayoutDetail.getInstance().getLayout(externalRecord);
-    reader.open(is, copybook);
-    return reader;
+    return copybook;
   }
 }
