@@ -18,6 +18,7 @@ package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.artifact.ArtifactVersion;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
@@ -48,6 +49,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -100,11 +102,23 @@ public class CopybookTest extends HydratorTestBase {
   @Test
   public void testCopybookReaderWithRequiredFields() throws Exception {
 
+    Schema schema = Schema.recordOf("record",
+                                    Schema.Field.of("DTAR020-KEYCODE-NO", Schema.nullableOf(Schema.of(Schema.Type.
+                                                                                                        STRING))),
+                                    Schema.Field.of("DTAR020-DATE", Schema.nullableOf(Schema.of(Schema.Type.
+                                                                                                  DOUBLE))),
+                                    Schema.Field.of("DTAR020-DEPT-NO", Schema.nullableOf(Schema.of(Schema.Type.
+                                                                                                     DOUBLE))),
+                                    Schema.Field.of("DTAR020-QTY-SOLD", Schema.nullableOf(Schema.of(Schema.Type.
+                                                                                                      DOUBLE))),
+                                    Schema.Field.of("DTAR020-SALE-PRICE", Schema.nullableOf(Schema.of(Schema.Type.
+                                                                                                        DOUBLE))));
+
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put("binaryFilePath", "src/test/resources/DTAR020_FB.bin")
       .put("copybookContents", cblContents)
-      .put("fieldsToDrop", "DTAR020-STORE-NO")
+      .put("drop", "DTAR020-STORE-NO")
       .build();
 
     ETLStage source = new ETLStage("CopybookReader", new ETLPlugin("CopybookReader", BatchSource.PLUGIN_TYPE,
@@ -129,19 +143,35 @@ public class CopybookTest extends HydratorTestBase {
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
-    StructuredRecord record = output.get(0);
 
-    Assert.assertEquals("Expected records", 5, output.size());
-    Assert.assertEquals("Output schema", "{\"type\":\"record\",\"name\":\"record\"," +
-      "\"fields\":[{\"name\":\"DTAR020-KEYCODE-NO\",\"type\":[\"string\",\"null\"]},{\"name\":\"DTAR020-STORE-NO\"," +
-      "\"type\":[\"double\",\"null\"]},{\"name\":\"DTAR020-DATE\",\"type\":[\"double\",\"null\"]}," +
-      "{\"name\":\"DTAR020-DEPT-NO\",\"type\":[\"double\",\"null\"]},{\"name\":\"DTAR020-QTY-SOLD\"," +
-      "\"type\":[\"double\",\"null\"]},{\"name\":\"DTAR020-SALE-PRICE\",\"type\":[\"double\",\"null\"]}]}", record
-                          .getSchema().toString());
+    Assert.assertEquals("Expected records", 2, output.size());
+
+    Map<String, Double> result = new HashMap<>();
+    result.put((String) output.get(0).get("DTAR020-KEYCODE-NO"), (Double) output.get(0).get("DTAR020-SALE-PRICE"));
+    result.put((String) output.get(1).get("DTAR020-KEYCODE-NO"), (Double) output.get(1).get("DTAR020-SALE-PRICE"));
+
+    Assert.assertEquals(4.87, result.get("63604808").doubleValue(), 0.1);
+    Assert.assertEquals(5.01, result.get("69694158").doubleValue(), 0.1);
+    Assert.assertEquals("Expected schema", output.get(0).getSchema(), schema);
+
   }
 
   @Test
   public void testCopybookReaderWithAllFields() throws Exception {
+
+    Schema schema = Schema.recordOf("record",
+                                    Schema.Field.of("DTAR020-KEYCODE-NO", Schema.nullableOf(Schema.of(Schema.Type.
+                                                                                                        STRING))),
+                                    Schema.Field.of("DTAR020-STORE-NO", Schema.nullableOf(Schema.of(Schema.Type
+                                                                                                      .DOUBLE))),
+                                    Schema.Field.of("DTAR020-DATE", Schema.nullableOf(Schema.of(Schema.Type.
+                                                                                                  DOUBLE))),
+                                    Schema.Field.of("DTAR020-DEPT-NO", Schema.nullableOf(Schema.of(Schema.Type.
+                                                                                                     DOUBLE))),
+                                    Schema.Field.of("DTAR020-QTY-SOLD", Schema.nullableOf(Schema.of(Schema.Type.
+                                                                                                      DOUBLE))),
+                                    Schema.Field.of("DTAR020-SALE-PRICE", Schema.nullableOf(Schema.of(Schema.Type.
+                                                                                                        DOUBLE))));
 
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
@@ -172,7 +202,16 @@ public class CopybookTest extends HydratorTestBase {
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
-    Assert.assertEquals("Expected records", 5, output.size());
+
+    Assert.assertEquals("Expected records", 2, output.size());
+
+    Map<String, Double> result = new HashMap<>();
+    result.put((String) output.get(0).get("DTAR020-KEYCODE-NO"), (Double) output.get(0).get("DTAR020-SALE-PRICE"));
+    result.put((String) output.get(1).get("DTAR020-KEYCODE-NO"), (Double) output.get(1).get("DTAR020-SALE-PRICE"));
+
+    Assert.assertEquals(4.87, result.get("63604808").doubleValue(), 0.1);
+    Assert.assertEquals(5.01, result.get("69694158").doubleValue(), 0.1);
+    Assert.assertEquals("Expected schema", output.get(0).getSchema(), schema);
   }
 
   @Test
@@ -201,7 +240,7 @@ public class CopybookTest extends HydratorTestBase {
       deployApplication(appId, appRequest);
       Assert.fail();
     } catch (IllegalStateException e) {
-      // expected - since the data should always be present in a binary (.bin) file
+      // expected - since cobol copybook is required
     }
   }
 

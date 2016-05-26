@@ -52,7 +52,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -70,6 +69,11 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, Abstra
 
   public static final long DEFAULT_MAX_SPLIT_SIZE_IN_MB = 1;
   private static final long CONVERT_TO_BYTES = 1024 * 1024;
+  private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
+  private static final SimpleDateFormat DATE_YMD = new SimpleDateFormat("YYMMDD");
+  private static final SimpleDateFormat DATE_YYMD = new SimpleDateFormat("YYYYMMDD");
+  private static final SimpleDateFormat DATE_DMY = new SimpleDateFormat("DDMMYY");
+  private static final SimpleDateFormat DATE_DMYY = new SimpleDateFormat("DDMMYYYY");
   private final CopybookSourceConfig config;
   private Schema outputSchema;
   private Set<String> fieldsToDrop = new HashSet<String>();
@@ -90,7 +94,7 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, Abstra
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
     if (!Strings.isNullOrEmpty(config.drop)) {
-      for (String dropField : Splitter.on(CopybookSourceConfig.fieldDelimiter).split(config.drop)) {
+      for (String dropField : Splitter.on(",").trimResults().split(config.drop)) {
         fieldsToDrop.add(dropField);
       }
     }
@@ -143,14 +147,13 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, Abstra
       inputStream = IOUtils.toInputStream(config.copybookContents, "UTF-8");
       BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
       externalRecord = CopybookIOUtils.getExternalRecord(bufferedInputStream);
-
       String fieldName;
       for (ExternalField field : externalRecord.getRecordFields()) {
         fieldName = field.getName();
-        if ((fieldsToDrop.size() > 0 && !fieldsToDrop.contains(fieldName)) || fieldsToDrop.size() == 0) {
-          fields.add(Schema.Field.of(field.getName(),
-                                     Schema.nullableOf(Schema.of(getFieldSchemaType(field.getType())))));
+        if (fieldsToDrop.contains(fieldName)) {
+          continue;
         }
+        fields.add(Schema.Field.of(field.getName(), Schema.nullableOf(Schema.of(getFieldSchemaType(field.getType())))));
       }
       return Schema.recordOf("record", fields);
     } catch (IOException e) {
@@ -228,9 +231,10 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, Abstra
    * @throws ParseException
    */
   private Object getFieldValue(@Nullable AbstractFieldValue value) throws ParseException {
+    if (value == null) {
+      return null;
+    }
     int type = value.getFieldDetail().getType();
-    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-    SimpleDateFormat simpleDateFormat;
     switch (type) {
       case 0:
       case 1:
@@ -247,7 +251,7 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, Abstra
       case 15:
       case 16:
       case 23:
-        return Integer.parseInt(Base64.decodeBase64(Base64.encodeBase64(value.toString().getBytes())).toString());
+        return Integer.parseInt(new String(Base64.decodeBase64(Base64.encodeBase64(value.asString().getBytes()))), 2);
       case 8:
       case 11:
       case 18:
@@ -269,27 +273,23 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, Abstra
       case 35:
       case 36:
       case 39:
-        return Base64.decodeInteger(Base64.encodeInteger(value.asBigInteger()));
+        return Base64.decodeInteger(Base64.encodeInteger(value.asBigInteger())).longValue();
       case 72:
-        simpleDateFormat = new SimpleDateFormat("YYMMDD");
-        return dateFormat.format(simpleDateFormat.parse(value.toString()));
+        return DATE_FORMAT.format(DATE_YMD.parse(value.toString()));
       case 73:
-        simpleDateFormat = new SimpleDateFormat("YYYYMMDD");
-        return dateFormat.format(simpleDateFormat.parse(value.toString()));
+        return DATE_FORMAT.format(DATE_YYMD.parse(value.toString()));
       case 74:
-        simpleDateFormat = new SimpleDateFormat("DDMMYY");
-        return dateFormat.format(simpleDateFormat.parse(value.toString()));
+        return DATE_FORMAT.format(DATE_DMY.parse(value.toString()));
       case 75:
-        simpleDateFormat = new SimpleDateFormat("DDMMYYYY");
-        return dateFormat.format(simpleDateFormat.parse(value.toString()));
+        return DATE_FORMAT.format(DATE_DMYY.parse(value.toString()));
       case 111:
-        if (value.toString().toLowerCase().contains("y")) {
+        if (value.asString().trim().equalsIgnoreCase("y")) {
           return true;
         } else {
           return false;
         }
       case 112:
-        if (value.toString().toLowerCase().contains("t")) {
+        if (value.asString().trim().equalsIgnoreCase("t")) {
           return true;
         } else {
           return false;
@@ -305,8 +305,6 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, Abstra
    * Config class for CopybookSource.
    */
   public static class CopybookSourceConfig extends ReferencePluginConfig {
-
-    private static final Pattern fieldDelimiter = Pattern.compile("\\s*,\\s*");
 
     @Description("Complete path of the .bin to be read; for example: 'hdfs://10.222.41.31:9000/test/DTAR020_FB.bin' " +
       "or 'file:///home/cdap/DTAR020_FB.bin'.\n " +
