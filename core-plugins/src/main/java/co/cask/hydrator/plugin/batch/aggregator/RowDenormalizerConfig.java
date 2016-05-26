@@ -21,7 +21,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -96,12 +96,13 @@ public class RowDenormalizerConfig extends AggregatorConfig {
   }
 
   /**
-   * Fetches the output fields (or output field alias, if provided) to build the output schema.
+   * Fetches the output fields from the list entered by user and replaces the output field with alias if provided. If
+   * alias is not present, then set will be created with original output field names.
    *
    * @return List of output fields
    */
-  Set<String> getOutputFields() {
-    Set<String> fields = new HashSet<String>();
+  Set<String> getOutputSchemaFields() {
+    Set<String> fields = new LinkedHashSet<>();
     Map<String, String> outputFieldMappings = getFieldAliases();
     for (String field : Splitter.on(',').trimResults().split(outputFields)) {
       if (outputFieldMappings.containsKey(field)) {

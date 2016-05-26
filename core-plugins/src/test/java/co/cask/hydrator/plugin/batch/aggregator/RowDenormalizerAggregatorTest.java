@@ -51,9 +51,9 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
 
   private static final Schema inputSchema = Schema.recordOf(
     "record",
-    Schema.Field.of("KeyField", Schema.of(Schema.Type.STRING)),
-    Schema.Field.of("FieldName", Schema.of(Schema.Type.STRING)),
-    Schema.Field.of("FieldValue", Schema.of(Schema.Type.STRING)));
+    Schema.Field.of("KeyField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+    Schema.Field.of("FieldName", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+    Schema.Field.of("FieldValue", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
 
   @Test
   public void testDenormalizerWithMultipleKeyFieldValues() throws Exception {
@@ -119,7 +119,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
     put = new Put(Bytes.toBytes(3));
     put.add("KeyField", "A");
     put.add("FieldName", "Address");
-    put.add("FieldValue", "PQR place near XYZ");
+    put.add("FieldValue", (byte[]) null);
     inputTable.put(put);
     put = new Put(Bytes.toBytes(4));
     put.add("KeyField", "B");
@@ -152,7 +152,6 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
     for (GenericRecord record : outputRecords) {
       if ((record.get("KeyField").toString()).equals("A")) {
         Assert.assertEquals("ABC", record.get("Firstname").toString());
-        Assert.assertEquals("PQR place near XYZ", record.get("Addr").toString());
       } else if ((record.get("KeyField").toString()).equals("B")) {
         Assert.assertEquals("ABC1", record.get("Firstname").toString());
         Assert.assertEquals("PQR1 place near XYZ1", record.get("Addr").toString());

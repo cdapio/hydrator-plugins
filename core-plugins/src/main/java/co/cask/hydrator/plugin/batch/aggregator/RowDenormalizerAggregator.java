@@ -50,6 +50,8 @@ public class RowDenormalizerAggregator extends BatchAggregator<String, Structure
   private Set<String> outputFields;
   private Schema outputSchema;
   private String keyField;
+  private String fieldName;
+  private String fieldValue;
 
   public RowDenormalizerAggregator(RowDenormalizerConfig conf) {
     this.conf = conf;
@@ -70,15 +72,20 @@ public class RowDenormalizerAggregator extends BatchAggregator<String, Structure
 
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
-    outputFields = conf.getOutputFields();
+    outputFields = conf.getOutputSchemaFields();
     outputMappings = conf.getFieldAliases();
     keyField = conf.getKeyField();
+    fieldName = conf.getFieldName();
+    fieldValue = conf.getFieldValue();
     outputSchema = initializeOutputSchema();
   }
 
   @Override
   public void groupBy(StructuredRecord record, Emitter<String> emitter) throws Exception {
     if (record.get(keyField) == null) {
+      if (!record.getSchema().getField(keyField).getSchema().isNullable()) {
+        throw new IllegalArgumentException("null value found for non-nullable field " + keyField);
+      }
       return;
     }
     emitter.emit((String) record.get(keyField));
@@ -94,10 +101,24 @@ public class RowDenormalizerAggregator extends BatchAggregator<String, Structure
     builder.set(conf.getKeyField(), groupKey);
     while (iterator.hasNext()) {
       StructuredRecord record = iterator.next();
-      String fieldName = record.get(conf.getFieldName());
-      fieldName = outputMappings.containsKey(fieldName) ? outputMappings.get(fieldName) : fieldName;
-      if (outputFields.contains(fieldName)) {
-        builder.set(fieldName, record.get(conf.getFieldValue()));
+      String outputFieldName = record.get(fieldName);
+      String outputFieldValue = record.get(fieldValue);
+
+      if (outputFieldName == null) {
+        if (!record.getSchema().getField(fieldName).getSchema().isNullable()) {
+          throw new IllegalArgumentException("null value found for non-nullable field " + fieldName);
+        }
+      }
+      if (outputFieldValue == null) {
+        if (!record.getSchema().getField(fieldValue).getSchema().isNullable()) {
+          throw new IllegalArgumentException("null value found for non-nullable field " + fieldValue);
+        }
+      }
+
+      outputFieldName = outputMappings.containsKey(outputFieldName) ? outputMappings.get(outputFieldName) :
+        outputFieldName;
+      if (outputFields.contains(outputFieldName)) {
+        builder.set(outputFieldName, outputFieldValue);
       }
     }
     emitter.emit(builder.build());
@@ -110,7 +131,7 @@ public class RowDenormalizerAggregator extends BatchAggregator<String, Structure
     List<Schema.Field> fields = new ArrayList<>();
     // Input fields coming from source will be of type String; that's why we are building the output schema as String.
     fields.add(Schema.Field.of(conf.getKeyField(), Schema.of(Schema.Type.STRING)));
-    for (String outputField : conf.getOutputFields()) {
+    for (String outputField : conf.getOutputSchemaFields()) {
       fields.add(Schema.Field.of(outputField, Schema.nullableOf(Schema.of(Schema.Type.STRING))));
     }
     return Schema.recordOf("output.schema", fields);
@@ -122,24 +143,32 @@ public class RowDenormalizerAggregator extends BatchAggregator<String, Structure
    * @return true
    */
   private void validateInputFields(Schema inputSchema) {
-    if ((inputSchema.getField(conf.getKeyField())) == null) {
+
+    Schema.Field keyField = inputSchema.getField(conf.getKeyField());
+    Schema.Field fieldName = inputSchema.getField(conf.getFieldName());
+    Schema.Field fieldValue = inputSchema.getField(conf.getFieldValue());
+
+    if (keyField == null) {
       throw new IllegalArgumentException(
         String.format("Keyfield '%s' does not exist in input schema %s", conf.getKeyField(), inputSchema));
-    } else if ((inputSchema.getField(conf.getFieldName())) == null) {
+    } else if (fieldName == null) {
       throw new IllegalArgumentException(
         String.format("Fieldname '%s' does not exist in input schema %s", conf.getFieldName(), inputSchema));
-    } else if ((inputSchema.getField(conf.getFieldValue())) == null) {
+    } else if (fieldValue == null) {
       throw new IllegalArgumentException(
         String.format("Fieldvalue '%s' does not exist in input schema %s", conf.getFieldValue(), inputSchema));
-    } else if (!inputSchema.getField(conf.getKeyField()).getSchema().getType().equals(Schema.Type.STRING)) {
+    } else if (!((keyField.getSchema().isNullable() ? keyField.getSchema().getNonNullable().getType() : keyField
+      .getSchema().getType()).equals(Schema.Type.STRING))) {
       throw new IllegalArgumentException(
-        String.format("Keyfield '%s' must be of type String", conf.getKeyField()));
-    } else if (!inputSchema.getField(conf.getFieldName()).getSchema().getType().equals(Schema.Type.STRING)) {
+        String.format("Keyfield '%s' in the input record must be of type Nullable String", conf.getKeyField()));
+    } else if (!((fieldName.getSchema().isNullable() ? fieldName.getSchema().getNonNullable().getType() : fieldName
+      .getSchema().getType()).equals(Schema.Type.STRING))) {
       throw new IllegalArgumentException(
-        String.format("Fieldname '%s' must be of type String", conf.getFieldName()));
-    } else if (!inputSchema.getField(conf.getFieldValue()).getSchema().getType().equals(Schema.Type.STRING)) {
+        String.format("Fieldname '%s' in the input record must be of type Nullable String", conf.getFieldName()));
+    } else if (!((fieldValue.getSchema().isNullable() ? fieldValue.getSchema().getNonNullable().getType() : fieldValue
+      .getSchema().getType()).equals(Schema.Type.STRING))) {
       throw new IllegalArgumentException(
-        String.format("Fieldvalue '%s' must be of type String", conf.getFieldValue()));
+        String.format("Fieldvalue '%s' in the input record must be of type Nullable String", conf.getFieldValue()));
     }
   }
 }

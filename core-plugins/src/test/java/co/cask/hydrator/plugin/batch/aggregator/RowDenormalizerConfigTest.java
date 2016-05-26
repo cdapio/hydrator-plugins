@@ -33,7 +33,7 @@ public class RowDenormalizerConfigTest {
     RowDenormalizerConfig config = new RowDenormalizerConfig("KeyField", "FieldName", "FieldValue", "Firstname," +
       "Lastname,Address", "Lastname:lname,Address:addr");
 
-    Assert.assertEquals(ImmutableSet.of("Firstname", "lname", "addr"), config.getOutputFields());
+    Assert.assertEquals(ImmutableSet.of("Firstname", "lname", "addr"), config.getOutputSchemaFields());
     Assert.assertEquals(ImmutableMap.of("Lastname", "lname", "Address", "addr"), config.getFieldAliases());
   }
 
@@ -62,9 +62,9 @@ public class RowDenormalizerConfigTest {
   public void testDenormalizerWithWrongKeyFieldName() throws Exception {
     Schema inputSchema = Schema.recordOf(
       "record",
-      Schema.Field.of("KeyField", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("FieldName", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("FieldValue", Schema.of(Schema.Type.STRING)));
+      Schema.Field.of("KeyField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+      Schema.Field.of("FieldName", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+      Schema.Field.of("FieldValue", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
     RowDenormalizerConfig config = new RowDenormalizerConfig("WrongKeyField", "FieldName", "FieldValue", "Firstname," +
       "Lastname,Address", "Lastname:lname,Address:addr");
