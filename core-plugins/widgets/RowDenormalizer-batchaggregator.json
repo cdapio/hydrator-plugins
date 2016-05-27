@@ -14,13 +14,13 @@
         },
 		{
           "widget-type": "textbox",
-          "label": "Input Field Name",
-          "name": "fieldName"
+          "label": "Input Name Field",
+          "name": "nameField"
         },
 		{
           "widget-type": "textbox",
-          "label": "Input Field Value",
-          "name": "fieldValue"
+          "label": "Input Value Field",
+          "name": "valueField"
         },
 		{
           "widget-type": "csv",

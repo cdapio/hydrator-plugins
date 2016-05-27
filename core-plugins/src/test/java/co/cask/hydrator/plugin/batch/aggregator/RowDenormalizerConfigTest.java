@@ -30,7 +30,7 @@ public class RowDenormalizerConfigTest {
 
   @Test
   public void testDenormalizerConfig() {
-    RowDenormalizerConfig config = new RowDenormalizerConfig("KeyField", "FieldName", "FieldValue", "Firstname," +
+    RowDenormalizerConfig config = new RowDenormalizerConfig("KeyField", "NameField", "ValueField", "Firstname," +
       "Lastname,Address", "Lastname:lname,Address:addr");
 
     Assert.assertEquals(ImmutableSet.of("Firstname", "lname", "addr"), config.getOutputSchemaFields());
@@ -39,21 +39,21 @@ public class RowDenormalizerConfigTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void testDormalizerConfWithNoKeyField() {
-    RowDenormalizerConfig config = new RowDenormalizerConfig("", "FieldName", "FieldValue", "Firstname," +
+    RowDenormalizerConfig config = new RowDenormalizerConfig("", "NameField", "ValueField", "Firstname," +
       "Lastname,Address", "Lastname:lname,Address:addr");
     config.validate();
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void testDormalizerConfWithNoFieldName() {
-    RowDenormalizerConfig config = new RowDenormalizerConfig("KeyField", "", "FieldValue", "Firstname," +
+    RowDenormalizerConfig config = new RowDenormalizerConfig("KeyField", "", "ValueField", "Firstname," +
       "Lastname,Address", "Lastname:lname,Address:addr");
     config.validate();
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void testDormalizerConfWithNoFieldValue() {
-    RowDenormalizerConfig config = new RowDenormalizerConfig("KeyField", "FieldName", "", "Firstname," +
+    RowDenormalizerConfig config = new RowDenormalizerConfig("KeyField", "NameField", "", "Firstname," +
       "Lastname,Address", "Lastname:lname,Address:addr");
     config.validate();
   }
@@ -63,10 +63,10 @@ public class RowDenormalizerConfigTest {
     Schema inputSchema = Schema.recordOf(
       "record",
       Schema.Field.of("KeyField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
-      Schema.Field.of("FieldName", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
-      Schema.Field.of("FieldValue", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
+      Schema.Field.of("NameField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+      Schema.Field.of("ValueField", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
-    RowDenormalizerConfig config = new RowDenormalizerConfig("WrongKeyField", "FieldName", "FieldValue", "Firstname," +
+    RowDenormalizerConfig config = new RowDenormalizerConfig("WrongKeyField", "NameField", "ValueField", "Firstname," +
       "Lastname,Address", "Lastname:lname,Address:addr");
     RowDenormalizerAggregator aggregator = new RowDenormalizerAggregator(config);
     aggregator.configurePipeline(configurer);

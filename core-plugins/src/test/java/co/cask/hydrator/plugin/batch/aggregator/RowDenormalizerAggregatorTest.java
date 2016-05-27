@@ -52,8 +52,8 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
   private static final Schema inputSchema = Schema.recordOf(
     "record",
     Schema.Field.of("KeyField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
-    Schema.Field.of("FieldName", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
-    Schema.Field.of("FieldValue", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
+    Schema.Field.of("NameField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+    Schema.Field.of("ValueField", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
 
   @Test
   public void testDenormalizerWithMultipleKeyFieldValues() throws Exception {
@@ -76,8 +76,8 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
 
     Map<String, String> configMap = new ImmutableMap.Builder<String, String>()
       .put("keyField", "KeyField")
-      .put("fieldName", "FieldName")
-      .put("fieldValue", "FieldValue")
+      .put("nameField", "NameField")
+      .put("valueField", "ValueField")
       .put("outputFields", "Firstname,Address")
       .put("fieldAliases", "Address:Addr")
       .build();
@@ -108,33 +108,33 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
     Table inputTable = inputManager.get();
     Put put = new Put(Bytes.toBytes(1));
     put.add("KeyField", "A");
-    put.add("FieldName", "Firstname");
-    put.add("FieldValue", "ABC");
+    put.add("NameField", "Firstname");
+    put.add("ValueField", "ABC");
     inputTable.put(put);
     put = new Put(Bytes.toBytes(2));
     put.add("KeyField", "A");
-    put.add("FieldName", "Lastname");
-    put.add("FieldValue", "XYZ");
+    put.add("NameField", "Lastname");
+    put.add("ValueField", "XYZ");
     inputTable.put(put);
     put = new Put(Bytes.toBytes(3));
     put.add("KeyField", "A");
-    put.add("FieldName", "Address");
-    put.add("FieldValue", (byte[]) null);
+    put.add("NameField", "Address");
+    put.add("ValueField", (byte[]) null);
     inputTable.put(put);
     put = new Put(Bytes.toBytes(4));
     put.add("KeyField", "B");
-    put.add("FieldName", "Firstname");
-    put.add("FieldValue", "ABC1");
+    put.add("NameField", "Firstname");
+    put.add("ValueField", "ABC1");
     inputTable.put(put);
     put = new Put(Bytes.toBytes(5));
     put.add("KeyField", "B");
-    put.add("FieldName", "Lastname");
-    put.add("FieldValue", "XYZ1");
+    put.add("NameField", "Lastname");
+    put.add("ValueField", "XYZ1");
     inputTable.put(put);
     put = new Put(Bytes.toBytes(6));
     put.add("KeyField", "B");
-    put.add("FieldName", "Address");
-    put.add("FieldValue", "PQR1 place near XYZ1");
+    put.add("NameField", "Address");
+    put.add("ValueField", "PQR1 place near XYZ1");
     inputTable.put(put);
 
     inputManager.flush();
@@ -182,8 +182,8 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
 
     Map<String, String> configMap = new ImmutableMap.Builder<String, String>()
       .put("keyField", "KeyField")
-      .put("fieldName", "FieldName")
-      .put("fieldValue", "FieldValue")
+      .put("nameField", "NameField")
+      .put("valueField", "ValueField")
       .put("outputFields", "Firstname,Lastname,Address,Salary")
       .build();
 
@@ -213,18 +213,18 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
     Table inputTable = inputManager.get();
     Put put = new Put(Bytes.toBytes(1));
     put.add("KeyField", "A");
-    put.add("FieldName", "Firstname");
-    put.add("FieldValue", "ABC");
+    put.add("NameField", "Firstname");
+    put.add("ValueField", "ABC");
     inputTable.put(put);
     put = new Put(Bytes.toBytes(2));
     put.add("KeyField", "A");
-    put.add("FieldName", "Lastname");
-    put.add("FieldValue", "XYZ");
+    put.add("NameField", "Lastname");
+    put.add("ValueField", "XYZ");
     inputTable.put(put);
     put = new Put(Bytes.toBytes(3));
     put.add("KeyField", "A");
-    put.add("FieldName", "Address");
-    put.add("FieldValue", "PQR place near XYZ");
+    put.add("NameField", "Address");
+    put.add("ValueField", "PQR place near XYZ");
     inputTable.put(put);
     inputManager.flush();
 

@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.batch.aggregator;
 import co.cask.cdap.api.annotation.Description;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -40,7 +41,7 @@ public class RowDenormalizerConfig extends AggregatorConfig {
     "input records have columns 'id', 'attribute', 'value' " +
     "and the 'attribute' column contains 'FirstName', 'LastName', 'Address'. " +
     "So the output record will have column names as 'FirstName', 'LastName', 'Address'.")
-  private final String fieldName;
+  private final String nameField;
 
   @Description("Name of the column in the input record which contains the values for output schema columns. " +
     "For example, " +
@@ -48,7 +49,7 @@ public class RowDenormalizerConfig extends AggregatorConfig {
     "and the 'value' column contains 'John', 'Wagh', 'NE Lakeside'. " +
     "So the output record will have values for columns 'FirstName', 'LastName', 'Address' as 'John', 'Wagh', 'NE " +
     "Lakeside' respectively.")
-  private final String fieldValue;
+  private final String valueField;
 
   @Description("List of the output fields to be included in denormalized output.")
   private final String outputFields;
@@ -59,11 +60,11 @@ public class RowDenormalizerConfig extends AggregatorConfig {
   private final String fieldAliases;
 
   @VisibleForTesting
-  RowDenormalizerConfig(String keyField, String fieldName, String fieldValue, String outputFields,
+  RowDenormalizerConfig(String keyField, String nameField, String valueField, String outputFields,
                         String fieldAliases) {
     this.keyField = keyField;
-    this.fieldName = fieldName;
-    this.fieldValue = fieldValue;
+    this.nameField = nameField;
+    this.valueField = valueField;
     this.outputFields = outputFields;
     this.fieldAliases = fieldAliases;
   }
@@ -82,8 +83,8 @@ public class RowDenormalizerConfig extends AggregatorConfig {
    *
    * @return field name
    */
-  String getFieldName() {
-    return fieldName;
+  String getNameField() {
+    return nameField;
   }
 
   /**
@@ -91,8 +92,8 @@ public class RowDenormalizerConfig extends AggregatorConfig {
    *
    * @return field value
    */
-  String getFieldValue() {
-    return fieldValue;
+  String getValueField() {
+    return valueField;
   }
 
   /**
@@ -121,11 +122,15 @@ public class RowDenormalizerConfig extends AggregatorConfig {
    */
   Map<String, String> getFieldAliases() {
     Map<String, String> outputFieldMappings = new HashMap<String, String>();
-    if (fieldAliases != null) {
+    if (StringUtils.isNotEmpty(fieldAliases)) {
       for (String field : Splitter.on(',').trimResults().split(fieldAliases)) {
         String[] value = field.split(":");
         if (value.length == 2) {
           outputFieldMappings.put(value[0], value[1]);
+        } else {
+          throw new IllegalArgumentException(
+            String.format("Either key or value is missing for 'Output fields to rename'. Please make sure that " +
+                            "both key and value are present."));
         }
       }
     }
@@ -138,10 +143,10 @@ public class RowDenormalizerConfig extends AggregatorConfig {
   void validate() {
     if (keyField.isEmpty()) {
       throw new IllegalArgumentException("The 'keyField' property must be set.");
-    } else if (fieldName.isEmpty()) {
-      throw new IllegalArgumentException("The 'fieldName' property must be set.");
-    } else if (fieldValue.isEmpty()) {
-      throw new IllegalArgumentException("The 'fieldValue' property must be set.");
+    } else if (nameField.isEmpty()) {
+      throw new IllegalArgumentException("The 'nameField' property must be set.");
+    } else if (valueField.isEmpty()) {
+      throw new IllegalArgumentException("The 'valueField' property must be set.");
     } else if (outputFields.isEmpty()) {
       throw new IllegalArgumentException("The 'outputFields' property must be set.");
     }

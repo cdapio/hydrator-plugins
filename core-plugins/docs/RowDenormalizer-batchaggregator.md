@@ -14,12 +14,12 @@ Properties
 ----------
 **keyField:** Name of the column in the input record which will be used to group the raw data. For Example, id.
 
-**fieldName:** Name of the column in the input record which contains the names of output schema columns. For example,
+**nameField:** Name of the column in the input record which contains the names of output schema columns. For example,
  input records have columns 'id', 'attribute', 'value' and the 'attribute' column contains 'FirstName', 'LastName',
  'Address'.
   "So the output record will have column names as 'FirstName', 'LastName', 'Address'.
 
-**fieldValue:** Name of the column in the input record which contains the values for output schema columns. For
+**valueField:** Name of the column in the input record which contains the values for output schema columns. For
 example, input records have columns 'id', 'attribute', 'value' and the 'value' column contains 'John',
 'Wagh', 'NE Lakeside'. So the output record will have values for columns 'FirstName', 'LastName', 'Address' as 'John', 'Wagh', 'NE Lakeside' respectively.
 
@@ -36,10 +36,10 @@ In case a field value is not present, then it will be considered as NULL.
 
 For Example,
 
-If keyfield('id') in the input record is NULL, then that particular row will not be considered.
+If keyfield('id') in the input record is NULL, then that particular record will be filtered out.
 
-If fieldname('attribute') or fieldvalue('value') is not present for a particular keyfield('id') value, then the
-denormalized output value for that fieldname will be NULL.
+If namefield('attribute') or valuefield('value') is not present for a particular keyfield('id') value, then the
+denormalized output value for that namefield will be NULL.
 
 If user provides output field which is not present in the input record, then it will be considered as NULL.
 
@@ -55,8 +55,8 @@ id, and then returns a denormalized table according to the output schema specifi
          "outputFields": "Firstname,Lastname,Address",
          "fieldAliases": "Address:Office Address",
          "keyField": "id",
-         "fieldName": "attribute",
-         "fieldValue": "value"
+         "nameField": "attribute",
+         "valueField": "value"
        }
     }
 

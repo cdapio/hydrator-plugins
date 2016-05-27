@@ -50,8 +50,8 @@ public class RowDenormalizerAggregator extends BatchAggregator<String, Structure
   private Set<String> outputFields;
   private Schema outputSchema;
   private String keyField;
-  private String fieldName;
-  private String fieldValue;
+  private String nameField;
+  private String valueField;
 
   public RowDenormalizerAggregator(RowDenormalizerConfig conf) {
     this.conf = conf;
@@ -75,15 +75,16 @@ public class RowDenormalizerAggregator extends BatchAggregator<String, Structure
     outputFields = conf.getOutputSchemaFields();
     outputMappings = conf.getFieldAliases();
     keyField = conf.getKeyField();
-    fieldName = conf.getFieldName();
-    fieldValue = conf.getFieldValue();
+    nameField = conf.getNameField();
+    valueField = conf.getValueField();
     outputSchema = initializeOutputSchema();
   }
 
   @Override
   public void groupBy(StructuredRecord record, Emitter<String> emitter) throws Exception {
     if (record.get(keyField) == null) {
-      if (!record.getSchema().getField(keyField).getSchema().isNullable()) {
+      if (record.getSchema().getField(keyField) != null && !record.getSchema().getField(keyField).getSchema()
+        .isNullable()) {
         throw new IllegalArgumentException("null value found for non-nullable field " + keyField);
       }
       return;
@@ -101,18 +102,16 @@ public class RowDenormalizerAggregator extends BatchAggregator<String, Structure
     builder.set(conf.getKeyField(), groupKey);
     while (iterator.hasNext()) {
       StructuredRecord record = iterator.next();
-      String outputFieldName = record.get(fieldName);
-      String outputFieldValue = record.get(fieldValue);
+      String outputFieldName = record.get(nameField);
+      String outputFieldValue = record.get(valueField);
 
-      if (outputFieldName == null) {
-        if (!record.getSchema().getField(fieldName).getSchema().isNullable()) {
-          throw new IllegalArgumentException("null value found for non-nullable field " + fieldName);
-        }
+      if (outputFieldName == null && record.getSchema().getField(nameField) != null && !record.getSchema().getField
+        (nameField).getSchema().isNullable()) {
+        throw new IllegalArgumentException("null value found for non-nullable field " + nameField);
       }
-      if (outputFieldValue == null) {
-        if (!record.getSchema().getField(fieldValue).getSchema().isNullable()) {
-          throw new IllegalArgumentException("null value found for non-nullable field " + fieldValue);
-        }
+      if (outputFieldValue == null && record.getSchema().getField(valueField) != null && !record.getSchema().getField
+        (valueField).getSchema().isNullable()) {
+        throw new IllegalArgumentException("null value found for non-nullable field " + valueField);
       }
 
       outputFieldName = outputMappings.containsKey(outputFieldName) ? outputMappings.get(outputFieldName) :
@@ -139,36 +138,39 @@ public class RowDenormalizerAggregator extends BatchAggregator<String, Structure
 
   /**
    * @param inputSchema Validates whether the keyfield, fieldname, and fieldvalue entered by the user is of type
-   *                    String and present in the input schema or not.
+   *                    String or Nullable String and present in the input schema or not.
    * @return true
    */
   private void validateInputFields(Schema inputSchema) {
 
     Schema.Field keyField = inputSchema.getField(conf.getKeyField());
-    Schema.Field fieldName = inputSchema.getField(conf.getFieldName());
-    Schema.Field fieldValue = inputSchema.getField(conf.getFieldValue());
+    Schema.Field nameField = inputSchema.getField(conf.getNameField());
+    Schema.Field valueField = inputSchema.getField(conf.getValueField());
 
     if (keyField == null) {
       throw new IllegalArgumentException(
         String.format("Keyfield '%s' does not exist in input schema %s", conf.getKeyField(), inputSchema));
-    } else if (fieldName == null) {
+    } else if (nameField == null) {
       throw new IllegalArgumentException(
-        String.format("Fieldname '%s' does not exist in input schema %s", conf.getFieldName(), inputSchema));
-    } else if (fieldValue == null) {
+        String.format("Namefield '%s' does not exist in input schema %s", conf.getNameField(), inputSchema));
+    } else if (valueField == null) {
       throw new IllegalArgumentException(
-        String.format("Fieldvalue '%s' does not exist in input schema %s", conf.getFieldValue(), inputSchema));
+        String.format("Valuefield '%s' does not exist in input schema %s", conf.getValueField(), inputSchema));
     } else if (!((keyField.getSchema().isNullable() ? keyField.getSchema().getNonNullable().getType() : keyField
       .getSchema().getType()).equals(Schema.Type.STRING))) {
       throw new IllegalArgumentException(
-        String.format("Keyfield '%s' in the input record must be of type Nullable String", conf.getKeyField()));
-    } else if (!((fieldName.getSchema().isNullable() ? fieldName.getSchema().getNonNullable().getType() : fieldName
+        String.format("Keyfield '%s' in the input record must be of type String or Nullable String",
+                      conf.getKeyField()));
+    } else if (!((nameField.getSchema().isNullable() ? nameField.getSchema().getNonNullable().getType() : nameField
       .getSchema().getType()).equals(Schema.Type.STRING))) {
       throw new IllegalArgumentException(
-        String.format("Fieldname '%s' in the input record must be of type Nullable String", conf.getFieldName()));
-    } else if (!((fieldValue.getSchema().isNullable() ? fieldValue.getSchema().getNonNullable().getType() : fieldValue
+        String.format("Namefield '%s' in the input record must be of type String or Nullable String",
+                      conf.getNameField()));
+    } else if (!((valueField.getSchema().isNullable() ? valueField.getSchema().getNonNullable().getType() : valueField
       .getSchema().getType()).equals(Schema.Type.STRING))) {
       throw new IllegalArgumentException(
-        String.format("Fieldvalue '%s' in the input record must be of type Nullable String", conf.getFieldValue()));
+        String.format("Valuefield '%s' in the input record must be of type String or Nullable String",
+                      conf.getValueField()));
     }
   }
 }
