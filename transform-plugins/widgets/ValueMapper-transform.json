@@ -5,18 +5,18 @@
   "configuration-groups": [
     {
       "properties": [
-       {
-       	  "name": "mapping",
-	  "label": "mapping",
-	  "widget-type": "ds-multiplevalues",
-	  "widget-attributes": {
-	  "delimiter": ",",
-	  "values-delimiter": ":",
-	  "numValues": "3",
-	  "placeholders": ["Source field", "Lookup table name", "Target field"]
-	}
-	},
-	{
+	    {
+          "name": "mapping",
+          "label": "mapping",
+          "widget-type": "ds-multiplevalues",
+          "widget-attributes": {
+            "delimiter": ",",
+            "values-delimiter": ":",
+            "numValues": "3",
+            "placeholders": ["Source Field", "Mapping Table Name", "Target Field"]
+          }
+        },
+        {
           "widget-type": "keyvalue",
           "label": "Defaults",
           "name": "defaults",
