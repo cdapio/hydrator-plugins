@@ -3,36 +3,51 @@
 
 Description
 -----------
-Value Mapper is a transform plugin that maps string values of a field in the input record to mapping value using mapping dataset.
-Mappings are usually stored in KeyValue dataset. Value Mapper provides you a simple alternative for manipulating the input data by using mapping dataset
+Value Mapper is a transform plugin that maps string values of a field in the input record 
+to mapping value using mapping dataset.
+
+Mappings for the values are usually stored in a key-value dataset. The ValueMapper transform
+provides a simple method for manipulating input data, both a field and its values, using a mapping.
 
 
 Use Case
 --------
-Suppose, If you want to replace language codes in the input record field to language description.
-     **Source Field name:** language_code
+One use is to replace language codes in the input record field with an 
+appropriate language description:
+     **Source field name:** language_code
      **Target field name:** language_desc
-     **Mappings, Source / Target:** DE/German, ES/Spanish, EN/English, etc.
+     **Mappings, source to target:** DE/German, ES/Spanish, EN/English
 
+This will replace the source column *language_code* with the target column 
+*language_desc*, replacing values found in the source field using the mappings 
+("DE" to "German", "ES" to "Spanish", and so on.)
 
 
 Properties
 ----------
-**mapping:** Defines mapping of source field to target field and mapping table name for the specified source field. 
-Contains three fields separated by ":" as **source field, mapping table name, target field**. 
-Here **source field** support only of STRING type.
+**mapping:** A comma-separated list that defines the mapping of a source
+field to a target field and the mapping table name for looking up values. 
+Contains three fields separated by a colon (":") as the source field, the 
+mapping table name, and the target field:
 
-**defaults:** Contains a key value pair of source field and its default value in case if the source field value is
-NULL/EMPTY or if the mapping value is not present. If no default value has been provided, then the source field value will be mapped to target field. 
-Value accepted is of STRING NULLABLE type only.
+         <source-field>:<mapping-table-name>:<target-field>
+
+Note: **source field** supports only STRING types.
+
+**defaults:** A comma-separated list that contains key-value pairs of a
+source field and its default value for cases where the source field
+value is either null or empty or if the mapping value is not present. If
+a default value has not been provided, the source field value will be
+mapped to the target field. Only STRING NULLABLE type values are accepted.
+Example: <source field>:<defaultValue>
 
 
 Example
 -------
-Suppose user takes the input data(employee details) through stream and wants to apply
-value mapper transform plugin on designation field
+As an example, take employee details as input data through a stream and then apply
+the ValueMapper transform on the *designation* field in the input data.
 
-Plugin JSON Representation will be:
+The plugin JSON Representation will be:
 
     {
         "name": "ValueMapper",
@@ -44,7 +59,7 @@ Plugin JSON Representation will be:
     }
 
 
-If the transform receives following input record:
+If the transform receives as an input record:
 
     +=========================================================+
     | field name | type                | value                |
@@ -55,7 +70,7 @@ If the transform receives following input record:
     | designation| string              | "2"                  |
     +=========================================================+
 
-Sample structure for Mapping/Lookup Dataset
+with this as the mapping dataset:
 
     +=======================+
     | key        | value    |
@@ -65,8 +80,10 @@ Sample structure for Mapping/Lookup Dataset
     | 3          | ML       |
     +=======================+
 
-After the transformations from ValueMapper plugin, output will have below structure.
-Here destination column values will be replaced in destinationName by using Mapping Dataset (Key-Value pair):
+	
+After transformation by the ValueMapper plugin, the output will have this structure and contents, with the
+*designation* column replaced by the *designationName* column, using values looked up from the 
+mapping database:
 
     +=========================================================+
     | field name      | type                | value           |
