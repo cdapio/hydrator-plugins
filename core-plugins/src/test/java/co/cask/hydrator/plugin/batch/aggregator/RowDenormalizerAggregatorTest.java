@@ -119,7 +119,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
     put = new Put(Bytes.toBytes(3));
     put.add("KeyField", "A");
     put.add("NameField", "Address");
-    put.add("ValueField", (byte[]) null);
+    put.add("ValueField", "PQR place near XYZ");
     inputTable.put(put);
     put = new Put(Bytes.toBytes(4));
     put.add("KeyField", "B");
@@ -152,9 +152,132 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
     for (GenericRecord record : outputRecords) {
       if ((record.get("KeyField").toString()).equals("A")) {
         Assert.assertEquals("ABC", record.get("Firstname").toString());
+        Assert.assertEquals("PQR place near XYZ", record.get("Addr").toString());
       } else if ((record.get("KeyField").toString()).equals("B")) {
         Assert.assertEquals("ABC1", record.get("Firstname").toString());
         Assert.assertEquals("PQR1 place near XYZ1", record.get("Addr").toString());
+      }
+    }
+  }
+
+  @Test
+  public void testDenormalizerWithNullValues() throws Exception {
+    String inputDatasetName = "denormalizer_null_values_input";
+    String outputDatasetName = "denormalizer_null_values_output";
+
+    ETLStage sourceStage = new ETLStage(
+      "records", new ETLPlugin("Table", BatchSource.PLUGIN_TYPE,
+                               ImmutableMap.of(
+                                 Properties.BatchReadableWritable.NAME, inputDatasetName,
+                                 Properties.Table.PROPERTY_SCHEMA, inputSchema.toString()),
+                               null));
+
+    Schema outputSchema = Schema.recordOf(
+      "denormalizedRecord",
+      Schema.Field.of("KeyField", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("Firstname", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+      Schema.Field.of("Lastname", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+      Schema.Field.of("Address", Schema.nullableOf(Schema.of(Schema.Type.STRING)))
+    );
+
+    Map<String, String> configMap = new ImmutableMap.Builder<String, String>()
+      .put("keyField", "KeyField")
+      .put("nameField", "NameField")
+      .put("valueField", "ValueField")
+      .put("outputFields", "Firstname,Lastname,Address")
+      .build();
+
+    ETLStage aggregateStage = new ETLStage(
+      "aggregate", new ETLPlugin("RowDenormalizer", BatchAggregator.PLUGIN_TYPE, configMap, null));
+
+
+    ETLStage sinkStage = new ETLStage(
+      "sink", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
+                            ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA, outputSchema.toString(),
+                                            Properties.TimePartitionedFileSetDataset.TPFS_NAME, outputDatasetName),
+                            null));
+
+    ETLBatchConfig config = ETLBatchConfig.builder("* * * * *")
+      .addStage(sourceStage)
+      .addStage(aggregateStage)
+      .addStage(sinkStage)
+      .addConnection(sourceStage.getName(), aggregateStage.getName())
+      .addConnection(aggregateStage.getName(), sinkStage.getName())
+      .build();
+    AppRequest<ETLBatchConfig> request = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "denormalize-test");
+    ApplicationManager appManager = deployApplication(appId, request);
+
+    // write input data
+    DataSetManager<Table> inputManager = getDataset(inputDatasetName);
+    Table inputTable = inputManager.get();
+    Put put = new Put(Bytes.toBytes(1));
+    put.add("KeyField", "A");
+    put.add("NameField", "Firstname");
+    put.add("ValueField", "ABC");
+    inputTable.put(put);
+    put = new Put(Bytes.toBytes(2));
+    put.add("KeyField", "A");
+    put.add("NameField", (byte[]) null);
+    put.add("ValueField", "XYZ");
+    inputTable.put(put);
+    put = new Put(Bytes.toBytes(3));
+    put.add("KeyField", "A");
+    put.add("NameField", "Address");
+    put.add("ValueField", "PQR place near XYZ");
+    inputTable.put(put);
+    put = new Put(Bytes.toBytes(4));
+    put.add("KeyField", "B");
+    put.add("NameField", "Firstname");
+    put.add("ValueField", "ABC1");
+    inputTable.put(put);
+    put = new Put(Bytes.toBytes(5));
+    put.add("KeyField", "B");
+    put.add("NameField", "Lastname");
+    put.add("ValueField", "XYZ1");
+    inputTable.put(put);
+    put = new Put(Bytes.toBytes(6));
+    put.add("KeyField", "B");
+    put.add("NameField", "Address");
+    put.add("ValueField", (byte[]) null);
+    inputTable.put(put);
+    put = new Put(Bytes.toBytes(7));
+    put.add("KeyField", "C");
+    put.add("NameField", "Firstname");
+    put.add("ValueField", "ABC2");
+    inputTable.put(put);
+    put = new Put(Bytes.toBytes(8));
+    put.add("KeyField", (byte[]) null);
+    put.add("NameField", "Lastname");
+    put.add("ValueField", "XYZ2");
+    inputTable.put(put);
+    put = new Put(Bytes.toBytes(9));
+    put.add("KeyField", "C");
+    put.add("NameField", (byte[]) null);
+    put.add("ValueField", (byte[]) null);
+    inputTable.put(put);
+
+    inputManager.flush();
+
+    // run the pipeline
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+
+    DataSetManager<TimePartitionedFileSet> outputManager = getDataset(outputDatasetName);
+    TimePartitionedFileSet fileSet = outputManager.get();
+    List<GenericRecord> outputRecords = readOutput(fileSet, outputSchema);
+
+    Assert.assertEquals(3, outputRecords.size());
+    for (GenericRecord record : outputRecords) {
+      if ((record.get("KeyField").toString()).equals("A")) {
+        Assert.assertEquals("ABC", record.get("Firstname").toString());
+        Assert.assertEquals("PQR place near XYZ", record.get("Address").toString());
+      } else if ((record.get("KeyField").toString()).equals("B")) {
+        Assert.assertEquals("ABC1", record.get("Firstname").toString());
+        Assert.assertEquals("XYZ1", record.get("Lastname").toString());
+      } else if ((record.get("KeyField").toString()).equals("C")) {
+        Assert.assertEquals("ABC2", record.get("Firstname").toString());
       }
     }
   }

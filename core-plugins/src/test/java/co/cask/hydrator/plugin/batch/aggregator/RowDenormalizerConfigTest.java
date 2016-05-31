@@ -59,7 +59,7 @@ public class RowDenormalizerConfigTest {
   }
 
   @Test(expected = IllegalArgumentException.class)
-  public void testDenormalizerWithWrongKeyFieldName() throws Exception {
+  public void testDenormalizerWithWrongKeyField() throws Exception {
     Schema inputSchema = Schema.recordOf(
       "record",
       Schema.Field.of("KeyField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
@@ -67,6 +67,34 @@ public class RowDenormalizerConfigTest {
       Schema.Field.of("ValueField", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
     RowDenormalizerConfig config = new RowDenormalizerConfig("WrongKeyField", "NameField", "ValueField", "Firstname," +
+      "Lastname,Address", "Lastname:lname,Address:addr");
+    RowDenormalizerAggregator aggregator = new RowDenormalizerAggregator(config);
+    aggregator.configurePipeline(configurer);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testDenormalizerWithWrongNameField() throws Exception {
+    Schema inputSchema = Schema.recordOf(
+      "record",
+      Schema.Field.of("KeyField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+      Schema.Field.of("NameField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+      Schema.Field.of("ValueField", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
+    RowDenormalizerConfig config = new RowDenormalizerConfig("KeyField", "WrongNameField", "ValueField", "Firstname," +
+      "Lastname,Address", "Lastname:lname,Address:addr");
+    RowDenormalizerAggregator aggregator = new RowDenormalizerAggregator(config);
+    aggregator.configurePipeline(configurer);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testDenormalizerWithWrongValueField() throws Exception {
+    Schema inputSchema = Schema.recordOf(
+      "record",
+      Schema.Field.of("KeyField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+      Schema.Field.of("NameField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+      Schema.Field.of("ValueField", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
+    RowDenormalizerConfig config = new RowDenormalizerConfig("KeyField", "NameField", "WrongValueField", "Firstname," +
       "Lastname,Address", "Lastname:lname,Address:addr");
     RowDenormalizerAggregator aggregator = new RowDenormalizerAggregator(config);
     aggregator.configurePipeline(configurer);
