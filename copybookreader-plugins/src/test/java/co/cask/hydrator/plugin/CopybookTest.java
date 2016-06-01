@@ -38,17 +38,31 @@ import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.hydrator.common.Constants;
+import co.cask.hydrator.plugin.batch.CopybookIOUtils;
 import co.cask.hydrator.plugin.batch.CopybookSource;
 import com.google.common.collect.ImmutableMap;
+import net.sf.JRecord.Common.RecordException;
+import net.sf.JRecord.Details.AbstractLine;
+import net.sf.JRecord.Details.LayoutDetail;
+import net.sf.JRecord.Details.Line;
+import net.sf.JRecord.External.ExternalRecord;
+import net.sf.JRecord.External.ToLayoutDetail;
+import net.sf.JRecord.IO.AbstractLineWriter;
+import net.sf.JRecord.IO.LineIOProvider;
+import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.JobConf;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,6 +111,11 @@ public class CopybookTest extends HydratorTestBase {
                       CopybookSource.class);
 
     FileInputFormat.setInputPaths(new JobConf(), new Path("src/test/resources"));
+  }
+
+  @AfterClass
+  public static void tearDown() throws Exception {
+    temporaryFolder.delete();
   }
 
   @Test
@@ -249,6 +268,130 @@ public class CopybookTest extends HydratorTestBase {
     CopybookSource.CopybookSourceConfig copybookSourceConfig = new CopybookSource.CopybookSourceConfig();
     Assert.assertEquals(Long.toString(CopybookSource.DEFAULT_MAX_SPLIT_SIZE_IN_MB * 1024 * 1024),
                         copybookSourceConfig.getMaxSplitSize().toString());
+  }
+
+  @Test
+  public void testDataTypes() throws Exception {
+
+    cblContents = "000100*                                                                         \n" +
+      "000200*   DTAR020 IS THE OUTPUT FROM DTAB020 FROM THE IML                       \n" +
+      "000300*   CENTRAL REPORTING SYSTEM                                              \n" +
+      "000400*                                                                         \n" +
+      "000500*   CREATED BY BRUCE ARTHUR  19/12/90                                     \n" +
+      "000600*                                                                         \n" +
+      "000700*   RECORD LENGTH IS 27.                                                  \n" +
+      "000800*                                                                         \n" +
+      "000900        03  DTAR020-KCODE-STORE-KEY.                                      \n" +
+      "001000            05 DTAR020-KEYCODE      \tPIC X(01).    \n" +
+      "001100            05 DTAR020-STORE-NO        \tPIC 9(18) \t\tCOMP.               \n" +
+      "001200        03  DTAR020-DATE               \tPIC S9(08)  \tCOMP-3.               \n" +
+      "001300        03  DTAR020-DEPT-NO            \tpic S9(5)   \tBINARY.               \n" +
+      "001400        03  DTAR020-QTY-SOLD           \tPIC S9(9)   \tCOMP-3.               \n" +
+      "001500        03  DTAR020-SALE-PRICE         \tPIC S9(9)V99 \tCOMP-1.    \n" +
+      "001600        03  DTAR020-MRP         \t\t \tPIC S9(9)V99\tCOMP-2.      \n" +
+      "001700        03  DTAR020-ZONED-DECIMAL      \tPIC S9(5)V9.   \n" +
+      "001800        03  DTAR020-ASSUMED-DECIMAL    \tPIC 999V99.   \n" +
+      "001900        03  DTAR020-NUM-RIGHTJUSTIFIED \tPIC 9(5).";
+
+    Schema schema = Schema.recordOf("record",
+                                    Schema.Field.of("DTAR020-KEYCODE", Schema.nullableOf(Schema.of(
+                                      Schema.Type.STRING))),
+                                    Schema.Field.of("DTAR020-STORE-NO", Schema.nullableOf(Schema.of(
+                                      Schema.Type.LONG))),
+                                    Schema.Field.of("DTAR020-DATE", Schema.nullableOf(Schema.of(
+                                      Schema.Type.DOUBLE))),
+                                    Schema.Field.of("DTAR020-DEPT-NO", Schema.nullableOf(Schema.of(
+                                      Schema.Type.LONG))),
+                                    Schema.Field.of("DTAR020-QTY-SOLD", Schema.nullableOf(Schema.of(
+                                      Schema.Type.DOUBLE))),
+                                    Schema.Field.of("DTAR020-SALE-PRICE", Schema.nullableOf(Schema.of(
+                                      Schema.Type.FLOAT))),
+                                    Schema.Field.of("DTAR020-MRP", Schema.nullableOf(Schema.of(
+                                      Schema.Type.DOUBLE))),
+                                    Schema.Field.of("DTAR020-ZONED-DECIMAL", Schema.nullableOf(Schema.of(
+                                      Schema.Type.DOUBLE))),
+                                    Schema.Field.of("DTAR020-ASSUMED-DECIMAL", Schema.nullableOf(Schema.of(
+                                      Schema.Type.DOUBLE))),
+                                    Schema.Field.of("DTAR020-NUM-RIGHTJUSTIFIED", Schema.nullableOf(Schema.of(
+                                      Schema.Type.INT))));
+
+    Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
+      .put(Constants.Reference.REFERENCE_NAME, "TestCase")
+      .put("binaryFilePath", generateBinaryFile(cblContents))
+      .put("copybookContents", cblContents)
+      .build();
+
+    ETLStage source = new ETLStage("CopybookReader", new ETLPlugin("CopybookReader", BatchSource.PLUGIN_TYPE,
+                                                                   sourceProperties, null));
+
+    String outputDatasetName = "output-batchsource-test-wihtout-schema";
+    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
+
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "CopybookReaderTest");
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+
+    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
+    mrManager.start();
+    mrManager.waitForFinish(10, TimeUnit.MINUTES);
+
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> output = MockSink.readOutput(outputManager);
+
+    StructuredRecord record = output.get(0);
+
+    Assert.assertEquals("1", record.get("DTAR020-KEYCODE"));
+    Assert.assertEquals(123, record.get("DTAR020-NUM-RIGHTJUSTIFIED"));
+    Assert.assertEquals(20L, record.get("DTAR020-STORE-NO"));
+    Assert.assertEquals(20140202, (Double) record.get("DTAR020-DATE"), 0);
+    Assert.assertEquals(100L, record.get("DTAR020-DEPT-NO"));
+    Assert.assertEquals(7, (Double) record.get("DTAR020-QTY-SOLD"), 0);
+    Assert.assertEquals(7.15F, (Float) record.get("DTAR020-SALE-PRICE"), 0);
+    Assert.assertEquals(7.30, (Double) record.get("DTAR020-MRP"), 0);
+    Assert.assertEquals(-123.2, (Double) record.get("DTAR020-ZONED-DECIMAL"), 0);
+    Assert.assertEquals(134.25, (Double) record.get("DTAR020-ASSUMED-DECIMAL"), 0);
+
+    Assert.assertEquals("Expected schema", record.getSchema(), schema);
+  }
+
+  public String generateBinaryFile(String copybook) {
+
+    ExternalRecord externalRecord = null;
+    try {
+      File file = temporaryFolder.newFile("TestFile.bin");
+      String binaryFilePath = file.getPath();
+      int fileStructure = net.sf.JRecord.Common.Constants.IO_FIXED_LENGTH;
+      InputStream inputStream = IOUtils.toInputStream(copybook, "UTF-8");
+      externalRecord = CopybookIOUtils.getExternalRecord(inputStream);
+      LayoutDetail layout = ToLayoutDetail.getInstance().getLayout(externalRecord);
+      AbstractLineWriter writer = LineIOProvider.getInstance().getLineWriter(fileStructure);
+      AbstractLine saleRecord = new Line(layout);
+      writer.open(binaryFilePath);
+      saleRecord.getFieldValue("DTAR020-KEYCODE").set(1);
+      saleRecord.getFieldValue("DTAR020-NUM-RIGHTJUSTIFIED").set(123);
+      saleRecord.getFieldValue("DTAR020-STORE-NO").set(20);
+      saleRecord.getFieldValue("DTAR020-DATE").set(20140202);
+      saleRecord.getFieldValue("DTAR020-DEPT-NO").set(100);
+      saleRecord.getFieldValue("DTAR020-QTY-SOLD").set(7);
+      saleRecord.getFieldValue("DTAR020-SALE-PRICE").set(7.15);
+      saleRecord.getFieldValue("DTAR020-MRP").set(7.30);
+      saleRecord.getFieldValue("DTAR020-ZONED-DECIMAL").set(-123.2);
+      saleRecord.getFieldValue("DTAR020-ASSUMED-DECIMAL").set(134.25);
+
+      writer.write(saleRecord);
+      writer.close();
+      return binaryFilePath;
+    } catch (RecordException e) {
+      throw new IllegalArgumentException("Invalid copybook contents: " + e.getMessage(), e);
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Error creating binary test file: " + e.getMessage(), e);
+    }
   }
 }
 

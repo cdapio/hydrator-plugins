@@ -40,6 +40,7 @@ import net.sf.JRecord.External.Def.ExternalField;
 import net.sf.JRecord.External.ExternalRecord;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.Job;
 
@@ -174,49 +175,21 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, Abstra
   private Schema.Type getFieldSchemaType(int type) {
     switch (type) {
       case 0:
-      case 1:
-      case 2:
-      case 3:
-      case 71:
-      case 72:
-      case 73:
-      case 74:
-      case 75:
         return Schema.Type.STRING;
-      case 5:
-      case 6:
-      case 7:
-      case 15:
-      case 16:
-      case 23:
-        return Schema.Type.INT;
-      case 8:
-      case 11:
+      case 17:
+        return Schema.Type.FLOAT;
       case 18:
-      case 19:
-      case 20:
       case 22:
-      case 24:
-      case 25:
-      case 26:
-      case 27:
-      case 28:
-      case 29:
       case 31:
       case 32:
       case 33:
         return Schema.Type.DOUBLE;
-      case 17:
-        return Schema.Type.FLOAT;
-      case 4:
+      case 25:
+        return Schema.Type.INT;
       case 35:
       case 36:
       case 39:
         return Schema.Type.LONG;
-      case 111:
-      case 112:
-      case 114:
-        return Schema.Type.BOOLEAN;
       default:
         return Schema.Type.STRING;
     }
@@ -230,74 +203,30 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, Abstra
    * @return data objects supported by CDAP
    * @throws ParseException
    */
-  private Object getFieldValue(@Nullable AbstractFieldValue value) throws ParseException {
+  public static Object getFieldValue(@Nullable AbstractFieldValue value) throws ParseException {
     if (value == null) {
       return null;
     }
     int type = value.getFieldDetail().getType();
     switch (type) {
       case 0:
-      case 1:
-      case 2:
-      case 3:
-      case 71:
         return value.asString();
-      case 4:
-        return Long.parseLong(value.asHex(), 16);
-      case 5:
-      case 6:
-      case 7:
-        return value.asInt();
-      case 15:
-      case 16:
-      case 23:
-        return Integer.parseInt(new String(Base64.decodeBase64(Base64.encodeBase64(value.asString().getBytes()))), 2);
-      case 8:
-      case 11:
+      case 17:
+        return value.asFloat();
       case 18:
-      case 19:
-      case 20:
       case 22:
-      case 24:
-      case 25:
-      case 26:
-      case 27:
-      case 28:
-      case 29:
       case 31:
       case 32:
       case 33:
         return value.asDouble();
-      case 17:
-        return value.asFloat();
+      case 25:
+        return value.asInt();
       case 35:
       case 36:
       case 39:
-        return Base64.decodeInteger(Base64.encodeInteger(value.asBigInteger())).longValue();
-      case 72:
-        return DATE_FORMAT.format(DATE_YMD.parse(value.toString()));
-      case 73:
-        return DATE_FORMAT.format(DATE_YYMD.parse(value.toString()));
-      case 74:
-        return DATE_FORMAT.format(DATE_DMY.parse(value.toString()));
-      case 75:
-        return DATE_FORMAT.format(DATE_DMYY.parse(value.toString()));
-      case 111:
-        if (value.asString().trim().equalsIgnoreCase("y")) {
-          return true;
-        } else {
-          return false;
-        }
-      case 112:
-        if (value.asString().trim().equalsIgnoreCase("t")) {
-          return true;
-        } else {
-          return false;
-        }
-      case 114:
-        return value.asBoolean();
+        return value.asLong();
       default:
-        return value.toString();
+        return value.asString();
     }
   }
 
