@@ -103,13 +103,10 @@ public class CopybookTest extends HydratorTestBase {
 
   @BeforeClass
   public static void setupTest() throws Exception {
-
     setupBatchArtifacts(BATCH_APP_ARTIFACT_ID, ETLBatchApplication.class);
-
     // add artifact for batch sources and sinks
     addPluginArtifact(NamespaceId.DEFAULT.artifact("copybookreader-plugins", "1.0.0"), BATCH_APP_ARTIFACT_ID,
                       CopybookSource.class);
-
     FileInputFormat.setInputPaths(new JobConf(), new Path("src/test/resources"));
   }
 
@@ -172,7 +169,6 @@ public class CopybookTest extends HydratorTestBase {
     Assert.assertEquals(4.87, result.get("63604808").doubleValue(), 0.1);
     Assert.assertEquals(5.01, result.get("69694158").doubleValue(), 0.1);
     Assert.assertEquals("Expected schema", output.get(0).getSchema(), schema);
-
   }
 
   @Test
@@ -339,7 +335,7 @@ public class CopybookTest extends HydratorTestBase {
 
     MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
     mrManager.start();
-    mrManager.waitForFinish(10, TimeUnit.MINUTES);
+    mrManager.waitForFinish(20, TimeUnit.MINUTES);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -394,5 +390,3 @@ public class CopybookTest extends HydratorTestBase {
     }
   }
 }
-
-

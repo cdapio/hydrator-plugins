@@ -38,9 +38,7 @@ import net.sf.JRecord.Common.AbstractFieldValue;
 import net.sf.JRecord.Common.RecordException;
 import net.sf.JRecord.External.Def.ExternalField;
 import net.sf.JRecord.External.ExternalRecord;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.Job;
 
@@ -48,7 +46,6 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -70,11 +67,7 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, Abstra
 
   public static final long DEFAULT_MAX_SPLIT_SIZE_IN_MB = 1;
   private static final long CONVERT_TO_BYTES = 1024 * 1024;
-  private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
-  private static final SimpleDateFormat DATE_YMD = new SimpleDateFormat("YYMMDD");
-  private static final SimpleDateFormat DATE_YYMD = new SimpleDateFormat("YYYYMMDD");
-  private static final SimpleDateFormat DATE_DMY = new SimpleDateFormat("DDMMYY");
-  private static final SimpleDateFormat DATE_DMYY = new SimpleDateFormat("DDMMYYYY");
+
   private final CopybookSourceConfig config;
   private Schema outputSchema;
   private Set<String> fieldsToDrop = new HashSet<String>();
@@ -88,7 +81,6 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, Abstra
     super.configurePipeline(pipelineConfigurer);
     outputSchema = getOutputSchema();
     pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
-
   }
 
   @Override
@@ -203,7 +195,7 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, Abstra
    * @return data objects supported by CDAP
    * @throws ParseException
    */
-  public static Object getFieldValue(@Nullable AbstractFieldValue value) throws ParseException {
+  private Object getFieldValue(@Nullable AbstractFieldValue value) throws ParseException {
     if (value == null) {
       return null;
     }
