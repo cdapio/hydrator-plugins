@@ -10,7 +10,6 @@
           "widget-type": "keyvalue-dropdown",
           "label": "Encode Fields",
           "name": "encode",
-          "description": "List of fields to encode. The key specifies the name of the field to be encoded, with its corresponding value specifying the type of encoder that will be applied to it.",
           "widget-attributes": {
             "showDelimiter": "false",
             "dropdownOptions": [

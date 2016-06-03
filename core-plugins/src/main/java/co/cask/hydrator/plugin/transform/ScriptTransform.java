@@ -57,7 +57,7 @@ import javax.script.ScriptException;
 @Plugin(type = "transform")
 @Name("Script")
 @Description("Executes user-provided JavaScript that transforms one record into another." +
-  "This transform has been deprecated, use JavaScriptTransform instead of this transform")
+  "This transform has been deprecated; use the JavaScript transform instead.")
 public class ScriptTransform extends Transform<StructuredRecord, StructuredRecord> {
   private static final Gson GSON = new GsonBuilder()
     .registerTypeAdapter(StructuredRecord.class, new StructuredRecordSerializer())
