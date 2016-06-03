@@ -20,7 +20,8 @@
               "STRING_BASE32",
               "HEX",
               "NONE"
-            ]
+            ],
+            "key-placeholder": "Field Name"
           }
         }
       ]

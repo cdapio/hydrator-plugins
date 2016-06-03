@@ -18,7 +18,8 @@
               "ZIP",
               "GZIP",
               "NONE"
-            ]
+            ],
+            "key-placeholder": "Field Name"
           }
         }
       ]
