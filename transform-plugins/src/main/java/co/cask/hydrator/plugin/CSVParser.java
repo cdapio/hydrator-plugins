@@ -194,7 +194,12 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
     StructuredRecord.Builder builder = StructuredRecord.builder(outSchema);
     int i = 0;
     for (Field field : fields) {
-      builder.set(field.getName(), TypeConvertor.get(record.get(i), field.getSchema().getType()));
+      String value = record.get(i);
+      try {
+        builder.set(field.getName(), TypeConvertor.get(value, field.getSchema().getType()));
+      } catch (Exception e) {
+        builder.set(field.getName(), null);
+      }
       ++i;
     }
     return builder.build();

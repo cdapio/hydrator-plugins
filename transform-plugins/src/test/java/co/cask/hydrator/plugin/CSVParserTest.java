@@ -47,6 +47,33 @@ public class CSVParserTest {
                                                         Schema.Field.of("d", Schema.of(Schema.Type.DOUBLE)),
                                                         Schema.Field.of("e", Schema.of(Schema.Type.BOOLEAN)));
 
+  private static final Schema OUTPUT3 = Schema.recordOf("output3",
+                                                        Schema.Field.of("a", Schema.of(Schema.Type.LONG)),
+                                                        Schema.Field.of("b", Schema.of(Schema.Type.LONG)),
+                                                        Schema.Field.of("c", Schema.of(Schema.Type.LONG)),
+                                                        Schema.Field.of("d", Schema.of(Schema.Type.LONG)),
+                                                        Schema.Field.of("e", Schema.of(Schema.Type.LONG)),
+                                                        Schema.Field.of("f", Schema.of(Schema.Type.LONG)),
+                                                        Schema.Field.of("g", Schema.of(Schema.Type.STRING)),
+                                                        Schema.Field.of("h", Schema.of(Schema.Type.DOUBLE)),
+                                                        Schema.Field.of("i", Schema.of(Schema.Type.DOUBLE)),
+                                                        Schema.Field.of("j", Schema.of(Schema.Type.DOUBLE)),
+                                                        Schema.Field.of("k", Schema.of(Schema.Type.DOUBLE)),
+                                                        Schema.Field.of("l", Schema.of(Schema.Type.DOUBLE)),
+                                                        Schema.Field.of("m", Schema.of(Schema.Type.DOUBLE)),
+                                                        Schema.Field.of("n", Schema.of(Schema.Type.DOUBLE)),
+                                                        Schema.Field.of("o", Schema.of(Schema.Type.DOUBLE)),
+                                                        Schema.Field.of("p", Schema.of(Schema.Type.DOUBLE)),
+                                                        Schema.Field.of("r", Schema.of(Schema.Type.DOUBLE)),
+                                                        Schema.Field.of("s", Schema.of(Schema.Type.DOUBLE)),
+                                                        Schema.Field.of("t", Schema.of(Schema.Type.DOUBLE)),
+                                                        Schema.Field.of("u", Schema.of(Schema.Type.DOUBLE)),
+                                                        Schema.Field.of("v", Schema.of(Schema.Type.DOUBLE)),
+                                                        Schema.Field.of("w", Schema.of(Schema.Type.DOUBLE)),
+                                                        Schema.Field.of("x", Schema.of(Schema.Type.DOUBLE)),
+                                                        Schema.Field.of("y", Schema.of(Schema.Type.STRING)),
+                                                        Schema.Field.of("z", Schema.of(Schema.Type.STRING)));
+
   @Test
   public void testDefaultCSVParser() throws Exception {
     CSVParser.Config config = new CSVParser.Config("DEFAULT", "body", OUTPUT1.toString());
@@ -143,6 +170,27 @@ public class CSVParserTest {
     Assert.assertEquals("3", emitter.getEmitted().get(0).get("c"));
     Assert.assertEquals("4", emitter.getEmitted().get(0).get("d"));
     Assert.assertEquals("", emitter.getEmitted().get(0).get("e"));
+  }
+
+
+  @Test
+  public void testPDLTypeChecks() throws Exception {
+    CSVParser.Config config = new CSVParser.Config("PDL", "body", OUTPUT3.toString());
+    Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
+    transform.initialize(null);
+
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+
+    // Test missing field.
+    emitter.clear();
+    transform.transform(StructuredRecord.builder(INPUT1)
+                          .set("body",
+                               "4|14659|313420|34987647|2106005|168948698|2016-05-22|-1|-1|" +
+                                 "-1|1|0|0|0|0|0|0|0|0|0|0|1|2|2016-05-30 20:30:37|0").build(), emitter);
+    Assert.assertEquals(4L, emitter.getEmitted().get(0).get("a"));
+    Assert.assertEquals(14659L, emitter.getEmitted().get(0).get("b"));
+    Assert.assertEquals(313420L, emitter.getEmitted().get(0).get("c"));
+    Assert.assertEquals(34987647L, emitter.getEmitted().get(0).get("d"));
   }
 
   @Test(expected = RuntimeException.class)
