@@ -177,7 +177,7 @@ public class JSONParserTest {
     };
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
-    JSONParser.Config config = new JSONParser.Config("body", com.google.common.base.Joiner.on(",").join(jsonPaths),
+    JSONParser.Config config = new JSONParser.Config("body", Joiner.on(",").join(jsonPaths),
                                                      OUTPUT4.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new JSONParser(config);
 
