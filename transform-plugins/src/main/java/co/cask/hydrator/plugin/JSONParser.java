@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * Transform parses a JSON Object into {@link StructuredRecord}.
@@ -100,7 +101,7 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
         String expression = mapParts[1];
         if (field.isEmpty() && !expression.isEmpty()) {
           throw new IllegalArgumentException("Json path expression '" + expression +
-                  "' has not output field specified");
+                  "' has no output field specified");
         }
         if (expression.isEmpty() && !field.isEmpty()) {
           throw new IllegalArgumentException("Field '" + field + "' doesn't have Json path expression.");
@@ -171,6 +172,7 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
 
     @Name("mapping")
     @Description("Mapping complex JSON to fields using JSON Path expressions")
+    @Nullable
     private String mapping;
 
     @Name("schema")

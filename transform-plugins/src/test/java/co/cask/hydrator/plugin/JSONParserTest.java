@@ -21,6 +21,7 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.hydrator.common.MockPipelineConfigurer;
 import co.cask.hydrator.common.test.MockEmitter;
+import com.google.common.base.Joiner;
 import com.jayway.jsonpath.PathNotFoundException;
 import org.junit.Assert;
 import org.junit.Test;
@@ -151,7 +152,7 @@ public class JSONParserTest {
     };
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
-    JSONParser.Config config = new JSONParser.Config("body", com.google.common.base.Joiner.on(",").join(jsonPaths),
+    JSONParser.Config config = new JSONParser.Config("body", Joiner.on(",").join(jsonPaths),
                                                      OUTPUT3.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new JSONParser(config);
 
