@@ -12,7 +12,8 @@
           "label": "Unique Fields",
           "name": "uniqueFields",
           "widget-attributes": {
-            "delimiter": ","
+            "delimiter": ",",
+            "value-placeholder": "Field Name"
           }
         },
         {
@@ -28,7 +29,8 @@
               "Max",
               "First",
               "Last"
-            ]
+            ],
+            "key-placeholder": "Field Name"
           }
         },
         {

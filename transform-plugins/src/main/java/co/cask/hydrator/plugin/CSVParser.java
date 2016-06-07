@@ -27,6 +27,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
+import com.google.common.base.Throwables;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.slf4j.Logger;
@@ -100,8 +101,9 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
                                            "DEFAULT, EXCEL, MYSQL, RFC4180, PDL & TDF");
     }
 
-    if (configurer.getStageConfigurer().getInputSchema() != null) {
-      Schema.Field inputSchemaField = configurer.getStageConfigurer().getInputSchema().getField(config.field);
+    Schema inputSchema = configurer.getStageConfigurer().getInputSchema();
+    if (inputSchema != null) {
+      Schema.Field inputSchemaField = inputSchema.getField(config.field);
       if (inputSchemaField == null) {
         throw new IllegalArgumentException(
           "Field " + config.field + " is not present in the input schema");
@@ -113,14 +115,30 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
       }
     }
 
+
     // Check if schema specified is a valid schema or no.
     try {
       Schema outputSchema = Schema.parseJson(this.config.schema);
       configurer.getStageConfigurer().setOutputSchema(outputSchema);
+
+      // When a input field is passed through to output, the type and name should be the same.
+      // If the type is not the same, then we fail.
+      if (inputSchema != null) {
+        for (Field field : inputSchema.getFields()) {
+          if (outputSchema.getField(field.getName()) != null) {
+            Schema out = outputSchema.getField(field.getName()).getSchema();
+            Schema in = field.getSchema();
+            if (!in.equals(out)) {
+              throw new IllegalArgumentException(
+                "Input field '" + field.getName() + "' does not have same output schema as input."
+              );
+            }
+          }
+        }
+      }
     } catch (IOException e) {
       throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
     }
-
   }
 
   @Override
@@ -176,26 +194,26 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
       org.apache.commons.csv.CSVParser parser = org.apache.commons.csv.CSVParser.parse(body, csvFormat);
       List<CSVRecord> records = parser.getRecords();
       for (CSVRecord record : records) {
-        if (fields.size() == record.size()) {
-          StructuredRecord sRecord = createStructuredRecord(record);
-          emitter.emit(sRecord);
-        } else {
-          LOG.warn("Skipping record as output schema specified has '{}' fields, while CSV record has '{}'",
-                   fields.size(), record.size());
-          // Write the record to error Dataset.
-        }
+        emitter.emit(createStructuredRecord(record, in));
       }
     } catch (IOException e) {
-      LOG.error("There was a issue parsing the record. ", e.getLocalizedMessage());
+      throw Throwables.propagate(e);
     }
   }
 
-  private StructuredRecord createStructuredRecord(CSVRecord record) {
+  private StructuredRecord createStructuredRecord(CSVRecord record, StructuredRecord in) {
     StructuredRecord.Builder builder = StructuredRecord.builder(outSchema);
     int i = 0;
     for (Field field : fields) {
-      builder.set(field.getName(), TypeConvertor.get(record.get(i), field.getSchema().getType()));
-      ++i;
+      String name = field.getName();
+      // If the field specified in the output field is present in the input, then
+      // it's directly copied into the output, else field is parsed in from the CSV parser.
+      if (in.get(name) != null) {
+        builder.set(name, in.get(name));
+      } else {
+        builder.set(name, TypeConvertor.get(record.get(i), field.getSchema().getType()));
+        ++i;
+      }
     }
     return builder.build();
   }
