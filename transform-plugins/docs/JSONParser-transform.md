@@ -2,7 +2,7 @@
 
 ## Description
 
-Parses input Json event into a record. The input Json event could either a map of string field to values or it could 
+Parses input Json event into a record. The input Json event could be either a map of string field to values or it could 
 be a complex nested Json structure. Plugin allows one to express Json paths for extracting fields from complex nested 
 input Json.
 
