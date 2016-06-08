@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -25,22 +25,21 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
-import co.cask.cdap.etl.api.TransformContext;
-import co.cask.cdap.format.StructuredRecordStringConverter;
-
-import java.io.IOException;
+import org.json.JSONObject;
+import org.json.XML;
 
 /**
- * Transform parses a JSON Object into {@link StructuredRecord}.
+ * Transform parses an XML String field into a stringified JSON Object.
  */
 @Plugin(type = "transform")
-@Name("JSONParser")
-@Description("Parses JSON Object into a Structured Record.")
+@Name("XMLToJSON")
+@Description("Converts an XML string to a JSON string")
 public final class XMLToJSONConverter extends Transform<StructuredRecord, StructuredRecord> {
   private final Config config;
-
-  // Output Schema that specifies the fileds of JSON object.
-  private Schema outSchema;
+  public static final Schema DEFAULT_SCHEMA = Schema.recordOf(
+    "event",
+    Schema.Field.of("jsonBody", Schema.of(Schema.Type.STRING))
+  );
 
   // Mainly used for testing.
   public XMLToJSONConverter(Config config) {
@@ -50,12 +49,7 @@ public final class XMLToJSONConverter extends Transform<StructuredRecord, Struct
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-    try {
-      Schema outputSchema = Schema.parseJson(config.schema);
-      pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Output Schema specified is not a valid JSON. Please check the Schema JSON");
-    }
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(DEFAULT_SCHEMA);
 
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
     if (inputSchema != null && inputSchema.getField(config.field) == null) {
@@ -64,35 +58,22 @@ public final class XMLToJSONConverter extends Transform<StructuredRecord, Struct
   }
   
   @Override
-  public void initialize(TransformContext context) throws Exception {
-    super.initialize(context);
-    try {
-      outSchema = Schema.parseJson(config.schema);
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Output Schema specified is not a valid JSON. Please check the Schema JSON");
-    }
-  }
-  
-  @Override
   public void transform(StructuredRecord input, Emitter<StructuredRecord> emitter) throws Exception {
-    emitter.emit(StructuredRecordStringConverter.fromJsonString((String) input.get(config.field), outSchema));
+    JSONObject jsonBody = XML.toJSONObject((String) input.get(config.field));
+    StructuredRecord.Builder builder = StructuredRecord.builder(DEFAULT_SCHEMA);
+    emitter.emit(builder.set("jsonBody", jsonBody.toString()).build());
   }
 
   /**
-   * JSONParser Plugin Config.
+   * XMLToJSONConverter Plugin Config.
    */
   public static class Config extends PluginConfig {
     @Name("field")
-    @Description("Input Field")
+    @Description("The field containing the XML string to convert into a JSON string.")
     private String field;
 
-    @Name("schema")
-    @Description("Output schema")
-    private String schema;
-
-    public Config(String field, String schema) {
+    public Config(String field) {
       this.field = field;
-      this.schema = schema;
     }
 
   }

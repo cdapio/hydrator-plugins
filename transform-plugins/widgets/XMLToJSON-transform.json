@@ -4,15 +4,11 @@
   },
   "configuration-groups": [
     {
-      "label": "XML to JSON",
       "properties": [
         {
           "widget-type": "textbox",
           "label": "Input Field",
-          "name": "field",
-          "widget-attributes": {
-            "width": "small"
-          }
+          "name": "field"
         }
       ]
     }
