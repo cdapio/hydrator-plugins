@@ -20,30 +20,18 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.UnsupportedTypeException;
-import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
-import co.cask.hydrator.common.HiveSchemaConverter;
-import co.cask.hydrator.common.batch.JobUtils;
 import co.cask.hydrator.plugin.common.AvroToStructuredTransformer;
+import co.cask.hydrator.plugin.common.FileSetUtil;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.google.common.base.Throwables;
-import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mapreduce.Job;
-import parquet.avro.AvroParquetInputFormat;
-import parquet.avro.AvroParquetOutputFormat;
-
-import java.io.IOException;
-import java.util.Map;
 
 /**
  * A {@link BatchSource} to read Avro record from {@link TimePartitionedFileSet}
@@ -53,8 +41,8 @@ import java.util.Map;
 @Description("Reads from a TimePartitionedFileSet whose data is in Parquet format.")
 public class TimePartitionedFileSetDatasetParquetSource extends
   TimePartitionedFileSetSource<NullWritable, GenericRecord> {
-  private final TPFSParquetConfig tpfsParquetConfig;
 
+  private final TPFSParquetConfig tpfsParquetConfig;
   private final AvroToStructuredTransformer recordTransformer = new AvroToStructuredTransformer();
 
   /**
@@ -96,38 +84,7 @@ public class TimePartitionedFileSetDatasetParquetSource extends
 
   @Override
   protected void addFileSetProperties(FileSetProperties.Builder properties) {
-    properties.setInputFormat(AvroParquetInputFormat.class)
-      .setOutputFormat(AvroParquetOutputFormat.class)
-      .setEnableExploreOnCreate(true)
-      .setExploreFormat("parquet");
-    try {
-      String schema = tpfsParquetConfig.schema.toLowerCase();
-      String hiveSchema = HiveSchemaConverter.toHiveSchema(
-        co.cask.cdap.api.data.schema.Schema.parseJson(schema));
-      properties.setExploreSchema(hiveSchema.substring(1, hiveSchema.length() - 1));
-      properties.add(DatasetProperties.SCHEMA, schema);
-    } catch (UnsupportedTypeException e) {
-      throw new IllegalArgumentException("schema " + tpfsParquetConfig.schema + " is not supported.", e);
-    } catch (Exception e) {
-      throw new IllegalArgumentException("schema " + tpfsParquetConfig.schema + " is invalid.", e);
-    }
-  }
-
-  @Override
-  protected void addInputFormatConfiguration(Map<String, String> config) {
-    try {
-      Job job = JobUtils.createInstance();
-      Configuration hConf = job.getConfiguration();
-
-      Schema avroSchema = new Schema.Parser().parse(tpfsParquetConfig.schema.toLowerCase());
-      AvroParquetInputFormat.setAvroReadSchema(job, avroSchema);
-      for (Map.Entry<String, String> entry : hConf) {
-        config.put(entry.getKey(), entry.getValue());
-      }
-    } catch (IOException e) {
-      // Shouldn't happen
-      throw Throwables.propagate(e);
-    }
+    FileSetUtil.configureParquetFileSet(tpfsParquetConfig.schema, properties);
   }
 
   @Override
