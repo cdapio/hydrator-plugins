@@ -7,15 +7,16 @@
       "properties": [
         {
           "widget-type": "textbox",
-          "label": "mapping",
+          "label": "Mapping",
           "name": "mapping"
         },
         {
           "widget-type": "keyvalue",
-          "label": "defaults",
+          "label": "Defaults",
           "name": "defaults",
           "widget-attributes": {
-            "showDelimiter": "false"
+            "showDelimiter": "false",
+            "key-placeholder": "Source Field"
           }
         }
       ]

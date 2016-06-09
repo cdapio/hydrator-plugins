@@ -21,6 +21,8 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.hydrator.common.MockPipelineConfigurer;
 import co.cask.hydrator.common.test.MockEmitter;
+import com.google.common.base.Joiner;
+import com.jayway.jsonpath.PathNotFoundException;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -37,13 +39,63 @@ public class JSONParserTest {
                                                         Schema.Field.of("c", Schema.of(Schema.Type.STRING)),
                                                         Schema.Field.of("d", Schema.of(Schema.Type.STRING)),
                                                         Schema.Field.of("e", Schema.of(Schema.Type.STRING)));
-  private static final Schema OUTPUT2 = Schema.recordOf("output1",
+  private static final Schema OUTPUT2 = Schema.recordOf("output2",
                                                         Schema.Field.of("a", Schema.of(Schema.Type.STRING)),
                                                         Schema.Field.of("b", Schema.of(Schema.Type.STRING)),
                                                         Schema.Field.of("e", Schema.of(Schema.Type.STRING)));
+
+  private static final Schema OUTPUT3 = Schema.recordOf("output3",
+                                                        Schema.Field.of("expensive", Schema.of(Schema.Type.INT)),
+                                                        Schema.Field.of("bicycle_color", Schema.of(Schema.Type.STRING)),
+                                                        Schema.Field.of("bicycle_price", Schema.of(Schema.Type.FLOAT)));
+
+  private static final Schema OUTPUT4 = Schema.recordOf("output4",
+                                                        Schema.Field.of("expensive", Schema.of(Schema.Type.INT)),
+                                                        Schema.Field.of("bicycle_color", Schema.of(Schema.Type.STRING)),
+                                                        Schema.Field.of("bicycle_price", Schema.of(Schema.Type.FLOAT)),
+                                                        Schema.Field.of("window", Schema.of(Schema.Type.FLOAT)));
+
+  private static final String json = "{\n" +
+    "    \"store\": {\n" +
+    "        \"book\": [\n" +
+    "            {\n" +
+    "                \"category\": \"reference\",\n" +
+    "                \"author\": \"Nigel Rees\",\n" +
+    "                \"title\": \"Sayings of the Century\",\n" +
+    "                \"price\": 8.95\n" +
+    "            },\n" +
+    "            {\n" +
+    "                \"category\": \"fiction\",\n" +
+    "                \"author\": \"Evelyn Waugh\",\n" +
+    "                \"title\": \"Sword of Honour\",\n" +
+    "                \"price\": 12.99\n" +
+    "            },\n" +
+    "            {\n" +
+    "                \"category\": \"fiction\",\n" +
+    "                \"author\": \"Herman Melville\",\n" +
+    "                \"title\": \"Moby Dick\",\n" +
+    "                \"isbn\": \"0-553-21311-3\",\n" +
+    "                \"price\": 8.99\n" +
+    "            },\n" +
+    "            {\n" +
+    "                \"category\": \"fiction\",\n" +
+    "                \"author\": \"J. R. R. Tolkien\",\n" +
+    "                \"title\": \"The Lord of the Rings\",\n" +
+    "                \"isbn\": \"0-395-19395-8\",\n" +
+    "                \"price\": 22.99\n" +
+    "            }\n" +
+    "        ],\n" +
+    "        \"bicycle\": {\n" +
+    "            \"color\": \"red\",\n" +
+    "            \"price\": 19.95\n" +
+    "        }\n" +
+    "    },\n" +
+    "    \"expensive\": 10\n" +
+    "}";
+
   @Test
   public void testJSONParser() throws Exception {
-    JSONParser.Config config = new JSONParser.Config("body", OUTPUT1.toString());
+    JSONParser.Config config = new JSONParser.Config("body", "", OUTPUT1.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new JSONParser(config);
     transform.initialize(null);
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
@@ -59,7 +111,7 @@ public class JSONParserTest {
 
   @Test
   public void testJSONParserProjections() throws Exception {
-    JSONParser.Config config = new JSONParser.Config("body", OUTPUT2.toString());
+    JSONParser.Config config = new JSONParser.Config("body", "", OUTPUT2.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new JSONParser(config);
     transform.initialize(null);
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
@@ -73,7 +125,7 @@ public class JSONParserTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void testSchemaInvalidSchema() throws Exception {
-    JSONParser.Config config = new JSONParser.Config("body2", OUTPUT2.toString());
+    JSONParser.Config config = new JSONParser.Config("body2", "", OUTPUT2.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new JSONParser(config);
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT1);
@@ -82,11 +134,58 @@ public class JSONParserTest {
 
   @Test
   public void testSchemaValidation() throws Exception {
-    JSONParser.Config config = new JSONParser.Config("body", OUTPUT2.toString());
+    JSONParser.Config config = new JSONParser.Config("body", "", OUTPUT2.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new JSONParser(config);
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT1);
     transform.configurePipeline(mockPipelineConfigurer);
     Assert.assertEquals(OUTPUT2, mockPipelineConfigurer.getOutputSchema());
+  }
+
+  @Test
+  public void testComplexJSONParsing() throws Exception {
+    final String[] jsonPaths = {
+      "expensive:$.expensive",
+      "bicycle_color:$.store.bicycle.color",
+      "bicycle_price:$.store.bicycle.price",
+      "window:$.store.window"
+    };
+
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    JSONParser.Config config = new JSONParser.Config("body", Joiner.on(",").join(jsonPaths),
+                                                     OUTPUT3.toString());
+    Transform<StructuredRecord, StructuredRecord> transform = new JSONParser(config);
+
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT1);
+    transform.configurePipeline(mockPipelineConfigurer);
+    transform.initialize(null);
+    transform.transform(StructuredRecord.builder(INPUT1)
+                          .set("body", json)
+                          .build(), emitter);
+    Assert.assertEquals(10, emitter.getEmitted().get(0).get("expensive"));
+    Assert.assertEquals("red", emitter.getEmitted().get(0).get("bicycle_color"));
+    Assert.assertEquals(19.95, emitter.getEmitted().get(0).get("bicycle_price"));
+  }
+
+  @Test(expected = PathNotFoundException.class)
+  public void testInvalidJsonPath() throws Exception {
+    final String[] jsonPaths = {
+      "expensive:$.expensive",
+      "bicycle_color:$.store.bicycle.color",
+      "bicycle_price:$.store.bicycle.price",
+      "window:$.store.window"
+    };
+
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    JSONParser.Config config = new JSONParser.Config("body", Joiner.on(",").join(jsonPaths),
+                                                     OUTPUT4.toString());
+    Transform<StructuredRecord, StructuredRecord> transform = new JSONParser(config);
+
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT1);
+    transform.configurePipeline(mockPipelineConfigurer);
+    transform.initialize(null);
+    transform.transform(StructuredRecord.builder(INPUT1)
+                          .set("body", json)
+                          .build(), emitter);
   }
 }

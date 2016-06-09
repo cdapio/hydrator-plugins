@@ -16,39 +16,29 @@
 
 package co.cask.hydrator.plugin;
 
-import co.cask.cdap.api.artifact.ArtifactVersion;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.etl.api.Transform;
-import co.cask.cdap.etl.batch.ETLBatchApplication;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.mock.batch.MockSink;
 import co.cask.cdap.etl.mock.batch.MockSource;
-import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
-import co.cask.cdap.proto.artifact.ArtifactSummary;
-import co.cask.cdap.proto.id.ArtifactId;
-import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
-import co.cask.cdap.test.TestConfiguration;
 import co.cask.hydrator.common.MockPipelineConfigurer;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.csv.CSVFormat;
 import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Test;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +47,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Test case for {@link ValueMapper}.
  */
-public class ValueMapperTest extends HydratorTestBase {
+public class ValueMapperTest extends TransformPluginsTestBase {
 
   private static final Schema SOURCE_SCHEMA =
     Schema.recordOf("sourceRecord",
@@ -74,31 +64,8 @@ public class ValueMapperTest extends HydratorTestBase {
   private static final String DESIGNATIONNAME = "designationName";
   private static final String SALARYDESC = "salaryDesc";
 
-
-  @ClassRule
-  public static final TestConfiguration CONFIG = new TestConfiguration();
-
-  private static final ArtifactVersion CURRENT_VERSION = new ArtifactVersion("3.2.0");
-
-  private static final ArtifactId BATCH_APP_ARTIFACT_ID =
-          NamespaceId.DEFAULT.artifact("etlbatch", CURRENT_VERSION.getVersion());
-  private static final ArtifactSummary ETLBATCH_ARTIFACT =
-          new ArtifactSummary(BATCH_APP_ARTIFACT_ID.getArtifact(), BATCH_APP_ARTIFACT_ID.getVersion());
-
-  @BeforeClass
-  public static void setupTestClass() throws Exception {
-    // Add the ETL batch artifact and mock plugins.
-    setupBatchArtifacts(BATCH_APP_ARTIFACT_ID, ETLBatchApplication.class);
-
-    // Add our plugins artifact with the ETL batch artifact as its parent.
-    // This will make our plugins available to the ETL batch.
-    addPluginArtifact(NamespaceId.DEFAULT.artifact("transform-plugins", "1.0.0"), BATCH_APP_ARTIFACT_ID,
-            ValueMapper.class, CSVFormat.class, Base64.class);
-  }
-
   @Test
   public void testEmptyAndNull() throws Exception {
-
     String inputTable = "input_table_test_Empty_Null";
     ETLStage source = new ETLStage("source", MockSource.getPlugin(inputTable));
 
@@ -168,12 +135,10 @@ public class ValueMapperTest extends HydratorTestBase {
       .get(DESIGNATIONNAME));
     Assert.assertEquals(nameDesignationMap.get(outputRecords.get(3).get(NAME)), outputRecords.get(3)
       .get(DESIGNATIONNAME));
-
   }
 
   @Test
   public void testWithNoDefaults() throws Exception {
-
     String inputTable = "input_table_without_defaults";
     ETLStage source = new ETLStage("source", MockSource.getPlugin(inputTable));
 
@@ -257,12 +222,10 @@ public class ValueMapperTest extends HydratorTestBase {
       .get(SALARY));
     Assert.assertEquals(nameSalaryMap.get(outputRecords.get(3).get(NAME)), outputRecords.get(3)
       .get(SALARY));
-
   }
 
   @Test
   public void testWithMultipleMapping() throws Exception {
-
     String inputTable = "input_table_with_multi_mapping";
     ETLStage source = new ETLStage("source", MockSource.getPlugin(inputTable));
 
@@ -348,12 +311,10 @@ public class ValueMapperTest extends HydratorTestBase {
       .get(SALARYDESC));
     Assert.assertEquals(nameSalaryMap.get(outputRecords.get(2).get(NAME)), outputRecords.get(2)
       .get(SALARYDESC));
-
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void testStringHandling() throws Exception {
-
     Schema inputSchema = Schema.recordOf("sourceRecord",
                                            Schema.Field.of(ID, Schema.of(Schema.Type.STRING)),
                                            Schema.Field.of(NAME, Schema.of(Schema.Type.STRING)),
@@ -365,12 +326,10 @@ public class ValueMapperTest extends HydratorTestBase {
 
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
     new ValueMapper(config).configurePipeline(configurer);
-
   }
 
   @Test
   public void testSchemaHandling() throws Exception {
-
     Schema inputSchema = Schema.recordOf("sourceRecord",
                                          Schema.Field.of(ID, Schema.of(Schema.Type.STRING)),
                                          Schema.Field.of(NAME, Schema.of(Schema.Type.STRING)),
@@ -392,12 +351,10 @@ public class ValueMapperTest extends HydratorTestBase {
                                          Schema.Field.of(DESIGNATIONNAME, Schema.of(Schema.Type.STRING)));
 
     Assert.assertEquals(expectedOutputSchema, outputSchema);
-
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void testMappingValidation() throws Exception {
-
     Schema inputSchema = Schema.recordOf("sourceRecord",
                                          Schema.Field.of(ID, Schema.of(Schema.Type.STRING)),
                                          Schema.Field.of(NAME, Schema.of(Schema.Type.STRING)),
@@ -409,7 +366,5 @@ public class ValueMapperTest extends HydratorTestBase {
 
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
     new ValueMapper(config).configurePipeline(configurer);
-
   }
-
 }

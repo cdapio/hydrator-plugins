@@ -270,7 +270,7 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
     Assert.assertNotNull(row.getLong("time"));
 
     Connection connection = getQueryClient();
-    ResultSet results = connection.prepareStatement("select binary,name,score from dataset_table1").executeQuery();
+    ResultSet results = connection.prepareStatement("select `binary`,name,score from dataset_table1").executeQuery();
     Assert.assertTrue(results.next());
     Assert.assertArrayEquals("Bob".getBytes(Charsets.UTF_8), results.getBytes(1));
     Assert.assertEquals("Bob", results.getString(2));

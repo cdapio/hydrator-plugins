@@ -13,6 +13,14 @@
           "widget-attributes": {
             "width": "large"
           }
+        },
+        {
+          "widget-type": "keyvalue",
+          "label": "Json Path Mappings",
+          "name": "mapping",
+          "widget-attributes": {
+            "showDelimiter": "false"
+          }
         }
       ]
     }
