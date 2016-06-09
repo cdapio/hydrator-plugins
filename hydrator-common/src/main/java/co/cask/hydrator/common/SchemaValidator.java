@@ -59,7 +59,6 @@ public final class SchemaValidator {
 
     // check that all fields in output schema are simple
     validateSchemaFieldsAreSimple(outputSchema);
-    validateFieldsArePresentInSchema(outputSchema, rowKeyField);
 
     if (inputSchema != null) {
       // check if output schema is a subset of input schema and check if rowkey field is present in input schema
