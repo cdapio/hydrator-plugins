@@ -18,6 +18,7 @@ package co.cask.hydrator.plugin.batch.aggregator.function;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.hydrator.plugin.batch.aggregator.AggrCommon;
 
 /**
  * Calculates the Standard Deviation
@@ -34,8 +35,7 @@ public class Stddev implements AggregateFunction<Double> {
     this.fieldName = fieldName;
     boolean isNullable = fieldSchema.isNullable();
     Schema.Type fieldType = isNullable ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
-    if (!(fieldType == Schema.Type.INT || fieldType == Schema.Type.LONG ||
-      fieldType == Schema.Type.FLOAT || fieldType == Schema.Type.DOUBLE)) {
+    if (!AggrCommon.isNumericType(fieldType)) {
       throw new IllegalArgumentException(String.format(
         "Cannot compute avg on field %s because its type %s is not numeric", fieldName, fieldType));
     }
