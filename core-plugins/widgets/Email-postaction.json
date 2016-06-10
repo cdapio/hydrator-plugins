@@ -29,7 +29,8 @@
           "label": "Recipients",
           "name": "recipients",
           "widget-attributes": {
-            "delimiter": ","
+            "delimiter": ",",
+            "value-placeholder": "Email"
           }
         },
         {

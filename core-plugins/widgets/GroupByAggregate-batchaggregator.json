@@ -12,7 +12,8 @@
           "label": "Group by fields",
           "name": "groupByFields",
           "widget-attributes": {
-            "delimiter": ","
+            "delimiter": ",",
+            "value-placeholder": "Field Name"
           },
           "plugin-function": {
             "method": "POST",

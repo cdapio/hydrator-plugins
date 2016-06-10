@@ -10,7 +10,6 @@
           "widget-type": "keyvalue-dropdown",
           "label": "Decode Fields",
           "name": "decode",
-          "description": "List of fields to decode. The key specifies the name of the field to be decoded, with its corresponding value specifying the type of decoder that will be applied to it.",
           "widget-attributes": {
             "showDelimiter": "false",
             "dropdownOptions": [
@@ -20,7 +19,8 @@
               "STRING_BASE32",
               "HEX",
               "NONE"
-            ]
+            ],
+            "key-placeholder": "Field Name"
           }
         }
       ]

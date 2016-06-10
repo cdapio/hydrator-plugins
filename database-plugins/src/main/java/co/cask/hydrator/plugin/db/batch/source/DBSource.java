@@ -269,6 +269,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     String splitBy;
 
     @Nullable
+    @Name(NUM_SPLITS)
     @Description("The number of splits to generate. If set to one, the boundingQuery is not needed, " +
       "and no $CONDITIONS string needs to be specified in the importQuery. If not specified, the " +
       "execution framework will pick a value.")
