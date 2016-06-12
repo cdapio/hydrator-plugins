@@ -12,6 +12,11 @@
           "name": "name"
         },
         {
+          "widget-type" : "textbox",
+          "label": "Compression",
+          "name": "compression"
+        },
+        {
           "widget-type": "textbox",
           "label": "Dataset Base Path",
           "name": "basePath"

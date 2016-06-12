@@ -52,6 +52,12 @@ public class TimePartitionedFileSetDatasetParquetSink extends
 
   private static final String SCHEMA_DESC = "The Parquet schema of the record being written to the Sink as a JSON " +
     "Object.";
+
+  private static final String COMPRESSION_DESC = "Option configuration to compress the data stored. " + 
+    "Available options: snappy, gzip, none. Defaults to none";
+
+  private static final String DEFAULT_COMPRESSION = "none";
+
   private StructuredToAvroTransformer recordTransformer;
   private final TPFSParquetSinkConfig config;
 
@@ -66,6 +72,7 @@ public class TimePartitionedFileSetDatasetParquetSink extends
     String tpfsName = tpfsSinkConfig.name;
     String basePath = tpfsSinkConfig.basePath == null ? tpfsName : tpfsSinkConfig.basePath;
     String schema = config.schema.toLowerCase();
+    String compression = config.compression == null ?  DEFAULT_COMPRESSION : config.compression.toLowerCase();
     // parse to make sure it's valid
     new org.apache.avro.Schema.Parser().parse(schema);
     String hiveSchema;
@@ -82,6 +89,7 @@ public class TimePartitionedFileSetDatasetParquetSink extends
       .setExploreFormat("parquet")
       .setExploreSchema(hiveSchema.substring(1, hiveSchema.length() - 1))
       .add(DatasetProperties.SCHEMA, schema)
+      .add("output.properties.parquet.compression", compression)
       .build());
   }
 
@@ -113,10 +121,15 @@ public class TimePartitionedFileSetDatasetParquetSink extends
     @Description(SCHEMA_DESC)
     private String schema;
 
-    public TPFSParquetSinkConfig(String name, String schema, @Nullable String basePath, @Nullable String pathFormat,
-                                 @Nullable String timeZone) {
+    @Description(COMPRESSION_DESC)
+    @Nullable
+    private String compression;
+
+    public TPFSParquetSinkConfig(String name, String schema, @Nullable String compression, @Nullable String basePath,
+                                 @Nullable String pathFormat, @Nullable String timeZone) {
       super(name, basePath, pathFormat, timeZone);
       this.schema = schema;
+      this.compression = compression;
     }
   }
 
