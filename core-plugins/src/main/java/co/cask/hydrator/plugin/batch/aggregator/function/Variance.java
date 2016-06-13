@@ -21,20 +21,20 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.plugin.batch.aggregator.AggregationUtils;
 
 /**
- * Calculates the Standard Deviation
+ * Calculates Variance
  */
-public class Stddev implements AggregateFunction<Double> {
+public class Variance implements AggregateFunction<Double> {
   private final String fieldName;
   private final Schema outputSchema;
   private RunningStats stats;
 
-  public Stddev(String fieldName, Schema fieldSchema) {
+  public Variance(String fieldName, Schema fieldSchema) {
     this.fieldName = fieldName;
     boolean isNullable = fieldSchema.isNullable();
     Schema.Type fieldType = isNullable ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
     if (!AggregationUtils.isNumericType(fieldType)) {
       throw new IllegalArgumentException(String.format(
-        "Cannot compute standard deviation on field %s because its type %s is not numeric", fieldName, fieldType));
+        "Cannot compute variance on field %s because its type %s is not numeric", fieldName, fieldType));
     }
     outputSchema = isNullable ? Schema.nullableOf(Schema.of(Schema.Type.DOUBLE)) : Schema.of(Schema.Type.DOUBLE);
   }
@@ -56,7 +56,7 @@ public class Stddev implements AggregateFunction<Double> {
 
   @Override
   public Double getAggregate() {
-    return stats.stddev();
+    return stats.variance();
   }
 
   @Override

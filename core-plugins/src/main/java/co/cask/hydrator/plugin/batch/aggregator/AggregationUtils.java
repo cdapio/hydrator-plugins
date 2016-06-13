@@ -21,7 +21,9 @@ import co.cask.cdap.api.data.schema.Schema;
 /**
  * Common functions for aggregation related functionalities.
  */
-public final class AggrCommon {
+public final class AggregationUtils {
+
+  private AggregationUtils(){}
 
   /**
    * Checks if the type of the field is Numeric.
@@ -29,11 +31,8 @@ public final class AggrCommon {
    * @return true if numeric, false otherwise.
    */
   public static boolean isNumericType(Schema.Type fieldType) {
-    if (fieldType == Schema.Type.INT || fieldType == Schema.Type.LONG ||
-      fieldType == Schema.Type.FLOAT || fieldType == Schema.Type.DOUBLE) {
-      return true;
-    }
-    return false;
+    return fieldType == Schema.Type.INT || fieldType == Schema.Type.LONG ||
+      fieldType == Schema.Type.FLOAT || fieldType == Schema.Type.DOUBLE;
   }
 
 }

@@ -18,7 +18,7 @@ package co.cask.hydrator.plugin.batch.aggregator.function;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.hydrator.plugin.batch.aggregator.AggrCommon;
+import co.cask.hydrator.plugin.batch.aggregator.AggregationUtils;
 
 /**
  * Calculates the average of a column. Does not protect against overflow.
@@ -33,7 +33,7 @@ public class Avg implements AggregateFunction<Double> {
     this.fieldName = fieldName;
     boolean isNullable = fieldSchema.isNullable();
     Schema.Type fieldType = isNullable ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
-    if (!AggrCommon.isNumericType(fieldType)) {
+    if (!AggregationUtils.isNumericType(fieldType)) {
       throw new IllegalArgumentException(String.format(
         "Cannot compute avg on field %s because its type %s is not numeric", fieldName, fieldType));
     }
