@@ -82,7 +82,7 @@ CSV Formatter
   - **schema:** Specifies the output schema. Output schema should only have fields of type ``String``
 
 JSON Parser
--------------
+-----------
 :ID:
   **JSONParser**
 :Type:
@@ -97,7 +97,7 @@ JSON Parser
   - **schema:** Specifies the output schema for the JSON Record
 
 JSON Formatter
--------------
+--------------
 :ID:
   **JSONFormatter**
 :Type:
@@ -111,7 +111,7 @@ JSON Formatter
   **schema:** Specifies the output schema, a single field either type ``STRING`` or type ``BYTE`` array
 
 Clone Record
--------------
+------------
 :ID:
   **CloneRecord**
 :Type:
@@ -125,7 +125,7 @@ Clone Record
   **copies:** Specifies the numbers of copies of the input record that are to be emitted
 
 Stream Formatter
--------------
+----------------
 :ID:
   **StreamFormatter**
 :Type:
@@ -143,7 +143,7 @@ Stream Formatter
   - **schema:** Specifies the output schema; the output schema can have only two fields: one of type ``STRING`` and the other of type ``MAP<STRING, STRING>``
 
 Compressor
--------------
+----------
 :ID:
   **Compressor**
 :Type:
@@ -159,7 +159,7 @@ Compressor
   - **schema:** Specifies the output schema; the fields that are compressed will have the same field name but they will be of type ``BYTE`` array
 
 Decompressor
--------------
+------------
 :ID:
   **Decompressor**
 :Type:
@@ -207,7 +207,7 @@ Decoder
   - **schema:** Specifies the output schema; the fields that are decoded will have the same field name but they will be of type ``BYTE`` array or STRING``
 
 Hasher
--------
+------
 :ID:
   **Hasher**
 :Type:
@@ -222,7 +222,7 @@ Hasher
   - **hash:** Specifies the hashing algorithm
 
 XMLToJSONConverter
--------
+------------------
 :ID:
   **XMLToJSON**
 :Type:
