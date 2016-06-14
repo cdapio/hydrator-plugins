@@ -38,7 +38,7 @@ public final class XMLToJSONConverter extends Transform<StructuredRecord, Struct
   private final Config config;
   public static final Schema DEFAULT_SCHEMA = Schema.recordOf(
     "event",
-    Schema.Field.of("jsonBody", Schema.of(Schema.Type.STRING))
+    Schema.Field.of("jsonevent", Schema.of(Schema.Type.STRING))
   );
 
   // Mainly used for testing.
@@ -61,7 +61,7 @@ public final class XMLToJSONConverter extends Transform<StructuredRecord, Struct
   public void transform(StructuredRecord input, Emitter<StructuredRecord> emitter) throws Exception {
     JSONObject jsonBody = XML.toJSONObject((String) input.get(config.field));
     StructuredRecord.Builder builder = StructuredRecord.builder(DEFAULT_SCHEMA);
-    emitter.emit(builder.set("jsonBody", jsonBody.toString()).build());
+    emitter.emit(builder.set("jsonevent", jsonBody.toString()).build());
   }
 
   /**
@@ -75,7 +75,6 @@ public final class XMLToJSONConverter extends Transform<StructuredRecord, Struct
     public Config(String field) {
       this.field = field;
     }
-
   }
 }
 

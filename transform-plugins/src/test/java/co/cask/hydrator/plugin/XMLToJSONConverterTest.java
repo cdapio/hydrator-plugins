@@ -24,9 +24,9 @@ import org.junit.Assert;
 import org.junit.Test;
 
 /**
- * Tests {@link XMLToJSONFormatter}
+ * Tests {@link XMLToJSONConverter}
  */
-public class XMLToJSONFormatterTest {
+public class XMLToJSONConverterTest {
   private static final Schema INPUT = Schema.recordOf("input1",
                                                        Schema.Field.of("body", Schema.of(Schema.Type.STRING)));
 
@@ -50,11 +50,11 @@ public class XMLToJSONFormatterTest {
                                  "  </PLANT>" +
                                  "</CATALOG>")
                           .build(), emitter);
-    Assert.assertNotNull(emitter.getEmitted().get(0).get("jsonBody"));
+    Assert.assertNotNull(emitter.getEmitted().get(0).get("jsonevent"));
     Assert.assertEquals("{\"CATALOG\":" +
                           "{\"PLANT\":" +
                           "[{\"COMMON\":\"Bloodroot\",\"BOTANICAL\":\"Sanguinaria canadensis\"}," +
                           "{\"COMMON\":\"Columbine\",\"BOTANICAL\":\"Aquilegia canadensis\"}]}}",
-                        emitter.getEmitted().get(0).get("jsonBody"));
+                        emitter.getEmitted().get(0).get("jsonevent"));
   }
 }
