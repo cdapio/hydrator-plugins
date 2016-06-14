@@ -32,12 +32,12 @@
           "name": "actionAfterProcess",
           "widget-attributes": {
             "values": [
-              "",
+              "None",
               "Delete",
               "Move",
               "Archive"
             ],
-            "default": ""
+            "default": "None"
           }
         },
         {

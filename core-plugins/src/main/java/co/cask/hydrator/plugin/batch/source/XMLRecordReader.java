@@ -31,7 +31,10 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
+import java.io.FilterInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.ZipEntry;
@@ -66,6 +69,9 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
   private String fileAction;
   private FileSystem fs;
   private String targetFolder;
+  private long availableBytes = 0;
+  private PublishingInputStream inputStream;
+  private DecimalFormat df = new DecimalFormat("#.##");
 
   public XMLRecordReader(FileSplit split, Configuration conf) throws IOException {
       file = split.getPath();
@@ -73,8 +79,10 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
       fs = file.getFileSystem(conf);
       XMLInputFactory factory = XMLInputFactory.newInstance();
       FSDataInputStream fdDataInputStream = fs.open(file);
+      inputStream = new PublishingInputStream(fdDataInputStream);
+      availableBytes  = inputStream.available();
       try {
-      reader = factory.createXMLStreamReader(fdDataInputStream);
+       reader = factory.createXMLStreamReader(inputStream);
       } catch (XMLStreamException exception) {
         throw new RuntimeException("XMLStreamException exception : ", exception);
       }
@@ -112,7 +120,9 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
 
   @Override
   public float getProgress() throws IOException {
-    return 1.0f;
+    float progress = (float) inputStream.getTotalBytes() /  availableBytes;
+    progress = Float.valueOf(df.format(progress));
+    return progress;
   }
 
   @Override
@@ -145,7 +155,6 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
     try {
       while (reader.hasNext()) {
         int event = reader.next();
-
         switch (event) {
           case XMLStreamConstants.START_ELEMENT:
             String nodeNameStart = reader.getLocalName();
@@ -282,6 +291,42 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
       bw.close();
     } catch (IOException ioe) {
       throw ioe;
+    }
+  }
+
+  /**
+   * Class to publish input stream and get total bytes read.
+   */
+  public class PublishingInputStream extends FilterInputStream {
+    private long totalBytes = 0;
+
+    public PublishingInputStream(InputStream in) {
+      super(in);
+    }
+
+    @Override
+    public int read(byte[] b) throws IOException {
+      int count = super.read(b);
+      this.totalBytes += count;
+      return count;
+    }
+
+    @Override
+    public int read() throws IOException {
+      int count = super.read();
+      this.totalBytes += count;
+      return count;
+    }
+
+    @Override
+    public int read(byte[] b, int off, int len) throws IOException {
+      int count = super.read(b, off, len);
+      this.totalBytes += count;
+      return count;
+    }
+
+    public long getTotalBytes() {
+      return totalBytes;
     }
   }
 }

@@ -68,6 +68,9 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
     new ArtifactSummary(BATCH_APP_ARTIFACT_ID.getArtifact(), BATCH_APP_ARTIFACT_ID.getVersion());
   private static final String SOURCE_FOLDER_PATH = "src/test/resources/xmlsource/";
   private static final String TARGET_FOLDER_PATH = "src/test/resources/xmltarget/";
+  private File sourceFolder = new File(SOURCE_FOLDER_PATH);
+  private File targetFolder = new File(TARGET_FOLDER_PATH);
+  private String sourceFolderUri = sourceFolder.toURI().toString();
 
   @ClassRule
   public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
@@ -99,15 +102,15 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
    * JUnit Test case.
    */
   private void clearSourceAndTargetFolder() {
-      File sourceDirectory = new File(SOURCE_FOLDER_PATH);
-      for (File sourceFile : sourceDirectory.listFiles()) {
-        sourceFile.delete();
-      }
+    File sourceDirectory = sourceFolder;
+    for (File sourceFile : sourceDirectory.listFiles()) {
+      sourceFile.delete();
+    }
 
-      File targetDirectory = new File(TARGET_FOLDER_PATH);
-      for (File targetFile : targetDirectory.listFiles()) {
-        targetFile.delete();
-      }
+    File targetDirectory = targetFolder;
+    for (File targetFile : targetDirectory.listFiles()) {
+      targetFile.delete();
+    }
   }
 
   /**
@@ -164,7 +167,7 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
     String processedFileTable = "XMLTrackingTableNoXMLPreProcessingRequired";
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "XMLReaderNoXMLPreProcessingRequiredTest")
-      .put("path", SOURCE_FOLDER_PATH)
+      .put("path", sourceFolderUri)
       .put("nodePath", "/catalog/book/price")
       .put("targetFolder", TARGET_FOLDER_PATH)
       .put("reprocessingReq", "No")
@@ -209,7 +212,6 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(3, output.size());
 
     //source folder left with one pre-processed file
-    File sourceFolder = new File(SOURCE_FOLDER_PATH);
     File[] sourceFiles = sourceFolder.listFiles();
     Assert.assertEquals(1, sourceFiles.length);
 
@@ -228,12 +230,12 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
 
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "XMLReaderXMLPreProcessingRequiredTest")
-      .put("path", SOURCE_FOLDER_PATH)
+      .put("path", sourceFolderUri)
       .put("nodePath", "/catalog/book/price")
       .put("targetFolder", TARGET_FOLDER_PATH)
       .put("reprocessingReq", "Yes")
       .put("tableName", processedFileTable)
-      .put("actionAfterProcess", "")
+      .put("actionAfterProcess", "None")
       .build();
 
     ETLStage source = new ETLStage("XMLReader", new ETLPlugin("XMLReader", BatchSource.PLUGIN_TYPE,
@@ -275,8 +277,8 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
     String processedFileTable = "XMLTrackingTableInvalidNodePathArchiveFiles";
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "XMLReaderInvalidNodePathArchiveFilesTest")
-      .put("path", SOURCE_FOLDER_PATH)
-      .put("nodePath", "/catalog/book/prices") //invalid node path - prices instead of price
+      .put("path", sourceFolderUri)
+      .put("nodePath", "/catalog/book/prices")
       .put("targetFolder", TARGET_FOLDER_PATH)
       .put("reprocessingReq", "No")
       .put("tableName", processedFileTable)
@@ -309,12 +311,10 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(0, output.size());
 
     //source folder must have 0 files after archive
-    File sourceFolder = new File(SOURCE_FOLDER_PATH);
     File[] sourceFiles = sourceFolder.listFiles();
     Assert.assertEquals(0, sourceFiles.length);
 
     //target folder must have 2 archived files
-    File targetFolder = new File(TARGET_FOLDER_PATH);
     File[] targetFiles = targetFolder.listFiles();
     Assert.assertEquals(2, targetFiles.length);
 
@@ -327,7 +327,7 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
     String processedFileTable = "XMLTrackingTableWithPatternAndMoveFiles";
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "XMLReaderWithPatternAndMoveFilesTest")
-      .put("path", SOURCE_FOLDER_PATH)
+      .put("path", sourceFolderUri)
       .put("pattern", "Large.xml$") // file ends with Large.xml
       .put("nodePath", "/catalog/book/price")
       .put("targetFolder", TARGET_FOLDER_PATH)
@@ -362,12 +362,10 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(9, output.size());
 
     //source folder must have 1 unprocessed file
-    File sourceFolder = new File(SOURCE_FOLDER_PATH);
     File[] sourceFiles = sourceFolder.listFiles();
     Assert.assertEquals(1, sourceFiles.length);
 
     //target folder must have 1 moved file
-    File targetFolder = new File(TARGET_FOLDER_PATH);
     File[] targetFiles = targetFolder.listFiles();
     Assert.assertEquals(1, targetFiles.length);
 
@@ -380,7 +378,7 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
     String processedFileTable = "XMLTrackingTableInvalidPatternDeleteFiles";
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "XMLReaderInvalidPatternDeleteFilesTest")
-      .put("path", SOURCE_FOLDER_PATH)
+      .put("path", sourceFolderUri)
       .put("pattern", "^catalogMedium") //file name start with catalogMedium, does not exist
       .put("nodePath", "/catalog/book/price")
       .put("targetFolder", TARGET_FOLDER_PATH)
@@ -415,7 +413,6 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(0, output.size());
 
     //source folder must have 2 files, no file deleted
-    File sourceFolder = new File(SOURCE_FOLDER_PATH);
     File[] sourceFiles = sourceFolder.listFiles();
     Assert.assertEquals(2, sourceFiles.length);
 

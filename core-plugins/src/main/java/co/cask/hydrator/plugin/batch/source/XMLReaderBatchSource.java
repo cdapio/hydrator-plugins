@@ -34,9 +34,13 @@ import co.cask.hydrator.common.ReferenceBatchSource;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.common.SourceInputFormatProvider;
 import co.cask.hydrator.common.batch.JobUtils;
+import co.cask.hydrator.plugin.common.BatchXMLFileFilter;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
+import com.google.common.base.Throwables;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
@@ -48,8 +52,13 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
@@ -62,11 +71,6 @@ import javax.annotation.Nullable;
 @Name("XMLReader")
 @Description("Batch source for XML read from HDFS")
 public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Object, StructuredRecord> {
-  @VisibleForTesting
-  private static final long DEFAULT_MAX_SPLIT_SIZE = 134217728;
-
-  protected static final String MAX_SPLIT_SIZE_DESCRIPTION = "Maximum split-size for each mapper in the MapReduce " +
-    "Job. Defaults to 128MB.";
   protected static final String PATH_DESCRIPTION = "Path to file(s) to be read. If a directory is specified, " +
     "terminate the path name with a \'/\'.";
   protected static final String PATTERN_DESCRIPTION = "Pattern to select specific file(s)." +
@@ -82,17 +86,21 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     "1. Delete from the HDFS." +
     "2. Archived to the target location." +
     "3. Moved to the target location.";
-  protected static final String TARGET_FOLDER_DESCRIPTION = "Target folder path if user select actionAfterProcess " +
+  protected static final String TARGET_FOLDER_DESCRIPTION = "Target folder path if user select action after process, " +
     "either ARCHIVE or MOVE";
-  protected static final String FILES_TO_REPROCESS_DESCRIPTION = "Flag to know if file(s) to be reprocessed or not.";
-  protected static final String TABLE_NAME_DESCRIPTION = "Table name to keep track of processed file(s).";
+  protected static final String FILES_TO_REPROCESS_DESCRIPTION = "Specifies whether the file(s) should be " +
+    "preprocessed.";
+  protected static final String TABLE_NAME_DESCRIPTION = "Name of the table to keep track of processed file(s).";
 
   public static final Schema DEFAULT_XML_SCHEMA = Schema.recordOf(
     "xmlSchema",
     Schema.Field.of("offset", Schema.of(Schema.Type.LONG)),
-    Schema.Field.of("fileName", Schema.of(Schema.Type.STRING)),
+    Schema.Field.of("filename", Schema.of(Schema.Type.STRING)),
     Schema.Field.of("record", Schema.of(Schema.Type.STRING))
   );
+
+  private static final Gson GSON = new Gson();
+  private static final Type ARRAYLIST_PREPROCESSED_FILES  = new TypeToken<ArrayList<String>>() { }.getType();
 
   private KeyValueTable processedFileTrackingTable;
   private final XMLReaderConfig config;
@@ -125,9 +133,6 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       conf.set(XMLInputFormat.XML_INPUTFORMAT_PATTERN, config.pattern);
     }
     XMLInputFormat.addInputPaths(job, config.path);
-    if (config.maxSplitSize != null) {
-      XMLInputFormat.setMaxInputSplitSize(job, config.maxSplitSize);
-    }
     conf.set(XMLInputFormat.XML_INPUTFORMAT_REPROCESSING_REQUIRED, this.config.reprocessingReq);
     //set file tracking information in a temporary file, to be available to read outside plugin.
     setFileTrackingInfo(context, conf);
@@ -138,13 +143,13 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       conf.set(XMLInputFormat.XML_INPUTFORMAT_TARGET_FOLDER, this.config.targetFolder);
     }
     conf.set(XMLInputFormat.XML_INPUTFORMAT_NODE_PATH, this.config.nodePath);
+    XMLInputFormat.setInputPathFilter(job, BatchXMLFileFilter.class);
+    conf.set(XMLInputFormat.XML_INPUT_NAME_CONFIG, config.path);
     context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(XMLInputFormat.class, conf)));
   }
 
   /**
-   * Method to set file tracking information to temporary file to read.
-   * This is to read / write file tracking information from / to XMLInputFormat and XMLRecordReader using temporary
-   * file, as there is no direct way to read / write information from / to dataset.
+   * Method to set file tracking information.
    * @param context
    * @param conf
    * @throws IOException
@@ -155,28 +160,28 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       try {
         processedFileTrackingTable = context.getDataset(tableName);
         if (processedFileTrackingTable != null) {
+          List<String> processedFiles =  new ArrayList<String>();
           File tempFile = new File(tableName);
           // if file exists, then delete it and create new.
           if (tempFile.exists()) {
             tempFile.delete();
           }
           tempFile.createNewFile();
-          FileWriter fw = new FileWriter(tempFile);
-          BufferedWriter bw = new BufferedWriter(fw);
           CloseableIterator<KeyValue<byte[], byte[]>> iterator = processedFileTrackingTable.scan(null, null);
 
           //write file tracking information to temporary file.
           while (iterator.hasNext()) {
             KeyValue<byte[], byte[]> keyValue = iterator.next();
-            bw.write(new String(keyValue.getKey(), Charsets.UTF_8) + "\n");
+            processedFiles.add(new String(keyValue.getKey(), Charsets.UTF_8));
           }
-          bw.close();
           conf.set(XMLInputFormat.XML_INPUTFORMAT_PROCESSED_DATA_TEMP_FILE, tableName);
+          if (config.reprocessingReq.equalsIgnoreCase("NO")) {
+            conf.set(XMLInputFormat.XML_INPUTFORMAT_PROCESSED_FILES,
+                     GSON.toJson(processedFiles, ARRAYLIST_PREPROCESSED_FILES));
+          }
         }
-      } catch (IOException ioException) {
-        throw ioException;
-      } catch (DatasetInstantiationException exception) {
-        throw exception;
+      } catch (DatasetInstantiationException datasetInstantiationException) {
+        throw Throwables.propagate(datasetInstantiationException);
       }
     }
   }
@@ -184,16 +189,14 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
   @Override
   public void transform(KeyValue<LongWritable, Object> input, Emitter<StructuredRecord> emitter) throws Exception {
     Map<String, String> xmlRecord = (Map<String, String>) input.getValue();
-    String fileName = "";
-    String record = "";
-    for (String key : xmlRecord.keySet()) {
-      fileName = key;
-      record = xmlRecord.get(key);
-    }
+    Set<String> keySet = xmlRecord.keySet();
+    Iterator<String>  itr = keySet.iterator();
+    String fileName = itr.next();
+    String record = xmlRecord.get(fileName);
 
     StructuredRecord output = StructuredRecord.builder(DEFAULT_XML_SCHEMA)
       .set("offset", input.getKey().get())
-      .set("fileName", fileName)
+      .set("filename", fileName)
       .set("record", record)
       .build();
     emitter.emit(output);
@@ -249,10 +252,6 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     @Description(TABLE_NAME_DESCRIPTION)
     public String tableName;
 
-    @Nullable
-    @Description(MAX_SPLIT_SIZE_DESCRIPTION)
-    public Long maxSplitSize;
-
     @VisibleForTesting
     public XMLReaderConfig(String referenceName, String path, @Nullable String pattern,
                            @Nullable String nodePath, @Nullable String actionAfterProcess,
@@ -265,7 +264,6 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       this.targetFolder = targetFolder;
       this.reprocessingReq = reprocessingReq;
       this.tableName = tableName;
-      this.maxSplitSize = DEFAULT_MAX_SPLIT_SIZE;
     }
 
     @VisibleForTesting
@@ -295,11 +293,11 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
         throw new IllegalArgumentException("Node path cannot be empty.");
       } else if (Strings.isNullOrEmpty(this.tableName)) {
         throw new IllegalArgumentException("Table Name cannot be empty.");
-      } else if (!Strings.isNullOrEmpty(this.actionAfterProcess) && this.reprocessingReq.equalsIgnoreCase("YES")) {
+      } else if (!this.actionAfterProcess.equalsIgnoreCase("NONE") && this.reprocessingReq.equalsIgnoreCase("YES")) {
         throw new IllegalArgumentException("Please select either 'After Processing Action' or 'Reprocessing " +
                                              "Required', both cannot be applied at same time.");
-      } else if (this.actionAfterProcess != null && (this.actionAfterProcess.equalsIgnoreCase("archive") ||
-        this.actionAfterProcess.equalsIgnoreCase("move")) && Strings.isNullOrEmpty(this.targetFolder)) {
+      } else if ((this.actionAfterProcess.equalsIgnoreCase("ARCHIVE") ||
+        this.actionAfterProcess.equalsIgnoreCase("MOVE")) && Strings.isNullOrEmpty(this.targetFolder)) {
         throw new IllegalArgumentException("Target folder cannot be Empty for Action = " + actionAfterProcess + ".");
       }
     }
