@@ -16,6 +16,7 @@ This project is a collection of useful transformations of data. These plugins ar
 - Encoder
 - Decoder
 - Hasher
+- XML to JSON Converter
 
 Getting Started
 ===============
@@ -220,10 +221,24 @@ Hasher
   - **fields:** Specifies the fields to be hashed
   - **hash:** Specifies the hashing algorithm
 
+XMLToJSONConverter
+-------
+:ID:
+  **XMLToJSON**
+:Type:
+      Transform
+:Mode:
+      Batch and
+      Realtime
+:Description:
+      Converts an XML string to a JSON string.
+:Configuration:
+    - **field:** Specifies the field containing the XML string
+
 
 License and Trademarks
 ======================
-Copyright © 2015 Cask Data, Inc.
+Copyright © 2016 Cask Data, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 in compliance with the License. You may obtain a copy of the License at

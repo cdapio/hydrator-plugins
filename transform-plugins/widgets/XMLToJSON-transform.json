@@ -17,7 +17,7 @@
     {
       "widget-type": "non-editable-schema-editor",
       "schema": {
-        "jsonBody": "string"
+        "jsonevent": "string"
       }
     }
   ]
