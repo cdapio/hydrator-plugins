@@ -7,7 +7,7 @@
       "properties": [
 	    {
           "name": "mapping",
-          "label": "mapping",
+          "label": "Mapping",
           "widget-type": "ds-multiplevalues",
           "widget-attributes": {
             "delimiter": ",",
@@ -18,7 +18,7 @@
         },
         {
           "widget-type": "keyvalue",
-          "label": "defaults",
+          "label": "Defaults",
           "name": "defaults",
           "widget-attributes": {
             "showDelimiter": "false"
