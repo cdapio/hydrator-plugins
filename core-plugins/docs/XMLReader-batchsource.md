@@ -10,7 +10,7 @@ Use Case
 --------
 Customer XML feeds that are dropped onto HDFS. These can be small to very large XML  files. The files have to read,
 parsed and when used in conjunction with XML Parser they are able to extract fields. This reader will emit one XML
-event that is specified by a XPath to be extracted from the file.
+event that is specified by a Node Path to be extracted from the file.
 
 
 Properties
@@ -43,7 +43,7 @@ Possible actions are -
 Example
 -------
 This example reads data from folder "file:///source/xmls/" and emits XML records on the basis of node path
-"/catalog/book/title". It will generate structure record with schema as 'offset', 'fileName', and 'record'.
+"/catalog/book/title". It will generate structured record with schema as 'offset', 'fileName', and 'record'.
 It will move the XML file to the target folder "file:///target/" and update processed file information in trackingTable.
 
       {

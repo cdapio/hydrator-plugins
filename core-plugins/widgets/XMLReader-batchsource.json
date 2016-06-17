@@ -61,6 +61,14 @@
           "widget-type": "textbox",
           "label": "Table Name",
           "name": "tableName"
+        },
+        {
+          "widget-type": "number",
+          "label": "Table Data Expiry Period (Days)",
+          "name": "tableExpiryPeriod",
+          "default": "30",
+          "min": 1,
+          "max": 365
         }
       ]
     }
@@ -70,7 +78,7 @@
       "widget-type": "non-editable-schema-editor",
       "schema": {
         "offset": "long",
-        "fileName": "string",
+        "filename": "string",
         "record": "string"
       }
     }
