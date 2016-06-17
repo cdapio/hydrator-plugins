@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -16,7 +16,9 @@
 
 package co.cask.hydrator.plugin.batch.sink;
 
+import co.cask.cdap.api.data.batch.Output;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.TimePartitionDetail;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSetArguments;
@@ -49,11 +51,18 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     tpfsSinkConfig.validate();
+    String tpfsName = tpfsSinkConfig.name;
+    FileSetProperties.Builder properties = FileSetProperties.builder();
+    if (!Strings.isNullOrEmpty(tpfsSinkConfig.basePath)) {
+      properties.setBasePath(tpfsSinkConfig.basePath);
+    }
+    addFileSetProperties(properties);
+    pipelineConfigurer.createDataset(tpfsName, TimePartitionedFileSet.class.getName(), properties.build());
   }
 
   @Override
   public void prepareRun(BatchSinkContext context) {
-    Map<String, String> sinkArgs = getAdditionalTPFSArguments();
+    Map<String, String> sinkArgs = new HashMap<>();
     long outputPartitionTime = context.getLogicalStartTime();
     if (tpfsSinkConfig.partitionOffset != null) {
       outputPartitionTime -= TimeParser.parseDuration(tpfsSinkConfig.partitionOffset);
@@ -64,16 +73,13 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
       TimePartitionedFileSetArguments.setOutputPathFormat(sinkArgs, tpfsSinkConfig.filePathFormat,
                                                           tpfsSinkConfig.timeZone);
     }
-    context.addOutput(tpfsSinkConfig.name, sinkArgs);
+    context.addOutput(Output.ofDataset(tpfsSinkConfig.name, sinkArgs));
   }
 
   /**
-   * @return any additional properties that need to be set for the sink. For example, avro sink requires
-   *         setting some schema output key.
+   * Set file set specific properties, such as input/output format and explore properties.
    */
-  protected Map<String, String> getAdditionalTPFSArguments() {
-    return new HashMap<>();
-  }
+  protected abstract void addFileSetProperties(FileSetProperties.Builder properties);
 
   @Override
   public void onRunFinish(boolean succeeded, BatchSinkContext context) {

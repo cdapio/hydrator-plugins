@@ -37,12 +37,10 @@ public final class JobUtils {
     Configuration conf = job.getConfiguration();
     conf.clear();
 
+    // some input formats require the credentials to be present in the job. We don't know for
+    // sure which ones (HCatalog is one of them), so we simply always add them. This has no other
+    // effect, because this method is only used at configure time and will be ignored later on.
     if (UserGroupInformation.isSecurityEnabled()) {
-      // If runs in secure cluster, this program runner is running in a yarn container, hence not able
-      // to get authenticated with the history.
-      conf.unset("mapreduce.jobhistory.address");
-      conf.setBoolean(Job.JOB_AM_ACCESS_DISABLED, false);
-
       Credentials credentials = UserGroupInformation.getCurrentUser().getCredentials();
       job.getCredentials().addAll(credentials);
     }
