@@ -156,7 +156,7 @@ public final class Properties {
   }
 
   /**
-   * AggregationUtils properties for BatchWritable source and sinks
+   * Common properties for BatchWritable source and sinks
    */
   public static class BatchReadableWritable {
     public static final String NAME = "name";
