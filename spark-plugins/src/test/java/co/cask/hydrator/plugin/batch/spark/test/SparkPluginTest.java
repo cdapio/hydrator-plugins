@@ -94,7 +94,8 @@ public class SparkPluginTest extends HydratorTestBase {
                                            ImmutableMap.of("fileSetName", "modelFileSet",
                                                            "path", "output",
                                                            "fieldToClassify", SpamMessage.TEXT_FIELD,
-                                                           "predictionField", SpamMessage.SPAM_PREDICTION_FIELD),
+                                                           "predictionField", SpamMessage.SPAM_PREDICTION_FIELD,
+                                                           "numFeatures", SpamMessage.SPAM_FEATURES),
                                            null)))
       .addConnection("source", "customsink")
       .build();
@@ -139,7 +140,8 @@ public class SparkPluginTest extends HydratorTestBase {
                                            ImmutableMap.of("fileSetName", "modelFileSet",
                                                            "path", "output",
                                                            "fieldToClassify", SpamMessage.TEXT_FIELD,
-                                                           "predictionField", SpamMessage.SPAM_PREDICTION_FIELD),
+                                                           "predictionField", SpamMessage.SPAM_PREDICTION_FIELD,
+                                                           "numFeatures", SpamMessage.SPAM_FEATURES),
                                            null)))
       .addStage(new ETLStage("sink", MockSink.getPlugin(CLASSIFIED_TEXTS)))
       .addConnection("source", "sparkcompute")

@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
  * Represents a string and whether that is spam or not.
  */
 public class SpamMessage {
+  public static final String SPAM_FEATURES = "100";
   public static final String SPAM_PREDICTION_FIELD = "isSpam";
   public static final String TEXT_FIELD = "text";
   static final Schema SCHEMA = Schema.recordOf(
