@@ -35,7 +35,7 @@ public class XMLReaderConfigTest {
                                                                                            tableName, "30");
     Assert.assertEquals(path, config.getPath());
     Assert.assertEquals(nodePath, config.getNodePath());
-    Assert.assertEquals(reprocessingRequired, config.getReprocessingReq());
+    Assert.assertEquals(reprocessingRequired, config.getReprocessingRequired());
     Assert.assertEquals(tableName, config.getTableName());
   }
 

@@ -108,7 +108,7 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       conf.set(XMLInputFormat.XML_INPUTFORMAT_PATTERN, config.pattern);
     }
     XMLInputFormat.addInputPaths(job, config.path);
-    conf.set(XMLInputFormat.XML_INPUTFORMAT_REPROCESSING_REQUIRED, this.config.reprocessingReq);
+    conf.set(XMLInputFormat.XML_INPUTFORMAT_REPROCESSING_REQUIRED, this.config.reprocessingRequired);
     //set file tracking information in a temporary file, to be available to read outside plugin.
     setFileTrackingInfo(context, conf);
     if (StringUtils.isNotEmpty(this.config.actionAfterProcess)) {
@@ -149,8 +149,9 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       }
       //TODO - remove temp file name setting in config after proper solution.
       conf.set(XMLInputFormat.XML_INPUTFORMAT_PROCESSED_DATA_TEMP_FILE, tableName);
-
-      if (config.reprocessingReq.equalsIgnoreCase("NO")) {
+      //For reprocessing not required, set processed file name to configuration.
+      //File name use by BatchXMLFileFilter to filter already processed files.
+      if (config.reprocessingRequired.equalsIgnoreCase("NO")) {
         conf.set(XMLInputFormat.XML_INPUTFORMAT_PROCESSED_FILES,
                  GSON.toJson(processedFiles, ARRAYLIST_PREPROCESSED_FILES));
       }
@@ -226,7 +227,7 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     private final String targetFolder;
 
     @Description("Name of the table to keep track of processed file(s).")
-    private final String reprocessingReq;
+    private final String reprocessingRequired;
 
     @Description("Name of the table to keep track of processed file(s).")
     private final String tableName;
@@ -238,7 +239,7 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     @VisibleForTesting
     XMLReaderConfig(String referenceName, String path, @Nullable String pattern,
                            @Nullable String nodePath, @Nullable String actionAfterProcess,
-                           @Nullable String targetFolder, String reprocessingReq, String tableName,
+                           @Nullable String targetFolder, String reprocessingRequired, String tableName,
                            String tableExpiryPeriod) {
       super(referenceName);
       this.path = path;
@@ -246,7 +247,7 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       this.nodePath = nodePath;
       this.actionAfterProcess = actionAfterProcess;
       this.targetFolder = targetFolder;
-      this.reprocessingReq = reprocessingReq;
+      this.reprocessingRequired = reprocessingRequired;
       this.tableName = tableName;
       this.tableExpiryPeriod = tableExpiryPeriod;
     }
@@ -257,8 +258,8 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     }
 
     @VisibleForTesting
-    String getReprocessingReq() {
-      return this.reprocessingReq;
+    String getReprocessingRequired() {
+      return this.reprocessingRequired;
     }
 
     @VisibleForTesting
@@ -278,7 +279,7 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       Preconditions.checkArgument(this.tableExpiryPeriod != null, "Table expiry period cannot be empty.");
 
       boolean onlyOneActionRequired = !this.actionAfterProcess.equalsIgnoreCase("NONE") &&
-        this.reprocessingReq.equalsIgnoreCase("YES");
+        this.reprocessingRequired.equalsIgnoreCase("YES");
       Preconditions.checkArgument(!onlyOneActionRequired, "Please select either 'After Processing Action' or " +
         "'Reprocessing Required', both cannot be applied at same time.");
 

@@ -48,7 +48,7 @@
         {
           "widget-type": "select",
           "label": "Reprocessing Required",
-          "name": "reprocessingReq",
+          "name": "reprocessingRequired",
           "widget-attributes": {
             "values": [
               "No",

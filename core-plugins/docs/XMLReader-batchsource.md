@@ -58,7 +58,7 @@ It will move the XML file to the target folder "file:///target/" and update proc
                                   "nodePath": "/catalog/book/title"
                                   "actionAfterProcess" : "Move",
                                   "targetFolder":"file:///target/", //this must be existing folder path
-                                  "reprocessingReq": "No",
+                                  "reprocessingRequired": "No",
                                   "tableName": "trackingTable"
                     }
          }
