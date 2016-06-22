@@ -21,30 +21,27 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.plugin.batch.aggregator.AggregationUtils;
 
 /**
- * Calculates the average of a column. Does not protect against overflow.
+ * Calculates Variance
  */
-public class Avg implements AggregateFunction<Double> {
+public class Variance implements AggregateFunction<Double> {
   private final String fieldName;
   private final Schema outputSchema;
-  private double avg;
-  private double count;
+  private RunningStats stats;
 
-  public Avg(String fieldName, Schema fieldSchema) {
+  public Variance(String fieldName, Schema fieldSchema) {
     this.fieldName = fieldName;
     boolean isNullable = fieldSchema.isNullable();
     Schema.Type fieldType = isNullable ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
     if (!AggregationUtils.isNumericType(fieldType)) {
       throw new IllegalArgumentException(String.format(
-        "Cannot compute avg on field %s because its type %s is not numeric", fieldName, fieldType));
+        "Cannot compute variance on field %s because its type %s is not numeric", fieldName, fieldType));
     }
-
     outputSchema = isNullable ? Schema.nullableOf(Schema.of(Schema.Type.DOUBLE)) : Schema.of(Schema.Type.DOUBLE);
   }
 
   @Override
   public void beginFunction() {
-    avg = 0d;
-    count = 0d;
+    stats = new RunningStats();
   }
 
   @Override
@@ -53,17 +50,13 @@ public class Avg implements AggregateFunction<Double> {
     if (val == null) {
       return;
     }
-    count++;
-    avg = avg + (((Number) val).doubleValue() - avg) / count;
+    double value = ((Number) val).doubleValue();
+    stats.push(value);
   }
 
   @Override
   public Double getAggregate() {
-    if (count == 0) {
-      // only happens if the field value was always null
-      return null;
-    }
-    return avg;
+    return stats.variance();
   }
 
   @Override
