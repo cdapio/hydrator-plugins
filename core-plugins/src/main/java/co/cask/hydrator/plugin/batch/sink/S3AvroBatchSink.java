@@ -24,6 +24,7 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
+import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
@@ -41,7 +42,7 @@ import java.util.Map;
 /**
  * {@link S3AvroBatchSink} that stores data in avro format to S3.
  */
-@Plugin(type = "batchsink")
+@Plugin(type = BatchSink.PLUGIN_TYPE)
 @Name("S3Avro")
 @Description("Batch sink to write to Amazon S3 in Avro format.")
 public class S3AvroBatchSink extends S3BatchSink<AvroKey<GenericRecord>, NullWritable> {
