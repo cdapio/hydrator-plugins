@@ -17,8 +17,10 @@
 package co.cask.hydrator.common;
 
 import co.cask.cdap.api.data.batch.InputFormatProvider;
+import co.cask.hydrator.common.batch.JobUtils;
 import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.mapreduce.InputFormat;
 
 import java.util.HashMap;
@@ -38,6 +40,12 @@ public final class SourceInputFormatProvider implements InputFormatProvider {
 
   public SourceInputFormatProvider(String inputFormatClassName, Configuration hConf) {
     Map<String, String> config = new HashMap<>();
+    // Unset the values of the default filesystem and implementation of the filesystem
+    // for MapR clusters. These values are explicitly set when we create new Job for configuration
+    // purpose using JobUtils.createInstance method. These values are already consumed
+    // by FileInputFormat now, so safe to clear here.
+    hConf.unset(JobUtils.MAPR_FS_IMPLEMENTATION_KEY);
+    hConf.unset(FileSystem.FS_DEFAULT_NAME_KEY);
     for (Map.Entry<String, String> entry : hConf) {
       config.put(entry.getKey(), entry.getValue());
     }
