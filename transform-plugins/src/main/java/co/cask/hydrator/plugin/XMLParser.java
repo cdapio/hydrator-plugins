@@ -33,7 +33,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
-import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -60,10 +59,12 @@ import javax.xml.xpath.XPathFactory;
 @Name("XMLParser")
 @Description("Parse XML events based on XPath")
 public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
+
+  private static final String EXIT_ON_ERROR = "Exit on error";
+  private static final String WRITE_ERROR_DATASET = "Write to error dataset";
   private final Config config;
   private Schema outSchema;
   private Map<String, String> xPathMapping = new HashMap<>();
-  private Map<String, Integer> mapErrorProcessing = new HashMap<>();
 
   // Required only for testing.
   public XMLParser(Config config) {
@@ -73,42 +74,29 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-    pipelineConfigurer.getStageConfigurer().setOutputSchema(config.getOutputSchema());
+    outSchema = config.getOutputSchema();
+    validateXpathAndSchema();
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(outSchema);
   }
 
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
     outSchema = config.getOutputSchema();
-    validateXpathAndSchema();
-    mapErrorProcessing.put("Ignore error and continue", 1);
-    mapErrorProcessing.put("Exit on error", 2);
-    mapErrorProcessing.put("Write to error dataset", 3);
+    xPathMapping = getxPathMapping();
   }
 
   /**
    * Valid if xpathMappings and schema contain the same field names.
    */
   private void validateXpathAndSchema() {
-    String[] xpaths = config.xpathFieldMapping.split(",");
-    String fieldName;
-    for (String xpath : xpaths) {
-      String[] xpathmap = xpath.split(":"); //name:xpath[,name:xpath]*
-      fieldName = xpathmap[0].trim();
-      if (Strings.isNullOrEmpty(fieldName)) {
-        throw new IllegalArgumentException("Field name cannot be null or empty.");
-      } else if (xpathmap.length < 2 || Strings.isNullOrEmpty(xpathmap[1])) {
-        throw new IllegalArgumentException(String.format("Xpath for field name, %s cannot be null or empty.",
-                                                         fieldName));
-      }
-      xPathMapping.put(fieldName, xpathmap[1].trim());
-    }
+    xPathMapping = getxPathMapping();
     List<Schema.Field> outFields = outSchema.getFields();
     // Checks if all the fields in the XPath mapping are present in the output schema.
     // If they are not a list of fields that are not present is included in the error message.
     StringBuilder notOutput = new StringBuilder();
     for (Schema.Field field : outFields) {
-      fieldName = field.getName();
+      String fieldName = field.getName();
       if (!xPathMapping.keySet().contains(field.getName())) {
         notOutput.append(fieldName + ";");
       }
@@ -119,11 +107,25 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
     }
   }
 
+  private Map<String, String> getxPathMapping() {
+    Map<String, String> map = new HashMap<>();
+    String[] xpaths = config.xpathFieldMapping.split(",");
+    for (String xpath : xpaths) {
+      String[] xpathmap = xpath.split(":"); //name:xpath[,name:xpath]*
+      String fieldName = xpathmap[0].trim();
+      if (Strings.isNullOrEmpty(fieldName)) {
+        throw new IllegalArgumentException("Field name cannot be null or empty.");
+      } else if (xpathmap.length < 2 || Strings.isNullOrEmpty(xpathmap[1])) {
+        throw new IllegalArgumentException(String.format("Xpath for field name, %s cannot be null or empty.",
+                                                         fieldName));
+      }
+      map.put(fieldName, xpathmap[1].trim());
+    }
+    return map;
+  }
+
   @Override
   public void transform(StructuredRecord input, Emitter<StructuredRecord> emitter) {
-    String fieldName;
-    Node node;
-    NodeList nodeList;
     try {
       InputSource source = new InputSource(new StringReader((String) input.get(config.inputField)));
       source.setEncoding(config.encoding);
@@ -134,27 +136,34 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
       XPath xpath = xpathFactory.newXPath();
       StructuredRecord.Builder builder = StructuredRecord.builder(outSchema);
       for (Schema.Field field : outSchema.getFields()) {
-        fieldName = field.getName();
+        String fieldName = field.getName();
         //To evaluate a node, the type(Nodelist or Node) should be known before hand.
         //Since, the type is not specified from user inputs, taking everything as NodeList and then evaluating.
-        nodeList = (NodeList) xpath.compile(xPathMapping.get(fieldName)).evaluate(document, XPathConstants.NODESET);
+        NodeList nodeList = (NodeList) xpath.compile(xPathMapping.get(fieldName)).evaluate(document,
+                                                                                           XPathConstants.NODESET);
         if (nodeList.getLength() > 1) {
           throw new IllegalArgumentException("Cannot specify XPath that are arrays");
         }
-        node = nodeList.item(0);
+        Node node = nodeList.item(0);
         //Since all columns have nullable schema extracting not nullable type.
-        builder.set(fieldName, parseValues(getValue(node, field.getSchema().getNonNullable().getType(), fieldName),
-                                           field));
+        Schema.Type type = field.getSchema().getNonNullable().getType();
+        String value = getValue(node, type, fieldName);
+        if (value == null) {
+          builder.set(fieldName, null);
+        } else {
+          builder.set(fieldName, TypeConvertor.get(value, type));
+        }
       }
       emitter.emit(builder.build());
     } catch (Exception e) {
-      switch (mapErrorProcessing.get(config.processOnError)) {
-        case 2:
+      switch (config.processOnError) {
+        case EXIT_ON_ERROR:
           throw new IllegalStateException("Terminating process in error : " + e.getMessage());
-        case 3:
+        case WRITE_ERROR_DATASET:
           emitter.emitError(new InvalidEntry<>(31, e.getStackTrace()[0].toString() + " : " + e.getMessage(), input));
           break;
-        default:      //ignore on error (case 1)
+        default:
+          //ignore on error(case "Ignore error and continue")
           break;
       }
     }
@@ -201,51 +210,10 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
       transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
       transformer.setOutputProperty(OutputKeys.INDENT, "no");
       transformer.transform(new DOMSource(node), new StreamResult(stringWriter));
-    } catch (TransformerException te) {
-      System.out.println("nodeToString Transformer Exception");
+    } catch (TransformerException e) {
+      throw new IllegalArgumentException("Cannot convert node to string. Transformer exception ", e);
     }
     return stringWriter.toString();
-  }
-
-  /**
-   * Convert the node value retrieved in the type specified by user in schema.
-   *
-   * @param value node value to be parsed
-   * @param field field type into which the node value is to be converted to
-   * @return object to be passed to StructuredRecord builder
-   * @throws IOException
-   */
-  private Object parseValues(String value, Schema.Field field) throws IOException {
-    String fieldName = field.getName();
-    Schema fieldSchema = field.getSchema();
-    if (Strings.isNullOrEmpty(value)) {
-      if (!fieldSchema.isNullable()) {
-        throw new IllegalArgumentException("NULL value found for non-nullable field : " + fieldName);
-      }
-      return null;
-    }
-    Schema.Type fieldType = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
-    switch (fieldType) {
-      case NULL:
-        return null;
-      case INT:
-        return Integer.parseInt(value);
-      case DOUBLE:
-        return Double.parseDouble(value);
-      case BOOLEAN:
-        return Boolean.parseBoolean(value);
-      case LONG:
-        return Long.parseLong(value);
-      case FLOAT:
-        return Float.parseFloat(value);
-      case BYTES:
-        return value.getBytes();
-      case STRING:
-        return value;
-      default:
-        throw new IllegalArgumentException(String.format("Unsupported schema: %s for field: \'%s\'", field.getSchema(),
-                                                         field.getName()));
-    }
   }
 
   /**
@@ -285,7 +253,7 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
 
     /**
      * Create output schema from the field name and type value coming from keyvalue-dropdown widget.
-     * Since the xpath acn evaluate to null(when no node is selected), creating nullable schema for all columns.
+     * Since the xpath can evaluate to null(when no node is selected), creating nullable schema for all columns.
      *
      * @return output schema
      */

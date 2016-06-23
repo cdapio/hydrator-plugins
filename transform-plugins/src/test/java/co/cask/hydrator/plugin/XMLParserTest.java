@@ -33,6 +33,7 @@ import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
+import co.cask.hydrator.common.MockPipelineConfigurer;
 import co.cask.hydrator.common.test.MockEmitter;
 import co.cask.hydrator.common.test.MockTransformContext;
 import com.google.common.collect.ImmutableList;
@@ -54,38 +55,16 @@ public class XMLParserTest extends TransformPluginsTestBase {
 
   @Test
   public void testInvalidConfig() throws Exception {
+    XMLParser.Config config = new XMLParser.Config("body", "UTF-8", "category://book/@category,title://book/title," +
+      "year:/bookstore/book[price>35.00]/year,price:/bookstore/book[price>35.00]/price,subcategory://book/subcategory",
+                                                   "category:,title:string,price:double,year:int,subcategory:string",
+                                                   "Exit on error");
 
-    String inputTable = "input-xpath-with-multiple-elements";
-    ETLStage source = new ETLStage("source", MockSource.getPlugin(inputTable));
-    Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
-      .put("input", "body")
-      .put("encoding", "UTF-8")
-      .put("xpathMappings", "category://book/@category,title://book/title,year:/bookstore/book[price>35.00]/year," +
-        "price:/bookstore/book[price>35.00]/price,subcategory://book/subcategory")
-      .put("fieldTypeMapping", "category:,title:string,price:double,year:int,subcategory:string")
-      .put("processOnError", "Exit on error")
-      .build();
-
-    ETLStage transform = new ETLStage("transform",
-                                      new ETLPlugin("XMLParser", Transform.PLUGIN_TYPE, sourceProperties, null));
-    String sinkTable = "output-xpath-with-multiple-elements";
-
-    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(sinkTable));
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(source)
-      .addStage(transform)
-      .addStage(sink)
-      .addConnection(source.getName(), transform.getName())
-      .addConnection(transform.getName(), sink.getName())
-      .build();
-
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("XMLReaderTest");
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(INPUT);
     try {
-      deployApplication(appId.toId(), appRequest);
-      Assert.fail();
-    } catch (IllegalStateException e) {
-      // expected - since type missing for field category.
+      new XMLParser(config).configurePipeline(configurer);
+    } catch (IllegalArgumentException e) {
+      Assert.assertEquals("Type cannot be null. Please specify type for category", e.getMessage());
     }
   }
 
@@ -283,6 +262,7 @@ public class XMLParserTest extends TransformPluginsTestBase {
 
       MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
       transform.transform(inputRecord, emitter);
+      Assert.fail();
     } catch (IllegalStateException e) {
       LOG.error("Test passes. Exiting on exception.", e);
     }
@@ -327,12 +307,9 @@ public class XMLParserTest extends TransformPluginsTestBase {
           "<year>2005</year><price>29.99</price></book></bookstore>").build()
     );
     MockSource.writeInput(inputManager, input);
-    try {
-      MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-      mrManager.start();
-      mrManager.waitForFinish(5, TimeUnit.MINUTES);
-    } catch (IllegalStateException e) {
-      Assert.assertEquals("Terminating process in error : Cannot specify XPath that are arrays", e.getMessage());
-    }
+    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
+    mrManager.start();
+    mrManager.waitForFinish(5, TimeUnit.MINUTES);
+    Assert.assertEquals("FAILED", mrManager.getHistory().get(0).getStatus().name());
   }
 }
