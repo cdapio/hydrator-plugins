@@ -50,6 +50,7 @@ import javax.annotation.Nullable;
 @Name("HDFS")
 @Description("Batch HDFS Sink")
 public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWritable> {
+  public static final String NULL_STRING = "\0";
   private HDFSSinkConfig config;
 
   public HDFSSink(HDFSSinkConfig config) {
@@ -76,7 +77,9 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
   public void transform(StructuredRecord input, Emitter<KeyValue<Text, NullWritable>> emitter) throws Exception {
     List<String> dataArray = new ArrayList<>();
     for (Schema.Field field : input.getSchema().getFields()) {
-      dataArray.add(input.get(field.getName()).toString());
+      Object fieldValue = input.get(field.getName());
+      String data = (fieldValue != null) ? fieldValue.toString() : NULL_STRING;
+      dataArray.add(data);
     }
     emitter.emit(new KeyValue<>(new Text(Joiner.on(",").join(dataArray)), NullWritable.get()));
   }
