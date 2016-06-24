@@ -1,4 +1,4 @@
-# CopybookReader plugin
+# CopybookReader Batch Source
 
 
 Description
