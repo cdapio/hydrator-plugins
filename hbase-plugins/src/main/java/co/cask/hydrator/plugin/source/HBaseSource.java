@@ -70,8 +70,7 @@ public class HBaseSource extends ReferenceBatchSource<ImmutableBytesWritable, Re
     conf.setStrings(ioSerializations,
                     MutationSerialization.class.getName(), ResultSerialization.class.getName(),
                     KeyValueSerialization.class.getName());
-    context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(TableInputFormat.class, conf))
-                       .alias(config.columnFamily));
+    context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(TableInputFormat.class, conf)));
   }
 
   @Override
