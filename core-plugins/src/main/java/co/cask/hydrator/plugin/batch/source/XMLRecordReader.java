@@ -16,9 +16,10 @@
 
 package co.cask.hydrator.plugin.batch.source;
 
-import org.apache.commons.lang.StringUtils;
+import co.cask.hydrator.plugin.common.FileUtililty;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -29,18 +30,12 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
@@ -105,7 +100,7 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
     }
     currentNodeLevelMap = new HashMap<Integer, String>();
 
-    tempFilePath = conf.get(XMLInputFormat.XML_INPUTFORMAT_PROCESSED_DATA_TEMP_FILE);
+    tempFilePath = conf.get(XMLInputFormat.XML_INPUTFORMAT_PROCESSED_DATA_TEMP_FOLDER);
     fileAction = conf.get(XMLInputFormat.XML_INPUTFORMAT_FILE_ACTION);
     targetFolder = conf.get(XMLInputFormat.XML_INPUTFORMAT_TARGET_FOLDER);
   }
@@ -234,10 +229,8 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
    * Method to take actions after EOF reached.
    */
   private void actionsAfterEOF() throws IOException {
-    if (StringUtils.isNotEmpty(fileAction)) {
-      processFileAction();
-    }
     updateFileTrackingInfo();
+    processFileAction();
   }
 
   /**
@@ -255,27 +248,8 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
         fs.rename(file, tagetFileMovePath);
         break;
       case "archive":
-        FileOutputStream archivedStream = new FileOutputStream(targetFolder + file.getName() + ".zip");
-        ZipOutputStream zipArchivedStream = new ZipOutputStream(archivedStream);
-        FSDataInputStream fdDataInputStream = null;
-        try {
-          fdDataInputStream = fs.open(file);
-          zipArchivedStream.putNextEntry(new ZipEntry(file.getName()));
-          int length;
-          byte[] buffer = new byte[1024];
-          while ((length = fdDataInputStream.read(buffer)) > 0) {
-            zipArchivedStream.write(buffer, 0, length);
-          }
-        } catch (IOException ioException) {
-          throw ioException;
-        } finally {
-          if (zipArchivedStream != null) {
-            zipArchivedStream.closeEntry();
-          }
-          fdDataInputStream.close();
-          zipArchivedStream.close();
-        }
-        fs.delete(file, true);
+        Path targetFile = new Path(targetFolder + file.getName() + ".zip");
+        FileUtililty.archiveFile(fs, file, targetFile, true);
         break;
       default:
         LOG.warn("No action required on the file.");
@@ -288,15 +262,9 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
    * @throws IOException - IO Exception occurred while writing data to temp file.
    */
   private void updateFileTrackingInfo() throws IOException {
-    //TODO - remove temp file usage after proper solution to send data back to XMLReaderBatchSource.
-    File tempFile = new File(tempFilePath);
-    if (!tempFile.exists()) {
-      tempFile.createNewFile();
+    try (FSDataOutputStream outputStream = fs.create(new Path(tempFilePath + "/" + file.getName() + ".txt"))) {
+      outputStream.writeUTF(fileName);
     }
-    FileWriter fw = new FileWriter(tempFile.getAbsoluteFile(), true);
-    BufferedWriter bw = new BufferedWriter(fw);
-    bw.write(fileName + "\n");
-    bw.close();
   }
 
   /**

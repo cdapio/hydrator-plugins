@@ -32,11 +32,10 @@ import java.util.Map;
  * InputFormat class for XMLReader plugin.
  */
 public class XMLInputFormat extends FileInputFormat<LongWritable, Map<String, String>> {
-  public static final String XML_INPUT_NAME_CONFIG = "xml.inputformat.path.name";
+  public static final String XML_INPUTFORMAT_PATH_NAME = "xml.inputformat.path.name";
   public static final String XML_INPUTFORMAT_NODE_PATH = "xml.inputformat.node.path";
   public static final String XML_INPUTFORMAT_PATTERN = "xml.inputformat.pattern";
-  public static final String XML_INPUTFORMAT_REPROCESSING_REQUIRED = "xml.inputformat.reprocessing.required";
-  public static final String XML_INPUTFORMAT_PROCESSED_DATA_TEMP_FILE = "xml.inputformat.processed.data.temp.file";
+  public static final String XML_INPUTFORMAT_PROCESSED_DATA_TEMP_FOLDER = "xml.inputformat.processed.data.temp.folder";
   public static final String XML_INPUTFORMAT_PROCESSED_FILES = "xml.inputformat.processed.files";
   public static final String XML_INPUTFORMAT_FILE_ACTION = "xml.inputformat.file.action";
   public static final String XML_INPUTFORMAT_TARGET_FOLDER = "xml.inputformat.target.folder";

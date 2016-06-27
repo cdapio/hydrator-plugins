@@ -1,4 +1,4 @@
-# XMLReader plugin
+# XMLReader Batch Source
 
 
 Description
@@ -34,9 +34,10 @@ Possible actions are -
 2. Archived to the target location.
 3. Moved to the target location.
 
-**targetFolder:** Target folder path if user select actionAfterProcess either ARCHIVE or MOVE.
+**targetFolder:** Target folder path if user select actionAfterProcess either ARCHIVE or MOVE. Target folder must be
+an existing directory.
 
-**reprocessingReq:** Flag to know if file(s) to be reprocessed or not.
+**reprocessingRequired:** Flag to know if file(s) to be reprocessed or not.
 
 **tableName:** Table name to keep track of processed file(s).
 

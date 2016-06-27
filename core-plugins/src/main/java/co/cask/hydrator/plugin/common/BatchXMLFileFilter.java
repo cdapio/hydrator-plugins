@@ -65,7 +65,7 @@ public class BatchXMLFileFilter extends Configured implements PathFilter {
     if (conf == null) {
       return;
     }
-    pathName = conf.get(XMLInputFormat.XML_INPUT_NAME_CONFIG, "/");
+    pathName = conf.get(XMLInputFormat.XML_INPUTFORMAT_PATH_NAME, "/");
 
     //path is a directory so remove trailing '/'
     if (pathName.endsWith("/")) {
