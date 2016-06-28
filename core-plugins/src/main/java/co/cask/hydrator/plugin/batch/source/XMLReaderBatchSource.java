@@ -196,7 +196,6 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       Path[] paths = FileUtil.stat2Paths(status);
       if (paths != null && paths.length > 0) {
         for (Path path : paths) {
-          System.out.println(path);
           try (FSDataInputStream input = fileSystem.open(path)) {
             String key = input.readUTF();
             processedFileTrackingTable.write(Bytes.toBytes(key), Bytes.toBytes(processingTime));
