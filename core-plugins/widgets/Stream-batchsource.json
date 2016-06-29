@@ -43,6 +43,7 @@
           "widget-attributes": {
             "values": [
               "avro",
+              "binary",
               "clf",
               "csv",
               "grok",

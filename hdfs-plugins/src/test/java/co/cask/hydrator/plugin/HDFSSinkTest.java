@@ -72,7 +72,7 @@ public class HDFSSinkTest extends HydratorTestBase {
 
   private static final Schema SCHEMA = Schema.recordOf(
     "event",
-    Schema.Field.of("ticker", Schema.of(Schema.Type.STRING)),
+    Schema.Field.of("ticker", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
     Schema.Field.of("num", Schema.of(Schema.Type.INT)),
     Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
 
@@ -149,7 +149,7 @@ public class HDFSSinkTest extends HydratorTestBase {
 
     DataSetManager<Table> inputManager = getDataset(inputDatasetName);
     List<StructuredRecord> input = ImmutableList.of(
-      StructuredRecord.builder(SCHEMA).set("ticker", "AAPL").set("num", 10).set("price", 400.23).build(),
+      StructuredRecord.builder(SCHEMA).set("ticker", null).set("num", 10).set("price", 400.23).build(),
       StructuredRecord.builder(SCHEMA).set("ticker", "CDAP").set("num", 13).set("price", 123.23).build()
     );
     MockSource.writeInput(inputManager, input);
@@ -170,7 +170,11 @@ public class HDFSSinkTest extends HydratorTestBase {
       String line;
       while ((line = reader.readLine()) != null) {
         lines.add(line);
-        if (line.contains("AAPL") || line.contains("CDAP")) {
+        if (line.contains("CDAP") && line.contains("123.23")) {
+          count++;
+        }
+
+        if (line.contains("400.23") && line.startsWith(HDFSSink.NULL_STRING)) {
           count++;
         }
       }

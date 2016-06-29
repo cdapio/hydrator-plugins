@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -26,6 +26,7 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
+import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.ReferencePluginConfig;
@@ -46,10 +47,11 @@ import javax.annotation.Nullable;
 /**
  * HDFS Sink
  */
-@Plugin(type = "batchsink")
+@Plugin(type = BatchSink.PLUGIN_TYPE)
 @Name("HDFS")
 @Description("Batch HDFS Sink")
 public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWritable> {
+  public static final String NULL_STRING = "\0";
   private HDFSSinkConfig config;
 
   public HDFSSink(HDFSSinkConfig config) {
@@ -68,15 +70,16 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
 
   @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
-    context.addOutput(Output.of(config.referenceName, new SinkOutputFormatProvider(config, context))
-                        .alias(config.path));
+    context.addOutput(Output.of(config.referenceName, new SinkOutputFormatProvider(config, context)));
   }
 
   @Override
   public void transform(StructuredRecord input, Emitter<KeyValue<Text, NullWritable>> emitter) throws Exception {
     List<String> dataArray = new ArrayList<>();
     for (Schema.Field field : input.getSchema().getFields()) {
-      dataArray.add(input.get(field.getName()).toString());
+      Object fieldValue = input.get(field.getName());
+      String data = (fieldValue != null) ? fieldValue.toString() : NULL_STRING;
+      dataArray.add(data);
     }
     emitter.emit(new KeyValue<>(new Text(Joiner.on(",").join(dataArray)), NullWritable.get()));
   }

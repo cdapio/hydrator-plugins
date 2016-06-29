@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -65,8 +65,7 @@ public class BatchCassandraSink
 
   @Override
   public void prepareRun(BatchSinkContext context) {
-    context.addOutput(Output.of(config.referenceName, new CassandraOutputFormatProvider(config))
-                        .alias(config.columnFamily));
+    context.addOutput(Output.of(config.referenceName, new CassandraOutputFormatProvider(config)));
   }
 
   @Override
