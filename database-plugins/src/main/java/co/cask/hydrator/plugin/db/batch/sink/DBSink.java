@@ -28,6 +28,7 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
+import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.ReferencePluginConfig;
@@ -59,7 +60,7 @@ import java.util.Map;
 /**
  * Sink that can be configured to export data to a database table.
  */
-@Plugin(type = "batchsink")
+@Plugin(type = BatchSink.PLUGIN_TYPE)
 @Name("Database")
 @Description("Writes records to a database table. Each record will be written to a row in the table.")
 public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullWritable> {
@@ -107,8 +108,7 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
     } finally {
       DBUtils.cleanup(driverClass);
     }
-    context.addOutput(Output.of(dbSinkConfig.referenceName, new DBOutputFormatProvider(dbSinkConfig, driverClass))
-                        .alias(dbSinkConfig.tableName));
+    context.addOutput(Output.of(dbSinkConfig.referenceName, new DBOutputFormatProvider(dbSinkConfig, driverClass)));
   }
 
   @Override

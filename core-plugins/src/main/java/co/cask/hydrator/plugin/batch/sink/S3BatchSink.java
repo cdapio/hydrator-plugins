@@ -74,7 +74,7 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<S
       outputConfig.putAll(properties);
     }
     context.addOutput(Output.of(config.referenceName, new SinkOutputFormatProvider(
-      outputFormatProvider.getOutputFormatClassName(), outputConfig)).alias(config.basePath));
+      outputFormatProvider.getOutputFormatClassName(), outputConfig)));
   }
 
   /**

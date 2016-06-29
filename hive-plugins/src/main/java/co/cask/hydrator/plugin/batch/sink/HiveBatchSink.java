@@ -29,6 +29,7 @@ import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
+import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.batch.JobUtils;
@@ -65,14 +66,13 @@ import java.util.Map;
 /**
  * Hive Batch Sink
  */
-@Plugin(type = "batchsink")
+@Plugin(type = BatchSink.PLUGIN_TYPE)
 @Name("Hive")
 @Description("Batch Sink to write to external Hive tables.")
 public class HiveBatchSink extends ReferenceBatchSink<StructuredRecord, NullWritable, HCatRecord> {
 
   private static final Gson GSON = new Gson();
-  private static final Type STRING_MAP_TYPE = new TypeToken<Map<String, String>>() {
-  }.getType();
+  private static final Type STRING_MAP_TYPE = new TypeToken<Map<String, String>>() { }.getType();
 
   private HiveSinkConfig config;
   private RecordToHCatRecordTransformer recordToHCatRecordTransformer;
@@ -94,12 +94,11 @@ public class HiveBatchSink extends ReferenceBatchSink<StructuredRecord, NullWrit
   @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
     Job job = JobUtils.createInstance();
-    Configuration conf = job.getConfiguration();
 
     HiveSinkOutputFormatProvider sinkOutputFormatProvider = new HiveSinkOutputFormatProvider(job, config);
     HCatSchema hiveSchema = sinkOutputFormatProvider.getHiveSchema();
     HiveSchemaStore.storeHiveSchema(context, config.dbName, config.tableName, hiveSchema);
-    context.addOutput(Output.of(config.referenceName, sinkOutputFormatProvider).alias(config.tableName));
+    context.addOutput(Output.of(config.referenceName, sinkOutputFormatProvider));
   }
 
   public void initialize(BatchRuntimeContext context) throws Exception {
