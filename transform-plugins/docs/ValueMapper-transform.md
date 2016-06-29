@@ -4,7 +4,7 @@
 Description
 -----------
 Value Mapper is a transform plugin that maps string values of a field in the input record
-to a mapping value using mapping dataset.
+to a mapping value using a mapping dataset.
 
 Mappings for the values are usually stored in a key-value dataset. The ValueMapper transform
 provides a simple method for manipulating input data, both a field and its values, using a mapping.
@@ -14,6 +14,7 @@ Use Case
 --------
 One use is to replace language codes in the input record field with an
 appropriate language description:
+
      **Source field name:** language_code
      **Target field name:** language_desc
      **Mappings, source to target:** DE/German, ES/Spanish, EN/English
@@ -83,13 +84,13 @@ Second Row:
 
 with this as the mapping dataset, *designationLookupTableName*:
 
-    +=======================+
-    | key        | value    |
-    +=======================+
-    | "1"          | "SE"   |
-    | "2"          | "SSE"  |
-    | "3"          | "ML"   |
-    +=======================+
+    +======================+
+    | key       | value    |
+    +======================+
+    | "1"       | "SE"     |
+    | "2"       | "SSE"    |
+    | "3"       | "ML"     |
+    +======================+
 
 
 After transformation by the ValueMapper plugin, the output will have this structure and contents, with the

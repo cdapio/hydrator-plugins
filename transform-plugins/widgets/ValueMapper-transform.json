@@ -10,8 +10,6 @@
           "label": "Mapping",
           "widget-type": "ds-multiplevalues",
           "widget-attributes": {
-            "delimiter": ",",
-            "values-delimiter": ":",
             "numValues": "3",
             "placeholders": ["Source Field", "Mapping Table Name", "Target Field"]
           }
