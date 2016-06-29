@@ -83,14 +83,14 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
     outSchema = config.getOutputSchema();
-    xPathMapping = getxPathMapping();
+    xPathMapping = getXPathMapping();
   }
 
   /**
    * Valid if xpathMappings and schema contain the same field names.
    */
   private void validateXpathAndSchema() {
-    xPathMapping = getxPathMapping();
+    xPathMapping = getXPathMapping();
     List<Schema.Field> outFields = outSchema.getFields();
     // Checks if all the fields in the XPath mapping are present in the output schema.
     // If they are not a list of fields that are not present is included in the error message.
@@ -107,16 +107,16 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
     }
   }
 
-  private Map<String, String> getxPathMapping() {
+  private Map<String, String> getXPathMapping() {
     Map<String, String> map = new HashMap<>();
-    String[] xpaths = config.xpathFieldMapping.split(",");
+    String[] xpaths = config.xPathFieldMapping.split(",");
     for (String xpath : xpaths) {
       String[] xpathmap = xpath.split(":"); //name:xpath[,name:xpath]*
       String fieldName = xpathmap[0].trim();
       if (Strings.isNullOrEmpty(fieldName)) {
         throw new IllegalArgumentException("Field name cannot be null or empty.");
       } else if (xpathmap.length < 2 || Strings.isNullOrEmpty(xpathmap[1])) {
-        throw new IllegalArgumentException(String.format("Xpath for field name, %s cannot be null or empty.",
+        throw new IllegalArgumentException(String.format("XPath for field name %s cannot be null or empty.",
                                                          fieldName));
       }
       map.put(fieldName, xpathmap[1].trim());
@@ -142,7 +142,7 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
         NodeList nodeList = (NodeList) xpath.compile(xPathMapping.get(fieldName)).evaluate(document,
                                                                                            XPathConstants.NODESET);
         if (nodeList.getLength() > 1) {
-          throw new IllegalArgumentException("Cannot specify XPath that are arrays");
+          throw new IllegalArgumentException("Cannot specify an XPath that is an array");
         }
         Node node = nodeList.item(0);
         //Since all columns have nullable schema extracting not nullable type.
@@ -158,7 +158,7 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
     } catch (Exception e) {
       switch (config.processOnError) {
         case EXIT_ON_ERROR:
-          throw new IllegalStateException("Terminating process in error : " + e.getMessage());
+          throw new IllegalStateException("Terminating process on error: " + e.getMessage());
         case WRITE_ERROR_DATASET:
           emitter.emitError(new InvalidEntry<>(31, e.getStackTrace()[0].toString() + " : " + e.getMessage(), input));
           break;
@@ -222,31 +222,35 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
   public static class Config extends PluginConfig {
 
     @Name("input")
-    @Description("Specifies the field in input that should be considered as source of XML event or record.")
+    @Description("The field in the input record that is the source of the XML event or record.")
     private final String inputField;
 
-    @Description("Specifies  XML encoding type(default is UTF-8).")
+    @Description("The source XML character set encoding (default UTF-8).")
     private final String encoding;
 
-    @Name("xpathMappings")
-    @Description("Specifies a mapping from XPath of XML record to field name.")
-    private final String xpathFieldMapping;
+    @Name("xPathMappings")
+    @Description("Mapping of the field names to the XPaths of the XML record. A comma-separated list, each element " +
+      "of which is a field name, followed by a colon, followed by an XPath expression. XPath location paths can " +
+      "include predicates and supports XPath 1.0. Example : <field-name>:<XPath expression>")
+    private final String xPathFieldMapping;
 
-    @Description("Specifies the field name as specified in xpathMappings and its corresponding data type." +
-      "The data type can be of following types : - boolean, int, long, float, double, bytes, string.")
+    @Description("Mapping of field names in the output schema to data types. Consists of a comma-separated list, " +
+      "each element of which is a field name followed by a colon and a type, where the field names are the same as " +
+      "used in the xPathMappings, and the type is one of: boolean, int, long, float, double, bytes, or string. " +
+      "Example : <field-name>:<data-type>")
     private final String fieldTypeMapping;
 
-    @Description("Specifies what happens in case of error.\n" +
-      "1. Ignore the error record" +
-      "2. Stop processing upon encoutering error" +
-      "3. Write error record to different dataset")
+    @Description("The action to take in case of an error.\n" +
+      "                     - \"Ignore error and continue\"\n" +
+      "                     - \"Exit on error\" : Stops processing upon encountering an error\n" +
+      "                     - \"Write to error dataset\" :  Writes the error record to an error dataset and continues")
     private final String processOnError;
 
-    public Config(String inputField, String encoding, String xpathFieldMapping, String fieldTypeMapping,
+    public Config(String inputField, String encoding, String xPathFieldMapping, String fieldTypeMapping,
                   String processOnError) {
       this.inputField = inputField;
       this.encoding = encoding;
-      this.xpathFieldMapping = xpathFieldMapping;
+      this.xPathFieldMapping = xPathFieldMapping;
       this.fieldTypeMapping = fieldTypeMapping;
       this.processOnError = processOnError;
     }
@@ -271,7 +275,8 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
         Schema.Field field = Schema.Field.of(fieldName, Schema.nullableOf(Schema.of(Schema.Type.valueOf(
           params[1].trim().toUpperCase()))));
         if (fields.contains(field)) {
-          throw new IllegalArgumentException("Field " + fieldName + " already has type specified. Check the mapping.");
+          throw new IllegalArgumentException(String.format("Field %s already has type specified. Duplicate field %s",
+                                                           fieldName, fieldName));
         } else {
           fields.add(field);
         }

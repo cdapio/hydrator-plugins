@@ -76,7 +76,7 @@ public class XMLParserTest extends TransformPluginsTestBase {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put("input", "body")
       .put("encoding", "UTF-8")
-      .put("xpathMappings", "title:/book/title,author:/book/author,year:/book/year")
+      .put("xPathMappings", "title:/book/title,author:/book/author,year:/book/year")
       .put("fieldTypeMapping", "title:string,author:string,year:string")
       .put("processOnError", "Write to error dataset")
       .build();
@@ -125,7 +125,7 @@ public class XMLParserTest extends TransformPluginsTestBase {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put("input", "body")
       .put("encoding", "UTF-8")
-      .put("xpathMappings", "category://book/@category,title://book/title,year:/bookstore/book[price>35.00]/year," +
+      .put("xPathMappings", "category://book/@category,title://book/title,year:/bookstore/book[price>35.00]/year," +
         "price:/bookstore/book[price>35.00]/price,subcategory://book/subcategory")
       .put("fieldTypeMapping", "category:string,title:string,price:double,year:int,subcategory:string")
       .put("processOnError", "Ignore error and continue")
@@ -275,7 +275,7 @@ public class XMLParserTest extends TransformPluginsTestBase {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put("input", "body")
       .put("encoding", "UTF-8")
-      .put("xpathMappings", "category://book/@category,title://book/title")
+      .put("xPathMappings", "category://book/@category,title://book/title")
       .put("fieldTypeMapping", "category:string,title:string")
       .put("processOnError", "Exit on error")
       .build();
