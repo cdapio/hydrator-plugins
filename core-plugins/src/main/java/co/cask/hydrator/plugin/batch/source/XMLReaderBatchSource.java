@@ -146,7 +146,7 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
   private void setFileTrackingInfo(BatchSourceContext context, Configuration conf) {
     //For reprocessing not required, set processed file name to configuration.
     processedFileTrackingTable = context.getDataset(config.tableName);
-    if (processedFileTrackingTable != null && config.reprocessingRequired.equalsIgnoreCase("NO")) {
+    if (processedFileTrackingTable != null && !config.getReprocessingRequired()) {
       List<String> processedFiles = new ArrayList<String>();
       Calendar cal = Calendar.getInstance();
       cal.add(Calendar.DATE, -Integer.valueOf(config.tableExpiryPeriod));
@@ -269,9 +269,8 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       return tableName;
     }
 
-    @VisibleForTesting
-    String getReprocessingRequired() {
-      return reprocessingRequired;
+    boolean getReprocessingRequired() {
+      return reprocessingRequired.equalsIgnoreCase("YES") ? true : false;
     }
 
     @VisibleForTesting
@@ -290,8 +289,7 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       Preconditions.checkArgument(!Strings.isNullOrEmpty(tableName), "Table Name cannot be empty.");
       Preconditions.checkArgument(tableExpiryPeriod != null, "Table expiry period cannot be empty.");
 
-      boolean onlyOneActionRequired = !actionAfterProcess.equalsIgnoreCase("NONE") &&
-        reprocessingRequired.equalsIgnoreCase("YES");
+      boolean onlyOneActionRequired = !actionAfterProcess.equalsIgnoreCase("NONE") && getReprocessingRequired();
       Preconditions.checkArgument(!onlyOneActionRequired, "Please select either 'After Processing Action' or " +
         "'Reprocessing Required', both cannot be applied at same time.");
 
