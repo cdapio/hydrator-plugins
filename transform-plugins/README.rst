@@ -204,7 +204,7 @@ Decoder
   Available decoding methods are STRING_BASE64, BASE64, BASE32, STRING_BASE32, and HEX.
 :Configuration:
   - **decode:** Specifies the configuration for decode fields; in JSON configuration, this is specified as ``<field>:<decoder>[,<field>:<decoder>]*``
-  - **schema:** Specifies the output schema; the fields that are decoded will have the same field name but they will be of type ``BYTE`` array or STRING``
+  - **schema:** Specifies the output schema; the fields that are decoded will have the same field name but they will be of type ``BYTE`` array or ``STRING``
 
 Hasher
 ------
@@ -233,7 +233,9 @@ XMLToJSONConverter
 :Description:
       Converts an XML string to a JSON string.
 :Configuration:
-    - **field:** Specifies the field containing the XML string
+    - **inputField:** Specifies the field containing the XML string
+    - **outputField:** Specifies the field to store the JSON string
+    - **schema:** Specifies the output schema; If outputField is not present, it will be added.
 
 
 License and Trademarks

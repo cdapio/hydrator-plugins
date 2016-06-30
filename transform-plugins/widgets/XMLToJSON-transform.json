@@ -8,16 +8,27 @@
         {
           "widget-type": "textbox",
           "label": "Input Field",
-          "name": "field"
+          "name": "inputField",
+          "widget-attributes": {
+            "default": "body"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Output Field",
+          "name": "outputField",
+          "widget-attributes": {
+            "default": "json_str"
+          }
         }
       ]
     }
   ],
   "outputs": [
     {
-      "widget-type": "non-editable-schema-editor",
+      "widget-type": "schema",
       "schema": {
-        "jsonevent": "string"
+        "json_str": "string"
       }
     }
   ]
