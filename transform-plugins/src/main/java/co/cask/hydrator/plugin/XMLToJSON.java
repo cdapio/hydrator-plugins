@@ -32,6 +32,7 @@ import org.json.XML;
 
 import java.io.IOException;
 import java.util.List;
+import javax.annotation.Nullable;
 
 /**
  * A transform that parses an XML String field into a stringified JSON Object.
@@ -137,6 +138,12 @@ public final class XMLToJSON extends Transform<StructuredRecord, StructuredRecor
     @Name("schema")
     @Description("Output schema")
     private String schema;
+
+    public Config(String inputField, String outputField) {
+      this.inputField = inputField;
+      this.outputField = outputField;
+      this.schema = DEFAULT_SCHEMA.toString();
+    }
 
     public Config(String inputField, String outputField, String schema) {
       this.inputField = inputField;

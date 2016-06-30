@@ -18,7 +18,7 @@
           "label": "Output Field",
           "name": "outputField",
           "widget-attributes": {
-            "default": "json_str"
+            "default": "json_body"
           }
         }
       ]
@@ -26,9 +26,21 @@
   ],
   "outputs": [
     {
+      "name": "schema",
+      "label": "schema",
       "widget-type": "schema",
-      "schema": {
-        "json_str": "string"
+      "widget-attributes": {
+        "schema-types": [
+          "boolean",
+          "int",
+          "long",
+          "float",
+          "double",
+          "bytes",
+          "string",
+          "map<string, string>"
+        ],
+        "schema-default-type": "string"
       }
     }
   ]

@@ -16,6 +16,7 @@ Configuration
 -------------
 **inputField:** Specifies the input field containing an XML string to 
 be converted to a JSON string.
+
 **outputField:** Specifies the output field where the JSON string will
 be stored. If it is not present in the output schema, it will be
 added.
