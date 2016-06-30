@@ -18,8 +18,7 @@ package co.cask.hydrator.common;
 
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
-import co.cask.cdap.proto.id.DatasetId;
-import co.cask.cdap.proto.id.NamespaceId;
+import co.cask.cdap.proto.id.EntityId;
 
 /**
  * A {@link BatchSource} that verifies referenceName property
@@ -39,7 +38,6 @@ public abstract class ReferenceBatchSource<KEY_IN, VAL_IN, OUT> extends BatchSou
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
     // Verify that reference name meets dataset id constraints
-    @SuppressWarnings("unused")
-    DatasetId datasetId = new DatasetId(NamespaceId.DEFAULT.getNamespace(), config.referenceName);
+    EntityId.isValidDatasetId(config.referenceName);
   }
 }
