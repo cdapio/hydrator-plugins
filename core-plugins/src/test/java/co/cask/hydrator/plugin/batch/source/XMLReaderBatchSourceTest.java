@@ -48,10 +48,12 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.python.google.common.collect.ImmutableMap;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -63,26 +65,35 @@ import java.util.concurrent.TimeUnit;
  * Unit test for {@link XMLReaderBatchSource} class.
  */
 public class XMLReaderBatchSourceTest extends HydratorTestBase {
-
   private static final ArtifactVersion CURRENT_VERSION = new ArtifactVersion("3.4.0-SNAPSHOT");
   private static final ArtifactId BATCH_APP_ARTIFACT_ID =
     NamespaceId.DEFAULT.artifact("etlbatch", CURRENT_VERSION.getVersion());
   private static final ArtifactSummary ETLBATCH_ARTIFACT =
     new ArtifactSummary(BATCH_APP_ARTIFACT_ID.getArtifact(), BATCH_APP_ARTIFACT_ID.getVersion());
-  private static final String SOURCE_FOLDER_PATH = "src/test/resources/xmlsource/";
-  private File sourceFolder = new File(SOURCE_FOLDER_PATH);
-  private File targetFolder = new File("src/test/resources/xmltarget/");
-  private String sourceFolderUri = sourceFolder.toURI().toString();
-  private String targetFolderUri = targetFolder.toURI().toString();
+  private static final String CATALOG_LARGE_XML_FILE_NAME = "catalogLarge.xml";
+  private static final String CATALOG_SMALL_XML_FILE_NAME = "catalogSmall.xml";
 
   @ClassRule
   public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
+
+  @ClassRule
+  public static TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+  private static File sourceFolder;
+  private static File targetFolder;
+  private static String sourceFolderUri;
+  private static String targetFolderUri;
 
   @BeforeClass
   public static void setupTest() throws Exception {
     setupBatchArtifacts(BATCH_APP_ARTIFACT_ID, ETLBatchApplication.class);
     addPluginArtifact(NamespaceId.DEFAULT.artifact("core-plugins", "1.0.1"), BATCH_APP_ARTIFACT_ID,
                       XMLReaderBatchSource.class);
+
+    sourceFolder = temporaryFolder.newFolder("xmlSourceFolder");
+    targetFolder = temporaryFolder.newFolder("xmlTargetFolder");
+    sourceFolderUri = sourceFolder.toURI().toString();
+    targetFolderUri = targetFolder.toURI().toString();
   }
 
   /**
@@ -90,11 +101,10 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
    */
   @Before
   public void copyFiles() throws IOException {
-      String xmlSourceFolder = "src/test/resources/";
-      String catalogLargeFile = "catalogLarge.xml";
-      String catalogSmallFile = "catalogSmall.xml";
-      FileUtils.copyFile(new File(xmlSourceFolder, catalogLargeFile), new File(SOURCE_FOLDER_PATH, catalogLargeFile));
-      FileUtils.copyFile(new File(xmlSourceFolder, catalogSmallFile), new File(SOURCE_FOLDER_PATH, catalogSmallFile));
+      URL url = this.getClass().getResource("/" + CATALOG_LARGE_XML_FILE_NAME);
+      URL url1 = this.getClass().getResource("/" + CATALOG_SMALL_XML_FILE_NAME);
+      FileUtils.copyFile(new File(url.getFile()), new File(sourceFolder, CATALOG_LARGE_XML_FILE_NAME));
+      FileUtils.copyFile(new File(url1.getFile()), new File(sourceFolder, CATALOG_SMALL_XML_FILE_NAME));
   }
 
   /**
@@ -131,7 +141,7 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
     DataSetManager<KeyValueTable> dataSetManager = getDataset(processedFileTable);
     KeyValueTable keyValueTable = dataSetManager.get();
     //put record of processed file.
-    File catalogLarge = new File(SOURCE_FOLDER_PATH, "catalogLarge.xml");
+    File catalogLarge = new File(sourceFolder, CATALOG_LARGE_XML_FILE_NAME);
     keyValueTable.write(Bytes.toBytes(catalogLarge.toURI().toString()), Bytes.toBytes(preProcessedDate.getTime()));
     dataSetManager.flush();
   }
@@ -143,7 +153,7 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
     DataSetManager<KeyValueTable> dataSetManager = getDataset(processedFileTable);
     KeyValueTable keyValueTable = dataSetManager.get();
     //put expired record which is 40 days old
-    File catalogSmall = new File(SOURCE_FOLDER_PATH, "catalogSmall.xml");
+    File catalogSmall = new File(targetFolder, CATALOG_SMALL_XML_FILE_NAME);
     Calendar cal = Calendar.getInstance();
     cal.add(Calendar.DATE, -40);
     Date expiryDate = cal.getTime();

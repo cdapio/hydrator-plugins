@@ -16,7 +16,6 @@
 
 package co.cask.hydrator.plugin.batch.source;
 
-import co.cask.hydrator.plugin.common.FileUtililty;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -36,6 +35,8 @@ import java.io.InputStream;
 import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
@@ -52,13 +53,10 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
   public static final String CLOSING_START_TAG_DELIMITER = ">";
   public static final String OPENING_START_TAG_DELIMITER = "<";
 
-  private LongWritable currentKey;
-  private Map<String, String> currentValue;
   private final String fileName;
   private final XMLStreamReader reader;
   private final String[] nodes;
   private final Map<Integer, String> currentNodeLevelMap;
-  private int nodeLevel = 0;
   private final String tempFilePath;
   private final Path file;
   private final String fileAction;
@@ -67,6 +65,10 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
   private final long availableBytes;
   private final TrackingInputStream inputStream;
   private final DecimalFormat df = new DecimalFormat("#.##");
+
+  private LongWritable currentKey;
+  private Map<String, String> currentValue;
+  private int nodeLevel = 0;
 
   public XMLRecordReader(FileSplit split, Configuration conf) throws IOException {
     file = split.getPath();
@@ -229,8 +231,18 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
         fs.rename(file, targetFileMovePath);
         break;
       case "archive":
-        Path targetPath = new Path(targetFolder, file.getName() + ".zip");
-        FileUtililty.archiveFile(fs, file, targetPath, true);
+        try (FSDataOutputStream archivedStream = fs.create(new Path(targetFolder, file.getName() + ".zip"));
+             ZipOutputStream zipArchivedStream = new ZipOutputStream(archivedStream);
+             FSDataInputStream fdDataInputStream = fs.open(file)) {
+          zipArchivedStream.putNextEntry(new ZipEntry(file.getName()));
+          int length;
+          byte[] buffer = new byte[1024];
+          while ((length = fdDataInputStream.read(buffer)) > 0) {
+            zipArchivedStream.write(buffer, 0, length);
+          }
+          zipArchivedStream.closeEntry();
+        }
+        fs.delete(file, true);
         break;
       default:
         LOG.warn("No action required on the file.");
@@ -249,7 +261,7 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
   }
 
   /**
-   * Class to publish input stream and get total bytes read.
+   * Class to track input stream and get total bytes read.
    */
   public class TrackingInputStream extends FilterInputStream {
     private long totalBytes = 0;

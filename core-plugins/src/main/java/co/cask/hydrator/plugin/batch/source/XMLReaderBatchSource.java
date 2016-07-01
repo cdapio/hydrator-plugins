@@ -75,6 +75,8 @@ import javax.annotation.Nullable;
 @Description("Batch source for XML read from HDFS")
 public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Object, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(XMLReaderBatchSource.class);
+  private static final Gson GSON = new Gson();
+  private static final Type ARRAYLIST_PREPROCESSED_FILES  = new TypeToken<ArrayList<String>>() { }.getType();
 
   public static final Schema DEFAULT_XML_SCHEMA = Schema.recordOf(
     "xmlSchema",
@@ -83,11 +85,9 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     Schema.Field.of("record", Schema.of(Schema.Type.STRING))
   );
 
-  private static final Gson GSON = new Gson();
-  private static final Type ARRAYLIST_PREPROCESSED_FILES  = new TypeToken<ArrayList<String>>() { }.getType();
+  private final XMLReaderConfig config;
 
   private KeyValueTable processedFileTrackingTable;
-  private final XMLReaderConfig config;
   private FileSystem fileSystem;
   private Path tempDirectoryPath;
 
@@ -146,7 +146,7 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
   private void setFileTrackingInfo(BatchSourceContext context, Configuration conf) {
     //For reprocessing not required, set processed file name to configuration.
     processedFileTrackingTable = context.getDataset(config.tableName);
-    if (processedFileTrackingTable != null && !config.getReprocessingRequired()) {
+    if (processedFileTrackingTable != null && !config.isReprocessingRequired()) {
       List<String> processedFiles = new ArrayList<String>();
       Calendar cal = Calendar.getInstance();
       cal.add(Calendar.DATE, -Integer.valueOf(config.tableExpiryPeriod));
@@ -269,7 +269,7 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       return tableName;
     }
 
-    boolean getReprocessingRequired() {
+    boolean isReprocessingRequired() {
       return reprocessingRequired.equalsIgnoreCase("YES") ? true : false;
     }
 
@@ -289,7 +289,7 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       Preconditions.checkArgument(!Strings.isNullOrEmpty(tableName), "Table Name cannot be empty.");
       Preconditions.checkArgument(tableExpiryPeriod != null, "Table expiry period cannot be empty.");
 
-      boolean onlyOneActionRequired = !actionAfterProcess.equalsIgnoreCase("NONE") && getReprocessingRequired();
+      boolean onlyOneActionRequired = !actionAfterProcess.equalsIgnoreCase("NONE") && isReprocessingRequired();
       Preconditions.checkArgument(!onlyOneActionRequired, "Please select either 'After Processing Action' or " +
         "'Reprocessing Required', both cannot be applied at same time.");
 
