@@ -200,14 +200,11 @@
           <instructions>
             <_exportcontents>
               co.cask.hydrator.plugin.batch.*;
-              co.cask.hydrator.plugin.transform.*;
-              co.cask.hydrator.plugin.validator.*;
               co.cask.hydrator.plugin.common;
-              org.apache.avro.mapreduce;
               co.cask.hydrator.plugin.realtime.*;
               co.cask.hydrator.plugin.transform.*;
               co.cask.hydrator.plugin.validator.*;
-              co.cask.hydrator.plugin.common;
+              org.apache.avro.mapreduce;
               parquet.avro.*;
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
