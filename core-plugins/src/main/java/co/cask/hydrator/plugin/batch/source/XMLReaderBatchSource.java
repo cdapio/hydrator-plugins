@@ -118,11 +118,6 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     if (StringUtils.isNotEmpty(config.pattern)) {
       conf.set(XMLInputFormat.XML_INPUTFORMAT_PATTERN, config.pattern);
     }
-    conf.set(XMLInputFormat.XML_INPUTFORMAT_FILE_ACTION, config.actionAfterProcess);
-    if (StringUtils.isNotEmpty(config.targetFolder)) {
-      conf.set(XMLInputFormat.XML_INPUTFORMAT_TARGET_FOLDER, config.targetFolder);
-    }
-
     setFileTrackingInfo(context, conf);
 
     //create a temporary directory, in which XMLRecordReader will add file tracking information.
@@ -226,18 +221,6 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       "Example - '/book/price' to read only price under the book node")
     private final String nodePath;
 
-    @Description("Action to be taken after processing of the XML file. " +
-      "Possible actions are - " +
-      "1. Delete from the HDFS." +
-      "2. Archived to the target location." +
-      "3. Moved to the target location.")
-    private final String actionAfterProcess;
-
-    @Nullable
-    @Description("Target folder path if user select action after process, either ARCHIVE or MOVE. " +
-      "Target folder must be an existing directory.")
-    private final String targetFolder;
-
     @Description("Name of the table to keep track of processed file(s).")
     private final String reprocessingRequired;
 
@@ -250,15 +233,12 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
 
     @VisibleForTesting
     XMLReaderConfig(String referenceName, String path, @Nullable String pattern,
-                           @Nullable String nodePath, @Nullable String actionAfterProcess,
-                           @Nullable String targetFolder, String reprocessingRequired, String tableName,
+                           @Nullable String nodePath, String reprocessingRequired, String tableName,
                            String tableExpiryPeriod) {
       super(referenceName);
       this.path = path;
       this.pattern = pattern;
       this.nodePath = nodePath;
-      this.actionAfterProcess = actionAfterProcess;
-      this.targetFolder = targetFolder;
       this.reprocessingRequired = reprocessingRequired;
       this.tableName = tableName;
       this.tableExpiryPeriod = tableExpiryPeriod;
@@ -288,15 +268,6 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       Preconditions.checkArgument(!Strings.isNullOrEmpty(nodePath), "Node path cannot be empty.");
       Preconditions.checkArgument(!Strings.isNullOrEmpty(tableName), "Table Name cannot be empty.");
       Preconditions.checkArgument(tableExpiryPeriod != null, "Table expiry period cannot be empty.");
-
-      boolean onlyOneActionRequired = !actionAfterProcess.equalsIgnoreCase("NONE") && isReprocessingRequired();
-      Preconditions.checkArgument(!onlyOneActionRequired, "Please select either 'After Processing Action' or " +
-        "'Reprocessing Required', both cannot be applied at same time.");
-
-      boolean targetFolderEmpty = (actionAfterProcess.equalsIgnoreCase("ARCHIVE") ||
-        actionAfterProcess.equalsIgnoreCase("MOVE")) && Strings.isNullOrEmpty(targetFolder);
-      Preconditions.checkArgument(!targetFolderEmpty, "Target folder cannot be Empty for Action = '" +
-        actionAfterProcess + "'.");
     }
   }
 }

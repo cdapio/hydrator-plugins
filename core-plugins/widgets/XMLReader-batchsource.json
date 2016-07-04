@@ -28,25 +28,6 @@
         },
         {
           "widget-type": "select",
-          "label": "Action After Processing File",
-          "name": "actionAfterProcess",
-          "widget-attributes": {
-            "values": [
-              "None",
-              "Delete",
-              "Move",
-              "Archive"
-            ],
-            "default": "None"
-          }
-        },
-        {
-          "widget-type": "textbox",
-          "label": "Target Folder",
-          "name": "targetFolder"
-        },
-        {
-          "widget-type": "select",
           "label": "Reprocessing Required",
           "name": "reprocessingRequired",
           "widget-attributes": {
