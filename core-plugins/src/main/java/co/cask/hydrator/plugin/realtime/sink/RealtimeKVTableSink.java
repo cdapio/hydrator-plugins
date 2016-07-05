@@ -49,7 +49,7 @@ import javax.annotation.Nullable;
  */
 @Plugin(type = "realtimesink")
 @Name("KVTable")
-@Description("Real-time Sink for CDAP KVTable dataset")
+@Description("Real-time Sink for CDAP Key Value Table dataset")
 public class RealtimeKVTableSink extends RealtimeSink<StructuredRecord> {
 
   private final KVTableSinkConfig kvTableSinkConfig;

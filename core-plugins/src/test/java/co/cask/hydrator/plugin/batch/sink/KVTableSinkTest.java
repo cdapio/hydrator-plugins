@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.sink;
 
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.hydrator.plugin.common.KVTableSinkConfig;
 import co.cask.hydrator.plugin.transform.MockPipelineConfigurer;
 import org.junit.Test;
 
@@ -32,7 +33,7 @@ public class KVTableSinkTest {
       Schema.Field.of("user", Schema.of(Schema.Type.STRING))
     );
 
-    KVTableSink.KVTableConfig kvTableConfig = new KVTableSink.KVTableConfig("purchases", "rowKey", "user");
+    KVTableSinkConfig kvTableConfig = new KVTableSinkConfig("purchases", "rowKey", "user");
     KVTableSink kvTableSink = new KVTableSink(kvTableConfig);
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
@@ -47,7 +48,7 @@ public class KVTableSinkTest {
       Schema.Field.of("userid", Schema.of(Schema.Type.STRING))
     );
 
-    KVTableSink.KVTableConfig kvTableConfig = new KVTableSink.KVTableConfig("purchases", "rowKey", "user");
+    KVTableSinkConfig kvTableConfig = new KVTableSinkConfig("purchases", "rowKey", "user");
     KVTableSink kvTableSink = new KVTableSink(kvTableConfig);
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
@@ -63,7 +64,7 @@ public class KVTableSinkTest {
       Schema.Field.of("user", Schema.of(Schema.Type.STRING))
     );
 
-    KVTableSink.KVTableConfig kvTableConfig = new KVTableSink.KVTableConfig("purchases", "rowKey", "user");
+    KVTableSinkConfig kvTableConfig = new KVTableSinkConfig("purchases", "rowKey", "user");
     KVTableSink kvTableSink = new KVTableSink(kvTableConfig);
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
@@ -78,7 +79,7 @@ public class KVTableSinkTest {
       Schema.Field.of("user", Schema.of(Schema.Type.STRING))
     );
 
-    KVTableSink.KVTableConfig kvTableConfig = new KVTableSink.KVTableConfig("purchases", "rowKey", "user");
+    KVTableSinkConfig kvTableConfig = new KVTableSinkConfig("purchases", "rowKey", "user");
     KVTableSink kvTableSink = new KVTableSink(kvTableConfig);
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
@@ -94,7 +95,7 @@ public class KVTableSinkTest {
       Schema.Field.of("user", Schema.of(Schema.Type.STRING))
     );
 
-    KVTableSink.KVTableConfig kvTableConfig = new KVTableSink.KVTableConfig("purchases", "rowKey", "user");
+    KVTableSinkConfig kvTableConfig = new KVTableSinkConfig("purchases", "rowKey", "user");
     KVTableSink kvTableSink = new KVTableSink(kvTableConfig);
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
@@ -110,7 +111,7 @@ public class KVTableSinkTest {
       Schema.Field.of("rowKey", Schema.of(Schema.Type.STRING))
     );
 
-    KVTableSink.KVTableConfig kvTableConfig = new KVTableSink.KVTableConfig("purchases", "rowKey", "user");
+    KVTableSinkConfig kvTableConfig = new KVTableSinkConfig("purchases", "rowKey", "user");
     KVTableSink kvTableSink = new KVTableSink(kvTableConfig);
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
@@ -126,7 +127,7 @@ public class KVTableSinkTest {
       Schema.Field.of("rowKey", Schema.of(Schema.Type.LONG))
     );
 
-    KVTableSink.KVTableConfig kvTableConfig = new KVTableSink.KVTableConfig("purchases", "rowKey", "user");
+    KVTableSinkConfig kvTableConfig = new KVTableSinkConfig("purchases", "rowKey", "user");
     KVTableSink kvTableSink = new KVTableSink(kvTableConfig);
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);

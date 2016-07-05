@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.realtime.sink;
 
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.hydrator.plugin.common.KVTableSinkConfig;
 import co.cask.hydrator.plugin.transform.MockPipelineConfigurer;
 import org.junit.Assert;
 import org.junit.Test;
@@ -33,8 +34,8 @@ public class RealtimeKVTableSinkTest {
       Schema.Field.of("user", Schema.of(Schema.Type.STRING))
     );
 
-    RealtimeKVTableSink.RealtimeKVTableSinkConfig realtimeKVTableConfig =
-      new RealtimeKVTableSink.RealtimeKVTableSinkConfig("purchases", "rowKey", "user");
+    KVTableSinkConfig realtimeKVTableConfig =
+      new KVTableSinkConfig("purchases", "rowKey", "user");
     RealtimeKVTableSink realtimeKVTableSink = new RealtimeKVTableSink(realtimeKVTableConfig);
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
@@ -49,8 +50,8 @@ public class RealtimeKVTableSinkTest {
       Schema.Field.of("userid", Schema.of(Schema.Type.STRING))
     );
 
-    RealtimeKVTableSink.RealtimeKVTableSinkConfig realtimeKVTableConfig =
-      new RealtimeKVTableSink.RealtimeKVTableSinkConfig("purchases", "rowKey", "user");
+    KVTableSinkConfig realtimeKVTableConfig =
+      new KVTableSinkConfig("purchases", "rowKey", "user");
     RealtimeKVTableSink realtimeKVTableSink = new RealtimeKVTableSink(realtimeKVTableConfig);
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
@@ -66,8 +67,8 @@ public class RealtimeKVTableSinkTest {
       Schema.Field.of("user", Schema.of(Schema.Type.STRING))
     );
 
-    RealtimeKVTableSink.RealtimeKVTableSinkConfig realtimeKVTableConfig =
-      new RealtimeKVTableSink.RealtimeKVTableSinkConfig("purchases", "rowKey", "user");
+    KVTableSinkConfig realtimeKVTableConfig =
+      new KVTableSinkConfig("purchases", "rowKey", "user");
     RealtimeKVTableSink realtimeKVTableSink = new RealtimeKVTableSink(realtimeKVTableConfig);
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
@@ -82,8 +83,8 @@ public class RealtimeKVTableSinkTest {
       Schema.Field.of("user", Schema.of(Schema.Type.STRING))
     );
 
-    RealtimeKVTableSink.RealtimeKVTableSinkConfig realtimeKVTableConfig
-      = new RealtimeKVTableSink.RealtimeKVTableSinkConfig("purchases", "rowKey", "user");
+    KVTableSinkConfig realtimeKVTableConfig
+      = new KVTableSinkConfig("purchases", "rowKey", "user");
     RealtimeKVTableSink realtimeKVTableSink = new RealtimeKVTableSink(realtimeKVTableConfig);
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
@@ -99,8 +100,8 @@ public class RealtimeKVTableSinkTest {
       Schema.Field.of("user", Schema.of(Schema.Type.STRING))
     );
 
-    RealtimeKVTableSink.RealtimeKVTableSinkConfig realtimeKVTableConfig
-      = new RealtimeKVTableSink.RealtimeKVTableSinkConfig("purchases", "rowKey", "user");
+    KVTableSinkConfig realtimeKVTableConfig
+      = new KVTableSinkConfig("purchases", "rowKey", "user");
     RealtimeKVTableSink realtimeKVTableSink = new RealtimeKVTableSink(realtimeKVTableConfig);
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
@@ -116,8 +117,8 @@ public class RealtimeKVTableSinkTest {
       Schema.Field.of("rowKey", Schema.of(Schema.Type.STRING))
     );
 
-    RealtimeKVTableSink.RealtimeKVTableSinkConfig realtimeKVTableConfig
-      = new RealtimeKVTableSink.RealtimeKVTableSinkConfig("purchases", "rowKey", "user");
+    KVTableSinkConfig realtimeKVTableConfig
+      = new KVTableSinkConfig("purchases", "rowKey", "user");
     RealtimeKVTableSink realtimeKVTableSink = new RealtimeKVTableSink(realtimeKVTableConfig);
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
@@ -133,8 +134,8 @@ public class RealtimeKVTableSinkTest {
       Schema.Field.of("rowKey", Schema.of(Schema.Type.LONG))
     );
 
-    RealtimeKVTableSink.RealtimeKVTableSinkConfig realtimeKVTableConfig
-      = new RealtimeKVTableSink.RealtimeKVTableSinkConfig("purchases", "rowKey", "user");
+    KVTableSinkConfig realtimeKVTableConfig
+      = new KVTableSinkConfig("purchases", "rowKey", "user");
     RealtimeKVTableSink realtimeKVTableSink = new RealtimeKVTableSink(realtimeKVTableConfig);
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
