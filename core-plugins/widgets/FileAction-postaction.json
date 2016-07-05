@@ -1,0 +1,55 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "File Action Properties",
+      "properties": [
+        {
+          "widget-type": "select",
+          "label": "Run Condition",
+          "name": "runCondition",
+          "widget-attributes": {
+            "values": [
+              "completion",
+              "success",
+              "failure"
+            ],
+            "default": "completion"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Path",
+          "name": "path"
+        },
+        {
+          "widget-type": "select",
+          "label": "Action on File",
+          "name": "action",
+          "widget-attributes": {
+            "values": [
+              "None",
+              "Delete",
+              "Move",
+              "Archive"
+            ],
+            "default": "None"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Target Folder",
+          "name": "targetFolder"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "File Pattern",
+          "name": "pattern"
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}
