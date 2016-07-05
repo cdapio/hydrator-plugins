@@ -221,7 +221,7 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       "Example - '/book/price' to read only price under the book node")
     private final String nodePath;
 
-    @Description("Name of the table to keep track of processed file(s).")
+    @Description("Specifies whether the file(s) should be preprocessed.")
     private final String reprocessingRequired;
 
     @Description("Name of the table to keep track of processed file(s).")
