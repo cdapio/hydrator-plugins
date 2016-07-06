@@ -16,6 +16,7 @@ This project is a collection of useful transformations of data. These plugins ar
 - Encoder
 - Decoder
 - Hasher
+- XML to JSON Converter
 
 Getting Started
 ===============
@@ -81,7 +82,7 @@ CSV Formatter
   - **schema:** Specifies the output schema. Output schema should only have fields of type ``String``
 
 JSON Parser
--------------
+-----------
 :ID:
   **JSONParser**
 :Type:
@@ -96,7 +97,7 @@ JSON Parser
   - **schema:** Specifies the output schema for the JSON Record
 
 JSON Formatter
--------------
+--------------
 :ID:
   **JSONFormatter**
 :Type:
@@ -110,7 +111,7 @@ JSON Formatter
   **schema:** Specifies the output schema, a single field either type ``STRING`` or type ``BYTE`` array
 
 Clone Record
--------------
+------------
 :ID:
   **CloneRecord**
 :Type:
@@ -124,7 +125,7 @@ Clone Record
   **copies:** Specifies the numbers of copies of the input record that are to be emitted
 
 Stream Formatter
--------------
+----------------
 :ID:
   **StreamFormatter**
 :Type:
@@ -142,7 +143,7 @@ Stream Formatter
   - **schema:** Specifies the output schema; the output schema can have only two fields: one of type ``STRING`` and the other of type ``MAP<STRING, STRING>``
 
 Compressor
--------------
+----------
 :ID:
   **Compressor**
 :Type:
@@ -158,7 +159,7 @@ Compressor
   - **schema:** Specifies the output schema; the fields that are compressed will have the same field name but they will be of type ``BYTE`` array
 
 Decompressor
--------------
+------------
 :ID:
   **Decompressor**
 :Type:
@@ -203,10 +204,10 @@ Decoder
   Available decoding methods are STRING_BASE64, BASE64, BASE32, STRING_BASE32, and HEX.
 :Configuration:
   - **decode:** Specifies the configuration for decode fields; in JSON configuration, this is specified as ``<field>:<decoder>[,<field>:<decoder>]*``
-  - **schema:** Specifies the output schema; the fields that are decoded will have the same field name but they will be of type ``BYTE`` array or STRING``
+  - **schema:** Specifies the output schema; the fields that are decoded will have the same field name but they will be of type ``BYTE`` array or ``STRING``
 
 Hasher
--------
+------
 :ID:
   **Hasher**
 :Type:
@@ -220,10 +221,26 @@ Hasher
   - **fields:** Specifies the fields to be hashed
   - **hash:** Specifies the hashing algorithm
 
+XMLToJSONConverter
+------------------
+:ID:
+  **XMLToJSON**
+:Type:
+      Transform
+:Mode:
+      Batch and
+      Realtime
+:Description:
+      Converts an XML string to a JSON string.
+:Configuration:
+    - **inputField:** Specifies the field containing the XML string
+    - **outputField:** Specifies the field to store the JSON string
+    - **schema:** Specifies the output schema; If outputField is not present, it will be added.
+
 
 License and Trademarks
 ======================
-Copyright © 2015 Cask Data, Inc.
+Copyright © 2016 Cask Data, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 in compliance with the License. You may obtain a copy of the License at
