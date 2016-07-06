@@ -51,9 +51,8 @@ public class BatchXMLFileFilter extends Configured implements PathFilter {
     if (filePathName.equals(pathName)) {
       return true;
     }
-    boolean patternMatch = true;
-    Matcher matcher = regex.matcher(filePathName);
-    patternMatch = matcher.find();
+    Matcher matcher = regex.matcher(path.getName());
+    boolean patternMatch = matcher.find();
     if (patternMatch && CollectionUtils.isNotEmpty(preProcessedFileList)) {
       patternMatch = !preProcessedFileList.contains(filePathName);
     }

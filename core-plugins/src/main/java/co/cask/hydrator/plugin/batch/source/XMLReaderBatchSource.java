@@ -118,20 +118,25 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     if (StringUtils.isNotEmpty(config.pattern)) {
       conf.set(XMLInputFormat.XML_INPUTFORMAT_PATTERN, config.pattern);
     }
+    conf.set(XMLInputFormat.XML_INPUTFORMAT_FILE_ACTION, config.actionAfterProcess);
+    if (StringUtils.isNotEmpty(config.targetFolder)) {
+      conf.set(XMLInputFormat.XML_INPUTFORMAT_TARGET_FOLDER, config.targetFolder);
+    }
+
     setFileTrackingInfo(context, conf);
 
-    //create a temporary directory, in which XMLRecordReader will add file tracking information.
+    //Create a temporary directory, in which XMLRecordReader will add file tracking information.
     fileSystem = FileSystem.get(conf);
     long startTime = context.getLogicalStartTime();
-    //create temp file name using start time to make it unique.
+    //Create temp file name using start time to make it unique.
     String tempDirectory = "/tmp/" + config.tableName + startTime;
     tempDirectoryPath = new Path(tempDirectory);
     fileSystem.mkdirs(tempDirectoryPath);
     fileSystem.deleteOnExit(tempDirectoryPath);
     conf.set(XMLInputFormat.XML_INPUTFORMAT_PROCESSED_DATA_TEMP_FOLDER, tempDirectoryPath.toUri().toString());
 
-    XMLInputFormat.addInputPaths(job, config.path);
     XMLInputFormat.setInputPathFilter(job, BatchXMLFileFilter.class);
+    XMLInputFormat.addInputPath(job, new Path(config.path));
     context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(XMLInputFormat.class, conf)));
   }
 
@@ -150,7 +155,7 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       try (CloseableIterator<KeyValue<byte[], byte[]>> iterator = processedFileTrackingTable.scan(null, null)) {
         while (iterator.hasNext()) {
           KeyValue<byte[], byte[]> keyValue = iterator.next();
-          //delete record before expiry time period
+          //Delete record before expiry time period
           Long time = Bytes.toLong(keyValue.getValue());
           Date processedDate = new Date(time);
           if (processedDate.before(expiryDate)) {
@@ -221,7 +226,19 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       "Example - '/book/price' to read only price under the book node")
     private final String nodePath;
 
-    @Description("Specifies whether the file(s) should be preprocessed.")
+    @Description("Action to be taken after processing of the XML file. " +
+      "Possible actions are - " +
+      "1. Delete from the HDFS." +
+      "2. Archived to the target location." +
+      "3. Moved to the target location.")
+    private final String actionAfterProcess;
+
+    @Nullable
+    @Description("Target folder path if user select action after process, either ARCHIVE or MOVE. " +
+      "Target folder must be an existing directory.")
+    private final String targetFolder;
+
+    @Description("Specifies whether the file(s) should be reprocessed.")
     private final String reprocessingRequired;
 
     @Description("Name of the table to keep track of processed file(s).")
@@ -233,12 +250,15 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
 
     @VisibleForTesting
     XMLReaderConfig(String referenceName, String path, @Nullable String pattern,
-                           @Nullable String nodePath, String reprocessingRequired, String tableName,
+                           @Nullable String nodePath, @Nullable String actionAfterProcess,
+                           @Nullable String targetFolder, String reprocessingRequired, String tableName,
                            String tableExpiryPeriod) {
       super(referenceName);
       this.path = path;
       this.pattern = pattern;
       this.nodePath = nodePath;
+      this.actionAfterProcess = actionAfterProcess;
+      this.targetFolder = targetFolder;
       this.reprocessingRequired = reprocessingRequired;
       this.tableName = tableName;
       this.tableExpiryPeriod = tableExpiryPeriod;
@@ -268,6 +288,15 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       Preconditions.checkArgument(!Strings.isNullOrEmpty(nodePath), "Node path cannot be empty.");
       Preconditions.checkArgument(!Strings.isNullOrEmpty(tableName), "Table Name cannot be empty.");
       Preconditions.checkArgument(tableExpiryPeriod != null, "Table expiry period cannot be empty.");
+
+      boolean onlyOneActionRequired = !actionAfterProcess.equalsIgnoreCase("NONE") && isReprocessingRequired();
+      Preconditions.checkArgument(!onlyOneActionRequired, "Please select either 'After Processing Action' or " +
+        "'Reprocessing Required', both cannot be applied at same time.");
+
+      boolean targetFolderEmpty = (actionAfterProcess.equalsIgnoreCase("ARCHIVE") ||
+        actionAfterProcess.equalsIgnoreCase("MOVE")) && Strings.isNullOrEmpty(targetFolder);
+      Preconditions.checkArgument(!targetFolderEmpty, "Target folder cannot be Empty for Action = '" +
+        actionAfterProcess + "'.");
     }
   }
 }

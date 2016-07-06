@@ -42,6 +42,7 @@ import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.hydrator.common.Constants;
 import org.apache.commons.io.FileUtils;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -79,35 +80,60 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
   public static TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   private static File sourceFolder;
+  private static File targetFolder;
   private static String sourceFolderUri;
+  private static String targetFolderUri;
 
   @BeforeClass
   public static void setupTest() throws Exception {
     setupBatchArtifacts(BATCH_APP_ARTIFACT_ID, ETLBatchApplication.class);
     addPluginArtifact(NamespaceId.DEFAULT.artifact("core-plugins", "1.0.1"), BATCH_APP_ARTIFACT_ID,
                       XMLReaderBatchSource.class);
+
     sourceFolder = temporaryFolder.newFolder("xmlSourceFolder");
+    targetFolder = temporaryFolder.newFolder("xmlTargetFolder");
     sourceFolderUri = sourceFolder.toURI().toString();
+    targetFolderUri = targetFolder.toURI().toString();
   }
 
   /**
-   * Method to copy test xml files into source folder path, from where XMLReader can read the file.
+   * Method to copy test xml files into source folder path, from where XMLReader read the file.
    */
   @Before
   public void copyFiles() throws IOException {
-    URL largeXMLUrl = this.getClass().getResource("/" + CATALOG_LARGE_XML_FILE_NAME);
-    URL smallXMLUrl = this.getClass().getResource("/" + CATALOG_SMALL_XML_FILE_NAME);
-    FileUtils.copyFile(new File(largeXMLUrl.getFile()), new File(sourceFolder, CATALOG_LARGE_XML_FILE_NAME));
-    FileUtils.copyFile(new File(smallXMLUrl.getFile()), new File(sourceFolder, CATALOG_SMALL_XML_FILE_NAME));
+      URL largeXMLUrl = this.getClass().getResource("/" + CATALOG_LARGE_XML_FILE_NAME);
+      URL smallXMLUrl = this.getClass().getResource("/" + CATALOG_SMALL_XML_FILE_NAME);
+      FileUtils.copyFile(new File(largeXMLUrl.getFile()), new File(sourceFolder, CATALOG_LARGE_XML_FILE_NAME));
+      FileUtils.copyFile(new File(smallXMLUrl.getFile()), new File(sourceFolder, CATALOG_SMALL_XML_FILE_NAME));
   }
 
+  /**
+   * Method to clear source and target folders. This ensures that source and target folder are ready to use for next
+   * JUnit Test case.
+   */
+  @After
+  public void clearSourceAndTargetFolder() {
+    deleteFiles(sourceFolder);
+    deleteFiles(targetFolder);
+  }
+
+  private void deleteFiles(File directory) {
+    if (directory != null) {
+      File[] files = directory.listFiles();
+      if (files != null && files.length > 0) {
+        for (File file : files) {
+          file.delete();
+        }
+      }
+    }
+  }
   /**
    * Method to Pre-Populate File tracking KeyValue with previously processed XML file.
    */
   private void createPreProcessedRecord(String processedFileTable, Date preProcessedDate) throws Exception {
     DataSetManager<KeyValueTable> dataSetManager = getDataset(processedFileTable);
     KeyValueTable keyValueTable = dataSetManager.get();
-    //put record of processed file.
+    //Put record of processed file.
     File catalogLarge = new File(sourceFolder, CATALOG_LARGE_XML_FILE_NAME);
     keyValueTable.write(Bytes.toBytes(catalogLarge.toURI().toString()), Bytes.toBytes(preProcessedDate.getTime()));
     dataSetManager.flush();
@@ -119,7 +145,7 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
   private void createExpiredRecord(String processedFileTable) throws Exception {
     DataSetManager<KeyValueTable> dataSetManager = getDataset(processedFileTable);
     KeyValueTable keyValueTable = dataSetManager.get();
-    //put expired record which is 40 days old
+    //Put expired record which is 40 days old
     File catalogSmall = new File(sourceFolder, CATALOG_SMALL_XML_FILE_NAME);
     Calendar cal = Calendar.getInstance();
     cal.add(Calendar.DATE, -40);
@@ -132,7 +158,7 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
    * Method to return currently processed XML file list.
    */
   private List<String> getProcessedFileList(String processedFileTable, Date preProcessedDate) throws Exception {
-    List<String> processedFileList = new ArrayList<String>();
+    List<String> processedFileList  = new ArrayList<String>();
     DataSetManager<KeyValueTable> dataSetManager = getDataset(processedFileTable);
     KeyValueTable table = dataSetManager.get();
     try (CloseableIterator<KeyValue<byte[], byte[]>> iterator = table.scan(null, null)) {
@@ -185,8 +211,10 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
       .put(Constants.Reference.REFERENCE_NAME, "XMLReaderNoXMLPreProcessingRequiredTest")
       .put("path", sourceFolderUri)
       .put("nodePath", "/catalog/book/price")
+      .put("targetFolder", targetFolderUri)
       .put("reprocessingRequired", "No")
       .put("tableName", processedFileTable)
+      .put("actionAfterProcess", "Delete")
       .put("tableExpiryPeriod", "40")
       .build();
 
@@ -200,14 +228,17 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
 
     startMapReduceJob(appManager);
 
-    //assert for number of files processed
+    //Nmber of files processed
     List<String> processedFileList = getProcessedFileList(processedFileTable, preProcessedDate);
     Assert.assertEquals(1, processedFileList.size());
 
-    //assert for number of record derived.
+    //Number of record derived.
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
     Assert.assertEquals(3, output.size());
+    //Source folder left with one pre-processed file
+    File[] sourceFiles = sourceFolder.listFiles();
+    Assert.assertEquals(1, sourceFiles.length);
   }
 
   @Test
@@ -223,8 +254,10 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
       .put(Constants.Reference.REFERENCE_NAME, "XMLReaderXMLPreProcessingRequiredTest")
       .put("path", sourceFolderUri)
       .put("nodePath", "/catalog/book/price")
+      .put("targetFolder", targetFolderUri)
       .put("reprocessingRequired", "Yes")
       .put("tableName", processedFileTable)
+      .put("actionAfterProcess", "None")
       .put("tableExpiryPeriod", "30")
       .build();
 
@@ -246,14 +279,16 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
   }
 
   @Test
-  public void testXMLReaderWithInvalidNodePath() throws Exception {
+  public void testXMLReaderWithInvalidNodePathArchiveFiles() throws Exception {
     String processedFileTable = "XMLTrackingTableInvalidNodePathArchiveFiles";
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "XMLReaderInvalidNodePathArchiveFilesTest")
       .put("path", sourceFolderUri)
       .put("nodePath", "/catalog/book/prices")
+      .put("targetFolder", targetFolderUri)
       .put("reprocessingRequired", "No")
       .put("tableName", processedFileTable)
+      .put("actionAfterProcess", "archive")
       .put("tableExpiryPeriod", "30")
       .build();
 
@@ -262,22 +297,32 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
                                                       "XMLReaderInvalidNodePathArchiveFilesTest");
     startMapReduceJob(appManager);
 
-    //zero records for invalid node path
+    //No records for invalid node path
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
     Assert.assertEquals(0, output.size());
+
+    //Source folder must have 0 files after archive
+    File[] sourceFiles = sourceFolder.listFiles();
+    Assert.assertEquals(0, sourceFiles.length);
+
+    //Target folder must have 2 archived zip and 2 corresponding .crc files
+    File[] targetFiles = targetFolder.listFiles();
+    Assert.assertEquals(4, targetFiles.length);
   }
 
   @Test
-  public void testXMLReaderWithPattern() throws Exception {
+  public void testXMLReaderWithPatternAndMoveFiles() throws Exception {
     String processedFileTable = "XMLTrackingTableWithPatternAndMoveFiles";
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "XMLReaderWithPatternAndMoveFilesTest")
       .put("path", sourceFolderUri)
       .put("pattern", "Large.xml$") // file ends with Large.xml
       .put("nodePath", "/catalog/book/price")
+      .put("targetFolder", targetFolderUri)
       .put("reprocessingRequired", "No")
       .put("tableName", processedFileTable)
+      .put("actionAfterProcess", "move")
       .put("tableExpiryPeriod", "30")
       .build();
 
@@ -286,22 +331,32 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
                                                       "XMLReaderWithPatternAndMoveFilesTest");
     startMapReduceJob(appManager);
 
-    //assert for number of record derived.
+    //Number of record derived from XML.
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
     Assert.assertEquals(9, output.size());
+
+    //Source folder must have 1 unprocessed file
+    File[] sourceFiles = sourceFolder.listFiles();
+    Assert.assertEquals(1, sourceFiles.length);
+
+    //Sarget folder must have 1 moved file
+    File[] targetFiles = targetFolder.listFiles();
+    Assert.assertEquals(1, targetFiles.length);
   }
 
   @Test
-  public void testXMLReaderWithInvalidPattern() throws Exception {
+  public void testXMLReaderWithInvalidPatternArchiveFiles() throws Exception {
     String processedFileTable = "XMLTrackingTableInvalidPatternDeleteFiles";
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "XMLReaderInvalidPatternDeleteFilesTest")
       .put("path", sourceFolderUri)
       .put("pattern", "^catalogMedium") //file name start with catalogMedium, does not exist
       .put("nodePath", "/catalog/book/price")
+      .put("targetFolder", targetFolderUri)
       .put("reprocessingRequired", "No")
       .put("tableName", processedFileTable)
+      .put("actionAfterProcess", "archive")
       .put("tableExpiryPeriod", "30")
       .build();
 
@@ -310,9 +365,13 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
                                                       "XMLReaderInvalidPatternDeleteFilesTest");
     startMapReduceJob(appManager);
 
-    //0 record fetched as no pattern matching file
+    //No record fetched as no pattern matching file
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
     Assert.assertEquals(0, output.size());
+
+    //Source folder must have 2 files, no file archived and deleted
+    File[] sourceFiles = sourceFolder.listFiles();
+    Assert.assertEquals(2, sourceFiles.length);
   }
 }

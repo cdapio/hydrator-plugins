@@ -28,15 +28,24 @@ Example -
 2. Use '$' to select file with name end with 'catalog.xml', like 'catalog.xml$'.
 3. Use '*' to select file with name contains 'catalogBook', like 'catalogBook*'.
 
+**actionAfterProcess:** Action to be taken after processing of the XML file.
+Possible actions are -
+1. Delete from the HDFS.
+2. Archived to the target location.
+3. Moved to the target location.
+
+**targetFolder:** Target folder path if user select action after process, either ARCHIVE or MOVE. Target folder must be
+an existing directory.
+
 **reprocessingRequired:** Flag to know if file(s) to be reprocessed or not.
 
 **tableName:** Table name to keep track of processed file(s).
 
 Example
 -------
-This example reads data from folder "file:///source/xmls/" and emits XML records on the basis of node path
+This example reads data from folder "/source/xmls/" and emits XML records on the basis of node path
 "/catalog/book/title". It will generate structured record with schema as 'offset', 'fileName', and 'record'.
-It will move the XML file to the target folder "file:///target/" and update processed file information in trackingTable.
+It will move the XML file to the target folder "/target/xmls/" and update processed file information in trackingTable.
 
       {
          "name": "XMLReaderBatchSource",
@@ -45,9 +54,11 @@ It will move the XML file to the target folder "file:///target/" and update proc
                     "type": "batchsource",
                     "properties":{
                                   "referenceName": "referenceName""
-                                  "path": "file:///source/xmls/",
+                                  "path": "/source/xmls/",
                                   "Pattern": "^catalog"
                                   "nodePath": "/catalog/book/title"
+                                  "actionAfterProcess" : "Move",
+                                  "targetFolder":"/target/xmls/", //this must be existing folder path
                                   "reprocessingRequired": "No",
                                   "tableName": "trackingTable"
                     }

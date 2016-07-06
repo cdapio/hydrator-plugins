@@ -30,7 +30,7 @@ public class XMLReaderConfigTest {
     String reprocessingRequired = "Yes";
     String tableName = "XMLTrackingTable";
     XMLReaderBatchSource.XMLReaderConfig config = new XMLReaderBatchSource.XMLReaderConfig("validReference", path,
-                                                                                           null, nodePath,
+                                                                                           null, nodePath, null, null,
                                                                                            reprocessingRequired,
                                                                                            tableName, "30");
     Assert.assertEquals(path, config.getPath());
@@ -43,8 +43,8 @@ public class XMLReaderConfigTest {
   public void testEmptyPath() {
     XMLReaderBatchSource.XMLReaderConfig config = new XMLReaderBatchSource.XMLReaderConfig("emptyPathReference", "",
                                                                                            null, "/catalog/book/",
-                                                                                           "Yes", "XMLTrackingTable",
-                                                                                           "30");
+                                                                                           null, null, "Yes",
+                                                                                           "XMLTrackingTable", "30");
     config.validateConfig();
   }
 
@@ -52,7 +52,28 @@ public class XMLReaderConfigTest {
   public void testEmptyNodePath() {
     XMLReaderBatchSource.XMLReaderConfig config = new XMLReaderBatchSource.XMLReaderConfig("emptyNodePathReference",
                                                                                            "/opt/hdfs/catalog.xml",
-                                                                                           null, "", "Yes",
+                                                                                           null, "", null, null,
+                                                                                           "Yes", "XMLTrackingTable",
+                                                                                           "30");
+    config.validateConfig();
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testActionAfterProcessAndReprocessingConflict() {
+    XMLReaderBatchSource.XMLReaderConfig config = new XMLReaderBatchSource.XMLReaderConfig("conflictReference",
+                                                                                           "/opt/hdfs/catalog.xml",
+                                                                                           null, "/catalog/book/",
+                                                                                           "Delete", null, "Yes",
+                                                                                           "XMLTrackingTable", "30");
+    config.validateConfig();
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testEmptyTargetFolder() {
+    XMLReaderBatchSource.XMLReaderConfig config = new XMLReaderBatchSource.XMLReaderConfig("emptyTargetFolderReference",
+                                                                                           "/opt/hdfs/catalog.xml",
+                                                                                           null, "/catalog/book/",
+                                                                                           "Move", "", "No",
                                                                                            "XMLTrackingTable", "30");
     config.validateConfig();
   }
@@ -62,7 +83,8 @@ public class XMLReaderConfigTest {
     XMLReaderBatchSource.XMLReaderConfig config = new XMLReaderBatchSource.XMLReaderConfig("emptyNodePathReference",
                                                                                            "/opt/hdfs/catalog.xml",
                                                                                            null, "/catalog/book/",
-                                                                                           "Yes", null, "30");
+                                                                                           "Delete", null, "Yes", null,
+                                                                                           "30");
     config.validateConfig();
   }
 }

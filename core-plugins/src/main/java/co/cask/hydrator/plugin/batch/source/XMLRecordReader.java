@@ -35,6 +35,8 @@ import java.io.InputStream;
 import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
@@ -57,7 +59,9 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
   private final Map<Integer, String> currentNodeLevelMap;
   private final String tempFilePath;
   private final Path file;
+  private final String fileAction;
   private final FileSystem fs;
+  private final String targetFolder;
   private final long availableBytes;
   private final TrackingInputStream inputStream;
   private final DecimalFormat df = new DecimalFormat("#.##");
@@ -79,9 +83,9 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
     } catch (XMLStreamException exception) {
       throw new RuntimeException("XMLStreamException exception : ", exception);
     }
-    //set required node path details.
+    //Set required node path details.
     String nodePath = conf.get(XMLInputFormat.XML_INPUTFORMAT_NODE_PATH);
-    //remove preceding '/' in node path to avoid first unwanted element after split('/')
+    //Remove preceding '/' in node path to avoid first unwanted element after split('/')
     if (nodePath.indexOf("/") == 0) {
       nodePath = nodePath.substring(1, nodePath.length());
     }
@@ -90,6 +94,8 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
     currentNodeLevelMap = new HashMap<Integer, String>();
 
     tempFilePath = conf.get(XMLInputFormat.XML_INPUTFORMAT_PROCESSED_DATA_TEMP_FOLDER);
+    fileAction = conf.get(XMLInputFormat.XML_INPUTFORMAT_FILE_ACTION);
+    targetFolder = conf.get(XMLInputFormat.XML_INPUTFORMAT_TARGET_FOLDER);
   }
 
   @Override
@@ -130,9 +136,9 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
     String lastNode = nodes[nodes.length - 1];
     StringBuilder xmlRecord = new StringBuilder();
 
-    //flag to know if xml record matching to node path has been read and ready to use.
+    //Flag to know if xml record matching to node path has been read and ready to use.
     boolean xmlRecordReady = false;
-    //flag to know if matching node found as per node path
+    //Flag to know if matching node found as per node path
     boolean nodeFound = false;
 
     try {
@@ -144,22 +150,22 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
             boolean validHierarchy = true;
             currentNodeLevelMap.put(nodeLevel, nodeNameStart);
 
-            //check if node hierarchy matches with expected one.
+            //Check if node hierarchy matches with expected one.
             for (int j = nodeLevel; j >= 0; j--) {
               if (j < nodes.length && !currentNodeLevelMap.get(j).equals(nodes[j])) {
                 validHierarchy = false;
               }
             }
-            //check if node hierarchy is valid and it matches with last node in node path
+            //Check if node hierarchy is valid and it matches with last node in node path
             //then start appending tag information to create valid XML Record.
             if (validHierarchy && nodeNameStart.equals(lastNode)) {
               appendStartTagInformation(nodeNameStart, xmlRecord);
               //Set flag for valid node path found
               nodeFound = true;
-              //set file offset
+              //Set file offset
               currentKey.set(reader.getLocation().getLineNumber());
             } else if (nodeFound) {
-              //append all child nodes inside valid node path
+              //Append all child nodes inside valid node path
               appendStartTagInformation(nodeNameStart, xmlRecord);
             }
             nodeLevel++;
@@ -172,11 +178,11 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
           case XMLStreamConstants.END_ELEMENT:
             String nodeNameEnd = reader.getLocalName();
             if (nodeFound) {
-              //add closing tag
+              //Add closing tag
               xmlRecord.append(OPENING_END_TAG_DELIMITER).append(nodeNameEnd).append(CLOSING_END_TAG_DELIMITER);
               if (nodeNameEnd.equals(lastNode)) {
                 nodeFound = false;
-                //set flag for XML record is ready to emit.
+                //Set flag for XML record is ready to emit.
                 xmlRecordReady = true;
               }
             }
@@ -194,6 +200,7 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
       throw new IllegalArgumentException(exception);
     }
     updateFileTrackingInfo();
+    processFileAction();
     return false;
   }
 
@@ -208,6 +215,39 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
         .append("\"");
     }
     xmlRecord.append(CLOSING_START_TAG_DELIMITER);
+  }
+
+  /**
+   * Method to process file with actions (Delete, Move, Archive ) specified.
+   * @throws IOException - IO Exception occurred while deleting, moving or archiving file.
+   */
+  private void processFileAction() throws IOException {
+    switch (fileAction.toLowerCase()) {
+      case "delete":
+        fs.delete(file, true);
+        break;
+      case "move":
+        Path targetFileMovePath = new Path(targetFolder, file.getName());
+        fs.rename(file, targetFileMovePath);
+        break;
+      case "archive":
+        try (FSDataOutputStream archivedStream = fs.create(new Path(targetFolder, file.getName() + ".zip"));
+             ZipOutputStream zipArchivedStream = new ZipOutputStream(archivedStream);
+             FSDataInputStream fdDataInputStream = fs.open(file)) {
+          zipArchivedStream.putNextEntry(new ZipEntry(file.getName()));
+          int length;
+          byte[] buffer = new byte[1024];
+          while ((length = fdDataInputStream.read(buffer)) > 0) {
+            zipArchivedStream.write(buffer, 0, length);
+          }
+          zipArchivedStream.closeEntry();
+        }
+        fs.delete(file, true);
+        break;
+      default:
+        LOG.warn("No action required on the file.");
+        break;
+    }
   }
 
   /**
