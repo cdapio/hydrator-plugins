@@ -17,7 +17,7 @@
         },
         {
           "widget-type": "textbox",
-          "label": "Memory Table",
+          "label": "File Tracking Table",
           "name": "memoryTableName"
         },
         {
@@ -40,7 +40,10 @@
         {
           "widget-type": "number",
           "label": "Sheet Number",
-          "name": "sheetNo"
+          "name": "sheetNo",
+          "widget-attributes": {
+            "default" : "0"
+          }
         },
         {
           "widget-type": "csv",
