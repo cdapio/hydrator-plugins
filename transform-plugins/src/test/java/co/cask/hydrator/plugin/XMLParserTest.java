@@ -63,6 +63,7 @@ public class XMLParserTest extends TransformPluginsTestBase {
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(INPUT);
     try {
       new XMLParser(config).configurePipeline(configurer);
+      Assert.fail();
     } catch (IllegalArgumentException e) {
       Assert.assertEquals("Type cannot be null. Please specify type for category", e.getMessage());
     }
@@ -112,8 +113,8 @@ public class XMLParserTest extends TransformPluginsTestBase {
 
     DataSetManager<Table> outputManager = getDataset(sinkTable);
     List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);
-    StructuredRecord record = outputRecords.get(0);
     Assert.assertEquals("OutputRecords", 1, outputRecords.size());
+    StructuredRecord record = outputRecords.get(0);
     Assert.assertEquals("Everyday Italian", record.get("title"));
     Assert.assertEquals("Giada De Laurentiis", record.get("author"));
   }
@@ -124,7 +125,7 @@ public class XMLParserTest extends TransformPluginsTestBase {
     ETLStage source = new ETLStage("source", MockSource.getPlugin(inputTable));
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put("input", "body")
-      .put("encoding", "UTF-8")
+      .put("encoding", "UTF-16 (Unicode with byte-order mark)")
       .put("xPathMappings", "category://book/@category,title://book/title,year:/bookstore/book[price>35.00]/year," +
         "price:/bookstore/book[price>35.00]/price,subcategory://book/subcategory")
       .put("fieldTypeMapping", "category:string,title:string,price:double,year:int,subcategory:string")
@@ -221,7 +222,7 @@ public class XMLParserTest extends TransformPluginsTestBase {
 
   @Test
   public void testIgnoreError() throws Exception {
-    XMLParser.Config config = new XMLParser.Config("body", "UTF-8", "title:/book/title,author:/book/author," +
+    XMLParser.Config config = new XMLParser.Config("body", "ISO-8859-1", "title:/book/title,author:/book/author," +
       "year:/book/year", "title:string,author:string,year:int", "Ignore error and continue");
     Transform<StructuredRecord, StructuredRecord> transform = new XMLParser(config);
     transform.initialize(new MockTransformContext());

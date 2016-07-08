@@ -24,12 +24,12 @@ Properties
 **xPathMappings:** Mapping of the field names to the XPaths of the XML record. A comma-separated list, each element of
 which is a field name, followed by a colon, followed by an XPath expression. XPath location paths can include predicates
 and supports XPath 1.0.
-Example : <field-name>:<XPath expression>
+Example : ``<field-name>:<XPath expression>``
 
 **fieldTypeMapping:** Mapping of field names in the output schema to data types. Consists of a comma-separated list,
 each element of which is a field name followed by a colon and a type, where the field names are the same as used in the
 xPathMappings, and the type is one of: boolean, int, long, float, double, bytes, or string.
-Example : <field-name>:<data-type>
+Example : ``<field-name>:<data-type>``
 
 **processOnError:** The action to take in case of an error.
                      - "Ignore error and continue"
@@ -68,12 +68,12 @@ For example, suppose the transform receives these input records:
     +=========================================================================================================+
     | offset   | body                                                                                         |
     +=========================================================================================================+
-    | 1        | <bookstore><book category="cooking"><subcategory><type>Continental</type></subcategory>      |
-    |          | <title lang="en">Everyday Italian</title><author>Giada De Laurentiis</author><year>2005      |
-    |          | </year><price>30.00</price></book></bookstore>                                               |
-    | 2        | <bookstore><book category="children"><subcategory><type>Series</type></subcategory>          |
-    |          | <title lang="en">Harry Potter</title><author>J. K. Rowling</author><year>2005</year><price>  |
-    |          | 49.99</price></book></bookstore>                                                             |
+    | 1        | <bookstore><book category="cooking"><subcategory><type>Continental</type><genre>European     |
+    |          | cuisines</genre></subcategory><title lang="en">Everyday Italian</title><author>Giada De      |
+    |          | Laurentiis</author><year>2005</year><price>30.00</price></book></bookstore>                  |
+    | 2        | <bookstore><book category="children"><subcategory><type>Series</type><genre>fantasy          |
+    |          | literature</genre></subcategory><title lang="en">Harry Potter</title><author>J. K. Rowling   |
+    |          | </author><year>2005</year><price>49.99</price></book></bookstore>                            |
     +=========================================================================================================+
 
 The output records will contain:
@@ -81,6 +81,13 @@ The output records will contain:
     +=========================================================================================================+
     | category  | title              | year   |  price  | subcategory                                         |
     +=========================================================================================================+
-    | cooking   | Everyday Italian   | null   |  null   | <subcategory><type>Continental</type></subcategory> |
-    | children  | Harry Potter       | 2005   | 49.99   | <subcategory><type>Series</type></subcategory>      |
+    | cooking   | Everyday Italian   | null   |  null   | <subcategory><type>Continental</type><genre>European|
+    |           |                    |        |         | cuisines</genre></subcategory>                      |
+    | children  | Harry Potter       | 2005   | 49.99   | <subcategory><type>Series</type><genre>fantasy      |
+    |           |                    |        |         | literature</genre></subcategory>                    |
     +=========================================================================================================+
+
+Here, since the subcategory contains child nodes, the plugin will retrun the complete subcategory node (along with its
+child elements) as string as ``<subcategory><type>Continental</type><genre>European cuisines</genre></subcategory>`` .
+This is to ensure that the plugin returns a sigle XML event for a structured record intead of the two child events:
+ ``<type>Continental</type>`` and ``<genre>European cuisines</genre>``.
