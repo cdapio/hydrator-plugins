@@ -121,6 +121,7 @@
     <zookeeper.version>3.4.5</zookeeper.version>
     <jython.version>2.5.2</jython.version>
     <json-path.version>2.2.0</json-path.version>
+    <json.version>20160212</json.version>
     <!-- properties for script build step that creates the config files for the artifacts -->
     <widgets.dir>widgets</widgets.dir>
     <docs.dir>docs</docs.dir>
