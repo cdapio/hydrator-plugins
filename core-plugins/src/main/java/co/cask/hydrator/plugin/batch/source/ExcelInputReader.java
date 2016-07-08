@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.batch.source;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
@@ -42,15 +43,16 @@ import com.google.common.collect.Lists;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.Job;
 
-import java.io.IOException;
 import java.lang.reflect.Type;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,6 +76,12 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
   public static final String WRITE_ERROR_DATASET = "Write to error dataset";
   public static final String NULL = "NULL";
   public static final String END = "END";
+  public static final String SHEET_NO = "Sheet Number";
+
+  // Non-printable ASCII character(EOT) to seperate column-values
+  public static final String CELL_SEPERATION = String.valueOf((char) 4);
+  public static final String COLUMN_SEPERATION = "\r";
+
   private static final Gson GSON = new Gson();
   private static final Type ARRAYLIST_PREPROCESSED_FILES = new TypeToken<ArrayList<String>>() {
   }.getType();
@@ -84,8 +92,7 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
   private List<String> inputColumns;
   private Map<String, String> outputFieldsMapping = new HashMap<>();
   private BatchRuntimeContext batchRuntimeContext;
-  private Map<String, Integer> filePrevRowNumMap = new HashMap<>();
-
+  private int prevRowNum;
 
   public ExcelInputReader(ExcelInputReaderConfig excelReaderConfig) {
     this.excelInputreaderConfig = excelReaderConfig;
@@ -149,36 +156,31 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
     StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
     String inputValue = input.getValue().toString();
 
-    String[] excelRecords = inputValue.split("\t");
+    String[] excelRecord = inputValue.split(CELL_SEPERATION);
 
-    String fileName = excelRecords[1];
-    String sheetName = excelRecords[2];
-    String ifEndRow = excelRecords[3];
+    String fileName = excelRecord[1];
+    String sheetName = excelRecord[2];
+    String ifEndRow = excelRecord[3];
 
-    int prevRowNum = Integer.parseInt(excelRecords[0]);
-
-    if (filePrevRowNumMap.containsKey(fileName)) {
-      if (prevRowNum - filePrevRowNumMap.get(fileName) > 1 &&
-        excelInputreaderConfig.terminateIfEmptyRow.equalsIgnoreCase("true")) {
-        throw new ExecutionException("Encountered empty row while reading Excel file :" + fileName +
-                                       " . Terminating processing", new Throwable());
-      }
+    int currentRowNum = Integer.parseInt(excelRecord[0]);
+    if (currentRowNum - prevRowNum > 1 && excelInputreaderConfig.terminateIfEmptyRow.equalsIgnoreCase("true")) {
+      throw new ExecutionException("Encountered empty row while reading Excel file :" + fileName +
+                                     " . Terminating processing", new Throwable());
     }
-
-    filePrevRowNumMap.put(fileName, prevRowNum);
+    prevRowNum = currentRowNum;
 
     Map<String, String> excelColumnValueMap = new HashMap<>();
 
-    for (String columns : excelRecords) {
-      String[] columnValueArray = columns.split("\r");
-      if (columnValueArray.length > 1) {
-        String columnName = columnValueArray[0];
-        String columnValue = columnValueArray[1];
+    for (String column : excelRecord) {
+      String[] columnValue = column.split(COLUMN_SEPERATION);
+      if (columnValue.length > 1) {
+        String name = columnValue[0];
+        String value = columnValue[1];
 
-        if (columnMapping.containsKey(columnName)) {
-          excelColumnValueMap.put(columnMapping.get(columnName), columnValue);
+        if (columnMapping.containsKey(name)) {
+          excelColumnValueMap.put(columnMapping.get(name), value);
         } else {
-          excelColumnValueMap.put(columnName, columnValue);
+          excelColumnValueMap.put(name, value);
         }
       }
     }
@@ -196,49 +198,30 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
       builder.set(FILE, new Path(fileName).getName());
       builder.set(SHEET, sheetName);
 
-      if (ifEndRow.equalsIgnoreCase(END)) {
-        trackProcessedFiles(fileName);
-      }
-
       emitter.emit(builder.build());
+
+      if (ifEndRow.equalsIgnoreCase(END)) {
+        KeyValueTable processedFileMemoryTable = batchRuntimeContext.getDataset(excelInputreaderConfig.memoryTableName);
+        processedFileMemoryTable.write(Bytes.toBytes(fileName), Bytes.toBytes(new Date().getTime()));
+      }
     } catch (Exception e) {
       switch (excelInputreaderConfig.ifErrorRecord) {
         case EXIT_ON_ERROR:
           throw new IllegalStateException("Terminating processing on error : " + e.getMessage());
         case WRITE_ERROR_DATASET:
           StructuredRecord.Builder errorRecordBuilder = StructuredRecord.builder(errorRecordSchema);
-          errorRecordBuilder.set(KEY, fileName + "_" + sheetName + "_" + excelRecords[0]);
+          errorRecordBuilder.set(KEY, fileName + "_" + sheetName + "_" + excelRecord[0]);
           errorRecordBuilder.set(FILE, fileName);
           errorRecordBuilder.set(SHEET, sheetName);
           errorRecordBuilder.set(RECORD, inputValue);
-          writeErrorRecordToDataset(errorRecordBuilder.build());
+          Table errorTable = batchRuntimeContext.getDataset(excelInputreaderConfig.errorDatasetName);
+          errorTable.write(errorRecordBuilder.build());
           break;
         default:
           //ignore on error
           break;
       }
-
     }
-
-  }
-
-  /**
-   * Writes proceesed file name to memory table.
-   * @param fileName
-   */
-  private void trackProcessedFiles(String fileName) {
-    KeyValueTable processedFileMemoryTable = batchRuntimeContext.getDataset(excelInputreaderConfig.memoryTableName);
-    processedFileMemoryTable.write(fileName, String.valueOf(System.currentTimeMillis()));
-  }
-
-  /**
-   * Writes error record to error dataset.
-   * @param errorRecord in the form of {@link StructuredRecord}
-   * throws {@link IOException}
-   */
-  private void writeErrorRecordToDataset(StructuredRecord errorRecord) throws IOException {
-    Table errorTable = batchRuntimeContext.getDataset(excelInputreaderConfig.errorDatasetName);
-    errorTable.write(errorRecord);
   }
 
   /**
@@ -247,12 +230,24 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
    * @return processedFiles
    */
   private List<String> getAllProcessedFiles(BatchSourceContext batchSourceContext) {
-    KeyValueTable table = batchSourceContext.getDataset(excelInputreaderConfig.memoryTableName);
     List<String> processedFiles = new ArrayList<>();
-    try (CloseableIterator<KeyValue<byte[], byte[]>> filesIterable = table.scan(null, null)) {
-      while (filesIterable.hasNext()) {
-        KeyValue<byte[], byte[]> file = filesIterable.next();
-        processedFiles.add(new String(file.getKey(), Charsets.UTF_8));
+    if (!excelInputreaderConfig.reprocess) {
+      KeyValueTable table = batchSourceContext.getDataset(excelInputreaderConfig.memoryTableName);
+      processedFiles = new ArrayList<>();
+      Calendar cal = Calendar.getInstance();
+      cal.add(Calendar.DATE, -Integer.valueOf(excelInputreaderConfig.tableExpiryPeriod));
+      Date expiryDate = cal.getTime();
+      try (CloseableIterator<KeyValue<byte[], byte[]>> filesIterable = table.scan(null, null)) {
+        while (filesIterable.hasNext()) {
+          KeyValue<byte[], byte[]> file = filesIterable.next();
+          Long time = Bytes.toLong(file.getValue());
+          Date processedDate = new Date(time);
+          if (processedDate.before(expiryDate)) {
+            table.delete(file.getKey());
+          } else {
+            processedFiles.add(new String(file.getKey(), Charsets.UTF_8));
+          }
+        }
       }
     }
     return processedFiles;
@@ -260,12 +255,11 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-
     super.configurePipeline(pipelineConfigurer);
 
-    if (excelInputreaderConfig.sheetNo < 0 && Strings.isNullOrEmpty(excelInputreaderConfig.sheetName)) {
-      throw new IllegalArgumentException("Sheet name cannot be empty when the value of 'Sheet Number' " +
-                                           "input is less than 0.");
+    if (excelInputreaderConfig.sheet.equalsIgnoreCase(SHEET_NO) &&
+      !StringUtils.isNumeric(excelInputreaderConfig.sheetValue)) {
+      throw new IllegalArgumentException("Invalid sheet number. The value should be greater than or equals to zero.");
     }
 
     if (Strings.isNullOrEmpty(excelInputreaderConfig.columnList) &&
@@ -280,14 +274,12 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
         properties.put(Properties.Table.PROPERTY_SCHEMA, errorRecordSchema.toString());
         properties.put(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, KEY);
         DatasetProperties datasetProperties = DatasetProperties.builder().addAll(properties).build();
-
         pipelineConfigurer.createDataset(excelInputreaderConfig.errorDatasetName, Table.class, datasetProperties);
 
       } else if (excelInputreaderConfig.ifErrorRecord.equalsIgnoreCase(WRITE_ERROR_DATASET)) {
         throw new IllegalArgumentException("Error dataset name should not be empty while choosing write to error " +
                                              "dataset for 'On Error' input.");
       }
-
       pipelineConfigurer.createDataset(excelInputreaderConfig.memoryTableName, KeyValueTable.class);
     } catch (Exception e) {
       throw new IllegalStateException("Exception while creating dataset.", e);
@@ -296,9 +288,7 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
     init();
     getOutputSchema();
     pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
-
   }
-
 
   @Override
   public void prepareRun(BatchSourceContext batchSourceContext) throws Exception {
@@ -307,8 +297,8 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
 
     String processFiles = GSON.toJson(getAllProcessedFiles(batchSourceContext), ARRAYLIST_PREPROCESSED_FILES);
 
-    ExcelInputFormat.setConfigurations(job, excelInputreaderConfig.filePattern, excelInputreaderConfig.sheetName,
-                                       excelInputreaderConfig.reprocess, excelInputreaderConfig.sheetNo,
+    ExcelInputFormat.setConfigurations(job, excelInputreaderConfig.filePattern, excelInputreaderConfig.sheet,
+                                       excelInputreaderConfig.reprocess, excelInputreaderConfig.sheetValue,
                                        excelInputreaderConfig.columnList, excelInputreaderConfig.skipFirstRow,
                                        excelInputreaderConfig.terminateIfEmptyRow, excelInputreaderConfig.rowsLimit,
                                        excelInputreaderConfig.ifErrorRecord, processFiles);
@@ -352,7 +342,6 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
               columnName = columnMapping.get(column);
             }
             if (outputSchemaMapping.containsKey(column)) {
-
               Schema fieldType = Schema.of(Schema.Type.valueOf(outputSchemaMapping.get(column).toUpperCase()));
               outputFields.add(Schema.Field.of(columnName, fieldType));
             } else {
@@ -378,7 +367,7 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
 
     @Name("filePath")
     @Description("Path of the excel file(s) to be read; for example: 'file:///home/cdap' for a " +
-      "local file and 'hdfs://10.222.73.37:9000/tmp' for a file in hdfs.")
+      "local path and 'hdfs://<namemode-hostname>:9000/cdap' for a path in hdfs.")
     private String filePath;
 
     @Name("filePattern")
@@ -390,19 +379,26 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
       " for example: 'inventory-memory-table'")
     private String memoryTableName;
 
+    @Description("Expiry period (days) for data in the table. Default is 30 days." +
+      "Example - For tableExpiryPeriod = 30, data before 30 days get deleted from the table.")
+    private String tableExpiryPeriod;
+
     @Name("reprocess")
     @Description("Specifies whether the file(s) should be reprocessed. " +
       "Options to select are true or false")
     private boolean reprocess;
 
-    @Nullable
-    @Name("sheetName")
-    @Description("Name of the sheet in excel file(s) to be processed; for example: 'Sheet1'.")
-    private String sheetName;
+    @Name("sheet")
+    @Description("Specifies whether sheet has to be processed by sheet name or sheet no; " +
+      "Shift 'Options are' in next line: " +
+      "Sheet Name" +
+      "Sheet Number")
+    private String sheet;
 
-    @Name("sheetNo")
-    @Description("Sheet number to be processed in the excel file; for example: '1'.")
-    private int sheetNo;
+    @Name("sheetValue")
+    @Description("Specifies the value corresponding to 'sheet' input. Can be either sheet name or sheet no; " +
+      "for example: 'Sheet1' or '1' in case user selects 'Sheet Name' or 'Sheet Number' as 'sheet' input respectively.")
+    private String sheetValue;
 
     @Nullable
     @Name("columnList")
@@ -452,6 +448,5 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
     public ExcelInputReaderConfig() {
       super(String.format("ExcelInputReader"));
     }
-
   }
 }

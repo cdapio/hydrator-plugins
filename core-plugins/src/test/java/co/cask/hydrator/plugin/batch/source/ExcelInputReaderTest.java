@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.artifact.ArtifactVersion;
+import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.api.dataset.table.Scanner;
@@ -51,6 +52,7 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.net.URL;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -110,9 +112,10 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put(Constants.Reference.REFERENCE_NAME, "TestCase-testExcelInputReader")
       .put("filePath", sourceFolderUri)
       .put("filePattern", ".*")
-      .put("sheetName", "Sheet1")
-      .put("sheetNo", "-1")
+      .put("sheet", "Sheet Name")
+      .put("sheetValue", "Sheet1")
       .put("memoryTableName", "trackMemoryTable")
+      .put("tableExpiryPeriod", "30")
       .put("reprocess", "false")
       .put("columnList", "")
       .put("columnMapping", "")
@@ -165,9 +168,10 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put("filePath", sourceFolderUri)
       .put("filePattern", ".*")
-      .put("sheetName", "Sheet1")
-      .put("sheetNo", "-1")
+      .put("sheet", "Sheet Number")
+      .put("sheetValue", "0")
       .put("memoryTableName", "trackMemoryTableWithReProcessedTrue")
+      .put("tableExpiryPeriod", "30")
       .put("reprocess", "true")
       .put("columnList", "")
       .put("columnMapping", "A:FirstColumn")
@@ -186,7 +190,6 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
     ApplicationManager appManager = deployApp(source, sink, "testWithReProcessedTrue");
-
 
     DataSetManager<KeyValueTable> dataSetManager = getDataset("trackMemoryTableWithReProcessedTrue");
     KeyValueTable keyValueTable = dataSetManager.get();
@@ -210,9 +213,10 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put("filePath", sourceFolderUri)
       .put("filePattern", ".*")
-      .put("sheetName", "Sheet1")
-      .put("sheetNo", "-1")
+      .put("sheet", "Sheet Name")
+      .put("sheetValue", "Sheet1")
       .put("memoryTableName", "trackMemoryTableWithReProcessedFalse")
+      .put("tableExpiryPeriod", "30")
       .put("reprocess", "false")
       .put("columnList", "")
       .put("columnMapping", "")
@@ -231,7 +235,6 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
     ApplicationManager appManager = deployApp(source, sink, "testWithReProcessedTrue");
-
 
     DataSetManager<KeyValueTable> dataSetManager = getDataset("trackMemoryTableWithReProcessedFalse");
     KeyValueTable keyValueTable = dataSetManager.get();
@@ -259,7 +262,6 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .get("A"));
     Assert.assertEquals(nameIdMap.get(output.get(2).get("B")), output.get(2)
       .get("A"));
-
   }
 
   @Test
@@ -268,15 +270,16 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put("filePath", sourceFolderUri)
       .put("filePattern", ".*")
-      .put("sheetName", "Sheet1")
-      .put("sheetNo", "-1")
+      .put("sheet", "Sheet Name")
+      .put("sheetValue", "Sheet1")
       .put("memoryTableName", "trackMemoryTableWithColumnsToBeExtracted")
+      .put("tableExpiryPeriod", "30")
       .put("reprocess", "false")
       .put("columnList", "A,B")
       .put("columnMapping", "A:FirstColumn")
       .put("skipFirstRow", "true")
       .put("terminateIfEmptyRow", "false")
-      .put("rowsLimit", "")
+      .put("rowsLimit", "2")
       .put("outputSchema", "")
       .put("ifErrorRecord", "Ignore error and continue")
       .put("errorDatasetName", "")
@@ -294,7 +297,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
 
-    Assert.assertEquals("Expected records", 7, output.size());
+    Assert.assertEquals("Expected records", 4, output.size());
 
     Assert.assertNotNull(output.get(1).getSchema().getField("FirstColumn"));
     Assert.assertNotNull(output.get(1).getSchema().getFields().contains("B"));
@@ -322,9 +325,10 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put("filePath", sourceFolderUri)
       .put("filePattern", ".*")
-      .put("sheetName", "Sheet1")
-      .put("sheetNo", "-1")
-      .put("memoryTableName", "trackMemoryTableWithOutputSchema")
+      .put("sheet", "Sheet Name")
+      .put("sheetValue", "Sheet1")
+      .put("memoryTableName", "trackMemoryTableWithErrorRecord")
+      .put("tableExpiryPeriod", "30")
       .put("reprocess", "false")
       .put("columnList", "A,B,C")
       .put("columnMapping", "A:FirstColumn")
@@ -339,10 +343,10 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("ExcelInputReader", BatchSource.PLUGIN_TYPE,
                                                                    sourceProperties, null));
 
-    String outputDatasetName = "output-testWithOutputSchema";
+    String outputDatasetName = "output-testWithErrorRecord";
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
-    ApplicationManager appManager = deployApp(source, sink, "testWithOutputSchema");
+    ApplicationManager appManager = deployApp(source, sink, "testWithErrorRecord");
     startMRFlow(appManager);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
@@ -368,9 +372,10 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put("filePath", sourceFolderUri)
       .put("filePattern", ".*")
-      .put("sheetName", "Sheet1")
-      .put("sheetNo", "-1")
+      .put("sheet", "Sheet Name")
+      .put("sheetValue", "Sheet1")
       .put("memoryTableName", "trackMemoryTableWithNoColumnListAndOutputSchema")
+      .put("tableExpiryPeriod", "30")
       .put("reprocess", "false")
       .put("columnList", "")
       .put("columnMapping", "")
@@ -398,9 +403,10 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put("filePath", sourceFolderUri)
       .put("filePattern", ".*")
-      .put("sheetName", "Sheet1")
-      .put("sheetNo", "-1")
+      .put("sheet", "Sheet Number")
+      .put("sheetValue", "0")
       .put("memoryTableName", "trackMemoryTableWithTerminateIfEmptyRow")
+      .put("tableExpiryPeriod", "30")
       .put("reprocess", "false")
       .put("columnList", "")
       .put("columnMapping", "")
@@ -430,9 +436,10 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put("filePath", sourceFolderUri)
       .put("filePattern", ".*")
-      .put("sheetName", "")
-      .put("sheetNo", "1")
+      .put("sheet", "Sheet Name")
+      .put("sheetValue", "Sheet1")
       .put("memoryTableName", "trackMemoryTableWithSkipFirstRow")
+      .put("tableExpiryPeriod", "30")
       .put("reprocess", "false")
       .put("columnList", "A")
       .put("columnMapping", "")
@@ -454,6 +461,83 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     Assert.fail();
   }
 
+  @Test(expected = IllegalStateException.class)
+  public void testWithInvalidSheetNumber() throws Exception {
+    Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
+      .put(Constants.Reference.REFERENCE_NAME, "TestCase")
+      .put("filePath", sourceFolderUri)
+      .put("filePattern", ".*")
+      .put("sheet", "Sheet Number")
+      .put("sheetValue", "-1")
+      .put("memoryTableName", "trackMemoryTableWithNoColumnListAndOutputSchema")
+      .put("tableExpiryPeriod", "30")
+      .put("reprocess", "false")
+      .put("columnList", "")
+      .put("columnMapping", "")
+      .put("skipFirstRow", "false")
+      .put("terminateIfEmptyRow", "false")
+      .put("rowsLimit", "")
+      .put("outputSchema", "")
+      .put("ifErrorRecord", "Ignore error and continue")
+      .put("errorDatasetName", "")
+      .build();
+
+    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("ExcelInputReader", BatchSource.PLUGIN_TYPE,
+                                                                   sourceProperties, null));
+
+    String outputDatasetName = "output-testWithNoColumnListAndOutputSchema";
+    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
+
+    deployApp(source, sink, "testWithNoColumnListAndOutputSchema");
+    Assert.fail();
+  }
+
+  @Test
+  public void testWithTTL() throws Exception {
+    Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
+      .put(Constants.Reference.REFERENCE_NAME, "TestCase")
+      .put("filePath", sourceFolderUri)
+      .put("filePattern", ".*")
+      .put("sheet", "Sheet Number")
+      .put("sheetValue", "0")
+      .put("memoryTableName", "trackMemoryTableWithTTL")
+      .put("tableExpiryPeriod", "15")
+      .put("reprocess", "false")
+      .put("columnList", "")
+      .put("columnMapping", "A:FirstColumn")
+      .put("skipFirstRow", "false")
+      .put("terminateIfEmptyRow", "false")
+      .put("rowsLimit", "10")
+      .put("outputSchema", "A:string")
+      .put("ifErrorRecord", "Ignore error and continue")
+      .put("errorDatasetName", "")
+      .build();
+
+    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("ExcelInputReader", BatchSource.PLUGIN_TYPE,
+                                                                   sourceProperties, null));
+
+    String outputDatasetName = "output-WithTTL";
+    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
+
+    ApplicationManager appManager = deployApp(source, sink, "testWithReProcessedTrue");
+
+    DataSetManager<KeyValueTable> dataSetManager = getDataset("trackMemoryTableWithTTL");
+    KeyValueTable keyValueTable = dataSetManager.get();
+
+    File testFile = new File(sourceFolder, excelTestFileTwo);
+    Calendar cal = Calendar.getInstance();
+    cal.add(Calendar.DATE, -20);
+    keyValueTable.write(Bytes.toBytes(testFile.toURI().toString()), Bytes.toBytes(cal.getTimeInMillis()));
+    dataSetManager.flush();
+
+    startMRFlow(appManager);
+
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> output = MockSink.readOutput(outputManager);
+
+    Assert.assertEquals("Expected records", 9, output.size());
+    Assert.assertNotNull(output.get(1).getSchema().getField("FirstColumn"));
+  }
 
   private ApplicationManager deployApp(ETLStage source, ETLStage sink, String appName) throws Exception {
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")

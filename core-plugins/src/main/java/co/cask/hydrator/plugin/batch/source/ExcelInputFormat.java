@@ -36,9 +36,7 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.ss.util.CellReference;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 
 
 /**
@@ -49,9 +47,8 @@ import java.util.Map;
  */
 public class ExcelInputFormat extends TextInputFormat {
 
-  public static final String SHEET_NAME = "sheetName";
+  public static final String SHEET_NAME = "Sheet Name";
   public static final String RE_PROCESS = "reprocess";
-  public static final String SHEET_NO = "sheetNo";
   public static final String COLUMN_LIST = "columnList";
   public static final String SKIP_FIRST_ROW = "skipFirstRow";
   public static final String TERMINATE_IF_EMPTY_ROW = "terminateIfEmptyRow";
@@ -59,21 +56,24 @@ public class ExcelInputFormat extends TextInputFormat {
   public static final String IF_ERROR_RECORD = "IfErrorRecord";
   public static final String PROCESSED_FILES = "processedFiles";
   public static final String FILE_PATTERN = "filePattern";
+  public static final String SHEET = "sheet";
+  public static final String SHEET_VALUE = "sheetValue";
 
   @Override
   public RecordReader<LongWritable, Text> createRecordReader(InputSplit split, TaskAttemptContext context) {
     return new ExcelRecordReader();
   }
 
-  public static void setConfigurations(Job job, String filePattern, String sheetName, boolean reprocess,
-                                       int sheetNo, String columnList, boolean skipFirstRow, String terminateIfEmptyRow,
-                                       String rowLimit, String ifErrorRecord, String processedFiles) {
+  public static void setConfigurations(Job job, String filePattern, String sheet, boolean reprocess,
+                                       String sheetValue, String columnList, boolean skipFirstRow,
+                                       String terminateIfEmptyRow, String rowLimit, String ifErrorRecord,
+                                       String processedFiles) {
 
     Configuration configuration = job.getConfiguration();
     configuration.set(FILE_PATTERN, filePattern);
-    configuration.set(SHEET_NAME, sheetName);
+    configuration.set(SHEET, sheet);
     configuration.setBoolean(RE_PROCESS, reprocess);
-    configuration.setInt(SHEET_NO, sheetNo);
+    configuration.set(SHEET_VALUE, sheetValue);
     configuration.set(COLUMN_LIST, columnList);
     configuration.setBoolean(SKIP_FIRST_ROW, skipFirstRow);
     configuration.set(TERMINATE_IF_EMPTY_ROW, terminateIfEmptyRow);
@@ -94,7 +94,10 @@ public class ExcelInputFormat extends TextInputFormat {
 
     public static final String END = "END";
     public static final String MID = "MID";
-    public static final String CELL_SEPERATION = "\t";
+
+    // Non-printable ASCII character(EOT) to seperate column-values
+    public static final String CELL_SEPERATION = String.valueOf((char) 4);
+
     public static final String COLUMN_SEPERATION = "\r";
 
     // Map key that represents the row index.
@@ -121,9 +124,8 @@ public class ExcelInputFormat extends TextInputFormat {
     // Specifies last row num.
     private int lastRowNum;
 
-    // Keeps row limits for each excel file(s)
-    private Map<String, Integer> fileRowLimitMap = new HashMap<>();
-
+    //Keeps row limits
+    private int rowCount;
 
     @Override
     public void initialize(InputSplit genericSplit, TaskAttemptContext context) throws IOException,
@@ -137,27 +139,24 @@ public class ExcelInputFormat extends TextInputFormat {
       fileIn = fs.open(split.getPath());
 
       // Reads the excel file, selects the sheet to be read.
+      String sheet = job.get(SHEET);
+      String sheetValue = job.get(SHEET_VALUE);
 
-      String sheetName = job.get(SHEET_NAME);
-      int sheetIndx = job.getInt(SHEET_NO, -1);
-
-      Sheet sheet = null; // sheet can be used as common for XSSF and HSSF workbook
+      Sheet workSheet = null; // sheet can be used as common for XSSF and HSSF workbook
       try {
         Workbook workbook = WorkbookFactory.create(fileIn);
-
-        if (sheetIndx < 0 && sheetName != null && !sheetName.isEmpty()) {
-          sheet = workbook.getSheet(sheetName);
+        if (sheet.equalsIgnoreCase(SHEET_NAME)) {
+          workSheet = workbook.getSheet(sheetValue);
         } else {
-          sheet = workbook.getSheetAt(sheetIndx);
+          workSheet = workbook.getSheetAt(Integer.parseInt(sheetValue));
         }
-
       } catch (Exception e) {
         throw new IllegalArgumentException("Exception while reading excel sheet. " + e.getMessage(), e);
       }
 
-      fileRowLimitMap.put(file.getName(), job.getInt(ROWS_LIMIT, sheet.getPhysicalNumberOfRows()));
-      rows = sheet.iterator();
-      lastRowNum = sheet.getLastRowNum();
+      rowCount = job.getInt(ROWS_LIMIT, workSheet.getPhysicalNumberOfRows());
+      rows = workSheet.iterator();
+      lastRowNum = workSheet.getLastRowNum();
       rowIdx = 0;
 
       boolean skipFirstRow = job.getBoolean(SKIP_FIRST_ROW, false);
@@ -171,7 +170,7 @@ public class ExcelInputFormat extends TextInputFormat {
 
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
-      if (!rows.hasNext() || (fileRowLimitMap.get(file.getName()) == 0)) {
+      if (!rows.hasNext() || rowCount == 0) {
         return false;
       }
 
@@ -187,15 +186,12 @@ public class ExcelInputFormat extends TextInputFormat {
       sb.append(file).append(CELL_SEPERATION);
       sb.append(row.getSheet().getSheetName()).append(CELL_SEPERATION);
 
-      int count = fileRowLimitMap.get(file.getName());
-      if (fileRowLimitMap.get(file.getName()) - 1 == 0 || !rows.hasNext()) {
+      if (rowCount - 1 == 0 || !rows.hasNext()) {
         sb.append(END).append(CELL_SEPERATION);
-
       } else {
         sb.append(MID).append(CELL_SEPERATION);
       }
-
-      fileRowLimitMap.put(file.getName(), count - 1);
+      rowCount--;
 
       key = new LongWritable(rowIdx);
       while (cellIterator.hasNext()) {
@@ -216,7 +212,6 @@ public class ExcelInputFormat extends TextInputFormat {
             sb.append(colName)
               .append(COLUMN_SEPERATION).append(cell.getNumericCellValue()).append(CELL_SEPERATION);
             break;
-
         }
       }
       value = new Text(sb.toString());
@@ -246,6 +241,5 @@ public class ExcelInputFormat extends TextInputFormat {
     public Text getCurrentValue() throws IOException, InterruptedException {
       return value;
     }
-
   }
 }

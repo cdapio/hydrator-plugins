@@ -34,9 +34,12 @@ a new table or existing one.
 
 **reprocess:** Specify whether the files mentioned in the memory table should be reprocessed or not.
 
-**sheetName:** Sheet name in the excel files to be processed.
+**sheet:** Specifies whether sheet has to be processed by sheet name or sheet no.
 
-**sheetNo:** Sheet number in the excel files to be processed.
+**sheetValue:** Specifies the value corresponding to 'sheet' input. Value can be either actual
+sheet name or sheet no.
+for example: 'Sheet1' or '1' in case user selects 'Sheet Name' or 'Sheet Number' as 'sheet'
+input respectively.
 
 **columnList:** Specify the excel column names which needs to be extracted from the excel sheet.
 Column name has to be same as excel column name; for example: A, B, etc.
@@ -68,7 +71,7 @@ of that column will be **string**.
 Example
 -------
 
-This example reads data from a hdfs excel file "hdfs://10.222.73.37:9000/tmp/inventory.xlsx"  and parses it
+This example reads all files with pattern **.*** from a hdfs path "hdfs://<namenode-hostname>:9000/cdap"  and parses it
 using the column list, column-label mapping and column-type mapping. It also keeps track of the processed
 file name in specified memory table. It will drop columns other than the one mentioned in **columnList** and
 generate structured records according to the inputs.
@@ -79,12 +82,12 @@ The plugin JSON Representation will be:
   "name": "ExcelInputReader",
   "type": "batchsource",
   "properties": {
-        "filePath": "hdfs://10.222.73.37:9000/tmp",
+        "filePath": "hdfs://<namenode-hostname>:9000/cdap",
         "filePattern": ".*",
         "memoryTableName": "inventory-memory-table",
         "reprocess": "false",
-        "sheetName": "Sheet1",
-        "sheetNo": "-1",
+        "sheet": "Sheet1",
+        "sheetValue": "-1",
         "columnList": "A,B",
         "columnMapping": "B:name,C:age"
         "skipFirstRow": "false",
@@ -96,7 +99,7 @@ The plugin JSON Representation will be:
    }
 }
 
-If the source receives these input rows from **Sheet1**:
+Suppose, the above **filePath** contains only one file with these input rows from **Sheet1**:
 
     +======================================+
     |    A      |     B      |     C       |
@@ -121,8 +124,8 @@ columns respectively:
 
 The memory table **inventory-memory-table** will contain:
 
-    +====================================================================+
-    |    key                                          |   value          |
-    +====================================================================+
-    | "hdfs://10.222.73.37:9000/tmp/inventory.xlsx"   | "1322018752992l" |
-    +====================================================================+
+    +===========================================================================+
+    |    key                                                 |   value          |
+    +===========================================================================+
+    | "hdfs://<namenode-hostname>:9000/tmp/inventory.xlsx"   | "1322018752992l" |
+    +===========================================================================+
