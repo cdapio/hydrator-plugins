@@ -33,6 +33,7 @@ import co.cask.cdap.test.TestConfiguration;
 import co.cask.hydrator.plugin.batch.action.EmailAction;
 import co.cask.hydrator.plugin.batch.aggregator.DedupAggregator;
 import co.cask.hydrator.plugin.batch.aggregator.GroupByAggregator;
+import co.cask.hydrator.plugin.batch.joiner.Joiner;
 import co.cask.hydrator.plugin.batch.sink.BatchCubeSink;
 import co.cask.hydrator.plugin.batch.sink.KVTableSink;
 import co.cask.hydrator.plugin.batch.sink.S3AvroBatchSink;
@@ -149,6 +150,7 @@ public class ETLBatchTestBase extends TestBase {
                       PythonEvaluator.class,
                       GroupByAggregator.class,
                       DedupAggregator.class,
+                      Joiner.class,
                       EmailAction.class);
   }
 
