@@ -216,6 +216,7 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
       .put("tableName", processedFileTable)
       .put("actionAfterProcess", "Delete")
       .put("tableExpiryPeriod", "40")
+      .put("temporaryFolder", "/tmp")
       .build();
 
     String outputDatasetName = "output-batchsink-test-no-preprocessing-required";
@@ -259,6 +260,7 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
       .put("tableName", processedFileTable)
       .put("actionAfterProcess", "None")
       .put("tableExpiryPeriod", "30")
+      .put("temporaryFolder", "/tmp")
       .build();
 
     String outputDatasetName = "output-batchsink-test-preprocessing-required";
@@ -290,6 +292,7 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
       .put("tableName", processedFileTable)
       .put("actionAfterProcess", "archive")
       .put("tableExpiryPeriod", "30")
+      .put("temporaryFolder", "/tmp")
       .build();
 
     String outputDatasetName = "output-batchsink-test-invalid-node-path-archived-files";
@@ -324,6 +327,7 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
       .put("tableName", processedFileTable)
       .put("actionAfterProcess", "move")
       .put("tableExpiryPeriod", "30")
+      .put("temporaryFolder", "/tmp")
       .build();
 
     String outputDatasetName = "output-batchsink-test-pattern-move-files";
@@ -358,6 +362,7 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
       .put("tableName", processedFileTable)
       .put("actionAfterProcess", "archive")
       .put("tableExpiryPeriod", "30")
+      .put("temporaryFolder", "/tmp")
       .build();
 
     String outputDatasetName = "output-batchsink-test-invalid-pattern-delete-files";

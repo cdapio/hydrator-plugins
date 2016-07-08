@@ -41,6 +41,9 @@ an existing directory.
 
 **tableName:** Table name to keep track of processed file(s).
 
+**temporaryFolder** Existing hdfs folder path having read and write access to the current User, required for internal
+computation of the plugin. Default value is /tmp.
+
 Example
 -------
 This example reads data from folder "/source/xmls/" and emits XML records on the basis of node path
@@ -60,42 +63,44 @@ It will move the XML file to the target folder "/target/xmls/" and update proces
                                   "actionAfterProcess" : "Move",
                                   "targetFolder":"/target/xmls/", //this must be existing folder path
                                   "reprocessingRequired": "No",
-                                  "tableName": "trackingTable"
+                                  "tableName": "trackingTable",
+                                  "temporaryFolder": "/tmp"
                     }
          }
       }
 
 
- For below XML as input file -
- <catalog>
-    <book id="bk104">
-       <author>Corets, Eva</author>
-       <title>Oberon's Legacy</title>
-       <genre>Fantasy</genre>
-       <price><base>5.95</base><tax><surcharge>13.00</surcharge><excise>13.00</excise></tax></price>
-       <publish_date>2001-03-10</publish_date>
-       <description><name><name>In post-apocalypse England, the mysterious
-       agent known only as Oberon helps to create a new life
-       for the inhabitants of London. Sequel to Maeve
-       Ascendant.</name></name></description>
-    </book>
-    <book id="bk105">
-       <author>Corets, Eva</author>
-       <title>The Sundered Grail</title>
-       <genre>Fantasy</genre>
-       <price><base>5.95</base><tax><surcharge>14.00</surcharge><excise>14.00</excise></tax></price>
-       <publish_date>2001-09-10</publish_date>
-       <description><name>The two daughters of Maeve, half-sisters,
-       battle one another for control of England. Sequel to
-       Oberon's Legacy.</name></description>
-    </book>
- </catalog>
+ For below XML as input file:
 
- Output schema will be -
+     <catalog>
+       <book id="bk104">
+         <author>Corets, Eva</author>
+         <title>Oberon's Legacy</title>
+         <genre>Fantasy</genre>
+         <price><base>5.95</base><tax><surcharge>13.00</surcharge><excise>13.00</excise></tax></price>
+         <publish_date>2001-03-10</publish_date>
+         <description><name><name>In post-apocalypse England, the mysterious
+         agent known only as Oberon helps to create a new life
+         for the inhabitants of London. Sequel to Maeve
+         Ascendant.</name></name></description>
+       </book>
+       <book id="bk105">
+         <author>Corets, Eva</author>
+         <title>The Sundered Grail</title>
+         <genre>Fantasy</genre>
+         <price><base>5.95</base><tax><surcharge>14.00</surcharge><excise>14.00</excise></tax></price>
+         <publish_date>2001-09-10</publish_date>
+         <description><name>The two daughters of Maeve, half-sisters,
+         battle one another for control of England. Sequel to
+         Oberon's Legacy.</name></description>
+       </book>
+     </catalog>
 
-   +================================================================================+
-   | offset | fileName                          | record                            |
-   +================================================================================+
-   | 2      | file:///source/xmls/catalog.xml   | <title>Oberon's Legacy</title>    |
-   | 13     | file:///source/xmls/catalog.xml   | <title>The Sundered Grail</title> |
-   +================================================================================+
+ Output schema will be:
+
+    +==================================================================================+
+    | offset | filename                            | record                            |
+    +==================================================================================+
+    | 2      | hdfs:/cask/source/xmls/catalog.xml  | <title>Oberon's Legacy</title>    |
+    | 13     | hdfs:/cask/source/xmls/catalog.xml  | <title>The Sundered Grail</title> |
+    +==================================================================================+

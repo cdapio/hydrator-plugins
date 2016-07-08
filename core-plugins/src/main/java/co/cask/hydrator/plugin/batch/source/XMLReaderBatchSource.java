@@ -129,8 +129,8 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     fileSystem = FileSystem.get(conf);
     long startTime = context.getLogicalStartTime();
     //Create temp file name using start time to make it unique.
-    String tempDirectory = "/tmp/" + config.tableName + startTime;
-    tempDirectoryPath = new Path(tempDirectory);
+    String tempDirectory = config.tableName + startTime;
+    tempDirectoryPath = new Path(config.temporaryFolder, tempDirectory);
     fileSystem.mkdirs(tempDirectoryPath);
     fileSystem.deleteOnExit(tempDirectoryPath);
     conf.set(XMLInputFormat.XML_INPUTFORMAT_PROCESSED_DATA_TEMP_FOLDER, tempDirectoryPath.toUri().toString());
@@ -248,11 +248,15 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       "Example - For tableExpiryPeriod = 30, data before 30 days get deleted from the table.")
     private final String tableExpiryPeriod;
 
+    @Description("Existing hdfs folder path having read and write access to the current User, required for internal" +
+      "computation of the plugin. Default value is /tmp.")
+    private final String temporaryFolder;
+
     @VisibleForTesting
     XMLReaderConfig(String referenceName, String path, @Nullable String pattern,
                            @Nullable String nodePath, @Nullable String actionAfterProcess,
                            @Nullable String targetFolder, String reprocessingRequired, String tableName,
-                           String tableExpiryPeriod) {
+                           String tableExpiryPeriod, String temporaryFolder) {
       super(referenceName);
       this.path = path;
       this.pattern = pattern;
@@ -262,6 +266,7 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       this.reprocessingRequired = reprocessingRequired;
       this.tableName = tableName;
       this.tableExpiryPeriod = tableExpiryPeriod;
+      this.temporaryFolder = temporaryFolder;
     }
 
     @VisibleForTesting
@@ -288,6 +293,7 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       Preconditions.checkArgument(!Strings.isNullOrEmpty(nodePath), "Node path cannot be empty.");
       Preconditions.checkArgument(!Strings.isNullOrEmpty(tableName), "Table Name cannot be empty.");
       Preconditions.checkArgument(tableExpiryPeriod != null, "Table expiry period cannot be empty.");
+      Preconditions.checkArgument(!Strings.isNullOrEmpty(temporaryFolder), "Temporary folder cannot be empty.");
 
       boolean onlyOneActionRequired = !actionAfterProcess.equalsIgnoreCase("NONE") && isReprocessingRequired();
       Preconditions.checkArgument(!onlyOneActionRequired, "Please select either 'After Processing Action' or " +
