@@ -3,8 +3,8 @@
 
 Description
 -----------
-The Projection transform lets you drop, rename, and cast fields to a different type.
-Fields are first dropped, then cast, then renamed.
+The Projection transform lets you drop, keep, rename, and cast fields to a different type.
+Fields are first dropped based on the drop or keep field, then cast, then renamed.
 
 For example, suppose the transform is configured to drop field 'B' and rename field 'A' to 'B'.
 If the transform receives this input record:
@@ -32,20 +32,26 @@ and then field 'A' will be renamed to 'B':
     | B          | int  | 10     |
     +============================+
 
+Similarly, the transfrom will first check if it should keep a field, and then rename it if configured to do so.
 
 Use Case
 --------
-The transform is used when you need to drop fields, change field types, or rename fields.
+The transform is used when you need to drop fields, keep specific fields, change field types, or rename fields.
 
 For example, you may want to rename a field from ``'timestamp'`` to ``'ts'`` because you want
-to write to a database where ``'timestamp'`` is a reserved keyword. Or, you might want to
+to write to a database where ``'timestamp'`` is a reserved keyword. You might want to
 drop a field named ``'headers'`` because you know it is always empty for your particular
-data source. 
+data source. Or, you might want to only keep fields named ``'ip'`` and ``'timestamp'`` and discard 
+all other fields.
 
 
 Properties
 ----------
 **drop:** Comma-separated list of fields to drop. For example: ``'field1,field2,field3'``.
+
+**keep:** Comma-separated list of fields to keep. For example: ``'field1,field2,field3'``.
+
+Note: Drop and keep fields cannot *both* be specified. At least one must be null or empty.
 
 **rename:** List of fields to rename. This is a comma-separated list of key-value pairs,
 where each pair is separated by a colon and specifies the input and output names.
@@ -68,16 +74,17 @@ converted to an int.
 
 Example
 -------
-This example drops the ``'ts'`` and ``'headers'`` fields. It also changes the type of the ``'cost'``
-field to a double and renames it ``'price'``. 
+This example keeps only the ``'id'`` and ``'cost'`` fields. It also changes the type of the ``'cost'``
+field to a double and renames it ``'price'``.
 
     {
         "name": "Projection",
         "type": "transform",
         "properties": {
-            "drop": "ts,headers",
+            "drop": "",
             "convert": "cost:double",
-            "rename": "cost:price"
+            "rename": "cost:price",
+	          "keep": "id,cost"
         }
     }
  
