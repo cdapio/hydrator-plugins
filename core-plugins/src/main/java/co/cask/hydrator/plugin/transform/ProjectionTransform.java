@@ -162,7 +162,7 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
   private void init() {
 
     if (!Strings.isNullOrEmpty(projectionTransformConfig.drop) &&
-    !Strings.isNullOrEmpty(projectionTransformConfig.keep)) {
+      !Strings.isNullOrEmpty(projectionTransformConfig.keep)) {
       throw new IllegalArgumentException("Cannot specify both drop and keep. One should be empty or null.");
     }
 
@@ -171,13 +171,6 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
     } else if (!Strings.isNullOrEmpty(projectionTransformConfig.keep)) {
       Iterables.addAll(fieldsToKeep, Splitter.on(fieldDelimiter).split(projectionTransformConfig.keep));
     }
-
-    } else if (!Strings.isNullOrEmpty(projectionTransformConfig.keep)) {
-      for (String keepField : Splitter.on(fieldDelimiter).split(projectionTransformConfig.keep)) {
-        fieldsToKeep.add(keepField);
-      }
-    }
-
     KeyValueListParser kvParser = new KeyValueListParser("\\s*,\\s*", ":");
     if (!Strings.isNullOrEmpty(projectionTransformConfig.rename)) {
       for (KeyValue<String, String> keyVal : kvParser.parse(projectionTransformConfig.rename)) {
