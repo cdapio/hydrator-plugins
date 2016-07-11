@@ -27,17 +27,13 @@ import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.plugin.common.SolrSearchSinkConfig;
-import com.google.common.io.Files;
-import org.apache.hadoop.fs.Path;
+import co.cask.hydrator.plugin.common.SolrSearchSinkUtility;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 
-import java.io.File;
 import java.util.Map;
 
 /**
@@ -50,14 +46,10 @@ import java.util.Map;
   "the mode of the Solr to connect to. For example, Single Node Solr or SolrCloud.")
 public class SolrSearchSink extends BatchSink<StructuredRecord, SolrInputField, SolrInputDocument> {
 
-  private static final String SINGLE_NODE_SOLR_MODE = "Single Node Solr";
-  private static final String SOLR_CLOUD_MODE = "SolrCloud";
   private final SolrSearchSinkConfig config;
   private String uniqueKey;
-  private Map<String, String> outputFieldMappings;
+  private Map<String, String> outputFieldMap;
   private SolrClient solrClient;
-
-  private File tempDir;
 
   public SolrSearchSink(SolrSearchSinkConfig config) {
     this.config = config;
@@ -65,28 +57,27 @@ public class SolrSearchSink extends BatchSink<StructuredRecord, SolrInputField, 
 
   @Override
   public void prepareRun(BatchSinkContext batchSinkContext) throws Exception {
-    // Setting FileOutputFormat.setOutputPath in order to resolve the 'Output directory not set' error.
-    tempDir = Files.createTempDir();
+    // Setting outputformat class in order to resolve the 'Output directory not set' error.
     Job job = batchSinkContext.getHadoopJob();
-    FileOutputFormat.setOutputPath(job, new Path(tempDir.getAbsolutePath() + "/temp"));
+    job.setOutputFormatClass(NullOutputFormat.class);
   }
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
-    validateSolrConnectionString();
-    verifySolrConfiguration();
+    SolrSearchSinkUtility.validateSolrConnectionString(config);
+    SolrSearchSinkUtility.verifySolrConfiguration(config);
     if (inputSchema != null) {
-      validateIdField(inputSchema);
-      validateInputFieldsDataType(inputSchema);
+      SolrSearchSinkUtility.validateIdField(inputSchema, config);
+      SolrSearchSinkUtility.validateInputFieldsDataType(inputSchema);
     }
   }
 
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     uniqueKey = config.getIdField();
-    outputFieldMappings = config.getOutputFieldMappings();
-    solrClient = getSolrConnection();
+    outputFieldMap = config.getOutputFieldMap();
+    solrClient = SolrSearchSinkUtility.getSolrConnection(config);
   }
 
   @Override
@@ -95,8 +86,8 @@ public class SolrSearchSink extends BatchSink<StructuredRecord, SolrInputField, 
     String solrFieldName;
     SolrInputDocument document;
 
-    validateIdField(structuredRecord.getSchema());
-    validateInputFieldsDataType(structuredRecord.getSchema());
+    SolrSearchSinkUtility.validateIdField(structuredRecord.getSchema(), config);
+    SolrSearchSinkUtility.validateInputFieldsDataType(structuredRecord.getSchema());
 
     if (structuredRecord.get(uniqueKey) == null) {
       return;
@@ -104,8 +95,8 @@ public class SolrSearchSink extends BatchSink<StructuredRecord, SolrInputField, 
     document = new SolrInputDocument();
     for (Schema.Field field : structuredRecord.getSchema().getFields()) {
       solrFieldName = field.getName();
-      if (outputFieldMappings.containsKey(solrFieldName)) {
-        document.addField(outputFieldMappings.get(solrFieldName), structuredRecord.get(solrFieldName));
+      if (outputFieldMap.containsKey(solrFieldName)) {
+        document.addField(outputFieldMap.get(solrFieldName), structuredRecord.get(solrFieldName));
       } else {
         document.addField(solrFieldName, structuredRecord.get(solrFieldName));
       }
@@ -118,99 +109,5 @@ public class SolrSearchSink extends BatchSink<StructuredRecord, SolrInputField, 
   @Override
   public void destroy() {
     solrClient.shutdown();
-  }
-
-  @Override
-  public void onRunFinish(boolean succeeded, BatchSinkContext context) {
-    File directory = new File(tempDir.getAbsolutePath() + "/temp");
-    if (directory.exists()) {
-      directory.delete();
-    }
-  }
-
-  /**
-   * Returns the SolrClient for establishing the connection with Solr server, using the hostname and port provided by
-   * user.
-   *
-   * @return Solr client
-   */
-  private SolrClient getSolrConnection() {
-    String urlString;
-    SolrClient solrClient = null;
-    if (config.getSolrMode().equals(SINGLE_NODE_SOLR_MODE)) {
-      urlString = "http://" + config.getSolrHost() + "/solr/" + config.getCollectionName();
-      solrClient = new HttpSolrClient(urlString);
-    } else if (config.getSolrMode().equals(SOLR_CLOUD_MODE)) {
-      CloudSolrClient solrCloudClient = new CloudSolrClient(config.getSolrHost());
-      solrCloudClient.setDefaultCollection(config.getCollectionName());
-      solrClient = solrCloudClient;
-    }
-    return solrClient;
-  }
-
-  /**
-   * Validates whether the host entered for Single Node Solr instance is proper or not.
-   */
-  private void validateSolrConnectionString() {
-    if (config.getSolrMode().equals(SINGLE_NODE_SOLR_MODE) && config.getSolrHost().contains(",")) {
-      throw new IllegalArgumentException(String.format("Multiple hosts '%s' found for Single Node Solr.",
-                                                       config.getSolrHost()));
-    }
-  }
-
-  /**
-   * Verifies whether the Solr server is running or not. Also, validates whether the collection provided by user is
-   * registered with the Solr server or not.
-   */
-  private void verifySolrConfiguration() {
-    SolrClient client = getSolrConnection();
-    try {
-      client.ping();
-    } catch (Exception e) {
-      throw new IllegalArgumentException(
-        String.format("Server refused connection at '%s'. Please make sure that either the Solr/Zookeeper services " +
-                        "are properly running or the collection '%s' exists in the Solr Server.", config.getSolrHost(),
-                      config.getCollectionName()));
-    }
-  }
-
-  /**
-   * Validates whether the Id field provided by user is present in the input schema or not.
-   *
-   * @param inputSchema
-   */
-  private void validateIdField(Schema inputSchema) {
-    if (inputSchema != null && inputSchema.getField(config.getIdField()) == null) {
-      throw new IllegalArgumentException(
-        String.format("Idfield '%s' does not exist in the input schema %s", config.getIdField(), inputSchema));
-    }
-  }
-
-  /**
-   * Validates whether the CDAP data types coming from the input schema are compatible with the Solr data types or not.
-   *
-   * @param inputSchema
-   */
-  private void validateInputFieldsDataType(Schema inputSchema) {
-    /* Currently SolrSearch sink plugin supports CDAP primitives types only: BOOLEAN, INT, LONG, FLOAT, DOUBLE and
-    STRING.*/
-    if (inputSchema != null) {
-      for (Schema.Field field : inputSchema.getFields()) {
-        switch (field.getSchema().getType()) {
-          case BOOLEAN:
-          case INT:
-          case LONG:
-          case FLOAT:
-          case DOUBLE:
-          case STRING:
-            break;
-          default:
-            throw new IllegalArgumentException(
-              String.format("Data type '%s' is not compatible for writing data to the Solr Server. Supported CDAP " +
-                              "data types are ' BOOLEAN, INT, LONG, FLOAT, DOUBLE and STRING '",
-                            field.getSchema().getType()));
-        }
-      }
-    }
   }
 }

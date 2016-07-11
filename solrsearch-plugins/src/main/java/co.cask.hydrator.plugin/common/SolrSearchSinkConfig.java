@@ -100,7 +100,7 @@ public class SolrSearchSinkConfig extends ReferencePluginConfig {
    *
    * @return Map of input fields and its mapping
    */
-  public Map<String, String> getOutputFieldMappings() {
+  public Map<String, String> getOutputFieldMap() {
     Map<String, String> outputFieldMap = new HashMap<String, String>();
     if (StringUtils.isNotEmpty(outputFieldMappings)) {
       for (String field : Splitter.on(',').trimResults().split(outputFieldMappings)) {
