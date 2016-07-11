@@ -9,10 +9,7 @@
         {
           "widget-type": "textbox",
           "label": "Input field to parse as an XML record",
-          "name": "input",
-          "widget-attributes": {
-            "width": "large"
-          }
+          "name": "input"
         },
         {
           "widget-type": "select",
