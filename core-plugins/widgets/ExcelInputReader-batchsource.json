@@ -17,8 +17,18 @@
         },
         {
           "widget-type": "textbox",
-          "label": "Memory Table",
+          "label": "File Tracking Table",
           "name": "memoryTableName"
+        },
+        {
+          "widget-type": "number",
+          "label": "Tracking Table Data Expiry Period (Days)",
+          "name": "tableExpiryPeriod",
+          "widget-attributes": {
+            "default": "30",
+            "min": 1,
+            "max": 365
+          }
         },
         {
           "widget-type": "select",
@@ -33,14 +43,21 @@
           }
         },
         {
-          "widget-type": "textbox",
-          "label": "Sheet Name",
-          "name": "sheetName"
+          "widget-type": "select",
+          "label": "Sheet",
+          "name": "sheet",
+          "widget-attributes": {
+            "values": [
+              "Sheet Name",
+              "Sheet Number"
+            ],
+            "default": "Sheet Number"
+          }
         },
         {
-          "widget-type": "number",
-          "label": "Sheet Number",
-          "name": "sheetNo"
+          "widget-type": "textbox",
+          "label": "Sheet Value",
+          "name": "sheetValue"
         },
         {
           "widget-type": "csv",
