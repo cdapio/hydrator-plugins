@@ -248,8 +248,9 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       "Example - For tableExpiryPeriod = 30, data before 30 days get deleted from the table.")
     private final String tableExpiryPeriod;
 
-    @Description("Existing hdfs folder path having read and write access to the current User, required for internal" +
-      "computation of the plugin. Default value is /tmp.")
+    @Description("Existing hdfs folder path having read and write access to the current User, required to store " +
+      "temporary file(s) containing path of the processed xml file(s). These temporary file(s) will be read at the " +
+      "end of job to update file track table.")
     private final String temporaryFolder;
 
     @VisibleForTesting
