@@ -144,7 +144,7 @@ public class TableSinkTest {
     TableSinkConfig tableSinkConfig = new TableSinkConfig("tableSink", "rowkey", null);
     TableSink tableSink = new TableSink(tableSinkConfig);
 
-    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(null);
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer((Schema) null);
     tableSink.configurePipeline(mockPipelineConfigurer);
   }
 
