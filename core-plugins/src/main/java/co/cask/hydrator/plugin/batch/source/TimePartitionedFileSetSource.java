@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -18,7 +18,6 @@ package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.data.batch.Input;
-import co.cask.cdap.api.data.batch.InputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
@@ -93,7 +92,6 @@ public abstract class TimePartitionedFileSetSource<KEY, VALUE> extends BatchSour
       properties.setBasePath(config.basePath);
     }
     addFileSetProperties(properties);
-
     pipelineConfigurer.createDataset(tpfsName, TimePartitionedFileSet.class.getName(), properties.build());
   }
 
@@ -106,7 +104,6 @@ public abstract class TimePartitionedFileSetSource<KEY, VALUE> extends BatchSour
     Map<String, String> sourceArgs = Maps.newHashMap();
     TimePartitionedFileSetArguments.setInputStartTime(sourceArgs, startTime);
     TimePartitionedFileSetArguments.setInputEndTime(sourceArgs, endTime);
-    addInputFormatConfiguration(sourceArgs);
     context.setInput(Input.ofDataset(config.name, sourceArgs));
   }
 
@@ -114,9 +111,4 @@ public abstract class TimePartitionedFileSetSource<KEY, VALUE> extends BatchSour
    * Set file set specific properties, such as input/output format and explore properties.
    */
   protected abstract void addFileSetProperties(FileSetProperties.Builder properties);
-
-  /**
-   * Adds additional configuration for the {@link InputFormatProvider}.
-   */
-  protected abstract void addInputFormatConfiguration(Map<String, String> config);
 }

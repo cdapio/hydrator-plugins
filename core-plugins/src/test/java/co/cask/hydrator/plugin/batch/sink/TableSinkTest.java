@@ -72,9 +72,10 @@ public class TableSinkTest {
 
   @Test
   public void testTableSinkWithComplexTypeSkipped() {
+    // This doesn't include the rowkey in the output record. The row key inclusion in output record
+    // is optional.
     Schema outputSchema = Schema.recordOf(
       "purchase",
-      Schema.Field.of("rowkey", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("user", Schema.of(Schema.Type.STRING))
     );
 
@@ -143,7 +144,7 @@ public class TableSinkTest {
     TableSinkConfig tableSinkConfig = new TableSinkConfig("tableSink", "rowkey", null);
     TableSink tableSink = new TableSink(tableSinkConfig);
 
-    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(null);
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer((Schema) null);
     tableSink.configurePipeline(mockPipelineConfigurer);
   }
 
@@ -151,7 +152,6 @@ public class TableSinkTest {
   public void testTableSink() {
     Schema outputSchema = Schema.recordOf(
       "purchase",
-      Schema.Field.of("rowkey", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("user", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("count", Schema.of(Schema.Type.INT))
     );

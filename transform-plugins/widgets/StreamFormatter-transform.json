@@ -52,7 +52,7 @@
       "widget-attributes": {
         "schema-types": [
           "string",
-          "map<string,string>"
+          "map<string, string>"
         ],
         "schema-default-type": "string"
       }

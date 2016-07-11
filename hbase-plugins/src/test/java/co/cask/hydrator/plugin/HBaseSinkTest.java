@@ -149,7 +149,7 @@ public class HBaseSinkTest {
                                                                               "rowkey", null);
     HBaseSink tableSink = new HBaseSink(tableSinkConfig);
 
-    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(null);
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer((Schema) null);
     tableSink.configurePipeline(mockPipelineConfigurer);
   }
 

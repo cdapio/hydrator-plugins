@@ -20,30 +20,20 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
-import co.cask.hydrator.common.batch.JobUtils;
 import co.cask.hydrator.plugin.common.AvroToStructuredTransformer;
+import co.cask.hydrator.plugin.common.FileSetUtil;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.google.common.base.Throwables;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroKey;
-import org.apache.avro.mapreduce.AvroJob;
-import org.apache.avro.mapreduce.AvroKeyInputFormat;
-import org.apache.avro.mapreduce.AvroKeyOutputFormat;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mapreduce.Job;
-
-import java.io.IOException;
-import java.util.Map;
 
 /**
  * A {@link BatchSource} to read Avro record from {@link TimePartitionedFileSet}
@@ -95,31 +85,7 @@ public class TimePartitionedFileSetDatasetAvroSource extends
 
   @Override
   protected void addFileSetProperties(FileSetProperties.Builder properties) {
-    properties.setInputFormat(AvroKeyInputFormat.class)
-      .setOutputFormat(AvroKeyOutputFormat.class)
-      .setEnableExploreOnCreate(true)
-      .setSerDe("org.apache.hadoop.hive.serde2.avro.AvroSerDe")
-      .setExploreInputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat")
-      .setExploreOutputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat")
-      .setTableProperty("avro.schema.literal", (tpfsAvroConfig.schema))
-      .add(DatasetProperties.SCHEMA, tpfsAvroConfig.schema);
-  }
-
-  @Override
-  protected void addInputFormatConfiguration(Map<String, String> config) {
-    try {
-      Job job = JobUtils.createInstance();
-      Configuration hConf = job.getConfiguration();
-
-      Schema avroSchema = new Schema.Parser().parse(tpfsAvroConfig.schema);
-      AvroJob.setInputKeySchema(job, avroSchema);
-      for (Map.Entry<String, String> entry : hConf) {
-        config.put(entry.getKey(), entry.getValue());
-      }
-    } catch (IOException e) {
-      // Shouldn't happen
-      throw Throwables.propagate(e);
-    }
+    FileSetUtil.configureAvroFileSet(tpfsAvroConfig.schema, properties);
   }
 
   @Override

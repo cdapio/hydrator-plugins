@@ -25,6 +25,11 @@
           "widget-type": "textbox",
           "label": "Prediction Field",
           "name": "predictionField"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Number of Features",
+          "name": "numFeatures"
         }
       ]
     }

@@ -71,6 +71,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Unit test for {@link CopybookSource} classes.
  */
+
 public class CopybookTest extends HydratorTestBase {
 
   @ClassRule
@@ -198,7 +199,8 @@ public class CopybookTest extends HydratorTestBase {
     ETLStage source = new ETLStage("CopybookReader", new ETLPlugin("CopybookReader", BatchSource.PLUGIN_TYPE,
                                                                    sourceProperties, null));
 
-    String outputDatasetName = "output-batchsource-test-wihtout-schema";
+    String outputDatasetName = "output-batchsource-test-without-schema";
+
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
@@ -320,7 +322,8 @@ public class CopybookTest extends HydratorTestBase {
     ETLStage source = new ETLStage("CopybookReader", new ETLPlugin("CopybookReader", BatchSource.PLUGIN_TYPE,
                                                                    sourceProperties, null));
 
-    String outputDatasetName = "output-batchsource-test-wihtout-schema";
+    String outputDatasetName = "output-batchsource-test-datatypes";
+
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
@@ -356,8 +359,8 @@ public class CopybookTest extends HydratorTestBase {
     Assert.assertEquals("Expected schema", record.getSchema(), schema);
   }
 
-  public String generateBinaryFile(String copybook) {
 
+  private String generateBinaryFile(String copybook) {
     ExternalRecord externalRecord = null;
     try {
       File file = temporaryFolder.newFile("TestFile.bin");

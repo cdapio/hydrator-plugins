@@ -101,8 +101,7 @@ public class ElasticsearchSource extends ReferenceBatchSource<Text, MapWritable,
     conf.set("es.query", config.query);
     job.setMapOutputKeyClass(Text.class);
     job.setMapOutputValueClass(MapWritable.class);
-    context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(EsInputFormat.class, conf))
-                       .alias(config.index));
+    context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(EsInputFormat.class, conf)));
   }
 
   @Override
