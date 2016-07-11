@@ -19,6 +19,9 @@ Properties
 
 **predictionField:** The field on which to set the prediction. It will be of type double.
 
+**numFeatures:** The number of features to use when classifying with the trained model. This should be the same as
+the number of features used to train the model in NaiveBayesTrainer. The default value if none is provided will be 100.
+
 
 Example
 -------
@@ -32,7 +35,8 @@ on to the ``isSpam`` field.
             "fileSetName": "modelFileSet",
             "path": "output",
             "fieldToClassify": "text",
-            "predictionField": "isSpam"
+            "predictionField": "isSpam",
+            "numFeatures": "100"
         }
     }
 
