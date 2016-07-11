@@ -29,6 +29,7 @@ import co.cask.cdap.etl.api.batch.SparkCompute;
 import co.cask.cdap.etl.api.batch.SparkExecutionPluginContext;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import org.apache.avro.reflect.Nullable;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -76,11 +77,19 @@ public class NaiveBayesClassifier extends SparkCompute<StructuredRecord, Structu
     @Description("The field on which to set the prediction. It will be of type double.")
     private final String predictionField;
 
-    public Config(String fileSetName, String path, String fieldToClassify, String predictionField) {
+    @Nullable
+    @Description("The number of features to use in training the model. It must be of type integer and equal to the" +
+                  " number of features used in NaiveBayesTrainer. The default value if none is provided will be" +
+                  " 100.")
+    private final Integer numFeatures;
+
+    public Config(String fileSetName, String path, String fieldToClassify, String predictionField,
+                  Integer numFeatures) {
       this.fileSetName = fileSetName;
       this.path = path;
       this.fieldToClassify = fieldToClassify;
       this.predictionField = predictionField;
+      this.numFeatures = numFeatures;
     }
   }
 
@@ -128,7 +137,7 @@ public class NaiveBayesClassifier extends SparkCompute<StructuredRecord, Structu
     SparkContext sparkContext = JavaSparkContext.toSparkContext(javaSparkContext);
     final NaiveBayesModel loadedModel = NaiveBayesModel.load(sparkContext, modelLocation.toURI().getPath());
 
-    final HashingTF tf = new HashingTF(100);
+    final HashingTF tf = new HashingTF((config.numFeatures == null) ? 100 : config.numFeatures);
 
     JavaRDD<StructuredRecord> output = input.map(new Function<StructuredRecord, StructuredRecord>() {
       @Override

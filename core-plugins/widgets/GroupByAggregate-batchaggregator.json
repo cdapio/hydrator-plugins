@@ -37,6 +37,8 @@
               "Count",
               "Sum",
               "Avg",
+              "Stddev",
+              "Variance",
               "Min",
               "Max",
               "First",

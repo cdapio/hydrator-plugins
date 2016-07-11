@@ -26,7 +26,9 @@ import co.cask.hydrator.plugin.batch.aggregator.function.First;
 import co.cask.hydrator.plugin.batch.aggregator.function.Last;
 import co.cask.hydrator.plugin.batch.aggregator.function.Max;
 import co.cask.hydrator.plugin.batch.aggregator.function.Min;
+import co.cask.hydrator.plugin.batch.aggregator.function.Stddev;
 import co.cask.hydrator.plugin.batch.aggregator.function.Sum;
+import co.cask.hydrator.plugin.batch.aggregator.function.Variance;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
@@ -176,6 +178,10 @@ public class GroupByConfig extends AggregatorConfig {
           return new First(field, fieldSchema);
         case LAST:
           return new Last(field, fieldSchema);
+        case STDDEV:
+          return new Stddev(field, fieldSchema);
+        case VARIANCE:
+          return new Variance(field, fieldSchema);
       }
       // should never happen
       throw new IllegalStateException("Unknown function type " + function);
@@ -219,6 +225,8 @@ public class GroupByConfig extends AggregatorConfig {
     MIN,
     MAX,
     FIRST,
-    LAST
+    LAST,
+    STDDEV,
+    VARIANCE
   }
 }
