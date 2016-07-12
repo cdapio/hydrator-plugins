@@ -62,16 +62,16 @@
       "name": "schema",
       "widget-type": "schema",
       "widget-attributes": {
-        "schema-types": [
-          "boolean",
-          "bytes",
-          "int",
-          "long",
-          "float",
-          "double",
-          "string",
-          "map<string, string>"
-        ],
+        "default-schema": {
+          "name": "etlSchemaBody",
+          "type": "record",
+          "fields": [
+            {
+              "name": "body",
+              "type": "string"
+            }
+          ]
+        },
         "schema-default-type": "string",
         "property-watch": "format"
       }
