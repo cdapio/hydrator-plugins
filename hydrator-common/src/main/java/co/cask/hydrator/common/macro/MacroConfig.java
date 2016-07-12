@@ -136,6 +136,35 @@ public abstract class MacroConfig extends PluginConfig {
     }
   }
 
+//  /**
+//   * Substitute all macros in the specified string. Supports nested macros.
+//   *
+//   * Not implemented in the most efficient way, as it makes a pass for every macro in the string.
+//   * But this keeps the logic simple.
+//   *
+//   * @param str the string to substitute
+//   * @param macroContext context for macros
+//   * @param isLenient whether invalid macro syntax should throw an exception
+//   * @return the substituted string
+//   * @throws InvalidMacroException if any invalid macro syntax was found
+//   */
+//  private String substitute(String str, MacroContext macroContext, boolean isLenient) {
+//    MacroPosition macroPosition = findRightmostMacro(str, str.length(), isLenient);
+//    while (macroPosition != null) {
+//      try {
+//        str = str.substring(0, macroPosition.startIndex) +
+//          macroPosition.getMacroValue(macroContext) +
+//          // + 1 since the end index is the index of the enclosing '}'
+//          str.substring(macroPosition.endIndex + 1);
+//      } catch (Exception e) {
+//        throw new InvalidMacroException(String.format("Invalid macro '%s'.", macroPosition.macroStr), e);
+//      }
+//
+//      macroPosition = findRightmostMacro(str, str.length(), isLenient);
+//    }
+//    return str;
+//  }
+
   /**
    * Substitute all macros in the specified string. Supports nested macros.
    *
@@ -149,15 +178,23 @@ public abstract class MacroConfig extends PluginConfig {
    * @throws InvalidMacroException if any invalid macro syntax was found
    */
   private String substitute(String str, MacroContext macroContext, boolean isLenient) {
+    return substitute(str, macroContext, isLenient, 0);
+  }
+
+  private String substitute(String str, MacroContext macroContext, boolean isLenient, int depth) {
+    if (depth > 10) {
+      throw new InvalidMacroException(String.format("Failed substituting maco '%s', expansion exceeded 10 levels.",
+                                                    str));
+    }
+
     MacroPosition macroPosition = findRightmostMacro(str, str.length(), isLenient);
     while (macroPosition != null) {
       try {
         str = str.substring(0, macroPosition.startIndex) +
-          macroPosition.getMacroValue(macroContext) +
-          // + 1 since the end index is the index of the enclosing '}'
+          substitute(macroPosition.getMacroValue(macroContext), macroContext, isLenient, depth + 1) +
           str.substring(macroPosition.endIndex + 1);
       } catch (Exception e) {
-        throw new InvalidMacroException(String.format("Invalid macro '%s'.", macroPosition.macroStr), e);
+        throw new InvalidMacroException(e.getMessage());
       }
 
       macroPosition = findRightmostMacro(str, str.length(), isLenient);
@@ -178,6 +215,12 @@ public abstract class MacroConfig extends PluginConfig {
   @Nullable
   private MacroPosition findRightmostMacro(String str, int fromIndex, boolean isLenient) {
     int startIndex = str.lastIndexOf("${", fromIndex);
+
+    // skip all escaped syntax
+    while (startIndex > 0 && str.charAt(startIndex - 1) == '\\') {
+      startIndex = str.substring(0, startIndex - 1).lastIndexOf("${", fromIndex);
+    }
+
     if (startIndex < 0) {
       return null;
     }

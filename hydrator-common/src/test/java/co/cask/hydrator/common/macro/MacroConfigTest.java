@@ -93,6 +93,80 @@ public class MacroConfigTest {
     Assert.assertEquals("1970-01-01T00:00:00", testConfig.stringField);
   }
 
+  // Begin custom macro tests
+
+  @Test(expected = InvalidMacroException.class)
+  public void testNonexistentMacro() throws InvalidMacroException {
+    MacroContext macroContext = new DefaultMacroContext(0);
+
+    TestConfig testConfig = new TestConfig("${test(invalid)}");
+    testConfig.substituteMacros(macroContext, "stringField");
+  }
+
+  @Test(expected = InvalidMacroException.class)
+  public void testCircularMacro() throws InvalidMacroException {
+    MacroContext macroContext = new DefaultMacroContext(0);
+
+    TestConfig testConfig = new TestConfig("${test(key)}");
+    testConfig.substituteMacros(macroContext, "stringField");
+  }
+
+  @Test
+  public void testSimpleMacroSyntaxEscaping() throws InvalidMacroException {
+    MacroContext macroContext = new DefaultMacroContext(0);
+
+    TestConfig testConfig = new TestConfig("${test(simpleEscape)}");
+    testConfig.substituteMacros(macroContext, "stringField");
+    Assert.assertEquals("\\${test(\\${test(expansiveHostnameTree)})}", testConfig.stringField);
+  }
+
+  @Test
+  public void testAdvancedMacroSyntaxEscaping() throws InvalidMacroException {
+    MacroContext macroContext = new DefaultMacroContext(0);
+
+    TestConfig testConfig = new TestConfig("${test(advancedEscape)}");
+    testConfig.substituteMacros(macroContext, "stringField");
+    Assert.assertEquals("\\${test(simpleHostnameTree)\\${test(first)}\\${test(filename\\${test(fileTypeMacro))}",
+                        testConfig.stringField);
+  }
+
+  @Test
+  public void testExpansiveSyntaxEscaping() throws InvalidMacroException {
+    MacroContext macroContext = new DefaultMacroContext(0);
+
+    TestConfig testConfig = new TestConfig("${test(expansiveEscape)}");
+    testConfig.substituteMacros(macroContext, "stringField");
+    Assert.assertEquals("\\{test(dontEvaluate):80\\${test-\\${test(null)}\\${\\${\\${nil\\${test(nothing)index.html",
+                        testConfig.stringField);
+  }
+
+  @Test
+  public void testSimpleMacroTree() throws InvalidMacroException {
+    MacroContext macroContext = new DefaultMacroContext(0);
+
+    TestConfig testConfig = new TestConfig("${test(simpleHostnameTree)}");
+    testConfig.substituteMacros(macroContext, "stringField");
+    Assert.assertEquals("localhost/index.html:80", testConfig.stringField);
+  }
+
+  @Test
+  public void testAdvancedMacroTree() throws InvalidMacroException {
+    MacroContext macroContext = new DefaultMacroContext(0);
+
+    TestConfig testConfig = new TestConfig("${test(advancedHostnameTree)}");
+    testConfig.substituteMacros(macroContext, "stringField");
+    Assert.assertEquals("localhost/index.html:80", testConfig.stringField);
+  }
+
+  @Test
+  public void testExpansiveMacroTree() throws InvalidMacroException {
+    MacroContext macroContext = new DefaultMacroContext(0);
+
+    TestConfig testConfig = new TestConfig("${test(expansiveHostnameTree)}");
+    testConfig.substituteMacros(macroContext, "stringField");
+    Assert.assertEquals("localhost/index.html:80", testConfig.stringField);
+  }
+
   // unused fields are ok, they are there just to make sure we don't choke on them while reflecting.
   @SuppressWarnings("unused")
   private static class TestConfig extends MacroConfig {

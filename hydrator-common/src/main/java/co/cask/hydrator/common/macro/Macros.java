@@ -29,7 +29,8 @@ import javax.annotation.Nullable;
  * This class would create a {@link RuntimeMacro}.
  */
 public class Macros {
-  private static final Map<String, Macro> MACRO_MAP = ImmutableMap.<String, Macro>of("runtime", new RuntimeMacro());
+  private static final Map<String, Macro> MACRO_MAP = ImmutableMap.<String, Macro>of("runtime", new RuntimeMacro(),
+                                                                                     "test", new TestMacro());
 
   @Nullable
   public static Macro fromType(String type) {

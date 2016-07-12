@@ -63,7 +63,6 @@ public class RuntimeMacro implements Macro {
       return String.valueOf(runtime);
     }
 
-
     SimpleDateFormat dateFormat;
     long offset = 0;
     TimeZone timeZone = defaultTimeZone;
