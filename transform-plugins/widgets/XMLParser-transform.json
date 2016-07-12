@@ -1,0 +1,71 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "XML Parser",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Input field to parse as an XML record",
+          "name": "input"
+        },
+        {
+          "widget-type": "select",
+          "label": "XML encoding",
+          "name": "encoding",
+          "widget-attributes": {
+            "values": [
+              "UTF-8",
+              "ISO-8859-1",
+              "UTF-8 (using character entities)",
+              "UTF-16 (Unicode with byte-order mark)"
+            ],
+            "default": "UTF-8"
+          }
+        },
+        {
+          "widget-type": "keyvalue",
+          "label": "XPath Mappings",
+          "name": "xPathMappings",
+          "widget-attributes": {
+            "showDelimiter": "false"
+          }
+        },
+        {
+          "widget-type": "keyvalue-dropdown",
+          "label": "Field Name Schema Type Mapping",
+          "name": "fieldTypeMapping",
+          "widget-attributes": {
+            "showDelimiter": "false",
+            "dropdownOptions": [
+              "boolean",
+              "int",
+              "long",
+              "float",
+              "double",
+              "bytes",
+              "string"
+            ],
+            "key-placeholder": "Field Name"
+          }
+        },
+        {
+          "widget-type": "select",
+          "label": "Error handling",
+          "name": "processOnError",
+          "widget-attributes": {
+            "values": [
+              "Ignore error and continue",
+              "Exit on error",
+              "Write to error dataset"
+            ],
+            "default": "Ignore error and continue"
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}
