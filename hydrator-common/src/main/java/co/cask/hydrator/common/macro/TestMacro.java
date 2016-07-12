@@ -40,8 +40,8 @@ public class TestMacro implements Macro {
       .put("advancedEscape", "${test(lotsOfEscaping)}")
       .put("lotsOfEscaping", "\\${test(simpleHostnameTree)\\${test(first)}\\${test(filename\\${test(fileTypeMacro))}")
       // expansive macro escaping
-      .put("expansiveEscape", "${test(${test(mix)})}\\${test(nothing)${test(simplePath)}")
-      .put("mix", "match")
+      .put("expansiveEscape", "${test(${test(\\${test(macroLiteral\\)\\})})}\\${test(nothing)${test(simplePath)}")
+      .put("\\${test(macroLiteral\\)\\}", "match")
       .put("match", "\\{test(dontEvaluate):${test(firstPortDigit)}0\\${test-\\${test(null)}\\${\\${\\${nil")
       // simple hostname tree
       .put("simpleHostnameTree", "${test(simpleHostname)}/${test(simplePath)}:${test(simplePort)}")

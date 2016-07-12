@@ -225,8 +225,13 @@ public abstract class MacroConfig extends PluginConfig {
       return null;
     }
 
-    // found "${", now look for enclosing "}"
+    // found "${", now look for enclosing "}" and allow escaping through \}
     int endIndex = str.indexOf('}', startIndex);
+    while (endIndex > 0 && str.charAt(endIndex - 1) == '\\') {
+      endIndex = str.indexOf('}', endIndex + 1);
+    }
+
+
     // if none is found, there is no a macro
     if (endIndex < 0 || endIndex > fromIndex) {
       if (!isLenient) {
