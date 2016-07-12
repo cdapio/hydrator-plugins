@@ -67,8 +67,7 @@ import javax.annotation.Nullable;
 /**
  * XML Reader Batch Source Plugin
  * It is used to read XML files from HDFS with specified file properties and filters.
- * It parses the read file into specified Output Schema.
- * A {@link FileBatchSource} to use any distributed file system as a Source.
+ * This reader emits XML event, specified by the node path property, for each file read.
  */
 @Plugin(type = BatchSource.PLUGIN_TYPE)
 @Name("XMLReader")
@@ -216,20 +215,20 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
 
     @Nullable
     @Description("Pattern to select specific file(s)." +
-      "Example - " +
-      "1. Use '^' to select file with name start with 'catalog', like '^catalog'." +
-      "2. Use '$' to select file with name end with 'catalog.xml', like 'catalog.xml$'." +
-      "3. Use '*' to select file with name contains 'catalogBook', like 'catalogBook*'.")
+      "Examples: " +
+      "1. Use '^' to select files with names starting with 'catalog', such as '^catalog'. " +
+      "2. Use '$' to select files with names ending with 'catalog.xml', such as 'catalog.xml$'. " +
+      "3. Use '*' to select file with name contains 'catalogBook', such as 'catalogBook*'.")
     private final String pattern;
 
-    @Description("Node path to emit individual event from the schema. " +
-      "Example - '/book/price' to read only price under the book node")
+    @Description("Node path to emit as an individual event from the XML schema. " +
+      "Example: '/book/price' to read only price under the book node")
     private final String nodePath;
 
     @Description("Action to be taken after processing of the XML file. " +
-      "Possible actions are - " +
-      "1. Delete from the HDFS." +
-      "2. Archived to the target location." +
+      "Possible actions are: " +
+      "1. Delete from the HDFS; " +
+      "2. Archived to the target location; and " +
       "3. Moved to the target location.")
     private final String actionAfterProcess;
 
@@ -241,16 +240,16 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     @Description("Specifies whether the file(s) should be reprocessed.")
     private final String reprocessingRequired;
 
-    @Description("Name of the table to keep track of processed file(s).")
+    @Description("Table name to be used to keep track of processed file(s).")
     private final String tableName;
 
-    @Description("Expiry period (days) for data in the table. Default is 30 days." +
-      "Example - For tableExpiryPeriod = 30, data before 30 days get deleted from the table.")
+    @Description("Expiry period (days) for data in the table. Default is 30 days. " +
+      "Example: For tableExpiryPeriod = 30, data before 30 days get deleted from the table.")
     private final String tableExpiryPeriod;
 
-    @Description("Existing hdfs folder path having read and write access to the current User, required to store " +
-      "temporary file(s) containing path of the processed xml file(s). These temporary file(s) will be read at the " +
-      "end of job to update file track table.")
+    @Description("An existing HDFS folder path with read and write access for the current user; required for storing " +
+      "temporary files containing paths of the processed XML files. These temporary files will be read at the end of " +
+      "the job to update the file track table.")
     private final String temporaryFolder;
 
     @VisibleForTesting
@@ -292,17 +291,17 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     void validateConfig() {
       Preconditions.checkArgument(!Strings.isNullOrEmpty(path), "Path cannot be empty.");
       Preconditions.checkArgument(!Strings.isNullOrEmpty(nodePath), "Node path cannot be empty.");
-      Preconditions.checkArgument(!Strings.isNullOrEmpty(tableName), "Table Name cannot be empty.");
+      Preconditions.checkArgument(!Strings.isNullOrEmpty(tableName), "Table name cannot be empty.");
       Preconditions.checkArgument(tableExpiryPeriod != null, "Table expiry period cannot be empty.");
       Preconditions.checkArgument(!Strings.isNullOrEmpty(temporaryFolder), "Temporary folder cannot be empty.");
 
       boolean onlyOneActionRequired = !actionAfterProcess.equalsIgnoreCase("NONE") && isReprocessingRequired();
       Preconditions.checkArgument(!onlyOneActionRequired, "Please select either 'After Processing Action' or " +
-        "'Reprocessing Required', both cannot be applied at same time.");
+        "'Reprocessing Required'; both cannot be applied at the same time.");
 
       boolean targetFolderEmpty = (actionAfterProcess.equalsIgnoreCase("ARCHIVE") ||
         actionAfterProcess.equalsIgnoreCase("MOVE")) && Strings.isNullOrEmpty(targetFolder);
-      Preconditions.checkArgument(!targetFolderEmpty, "Target folder cannot be Empty for Action = '" +
+      Preconditions.checkArgument(!targetFolderEmpty, "Target folder cannot be empty for Action = '" +
         actionAfterProcess + "'.");
     }
   }

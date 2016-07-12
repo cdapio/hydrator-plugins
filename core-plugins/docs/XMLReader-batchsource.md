@@ -8,9 +8,10 @@ The XML Reader plugin is a source plugin that allows users to read XML files sto
 
 Use Case
 --------
-Customer XML feeds that are dropped onto HDFS. These can be small to very large XML  files. The files have to read,
-parsed and when used in conjunction with XML Parser they are able to extract fields. This reader will emit one XML
-event that is specified by a Node Path to be extracted from the file.
+A user would like to read XML files that have been dropped into HDFS.
+These can be small to very large XML files. The XMLReader will read and parse the files,
+and when used in conjunction with the XMLParser plugin, fields can be extracted.
+This reader emits one XML event, specified by the node path property, for each file read.
 
 
 Properties
@@ -19,37 +20,40 @@ Properties
 
 **path:** Path to file(s) to be read. If a directory is specified, terminate the path name with a '/'.
 
-**nodePath:** Node path to emit individual event from the schema.
-Example - '/book/price' to read only price under the book node
+**nodePath:** Node path to emit as an individual event from the XML schema.
+Example: '/book/price' to read only the price from under the book node.
 
 **pattern:** Pattern to select specific file(s).
-Example -
-1. Use '^' to select file with name start with 'catalog', like '^catalog'.
-2. Use '$' to select file with name end with 'catalog.xml', like 'catalog.xml$'.
-3. Use '*' to select file with name contains 'catalogBook', like 'catalogBook*'.
+Examples:
+
+1. Use '^' to select files with names starting with 'catalog', such as '^catalog'.
+2. Use '$' to select files with names ending with 'catalog.xml', such as 'catalog.xml$'.
+3. Use '\*' to select file with name contains 'catalogBook', such as 'catalogBook*'.
 
 **actionAfterProcess:** Action to be taken after processing of the XML file.
-Possible actions are -
-1. Delete from the HDFS.
-2. Archived to the target location.
+Possible actions are:
+
+1. Delete from the HDFS;
+2. Archived to the target location; and
 3. Moved to the target location.
 
-**targetFolder:** Target folder path if user select action after process, either ARCHIVE or MOVE. Target folder must be
-an existing directory.
+**targetFolder:** Target folder path if user select action after process, either ARCHIVE or MOVE.
+Target folder must be an existing directory.
 
-**reprocessingRequired:** Flag to know if file(s) to be reprocessed or not.
+**reprocessingRequired:** Specifies whether the file(s) should be reprocessed.
 
-**tableName:** Table name to keep track of processed file(s).
+**tableName:** Table name to be used to keep track of processed file(s).
 
-**temporaryFolder** Existing hdfs folder path having read and write access to the current User, required to store
-temporary file(s) containing path of the processed xml file(s). These temporary file(s) will be read at the end of job
-to update file track table.
+**temporaryFolder:** An existing HDFS folder path with read and write access for the current user;
+required for storing temporary files containing paths of the processed XML files.
+These temporary files will be read at the end of the job to update the file track table.
 
 Example
 -------
-This example reads data from folder "/source/xmls/" and emits XML records on the basis of node path
-"/catalog/book/title". It will generate structured record with schema as 'offset', 'fileName', and 'record'.
-It will move the XML file to the target folder "/target/xmls/" and update processed file information in trackingTable.
+This example reads data from the folder "hdfs:/cask/source/xmls/" and emits XML records on the basis of the node path
+"/catalog/book/title". It will generate structured records with fields 'offset', 'fileName', and 'record'.
+It will move the XML files to the target folder "hdfs:/cask/target/xmls/" and update the processed file information
+in the table named "trackingTable".
 
       {
          "name": "XMLReaderBatchSource",
@@ -58,20 +62,20 @@ It will move the XML file to the target folder "/target/xmls/" and update proces
                     "type": "batchsource",
                     "properties":{
                                   "referenceName": "referenceName""
-                                  "path": "/source/xmls/",
+                                  "path": "hdfs:/cask/source/xmls/",
                                   "Pattern": "^catalog"
                                   "nodePath": "/catalog/book/title"
                                   "actionAfterProcess" : "Move",
-                                  "targetFolder":"/target/xmls/", //this must be existing folder path
+                                  "targetFolder":"hdfs:/cask/target/xmls/",
                                   "reprocessingRequired": "No",
                                   "tableName": "trackingTable",
-                                  "temporaryFolder": "/tmp"
+                                  "temporaryFolder": "hdfs:/cask/tmp/"
                     }
          }
       }
 
 
- For below XML as input file:
+ For this XML as an input:
 
      <catalog>
        <book id="bk104">
@@ -97,7 +101,7 @@ It will move the XML file to the target folder "/target/xmls/" and update proces
        </book>
      </catalog>
 
- Output schema will be:
+ The output records will be:
 
     +==================================================================================+
     | offset | filename                            | record                            |
