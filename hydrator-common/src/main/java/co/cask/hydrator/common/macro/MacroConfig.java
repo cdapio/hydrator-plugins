@@ -25,8 +25,6 @@ import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -184,7 +182,7 @@ public abstract class MacroConfig extends PluginConfig {
    * @throws InvalidMacroException if any invalid macro syntax was found
    */
   private String substitute(String str, MacroContext macroContext, boolean isLenient) {
-    return removeEscapedSyntax(substitute(str, macroContext, isLenient, 0));
+    return replaceEscapedSyntax(substitute(str, macroContext, isLenient, 0));
   }
 
   private String substitute(String str, MacroContext macroContext, boolean isLenient, int depth) {
@@ -272,8 +270,8 @@ public abstract class MacroConfig extends PluginConfig {
       arguments = macroStr;
     }
 
-    type = removeEscapedSyntax(type);
-    arguments = removeEscapedSyntax(arguments);
+    type = replaceEscapedSyntax(type);
+    arguments = replaceEscapedSyntax(arguments);
 
     Macro macro = Macros.fromType(type);
     if (macro == null) {
@@ -287,7 +285,7 @@ public abstract class MacroConfig extends PluginConfig {
    * @param str the string to replace escaped syntax in
    * @return the string with no escaped syntax
    */
-  private String removeEscapedSyntax(String str) {
+  private String replaceEscapedSyntax(String str) {
     for (String token : ESCAPED_TOKENS) {
       str = str.replace(token, token.substring(1));
     }
