@@ -158,7 +158,7 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
     } catch (Exception e) {
       switch (config.processOnError) {
         case EXIT_ON_ERROR:
-          throw new IllegalStateException("Terminating process on error: " + e.getMessage());
+          throw new IllegalStateException("Terminating process on error: " + e.getMessage(), e);
         case WRITE_ERROR_DATASET:
           emitter.emitError(new InvalidEntry<>(31, e.getStackTrace()[0].toString() + " : " + e.getMessage(), input));
           break;

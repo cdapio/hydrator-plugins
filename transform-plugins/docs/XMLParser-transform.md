@@ -40,7 +40,7 @@ Example
 -------
 
 This example parses an XML record received in the "body" field of the input record following the *xPathMappings* for
-each field name. The output structured record will be created  using the type specified for each field in the
+each field name. The output structured record will be created using the type specified for each field in the
 "fieldTypeMapping". Only years and prices will be passed on for books with a price over 35.00:
 
        {
@@ -87,7 +87,7 @@ The output records will contain:
     |           |                    |        |         | literature</genre></subcategory>                    |
     +=========================================================================================================+
 
-Here, since the subcategory contains child nodes, the plugin will retrun the complete subcategory node (along with its
+Here, since the subcategory contains child nodes, the plugin will return the complete subcategory node (along with its
 child elements) as string as ``<subcategory><type>Continental</type><genre>European cuisines</genre></subcategory>`` .
-This is to ensure that the plugin returns a sigle XML event for a structured record intead of the two child events:
+This is to ensure that the plugin returns a single XML event for a structured record intead of the two child events:
  ``<type>Continental</type>`` and ``<genre>European cuisines</genre>``.
