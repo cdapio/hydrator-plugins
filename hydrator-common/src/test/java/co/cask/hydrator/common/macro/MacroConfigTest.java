@@ -149,6 +149,15 @@ public class MacroConfigTest {
   }
 
   @Test
+  public void testRidiculousSyntaxEscaping() throws InvalidMacroException {
+    MacroContext macroContext = new DefaultMacroContext(0);
+
+    TestConfig testConfig = new TestConfig("\\${${macro}}\\${${\\{\\}}}\\${one}${fun${\\${escapedMacroLiteral\\}}}");
+    testConfig.substituteMacros(macroContext, "stringField");
+    Assert.assertEquals("${42}${brackets}${one}ahead", testConfig.stringField);
+  }
+
+  @Test
   public void testSimpleMacroTree() throws InvalidMacroException {
     MacroContext macroContext = new DefaultMacroContext(0);
 

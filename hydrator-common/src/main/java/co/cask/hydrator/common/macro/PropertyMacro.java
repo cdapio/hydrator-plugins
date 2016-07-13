@@ -32,6 +32,9 @@ public class PropertyMacro implements Macro {
       // property-specific tests
       .put("notype", "Property Macro")
       .put("{}", "brackets")
+      .put("macro", "42")
+      .put("${escapedMacroLiteral}", "Times")
+      .put("funTimes", "ahead")
       // circular key
       .put("key", "${key}")
       // simple macro escaping

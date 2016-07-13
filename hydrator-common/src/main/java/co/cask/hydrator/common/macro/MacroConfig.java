@@ -204,8 +204,6 @@ public abstract class MacroConfig extends PluginConfig {
       macroPosition = findRightmostMacro(str, str.length(), isLenient);
     }
 
-    // replace all escaped end brackets
-
     return str;
   }
 
