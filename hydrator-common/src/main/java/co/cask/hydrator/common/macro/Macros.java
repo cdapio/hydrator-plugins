@@ -30,6 +30,7 @@ import javax.annotation.Nullable;
  */
 public class Macros {
   private static final Map<String, Macro> MACRO_MAP = ImmutableMap.<String, Macro>of("runtime", new RuntimeMacro(),
+                                                                                     "property", new PropertyMacro(),
                                                                                      "test", new TestMacro());
 
   @Nullable

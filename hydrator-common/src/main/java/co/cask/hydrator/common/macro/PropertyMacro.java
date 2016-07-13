@@ -19,58 +19,58 @@ package co.cask.hydrator.common.macro;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import org.apache.avro.reflect.Nullable;
 
-import java.util.HashMap;
 import java.util.Map;
 
-public class TestMacro implements Macro {
-
+public class PropertyMacro implements Macro {
   private final Map<String, String> substitutions;
 
   @VisibleForTesting
-  public TestMacro() {
+  public PropertyMacro() {
     substitutions = ImmutableMap.<String, String>builder()
+      // property-specific tests
+      .put("notype", "Property Macro")
+      .put("{}", "brackets")
       // circular key
-      .put("key", "${test(key)}")
+      .put("key", "${key}")
       // simple macro escaping
-      .put("simpleEscape", "\\${test(\\${test(expansiveHostnameTree)})}")
+      .put("simpleEscape", "\\${\\${expansiveHostnameTree}}")
       // advanced macro escaping
-      .put("advancedEscape", "${test(lotsOfEscaping)}")
-      .put("lotsOfEscaping", "\\${test(simpleHostnameTree)\\${test(first)}\\${test(filename\\${test(fileTypeMacro))}")
+      .put("advancedEscape", "${lotsOfEscaping}")
+      .put("lotsOfEscaping", "\\${simpleHostnameTree\\${first}\\${filename\\${fileTypeMacro}")
       // expansive macro escaping
-      .put("expansiveEscape", "${test(${test(\\${test(macroLiteral\\)\\})})}\\${test(nothing)${test(simplePath)}")
-      .put("${test(macroLiteral)}", "match")
-      .put("match", "\\{test(dontEvaluate):${test(firstPortDigit)}0\\${test-\\${test(null)}\\${\\${\\${nil")
+      .put("expansiveEscape", "${${\\${macroLiteral\\}}}\\${nothing${simplePath}")
+      .put("\\${macroLiteral\\}", "match")
+      .put("match", "\\{dontEvaluate:${firstPortDigit}0\\${NaN-\\${null}\\${\\${\\${nil")
       // simple hostname tree
-      .put("simpleHostnameTree", "${test(simpleHostname)}/${test(simplePath)}:${test(simplePort)}")
+      .put("simpleHostnameTree", "${simpleHostname}/${simplePath}:${simplePort}")
       .put("simpleHostname", "localhost")
       .put("simplePath", "index.html")
       .put("simplePort", "80")
       // advanced hostname tree
-      .put("advancedHostnameTree", "${test(first)}/${test(second)}")
+      .put("advancedHostnameTree", "${first}/${second}")
       .put("first", "localhost")
-      .put("second", "${test(third)}:${test(sixth)}")
-      .put("third", "${test(fourth)}${test(fifth)}")
+      .put("second", "${third}:${sixth}")
+      .put("third", "${fourth}${fifth}")
       .put("fourth", "index")
       .put("fifth", ".html")
       .put("sixth", "80")
       // expansive hostname tree
-      .put("expansiveHostnameTree", "${test(hostname)}/${test(path)}:${test(port)}")
-      .put("hostname", "${test(one)}")
-      .put("path", "${test(two)}")
-      .put("port", "${test(three)}")
-      .put("one", "${test(host${test(hostScopeMacro)})}")
+      .put("expansiveHostnameTree", "${hostname}/${path}:${port}")
+      .put("hostname", "${one}")
+      .put("path", "${two}")
+      .put("port", "${three}")
+      .put("one", "${host${hostScopeMacro}}")
       .put("hostScopeMacro", "-local")
-      .put("host-local", "${test(l)}${test(o)}${test(c)}${test(a)}${test(l)}${test(hostSuffix)}")
+      .put("host-local", "${l}${o}${c}${a}${l}${hostSuffix}")
       .put("l", "l")
       .put("o", "o")
       .put("c", "c")
       .put("a", "a")
       .put("hostSuffix", "host")
-      .put("two", "${test(filename${test(fileTypeMacro)})}")
-      .put("three", "${test(firstPortDigit)}${test(secondPortDigit)}")
+      .put("two", "${filename${fileTypeMacro}}")
+      .put("three", "${firstPortDigit}${secondPortDigit}")
       .put("filename", "index")
       .put("fileTypeMacro", "-html")
       .put("filename-html", "index.html")
@@ -81,14 +81,14 @@ public class TestMacro implements Macro {
   }
 
   @VisibleForTesting
-  public TestMacro(Map<String, String> substitutions) {
+  public PropertyMacro(Map<String, String> substitutions) {
     this.substitutions = substitutions;
   }
 
   @Override
   public String getValue(@Nullable String argument, MacroContext macroContext) {
     if (argument == null || argument.isEmpty()) {
-      throw new IllegalArgumentException("test macros must have an argument provided.");
+      throw new IllegalArgumentException("default macros must have an argument provided.");
     }
     String substitution = substitutions.get(argument);
     if (substitution == null) {
@@ -96,4 +96,6 @@ public class TestMacro implements Macro {
     }
     return substitutions.get(argument);
   }
+
 }
+

@@ -25,6 +25,8 @@ import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -41,6 +43,10 @@ import javax.annotation.Nullable;
  * If this gets any more complicated, could look into using some grammar and parser
  */
 public abstract class MacroConfig extends PluginConfig {
+
+  private static final String[] ESCAPED_TOKENS = {"\\${", "\\{", "\\}", "\\(",
+                                                  "\\)"};
+
   /**
    * Validate that macros can be substituted.
    */
@@ -178,7 +184,7 @@ public abstract class MacroConfig extends PluginConfig {
    * @throws InvalidMacroException if any invalid macro syntax was found
    */
   private String substitute(String str, MacroContext macroContext, boolean isLenient) {
-    return substitute(str, macroContext, isLenient, 0);
+    return removeEscapedSyntax(substitute(str, macroContext, isLenient, 0));
   }
 
   private String substitute(String str, MacroContext macroContext, boolean isLenient, int depth) {
@@ -199,6 +205,9 @@ public abstract class MacroConfig extends PluginConfig {
 
       macroPosition = findRightmostMacro(str, str.length(), isLenient);
     }
+
+    // replace all escaped end brackets
+
     return str;
   }
 
@@ -215,8 +224,7 @@ public abstract class MacroConfig extends PluginConfig {
   @Nullable
   private MacroPosition findRightmostMacro(String str, int fromIndex, boolean isLenient) {
     int startIndex = str.lastIndexOf("${", fromIndex);
-
-    // skip all escaped syntax
+    // skip all escaped syntax '\${'
     while (startIndex > 0 && str.charAt(startIndex - 1) == '\\') {
       startIndex = str.substring(0, startIndex - 1).lastIndexOf("${", fromIndex);
     }
@@ -232,45 +240,58 @@ public abstract class MacroConfig extends PluginConfig {
     }
 
 
-    // if none is found, there is no a macro
+    // if none is found, there is not a macro
     if (endIndex < 0 || endIndex > fromIndex) {
-      if (!isLenient) {
-        throw new InvalidMacroException(String.format("Could not find enclosing '}' for macro '%s'.",
+      throw new InvalidMacroException(String.format("Could not find enclosing '}' for macro '%s'.",
                                                       str.substring(startIndex, fromIndex)));
-      }
-      return null;
     }
 
-    // macroStr = macro-type(macro-arguments)
+    // macroStr = 'macroType(macro-arguments)' or just 'property'
     String macroStr = str.substring(startIndex + 2, endIndex).trim();
     String type = macroStr;
     String arguments = null;
 
-    // look for '(', which indicates there are arguments
+    // look for '(', which indicates there are arguments and skip all escaped syntax '\('
     int argsStartIndex = macroStr.indexOf('(');
+    while (argsStartIndex > 0 && str.charAt(argsStartIndex - 1) == '\\') {
+      argsStartIndex = macroStr.indexOf('(', argsStartIndex);
+    }
+
     if (argsStartIndex > 0) {
       // if there is no enclosing ')'
-      if (!macroStr.endsWith(")")) {
-        // if we're not being lenient, throw an exception
-        if (!isLenient) {
-          throw new InvalidMacroException(String.format("Could not find enclosing ')' for macro arguments in '%s'.",
+      boolean lastParenEscaped = macroStr.endsWith(")") && macroStr.charAt(macroStr.lastIndexOf(')') - 1) == '\\';
+      if (!macroStr.endsWith(")") || lastParenEscaped) {
+        throw new InvalidMacroException(String.format("Could not find enclosing ')' for macro arguments in '%s'.",
                                                         macroStr));
-        }
-        // otherwise, assume its not a macro and look for the next one
-        return findRightmostMacro(str, startIndex, true);
       }
       arguments = macroStr.substring(argsStartIndex + 1, macroStr.length() - 1);
       type = macroStr.substring(0, argsStartIndex);
+    } else {
+      // the macro is just a property substitution
+      type = "property";
+      arguments = macroStr;
     }
+
+    type = removeEscapedSyntax(type);
+    arguments = removeEscapedSyntax(arguments);
 
     Macro macro = Macros.fromType(type);
     if (macro == null) {
-      if (!isLenient) {
-        throw new InvalidMacroException(String.format("Unknown macro type '%s'.", type));
-      }
-      return findRightmostMacro(str, startIndex, true);
+      throw new InvalidMacroException(String.format("Unknown macro type '%s'.", type));
     }
     return new MacroPosition(macroStr, macro, startIndex, endIndex, arguments);
+  }
+
+  /**
+   * Removes all escaped syntax for all macro syntax symbols: ${, {, } }, (, )
+   * @param str the string to replace escaped syntax in
+   * @return the string with no escaped syntax
+   */
+  private String removeEscapedSyntax(String str) {
+    for (String token : ESCAPED_TOKENS) {
+      str = str.replace(token, token.substring(1));
+    }
+    return str;
   }
 
   private static class MacroPosition {
