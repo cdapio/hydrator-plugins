@@ -18,10 +18,10 @@
           "name": "solrMode",
           "widget-attributes": {
             "values": [
-              "Single Node Solr",
+              "SingleNode",
               "SolrCloud"
             ],
-            "default": "Single Node Solr"
+            "default": "SingleNode"
           }
         },
         {

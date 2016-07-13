@@ -26,7 +26,6 @@ import co.cask.cdap.etl.api.realtime.DataWriter;
 import co.cask.cdap.etl.api.realtime.RealtimeContext;
 import co.cask.cdap.etl.api.realtime.RealtimeSink;
 import co.cask.hydrator.plugin.common.SolrSearchSinkConfig;
-import co.cask.hydrator.plugin.common.SolrSearchSinkUtility;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrInputDocument;
 
@@ -57,11 +56,10 @@ public class RealtimeSolrSearchSink extends RealtimeSink<StructuredRecord> {
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
-    SolrSearchSinkUtility.validateSolrConnectionString(config);
-    SolrSearchSinkUtility.verifySolrConfiguration(config);
+    config.validateSolrConnectionString();
     if (inputSchema != null) {
-      SolrSearchSinkUtility.validateIdField(inputSchema, config);
-      SolrSearchSinkUtility.validateInputFieldsDataType(inputSchema);
+      config.validateIdField(inputSchema);
+      config.validateInputFieldsDataType(inputSchema);
     }
   }
 
@@ -69,7 +67,7 @@ public class RealtimeSolrSearchSink extends RealtimeSink<StructuredRecord> {
   public void initialize(RealtimeContext context) throws Exception {
     uniqueKey = config.getIdField();
     outputFieldMap = config.getOutputFieldMap();
-    solrClient = SolrSearchSinkUtility.getSolrConnection(config);
+    solrClient = config.getSolrConnection();
   }
 
   @Override
@@ -79,9 +77,11 @@ public class RealtimeSolrSearchSink extends RealtimeSink<StructuredRecord> {
     List<SolrInputDocument> documentList = new ArrayList<SolrInputDocument>();
     SolrInputDocument document;
 
+    config.verifySolrConfiguration();
+
     for (StructuredRecord structuredRecord : structuredRecords) {
-      SolrSearchSinkUtility.validateIdField(structuredRecord.getSchema(), config);
-      SolrSearchSinkUtility.validateInputFieldsDataType(structuredRecord.getSchema());
+      config.validateIdField(structuredRecord.getSchema());
+      config.validateInputFieldsDataType(structuredRecord.getSchema());
 
       if (structuredRecord.get(uniqueKey) == null) {
         continue;

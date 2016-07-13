@@ -16,9 +16,13 @@
 package co.cask.hydrator.plugin.common;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import com.google.common.base.Splitter;
 import org.apache.commons.lang.StringUtils;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,21 +33,20 @@ import javax.annotation.Nullable;
  */
 public class SolrSearchSinkConfig extends ReferencePluginConfig {
 
+  private static final String SINGLE_NODE_MODE = "SingleNode";
+  private static final String SOLR_CLOUD_MODE = "SolrCloud";
+
   @Description("Solr mode to connect to. For example, Single Node Solr or SolrCloud.")
   private final String solrMode;
-
-  @Description("The hostname and port for the Solr server seperated by colon. For example, localhost:8983 for " +
-    "Single Node Solr or comma-seperated list of hostname and port, zkHost1:2181,zkHost2:2181,zkHost3:2181 " +
+  @Description("The hostname and port for the Solr server separated by a colon. For example, localhost:8983 for " +
+    "Single Node Solr or comma-separated list of hostname and port, zkHost1:2181,zkHost2:2181,zkHost3:2181 " +
     "for SolrCloud.")
   private final String solrHost;
-
   @Description("Name of the collection where data will be indexed and stored in Solr.")
   private final String collectionName;
-
-  @Description("Field that will determine the unique id for the document to be indexed. It should match a " +
-    "fieldname in the structured record of the input.")
+  @Description("Field that will determine the unique id for the document to be indexed. It must match a " +
+    "field name in the structured record of the input.")
   private final String idField;
-
   @Description("List of the input fields to map to the output Solr fields. The key specifies the name of the field to" +
     " rename, with its corresponding value specifying the new name for that field.")
   @Nullable
@@ -57,33 +60,6 @@ public class SolrSearchSinkConfig extends ReferencePluginConfig {
     this.collectionName = collectionName;
     this.idField = idField;
     this.outputFieldMappings = outputFieldMappings;
-  }
-
-  /**
-   * Returns the Solr mode selected as input by user.
-   *
-   * @return Solr mode
-   */
-  public String getSolrMode() {
-    return solrMode;
-  }
-
-  /**
-   * Returns the hostname and port entered by user.
-   *
-   * @return Solr host
-   */
-  public String getSolrHost() {
-    return solrHost;
-  }
-
-  /**
-   * Returns the Solr collection name given as input by user.
-   *
-   * @return collection name
-   */
-  public String getCollectionName() {
-    return collectionName;
   }
 
   /**
@@ -115,5 +91,96 @@ public class SolrSearchSinkConfig extends ReferencePluginConfig {
       }
     }
     return outputFieldMap;
+  }
+
+  /**
+   * Returns the SolrClient for establishing the connection with Solr server, using the hostname and port provided by
+   * user.
+   *
+   * @return Solr client
+   */
+  public SolrClient getSolrConnection() {
+    String urlString;
+    SolrClient solrClient = null;
+    if (solrMode.equals(SINGLE_NODE_MODE)) {
+      urlString = "http://" + solrHost + "/solr/" + collectionName;
+      solrClient = new HttpSolrClient(urlString);
+    } else if (solrMode.equals(SOLR_CLOUD_MODE)) {
+      CloudSolrClient solrCloudClient = new CloudSolrClient(solrHost);
+      solrCloudClient.setDefaultCollection(collectionName);
+      solrClient = solrCloudClient;
+    }
+    return solrClient;
+  }
+
+  /**
+   * Validates whether the host entered for Single Node Solr instance is proper or not.
+   */
+  public void validateSolrConnectionString() {
+    if (solrMode.equals(SINGLE_NODE_MODE) && solrHost.contains(",")) {
+      throw new IllegalArgumentException(String.format("Multiple hosts '%s' found for Single Node Solr.",
+                                                       solrHost));
+    }
+  }
+
+  /**
+   * Verifies whether the Solr server is running or not. Also, validates whether the collection provided by user is
+   * registered with the Solr server or not.
+   */
+  public void verifySolrConfiguration() {
+    SolrClient client = getSolrConnection();
+    try {
+      client.ping();
+    } catch (Exception e) {
+      throw new IllegalArgumentException(
+        String.format("Server refused connection at '%s'. Please make sure that either the Solr/Zookeeper services " +
+                        "are properly running or the collection '%s' exists in the Solr Server.", solrHost,
+                      collectionName));
+    }
+  }
+
+  /**
+   * Validates whether the Id field provided by user is present in the input schema or not.
+   *
+   * @param inputSchema
+   */
+  public void validateIdField(Schema inputSchema) {
+    if (inputSchema != null && inputSchema.getField(idField) == null) {
+      throw new IllegalArgumentException(
+        String.format("Idfield '%s' does not exist in the input schema %s", idField, inputSchema));
+    }
+  }
+
+  /**
+   * Validates whether the CDAP data types coming from the input schema are compatible with the Solr data types or not.
+   *
+   * @param inputSchema
+   */
+  public void validateInputFieldsDataType(Schema inputSchema) {
+    /* Currently SolrSearch sink plugin supports CDAP primitives types only: BOOLEAN, INT, LONG, FLOAT, DOUBLE and
+    STRING.*/
+    Schema.Type schemaType;
+    if (inputSchema != null) {
+      for (Schema.Field field : inputSchema.getFields()) {
+        schemaType = field.getSchema().isNullable() ? field.getSchema().getNonNullable().getType() :
+          field.getSchema().getType();
+
+        switch (schemaType) {
+          case BOOLEAN:
+          case INT:
+          case LONG:
+          case FLOAT:
+          case DOUBLE:
+          case STRING:
+          case NULL:
+            break;
+          default:
+            throw new IllegalArgumentException(
+              String.format("Data type '%s' is not compatible for writing data to the Solr Server. Supported CDAP " +
+                              "data types are ' BOOLEAN, INT, LONG, FLOAT, DOUBLE and STRING '",
+                            field.getSchema().getType()));
+        }
+      }
+    }
   }
 }

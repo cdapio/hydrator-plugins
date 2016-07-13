@@ -27,7 +27,6 @@ import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.plugin.common.SolrSearchSinkConfig;
-import co.cask.hydrator.plugin.common.SolrSearchSinkUtility;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import org.apache.solr.client.solrj.SolrClient;
@@ -65,11 +64,10 @@ public class SolrSearchSink extends BatchSink<StructuredRecord, SolrInputField, 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
-    SolrSearchSinkUtility.validateSolrConnectionString(config);
-    SolrSearchSinkUtility.verifySolrConfiguration(config);
+    config.validateSolrConnectionString();
     if (inputSchema != null) {
-      SolrSearchSinkUtility.validateIdField(inputSchema, config);
-      SolrSearchSinkUtility.validateInputFieldsDataType(inputSchema);
+      config.validateIdField(inputSchema);
+      config.validateInputFieldsDataType(inputSchema);
     }
   }
 
@@ -77,7 +75,7 @@ public class SolrSearchSink extends BatchSink<StructuredRecord, SolrInputField, 
   public void initialize(BatchRuntimeContext context) throws Exception {
     uniqueKey = config.getIdField();
     outputFieldMap = config.getOutputFieldMap();
-    solrClient = SolrSearchSinkUtility.getSolrConnection(config);
+    solrClient = config.getSolrConnection();
   }
 
   @Override
@@ -86,8 +84,9 @@ public class SolrSearchSink extends BatchSink<StructuredRecord, SolrInputField, 
     String solrFieldName;
     SolrInputDocument document;
 
-    SolrSearchSinkUtility.validateIdField(structuredRecord.getSchema(), config);
-    SolrSearchSinkUtility.validateInputFieldsDataType(structuredRecord.getSchema());
+    config.verifySolrConfiguration();
+    config.validateIdField(structuredRecord.getSchema());
+    config.validateInputFieldsDataType(structuredRecord.getSchema());
 
     if (structuredRecord.get(uniqueKey) == null) {
       return;

@@ -103,11 +103,10 @@ public class SolrSearchSinkTest extends HydratorTestBase {
   private static final ArtifactRange BATCH_ARTIFACT_RANGE = new ArtifactRange(Id.Namespace.DEFAULT, "etlbatch",
                                                                               CURRENT_VERSION, true,
                                                                               CURRENT_VERSION, true);
-  private static final String SINGLE_NODE_SOLR_MODE = "Single Node Solr";
+  private static final String SINGLE_NODE_MODE = "SingleNode";
   private static final String SOLR_CLOUD_MODE = "SolrCloud";
   @ClassRule
   public static TemporaryFolder temporaryFolder = new TemporaryFolder();
-
   private SolrClient client;
 
   @BeforeClass
@@ -131,7 +130,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
     Map<String, String> sinkConfigproperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "BatchSolrSink")
-      .put("solrMode", SINGLE_NODE_SOLR_MODE)
+      .put("solrMode", SINGLE_NODE_MODE)
       .put("solrHost", "localhost:8983")
       .put("collectionName", "collection1")
       .put("idField", "id")
@@ -201,7 +200,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
     Map<String, String> sinkConfigproperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "RealtimeSolrSink")
-      .put("solrMode", SINGLE_NODE_SOLR_MODE)
+      .put("solrMode", SINGLE_NODE_MODE)
       .put("solrHost", "localhost:8983")
       .put("collectionName", "collection1")
       .put("idField", "id")
@@ -321,29 +320,183 @@ public class SolrSearchSinkTest extends HydratorTestBase {
     cloudClient.shutdown();
   }
 
+  @Ignore
+  public void testSolrSinkWithNullValues() throws Exception {
+    Schema nullInputSchema = Schema.recordOf(
+      "input-record",
+      Schema.Field.of("id", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+      Schema.Field.of("firstname", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("lastname", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("office address", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+      Schema.Field.of("pincode", Schema.nullableOf(Schema.of(Schema.Type.INT))));
+
+    client = new HttpSolrClient("http://localhost:8983/solr/collection1");
+    String inputDatasetName = "input-source-with-null";
+    ETLStage source = new ETLStage("source", MockSource.getPlugin(inputDatasetName));
+
+    Map<String, String> sinkConfigproperties = new ImmutableMap.Builder<String, String>()
+      .put(Constants.Reference.REFERENCE_NAME, "BatchSolrSink")
+      .put("solrMode", SINGLE_NODE_MODE)
+      .put("solrHost", "localhost:8983")
+      .put("collectionName", "collection1")
+      .put("idField", "id")
+      .put("outputFieldMappings", "office address:address")
+      .build();
+
+    ETLStage sink = new ETLStage("SolrSink", new ETLPlugin("SolrSearch", BatchSink.PLUGIN_TYPE, sinkConfigproperties,
+                                                           null));
+
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    ApplicationId appId = NamespaceId.DEFAULT.app("testBatchSolrSink");
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
+
+    DataSetManager<Table> inputManager = getDataset(inputDatasetName);
+    List<StructuredRecord> input = ImmutableList.of(
+      StructuredRecord.builder(nullInputSchema).set("id", "1").set("firstname", "Brett").set("lastname", "Lee").set
+        ("office address", "NE lake side").set("pincode", 480001).build(),
+      StructuredRecord.builder(nullInputSchema).set("id", "2").set("firstname", "John").set("lastname", "Ray").set
+        ("office address", "SE lake side").set("pincode", null).build(),
+      StructuredRecord.builder(nullInputSchema).set("id", "3").set("firstname", "Johnny").set("lastname", "Wagh").set
+        ("office address", "").set("pincode", 480003).build(),
+      StructuredRecord.builder(nullInputSchema).set("id", "").set("firstname", "Michael").set("lastname", "Hussey").set
+        ("office address", "WE Lake Side").set("pincode", 480004).build(),
+      StructuredRecord.builder(nullInputSchema).set("id", null).set("firstname", "Michael").set("lastname", "Clarke")
+        .set("office address", "WE Lake Side").set("pincode", 480005).build());
+    MockSource.writeInput(inputManager, input);
+
+    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
+    mrManager.start();
+    mrManager.waitForFinish(5, TimeUnit.MINUTES);
+
+    QueryResponse queryResponse = client.query(new SolrQuery("*:*"));
+    SolrDocumentList resultList = queryResponse.getResults();
+
+    Assert.assertEquals(4, resultList.size());
+    for (SolrDocument document : resultList) {
+      if (document.get("id").equals("1")) {
+        Assert.assertEquals("Brett", document.get("firstname"));
+        Assert.assertEquals("Lee", document.get("lastname"));
+        Assert.assertEquals("NE lake side", document.get("address"));
+        Assert.assertEquals(480001, document.get("pincode"));
+      } else if (document.get("id").equals("2")) {
+        Assert.assertEquals("John", document.get("firstname"));
+        Assert.assertEquals("Ray", document.get("lastname"));
+        Assert.assertEquals("SE lake side", document.get("address"));
+      } else if (document.get("id").equals("3")) {
+        Assert.assertEquals("Johnny", document.get("firstname"));
+        Assert.assertEquals("Wagh", document.get("lastname"));
+        Assert.assertEquals("", document.get("address"));
+        Assert.assertEquals(480003, document.get("pincode"));
+      } else {
+        Assert.assertEquals("Michael", document.get("firstname"));
+        Assert.assertEquals("Hussey", document.get("lastname"));
+        Assert.assertEquals("WE Lake Side", document.get("address"));
+        Assert.assertEquals(480004, document.get("pincode"));
+      }
+    }
+    // Clean the indexes
+    client.deleteByQuery("*:*");
+    client.commit();
+    client.shutdown();
+  }
+
+  @Test
+  public void testSolrConnectionWithWrongHost() throws Exception {
+    String inputDatasetName = "input-source-with-wrong-host";
+    ETLStage source = new ETLStage("source", MockSource.getPlugin(inputDatasetName));
+
+    Map<String, String> sinkConfigproperties = new ImmutableMap.Builder<String, String>()
+      .put(Constants.Reference.REFERENCE_NAME, "BatchSolrSink")
+      .put("solrMode", SINGLE_NODE_MODE)
+      .put("solrHost", "localhost:8984")
+      .put("collectionName", "collection1")
+      .put("idField", "id")
+      .put("outputFieldMappings", "office address:address")
+      .build();
+
+    ETLStage sink = new ETLStage("SolrSink", new ETLPlugin("SolrSearch", BatchSink.PLUGIN_TYPE, sinkConfigproperties,
+                                                           null));
+
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    ApplicationId appId = NamespaceId.DEFAULT.app("testBatchSolrSink");
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
+
+    DataSetManager<Table> inputManager = getDataset(inputDatasetName);
+    List<StructuredRecord> input = ImmutableList.of(
+      StructuredRecord.builder(inputSchema).set("id", "1").set("firstname", "Brett").set("lastname", "Lee").set
+        ("office address", "NE lake side").set("pincode", 480001).build(),
+      StructuredRecord.builder(inputSchema).set("id", "2").set("firstname", "John").set("lastname", "Ray").set
+        ("office address", "SE lake side").set("pincode", 480002).build()
+    );
+    MockSource.writeInput(inputManager, input);
+
+    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
+    mrManager.start();
+    mrManager.waitForFinish(5, TimeUnit.MINUTES);
+
+    Assert.assertEquals("FAILED", mrManager.getHistory().get(0).getStatus().name());
+  }
+
+  @Test
+  public void testSolrConnectionWithWrongCollection() throws Exception {
+    String inputDatasetName = "input-source-with-wrong-collection";
+    ETLStage source = new ETLStage("source", MockSource.getPlugin(inputDatasetName));
+
+    Map<String, String> sinkConfigproperties = new ImmutableMap.Builder<String, String>()
+      .put(Constants.Reference.REFERENCE_NAME, "BatchSolrSink")
+      .put("solrMode", SINGLE_NODE_MODE)
+      .put("solrHost", "localhost:8983")
+      .put("collectionName", "wrong_collection")
+      .put("idField", "id")
+      .put("outputFieldMappings", "office address:address")
+      .build();
+
+    ETLStage sink = new ETLStage("SolrSink", new ETLPlugin("SolrSearch", BatchSink.PLUGIN_TYPE, sinkConfigproperties,
+                                                           null));
+
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    ApplicationId appId = NamespaceId.DEFAULT.app("testBatchSolrSink");
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
+
+    DataSetManager<Table> inputManager = getDataset(inputDatasetName);
+    List<StructuredRecord> input = ImmutableList.of(
+      StructuredRecord.builder(inputSchema).set("id", "1").set("firstname", "Brett").set("lastname", "Lee").set
+        ("office address", "NE lake side").set("pincode", 480001).build(),
+      StructuredRecord.builder(inputSchema).set("id", "2").set("firstname", "John").set("lastname", "Ray").set
+        ("office address", "SE lake side").set("pincode", 480002).build()
+    );
+    MockSource.writeInput(inputManager, input);
+
+    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
+    mrManager.start();
+    mrManager.waitForFinish(5, TimeUnit.MINUTES);
+
+    Assert.assertEquals("FAILED", mrManager.getHistory().get(0).getStatus().name());
+  }
+
   @Test(expected = IllegalArgumentException.class)
   public void testInvalidSingleNodeSolrUrl() {
-    SolrSearchSinkConfig config = new SolrSearchSinkConfig("SolrSink", SINGLE_NODE_SOLR_MODE,
-                                                           "localhost:8983,localhost:8984", "collection1",
-                                                           "id", "office address:address");
-    SolrSearchSink sinkObject = new SolrSearchSink(config);
-    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
-    sinkObject.configurePipeline(configurer);
-  }
-
-  @Test(expected = IllegalArgumentException.class)
-  public void testSolrConnectionWithWrongHost() {
-    SolrSearchSinkConfig config = new SolrSearchSinkConfig("SolrSink", SINGLE_NODE_SOLR_MODE, "localhost:8984",
-                                                           "collection1", "id", "office address:address");
-    SolrSearchSink sinkObject = new SolrSearchSink(config);
-    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
-    sinkObject.configurePipeline(configurer);
-  }
-
-  @Test(expected = IllegalArgumentException.class)
-  public void testSolrConnectionWithWrongCollection() {
-    SolrSearchSinkConfig config = new SolrSearchSinkConfig("SolrSink", SINGLE_NODE_SOLR_MODE, "localhost:8983",
-                                                           "Wrong_Collection", "id", "office address:address");
+    SolrSearchSinkConfig config = new SolrSearchSinkConfig("SolrSink", SINGLE_NODE_MODE,
+                                                           "localhost:8983,localhost:8984", "collection1", "id",
+                                                           "office address:address");
     SolrSearchSink sinkObject = new SolrSearchSink(config);
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
     sinkObject.configurePipeline(configurer);
@@ -351,8 +504,9 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
   @Test(expected = IllegalArgumentException.class)
   public void testWrongIdFieldName() {
-    SolrSearchSinkConfig config = new SolrSearchSinkConfig("SolrSink", SINGLE_NODE_SOLR_MODE, "localhost:8983",
-                                                           "collection1", "wrong_id", "office address:address");
+    SolrSearchSinkConfig config = new SolrSearchSinkConfig("SolrSink", SINGLE_NODE_MODE,
+                                                           "localhost:8983", "collection1", "wrong_id",
+                                                           "office address:address");
     SolrSearchSink sinkObject = new SolrSearchSink(config);
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
     sinkObject.configurePipeline(configurer);
@@ -366,9 +520,10 @@ public class SolrSearchSinkTest extends HydratorTestBase {
       Schema.Field.of("firstname", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("lastname", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("office address", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("pincode", Schema.of(Schema.Type.BYTES)));
-    SolrSearchSinkConfig config = new SolrSearchSinkConfig("SolrSink", SINGLE_NODE_SOLR_MODE, "localhost:8983",
-                                                           "collection1", "rowid", "office address:address");
+      Schema.Field.of("pincode", Schema.nullableOf(Schema.of(Schema.Type.BYTES))));
+    SolrSearchSinkConfig config = new SolrSearchSinkConfig("SolrSink", SINGLE_NODE_MODE,
+                                                           "localhost:8983", "collection1", "id",
+                                                           "office address:address");
     SolrSearchSink sinkObject = new SolrSearchSink(config);
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
     sinkObject.configurePipeline(configurer);

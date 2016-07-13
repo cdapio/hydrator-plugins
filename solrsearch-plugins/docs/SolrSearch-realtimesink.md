@@ -25,7 +25,7 @@ zkHost1:2181,zkHost2:2181,zkHost3:2181 for SolrCloud.
 
 **collectionName:** Name of the collection where data will be indexed and stored in Solr.
 
-**idField:** Field that will determine the unique id for the document to be indexed. It should match a fieldname
+**idField:** Field that will determine the unique id for the document to be indexed. It must match a field name
 in the structured record of the input.
 
 **outputFieldMappings:** List of the input fields to map to the output Solr fields. The key specifies the name of the
@@ -42,7 +42,7 @@ If idField('id') in the input record is NULL, then that particular record will b
 
 Example
 -------
-This example connects to 'Sinlge Node Solr' server, which is running locally( at default port 8983), and writes the
+This example connects to a 'Sinlge Node Solr' server, running locally at the default port of 8983, and writes the
 data to the specified collection (test_collection). The data is indexed using the id field coming in the input record
 . And also the fieldname 'office address' is mapped to the 'address' field in Solr's index.
 
@@ -50,7 +50,7 @@ data to the specified collection (test_collection). The data is indexed using th
       "name": "SolrSearch",
       "type": "realtimesink",
         "properties": {
-          "solrMode": "Single Node Solr",
+          "solrMode": "SingleNode",
           "solrHost": "localhost:8983",
           "collectionName": "test_collection",
           "idField": "id",
