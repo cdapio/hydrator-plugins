@@ -16,6 +16,8 @@
 
 package co.cask.hydrator.common.test;
 
+import co.cask.cdap.api.macro.InvalidMacroException;
+import co.cask.cdap.api.macro.MacroEvaluator;
 import co.cask.cdap.api.plugin.PluginProperties;
 import co.cask.cdap.etl.api.Lookup;
 import co.cask.cdap.etl.api.LookupProvider;
@@ -79,6 +81,12 @@ public class MockTransformContext implements TransformContext {
 
   @Override
   public <T> T newPluginInstance(String pluginId) throws InstantiationException {
+    return null;
+  }
+
+  @Override
+  public <T> T newPluginInstance(String s,
+                                 MacroEvaluator macroEvaluator) throws InstantiationException, InvalidMacroException {
     return null;
   }
 
