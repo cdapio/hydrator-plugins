@@ -28,7 +28,8 @@ public class SSHActionTestRun {
   private static final String user = "Christopher";
   private static final String privateKeyFile = "/Users/Christopher/.ssh/id_rsa";
   private static final String privateKeyPassphrase = "thegreenfrogatcask";
-  private static final String cmd = "uptime";
+  private static final String cmd = "mkdir -p dirFromSSHAction/subdir && touch dirFromSSHAction/createFile.txt " +
+    "&& mv dirFromSSHAction/createFile.txt dirFromSSHAction/subdir";
 
   @Test
   public void testSSHAction() throws Exception {
