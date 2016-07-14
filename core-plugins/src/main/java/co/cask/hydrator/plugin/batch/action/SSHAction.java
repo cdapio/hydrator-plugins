@@ -70,7 +70,7 @@ public class SSHAction extends Action {
 
       Session session = connection.openSession();
 
-      session.execCommand(config.scriptCMD);
+      session.execCommand(config.cmd);
 
       // Read stdout and stderr
       InputStream stdout = new StreamGobbler(session.getStdout());
@@ -116,38 +116,38 @@ public class SSHAction extends Action {
 
     @Nullable
     @Description("URL of host machine. Defaults to localhost")
-    public String host;
+    private String host;
 
     @Description("User login credentials")
-    public String user;
+    private String user;
 
     @Description("Path to Private Key File")
-    public String privateKeyFile;
+    private String privateKeyFile;
 
     @Description("Private Key Passphrase")
-    public String privateKeyPassPhrase;
+    private String privateKeyPassPhrase;
 
     @Nullable
     @Description("Port to connect to. Defaults to 22")
-    public int port;
+    private int port;
 
     @Nullable
     @Description("Script command")
-    public String scriptCMD; //command should include filepath and arguments
+    private String cmd; //command should include filepath and arguments
 
     public SSHActionConfig() {
       host = "localhost";
       port = 22;
     }
 
-    public SSHActionConfig(String host, int port, String user, String privateKeyFile, String privateKeyPassPhrase,
-                           String scriptCMD) {
+    public SSHActionConfig(String host, String user, String privateKeyFile, String privateKeyPassPhrase, int port,
+                           String cmd) {
       this.host = host;
-      this.port = port;
       this.user = user;
       this.privateKeyFile = privateKeyFile;
       this.privateKeyPassPhrase = privateKeyPassPhrase;
-      this.scriptCMD = scriptCMD;
+      this.port = port;
+      this.cmd = cmd;
     }
 
     public void validate() {
