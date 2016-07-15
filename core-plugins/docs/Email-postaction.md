@@ -42,14 +42,14 @@ If set to 'failure', the action will only be executed if the pipeline run failed
 
 Example
 -------
-This example sends an email from 'team-ops@company.com' to 'team-alerts@company.com' whenever a run fails:
+This example sends an email from 'team-ops@example.com' to 'team-alerts@example.com' whenever a run fails:
 
     {
         "name": "Email",
         "type": "postaction",
         "properties": {
-            "recipientEmailAddress": "team-alerts@company.com",
-            "senderEmailAddress": "team-ops@company.com",
+            "recipientEmailAddress": "team-alerts@example.com",
+            "senderEmailAddress": "team-ops@example.com",
             "subject": "Pipeline Failure ${runtime(yyyy-MM-dd)}",
             "message": "The pipeline run failed.",
             "includeWorkflowToken": "true",
