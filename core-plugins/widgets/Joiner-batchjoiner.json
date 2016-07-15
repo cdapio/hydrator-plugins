@@ -1,0 +1,36 @@
+{
+  "metadata": {
+    "spec-version": "1.3"
+  },
+  "inputs": {
+    "multipleInputs": true
+  },
+  "configuration-groups": [
+    {
+      "label": "Join",
+      "properties": [
+        {
+          "widget-type": "sql-select-fields",
+          "label": "Fields",
+          "name": "selectedFields"
+        },
+        {
+          "widget-type": "multi-checkboxes",
+          "label": "Join Type",
+          "name": "requiredInputs"
+        },
+        {
+          "widget-type": "sql-conditions",
+          "label": "Join Condition",
+          "name": "joinKeys"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Number of Partitions",
+          "name": "numPartitions"
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}
