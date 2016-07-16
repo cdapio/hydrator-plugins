@@ -70,7 +70,11 @@ public class SSHAction extends Action {
 
       Session session = connection.openSession();
 
-      session.execCommand(config.cmd);
+      try {
+        session.execCommand(config.cmd);
+      } catch (IOException e) {
+        throw new IOException(String.format("Command failed with IOException: %s", e.getMessage()));
+      }
 
       // Read stdout and stderr
       InputStream stdout = new StreamGobbler(session.getStdout());
@@ -100,7 +104,7 @@ public class SSHAction extends Action {
 
       session.close();
     } catch (IOException e) {
-      LOG.error("Unable to establish connection.", e);
+      LOG.error("Error during SSHAction execution: ", e);
     }
   }
 
