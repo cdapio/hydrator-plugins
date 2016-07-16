@@ -154,7 +154,7 @@ public class JoinerConfig extends PluginConfig {
       Iterable<String> stageOldNamePair = Splitter.on('.').trimResults().omitEmptyStrings().
         split(Iterables.get(stageOldNameAliasPair, 0));
 
-      if (Iterables.size(stageOldNameAliasPair) != 2) {
+      if (Iterables.size(stageOldNamePair) != 2) {
         throw new IllegalArgumentException(String.format("Invalid syntax. Selected Fields must be of syntax " +
                                                            "<stageName>.<oldFieldName> as <alias>, but found %s",
                                                          selectedField));
