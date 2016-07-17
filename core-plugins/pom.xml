@@ -69,6 +69,12 @@
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-etl-realtime</artifactId>
     </dependency>
+    <!-- https://mvnrepository.com/artifact/com.jcraft/jsch -->
+    <dependency>
+      <groupId>com.jcraft</groupId>
+      <artifactId>jsch</artifactId>
+      <version>0.1.53</version>
+    </dependency>
     <dependency>
       <groupId>org.twitter4j</groupId>
       <artifactId>twitter4j-core</artifactId>
