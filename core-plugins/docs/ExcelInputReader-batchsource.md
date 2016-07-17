@@ -1,18 +1,18 @@
-# ExcelInputReader Batch Source
+# Excel Batch Source
 
 
 Description
 -----------
-The Excel Input Reader provides user the ability to read data from one or more Excel file(s).
+The Excel plugin provides user the ability to read data from one or more Excel file(s).
 
-The Input Reader supports following types of Excel file(s):
+The plugin supports following types of Excel file(s):
 Microsoft Excel 97(-2007) file format
 Microsoft Excel XML (2007+) file format
 
 
 Use Case
 --------
-The Excel Input Reader is used to read excel file(s) and converts the rows to structured records based
+The Excel plugin is used to read excel file(s) and converts the rows to structured records based
 on the column names, column-label mapping and column-type mapping provided by the user. Also keeps track
 of all the processed excel files in a memory table provided by the user. So, that if user has the option
 not to reprocess a particular file.
@@ -78,26 +78,26 @@ generate structured records according to the inputs.
 
 The plugin JSON Representation will be:
 
-{
-  "name": "ExcelInputReader",
-  "type": "batchsource",
-  "properties": {
-        "filePath": "hdfs://<namenode-hostname>:9000/cdap",
-        "filePattern": ".*",
-        "memoryTableName": "inventory-memory-table",
-        "reprocess": "false",
-        "sheet": "Sheet1",
-        "sheetValue": "-1",
-        "columnList": "A,B",
-        "columnMapping": "B:name,C:age"
-        "skipFirstRow": "false",
-        "terminateIfEmptyRow": "false",
-        "rowsLimit": "" ,
-        "outputSchema": "A:string",
-        "ifErrorRecord" : "Ignore error and continue",
-        "errorDatasetName": ""
-   }
-}
+    {
+      "name": "Excel",
+      "type": "batchsource",
+      "properties": {
+            "filePath": "hdfs://<namenode-hostname>:9000/cdap",
+            "filePattern": ".*",
+            "memoryTableName": "inventory-memory-table",
+            "reprocess": "false",
+            "sheet": "Sheet1",
+            "sheetValue": "-1",
+            "columnList": "A,B",
+            "columnMapping": "B:name,C:age"
+            "skipFirstRow": "false",
+            "terminateIfEmptyRow": "false",
+            "rowsLimit": "" ,
+            "outputSchema": "A:string",
+            "ifErrorRecord" : "Ignore error and continue",
+            "errorDatasetName": ""
+       }
+    }
 
 Suppose, the above **filePath** contains only one file with these input rows from **Sheet1**:
 
@@ -109,7 +109,7 @@ Suppose, the above **filePath** contains only one file with these input rows fro
     |    3      |  "Ashley"  |    45       |
     +======================================+
 
-After, the processing has been done by the ExcelInputReader plugin, the output will have these
+After, the processing has been done by the Excel plugin, the output will have these
 structure and contents, with the 'B' and 'C' column names being replaced by the 'name' and 'age'
 columns respectively:
 

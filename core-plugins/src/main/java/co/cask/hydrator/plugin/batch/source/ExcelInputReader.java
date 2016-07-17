@@ -63,7 +63,7 @@ import javax.annotation.Nullable;
  *Reads excel file(s) rows and convert them to structure records.
  */
 @Plugin(type = BatchSource.PLUGIN_TYPE)
-@Name("ExcelInputReader")
+@Name("Excel")
 @Description("Batch Source to read one or more excel files and convert rows to structure records using " +
   "input columns, column-mapping and field-type mapping.")
 public class ExcelInputReader extends BatchSource<LongWritable, Object, StructuredRecord> {
