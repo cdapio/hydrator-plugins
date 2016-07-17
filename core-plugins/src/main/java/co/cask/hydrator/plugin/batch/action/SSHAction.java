@@ -157,11 +157,12 @@ public class SSHAction extends Action {
     @Description("Command to be executed on the remote host.")
     private String cmd;
 
-    public SSHActionConfig(String host, String user, String privateKeyFile, int port, String cmd) {
+    public SSHActionConfig(String host, String user, String privateKeyFile, int port, String password, String cmd) {
       this.host = host;
       this.port = port;
       this.user = user;
       this.privateKeyFile = privateKeyFile;
+      this.password = password;
       this.cmd = cmd;
     }
 

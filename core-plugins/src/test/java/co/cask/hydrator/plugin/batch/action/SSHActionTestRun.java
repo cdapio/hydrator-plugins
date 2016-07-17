@@ -32,7 +32,6 @@ import co.cask.cdap.proto.ProgramType;
 import co.cask.cdap.proto.RunRecord;
 import co.cask.cdap.proto.WorkflowNodeStateDetail;
 import co.cask.cdap.proto.artifact.AppRequest;
-
 import co.cask.cdap.proto.id.ProgramId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.WorkflowManager;
@@ -89,7 +88,7 @@ public class SSHActionTestRun extends ETLBatchTestBase {
   public void testSSHAction() throws Exception {
     try {
       SSHAction sshAction = new SSHAction(
-        new SSHAction.SSHActionConfig(host, user, privateKeyFile, port, cmd));
+        new SSHAction.SSHActionConfig(host, user, privateKeyFile, port, privateKeyPassphrase, cmd));
       sshAction.run(null);
     } catch (Exception e) {
       e.printStackTrace();
@@ -104,7 +103,7 @@ public class SSHActionTestRun extends ETLBatchTestBase {
       builder.put("port", Integer.toString(port));
       builder.put("user", user);
       builder.put("privateKeyFile", privateKeyFile);
-      builder.put("privateKeyPassPhrase", privateKeyPassphrase);
+      builder.put("password", privateKeyPassphrase);
       builder.put("cmd", cmd);
       ETLStage action = new ETLStage(
         "sshActionPOC",
@@ -123,7 +122,7 @@ public class SSHActionTestRun extends ETLBatchTestBase {
         .addConnection(action.getName(), source.getName())
         .addConnection(source.getName(), sink.getName())
         .build();
-      
+
       AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
       Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "sshActionTest");
       ApplicationManager appManager = deployApplication(appId, appRequest);
@@ -151,7 +150,7 @@ public class SSHActionTestRun extends ETLBatchTestBase {
       builder.put("port", Integer.toString(port));
       builder.put("user", user);
       builder.put("privateKeyFile", null);
-      builder.put("privateKeyPassPhrase", privateKeyPassphrase);
+      builder.put("password", privateKeyPassphrase);
       builder.put("cmd", cmd);
       ETLStage action = new ETLStage(
         "sshActionPOC",
@@ -182,7 +181,8 @@ public class SSHActionTestRun extends ETLBatchTestBase {
                                                       ProgramRunStatus.FAILED);
       Assert.assertTrue(history.size() == 1); //make sure pipeline didn't fail
 
-      Map<String, WorkflowNodeStateDetail> nodesInFailedProgram = manager.getWorkflowNodeStates(history.get(0).getPid());
+      Map<String, WorkflowNodeStateDetail> nodesInFailedProgram =
+        manager.getWorkflowNodeStates(history.get(0).getPid());
       Assert.assertTrue(nodesInFailedProgram.size() == 1);
 
       //check that SSHAction node failed
