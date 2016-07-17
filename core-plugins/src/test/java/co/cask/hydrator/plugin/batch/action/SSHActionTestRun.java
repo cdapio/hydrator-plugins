@@ -44,23 +44,10 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.SecureRandom;
-import java.security.Signature;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import javax.swing.*;
 
 
 /**
@@ -96,14 +83,13 @@ public class SSHActionTestRun extends ETLBatchTestBase {
     } catch (Exception e) {
       throw new Exception(String.format("Error when setting SSH authentication: %s", e.getMessage()));
     }
-
   }
 
   @Test
   public void testSSHAction() throws Exception {
     try {
       SSHAction sshAction = new SSHAction(
-        new SSHAction.SSHActionConfig(host, user, privateKeyFile, privateKeyPassphrase, port, cmd));
+        new SSHAction.SSHActionConfig(host, user, privateKeyFile, port, cmd));
       sshAction.run(null);
     } catch (Exception e) {
       e.printStackTrace();
@@ -137,7 +123,7 @@ public class SSHActionTestRun extends ETLBatchTestBase {
         .addConnection(action.getName(), source.getName())
         .addConnection(source.getName(), sink.getName())
         .build();
-
+      
       AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
       Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "sshActionTest");
       ApplicationManager appManager = deployApplication(appId, appRequest);

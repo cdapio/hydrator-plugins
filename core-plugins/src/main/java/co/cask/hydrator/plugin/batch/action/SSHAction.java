@@ -14,7 +14,6 @@
  * the License.
  */
 
-
 package co.cask.hydrator.plugin.batch.action;
 
 import ch.ethz.ssh2.Connection;
@@ -29,11 +28,14 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 
 import co.cask.cdap.etl.api.action.Action;
 import co.cask.cdap.etl.api.action.ActionContext;
+import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
+import java.io.CharArrayWriter;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -41,7 +43,11 @@ import javax.annotation.Nullable;
 
 /**
  * SSH into a remote machine and execute a script on that machine.
+<<<<<<< HEAD
  * A user must specify username and keypair authentication credentials.
+=======
+ * A user must specify username and key pair authentication credentials.
+>>>>>>> 0b5a58b6ba2dfc9199791d3dadbf63038dbb5474
  * Optionals include port and machine URL
  */
 @Plugin(type = Action.PLUGIN_TYPE)
@@ -57,54 +63,68 @@ public class SSHAction extends Action {
   }
 
   @Override
-  public void run(ActionContext context) throws Exception {
+  public void run(final ActionContext context) throws Exception {
+    Connection connection = new Connection(config.host);
     try {
-      Connection connection = new Connection(config.host);
       connection.connect();
 
-      if (!connection.authenticateWithPublicKey(config.user, new File(config.privateKeyFile),
-                                                config.privateKeyPassPhrase)) {
+      LOG.info("DEBUG {}", config.privateKeyFile);
+      char[] buff = new char[256];
+
+      CharArrayWriter cw = new CharArrayWriter();
+
+      FileReader fr = new FileReader(new File(config.privateKeyFile));
+
+      while (true) {
+        int len = fr.read(buff);
+        if (len < 0) {
+          break;
+        }
+        cw.write(buff, 0, len);
+      }
+
+      fr.close();
+
+      LOG.info("File content is {}", new String(buff));
+
+      String password = Strings.isNullOrEmpty(config.password) ? null : config.password;
+      if (!connection.authenticateWithPublicKey(config.user, new File(config.privateKeyFile), password)) {
         throw new IOException(String.format("Unable to establish SSH connection for %s@%s on port %d",
                                             config.user, config.host, config.port));
       }
 
+      LOG.info(String.format("Connection established with the host %s", config.host));
+
       Session session = connection.openSession();
+      session.execCommand(config.cmd);
 
-      try {
-        session.execCommand(config.cmd);
-      } catch (IOException e) {
-        throw new IOException(String.format("Command failed with IOException: %s", e.getMessage()));
-      }
-
-      // Read stdout and stderr
       InputStream stdout = new StreamGobbler(session.getStdout());
       BufferedReader outBuffer = new BufferedReader(new InputStreamReader(stdout));
       InputStream stderr = new StreamGobbler(session.getStderr());
       BufferedReader errBuffer = new BufferedReader(new InputStreamReader(stderr));
 
-
       StringBuilder outBuilder = new StringBuilder();
+      StringBuilder errBuilder = new StringBuilder();
+
       String line = outBuffer.readLine();
       while (line != null) {
-        outBuilder.append(line + "\n");
+        outBuilder.append(line).append("\n");
         line = outBuffer.readLine();
       }
 
-      StringBuilder errBuilder = new StringBuilder();
       line = errBuffer.readLine();
       while (line != null) {
-        errBuilder.append(line + "\n");
+        errBuilder.append(line).append("\n");
         line = errBuffer.readLine();
       }
 
-      LOG.info("Output:");
-      LOG.info(outBuilder.toString());
-      LOG.info("Errors:");
-      LOG.info(errBuilder.toString());
+      LOG.info("Command: {} and ExitStatus: {}", config.cmd, session.getExitStatus());
+      LOG.info("Output: {}", outBuilder.toString());
+      LOG.info("Errors: {}", errBuilder.toString());
 
       session.close();
-    } catch (IOException e) {
-      LOG.error("Error during SSHAction execution: ", e);
+    } finally {
+      connection.close();
     }
   }
 
@@ -118,46 +138,34 @@ public class SSHAction extends Action {
    */
   public static class SSHActionConfig extends PluginConfig {
 
-    @Nullable
-    @Description("URL of host machine. Defaults to localhost")
+    @Description("Host name of the remote machine where the command need to be executed.")
     private String host;
-
-    @Description("User login credentials")
-    private String user;
-
-    @Description("Path to Private Key File")
-    private String privateKeyFile;
-
-    @Description("Private Key Passphrase")
-    private String privateKeyPassPhrase;
 
     @Nullable
     @Description("Port to connect to. Defaults to 22")
     private int port;
 
-    @Nullable
-    @Description("Script command")
-    private String cmd; //command should include filepath and arguments
+    @Description("User name used for conn")
+    private String user;
 
-    public SSHActionConfig() {
-      host = "localhost";
-      port = 22;
-    }
+    @Description("Private key file.")
+    private String privateKeyFile;
 
-    public SSHActionConfig(String host, String user, String privateKeyFile, String privateKeyPassPhrase, int port,
-                           String cmd) {
+    @Description("Password")
+    private String password;
+
+    @Description("Command to be executed on the remote host.")
+    private String cmd;
+
+    public SSHActionConfig(String host, String user, String privateKeyFile, int port, String cmd) {
       this.host = host;
+      this.port = port;
       this.user = user;
       this.privateKeyFile = privateKeyFile;
-      this.privateKeyPassPhrase = privateKeyPassPhrase;
-      this.port = port;
       this.cmd = cmd;
     }
 
     public void validate() {
-      //check that only password or privateKey is set
-
-
       //check that port is not negative
       if (port < 0) {
         throw new IllegalArgumentException("Port cannot be negative");
