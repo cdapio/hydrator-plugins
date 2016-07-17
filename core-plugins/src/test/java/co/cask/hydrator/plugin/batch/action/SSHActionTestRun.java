@@ -117,7 +117,7 @@ public class SSHActionTestRun extends ETLBatchTestBase {
   public void testSSHAction() throws Exception {
     try {
       SSHAction sshAction = new SSHAction(
-        new SSHAction.SSHActionConfig(host, user, privateKeyFile, privateKeyPassphrase, port, cmd));
+        new SSHAction.SSHActionConfig(host, user, privateKeyFile, port, cmd));
       sshAction.run(null);
     } catch (Exception e) {
       e.printStackTrace();
