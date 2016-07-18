@@ -160,12 +160,18 @@ public class JoinerConfig extends PluginConfig {
                                                          selectedField));
       }
 
+      String stageName = Iterables.get(stageOldNamePair, 0);
+      String oldFieldName = Iterables.get(stageOldNamePair, 1);
+
       // if alias is not present in selected fields, use original field name as alias
-      String alias = (Iterables.size(stageOldNameAliasPair) == 1) ? Iterables.get(stageOldNameAliasPair, 0) :
-        Iterables.get(stageOldNameAliasPair, 1);
-      tableBuilder.put(Iterables.get(stageOldNamePair, 0), Iterables.get(stageOldNamePair, 1), alias);
+      String alias = isAliasPresent(stageOldNameAliasPair) ? oldFieldName : Iterables.get(stageOldNameAliasPair, 1);
+      tableBuilder.put(stageName, oldFieldName, alias);
     }
     return tableBuilder.build();
+  }
+
+  private boolean isAliasPresent(Iterable<String> stageOldNameAliasPair) {
+    return Iterables.size(stageOldNameAliasPair) == 1;
   }
 
   Set<String> getInputs() {

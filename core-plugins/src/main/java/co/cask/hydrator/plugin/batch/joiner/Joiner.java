@@ -149,6 +149,10 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
   @Path("outputSchema")
   public Schema getOutputSchema(GetSchemaRequest request) {
     try {
+      perStageJoinKeys = request.getPerStageJoinKeys();
+      requiredInputs = request.getInputs();
+      perStageSelectedFields = request.getPerStageSelectedFields();
+      duplicateFields = ArrayListMultimap.create();
       return getOutputSchema(request.inputSchemas);
     } catch (IllegalArgumentException e) {
       if (!duplicateFields.isEmpty()) {
