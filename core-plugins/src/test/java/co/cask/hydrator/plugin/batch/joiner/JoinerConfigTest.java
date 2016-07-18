@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableTable;
+import com.google.common.collect.Table;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -151,13 +152,22 @@ public class JoinerConfigTest {
 
   @Test
   public void testJoinerConfigWithoutFieldsToRename() {
-    String selectedFields = "film.film_id film_id, film.film_name as film_name, " +
+    String selectedFields = "film.film_id, film.film_name, " +
       "filmActor.actor_name as renamed_actor, filmCategory.category_name as renamed_category";
 
     JoinerConfig config = new JoinerConfig("film.film_id=filmActor.film_id=filmCategory.film_id&" +
                                              "film.film_name=filmActor.film_name=filmCategory.film_name",
                                            selectedFields, "film,filmActor,filmCategory");
-    config.getPerStageSelectedFields();
+
+    Table<String, String, String> actual = config.getPerStageSelectedFields();
+    ImmutableTable.Builder<String, String, String> tableBuilder = new ImmutableTable.Builder<>();
+    tableBuilder.put("film", "film_id", "film_id");
+    tableBuilder.put("film", "film_name", "film_name");
+    tableBuilder.put("filmActor", "actor_name", "renamed_actor");
+    tableBuilder.put("filmCategory", "category_name", "renamed_category");
+    Table<String, String, String> expected = tableBuilder.build();
+    Assert.assertEquals(expected, actual);
+
   }
 
   @Test(expected = IllegalArgumentException.class)

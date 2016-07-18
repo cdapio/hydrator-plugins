@@ -113,8 +113,8 @@ public class JoinerTestRun extends ETLBatchTestBase {
                                    Properties.Table.PROPERTY_SCHEMA, filmCategorySchema.toString()),
                                  null));
 
-    String selectedFields = "film.film_id as film_id, film.film_name as film_name, filmActor.actor_name as " +
-      "renamed_actor, filmCategory.category_name as renamed_category";
+    String selectedFields = "film.film_id, film.film_name, filmActor.actor_name as renamed_actor, " +
+      "filmCategory.category_name as renamed_category";
 
     ETLStage joinStage =
       new ETLStage("joiner",
