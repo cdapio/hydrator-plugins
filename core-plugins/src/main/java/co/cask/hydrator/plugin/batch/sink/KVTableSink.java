@@ -29,6 +29,7 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.hydrator.common.SchemaValidator;
+import co.cask.hydrator.plugin.common.BatchReadableWritableConfig;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.base.Preconditions;
 
@@ -52,10 +53,7 @@ public class KVTableSink extends BatchWritableSink<StructuredRecord, byte[], byt
   /**
    * Config class for KVTableSink
    */
-  public static class KVTableConfig extends PluginConfig {
-    @Description(NAME_DESC)
-    @Macro
-    private String name;
+  public static class KVTableConfig extends BatchReadableWritableConfig {
 
     @Name(Properties.KeyValueTable.KEY_FIELD)
     @Description(KEY_FIELD_DESC)
@@ -72,7 +70,7 @@ public class KVTableSink extends BatchWritableSink<StructuredRecord, byte[], byt
     }
 
     public KVTableConfig(String name, String keyField, String valueField) {
-      this.name = name;
+      super(name);
       this.keyField = keyField;
       this.valueField = valueField;
     }
@@ -123,7 +121,7 @@ public class KVTableSink extends BatchWritableSink<StructuredRecord, byte[], byt
     } else {
       properties = new HashMap<>(kvTableConfig.getProperties().getProperties());
     }
-    properties.put(Properties.BatchReadableWritable.NAME, kvTableConfig.name);
+    properties.put(Properties.BatchReadableWritable.NAME, kvTableConfig.getName());
     properties.put(Properties.BatchReadableWritable.TYPE, KeyValueTable.class.getName());
     return properties;
   }
