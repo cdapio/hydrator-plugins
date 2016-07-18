@@ -1,0 +1,46 @@
+{
+  "metadata": {
+    "spec-version": "1.3"
+  },
+  "inputs": {
+    "multipleInputs": true
+  },
+  "configuration-groups": [
+    {
+      "label": "Join",
+      "properties": [
+        {
+          "widget-type": "sql-select-fields",
+          "label": "Fields",
+          "name": "selectedFields"
+        },
+        {
+          "widget-type": "join-types",
+          "label": "Join Type",
+          "name": "requiredInputs"
+        },
+        {
+          "widget-type": "sql-conditions",
+          "label": "Join Condition",
+          "name": "joinKeys"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Number of Partitions",
+          "name": "numPartitions",
+          "plugin-function": {
+            "method": "POST",
+            "label": "Generate Schema",
+            "widget": "outputSchema",
+            "output-property": "schema",
+            "plugin-method": "outputSchema",
+            "position": "bottom",
+            "multiple-inputs": true,
+            "button-class": "btn-hydrator"
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}
