@@ -21,6 +21,7 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.datapipeline.DataPipelineApp;
 import co.cask.cdap.etl.api.PipelineConfigurable;
+import co.cask.cdap.etl.api.action.Action;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
 import co.cask.cdap.proto.Id;
@@ -31,6 +32,7 @@ import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.hydrator.plugin.batch.action.EmailAction;
+import co.cask.hydrator.plugin.batch.action.SSHAction;
 import co.cask.hydrator.plugin.batch.aggregator.DedupAggregator;
 import co.cask.hydrator.plugin.batch.aggregator.GroupByAggregator;
 import co.cask.hydrator.plugin.batch.joiner.Joiner;
@@ -114,6 +116,7 @@ public class ETLBatchTestBase extends TestBase {
     // add the artifact for etl batch app
     addAppArtifact(DATAPIPELINE_ARTIFACT_ID, DataPipelineApp.class,
                    BatchSource.class.getPackage().getName(),
+                   Action.class.getPackage().getName(),
                    PipelineConfigurable.class.getPackage().getName(),
                    "org.apache.avro.mapred", "org.apache.avro", "org.apache.avro.generic", "org.apache.avro.io",
                    // these are not real exports for the application, but are required for unit tests.
@@ -151,7 +154,8 @@ public class ETLBatchTestBase extends TestBase {
                       GroupByAggregator.class,
                       DedupAggregator.class,
                       Joiner.class,
-                      EmailAction.class);
+                      EmailAction.class,
+                      SSHAction.class);
   }
 
   protected List<GenericRecord> readOutput(TimePartitionedFileSet fileSet, Schema schema) throws IOException {
