@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.common;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.api.plugin.PluginProperties;
@@ -28,11 +29,7 @@ import javax.annotation.Nullable;
 /**
  * {@link PluginConfig} for {@link TableSink} and {@link RealtimeTableSink}
  */
-public class TableSinkConfig extends PluginConfig {
-  @Name(Properties.Table.NAME)
-  @Description("Name of the table. If the table does not already exist, one will be created.")
-  private String name;
-
+public class TableSinkConfig extends BatchReadableWritableConfig {
   @Name(Properties.Table.PROPERTY_SCHEMA)
   @Description("schema of the table as a JSON Object. If the table does not already exist, one will be " +
     "created with this schema, which will allow the table to be explored through Hive. If no schema is given, the " +
@@ -45,13 +42,9 @@ public class TableSinkConfig extends PluginConfig {
   private String rowField;
 
   public TableSinkConfig(String name, String rowField, @Nullable String schemaStr) {
-    this.name = name;
+    super(name);
     this.rowField = rowField;
     this.schemaStr = schemaStr;
-  }
-
-  public String getName() {
-    return name;
   }
 
   @Nullable
