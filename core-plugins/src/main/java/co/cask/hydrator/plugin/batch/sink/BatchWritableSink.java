@@ -16,8 +16,9 @@
 
 package co.cask.hydrator.plugin.batch.sink;
 
+import co.cask.cdap.api.dataset.DatasetManagementException;
 import co.cask.cdap.api.dataset.DatasetProperties;
-import co.cask.cdap.api.plugin.PluginProperties;
+import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
@@ -37,7 +38,11 @@ import java.util.Map;
  * @param <VAL_OUT> the type of value the sink outputs
  */
 public abstract class BatchWritableSink<IN, KEY_OUT, VAL_OUT> extends BatchSink<IN, KEY_OUT, VAL_OUT> {
+  private final PluginConfig pluginConfig;
 
+  protected BatchWritableSink(PluginConfig pluginConfig) {
+    this.pluginConfig = pluginConfig;
+  }
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     String datasetName = getProperties().get(Properties.BatchReadableWritable.NAME);
@@ -49,7 +54,10 @@ public abstract class BatchWritableSink<IN, KEY_OUT, VAL_OUT> extends BatchSink<
     properties.remove(Properties.BatchReadableWritable.NAME);
     properties.remove(Properties.BatchReadableWritable.TYPE);
 
-    pipelineConfigurer.createDataset(datasetName, datasetType, DatasetProperties.builder().addAll(properties).build());
+    if (!pluginConfig.containsMacro(Properties.BatchReadableWritable.NAME)) {
+      pipelineConfigurer.createDataset(datasetName, datasetType,
+                                       DatasetProperties.builder().addAll(properties).build());
+    }
   }
 
   /**
@@ -58,8 +66,16 @@ public abstract class BatchWritableSink<IN, KEY_OUT, VAL_OUT> extends BatchSink<
   protected abstract Map<String, String> getProperties();
 
   @Override
-  public void prepareRun(BatchSinkContext context) {
-    PluginProperties pluginProperties = context.getPluginProperties();
-    context.addOutput(pluginProperties.getProperties().get(Properties.BatchReadableWritable.NAME));
+  public void prepareRun(BatchSinkContext context) throws DatasetManagementException {
+    Map<String, String> properties = getProperties();
+    if (pluginConfig.containsMacro(Properties.BatchReadableWritable.NAME)) {
+      if (!context.datasetExists(properties.get(Properties.BatchReadableWritable.NAME))) {
+        context.createDataset(properties.get(Properties.BatchReadableWritable.NAME),
+                              properties.get(Properties.BatchReadableWritable.TYPE),
+                              DatasetProperties.builder().addAll(properties).build());
+      }
+    }
+
+    context.addOutput(properties.get(Properties.BatchReadableWritable.NAME));
   }
 }

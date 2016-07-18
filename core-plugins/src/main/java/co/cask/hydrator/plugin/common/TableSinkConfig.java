@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.common;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.api.plugin.PluginProperties;
@@ -31,6 +32,7 @@ import javax.annotation.Nullable;
 public class TableSinkConfig extends PluginConfig {
   @Name(Properties.Table.NAME)
   @Description("Name of the table. If the table does not already exist, one will be created.")
+  @Macro
   private String name;
 
   @Name(Properties.Table.PROPERTY_SCHEMA)

@@ -79,6 +79,7 @@ public class KVTableSink extends BatchWritableSink<StructuredRecord, byte[], byt
   private final KVTableConfig kvTableConfig;
 
   public KVTableSink(KVTableConfig kvTableConfig) {
+    super(kvTableConfig);
     this.kvTableConfig = kvTableConfig;
   }
 
