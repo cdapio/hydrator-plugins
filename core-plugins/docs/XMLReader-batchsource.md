@@ -23,7 +23,7 @@ Properties
 **nodePath:** Node path to emit as an individual event from the XML schema.
 Example: '/book/price' to read only the price from under the book node.
 
-**pattern:** Pattern to select specific file(s).
+**pattern:** Pattern to select specific file(s). (Optional)
 Examples:
 
 1. Use '^' to select files with names starting with 'catalog', such as '^catalog'.
@@ -38,15 +38,19 @@ Possible actions are:
 3. Moved to the target location.
 
 **targetFolder:** Target folder path if user select action after process, either ARCHIVE or MOVE.
-Target folder must be an existing directory.
+Target folder must be an existing directory. (Optional)
 
 **reprocessingRequired:** Specifies whether the file(s) should be reprocessed.
 
 **tableName:** Table name to be used to keep track of processed file(s).
 
+**tableExpiryPeriod:** Expiry period (days) for data in the table. Default is 30 days.
+Example: For tableExpiryPeriod = 30, data before 30 days get deleted from the table.
+
 **temporaryFolder:** An existing HDFS folder path with read and write access for the current user;
 required for storing temporary files containing paths of the processed XML files.
 These temporary files will be read at the end of the job to update the file track table.
+Default to /tmp.
 
 Example
 -------

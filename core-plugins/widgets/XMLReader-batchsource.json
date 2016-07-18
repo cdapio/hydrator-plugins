@@ -75,7 +75,10 @@
         {
           "widget-type": "textbox",
           "label": "Temporary Folder",
-          "name": "temporaryFolder"
+          "name": "temporaryFolder",
+          "widget-attributes": {
+            "default": "/tmp"
+          }
         }
       ]
     }

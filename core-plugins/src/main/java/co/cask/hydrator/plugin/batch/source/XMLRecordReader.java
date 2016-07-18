@@ -245,7 +245,6 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
         fs.delete(file, true);
         break;
       default:
-        LOG.warn("No action required on the file.");
         break;
     }
   }

@@ -249,14 +249,13 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
 
     @Description("An existing HDFS folder path with read and write access for the current user; required for storing " +
       "temporary files containing paths of the processed XML files. These temporary files will be read at the end of " +
-      "the job to update the file track table.")
+      "the job to update the file track table. Default to /tmp.")
     private final String temporaryFolder;
 
     @VisibleForTesting
-    XMLReaderConfig(String referenceName, String path, @Nullable String pattern,
-                           @Nullable String nodePath, @Nullable String actionAfterProcess,
-                           @Nullable String targetFolder, String reprocessingRequired, String tableName,
-                           String tableExpiryPeriod, String temporaryFolder) {
+    XMLReaderConfig(String referenceName, String path, @Nullable String pattern, String nodePath,
+                    String actionAfterProcess, @Nullable String targetFolder, String reprocessingRequired,
+                    String tableName, String tableExpiryPeriod, String temporaryFolder) {
       super(referenceName);
       this.path = path;
       this.pattern = pattern;
