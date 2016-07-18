@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.sink;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.common.Bytes;
@@ -53,6 +54,7 @@ public class KVTableSink extends BatchWritableSink<StructuredRecord, byte[], byt
    */
   public static class KVTableConfig extends PluginConfig {
     @Description(NAME_DESC)
+    @Macro
     private String name;
 
     @Name(Properties.KeyValueTable.KEY_FIELD)
@@ -79,6 +81,7 @@ public class KVTableSink extends BatchWritableSink<StructuredRecord, byte[], byt
   private final KVTableConfig kvTableConfig;
 
   public KVTableSink(KVTableConfig kvTableConfig) {
+    super(kvTableConfig);
     this.kvTableConfig = kvTableConfig;
   }
 

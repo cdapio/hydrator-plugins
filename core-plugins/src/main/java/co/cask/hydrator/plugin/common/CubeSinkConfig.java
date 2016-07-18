@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.common;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.plugin.PluginConfig;
 
@@ -27,6 +28,7 @@ import javax.annotation.Nullable;
  */
 public class CubeSinkConfig extends PluginConfig {
   @Description("Name of the Cube dataset. If the Cube does not already exist, one will be created.")
+  @Macro
   String name;
 
   @Name(Properties.Cube.DATASET_RESOLUTIONS)
