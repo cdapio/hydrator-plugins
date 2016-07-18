@@ -62,7 +62,6 @@ public class SSHAction extends Action {
   @Override
   public void run(final ActionContext context) throws Exception {
     Connection connection = new Connection(config.host);
-    Session session = connection.openSession();
     try {
       connection.connect();
 
@@ -73,6 +72,7 @@ public class SSHAction extends Action {
       }
 
       LOG.debug("Connection established with the host {}", config.host);
+      Session session = connection.openSession();
       session.execCommand(config.command);
 
       InputStream stdout = new StreamGobbler(session.getStdout());
