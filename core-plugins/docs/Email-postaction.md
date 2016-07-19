@@ -20,7 +20,7 @@ If set to 'completion', the action will be executed regardless of whether the pi
 If set to 'success', the action will only be executed if the pipeline run succeeded.
 If set to 'failure', the action will only be executed if the pipeline run failed.
 
-**recipients:** Comma separated list of addresses to send the email to.
+**recipients:** Comma-separated list of addresses to send the email to.
 
 **sender:** The address to send the email from.
 
@@ -28,13 +28,13 @@ If set to 'failure', the action will only be executed if the pipeline run failed
 
 **subject:** The subject of the email.
 
-**protocol:** The email protocol to use. smtp, smtps, and tls are supported. Defaults to SMTP.
+**protocol:** The email protocol to use. SMTP, SMTPS, and TLS are supported. Defaults to SMTP.
 
 **username:** The username to use for authentication if the protocol requires it.
 
 **password:** The password to use for authentication if the protocol requires it.
 
-**host:** The SMTP host to use. Defaults to localhost.
+**host:** The SMTP host to use. Defaults to 'localhost'.
 
 **port:** The SMTP port to use. Defaults to 25.
 
