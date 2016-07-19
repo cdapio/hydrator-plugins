@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "spec-version": "1.0"
+    "spec-version": "1.3"
   },
   "configuration-groups": [
     {
@@ -47,5 +47,10 @@
         "schema-default-type": "string"
       }
     }
-  ]
+  ],
+  "jump-config": {
+    "datasets": [{
+      "ref-property-name": "name"
+    }]
+  }
 }
