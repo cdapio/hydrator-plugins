@@ -85,8 +85,16 @@ public class SSHAction extends Action {
 
       LOG.debug("Output: {}", out);
       LOG.error("Errors: {}", err);
+      Integer exitCode = session.getExitStatus();
+      if (exitCode != null && exitCode != 0) {
+        throw new IOException(String.format("Error: command %s running on hostname %s finished with exit code: %d",
+                                            config.command, config.host, exitCode));
+      }
 
       if (config.output != null) {
+        //removes the carriage return at the end of the line
+        out = out.endsWith("\n") ? out.substring(0, out.length() - 1) : out;
+
         context.getArguments().set(config.output, out);
       }
     } finally {
