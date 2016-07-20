@@ -172,6 +172,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
 
   private Schema getOutputSchema(Map<String, Schema> inputSchemas) {
     validateRequiredInputs(inputSchemas);
+    validateJoinKeys(inputSchemas);
 
     // stage name to input schema
     Map<String, Schema> inputs = new HashMap<>(inputSchemas);
@@ -224,6 +225,10 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
                                                        duplicateAliases));
     }
     return Schema.recordOf("join.output", getOutputFields(outputFieldInfo.values()));
+  }
+
+  private void validateJoinKeys(Map<String, Schema> inputSchemas) {
+    
   }
 
   private List<Schema.Field> getOutputFields(Collection<OutputFieldInfo> fieldsInfo) {
