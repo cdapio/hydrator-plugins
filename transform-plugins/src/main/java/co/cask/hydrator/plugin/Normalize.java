@@ -27,6 +27,7 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 
 import java.util.HashMap;
@@ -60,6 +61,22 @@ public class Normalize extends Transform<StructuredRecord, StructuredRecord> {
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
+    //validate fields with input schema
+    Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
+    //validate mapping fields
+    String[] fieldMappingArray = config.fieldMapping.split(",");
+    for (String fieldMapping : fieldMappingArray) {
+      String[] mappings = fieldMapping.split(":");
+      Preconditions.checkArgument(inputSchema.getField(mappings[0]) != null, "Mapping field '" + mappings[0]
+        + "' not present in input schema.");
+    }
+    //validate normalizing fields
+    String[] fieldNormalizingArray = config.fieldNormalizing.split(",");
+    for (String fieldNormalizing : fieldNormalizingArray) {
+      String[] fields = fieldNormalizing.split(":");
+      Preconditions.checkArgument(inputSchema.getField(fields[0]) != null, "Normalizing field '" + fields[0]
+        + "' not present in input schema.");
+    }
     createOutputSchema();
     pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
   }
