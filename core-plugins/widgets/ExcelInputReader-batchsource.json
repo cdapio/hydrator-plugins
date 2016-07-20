@@ -7,13 +7,13 @@
       "properties": [
         {
           "widget-type": "textbox",
-          "label": "Input Path",
-          "name": "filesPath"
+          "label": "File Path",
+          "name": "filePath"
         },
         {
           "widget-type": "textbox",
-          "label": "Input File Pattern",
-          "name": "filesPattern"
+          "label": "File Regex",
+          "name": "filePattern"
         },
         {
           "widget-type": "textbox",
@@ -66,7 +66,7 @@
         },
         {
           "widget-type": "keyvalue",
-          "label": "Column-Label Mapping ",
+          "label": "Column Label Mapping ",
           "name": "columnMapping",
           "widget-attributes": {
             "showDelimiter": "false"

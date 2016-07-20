@@ -96,10 +96,6 @@ public class SnapshotFileSet {
   public void onSuccess(long snapshotTime) throws IOException, InterruptedException {
     Location lock = lock();
     try {
-      // add partition
-      PartitionKey partitionKey = PartitionKey.builder().addLongField("snapshot", snapshotTime).build();
-      files.addPartition(partitionKey, String.valueOf(snapshotTime));
-
       // update state file that contains the latest snapshot
       Long latestSnapshot = getLatestSnapshot();
       if (latestSnapshot == null || snapshotTime > latestSnapshot) {

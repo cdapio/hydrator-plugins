@@ -61,7 +61,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     "error",
     Schema.Field.of("errCode", Schema.of(Schema.Type.INT)),
     Schema.Field.of("errMsg", Schema.unionOf(Schema.of(Schema.Type.STRING),
-                                                        Schema.of(Schema.Type.NULL))),
+                                             Schema.of(Schema.Type.NULL))),
     Schema.Field.of("invalidRecord", Schema.of(Schema.Type.STRING))
   );
 

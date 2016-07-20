@@ -18,16 +18,13 @@ package co.cask.hydrator.plugin.common;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
-import co.cask.cdap.api.plugin.PluginConfig;
 
 import javax.annotation.Nullable;
 
 /**
  * Config class for Cube dataset sinks
  */
-public class CubeSinkConfig extends PluginConfig {
-  @Description("Name of the Cube dataset. If the Cube does not already exist, one will be created.")
-  String name;
+public class CubeSinkConfig extends BatchReadableWritableConfig {
 
   @Name(Properties.Cube.DATASET_RESOLUTIONS)
   @Description("Aggregation resolutions to be used if a new Cube dataset " +
@@ -79,16 +76,12 @@ public class CubeSinkConfig extends PluginConfig {
 
   public CubeSinkConfig(String name, String resolutions, String aggregations,
                         String tsField, String tsFormat, String measurements) {
-    this.name = name;
+    super(name);
     this.resolutions = resolutions;
     this.aggregations = aggregations;
     this.tsField = tsField;
     this.tsFormat = tsFormat;
     this.measurements = measurements;
-  }
-
-  public String getName() {
-    return name;
   }
 
   @Nullable

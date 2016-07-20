@@ -109,7 +109,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
   @Test
   public void testExcelInputReader() throws Exception {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
-      .put(Constants.Reference.REFERENCE_NAME, "TestCase-testExcelInputReader")
+      .put(Constants.Reference.REFERENCE_NAME, "TestCase-testExcel")
       .put("filePath", sourceFolderUri)
       .put("filePattern", ".*")
       .put("sheet", "Sheet Name")
@@ -127,13 +127,13 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put("errorDatasetName", "")
       .build();
 
-    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("ExcelInputReader", BatchSource.PLUGIN_TYPE,
+    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("Excel", BatchSource.PLUGIN_TYPE,
                                                                    sourceProperties, null));
 
-    String outputDatasetName = "output-testExcelInputReader";
+    String outputDatasetName = "output-testExcel";
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
-    ApplicationManager appManager = deployApp(source, sink, "ExcelInputReaderTests");
+    ApplicationManager appManager = deployApp(source, sink, "ExcelTests");
     startMRFlow(appManager);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
@@ -183,7 +183,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put("errorDatasetName", "")
       .build();
 
-    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("ExcelInputReader", BatchSource.PLUGIN_TYPE,
+    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("Excel", BatchSource.PLUGIN_TYPE,
                                                                    sourceProperties, null));
 
     String outputDatasetName = "output-batchsourcetest";
@@ -228,7 +228,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put("errorDatasetName", "")
       .build();
 
-    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("ExcelInputReader", BatchSource.PLUGIN_TYPE,
+    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("Excel", BatchSource.PLUGIN_TYPE,
                                                                    sourceProperties, null));
 
     String outputDatasetName = "output-testWithReProcessedFalse";
@@ -285,7 +285,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put("errorDatasetName", "")
       .build();
 
-    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("ExcelInputReader", BatchSource.PLUGIN_TYPE,
+    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("Excel", BatchSource.PLUGIN_TYPE,
                                                                    sourceProperties, null));
 
     String outputDatasetName = "output-testWithColumnsToBeExtracted";
@@ -340,7 +340,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put("errorDatasetName", "error-dataset-table")
       .build();
 
-    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("ExcelInputReader", BatchSource.PLUGIN_TYPE,
+    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("Excel", BatchSource.PLUGIN_TYPE,
                                                                    sourceProperties, null));
 
     String outputDatasetName = "output-testWithErrorRecord";
@@ -387,7 +387,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put("errorDatasetName", "")
       .build();
 
-    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("ExcelInputReader", BatchSource.PLUGIN_TYPE,
+    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("Excel", BatchSource.PLUGIN_TYPE,
                                                                    sourceProperties, null));
 
     String outputDatasetName = "output-testWithNoColumnListAndOutputSchema";
@@ -418,7 +418,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put("errorDatasetName", "")
       .build();
 
-    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("ExcelInputReader", BatchSource.PLUGIN_TYPE,
+    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("Excel", BatchSource.PLUGIN_TYPE,
                                                                    sourceProperties, null));
 
     String outputDatasetName = "output-testWithTerminateIfEmptyRow";
@@ -451,7 +451,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put("errorDatasetName", "")
       .build();
 
-    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("ExcelInputReader", BatchSource.PLUGIN_TYPE,
+    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("Excel", BatchSource.PLUGIN_TYPE,
                                                                    sourceProperties, null));
 
     String outputDatasetName = "output-testWithSkipFirstRow";
@@ -482,7 +482,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put("errorDatasetName", "")
       .build();
 
-    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("ExcelInputReader", BatchSource.PLUGIN_TYPE,
+    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("Excel", BatchSource.PLUGIN_TYPE,
                                                                    sourceProperties, null));
 
     String outputDatasetName = "output-testWithNoColumnListAndOutputSchema";
@@ -513,7 +513,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put("errorDatasetName", "")
       .build();
 
-    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("ExcelInputReader", BatchSource.PLUGIN_TYPE,
+    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("Excel", BatchSource.PLUGIN_TYPE,
                                                                    sourceProperties, null));
 
     String outputDatasetName = "output-WithTTL";
