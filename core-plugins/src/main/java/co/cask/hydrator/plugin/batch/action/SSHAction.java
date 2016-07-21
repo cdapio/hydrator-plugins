@@ -83,8 +83,12 @@ public class SSHAction extends Action {
       String out = CharStreams.toString(outBuffer);
       String err = CharStreams.toString(errBuffer);
 
-      LOG.debug("Output: {}", out);
-      LOG.error("Errors: {}", err);
+      if (out.length() > 0) {
+        LOG.debug("Stdout: {}", out);
+      }
+      if (err.length() > 0) {
+        LOG.error("Stderr: {}", err);
+      }
       Integer exitCode = session.getExitStatus();
       if (exitCode != null && exitCode != 0) {
         throw new IOException(String.format("Error: command %s running on hostname %s finished with exit code: %d",
