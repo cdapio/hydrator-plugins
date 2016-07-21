@@ -63,19 +63,22 @@ public class Normalize extends Transform<StructuredRecord, StructuredRecord> {
     super.configurePipeline(pipelineConfigurer);
     //validate fields with input schema
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
-    //validate mapping fields
-    String[] fieldMappingArray = config.fieldMapping.split(",");
-    for (String fieldMapping : fieldMappingArray) {
-      String[] mappings = fieldMapping.split(":");
-      Preconditions.checkArgument(inputSchema.getField(mappings[0]) != null, "Mapping field '" + mappings[0]
-        + "' not present in input schema.");
-    }
-    //validate normalizing fields
-    String[] fieldNormalizingArray = config.fieldNormalizing.split(",");
-    for (String fieldNormalizing : fieldNormalizingArray) {
-      String[] fields = fieldNormalizing.split(":");
-      Preconditions.checkArgument(inputSchema.getField(fields[0]) != null, "Normalizing field '" + fields[0]
-        + "' not present in input schema.");
+    //input schema will never be null, if condition added for JUnit test case
+    if (inputSchema != null) {
+      //validate mapping fields
+      String[] fieldMappingArray = config.fieldMapping.split(",");
+      for (String fieldMapping : fieldMappingArray) {
+        String[] mappings = fieldMapping.split(":");
+        Preconditions.checkArgument(inputSchema.getField(mappings[0]) != null, "Mapping field '" + mappings[0]
+          + "' not present in input schema.");
+      }
+      //validate normalizing fields
+      String[] fieldNormalizingArray = config.fieldNormalizing.split(",");
+      for (String fieldNormalizing : fieldNormalizingArray) {
+        String[] fields = fieldNormalizing.split(":");
+        Preconditions.checkArgument(inputSchema.getField(fields[0]) != null, "Normalizing field '" + fields[0]
+          + "' not present in input schema.");
+      }
     }
     createOutputSchema();
     pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
@@ -133,17 +136,21 @@ public class Normalize extends Transform<StructuredRecord, StructuredRecord> {
   @Override
   public void transform(StructuredRecord structuredRecord, Emitter<StructuredRecord> emitter) throws Exception {
     for (String normalizeField : normalizeFieldList) {
+      if (structuredRecord.get(normalizeField) == null) {
+        continue;
+      }
       StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
+      String normalizeFieldValue = String.valueOf(structuredRecord.get(normalizeField));
       //set normalize fields to the record
       builder.set(normalizeFieldMap.get(normalizeField + NAME_KEY_SUFFIX), normalizeField)
-        .set(normalizeFieldMap.get(normalizeField + VALUE_KEY_SUFFIX), structuredRecord.get(normalizeField));
+        .set(normalizeFieldMap.get(normalizeField + VALUE_KEY_SUFFIX), normalizeFieldValue);
 
       //set mapping fields to the record
       Set<String> keySet = mappingFieldMap.keySet();
       Iterator<String>  itr = keySet.iterator();
       while (itr.hasNext()) {
         String field = itr.next();
-        builder.set(mappingFieldMap.get(field), structuredRecord.get(field));
+        builder.set(mappingFieldMap.get(field), String.valueOf(structuredRecord.get(field)));
       }
       emitter.emit(builder.build());
     }
