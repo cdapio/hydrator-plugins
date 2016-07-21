@@ -17,16 +17,16 @@
 package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.plugin.PluginConfig;
-import co.cask.hydrator.common.macro.MacroConfig;
 
 import javax.annotation.Nullable;
 
 /**
  * Defines a base {@link PluginConfig} that Database source, sink, and action can all re-use.
  */
-public class ConnectionConfig extends MacroConfig {
+public class ConnectionConfig extends PluginConfig {
   public static final String CONNECTION_STRING = "connectionString";
   public static final String USER = "user";
   public static final String PASSWORD = "password";
@@ -37,6 +37,7 @@ public class ConnectionConfig extends MacroConfig {
 
   @Name(CONNECTION_STRING)
   @Description("JDBC connection string including database name.")
+  @Macro
   public String connectionString;
 
   @Name(USER)
@@ -68,6 +69,7 @@ public class ConnectionConfig extends MacroConfig {
     "auto commit, or a driver that does not support the commit call. For example, the Hive jdbc driver will throw " +
     "an exception whenever a commit is called. For drivers like that, this should be set to true.")
   @Nullable
+  @Macro
   public Boolean enableAutoCommit;
 
   public ConnectionConfig() {

@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.action;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.workflow.WorkflowToken;
@@ -54,39 +55,49 @@ public class EmailAction extends PostAction {
    */
   public static class Config extends ConditionConfig {
     @Description("Comma separated list of addresses to send the email to.")
+    @Macro
     private String recipients;
 
     @Description("The address to send the email from.")
+    @Macro
     private String sender;
 
     @Description("The message of the email.")
+    @Macro
     private String message;
 
     @Description("The subject of the email.")
+    @Macro
     private String subject;
 
     @Nullable
     @Description("The username to use for authentication if the protocol requires it.")
+    @Macro
     private String username;
 
     @Nullable
     @Description("The password to use for authentication if the protocol requires it.")
+    @Macro
     private String password;
 
     @Nullable
     @Description("The email protocol to use. smtp, smtps, and tls are supported. Defaults to SMTP.")
+    @Macro
     private String protocol;
 
     @Nullable
     @Description("The SMTP host to use. Defaults to localhost.")
+    @Macro
     private String host;
 
     @Nullable
     @Description("The SMTP port to use. Defaults to 587.")
+    @Macro
     private Integer port;
 
     @Nullable
     @Description("Whether to include the contents of the workflow token in the email message. Defaults to false.")
+    @Macro
     private Boolean includeWorkflowToken;
 
     public Config() {
@@ -99,30 +110,35 @@ public class EmailAction extends PostAction {
     public void validate() {
       super.validate();
 
-      if (Strings.isNullOrEmpty(username) ^ Strings.isNullOrEmpty(password)) {
+      if (!containsMacro("username") && (Strings.isNullOrEmpty(username) ^ Strings.isNullOrEmpty(password))) {
         throw new IllegalArgumentException("You must either set both username and password or " +
                                              "neither username nor password.");
       }
 
-      try {
-        InternetAddress[] addresses = InternetAddress.parse(sender);
-        if (addresses.length == 0) {
-          throw new IllegalArgumentException("Must specify a sender email address.");
+      if (!containsMacro("sender")) {
+        try {
+          InternetAddress[] addresses = InternetAddress.parse(sender);
+          if (addresses.length == 0) {
+            throw new IllegalArgumentException("Must specify a sender email address.");
+          }
+          if (addresses.length > 1) {
+            throw new IllegalArgumentException(String.format(
+              "%s is an invalid sender email address. Only one sender is supported.", sender));
+          }
+        } catch (AddressException e) {
+          throw new IllegalArgumentException(
+            String.format("%s is an invalid sender email address. Reason: %s", sender, e.getMessage()));
         }
-        if (addresses.length > 1) {
-          throw new IllegalArgumentException(String.format(
-            "%s is an invalid sender email address. Only one sender is supported.", sender));
-        }
-      } catch (AddressException e) {
-        throw new IllegalArgumentException(
-          String.format("%s is an invalid sender email address. Reason: %s", sender, e.getMessage()));
       }
 
-      try {
-        InternetAddress.parse(recipients);
-      } catch (AddressException e) {
-        throw new IllegalArgumentException(
-          String.format("%s is an invalid list of recipient email addresses. Reason: %s", recipients, e.getMessage()));
+      if (!containsMacro("recipients")) {
+        try {
+          InternetAddress.parse(recipients);
+        } catch (AddressException e) {
+          throw new IllegalArgumentException(
+            String.format("%s is an invalid list of recipient email addresses. Reason: %s",
+                          recipients, e.getMessage()));
+        }
       }
     }
   }
@@ -139,7 +155,7 @@ public class EmailAction extends PostAction {
     if (!config.shouldRun(context)) {
       return;
     }
-    config.substituteMacros(context);
+    config.validate();
 
     Authenticator authenticator = null;
 

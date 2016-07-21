@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.db.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.batch.Input;
@@ -82,7 +83,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
     // validate macro syntax
-    sourceConfig.validate();
+
     dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId());
     boolean hasOneSplit = false;
     if (sourceConfig.numSplits != null) {
@@ -95,7 +96,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
       }
     }
     if (!hasOneSplit) {
-      if (!sourceConfig.getImportQuery().contains("$CONDITIONS")) {
+      if (!sourceConfig.containsMacro("importQuery") && !sourceConfig.getImportQuery().contains("$CONDITIONS")) {
         throw new IllegalArgumentException(String.format("Import Query %s must contain the string '$CONDITIONS'.",
                                                          sourceConfig.importQuery));
       }
@@ -185,13 +186,17 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
-    sourceConfig.substituteMacros(context);
     LOG.debug("pluginType = {}; pluginName = {}; connectionString = {}; importQuery = {}; " +
                 "boundingQuery = {}",
               sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName,
               sourceConfig.connectionString, sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery());
     Configuration hConf = new Configuration();
     hConf.clear();
+
+    if (!sourceConfig.getImportQuery().contains("$CONDITIONS")) {
+      throw new IllegalArgumentException(String.format("Import Query %s must contain the string '$CONDITIONS'.",
+                                                       sourceConfig.importQuery));
+    }
 
     // Load the plugin class to make sure it is available.
     Class<? extends Driver> driverClass = context.loadPluginClass(getJDBCPluginId());
@@ -254,6 +259,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
       "The Query should contain the '$CONDITIONS' string unless numSplits is set to one. " +
       "For example, 'SELECT * FROM table WHERE $CONDITIONS'. The '$CONDITIONS' string" +
       "will be replaced by 'splitBy' field limits specified by the bounding query.")
+    @Macro
     String importQuery;
 
     @Nullable
