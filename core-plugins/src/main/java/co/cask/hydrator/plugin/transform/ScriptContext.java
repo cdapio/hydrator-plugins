@@ -24,8 +24,7 @@ import org.slf4j.Logger;
 import javax.annotation.Nullable;
 
 /**
- * Context passed to {@link ScriptTransform} and
- * {@link ScriptFilterTransform} scripts.
+ * Context passed to {@link ScriptFilterTransform} scripts.
  */
 public class ScriptContext {
   private final Logger logger;

@@ -21,7 +21,7 @@ import co.cask.cdap.etl.api.LookupProvider;
 import co.cask.cdap.etl.api.LookupTableConfig;
 
 /**
- * {@link LookupProvider} implementation for {@link ScriptTransform}.
+ * {@link LookupProvider} implementation.
  */
 public class ScriptLookupProvider {
 
