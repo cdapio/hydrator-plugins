@@ -23,9 +23,9 @@ import co.cask.cdap.etl.api.action.Action;
 import co.cask.cdap.etl.api.action.ActionContext;
 
 /**
- * SSH into a remote machine and execute a script on that machine.
- * A user must specify username and keypair authentication credentials.
- * Optionals include port and machine URL
+ * SSH into a remote machine and execute a command to pull files/data from a different machine
+ * A user must specify source username and keypair authentication credentials.
+ * 
  */
 @Plugin(type = Action.PLUGIN_TYPE)
 @Name("FileMoveAction")
@@ -49,7 +49,8 @@ public class FileMoveAction extends SSHAction {
                          String sourcePassword, String sourceDestinationPair, String sourceFile, String destFile) {
       //always will SSH into destination machine and pull file from source machine
       super(destHost, destUser, destPrivateKeyFile, destPort, destPassword, destPassword, null,
-            createCMD(sourceDestinationPair, sourceFile, destFile));
+            createCMD(sourceDestinationPair, sourceHost, sourceUser, sourcePrivateKeyFile,
+                      sourcePort, sourcePassword, sourceFile, destFile));
     }
 
     private String createFTPGetCMD(String sourceHost, String sourceUser,
@@ -69,7 +70,7 @@ public class FileMoveAction extends SSHAction {
 
     private String createCMD(String sourceDestinationPair, String sourceHost, String sourceUser,
                              String sourcePrivateKeyFile, int sourcePort,
-                             String sourcePassword, String destType, String sourceFile, String destFile) {
+                             String sourcePassword, String sourceFile, String destFile) {
       /**
        * Source-Destination pairing could be: FTP->HDFS  FTP->Unix HDFS->HDFS  Unix->Unix  Unix-HDFS
       */
