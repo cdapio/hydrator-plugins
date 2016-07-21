@@ -61,6 +61,7 @@ public class Normalize extends Transform<StructuredRecord, StructuredRecord> {
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
+    config.validateConfig();
     //validate fields with input schema
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
     //input schema will never be null, if condition added for JUnit test case
@@ -69,6 +70,8 @@ public class Normalize extends Transform<StructuredRecord, StructuredRecord> {
       String[] fieldMappingArray = config.fieldMapping.split(",");
       for (String fieldMapping : fieldMappingArray) {
         String[] mappings = fieldMapping.split(":");
+        Preconditions.checkArgument(mappings.length == 2, "Mapping field '" + mappings[0] + "' is invalid. Both input" +
+          " and output schema fields required.");
         Preconditions.checkArgument(inputSchema.getField(mappings[0]) != null, "Mapping field '" + mappings[0]
           + "' not present in input schema.");
       }
@@ -76,6 +79,8 @@ public class Normalize extends Transform<StructuredRecord, StructuredRecord> {
       String[] fieldNormalizingArray = config.fieldNormalizing.split(",");
       for (String fieldNormalizing : fieldNormalizingArray) {
         String[] fields = fieldNormalizing.split(":");
+        Preconditions.checkArgument(fields.length == 3, "Normalizing field '" + fields[0] + "' is invalid. " +
+          " Field Type and Field Value columns required.");
         Preconditions.checkArgument(inputSchema.getField(fields[0]) != null, "Normalizing field '" + fields[0]
           + "' not present in input schema.");
       }
@@ -172,6 +177,11 @@ public class Normalize extends Transform<StructuredRecord, StructuredRecord> {
     public NormalizeConfig(String fieldMapping, String fieldNormalizing) {
       this.fieldMapping = fieldMapping;
       this.fieldNormalizing = fieldNormalizing;
+    }
+
+    void validateConfig() {
+      Preconditions.checkArgument(!Strings.isNullOrEmpty(fieldMapping), "Fields to mapped cannot be empty.");
+      Preconditions.checkArgument(!Strings.isNullOrEmpty(fieldNormalizing), "Fields to normalized cannot be empty.");
     }
   }
 }

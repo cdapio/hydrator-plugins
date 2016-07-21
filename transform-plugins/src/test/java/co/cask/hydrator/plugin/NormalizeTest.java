@@ -139,6 +139,20 @@ public class NormalizeTest extends TransformPluginsTestBase {
   }
 
   @Test(expected = IllegalArgumentException.class)
+  public void testEmptyFieldMapping() throws Exception {
+    Normalize.NormalizeConfig config = new Normalize.NormalizeConfig(null, validFieldNormalizing);
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(INPUT_SCHEMA);
+    new Normalize(config).configurePipeline(configurer);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testEmptyFieldNormalizing() throws Exception {
+    Normalize.NormalizeConfig config = new Normalize.NormalizeConfig(validFieldMapping, null);
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(INPUT_SCHEMA);
+    new Normalize(config).configurePipeline(configurer);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
   public void testInvalidMappingValues() throws Exception {
     Normalize.NormalizeConfig config = new Normalize.NormalizeConfig("CustomerId,PurchaseDate:Date",
                                                                      validFieldNormalizing);
