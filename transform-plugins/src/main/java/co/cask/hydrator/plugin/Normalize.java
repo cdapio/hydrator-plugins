@@ -44,8 +44,8 @@ import java.util.Set;
 @Name("Normalize")
 @Description("Convert wide rows and reducing data to it canonicalize form")
 public class Normalize extends Transform<StructuredRecord, StructuredRecord> {
-  public static final String NAME_KEY_SUFFIX = "_name";
-  public static final String VALUE_KEY_SUFFIX = "_value";
+  private static final String NAME_KEY_SUFFIX = "_name";
+  private static final String VALUE_KEY_SUFFIX = "_value";
 
   private final NormalizeConfig config;
 
