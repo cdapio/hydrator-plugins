@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -119,7 +119,8 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     // add data to a partition from 30 minutes before the runtime
     long inputTime = runtime - TimeUnit.MINUTES.toMillis(30);
     TimePartitionOutput timePartitionOutput = inputManager.get().getPartitionOutput(inputTime);
-    Location location = timePartitionOutput.getLocation();
+    // Append the file name to the location representing the partition to which the schema would be written.
+    Location location = timePartitionOutput.getLocation().append("0.avro");
     DatumWriter<GenericRecord> datumWriter = new GenericDatumWriter<>(avroSchema);
     DataFileWriter<GenericRecord> dataFileWriter = new DataFileWriter<>(datumWriter);
     dataFileWriter.create(avroSchema, location.getOutputStream());
