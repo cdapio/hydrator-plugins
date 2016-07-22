@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.db.batch.action;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.etl.api.batch.BatchActionContext;
 import co.cask.hydrator.common.batch.action.Condition;
 import co.cask.hydrator.common.batch.action.ConditionConfig;
@@ -30,6 +31,7 @@ import javax.annotation.Nullable;
 public class QueryConfig extends ConnectionConfig {
 
   @Description("The query to run.")
+  @Macro
   public String query;
 
   @Nullable
@@ -37,6 +39,7 @@ public class QueryConfig extends ConnectionConfig {
     "If set to 'completion', the action will be executed regardless of whether the pipeline run succeeded or failed." +
     "If set to 'success', the action will only be executed if the pipeline run succeeded. " +
     "If set to 'failure', the action will only be executed if the pipeline run failed.")
+  @Macro
   public String runCondition;
 
   public QueryConfig() {
@@ -46,7 +49,9 @@ public class QueryConfig extends ConnectionConfig {
 
   public void validate() {
     // have to delegate instead of inherit, since we can't extend both ConditionConfig and ConnectionConfig.
-    new ConditionConfig(runCondition).validate();
+    if (!containsMacro("runCondition")) {
+      new ConditionConfig(runCondition).validate();
+    }
   }
 
   public boolean shouldRun(BatchActionContext actionContext) {

@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.db.batch.sink;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.batch.Output;
@@ -87,13 +88,11 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
-    dbSinkConfig.validate();
     dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId());
   }
 
   @Override
   public void prepareRun(BatchSinkContext context) {
-    dbSinkConfig.substituteMacros(context);
     LOG.debug("tableName = {}; pluginType = {}; pluginName = {}; connectionString = {}; columns = {}",
               dbSinkConfig.tableName, dbSinkConfig.jdbcPluginType, dbSinkConfig.jdbcPluginName,
               dbSinkConfig.connectionString, dbSinkConfig.columns);
@@ -203,10 +202,12 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
 
     @Name(COLUMNS)
     @Description("Comma-separated list of columns in the specified table to export to.")
+    @Macro
     public String columns;
 
     @Name(TABLE_NAME)
     @Description("Name of the database table to write to.")
+    @Macro
     public String tableName;
 
   }
