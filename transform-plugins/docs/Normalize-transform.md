@@ -27,6 +27,7 @@ needs to be added.
 Example: ItemId:AttributeType:AttributeValue, here ItemId column name will be saved to AttributeType field and its
 value will be saved to AttributeValue field of output schema.
 
+**outputSchema:** The output schema for the data as it will be formatted in CDAP.
 
 Example
 -------
@@ -64,7 +65,17 @@ The plugin JSON Representation will be:
                "fieldMapping": "CustomerId:ID,Last Update Date:Date",
                "fieldNormalizing": "First Name:Attribute Type:Attribute Value,Last Name:Attribute Type:Attribute Value,
                                    Credit Card:Attribute Type:Attribute Value,
-                                   Billing Address:Attribute Type:Attribute Value"
+                                   Billing Address:Attribute Type:Attribute Value",
+               "outputSchema": "{
+                             \"type\":\"schema\",
+                             \"name\":\"outputSchema\",
+                             \"fields\":[
+                               {\"name\":\"ID\",\"type\":\"string\"},
+                               {\"name\":\"Date\",\"type\":\"string\"},
+                               {\"name\":\"Attribute Type\",\"type\":\"string\"},
+                               {\"name\":\"Attribute Value\",\"type\":\"string\"}
+                             ]
+               }"
             }
         }
     }
@@ -111,7 +122,17 @@ The plugin JSON Representation will be:
             "label": "Normalize",
             "properties": {
                "fieldMapping": "CustomerId:ID,Purchase Date:Date",
-               "fieldNormalizing": "Item ID:Attribute Type:Attribute Value,Item Cost:Attribute Type:Attribute Value"
+               "fieldNormalizing": "Item ID:Attribute Type:Attribute Value,Item Cost:Attribute Type:Attribute Value",
+               "outputSchema": "{
+                             \"type\":\"schema\",
+                             \"name\":\"outputSchema\",
+                             \"fields\":[
+                               {\"name\":\"ID\",\"type\":\"string\"},
+                               {\"name\":\"Date\",\"type\":\"string\"},
+                               {\"name\":\"Attribute Type\",\"type\":\"string\"},
+                               {\"name\":\"Attribute Value\",\"type\":\"string\"}
+                             ]
+               }"
             }
         }
     }

@@ -25,5 +25,16 @@
       ]
     }
   ],
-  "outputs": [ ]
+  "outputs": [
+    {
+      "name": "outputSchema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "string"
+        ],
+        "schema-default-type": "string"
+      }
+    }
+  ]
 }
