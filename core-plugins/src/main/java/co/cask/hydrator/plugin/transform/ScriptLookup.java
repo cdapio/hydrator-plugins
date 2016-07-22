@@ -21,8 +21,7 @@ import co.cask.cdap.etl.api.LookupTableConfig;
 import java.util.Set;
 
 /**
- * Provides JavaScript-friendly lookup functions for {@link ScriptTransform}.
- * Used directly by {@link ScriptTransform}.
+ * Provides JavaScript-friendly lookup functions.
  */
 public class ScriptLookup {
 
