@@ -153,6 +153,10 @@ public class SSHAction extends Action {
       this.output = output;
     }
 
+    public void setCMD(String command) {
+      this.command = command;
+    }
+
     public void validate() {
       //check that port is not negative
       if (port < 0) {

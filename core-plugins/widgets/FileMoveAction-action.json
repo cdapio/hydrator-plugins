@@ -1,0 +1,98 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Type of File Move",
+      "properties": [
+        {
+          "widget-type": "select",
+          "label": "Source-Destination",
+          "name": "sourceDestinationPair",
+          "widget-attributes": {
+            "values": [
+              "FTP->HDFS",
+              "FTP->Unix",
+              "HDFS->HDFS",
+              "Unix->Unix",
+              "Unix-HDFS"
+            ],
+            "default": "FTP->HDFS"
+          }
+        }
+      ]
+    },
+    {
+      "label": "Source File Machine Properties",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Hostname",
+          "name": "sourceHost"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Port",
+          "name": "sourcePort"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Username",
+          "name": "sourceUser"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Private Key File",
+          "name": "sourcePrivateKeyFile"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Private Key Passphrase",
+          "name": "sourcePassword"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "File Path",
+          "name": "sourceFile"
+        }
+      ]
+    },
+    {
+      "label": "Destination Machine Properties (For HDFS->HDFS, type in same machine information)",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Hostname",
+          "name": "destHost"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Port",
+          "name": "destPort"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Username",
+          "name": "destUser"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Private Key File",
+          "name": "destPrivateKeyFile"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Private Key Passphrase",
+          "name": "destPassword"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Desired Destination File Path",
+          "name": "destFile"
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}
