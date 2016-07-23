@@ -38,7 +38,7 @@
         },
         {
           "widget-type": "textbox",
-          "label": "Script Output Key Name",
+          "label": "Key Name for Script Output",
           "name": "output"
         }
       ]

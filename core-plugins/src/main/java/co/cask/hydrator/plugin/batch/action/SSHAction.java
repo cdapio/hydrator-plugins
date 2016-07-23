@@ -115,6 +115,8 @@ public class SSHAction extends Action {
    * Config class that contains all the properties needed to SSH into the remote machine and run the script.
    */
   public static class SSHActionConfig extends PluginConfig {
+    @Description("Command to be executed on the remote host. Should include filepath of script and any arguments")
+    private String command;
 
     @Description("Host name of the remote machine where the command needs to be executed.")
     private String host;
@@ -133,12 +135,9 @@ public class SSHAction extends Action {
     @Description("Password associated with private key")
     private String password;
 
-    @Description("Command to be executed on the remote host. Should include filepath of script and any arguments")
-    private String command;
-
     @Nullable
-    @Description("Script output variable used as the key to store output from the script " +
-      "to pass through Action Context")
+    @Description("Variable used to hold desired key name to be associated with script output in the instance " +
+      "the script output contains information needed to be stored in the ActionContext for later use in the pipeline.")
     private String output;
 
     public SSHActionConfig() {
@@ -146,14 +145,14 @@ public class SSHAction extends Action {
     }
 
     @VisibleForTesting
-    public SSHActionConfig(String host, String user, String privateKeyFile, int port, String password,
-                           String command, String output) {
+    public SSHActionConfig(String command, String host, String user, String privateKeyFile, int port, String password,
+                           String output) {
+      this.command = command;
       this.host = host;
       this.port = port;
       this.user = user;
       this.privateKeyFile = privateKeyFile;
       this.password = password;
-      this.command = command;
       this.output = output;
     }
 
