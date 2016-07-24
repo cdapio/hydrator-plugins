@@ -31,7 +31,7 @@
     <jrecord.version>0.80.8</jrecord.version>
     <cb2xml.version>0.80.8-jrecord</cb2xml.version>
     <main.basedir>${project.basedir}</main.basedir>
-    <project-version>3.5.0-SNAPSHOT</project-version>
+    <project-version>1.5.0-SNAPSHOT</project-version>
   </properties>
 
   <repositories>
