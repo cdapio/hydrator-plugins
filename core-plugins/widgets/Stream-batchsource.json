@@ -76,5 +76,10 @@
         "property-watch": "format"
       }
     }
-  ]
+  ],
+  "jump-config": {
+    "streams": [{
+      "ref-property-name": "name"
+    }]
+  }
 }
