@@ -31,12 +31,34 @@
     {
       "widget-type": "non-editable-schema-editor",
       "schema": {
-        "uri": "string",
-        "ip": "string",
-        "browser": "string",
-        "device": "string",
-        "httpStatus": "int",
-        "ts": "long"
+        "name": "etlSchemaBody",
+        "type": "record",
+        "fields": [
+          {
+            "name": "uri",
+            "type": "string"
+          },
+          {
+            "name": "ip",
+            "type": "string"
+          },
+          {
+            "name": "browser",
+            "type": "string"
+          },
+          {
+            "name": "device",
+            "type": "string"
+          },
+          {
+            "name": "httpStatus",
+            "type": "int"
+          },
+          {
+            "name": "ts",
+            "type": "long"
+          }
+        ]
       }
     }
   ]
