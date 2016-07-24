@@ -162,6 +162,18 @@
       </dependency>
       <dependency>
         <groupId>co.cask.cdap</groupId>
+        <artifactId>cdap-api</artifactId>
+        <version>${cdap.version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>co.cask.cdap</groupId>
+        <artifactId>cdap-etl-proto</artifactId>
+        <version>${cdap.version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>co.cask.cdap</groupId>
         <artifactId>cdap-etl-api</artifactId>
         <version>${cdap.version}</version>
         <scope>provided</scope>
