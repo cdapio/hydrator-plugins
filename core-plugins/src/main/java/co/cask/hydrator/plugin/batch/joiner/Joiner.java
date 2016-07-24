@@ -155,11 +155,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
       duplicateFields = ArrayListMultimap.create();
       return getOutputSchema(request.inputSchemas);
     } catch (IllegalArgumentException e) {
-      if (!duplicateFields.isEmpty()) {
-        throw new BadRequestException(GSON.toJson(duplicateFields.asMap()));
-      } else {
         throw new BadRequestException(e.getMessage());
-      }
     }
   }
 
@@ -220,7 +216,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
 
     if (!duplicateFields.isEmpty()) {
       throw new IllegalArgumentException(String.format("Output schema must not have any duplicate field names, but " +
-                                                         "found: %s for aliases: %s", duplicateFields,
+                                                         "found duplicate fields: %s for aliases: %s", duplicateFields,
                                                        duplicateAliases));
     }
     return Schema.recordOf("join.output", getOutputFields(outputFieldInfo.values()));
