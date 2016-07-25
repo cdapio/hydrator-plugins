@@ -53,7 +53,7 @@ public class QueryAction extends PostAction {
     if (!config.shouldRun(batchContext)) {
       return;
     }
-    config.substituteMacros(batchContext);
+    config.validate();
 
     Class<? extends Driver> driverClass = batchContext.loadPluginClass(JDBC_PLUGIN_ID);
     DBManager dbManager = new DBManager(config);

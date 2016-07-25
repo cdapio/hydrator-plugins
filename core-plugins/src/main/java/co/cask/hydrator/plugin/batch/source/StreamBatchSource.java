@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.batch.Input;
@@ -33,6 +34,7 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.common.TimeParser;
+import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -94,7 +96,9 @@ public class StreamBatchSource extends BatchSource<Object, Object, StructuredRec
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
     streamBatchConfig.validate();
-    pipelineConfigurer.addStream(new Stream(streamBatchConfig.name));
+    if (!streamBatchConfig.containsMacro(Properties.Stream.NAME)) {
+      pipelineConfigurer.addStream(new Stream(streamBatchConfig.name));
+    }
     // if no format is specified then default schema is used, if otherwise its based on format spec.
     if (streamBatchConfig.format == null) {
       pipelineConfigurer.getStageConfigurer().setOutputSchema(DEFAULT_SCHEMA);
@@ -176,14 +180,18 @@ public class StreamBatchSource extends BatchSource<Object, Object, StructuredRec
    */
   public static class StreamBatchConfig extends PluginConfig {
 
+    @Name(Properties.Stream.NAME)
     @Description(NAME_DESCRIPTION)
+    @Macro
     private String name;
 
     @Description(DURATION_DESCRIPTION)
+    @Macro
     private String duration;
 
     @Description(DELAY_DESCRIPTION)
     @Nullable
+    @Macro
     private String delay;
 
     @Description(FORMAT_DESCRIPTION)
@@ -200,9 +208,11 @@ public class StreamBatchSource extends BatchSource<Object, Object, StructuredRec
         parseSchema();
       }
       // check duration and delay
-      long durationInMs = TimeParser.parseDuration(duration);
-      Preconditions.checkArgument(durationInMs > 0, "Duration must be greater than 0");
-      if (!Strings.isNullOrEmpty(delay)) {
+      if (!this.containsMacro(duration)) {
+        long durationInMs = TimeParser.parseDuration(duration);
+        Preconditions.checkArgument(durationInMs > 0, "Duration must be greater than 0");
+      }
+      if (!this.containsMacro(delay) && !Strings.isNullOrEmpty(delay)) {
         TimeParser.parseDuration(delay);
       }
     }

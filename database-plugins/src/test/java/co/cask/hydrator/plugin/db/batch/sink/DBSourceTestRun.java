@@ -52,7 +52,8 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
   @Test
   @SuppressWarnings("ConstantConditions")
   public void testDBMacroSupport() throws Exception {
-    String importQuery = "SELECT * FROM \"my_table\" WHERE DATE_COL <= '${runtime(yyyy-MM-dd,1d)}' AND $CONDITIONS";
+    String importQuery = "SELECT * FROM \"my_table\" WHERE DATE_COL <= '${logicalStartTime(yyyy-MM-dd,1d)}' " +
+      "AND $CONDITIONS";
     String boundingQuery = "SELECT MIN(ID),MAX(ID) from \"my_table\"";
     String splitBy = "ID";
     ETLPlugin sourceConfig = new ETLPlugin(

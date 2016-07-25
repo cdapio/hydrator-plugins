@@ -63,8 +63,18 @@
     {
       "widget-type": "non-editable-schema-editor",
       "schema": {
-        "offset": "long",
-        "body": "string"
+        "name": "etlSchemaBody",
+        "type": "record",
+        "fields": [
+          {
+            "name": "offset",
+            "type": "long"
+          },
+          {
+            "name": "body",
+            "type": "string"
+          }
+        ]
       }
     }
   ]

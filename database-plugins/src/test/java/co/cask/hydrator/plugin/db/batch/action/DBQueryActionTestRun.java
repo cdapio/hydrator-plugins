@@ -61,7 +61,7 @@ public class DBQueryActionTestRun extends DatabasePluginTestBase {
       ImmutableMap.<String, String>builder()
         .put("connectionString", getConnectionURL())
         .put("jdbcPluginName", "hypersql")
-        .put("query", "delete from \"actionTest\" where day = '${runtime(yyyy-MM-dd,0m,UTC)}'")
+        .put("query", "delete from \"actionTest\" where day = '${logicalStartTime(yyyy-MM-dd,0m,UTC)}'")
         .build(),
       null));
 
