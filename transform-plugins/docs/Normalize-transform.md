@@ -4,36 +4,34 @@
 Description
 -----------
 Normalize is a transform plugin that breaks one source row into multiple target rows.
-Example: Attributes are stored in columns of table or file, may need to be broken into multiple records such as one
+Attributes stored in the columns of a table or a file may need to be broken into multiple records: for example, one
 record per column attribute.
-In general it allows one to convert columns to rows.
+In general, the plugin allows one to convert columns to rows.
 
 Use Case
 --------
-User want to reduce the restructuring of dataset when new type of data introduced in the collection.
-Let’s assume that we are building a customer 360 Master table that aggregates data for a user from multiple sources.
-Each of the source has it's own type of data to be added to a Customer Id. Instead of creating wide columns,
-normalization allows one to transform into it's canonical form and update the customer 360 profile simultaneously
-from multiple sources.
-
+Normalize transform can be used if you want to reduce the restructuring of a dataset when a new type of data is
+introduced into the collection. For example, let's assume we are building a customer 360 Master table that aggregates 
+data for a user from multiple sources, and each of the source has its own type of data to be added to a Customer Id. 
+Instead of creating wide columns, normalization allows you to transform data into its canonical form and update the 
+customer 360 profile simultaneously from multiple sources.
 
 Properties
 ----------
-**fieldMapping:** Specify the input schema field mapping to output schema field.
-Example: CustomerID:ID, here value of CustomerID will be saved to ID field of output schema.
+**fieldMapping:** Specify the input schema field to map to the output schema field.
+Example: 'CustomerID:ID': value of CustomerID will be saved to the ID field of the output schema.
 
-**fieldNormalizing:** Specify the normalize field name, to what output field it should be mapped to and where the value
+**fieldNormalizing:** Specify the normalize field name, to what output field it should be mapped to, and where the value
 needs to be added.
-Example: ItemId:AttributeType:AttributeValue, here ItemId column name will be saved to AttributeType field and its
-value will be saved to AttributeValue field of output schema.
+Example: 'ItemId:AttributeType:AttributeValue': ItemId column name will be saved to AttributeType field, and its
+value will be saved to AttributeValue field of the output schema.
 
-**outputSchema:** The output schema for the data as it will be formatted in CDAP.
+**outputSchema:** The output schema for the data in CDAP.
 
 Example
 -------
-This example creates customer 360 profile data from multiple sources.
-Assume we have a source 'Customer Profile' table and 'Customer Purchase' table, which will be normalize to
-Customer-360 table.
+This example creates a customer 360 profile from two sources. Assume we have sources 'Customer Profile' table and 
+'Customer Purchase' table which we need to normalize to the Customer-360 table.
 
 Customer Profile table:
 
@@ -49,11 +47,11 @@ Customer Profile table:
     |            |            |            | 65765            |             | 23423           |                    |
     +==============================================================================================================+
 
-Map "CustomerId" column to "ID" column of output schema, and "Last Update Date" to "Date" column of output schema.
-Normalize "First Name", "Last Name", "Credit Card" and "Billing Address" columns where each column name mapped to
-"Attribute Type" and value mapped to "Attribute Value" columns of the output schema.
+Map "CustomerId" column to "ID" column of the output schema, and "Last Update Date" to "Date" column of the output schema.
+Normalize "First Name", "Last Name", "Credit Card" and "Billing Address" columns by mapping each column name to
+"Attribute Type" column and the values to "Attribute Value" column of the output schema.
 
-The plugin JSON Representation will be:
+The plugin's JSON Representation will be:
 
     {
         "name": "Normalize",
@@ -81,7 +79,7 @@ The plugin JSON Representation will be:
     }
 
 
-After transformation of Normalize plugin, the output records in Customer-360 table will be:
+After the transformation, the output records in Customer-360 table will be:
 
     +====================================================================================+
     | ID	      | Attribute Type	| Attribute Value	                       | Date        |
@@ -96,7 +94,7 @@ After transformation of Normalize plugin, the output records in Customer-360 tab
     | R45764646	| Billing Address	| 32421, MyVilla Ct, YourVille, YR, 23423| 04/03/2012  |
     +====================================================================================+
 
-Create a new pipeline to normalize Customer profile table to Customer-360 table.
+Next, create a new pipeline to normalize Customer purchase table to Customer-360 table.
 
 Customer Purchase table:
 
@@ -108,11 +106,11 @@ Customer Purchase table:
     | R45764646  | SKU-567757543532	| 14.15 	  | 06/09/2014    |
     +===========================================================+
 
-Map "CustomerId" column to "ID" column of output schema, and "Purchase Date" to "Date" column of output schema.
-Normalize "Item ID", "Item Cost" columns where each column name mapped to "Attribute Type" and value mapped to
-"Attribute Value" columns of the output schema.
+Map "CustomerId" column to "ID" column of the output schema, and "Purchase Date" to "Date" column of the output schema.
+Normalize "Item ID", "Item Cost" columns so that each column name will be mapped to "Attribute Type" column and each value 
+will be mapped to "Attribute Value" column of the output schema.
 
-The plugin JSON Representation will be:
+The plugin's JSON Representation will be:
 
     {
         "name": "Normalize",
@@ -137,7 +135,7 @@ The plugin JSON Representation will be:
         }
     }
 
-After transformation of Normalize plugin, the output records in Customer-360 table will be:
+After the transformation, the output records in Customer-360 table will be:
 
     +====================================================================================+
     | ID	      | Attribute Type	| Attribute Value	                       | Date        |
@@ -157,5 +155,3 @@ After transformation of Normalize plugin, the output records in Customer-360 tab
     | R45764646	| Item ID       	| SKU-567757543532                       | 06/09/2014  |
     | R45764646	| Item Cost       | 14.15                                  | 06/09/2014  |
     +====================================================================================+
-
-Above Customer-360 table has normalized data from 'Customer Profile' and 'Customer Purchase' tables.
