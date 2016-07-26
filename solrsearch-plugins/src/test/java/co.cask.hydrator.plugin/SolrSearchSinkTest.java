@@ -73,6 +73,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
+
 /**
  * Test cases for {@Link SolrSearchSink} and {@Link RealtimeSolrSearchSink} classes.
  */
@@ -103,8 +104,8 @@ public class SolrSearchSinkTest extends HydratorTestBase {
   private static final ArtifactRange BATCH_ARTIFACT_RANGE = new ArtifactRange(Id.Namespace.DEFAULT, "etlbatch",
                                                                               CURRENT_VERSION, true,
                                                                               CURRENT_VERSION, true);
-  private static final String SINGLE_NODE_MODE = "SingleNode";
-  private static final String SOLR_CLOUD_MODE = "SolrCloud";
+
+
   @ClassRule
   public static TemporaryFolder temporaryFolder = new TemporaryFolder();
   private SolrClient client;
@@ -130,7 +131,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
     Map<String, String> sinkConfigproperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "BatchSolrSink")
-      .put("solrMode", SINGLE_NODE_MODE)
+      .put("solrMode", SolrSearchSinkConfig.SINGLE_NODE_MODE)
       .put("solrHost", "localhost:8983")
       .put("collectionName", "collection1")
       .put("idField", "id")
@@ -200,7 +201,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
     Map<String, String> sinkConfigproperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "RealtimeSolrSink")
-      .put("solrMode", SINGLE_NODE_MODE)
+      .put("solrMode", SolrSearchSinkConfig.SINGLE_NODE_MODE)
       .put("solrHost", "localhost:8983")
       .put("collectionName", "collection1")
       .put("idField", "id")
@@ -264,7 +265,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
     Map<String, String> sinkConfigproperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "SolrCloudSink")
-      .put("solrMode", SOLR_CLOUD_MODE)
+      .put("solrMode", SolrSearchSinkConfig.SOLR_CLOUD_MODE)
       .put("solrHost", "localhost:2181")
       .put("collectionName", "collection1")
       .put("idField", "id")
@@ -336,7 +337,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
     Map<String, String> sinkConfigproperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "BatchSolrSink")
-      .put("solrMode", SINGLE_NODE_MODE)
+      .put("solrMode", SolrSearchSinkConfig.SINGLE_NODE_MODE)
       .put("solrHost", "localhost:8983")
       .put("collectionName", "collection1")
       .put("idField", "id")
@@ -413,7 +414,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
     Map<String, String> sinkConfigproperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "BatchSolrSink")
-      .put("solrMode", SINGLE_NODE_MODE)
+      .put("solrMode", SolrSearchSinkConfig.SINGLE_NODE_MODE)
       .put("solrHost", "localhost:8984")
       .put("collectionName", "collection1")
       .put("idField", "id")
@@ -456,7 +457,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
     Map<String, String> sinkConfigproperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "BatchSolrSink")
-      .put("solrMode", SINGLE_NODE_MODE)
+      .put("solrMode", SolrSearchSinkConfig.SINGLE_NODE_MODE)
       .put("solrHost", "localhost:8983")
       .put("collectionName", "wrong_collection")
       .put("idField", "id")
@@ -494,7 +495,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
   @Test(expected = IllegalArgumentException.class)
   public void testInvalidSingleNodeSolrUrl() {
-    SolrSearchSinkConfig config = new SolrSearchSinkConfig("SolrSink", SINGLE_NODE_MODE,
+    SolrSearchSinkConfig config = new SolrSearchSinkConfig("SolrSink", SolrSearchSinkConfig.SINGLE_NODE_MODE,
                                                            "localhost:8983,localhost:8984", "collection1", "id",
                                                            "office address:address");
     SolrSearchSink sinkObject = new SolrSearchSink(config);
@@ -504,7 +505,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
   @Test(expected = IllegalArgumentException.class)
   public void testWrongIdFieldName() {
-    SolrSearchSinkConfig config = new SolrSearchSinkConfig("SolrSink", SINGLE_NODE_MODE,
+    SolrSearchSinkConfig config = new SolrSearchSinkConfig("SolrSink", SolrSearchSinkConfig.SINGLE_NODE_MODE,
                                                            "localhost:8983", "collection1", "wrong_id",
                                                            "office address:address");
     SolrSearchSink sinkObject = new SolrSearchSink(config);
@@ -521,7 +522,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
       Schema.Field.of("lastname", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("office address", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("pincode", Schema.nullableOf(Schema.of(Schema.Type.BYTES))));
-    SolrSearchSinkConfig config = new SolrSearchSinkConfig("SolrSink", SINGLE_NODE_MODE,
+    SolrSearchSinkConfig config = new SolrSearchSinkConfig("SolrSink", SolrSearchSinkConfig.SINGLE_NODE_MODE,
                                                            "localhost:8983", "collection1", "id",
                                                            "office address:address");
     SolrSearchSink sinkObject = new SolrSearchSink(config);

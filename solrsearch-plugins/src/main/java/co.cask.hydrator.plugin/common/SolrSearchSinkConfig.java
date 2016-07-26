@@ -33,8 +33,8 @@ import javax.annotation.Nullable;
  */
 public class SolrSearchSinkConfig extends ReferencePluginConfig {
 
-  private static final String SINGLE_NODE_MODE = "SingleNode";
-  private static final String SOLR_CLOUD_MODE = "SolrCloud";
+  public static final String SINGLE_NODE_MODE = "SingleNode";
+  public static final String SOLR_CLOUD_MODE = "SolrCloud";
 
   @Description("Solr mode to connect to. For example, Single Node Solr or SolrCloud.")
   private final String solrMode;
@@ -102,10 +102,10 @@ public class SolrSearchSinkConfig extends ReferencePluginConfig {
   public SolrClient getSolrConnection() {
     String urlString;
     SolrClient solrClient = null;
-    if (solrMode.equals(SINGLE_NODE_MODE)) {
+    if (solrMode.equalsIgnoreCase(SINGLE_NODE_MODE)) {
       urlString = "http://" + solrHost + "/solr/" + collectionName;
       solrClient = new HttpSolrClient(urlString);
-    } else if (solrMode.equals(SOLR_CLOUD_MODE)) {
+    } else if (solrMode.equalsIgnoreCase(SOLR_CLOUD_MODE)) {
       CloudSolrClient solrCloudClient = new CloudSolrClient(solrHost);
       solrCloudClient.setDefaultCollection(collectionName);
       solrClient = solrCloudClient;
