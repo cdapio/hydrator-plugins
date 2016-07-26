@@ -51,9 +51,28 @@ import java.util.concurrent.TimeUnit;
  * Tests for Joiner.
  */
 public class JoinerTestRun extends ETLBatchTestBase {
+  private static final Schema FILM_SCHEMA = Schema.recordOf(
+    "film",
+    Schema.Field.of("film_id", Schema.of(Schema.Type.STRING)),
+    Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)));
+
+  private static final Schema FILM_ACTOR_SCHEMA = Schema.recordOf(
+    "filmActor",
+    Schema.Field.of("film_id", Schema.of(Schema.Type.STRING)),
+    Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
+    Schema.Field.of("actor_name", Schema.of(Schema.Type.STRING)));
+
+  private static final Schema FILM_CATEGORY_SCHEMA = Schema.recordOf(
+    "filmCategory",
+    Schema.Field.of("film_id", Schema.of(Schema.Type.STRING)),
+    Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
+    Schema.Field.of("category_name", Schema.of(Schema.Type.STRING)));
+
+  private static final String selectedFields = "film.film_id, film.film_name, filmActor.actor_name as renamed_actor, " +
+    "filmCategory.category_name as renamed_category";
 
   @Test
-  public void testJoiner() throws Exception {
+  public void testInnerJoin() throws Exception {
     /*
      * film         ---------------
      *                              |
@@ -68,26 +87,14 @@ public class JoinerTestRun extends ETLBatchTestBase {
     String filmActorDatasetName = "film-actor-innerjoin";
     String joinedDatasetName = "innerjoin-output";
 
-    Schema filmSchema = Schema.recordOf(
-      "film",
-      Schema.Field.of("film_id", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)));
-
     ETLStage filmStage =
       new ETLStage("film",
                    new ETLPlugin("Table",
                                  BatchSource.PLUGIN_TYPE,
                                  ImmutableMap.of(
                                    Properties.BatchReadableWritable.NAME, filmDatasetName,
-                                   Properties.Table.PROPERTY_SCHEMA, filmSchema.toString()),
+                                   Properties.Table.PROPERTY_SCHEMA, FILM_SCHEMA.toString()),
                                  null));
-
-
-    Schema filmActorSchema = Schema.recordOf(
-      "filmActor",
-      Schema.Field.of("film_id", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("actor_name", Schema.of(Schema.Type.STRING)));
 
     ETLStage filmActorStage =
       new ETLStage("filmActor",
@@ -95,14 +102,8 @@ public class JoinerTestRun extends ETLBatchTestBase {
                                  BatchSource.PLUGIN_TYPE,
                                  ImmutableMap.of(
                                    Properties.BatchReadableWritable.NAME, filmActorDatasetName,
-                                   Properties.Table.PROPERTY_SCHEMA, filmActorSchema.toString()),
+                                   Properties.Table.PROPERTY_SCHEMA, FILM_ACTOR_SCHEMA.toString()),
                                  null));
-
-    Schema filmCategorySchema = Schema.recordOf(
-      "filmCategory",
-      Schema.Field.of("film_id", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("category_name", Schema.of(Schema.Type.STRING)));
 
     ETLStage filmCategoryStage =
       new ETLStage("filmCategory",
@@ -110,11 +111,8 @@ public class JoinerTestRun extends ETLBatchTestBase {
                                  BatchSource.PLUGIN_TYPE,
                                  ImmutableMap.of(
                                    Properties.BatchReadableWritable.NAME, filmCategoryDatasetName,
-                                   Properties.Table.PROPERTY_SCHEMA, filmCategorySchema.toString()),
+                                   Properties.Table.PROPERTY_SCHEMA, FILM_CATEGORY_SCHEMA.toString()),
                                  null));
-
-    String selectedFields = "film.film_id, film.film_name, filmActor.actor_name as renamed_actor, " +
-      "filmCategory.category_name as renamed_category";
 
     ETLStage joinStage =
       new ETLStage("joiner",
@@ -189,26 +187,14 @@ public class JoinerTestRun extends ETLBatchTestBase {
     String filmActorDatasetName = "film-actor-outerjoin";
     String joinedDatasetName = "outerjoin-output";
 
-    Schema filmSchema = Schema.recordOf(
-      "film",
-      Schema.Field.of("film_id", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)));
-
     ETLStage filmStage =
       new ETLStage("film",
                    new ETLPlugin("Table",
                                  BatchSource.PLUGIN_TYPE,
                                  ImmutableMap.of(
                                    Properties.BatchReadableWritable.NAME, filmDatasetName,
-                                   Properties.Table.PROPERTY_SCHEMA, filmSchema.toString()),
+                                   Properties.Table.PROPERTY_SCHEMA, FILM_SCHEMA.toString()),
                                  null));
-
-
-    Schema filmActorSchema = Schema.recordOf(
-      "filmActor",
-      Schema.Field.of("film_id", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("actor_name", Schema.of(Schema.Type.STRING)));
 
     ETLStage filmActorStage =
       new ETLStage("filmActor",
@@ -216,14 +202,8 @@ public class JoinerTestRun extends ETLBatchTestBase {
                                  BatchSource.PLUGIN_TYPE,
                                  ImmutableMap.of(
                                    Properties.BatchReadableWritable.NAME, filmActorDatasetName,
-                                   Properties.Table.PROPERTY_SCHEMA, filmActorSchema.toString()),
+                                   Properties.Table.PROPERTY_SCHEMA, FILM_ACTOR_SCHEMA.toString()),
                                  null));
-
-    Schema filmCategorySchema = Schema.recordOf(
-      "filmCategory",
-      Schema.Field.of("film_id", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("category_name", Schema.of(Schema.Type.STRING)));
 
     ETLStage filmCategoryStage =
       new ETLStage("filmCategory",
@@ -231,11 +211,8 @@ public class JoinerTestRun extends ETLBatchTestBase {
                                  BatchSource.PLUGIN_TYPE,
                                  ImmutableMap.of(
                                    Properties.BatchReadableWritable.NAME, filmCategoryDatasetName,
-                                   Properties.Table.PROPERTY_SCHEMA, filmCategorySchema.toString()),
+                                   Properties.Table.PROPERTY_SCHEMA, FILM_CATEGORY_SCHEMA.toString()),
                                  null));
-
-    String selectedFields = "film.film_id as film_id, film.film_name as film_name, filmActor.actor_name as " +
-      "renamed_actor, filmCategory.category_name as renamed_category";
 
     ETLStage joinStage =
       new ETLStage("joiner",
@@ -310,26 +287,14 @@ public class JoinerTestRun extends ETLBatchTestBase {
     String filmActorDatasetName = "film-actor-outerjoin-no-requiredinputs";
     String joinedDatasetName = "outerjoin-no-requiredinputs-output";
 
-    Schema filmSchema = Schema.recordOf(
-      "film",
-      Schema.Field.of("film_id", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)));
-
     ETLStage filmStage =
       new ETLStage("film",
                    new ETLPlugin("Table",
                                  BatchSource.PLUGIN_TYPE,
                                  ImmutableMap.of(
                                    Properties.BatchReadableWritable.NAME, filmDatasetName,
-                                   Properties.Table.PROPERTY_SCHEMA, filmSchema.toString()),
+                                   Properties.Table.PROPERTY_SCHEMA, FILM_SCHEMA.toString()),
                                  null));
-
-
-    Schema filmActorSchema = Schema.recordOf(
-      "filmActor",
-      Schema.Field.of("film_id", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("actor_name", Schema.of(Schema.Type.STRING)));
 
     ETLStage filmActorStage =
       new ETLStage("filmActor",
@@ -337,14 +302,8 @@ public class JoinerTestRun extends ETLBatchTestBase {
                                  BatchSource.PLUGIN_TYPE,
                                  ImmutableMap.of(
                                    Properties.BatchReadableWritable.NAME, filmActorDatasetName,
-                                   Properties.Table.PROPERTY_SCHEMA, filmActorSchema.toString()),
+                                   Properties.Table.PROPERTY_SCHEMA, FILM_ACTOR_SCHEMA.toString()),
                                  null));
-
-    Schema filmCategorySchema = Schema.recordOf(
-      "filmCategory",
-      Schema.Field.of("film_id", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("category_name", Schema.of(Schema.Type.STRING)));
 
     ETLStage filmCategoryStage =
       new ETLStage("filmCategory",
@@ -352,11 +311,8 @@ public class JoinerTestRun extends ETLBatchTestBase {
                                  BatchSource.PLUGIN_TYPE,
                                  ImmutableMap.of(
                                    Properties.BatchReadableWritable.NAME, filmCategoryDatasetName,
-                                   Properties.Table.PROPERTY_SCHEMA, filmCategorySchema.toString()),
+                                   Properties.Table.PROPERTY_SCHEMA, FILM_CATEGORY_SCHEMA.toString()),
                                  null));
-
-    String selectedFields = "film.film_id as film_id, film.film_name as film_name, filmActor.actor_name as " +
-      "renamed_actor, filmCategory.category_name as renamed_category";
 
     ETLStage joinStage =
       new ETLStage("joiner",
@@ -514,43 +470,11 @@ public class JoinerTestRun extends ETLBatchTestBase {
     Set<GenericRecord> actual = Sets.newHashSet(readOutput(fileSet, outputSchema));
     Assert.assertEquals(5, actual.size());
     org.apache.avro.Schema avroOutputSchema = new org.apache.avro.Schema.Parser().parse(outputSchema.toString());
-
-    GenericRecord bobRecord1 = new GenericRecordBuilder(avroOutputSchema)
-      .set("film_id", "1")
-      .set("film_name", "matrix")
-      .set("renamed_category", "thriller")
-      .set("renamed_actor", "bob")
-      .build();
-
-    GenericRecord bobRecord2 = new GenericRecordBuilder(avroOutputSchema)
-      .set("film_id", "1")
-      .set("film_name", "matrix")
-      .set("renamed_category", "action")
-      .set("renamed_actor", "bob")
-      .build();
-
-    GenericRecord alexRecord1 = new GenericRecordBuilder(avroOutputSchema)
-      .set("film_id", "1")
-      .set("film_name", "matrix")
-      .set("renamed_category", "thriller")
-      .set("renamed_actor", "alex")
-      .build();
-
-    GenericRecord alexRecord2 = new GenericRecordBuilder(avroOutputSchema)
-      .set("film_id", "1")
-      .set("film_name", "matrix")
-      .set("renamed_category", "action")
-      .set("renamed_actor", "alex")
-      .build();
-
-    GenericRecord cathieRecord1 = new GenericRecordBuilder(avroOutputSchema)
-      .set("film_id", "2")
-      .set("film_name", "equilibrium")
-      .set("renamed_category", "action")
-      .set("renamed_actor", "cathie")
-      .build();
-
-    Set<GenericRecord> expected = ImmutableSet.of(bobRecord1, bobRecord2, alexRecord1, alexRecord2, cathieRecord1);
+    Set<GenericRecord> expected = ImmutableSet.of(getBobRecord1(avroOutputSchema),
+                                                  getBobRecord2(avroOutputSchema),
+                                                  getAlexRecord1(avroOutputSchema),
+                                                  getAlexRecord2(avroOutputSchema),
+                                                  getCathieRecord1(avroOutputSchema));
     Assert.assertEquals(expected, actual);
   }
 
@@ -558,51 +482,12 @@ public class JoinerTestRun extends ETLBatchTestBase {
     Set<GenericRecord> actual = Sets.newHashSet(readOutput(fileSet, outputSchema));
     Assert.assertEquals(6, actual.size());
     org.apache.avro.Schema avroOutputSchema = new org.apache.avro.Schema.Parser().parse(outputSchema.toString());
-
-    GenericRecord bobRecord1 = new GenericRecordBuilder(avroOutputSchema)
-      .set("film_id", "1")
-      .set("film_name", "matrix")
-      .set("renamed_category", "thriller")
-      .set("renamed_actor", "bob")
-      .build();
-
-    GenericRecord bobRecord2 = new GenericRecordBuilder(avroOutputSchema)
-      .set("film_id", "1")
-      .set("film_name", "matrix")
-      .set("renamed_category", "action")
-      .set("renamed_actor", "bob")
-      .build();
-
-    GenericRecord alexRecord1 = new GenericRecordBuilder(avroOutputSchema)
-      .set("film_id", "1")
-      .set("film_name", "matrix")
-      .set("renamed_category", "thriller")
-      .set("renamed_actor", "alex")
-      .build();
-
-    GenericRecord alexRecord2 = new GenericRecordBuilder(avroOutputSchema)
-      .set("film_id", "1")
-      .set("film_name", "matrix")
-      .set("renamed_category", "action")
-      .set("renamed_actor", "alex")
-      .build();
-
-    GenericRecord cathieRecord1 = new GenericRecordBuilder(avroOutputSchema)
-      .set("film_id", "2")
-      .set("film_name", "equilibrium")
-      .set("renamed_category", "action")
-      .set("renamed_actor", "cathie")
-      .build();
-
-    GenericRecord avatarRecord = new GenericRecordBuilder(avroOutputSchema)
-      .set("film_id", "3")
-      .set("film_name", "avatar")
-      .set("renamed_actor", "samuel")
-      .set("renamed_category", null)
-      .build();
-
-    Set<GenericRecord> expected = ImmutableSet.of(bobRecord1, bobRecord2, alexRecord1, alexRecord2, cathieRecord1,
-                                                  avatarRecord);
+    Set<GenericRecord> expected = ImmutableSet.of(getBobRecord1(avroOutputSchema),
+                                                  getBobRecord2(avroOutputSchema),
+                                                  getAlexRecord1(avroOutputSchema),
+                                                  getAlexRecord2(avroOutputSchema),
+                                                  getCathieRecord1(avroOutputSchema),
+                                                  getAvatarRecord1(avroOutputSchema));
     Assert.assertEquals(expected, actual);
   }
 
@@ -611,48 +496,6 @@ public class JoinerTestRun extends ETLBatchTestBase {
     Set<GenericRecord> actual = Sets.newHashSet(readOutput(fileSet, outputSchema));
     Assert.assertEquals(8, actual.size());
     org.apache.avro.Schema avroOutputSchema = new org.apache.avro.Schema.Parser().parse(outputSchema.toString());
-
-    GenericRecord bobRecord1 = new GenericRecordBuilder(avroOutputSchema)
-      .set("film_id", "1")
-      .set("film_name", "matrix")
-      .set("renamed_category", "thriller")
-      .set("renamed_actor", "bob")
-      .build();
-
-    GenericRecord bobRecord2 = new GenericRecordBuilder(avroOutputSchema)
-      .set("film_id", "1")
-      .set("film_name", "matrix")
-      .set("renamed_category", "action")
-      .set("renamed_actor", "bob")
-      .build();
-
-    GenericRecord alexRecord1 = new GenericRecordBuilder(avroOutputSchema)
-      .set("film_id", "1")
-      .set("film_name", "matrix")
-      .set("renamed_category", "thriller")
-      .set("renamed_actor", "alex")
-      .build();
-
-    GenericRecord alexRecord2 = new GenericRecordBuilder(avroOutputSchema)
-      .set("film_id", "1")
-      .set("film_name", "matrix")
-      .set("renamed_category", "action")
-      .set("renamed_actor", "alex")
-      .build();
-
-    GenericRecord cathieRecord1 = new GenericRecordBuilder(avroOutputSchema)
-      .set("film_id", "2")
-      .set("film_name", "equilibrium")
-      .set("renamed_category", "action")
-      .set("renamed_actor", "cathie")
-      .build();
-
-    GenericRecord avatarRecord = new GenericRecordBuilder(avroOutputSchema)
-      .set("film_id", "3")
-      .set("film_name", "avatar")
-      .set("renamed_actor", "samuel")
-      .set("renamed_category", null)
-      .build();
 
     GenericRecord humtumRecord = new GenericRecordBuilder(avroOutputSchema)
       .set("film_id", "4")
@@ -668,8 +511,67 @@ public class JoinerTestRun extends ETLBatchTestBase {
       .set("renamed_category", "comedy")
       .build();
 
-    Set<GenericRecord> expected = ImmutableSet.of(bobRecord1, bobRecord2, alexRecord1, alexRecord2, cathieRecord1,
-                                                  avatarRecord, humtumRecord, sultanRecord);
+    Set<GenericRecord> expected = ImmutableSet.of(getBobRecord1(avroOutputSchema),
+                                                  getBobRecord2(avroOutputSchema),
+                                                  getAlexRecord1(avroOutputSchema),
+                                                  getAlexRecord2(avroOutputSchema),
+                                                  getCathieRecord1(avroOutputSchema),
+                                                  getAvatarRecord1(avroOutputSchema),
+                                                  humtumRecord, sultanRecord);
     Assert.assertEquals(expected, actual);
+  }
+
+  private GenericRecord getBobRecord1(org.apache.avro.Schema avroOutputSchema) {
+    return new GenericRecordBuilder(avroOutputSchema)
+      .set("film_id", "1")
+      .set("film_name", "matrix")
+      .set("renamed_category", "thriller")
+      .set("renamed_actor", "bob")
+      .build();
+  }
+
+  private GenericRecord getBobRecord2(org.apache.avro.Schema avroOutputSchema) {
+    return new GenericRecordBuilder(avroOutputSchema)
+      .set("film_id", "1")
+      .set("film_name", "matrix")
+      .set("renamed_category", "action")
+      .set("renamed_actor", "bob")
+      .build();
+  }
+
+  private GenericRecord getAlexRecord1(org.apache.avro.Schema avroOutputSchema) {
+    return new GenericRecordBuilder(avroOutputSchema)
+      .set("film_id", "1")
+      .set("film_name", "matrix")
+      .set("renamed_category", "thriller")
+      .set("renamed_actor", "alex")
+      .build();
+  }
+
+  private GenericRecord getAlexRecord2(org.apache.avro.Schema avroOutputSchema) {
+    return new GenericRecordBuilder(avroOutputSchema)
+      .set("film_id", "1")
+      .set("film_name", "matrix")
+      .set("renamed_category", "action")
+      .set("renamed_actor", "alex")
+      .build();
+  }
+
+  private GenericRecord getCathieRecord1(org.apache.avro.Schema avroOutputSchema) {
+    return new GenericRecordBuilder(avroOutputSchema)
+      .set("film_id", "2")
+      .set("film_name", "equilibrium")
+      .set("renamed_category", "action")
+      .set("renamed_actor", "cathie")
+      .build();
+  }
+
+  private GenericRecord getAvatarRecord1(org.apache.avro.Schema avroOutputSchema) {
+    return new GenericRecordBuilder(avroOutputSchema)
+      .set("film_id", "3")
+      .set("film_name", "avatar")
+      .set("renamed_actor", "samuel")
+      .set("renamed_category", null)
+      .build();
   }
 }
