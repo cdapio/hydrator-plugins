@@ -21,6 +21,7 @@ import ch.ethz.ssh2.Session;
 import ch.ethz.ssh2.StreamGobbler;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.plugin.PluginConfig;
@@ -65,8 +66,11 @@ public class SSHAction extends Action {
     try {
       connection.connect();
 
+      LOG.debug("runtime arg of ssh-key: {}", context.getArguments().get("ssh-key"));
       String password = Strings.isNullOrEmpty(config.password) ? null : config.password;
-      if (!connection.authenticateWithPublicKey(config.user, new File(config.privateKeyFile), password)) {
+      LOG.debug("Private Key File Value: {}", config.privateKeyFile);
+      char[] privateKey = context.getSecureData("default", config.privateKeyFile).get().toString().toCharArray();
+      if (!connection.authenticateWithPublicKey(config.user, privateKey, password)) {
         throw new IOException(String.format("SSH authentication error when connecting to %s@%s on port %d",
                                             config.user, config.host, config.port));
       }
@@ -122,6 +126,7 @@ public class SSHAction extends Action {
     @Description("User name used to connect to host")
     private String user;
 
+    @Macro
     @Description("File path to Private key")
     private String privateKeyFile;
 
