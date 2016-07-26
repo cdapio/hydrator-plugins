@@ -20,7 +20,7 @@
 
   <groupId>co.cask.hydrator</groupId>
   <artifactId>hydrator-plugins</artifactId>
-  <version>1.4.0-SNAPSHOT</version>
+  <version>1.5.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Hydrator Plugin Collection</name>
   <description>A collection of plugins for Cask Hydrator.</description>
@@ -99,7 +99,7 @@
     <cassandraunit.version>2.0.2.2</cassandraunit.version>
     <commons-codec.version>1.10</commons-codec.version>
     <commons-httpclient.version>3.1</commons-httpclient.version>
-    <cdap.version>3.5.0-SNAPSHOT</cdap.version>
+    <cdap.version>3.6.0-SNAPSHOT</cdap.version>
     <datastax.version>2.0.5</datastax.version>
     <dumbster.version>1.6</dumbster.version>
     <es.version>1.6.0</es.version>
@@ -159,6 +159,18 @@
         <groupId>javax.annotation</groupId>
         <artifactId>jsr250-api</artifactId>
         <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>co.cask.cdap</groupId>
+        <artifactId>cdap-api</artifactId>
+        <version>${cdap.version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>co.cask.cdap</groupId>
+        <artifactId>cdap-etl-proto</artifactId>
+        <version>${cdap.version}</version>
+        <scope>provided</scope>
       </dependency>
       <dependency>
         <groupId>co.cask.cdap</groupId>
