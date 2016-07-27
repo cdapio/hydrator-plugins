@@ -21,6 +21,7 @@ import ch.ethz.ssh2.Session;
 import ch.ethz.ssh2.StreamGobbler;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.plugin.PluginConfig;
@@ -30,13 +31,11 @@ import co.cask.cdap.etl.api.action.Action;
 import co.cask.cdap.etl.api.action.ActionContext;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
-import com.google.common.base.Strings;
 import com.google.common.io.CharStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -61,12 +60,14 @@ public class SSHAction extends Action {
 
   @Override
   public void run(final ActionContext context) throws Exception {
+    // now that macros have been substituted, try validation again
+    config.validate();
+
     Connection connection = new Connection(config.host);
     try {
       connection.connect();
 
-      String password = Strings.isNullOrEmpty(config.password) ? null : config.password;
-      if (!connection.authenticateWithPublicKey(config.user, new File(config.privateKeyFile), password)) {
+      if (!connection.authenticateWithPublicKey(config.user, config.privateKey.toCharArray(), config.passphrase)) {
         throw new IOException(String.format("SSH authentication error when connecting to %s@%s on port %d",
                                             config.user, config.host, config.port));
       }
@@ -95,12 +96,9 @@ public class SSHAction extends Action {
                                             config.command, config.host, exitCode));
       }
 
-      if (config.output != null) {
-        //removes the carriage return at the end of the line
-        out = out.endsWith("\n") ? out.substring(0, out.length() - 1) : out;
-
-        context.getArguments().set(config.output, out);
-      }
+      //removes the carriage return at the end of the line
+      out = out.endsWith("\n") ? out.substring(0, out.length() - 1) : out;
+      context.getArguments().set(config.outputKey, out);
     } finally {
       connection.close();
     }
@@ -108,7 +106,9 @@ public class SSHAction extends Action {
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    this.config.validate();
+    if (!config.containsMacro("port")) {
+      config.validate();
+    }
   }
 
   /**
@@ -116,44 +116,54 @@ public class SSHAction extends Action {
    */
   public static class SSHActionConfig extends PluginConfig {
     @Description("Command to be executed on the remote host. Should include filepath of script and any arguments")
+    @Macro
     private String command;
 
     @Description("Host name of the remote machine where the command needs to be executed.")
+    @Macro
     private String host;
 
     @Nullable
     @Description("Port to connect to. Defaults to 22")
+    @Macro
     private Integer port;
 
     @Description("User name used to connect to host")
+    @Macro
     private String user;
 
-    @Description("File path to Private key")
-    private String privateKeyFile;
+    @Description("The private key to be used to perform the secure shell action. Users can also specify a macro that " +
+      "will pull the private key from the secure key management store in CDAP such as ${secure(myPrivateKey)}.")
+    @Macro
+    private String privateKey;
 
     @Nullable
-    @Description("Password associated with private key")
-    private String password;
+    @Description("Passphrase used to decrypt the provided private key associated with \"privateKeyLookupKey\"")
+    @Macro
+    private String passphrase;
 
     @Nullable
-    @Description("Variable used to hold desired key name to be associated with script output in the instance " +
-      "the script output contains information needed to be stored in the ActionContext for later use in the pipeline.")
-    private String output;
+    @Description("The key used to store the output of the command run by the action. Plugins that run at later " +
+      "stages in the pipeline can retrieve the command's output using this key through macro substitution " +
+      "${outputKey} where \"outputKey\" is the key specified. Defaults to \"sshOutput\".")
+    @Macro
+    private String outputKey;
 
     public SSHActionConfig() {
-      port = 22;
+      this.port = 22;
+      this.outputKey = "sshOutput";
     }
 
     @VisibleForTesting
-    public SSHActionConfig(String command, String host, String user, String privateKeyFile, int port, String password,
-                           String output) {
+    public SSHActionConfig(String command, String host, String user, String privateKeyFileLookupKey, Integer port,
+                           String passphrase, String outputKey) {
       this.command = command;
       this.host = host;
-      this.port = port;
+      this.port = (port == null) ? 22 : port;
       this.user = user;
-      this.privateKeyFile = privateKeyFile;
-      this.password = password;
-      this.output = output;
+      this.privateKey = privateKeyFileLookupKey;
+      this.passphrase = passphrase;
+      this.outputKey = outputKey;
     }
 
     public void validate() {
