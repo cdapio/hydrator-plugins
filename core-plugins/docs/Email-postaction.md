@@ -50,7 +50,7 @@ This example sends an email from 'team-ops@example.com' to 'team-alerts@example.
         "properties": {
             "recipientEmailAddress": "team-alerts@example.com",
             "senderEmailAddress": "team-ops@example.com",
-            "subject": "Pipeline Failure ${runtime(yyyy-MM-dd)}",
+            "subject": "Pipeline Failure ${logicalStartTime(yyyy-MM-dd)}",
             "message": "The pipeline run failed.",
             "includeWorkflowToken": "true",
             "host": "smtp-server.com",
