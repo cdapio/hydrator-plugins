@@ -4,115 +4,63 @@
 Description
 -----------
 Normalize is a transform plugin that breaks one source row into multiple target rows.
-Example: Attributes are stored in columns of table or file, may need to be broken into multiple records such as one
-record per column attribute.
-In general it allows one to convert columns to rows.
+Attributes stored in the columns of a table or a file may need to be broken into multiple
+records: for example, one record per column attribute. In general, the plugin allows the
+conversion of columns to rows.
 
 Use Case
 --------
-User want to reduce the restructuring of dataset when new type of data introduced in the collection.
-Let’s assume that we are building a customer 360 Master table that aggregates data for a user from multiple sources.
-Each of the source has it's own type of data to be added to a Customer Id. Instead of creating wide columns,
-normalization allows one to transform into it's canonical form and update the customer 360 profile simultaneously
-from multiple sources.
-
+The normalize transform can be used if you want to reduce the restructuring of a dataset
+when a new type of data is introduced into the collection. For example, assume you are
+building a master customer table that aggregates data for a user from multiple sources,
+and each of the sources has its own type of data to be added to a "customer-id". Instead
+of creating wide columns, normalization allows you to transform data into its canonical
+form and update the master customer profile simultaneously from the multiple sources.
 
 Properties
 ----------
-**fieldMapping:** Specify the input schema field mapping to output schema field.
-Example: CustomerID:ID, here value of CustomerID will be saved to ID field of output schema.
+**fieldMapping:** A string that is a comma-separated list of field names. Specifies the input schema field
+to be mapped to the output schema field. Example: "CustomerID:ID" maps the value of the
+CustomerID field to the ID field of the output schema.
 
-**fieldNormalizing:** Specify the normalize field name, to what output field it should be mapped to and where the value
-needs to be added.
-Example: ItemId:AttributeType:AttributeValue, here ItemId column name will be saved to AttributeType field and its
-value will be saved to AttributeValue field of output schema.
+**fieldNormalizing:** A string that is a comma-separated list of field names, a common
+column for the field types, and a common column for the field values. Specifies the name
+of the field to be normalized, to which output field its name should be mapped as a type,
+and the output field where the value needs to be saved.
 
-**outputSchema:** The output schema for the data as it will be formatted in CDAP.
+Example: "ItemId:AttributeType:AttributeValue" will save the name "ItemId" to the
+"AttributeType" field, and the value of "ItemId" column will be saved in the
+"AttributeValue" field of the output schema.
+
+**outputSchema:** The output schema for the data.
 
 Example
 -------
-This example creates customer 360 profile data from multiple sources.
-Assume we have a source 'Customer Profile' table and 'Customer Purchase' table, which will be normalize to
-Customer-360 table.
+This example creates a customer profile table from two sources. Assume we have as sources
+a "Customer_Profile" table and a "Customer_Purchase" table which we need to normalize into
+a "Customer" table.
 
-Customer Profile table:
+Customer_Profile table:
 
     +==============================================================================================================+
-    | CustomerId | First Name |  Last Name | Shipping Address | Credit Card | Billing Address | Last Update Date   |
+    | CustomerId | First_Name | Last_Name  | Shipping_Address | Credit_Card | Billing_Address | Last_Update_Date   |
     +==============================================================================================================+
-    | S23424242  | Joltie     |  Root      | 32826 Mars Way,  | 2334-232132 | 32826 Mars Way, | 05/12/2015         |
+    | S23424242  | Joltie     | Root       | 32826 Mars Way,  | 2334-232132 | 32826 Mars Way, | 05/12/2015         |
     |            |            |            | Marsville,  MR,  | -2323       | Marsville,  MR, |                    |
     |            |            |            | 24344            |             | 24344           |                    |
     +--------------------------------------------------------------------------------------------------------------+
-    | R45764646  | Root       | Joltie     | 32423, Your Way, | 2343-12312- | 32421 MyVilla,  | 04/03/2012         |
+    | R45764646  | Iris       | Cask       | 32423, Your Way, | 2343-12312- | 32421 MyVilla,  | 04/03/2012         |
     |            |            |            | YourVille, YR,   | 12313       | YourVille, YR,  |                    |
     |            |            |            | 65765            |             | 23423           |                    |
     +==============================================================================================================+
 
-Map "CustomerId" column to "ID" column of output schema, and "Last Update Date" to "Date" column of output schema.
-Normalize "First Name", "Last Name", "Credit Card" and "Billing Address" columns where each column name mapped to
-"Attribute Type" and value mapped to "Attribute Value" columns of the output schema.
+Map the "CustomerId" column to the "ID" column of the output schema, and the
+"Last_Update_Date" to the "Date" column of the output schema. Normalize the "First_Name",
+"Last_Name", "Credit_Card", and "Billing_Address" columns by mapping each column name to
+the "Attribute_Type" column and their values to the "Attribute_Value" column of the output
+schema.
 
-The plugin JSON Representation will be:
-
-    {
-        "name": "Normalize",
-        "plugin": {
-            "name": "Normalize",
-            "type": "transform",
-            "label": "Normalize",
-            "properties": {
-               "fieldMapping": "CustomerId:ID,Last Update Date:Date",
-               "fieldNormalizing": "First Name:Attribute Type:Attribute Value,Last Name:Attribute Type:Attribute Value,
-                                   Credit Card:Attribute Type:Attribute Value,
-                                   Billing Address:Attribute Type:Attribute Value",
-               "outputSchema": "{
-                             \"type\":\"schema\",
-                             \"name\":\"outputSchema\",
-                             \"fields\":[
-                               {\"name\":\"ID\",\"type\":\"string\"},
-                               {\"name\":\"Date\",\"type\":\"string\"},
-                               {\"name\":\"Attribute Type\",\"type\":\"string\"},
-                               {\"name\":\"Attribute Value\",\"type\":\"string\"}
-                             ]
-               }"
-            }
-        }
-    }
-
-
-After transformation of Normalize plugin, the output records in Customer-360 table will be:
-
-    +====================================================================================+
-    | ID	      | Attribute Type	| Attribute Value	                       | Date        |
-    +====================================================================================+
-    | S23424242	| First Name	    | Joltie	                               | 05/12/2015  |
-    | S23424242	| Last Name	      | Root	                                 | 05/12/2015  |
-    | S23424242	| Credit Card	    | 2334-232132-2323	                     | 05/12/2015  |
-    | S23424242	| Billing Address	| 32826 Mars Way, Marsville,  MR, 24344	 | 05/12/2015  |
-    | R45764646	| First Name	    | Root                                   | 04/03/2012  |
-    | R45764646	| Last Name	      | Joltie                                 | 04/03/2012  |
-    | R45764646	| Credit Card	    | 2343-12312-12313	                     | 04/03/2012  |
-    | R45764646	| Billing Address	| 32421, MyVilla Ct, YourVille, YR, 23423| 04/03/2012  |
-    +====================================================================================+
-
-Create a new pipeline to normalize Customer profile table to Customer-360 table.
-
-Customer Purchase table:
-
-    +===========================================================+
-    | CustomerId | Item ID	        | Item Cost	| Purchase Date |
-    +===========================================================+
-    | S23424242  | UR-AR-243123-ST	| 245.67	  | 08/09/2015    |
-    | S23424242  | SKU-234294242942	| 67.90 	  | 10/12/2015    |
-    | R45764646  | SKU-567757543532	| 14.15 	  | 06/09/2014    |
-    +===========================================================+
-
-Map "CustomerId" column to "ID" column of output schema, and "Purchase Date" to "Date" column of output schema.
-Normalize "Item ID", "Item Cost" columns where each column name mapped to "Attribute Type" and value mapped to
-"Attribute Value" columns of the output schema.
-
-The plugin JSON Representation will be:
+The plugin's JSON Representation will be:
 
     {
         "name": "Normalize",
@@ -121,41 +69,100 @@ The plugin JSON Representation will be:
             "type": "transform",
             "label": "Normalize",
             "properties": {
-               "fieldMapping": "CustomerId:ID,Purchase Date:Date",
-               "fieldNormalizing": "Item ID:Attribute Type:Attribute Value,Item Cost:Attribute Type:Attribute Value",
+               "fieldMapping": "CustomerId:ID,Last_Update_Date:Date",
+               "fieldNormalizing": "First_Name:Attribute_Type:Attribute_Value,
+                                    Last_Name:Attribute_Type:Attribute_Value,
+                                    Credit_Card:Attribute_Type:Attribute_Value,
+                                    Billing_Address:Attribute_Type:Attribute_Value",
                "outputSchema": "{
                              \"type\":\"schema\",
                              \"name\":\"outputSchema\",
                              \"fields\":[
                                {\"name\":\"ID\",\"type\":\"string\"},
                                {\"name\":\"Date\",\"type\":\"string\"},
-                               {\"name\":\"Attribute Type\",\"type\":\"string\"},
-                               {\"name\":\"Attribute Value\",\"type\":\"string\"}
+                               {\"name\":\"Attribute_Type\",\"type\":\"string\"},
+                               {\"name\":\"Attribute_Value\",\"type\":\"string\"}
                              ]
                }"
             }
         }
     }
 
-After transformation of Normalize plugin, the output records in Customer-360 table will be:
+
+After the transformation, the output records in the Customer table will be:
 
     +====================================================================================+
-    | ID	      | Attribute Type	| Attribute Value	                       | Date        |
+    | ID        | Attribute_Type  | Attribute_Value                         | Date       |
     +====================================================================================+
-    | S23424242	| First Name	    | Joltie	                               | 05/12/2015  |
-    | S23424242	| Last Name	      | Root	                                 | 05/12/2015  |
-    | S23424242	| Credit Card	    | 2334-232132-2323	                     | 05/12/2015  |
-    | S23424242	| Billing Address	| 32826 Mars Way, Marsville,  MR, 24344	 | 05/12/2015  |
-    | R45764646	| First Name	    | Root                                   | 04/03/2012  |
-    | R45764646	| Last Name	      | Joltie                                 | 04/03/2012  |
-    | R45764646	| Credit Card	    | 2343-12312-12313	                     | 04/03/2012  |
-    | R45764646	| Billing Address | 32421, MyVilla Ct, YourVille, YR, 23423| 08/09/2015  |
-    | S23424242	| Item ID	        | UR-AR-243123-ST                        | 08/09/2015  |
-    | S23424242	| Item Cost     	| 245.67                                 | 08/09/2015  |
-    | S23424242	| Item ID        	| SKU-234294242942                       | 10/12/2015  |
-    | S23424242	| Item Cost	      | 67.90                                  | 10/12/2015  |
-    | R45764646	| Item ID       	| SKU-567757543532                       | 06/09/2014  |
-    | R45764646	| Item Cost       | 14.15                                  | 06/09/2014  |
+    | S23424242 | First Name      | Joltie                                  | 05/12/2015 |
+    | S23424242 | Last Name       | Root                                    | 05/12/2015 |
+    | S23424242 | Credit Card     | 2334-232132-2323                        | 05/12/2015 |
+    | S23424242 | Billing Address | 32826 Mars Way, Marsville,  MR, 24344   | 05/12/2015 |
+    | R45764646 | First Name      | Iris                                    | 04/03/2012 |
+    | R45764646 | Last Name       | Cask                                    | 04/03/2012 |
+    | R45764646 | Credit Card     | 2343-12312-12313                        | 04/03/2012 |
+    | R45764646 | Billing Address | 32421, MyVilla Ct, YourVille, YR, 23423 | 04/03/2012 |
     +====================================================================================+
 
-Above Customer-360 table has normalized data from 'Customer Profile' and 'Customer Purchase' tables.
+Next, create a new pipeline to normalize the Customer_Purchase table to the revised Customer table.
+
+Customer_Purchase table:
+
+    +===========================================================+
+    | CustomerId | Item_ID          | Item_Cost | Purchase_Date |
+    +===========================================================+
+    | S23424242  | UR-AR-243123-ST  | 245.67    | 08/09/2015    |
+    | S23424242  | SKU-234294242942 | 67.90     | 10/12/2015    |
+    | R45764646  | SKU-567757543532 | 14.15     | 06/09/2014    |
+    +===========================================================+
+
+Map the "CustomerId" column to the "ID" column of the output schema, and the
+"Purchase_Date" to the "Date" column of the output schema. Normalize the "Item_ID" and
+"Item_Cost" columns so that each column name will be mapped to the "Attribute_Type" column
+and each value will be mapped to the "Attribute_Value" column of the output schema.
+
+The plugin's JSON Representation will be:
+
+    {
+        "name": "Normalize",
+        "plugin": {
+            "name": "Normalize",
+            "type": "transform",
+            "label": "Normalize",
+            "properties": {
+               "fieldMapping": "CustomerId:ID,Purchase_Date:Date",
+               "fieldNormalizing": "Item_ID:Attribute_Type:Attribute_Value,Item_Cost:Attribute_Type:Attribute_Value",
+               "outputSchema": "{
+                             \"type\":\"schema\",
+                             \"name\":\"outputSchema\",
+                             \"fields\":[
+                               {\"name\":\"ID\",\"type\":\"string\"},
+                               {\"name\":\"Date\",\"type\":\"string\"},
+                               {\"name\":\"Attribute_Type\",\"type\":\"string\"},
+                               {\"name\":\"Attribute_Value\",\"type\":\"string\"}
+                             ]
+               }"
+            }
+        }
+    }
+
+After the transformation, the output records in the Customer table will be:
+
+    +=====================================================================================+
+    | ID        | Attribute_Type  | Attribute_Value                         | Date        |
+    +=====================================================================================+
+    | S23424242 | First_Name      | Joltie                                  | 05/12/2015  |
+    | S23424242 | Last_Name       | Root                                    | 05/12/2015  |
+    | S23424242 | Credit_Card     | 2334-232132-2323                        | 05/12/2015  |
+    | S23424242 | Billing_Address | 32826 Mars Way, Marsville,  MR, 24344   | 05/12/2015  |
+    | R45764646 | First_Name      | Iris                                    | 04/03/2012  |
+    | R45764646 | Last_Name       | Cask                                    | 04/03/2012  |
+    | R45764646 | Credit_Card     | 2343-12312-12313                        | 04/03/2012  |
+    | R45764646 | Billing_Address | 32421, MyVilla Ct, YourVille, YR, 23423 | 08/09/2015  |
+    | S23424242 | Item_ID         | UR-AR-243123-ST                         | 08/09/2015  |
+    | S23424242 | Item_Cost       | 245.67                                  | 08/09/2015  |
+    | S23424242 | Item_ID         | SKU-234294242942                        | 10/12/2015  |
+    | S23424242 | Item_Cost       | 67.90                                   | 10/12/2015  |
+    | R45764646 | Item_ID         | SKU-567757543532                        | 06/09/2014  |
+    | R45764646 | Item_Cost       | 14.15                                   | 06/09/2014  |
+    +=====================================================================================+
