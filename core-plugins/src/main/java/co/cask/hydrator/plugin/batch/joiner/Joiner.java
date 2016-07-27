@@ -70,7 +70,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
     Map<String, Schema> inputSchemas = stageConfigurer.getInputSchemas();
-    init();
+    init(inputSchemas);
     //validate the input schema and get the output schema for it
     stageConfigurer.setOutputSchema(getOutputSchema(inputSchemas));
   }
@@ -84,7 +84,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
 
   @Override
   public void initialize(BatchJoinerRuntimeContext context) throws Exception {
-    init();
+    init(context.getInputSchemas());
     inputSchemas = context.getInputSchemas();
     outputSchema = context.getOutputSchema();
   }
@@ -140,16 +140,42 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     return outRecordBuilder.build();
   }
 
-  private void init() {
-    perStageJoinKeys = conf.getPerStageJoinKeys();
+  void init(Map<String, Schema> inputSchemas) {
+    validateJoinKeySchemas(inputSchemas);
     requiredInputs = conf.getInputs();
     perStageSelectedFields = conf.getPerStageSelectedFields();
+  }
+
+  void validateJoinKeySchemas(Map<String, Schema> inputSchemas) {
+    perStageJoinKeys = conf.getPerStageJoinKeys();
+
+    if (perStageJoinKeys.size() != inputSchemas.size()) {
+      throw new IllegalArgumentException("There should be join keys present from each stage");
+    }
+
+    List<Schema> prevSchemaList = null;
+    for (Map.Entry<String, List<String>> entry : perStageJoinKeys.entrySet()) {
+      ArrayList<Schema> schemaList = new ArrayList<>();
+      String stageName = entry.getKey();
+      Schema schema = inputSchemas.get(stageName);
+      for (String joinKey : entry.getValue()) {
+        Schema.Field field = schema.getField(joinKey);
+        schemaList.add(field.getSchema());
+      }
+      if (prevSchemaList != null && !prevSchemaList.equals(schemaList)) {
+        throw new IllegalArgumentException(String.format("For stage %s, Schemas of joinKeys %s are expected to be: " +
+                                                           "%s, but found: %s",
+                                                         stageName, entry.getValue(), prevSchemaList.toString(),
+                                                         schemaList.toString()));
+      }
+      prevSchemaList = schemaList;
+    }
   }
 
   @Path("outputSchema")
   public Schema getOutputSchema(GetSchemaRequest request) {
     try {
-      perStageJoinKeys = request.getPerStageJoinKeys();
+      validateJoinKeySchemas(request.inputSchemas);
       requiredInputs = request.getInputs();
       perStageSelectedFields = request.getPerStageSelectedFields();
       duplicateFields = ArrayListMultimap.create();
@@ -166,7 +192,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     public Map<String, Schema> inputSchemas;
   }
 
-  private Schema getOutputSchema(Map<String, Schema> inputSchemas) {
+  Schema getOutputSchema(Map<String, Schema> inputSchemas) {
     validateRequiredInputs(inputSchemas);
 
     // stage name to input schema
