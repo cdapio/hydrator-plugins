@@ -20,25 +20,26 @@ If set to 'completion', the action will be executed regardless of whether the pi
 If set to 'success', the action will only be executed if the pipeline run succeeded.
 If set to 'failure', the action will only be executed if the pipeline run failed.
 
-**recipients:** Comma-separated list of addresses to send the email to.
+**recipients:** Comma-separated list of addresses to send the email to. (Macro-enabled)
 
-**sender:** The address to send the email from.
+**sender:** The address to send the email from. (Macro-enabled)
 
-**message:** The message of the email.
+**message:** The message of the email. (Macro-enabled)
 
-**subject:** The subject of the email.
+**subject:** The subject of the email. (Macro-enabled)
 
-**protocol:** The email protocol to use. SMTP, SMTPS, and TLS are supported. Defaults to SMTP.
+**protocol:** The email protocol to use. SMTP, SMTPS, and TLS are supported. Defaults to SMTP. (Macro-enabled)
 
-**username:** The username to use for authentication if the protocol requires it.
+**username:** The username to use for authentication if the protocol requires it. (Macro-enabled)
 
-**password:** The password to use for authentication if the protocol requires it.
+**password:** The password to use for authentication if the protocol requires it. (Macro-enabled)
 
-**host:** The SMTP host to use. Defaults to 'localhost'.
+**host:** The SMTP host to use. Defaults to 'localhost'. (Macro-enabled)
 
-**port:** The SMTP port to use. Defaults to 25.
+**port:** The SMTP port to use. Defaults to 25. (Macro-enabled)
 
 **includeWorkflowToken:** Whether to include the contents of the workflow token in the email message. Defaults to false.
+(Macro-enabled)
 
 Example
 -------
