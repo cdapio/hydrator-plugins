@@ -22,14 +22,14 @@
           "name": "user"
         },
         {
-          "widget-type": "textbox",
-          "label": "Private Key File",
-          "name": "privateKeyFile"
+          "widget-type": "textarea",
+          "label": "Private Key",
+          "name": "privateKey"
         },
         {
           "widget-type": "textbox",
           "label": "Private Key Passphrase",
-          "name": "password"
+          "name": "passphrase"
         },
         {
           "widget-type": "textbox",
@@ -39,7 +39,7 @@
         {
           "widget-type": "textbox",
           "label": "Key Name for Script Output",
-          "name": "output"
+          "name": "outputKey"
         }
       ]
     }
