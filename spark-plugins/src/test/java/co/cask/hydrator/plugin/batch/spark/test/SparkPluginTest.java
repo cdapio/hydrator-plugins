@@ -155,6 +155,7 @@ public class SparkPluginTest extends HydratorTestBase {
       Schema.Field.of("last", Schema.of(Schema.Type.STRING)));
 
     Map<String, String> properties = new HashMap<>();
+    properties.put("referenceName", "kafkaPurchases");
     properties.put("brokers", "localhost:" + kafkaPort);
     properties.put("topics", "users");
     properties.put("format", "csv");
@@ -177,10 +178,11 @@ public class SparkPluginTest extends HydratorTestBase {
     sparkManager.start();
     sparkManager.waitForStatus(true, 10, 1);
 
-    final Set<StructuredRecord> expected = ImmutableSet.of(
-      StructuredRecord.builder(schema).set("id", 1L).set("first", "samuel").set("last", "jackson").build(),
-      StructuredRecord.builder(schema).set("id", 2L).set("first", "dwayne").set("last", "johnson").build(),
-      StructuredRecord.builder(schema).set("id", 3L).set("first", "christopher").set("last", "walken").build());
+    final Map<Long, String> expected = ImmutableMap.of(
+      1L, "samuel jackson",
+      2L, "dwayne johnson",
+      3L, "christopher walken"
+    );
 
     final DataSetManager<Table> outputManager = getDataset("kafkaOutput");
     Tasks.waitFor(
@@ -188,14 +190,17 @@ public class SparkPluginTest extends HydratorTestBase {
       new Callable<Boolean>() {
         @Override
         public Boolean call() throws Exception {
-          // write to kafka here since the source doesn't read old messages
+          // write to kafka here since the source doesn't read old messages right now
           Map<String, String> messages = new HashMap<>();
           messages.put("a", "1,samuel,jackson");
           messages.put("b", "2,dwayne,johnson");
           messages.put("c", "3,christopher,walken");
           sendKafkaMessage("users", messages);
           outputManager.flush();
-          Set<StructuredRecord> actual = ImmutableSet.copyOf(MockSink.readOutput(outputManager));
+          Map<Long, String> actual = new HashMap<>();
+          for (StructuredRecord outputRecord : MockSink.readOutput(outputManager)) {
+            actual.put((Long) outputRecord.get("id"), outputRecord.get("first") + " " + outputRecord.get("last"));
+          }
           return expected.equals(actual);
         }
       },

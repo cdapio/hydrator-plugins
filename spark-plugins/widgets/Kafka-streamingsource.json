@@ -7,6 +7,11 @@
       "label": "Kafka Configuration",
       "properties": [
         {
+          "widget-type": "textbox",
+          "label": "Reference Name",
+          "name": "referenceName"
+        },
+        {
           "widget-type": "csv",
           "label": "Kafka Brokers",
           "name": "brokers",
@@ -21,6 +26,16 @@
           "widget-attributes": {
             "delimiter": ","
           }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Time Field",
+          "name": "timeField"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Key Field",
+          "name": "keyField"
         }
       ]
     },
@@ -59,12 +74,8 @@
           "type": "record",
           "fields": [
             {
-              "name": "key",
-              "type": ["string", "null"]
-            },
-            {
               "name": "message",
-              "type": "bytes"
+              "type": ["bytes", "null"]
             }
           ]
         },
