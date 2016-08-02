@@ -34,7 +34,7 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.io.NullWritable;
 
 /**
- * A {@link BatchSource} to read Avro record from {@link TimePartitionedFileSet}
+ * A {@link BatchSource} to read Parquet record from {@link TimePartitionedFileSet}
  */
 @Plugin(type = "batchsource")
 @Name("TPFSParquet")
