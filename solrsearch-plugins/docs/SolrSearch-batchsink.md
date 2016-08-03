@@ -3,16 +3,16 @@
 
 Description
 -----------
-The SolrSearch Batch Sink takes the structured record from the input source and indexes it into the Solr server using
-the collection and idField specified by the user.
+The Solr search batch sink takes the structured record from the input source and indexes it into the Solr server or
+SolrCloud using the collection and key field specified by the user.
 
 The incoming fields from the previous stage in pipelines are mapped to Solr fields. Also, user is able to specify the
 mode of the Solr to connect to. For example, Single Node Solr or SolrCloud.
 
 Use Case
 --------
-SolrSearch Batch Sink is used to write data to the Solr server. For example, the plugin can be used in conjuction
-with a stream batch source to parse a file and read its contents in Solr.
+Solr search batch sink is used to write data to the Solr server or SolrCloud. For example, the plugin can be used in
+conjuction with a stream batch source to parse a file and read its contents in Solr.
 
 Properties
 ----------
@@ -25,8 +25,11 @@ zkHost1:2181,zkHost2:2181,zkHost3:2181 for SolrCloud.
 
 **collectionName:** Name of the collection where data will be indexed and stored in Solr.
 
-**idField:** Field that will determine the unique id for the document to be indexed. It must match a field name
+**keyField:** Field that will determine the unique key for the document to be indexed. It must match a field name
 in the structured record of the input.
+
+**batchSize** Number of documents to create a batch and send it to Solr for indexing. After each batch, commit will
+be triggered. Default batch size is 1000.
 
 **outputFieldMappings:** List of the input fields to map to the output Solr fields. The key specifies the name of the
 field to rename, with its corresponding value specifying the new name for that field.
@@ -38,7 +41,7 @@ The Solr server should be running prior to creating the application.
 All the fields that user wants to index into the Solr server, should be properly declared and defined in Solr's
 schema.xml file. The Solr server schema should be properly defined prior to creating the application.
 
-If idField('id') in the input record is NULL, then that particular record will be filtered out.
+If keyField('id') in the input record is NULL, then that particular record will be filtered out.
 
 Example
 -------
@@ -53,12 +56,13 @@ data to the specified collection (test_collection). The data is indexed using th
           "solrMode": "SingleNode",
           "solrHost": "localhost:8983",
           "collectionName": "test_collection",
-          "idField": "id",
+          "keyField": "id",
+          "batchSize": "1000",
 			    "outputFieldMappings": "office address:address"
         }
     }
 
-For example, suppose the SolrSearch sink receives the input record:
+For example, suppose the Solr search sink receives the input record:
 
     +===================================================================================================+
     | id : STRING | firstname : STRING  | lastname : STRING |  Office Address : STRING  | pincode : INT |
@@ -67,5 +71,5 @@ For example, suppose the SolrSearch sink receives the input record:
     | 100B        | Brett               | Lee               |  SE Lakeside              | 480001        |
     +===================================================================================================+
 
- Once SolrSearch sink plugin execution is completed, all the rows from input data will be indexed in the
+ Once Solr search sink plugin execution is completed, all the rows from input data will be indexed in the
  test_collection with the fields id, firstname, lastname, address and pincode.

@@ -18,21 +18,26 @@ package co.cask.hydrator.plugin.batch;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.data.batch.Output;
+import co.cask.cdap.api.data.batch.OutputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
-import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
+import co.cask.cdap.format.StructuredRecordStringConverter;
+import co.cask.hydrator.plugin.common.SolrOutputFormat;
 import co.cask.hydrator.plugin.common.SolrSearchSinkConfig;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.SolrInputField;
 
+import java.lang.reflect.Type;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -43,22 +48,18 @@ import java.util.Map;
 @Description("This plugin allows users to build the pipelines to write data to Solr. " +
   "The input fields coming from the previous stage of the pipeline are mapped to Solr fields. User can also specify " +
   "the mode of the Solr to connect to. For example, Single Node Solr or SolrCloud.")
-public class SolrSearchSink extends BatchSink<StructuredRecord, SolrInputField, SolrInputDocument> {
-
+public class SolrSearchSink extends BatchSink<StructuredRecord, Text, Text> {
   private final SolrSearchSinkConfig config;
-  private String uniqueKey;
-  private Map<String, String> outputFieldMap;
-  private SolrClient solrClient;
 
   public SolrSearchSink(SolrSearchSinkConfig config) {
     this.config = config;
   }
 
   @Override
-  public void prepareRun(BatchSinkContext batchSinkContext) throws Exception {
-    // Setting outputformat class in order to resolve the 'Output directory not set' error.
-    Job job = batchSinkContext.getHadoopJob();
+  public void prepareRun(BatchSinkContext context) throws Exception {
+    Job job = context.getHadoopJob();
     job.setOutputFormatClass(NullOutputFormat.class);
+    context.addOutput(Output.of(config.referenceName, new SolrSearchSink.SolrOutputFormatProvider(config)));
   }
 
   @Override
@@ -66,47 +67,50 @@ public class SolrSearchSink extends BatchSink<StructuredRecord, SolrInputField, 
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
     config.validateSolrConnectionString();
     if (inputSchema != null) {
-      config.validateIdField(inputSchema);
+      config.validateKeyField(inputSchema);
       config.validateInputFieldsDataType(inputSchema);
     }
   }
 
   @Override
-  public void initialize(BatchRuntimeContext context) throws Exception {
-    uniqueKey = config.getIdField();
-    outputFieldMap = config.getOutputFieldMap();
-    solrClient = config.getSolrConnection();
-  }
-
-  @Override
-  public void transform(StructuredRecord structuredRecord, Emitter<KeyValue<SolrInputField, SolrInputDocument>> emitter)
-    throws Exception {
-    String solrFieldName;
-    SolrInputDocument document;
-
+  public void transform(StructuredRecord structuredRecord, Emitter<KeyValue<Text, Text>> emitter) throws Exception {
+    Type schemaType = new TypeToken<Schema>() {
+    }.getType();
     config.verifySolrConfiguration();
-    config.validateIdField(structuredRecord.getSchema());
+    config.validateKeyField(structuredRecord.getSchema());
     config.validateInputFieldsDataType(structuredRecord.getSchema());
 
-    if (structuredRecord.get(uniqueKey) == null) {
+    if (structuredRecord.get(config.getKeyField()) == null) {
       return;
     }
-    document = new SolrInputDocument();
-    for (Schema.Field field : structuredRecord.getSchema().getFields()) {
-      solrFieldName = field.getName();
-      if (outputFieldMap.containsKey(solrFieldName)) {
-        document.addField(outputFieldMap.get(solrFieldName), structuredRecord.get(solrFieldName));
-      } else {
-        document.addField(solrFieldName, structuredRecord.get(solrFieldName));
-      }
-    }
-    solrClient.add(document);
-    solrClient.commit();
-    emitter.emit(new KeyValue<>(document.getField(uniqueKey), document));
+    emitter.emit(new KeyValue<Text, Text>(new Text(new Gson().toJson(structuredRecord.getSchema(), schemaType)),
+                                          new Text(StructuredRecordStringConverter.toJsonString(structuredRecord))));
   }
 
-  @Override
-  public void destroy() {
-    solrClient.shutdown();
+  /**
+   * Output format provider for BatchSolrSearch Sink.
+   */
+  private static class SolrOutputFormatProvider implements OutputFormatProvider {
+    private Map<String, String> conf;
+
+    public SolrOutputFormatProvider(SolrSearchSinkConfig config) {
+      this.conf = new HashMap<>();
+      conf.put("solr.server.url", config.getSolrHost());
+      conf.put("solr.server.mode", config.getSolrMode());
+      conf.put("solr.server.collection", config.getCollectionName());
+      conf.put("solr.server.idfield", config.getKeyField());
+      conf.put("solr.output.field.mappings", config.getOutputFieldMappings());
+      conf.put("solr.batch.size", config.getBatchSize());
+    }
+
+    @Override
+    public String getOutputFormatClassName() {
+      return SolrOutputFormat.class.getName();
+    }
+
+    @Override
+    public Map<String, String> getOutputFormatConfiguration() {
+      return conf;
+    }
   }
 }

@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package co.cask.hydrator.plugin.realtime;
 
 import co.cask.cdap.api.annotation.Description;
@@ -33,7 +32,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-
 /**
  * Realtime SolrSearch Sink Plugin - Writes data to a Sinlge Node Solr or to SolrCloud.
  */
@@ -43,7 +41,6 @@ import java.util.Map;
   "The input fields coming from the previous stage of the pipeline are mapped to Solr fields. User can also specify " +
   "the mode of the Solr to connect to. For example, Single Node Solr or SolrCloud.")
 public class RealtimeSolrSearchSink extends RealtimeSink<StructuredRecord> {
-
   private final SolrSearchSinkConfig config;
   private String uniqueKey;
   private Map<String, String> outputFieldMap;
@@ -58,14 +55,14 @@ public class RealtimeSolrSearchSink extends RealtimeSink<StructuredRecord> {
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
     config.validateSolrConnectionString();
     if (inputSchema != null) {
-      config.validateIdField(inputSchema);
+      config.validateKeyField(inputSchema);
       config.validateInputFieldsDataType(inputSchema);
     }
   }
 
   @Override
   public void initialize(RealtimeContext context) throws Exception {
-    uniqueKey = config.getIdField();
+    uniqueKey = config.getKeyField();
     outputFieldMap = config.getOutputFieldMap();
     solrClient = config.getSolrConnection();
   }
@@ -80,7 +77,7 @@ public class RealtimeSolrSearchSink extends RealtimeSink<StructuredRecord> {
     config.verifySolrConfiguration();
 
     for (StructuredRecord structuredRecord : structuredRecords) {
-      config.validateIdField(structuredRecord.getSchema());
+      config.validateKeyField(structuredRecord.getSchema());
       config.validateInputFieldsDataType(structuredRecord.getSchema());
 
       if (structuredRecord.get(uniqueKey) == null) {

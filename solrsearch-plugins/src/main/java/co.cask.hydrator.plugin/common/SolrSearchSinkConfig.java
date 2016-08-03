@@ -32,7 +32,6 @@ import javax.annotation.Nullable;
  * Config class for SolrSearchSink and RealtimeSolrSearchSink plugins.
  */
 public class SolrSearchSinkConfig extends ReferencePluginConfig {
-
   public static final String SINGLE_NODE_MODE = "SingleNode";
   public static final String SOLR_CLOUD_MODE = "SolrCloud";
 
@@ -44,31 +43,83 @@ public class SolrSearchSinkConfig extends ReferencePluginConfig {
   private final String solrHost;
   @Description("Name of the collection where data will be indexed and stored in Solr.")
   private final String collectionName;
-  @Description("Field that will determine the unique id for the document to be indexed. It must match a " +
+  @Description("Field that will determine the unique key for the document to be indexed. It must match a " +
     "field name in the structured record of the input.")
-  private final String idField;
+  private final String keyField;
+  @Description("Number of documents to create a batch and send it to Solr for indexing. After each batch, commit will" +
+    " be triggered. Default batch size is 1000.")
+  @Nullable
+  private final String batchSize;
   @Description("List of the input fields to map to the output Solr fields. The key specifies the name of the field to" +
     " rename, with its corresponding value specifying the new name for that field.")
   @Nullable
   private final String outputFieldMappings;
 
   public SolrSearchSinkConfig(String referenceName, String solrMode, String solrHost, String collectionName,
-                              String idField, String outputFieldMappings) {
+                              String keyField, String batchSize, String outputFieldMappings) {
     super(referenceName);
     this.solrMode = solrMode;
     this.solrHost = solrHost;
     this.collectionName = collectionName;
-    this.idField = idField;
+    this.keyField = keyField;
+    this.batchSize = batchSize;
     this.outputFieldMappings = outputFieldMappings;
   }
 
   /**
-   * Return the Id field given as input by user.
+   * Returns the Solr mode selected as input by user.
    *
-   * @return id field
+   * @return Solr mode
    */
-  public String getIdField() {
-    return idField;
+  public String getSolrMode() {
+    return solrMode;
+  }
+
+  /**
+   * Returns the hostname and port entered by user.
+   *
+   * @return Solr host
+   */
+  public String getSolrHost() {
+    return solrHost;
+  }
+
+  /**
+   * Returns the Solr collection name given as input by user.
+   *
+   * @return collection name
+   */
+  public String getCollectionName() {
+    return collectionName;
+  }
+
+  /**
+   * Returns the Key field given as input by user.
+   *
+   * @return key field
+   */
+  public String getKeyField() {
+    return keyField;
+  }
+
+  /**
+   * Returns the batch size given as input by user.
+   *
+   * @return batch size
+   */
+  @Nullable
+  public String getBatchSize() {
+    return batchSize;
+  }
+
+  /**
+   * Returns the input fields and its output fields mapping given as input by user.
+   *
+   * @return
+   */
+  @Nullable
+  public String getOutputFieldMappings() {
+    return outputFieldMappings;
   }
 
   /**
@@ -102,10 +153,10 @@ public class SolrSearchSinkConfig extends ReferencePluginConfig {
   public SolrClient getSolrConnection() {
     String urlString;
     SolrClient solrClient = null;
-    if (solrMode.equalsIgnoreCase(SINGLE_NODE_MODE)) {
+    if (solrMode.equals(SINGLE_NODE_MODE)) {
       urlString = "http://" + solrHost + "/solr/" + collectionName;
       solrClient = new HttpSolrClient(urlString);
-    } else if (solrMode.equalsIgnoreCase(SOLR_CLOUD_MODE)) {
+    } else if (solrMode.equals(SOLR_CLOUD_MODE)) {
       CloudSolrClient solrCloudClient = new CloudSolrClient(solrHost);
       solrCloudClient.setDefaultCollection(collectionName);
       solrClient = solrCloudClient;
@@ -140,14 +191,14 @@ public class SolrSearchSinkConfig extends ReferencePluginConfig {
   }
 
   /**
-   * Validates whether the Id field provided by user is present in the input schema or not.
+   * Validates whether the key field provided by user is present in the input schema or not.
    *
    * @param inputSchema
    */
-  public void validateIdField(Schema inputSchema) {
-    if (inputSchema != null && inputSchema.getField(idField) == null) {
+  public void validateKeyField(Schema inputSchema) {
+    if (inputSchema != null && inputSchema.getField(keyField) == null) {
       throw new IllegalArgumentException(
-        String.format("Idfield '%s' does not exist in the input schema %s", idField, inputSchema));
+        String.format("Keyfield '%s' does not exist in the input schema %s", keyField, inputSchema));
     }
   }
 
@@ -157,7 +208,8 @@ public class SolrSearchSinkConfig extends ReferencePluginConfig {
    * @param inputSchema
    */
   public void validateInputFieldsDataType(Schema inputSchema) {
-    /* Currently SolrSearch sink plugin supports CDAP primitives types only: BOOLEAN, INT, LONG, FLOAT, DOUBLE and
+    /* Currently SolrSearch sink plugin supports CDAP primitives types only: BOOLEAN, INT, LONG,
+    FLOAT, DOUBLE and
     STRING.*/
     Schema.Type schemaType;
     if (inputSchema != null) {
