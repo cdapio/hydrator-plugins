@@ -26,23 +26,17 @@ import co.cask.cdap.api.plugin.PluginSelector;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.StageConfigurer;
 
-import java.util.HashMap;
-import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
  * Mock test configurer used to test configure pipeline's validation of input schema and setting of output shcema.
  */
 public class MockPipelineConfigurer implements PipelineConfigurer {
-  private final Map<String, Schema> inputSchemas = new HashMap<String, Schema>();
+  private final Schema inputSchema;
   Schema outputSchema;
 
   public MockPipelineConfigurer(Schema inputSchema) {
-    this.inputSchemas.put("", inputSchema);
-  }
-
-  public MockPipelineConfigurer(Map<String, Schema> inputSchemas) {
-    this.inputSchemas.putAll(inputSchemas);
+    this.inputSchema = inputSchema;
   }
 
   @Nullable
@@ -56,13 +50,7 @@ public class MockPipelineConfigurer implements PipelineConfigurer {
       @Nullable
       @Override
       public Schema getInputSchema() {
-        return inputSchemas.entrySet().iterator().next().getValue();
-      }
-
-      @Nullable
-      @Override
-      public Map<String, Schema> getInputSchemas() {
-        return inputSchemas;
+        return inputSchema;
       }
 
       @Override
