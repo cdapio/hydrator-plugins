@@ -69,7 +69,7 @@ public class CompositeKeySortingTest {
     Gson gson = new GsonBuilder().create();
     Schema input =
       Schema.recordOf("input", Schema.Field.of("productName", Schema.of(Schema.Type.STRING)),
-                      Schema.Field.of("quantity", Schema.of(Schema.Type.INT)),
+                      Schema.Field.of("quantity", Schema.nullableOf(Schema.of(Schema.Type.INT))),
                       Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
     StructuredRecord structuredRecord1 = StructuredRecord.builder(input)
       .set("productName", "Angels & Demons Hardback")
@@ -91,8 +91,8 @@ public class CompositeKeySortingTest {
 
     StructuredRecord structuredRecord4 = StructuredRecord.builder(input)
       .set("productName", "Angels & Demons Hardback")
-      .set("quantity", 1)
-      .set("price", 20.0)
+      .set("quantity", null)
+      .set("price", 20.5)
       .build();
 
     StructuredRecord structuredRecord5 = StructuredRecord.builder(input)
@@ -142,6 +142,12 @@ public class CompositeKeySortingTest {
     Assert.assertEquals("Inferno HardBack", record3.get("productName"));
     Assert.assertEquals(30.0, (Double) record3.get("price"), 0.0);
     Assert.assertEquals(1, record3.get("quantity"));
+
+    StructuredRecord record4 = StructuredRecordStringConverter.fromJsonString(output.get(3).getSecond().toString(),
+                                                                              input);
+    Assert.assertEquals("Angels & Demons Hardback", record4.get("productName"));
+    Assert.assertEquals(20.5, (Double) record4.get("price"), 0.0);
+    Assert.assertEquals(null, record4.get("quantity"));
   }
 
   @Test
@@ -206,8 +212,8 @@ public class CompositeKeySortingTest {
     Map<String, String> map = new LinkedHashMap<>();
     map.put("productName", "asc");
     map.put("price", "desc");
-    map.put("shippingAddress->city", "asc");
-    map.put("billingAddress->zip", "desc");
+    map.put("shippingAddress:city", "asc");
+    map.put("billingAddress:zip", "desc");
     conf.set("sortFieldList", gson.toJson(map, mapType));
     conf.set("schema", gson.toJson(input, schemaType));
 

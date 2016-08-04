@@ -55,16 +55,16 @@ public class CompositeKeyGroupComparator extends WritableComparator {
     Schema schema = gson.fromJson(comparator1.getSchemaJSON(), schemaType);
     try {
       StructuredRecord structuredRecord1 = StructuredRecordStringConverter
-        .fromJsonString(comparator1.getStructureRecordJSON(), schema);
+        .fromJsonString(comparator1.getStructuredRecordJSON(), schema);
       StructuredRecord structuredRecord2 = StructuredRecordStringConverter
-        .fromJsonString(comparator2.getStructureRecordJSON(), schema);
+        .fromJsonString(comparator2.getStructuredRecordJSON(), schema);
       LinkedHashMap<String, String> sortFields = gson.fromJson(comparator1.getSortFieldsJSON(), LinkedHashMap.class);
       List<String> sortList = new ArrayList<String>(sortFields.keySet());
       for (int i = 0; i < sortList.size() - 1; i++) {
         String key = sortList.get(i);
         String value = sortFields.get(key);
-        if (key.contains("->")) {
-          key = key.split("->")[0].trim();
+        if (key.contains(CompositeKey.FIELD_DELIMITER)) {
+          key = key.split(CompositeKey.FIELD_DELIMITER)[0].trim();
         }
         if (structuredRecord1.getSchema().getField(key).getSchema().getType().equals(Schema.Type.RECORD)) {
           res = CompositeKey.getSortingOrder(value) * Integer.compare(structuredRecord1.get(key).hashCode(),

@@ -20,6 +20,7 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.format.StructuredRecordStringConverter;
 import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -40,19 +41,21 @@ import java.util.Map;
  */
 public class CompositeKey implements Writable, WritableComparable<CompositeKey> {
 
-  private static final String FIELD_DELIMITER = "->";
+  public static final String FIELD_DELIMITER = ":";
+  //Since 0, 1 and -1 are used for record comparison; using 100 to identify that the records do not contain null.
+  private static final int DEFAULT_COMP_VALUE = 100;
   private final Gson gson = new GsonBuilder().create();
   private final Type mapType = new TypeToken<LinkedHashMap>() {  }.getType();
   private final Type schemaType = new TypeToken<Schema>() {  }.getType();
-  private String structureRecordJSON;
+  private String structuredRecordJSON;
   private String sortFieldsJSON;
   private String schemaJSON;
 
   public CompositeKey() {
   }
 
-  public CompositeKey(Text structureRecordJSON, String sortFieldsJSON, String schemaJSON) {
-    this.structureRecordJSON = structureRecordJSON.toString();
+  public CompositeKey(Text structuredRecordJSON, String sortFieldsJSON, String schemaJSON) {
+    this.structuredRecordJSON = structuredRecordJSON.toString();
     this.sortFieldsJSON = sortFieldsJSON;
     this.schemaJSON = schemaJSON;
   }
@@ -77,42 +80,80 @@ public class CompositeKey implements Writable, WritableComparable<CompositeKey> 
   public static int compareRecords(String key, String value, StructuredRecord structuredRecord1,
                                    StructuredRecord structuredRecord2) {
     int res;
-    Schema.Type type = structuredRecord1.getSchema().getField(key).getSchema().getType();
-    if (type.equals(Schema.Type.STRING)) {
-      res = getSortingOrder(value) * ((String) structuredRecord1.get(key))
-        .compareTo((String) structuredRecord2.get(key));
-    } else if (type.equals(Schema.Type.INT)) {
-      res = getSortingOrder(value) * Integer.compare((Integer) structuredRecord1.get(key),
-                                                     (Integer) structuredRecord2.get(key));
-    } else if (type.equals(Schema.Type.LONG)) {
-      res = getSortingOrder(value) * Long.compare((Long) structuredRecord1.get(key),
-                                                  (Long) structuredRecord2.get(key));
-    } else if (type.equals(Schema.Type.FLOAT)) {
-      res = getSortingOrder(value) * Float.compare((Float) structuredRecord1.get(key),
-                                                   (Float) structuredRecord2.get(key));
-    } else if (type.equals(Schema.Type.DOUBLE)) {
-      res = getSortingOrder(value) * Double.compare((Double) structuredRecord1.get(key),
-                                                    (Double) structuredRecord2.get(key));
-    } else if (type.equals(Schema.Type.BYTES)) {
-      res = getSortingOrder(value) * Byte.compare((Byte) structuredRecord1.get(key),
-                                                  (Byte) structuredRecord2.get(key));
-    } else {
-      throw new IllegalArgumentException("Sorting can be performed only on the following CDAP data types:  " +
-                                           "String, Int, Long, Float, Double, Byte");
+    res = compareNull(key, structuredRecord1, structuredRecord2);
+    if (res == DEFAULT_COMP_VALUE) {
+      Schema schema = structuredRecord1.getSchema().getField(key).getSchema();
+      Schema.Type type = schema.isNullableSimple() ? schema.getNonNullable().getType() : schema.getType();
+      if (type.equals(Schema.Type.STRING)) {
+        res = getSortingOrder(value) * ((String) structuredRecord1.get(key))
+          .compareTo((String) structuredRecord2.get(key));
+      } else if (type.equals(Schema.Type.INT)) {
+        res = getSortingOrder(value) * Integer.compare((Integer) structuredRecord1.get(key),
+                                                       (Integer) structuredRecord2.get(key));
+      } else if (type.equals(Schema.Type.LONG)) {
+        res = getSortingOrder(value) * Long.compare((Long) structuredRecord1.get(key),
+                                                    (Long) structuredRecord2.get(key));
+      } else if (type.equals(Schema.Type.FLOAT)) {
+        res = getSortingOrder(value) * Float.compare((Float) structuredRecord1.get(key),
+                                                     (Float) structuredRecord2.get(key));
+      } else if (type.equals(Schema.Type.DOUBLE)) {
+        res = getSortingOrder(value) * Double.compare((Double) structuredRecord1.get(key),
+                                                      (Double) structuredRecord2.get(key));
+      } else if (type.equals(Schema.Type.BYTES)) {
+        res = getSortingOrder(value) * Byte.compare((Byte) structuredRecord1.get(key),
+                                                    (Byte) structuredRecord2.get(key));
+      } else {
+        throw new IllegalArgumentException("Sorting can be performed only on the following CDAP data types:  " +
+                                             "String, Int, Long, Float, Double, Byte");
+      }
     }
     return res;
   }
 
+  /**
+   * Compares key fields with null values. Also, places records with null values in the key field at the end of the
+   * list.
+   *
+   * @param key               contains the value to sort the data
+   * @param structuredRecord1 Structured record
+   * @param structuredRecord2 Structured record to compare against
+   * @return sorting order of the complete structured record
+   */
+  private static int compareNull(String key, StructuredRecord structuredRecord1, StructuredRecord structuredRecord2) {
+    int result = DEFAULT_COMP_VALUE;
+    Schema fieldSchema = structuredRecord1.getSchema().getField(key).getSchema();
+    if (!fieldSchema.isNullableSimple()) {
+      if (Strings.isNullOrEmpty(structuredRecord1.get(key).toString()) ||
+        Strings.isNullOrEmpty(structuredRecord2.get(key).toString())) {
+        throw new IllegalArgumentException(String.format("Cannot accept null values for non-nullable field %s ", key));
+      }
+    }
+    if (structuredRecord1.get(key) == null && structuredRecord2.get(key) == null) {
+      result = 0;
+    } else if (structuredRecord1.get(key) == null) {
+      result = 1;
+    } else if (structuredRecord2.get(key) == null) {
+      result = -1;
+    }
+    return result;
+  }
+
   @Override
+  /**
+   *  Write method for serialization. Should be in sync with read()
+   */
   public void write(DataOutput dataOutput) throws IOException {
-    dataOutput.writeUTF(structureRecordJSON);
+    dataOutput.writeUTF(structuredRecordJSON);
     dataOutput.writeUTF(sortFieldsJSON);
     dataOutput.writeUTF(schemaJSON);
   }
 
   @Override
+  /**
+   * Read method for serialization.
+   */
   public void readFields(DataInput dataInput) throws IOException {
-    this.structureRecordJSON = dataInput.readUTF();
+    this.structuredRecordJSON = dataInput.readUTF();
     this.sortFieldsJSON = dataInput.readUTF();
     this.schemaJSON = dataInput.readUTF();
   }
@@ -129,17 +170,16 @@ public class CompositeKey implements Writable, WritableComparable<CompositeKey> 
     Schema schema = gson.fromJson(schemaJSON, schemaType);
     try {
       StructuredRecord structuredRecord1 = StructuredRecordStringConverter
-        .fromJsonString(this.structureRecordJSON, schema);
+        .fromJsonString(this.structuredRecordJSON, schema);
       StructuredRecord structuredRecord2 = StructuredRecordStringConverter
-        .fromJsonString(compositeKeyToCompare.structureRecordJSON, schema);
+        .fromJsonString(compositeKeyToCompare.structuredRecordJSON, schema);
       LinkedHashMap<String, String> sortFields = gson.fromJson(sortFieldsJSON, mapType);
 
       for (Map.Entry<String, String> entry : sortFields.entrySet()) {
         String key = entry.getKey();
         String value = entry.getValue();
         if (key.contains(FIELD_DELIMITER)) {
-          res = compareNestedRecords(key, value, structuredRecord1,
-                                     structuredRecord2);
+          res = compareNestedRecords(key, value, structuredRecord1, structuredRecord2);
         } else {
           res = compareRecords(key, value, structuredRecord1, structuredRecord2);
         }
@@ -168,24 +208,29 @@ public class CompositeKey implements Writable, WritableComparable<CompositeKey> 
     if (key.contains(FIELD_DELIMITER)) {
       String[] nestedRecord = key.split(FIELD_DELIMITER);
       Schema.Field field = structuredRecord1.getSchema().getField(nestedRecord[0].trim());
-      Schema.Type type = field.getSchema().getType();
+      Schema schema = field.getSchema();
+      Schema.Type type = schema.isNullableSimple() ? schema.getNonNullable().getType() : schema.getType();
       if (type.equals(Schema.Type.RECORD)) {
         structuredRecord1 = structuredRecord1.get(nestedRecord[0].trim());
         structuredRecord2 = structuredRecord2.get(nestedRecord[0].trim());
         nestedRecord = (String[]) ArrayUtils.removeElement(nestedRecord, nestedRecord[0].trim());
-
-        return compareNestedRecords(Joiner.on(FIELD_DELIMITER).join(nestedRecord), value, structuredRecord1,
-                                    structuredRecord2);
+        key = Joiner.on(FIELD_DELIMITER).join(nestedRecord);
+        int res = compareNull(key, structuredRecord1, structuredRecord2);
+        if (res != DEFAULT_COMP_VALUE) {
+          return res;
+        } else {
+          return compareNestedRecords(key, value, structuredRecord1, structuredRecord2);
+        }
       } else {
-        throw new IllegalArgumentException("Nested structured defined by -> should be of type RECORD");
+        throw new IllegalArgumentException("Nested structured defined by \":\" should be of type RECORD");
       }
     } else {
       return compareRecords(key, value, structuredRecord1, structuredRecord2);
     }
   }
 
-  public String getStructureRecordJSON() {
-    return structureRecordJSON;
+  public String getStructuredRecordJSON() {
+    return structuredRecordJSON;
   }
 
   public String getSortFieldsJSON() {

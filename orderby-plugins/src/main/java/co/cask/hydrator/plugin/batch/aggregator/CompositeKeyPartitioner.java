@@ -43,14 +43,14 @@ public class CompositeKeyPartitioner extends Partitioner<CompositeKey, Text> {
     int hash = 7;
     try {
       StructuredRecord structuredRecord1 = StructuredRecordStringConverter
-        .fromJsonString(comparator.getStructureRecordJSON(), schema);
+        .fromJsonString(comparator.getStructuredRecordJSON(), schema);
       LinkedHashMap<String, String> sortFields = gson.fromJson(comparator.getSortFieldsJSON(), LinkedHashMap.class);
       List<String> sortList = new ArrayList<String>(sortFields.keySet());
 
       for (int i = 0; i < sortList.size() - 1; i++) {
         String key = sortList.get(i);
-        if (key.contains("->")) {
-          key = key.split("->")[0].trim();
+        if (key.contains(CompositeKey.FIELD_DELIMITER)) {
+          key = key.split(CompositeKey.FIELD_DELIMITER)[0].trim();
         }
         hash = 13 * hash + Math.abs((structuredRecord1.get(key) != null ? structuredRecord1.get(key).hashCode() : 0));
       }
