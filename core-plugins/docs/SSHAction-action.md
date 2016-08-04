@@ -21,15 +21,17 @@ Properties
 
 **user:** The username used to connect to host.
 
-**privateKeyFile:** The file path to Private key.
+**privateKey:** The private key to be used to perform the secure shell action. Users can also specify a macro that will
+pull the private key from the secure key management store in CDAP such as ${secure(myPrivateKey)}.
 
-**password:** The password associated with private key.
+**passphrase:** Passphrase used to decrypt the provided private key in "privateKey".
 
 **command:** The command to be executed on the remote host. This includes the filepath of the script and any arguments
 needing to be passed.
 
-**output:** Script output variable used as the key in the instance the output from a script needs to be saved
-and passed through the Action Context.
+**outputKey:** The key used to store the output of the command run by the action.
+Plugins that run at later stages in the pipeline can retrieve the command's output using this key through
+macro substitution (e.g. ${outputKey} where "outputKey" is the key specified). Defaults to "sshOutput".
 
 Example
 -------
@@ -48,11 +50,12 @@ This example runs a script on demo@example.com:
           },
           "properties": {
               "host": "example.com",
-              "password": "pass",
               "port": "22",
               "user": "demo",
-              "privateKeyFile": "/Users/Jose/.ssh/id_rsa",
-              "command": "~/scripts/remoteScript.sh"
+              "privateKey": "${secure(myPrivateKey)}",
+              "passphrase": "pass",
+              "command": "~/scripts/remoteScript.sh",
+              "outputKey": "myActionOutput"
             }
           }
     }
