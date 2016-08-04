@@ -28,6 +28,8 @@ import org.apache.avro.mapreduce.AvroKeyInputFormat;
 import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.orc.mapreduce.OrcInputFormat;
+import org.apache.orc.mapreduce.OrcOutputFormat;
 import org.apache.parquet.avro.AvroParquetInputFormat;
 import org.apache.parquet.avro.AvroParquetOutputFormat;
 
@@ -47,12 +49,13 @@ public class FileSetUtil {
    * Parquet input and output format, and also configured for Explore to use Parquet. The schema is added
    * to the file set properties in all the different required ways:
    * <ul>
-   *   <li>As a top-level dataset property;</li>
-   *   <li>As the schema for the input and output format;</li>
-   *   <li>As the schema of the Hive table.</li>
+   * <li>As a top-level dataset property;</li>
+   * <li>As the schema for the input and output format;</li>
+   * <li>As the schema of the Hive table.</li>
    * </ul>
+   *
    * @param configuredSchema the original schema configured for the table
-   * @param properties a builder for the file set properties
+   * @param properties       a builder for the file set properties
    */
   public static void configureParquetFileSet(String configuredSchema, FileSetProperties.Builder properties) {
 
@@ -83,18 +86,43 @@ public class FileSetUtil {
   }
 
   /**
+   * @param configuredSchema
+   * @param properties
+   */
+  public static void configureORCFileSet(String configuredSchema, FileSetProperties.Builder properties) {
+    String lowerCaseSchema = configuredSchema.toLowerCase();
+    //String newSchema = "struct<key:string,value:string>";
+    //  String lowerCaseSchema = newSchema.toLowerCase();
+    String hiveSchema = parseHiveSchema(lowerCaseSchema, configuredSchema);
+    hiveSchema = hiveSchema.substring(1, hiveSchema.length() - 1);
+    String orcSchema = "struct<key:string,value:string>";
+
+    properties.setInputFormat(OrcInputFormat.class)
+      .setOutputFormat(OrcOutputFormat.class)
+      .setExploreInputFormat("org.apache.hadoop.hive.ql.io.orc.OrcInputFormat")
+      .setExploreOutputFormat("org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat")
+      .setSerDe("org.apache.hadoop.hive.ql.io.orc.OrcSerde")
+      .setExploreSchema(hiveSchema)
+      .setEnableExploreOnCreate(true)
+      .setInputProperty("orc.mapred.output.schema", orcSchema)
+      .setOutputProperty("orc.mapred.output.schema", orcSchema)
+      .build();
+  }
+
+  /**
    * Configure a file set to use Avro file format with a given schema. The schema is parsed
    * as an Avro schema, validated and converted into a Hive schema. The file set is configured to use
    * Avro key input and output format, and also configured for Explore to use Avro. The schema is added
    * to the file set properties in all the different required ways:
    * <ul>
-   *   <li>As a top-level dataset property;</li>
-   *   <li>As the schema for the input and output format;</li>
-   *   <li>As the schema of the Hive table;</li>
-   *   <li>As the schema to be used by the Avro serde (which is used by Hive).</li>
+   * <li>As a top-level dataset property;</li>
+   * <li>As the schema for the input and output format;</li>
+   * <li>As the schema of the Hive table;</li>
+   * <li>As the schema to be used by the Avro serde (which is used by Hive).</li>
    * </ul>
+   *
    * @param configuredSchema the original schema configured for the table
-   * @param properties a builder for the file set properties
+   * @param properties       a builder for the file set properties
    */
   public static void configureAvroFileSet(String configuredSchema, FileSetProperties.Builder properties) {
     // validate and parse schema as Avro, and attempt to convert it into a Hive schema

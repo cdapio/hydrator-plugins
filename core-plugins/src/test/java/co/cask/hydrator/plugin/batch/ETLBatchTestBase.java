@@ -24,6 +24,8 @@ import co.cask.cdap.etl.api.PipelineConfigurable;
 import co.cask.cdap.etl.api.action.Action;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
+import co.cask.cdap.etl.mock.batch.MockSource;
+import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.ArtifactRange;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
@@ -43,6 +45,7 @@ import co.cask.hydrator.plugin.batch.sink.S3ParquetBatchSink;
 import co.cask.hydrator.plugin.batch.sink.SnapshotFileBatchAvroSink;
 import co.cask.hydrator.plugin.batch.sink.SnapshotFileBatchParquetSink;
 import co.cask.hydrator.plugin.batch.sink.TableSink;
+import co.cask.hydrator.plugin.batch.sink.TimePartitionedFileSetDataSetORCSink;
 import co.cask.hydrator.plugin.batch.sink.TimePartitionedFileSetDatasetAvroSink;
 import co.cask.hydrator.plugin.batch.sink.TimePartitionedFileSetDatasetParquetSink;
 import co.cask.hydrator.plugin.batch.source.FTPBatchSource;
@@ -73,6 +76,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.parquet.avro.AvroParquetInputFormat;
 import org.apache.parquet.avro.AvroParquetOutputFormat;
 import org.apache.parquet.avro.AvroParquetReader;
+import org.apache.orc.mapred.OrcStruct;
+import org.apache.orc.mapreduce.OrcMapreduceRecordWriter;
 import org.apache.twill.filesystem.Location;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -84,7 +89,7 @@ import java.util.Set;
 /**
  * Base test class that sets up plugin and the etl batch app artifacts.
  */
-public class ETLBatchTestBase extends TestBase {
+public class ETLBatchTestBase extends HydratorTestBase {
 
   @ClassRule
   public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", true);
@@ -103,8 +108,10 @@ public class ETLBatchTestBase extends TestBase {
       return;
     }
 
+    setupBatchArtifacts(ETLBATCH_ARTIFACT_ID, ETLBatchApplication.class);
+    setupBatchArtifacts(DATAPIPELINE_ARTIFACT_ID, DataPipelineApp.class);
     // add the artifact for etl batch app
-    addAppArtifact(ETLBATCH_ARTIFACT_ID, ETLBatchApplication.class,
+    /*addAppArtifact(ETLBATCH_ARTIFACT_ID, ETLBatchApplication.class,
                    BatchSource.class.getPackage().getName(),
                    PipelineConfigurable.class.getPackage().getName(),
                    "org.apache.avro.mapred", "org.apache.avro", "org.apache.avro.generic", "org.apache.avro.io",
@@ -122,7 +129,7 @@ public class ETLBatchTestBase extends TestBase {
                    // these are not real exports for the application, but are required for unit tests.
                    // the stupid hive-exec jar pulled in by cdap-unit-test contains ParquetInputSplit...
                    // without this, different classloaders will be used for ParquetInputSplit and we'll see errors
-                   "parquet.hadoop.api", "parquet.hadoop", "parquet.schema", "parquet.io.api");
+                   "parquet.hadoop.api", "parquet.hadoop", "parquet.schema", "parquet.io.api");*/
 
     Set<ArtifactRange> parents = ImmutableSet.of(
       new ArtifactRange(Id.Namespace.DEFAULT, ETLBATCH_ARTIFACT_ID.getArtifact(),
@@ -142,6 +149,7 @@ public class ETLBatchTestBase extends TestBase {
                       BatchCubeSink.class, KVTableSink.class, TableSink.class,
                       TimePartitionedFileSetDatasetAvroSink.class, AvroKeyOutputFormat.class, AvroKey.class,
                       TimePartitionedFileSetDatasetParquetSink.class, AvroParquetOutputFormat.class,
+                      TimePartitionedFileSetDataSetORCSink.class, OrcStruct.class, OrcMapreduceRecordWriter.class,
                       SnapshotFileBatchAvroSink.class, SnapshotFileBatchParquetSink.class,
                       SnapshotFileBatchAvroSource.class, SnapshotFileBatchParquetSource.class,
                       S3AvroBatchSink.class, S3ParquetBatchSink.class,

@@ -187,6 +187,11 @@
       <artifactId>MockFtpServer</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.apache.orc</groupId>
+      <artifactId>orc-mapreduce</artifactId>
+      <version>1.1.0</version>
+    </dependency>
+    <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-common</artifactId>
       <classifier>tests</classifier>
@@ -223,6 +228,7 @@
               org.apache.avro.mapreduce;
               org.apache.parquet.avro.*;
               org.apache.parquet.hadoop.*;
+              org.apache.orc.*
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
