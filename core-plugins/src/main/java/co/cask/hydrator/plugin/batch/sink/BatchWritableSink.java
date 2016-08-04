@@ -47,18 +47,18 @@ public abstract class BatchWritableSink<IN, KEY_OUT, VAL_OUT> extends BatchSink<
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    String datasetName = getProperties().get(Properties.BatchReadableWritable.NAME);
-    Preconditions.checkArgument(datasetName != null && !datasetName.isEmpty(), "Dataset name must be given.");
-    String datasetType = getProperties().get(Properties.BatchReadableWritable.TYPE);
-    Preconditions.checkArgument(datasetType != null && !datasetType.isEmpty(), "Dataset type must be given.");
-
-    Map<String, String> properties = Maps.newHashMap(getProperties());
-    properties.remove(Properties.BatchReadableWritable.NAME);
-    properties.remove(Properties.BatchReadableWritable.TYPE);
-
     // null check for tests, as macro fields map and properties are null in test cases
     if (batchReadableWritableConfig.getProperties() != null &&
       !batchReadableWritableConfig.containsMacro(Properties.BatchReadableWritable.NAME)) {
+      String datasetName = getProperties().get(Properties.BatchReadableWritable.NAME);
+      Preconditions.checkArgument(datasetName != null && !datasetName.isEmpty(), "Dataset name must be given.");
+      String datasetType = getProperties().get(Properties.BatchReadableWritable.TYPE);
+      Preconditions.checkArgument(datasetType != null && !datasetType.isEmpty(), "Dataset type must be given.");
+
+      Map<String, String> properties = Maps.newHashMap(getProperties());
+      properties.remove(Properties.BatchReadableWritable.NAME);
+      properties.remove(Properties.BatchReadableWritable.TYPE);
+
       pipelineConfigurer.createDataset(datasetName, datasetType,
                                        DatasetProperties.builder().addAll(properties).build());
     }
