@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015-2016 Cask Data, Inc.
+ * Copyright © 2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -16,15 +16,19 @@
 
 package co.cask.hydrator.plugin.batch;
 
+import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.data.schema.UnsupportedTypeException;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.TimePartitionDetail;
 import co.cask.cdap.api.dataset.lib.TimePartitionOutput;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
+import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.batch.ETLWorkflow;
+import co.cask.cdap.etl.mock.batch.MockSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
@@ -33,10 +37,12 @@ import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.WorkflowManager;
+import co.cask.hydrator.common.HiveSchemaConverter;
 import co.cask.hydrator.plugin.common.Properties;
 import co.cask.tephra.Transaction;
 import co.cask.tephra.TransactionAware;
 import co.cask.tephra.TransactionManager;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.avro.file.DataFileWriter;
 import org.apache.avro.generic.GenericDatumWriter;
@@ -47,6 +53,8 @@ import org.apache.avro.mapreduce.AvroKeyInputFormat;
 import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.Path;
+import org.apache.orc.mapred.OrcInputFormat;
+import org.apache.orc.mapred.OrcOutputFormat;
 import org.apache.twill.filesystem.Location;
 import org.junit.Assert;
 import org.junit.Test;
@@ -57,6 +65,16 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class ETLTPFSTestRun extends ETLBatchTestBase {
+
+  private static String parseHiveSchema(String schemaString, String configuredSchema) {
+    try {
+      return HiveSchemaConverter.toHiveSchema(co.cask.cdap.api.data.schema.Schema.parseJson(schemaString));
+    } catch (UnsupportedTypeException e) {
+      throw new IllegalArgumentException("Schema " + configuredSchema + " is not supported as a Hive schema.", e);
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Schema " + configuredSchema + " is invalid.", e);
+    }
+  }
 
   @Test
   public void testPartitionOffsetAndCleanup() throws Exception {
@@ -217,6 +235,84 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     List<GenericRecord> newRecords = readOutput(newFileSet, eventSchema);
     Assert.assertEquals(1, newRecords.size());
     Assert.assertEquals(Integer.MAX_VALUE, newRecords.get(0).get("int"));
+  }
+
+  @Test
+  public void testOrc() throws Exception {
+    Schema recordSchema = Schema.recordOf("record",
+                                          Schema.Field.of("key", Schema.of(Schema.Type.STRING)),
+                                          Schema.Field.of("value", Schema.of(Schema.Type.STRING))
+    );
+
+    ETLPlugin sinkConfig = new ETLPlugin("TPFSOrc",
+                                         BatchSink.PLUGIN_TYPE,
+                                         ImmutableMap.of(
+                                           "schema", recordSchema.toString(),
+                                           "name", "outputOrc"),
+                                         null);
+
+    ETLStage sink = new ETLStage("sink", sinkConfig);
+
+
+    String lowerCaseSchema = recordSchema.toString().toLowerCase();
+    String hiveSchema = parseHiveSchema(lowerCaseSchema, recordSchema.toString());
+    hiveSchema = hiveSchema.substring(1, hiveSchema.length() - 1);
+
+    String filesetName = "tpfsOrc";
+
+    addDatasetInstance(TimePartitionedFileSet.class.getName(), filesetName, FileSetProperties.builder()
+      .setInputFormat(OrcInputFormat.class)
+      .setOutputFormat(OrcOutputFormat.class)
+      .setExploreInputFormat("org.apache.hadoop.hive.ql.io.orc.OrcInputFormat")
+      .setExploreOutputFormat("org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat")
+      .setSerDe("org.apache.hadoop.hive.ql.io.orc.OrcSerde")
+      .setExploreSchema(hiveSchema)
+      .setEnableExploreOnCreate(true)
+      .setInputProperty("orc.mapred.output.schema", hiveSchema)
+      .setOutputProperty("orc.mapred.output.schema", hiveSchema)
+      .build());
+
+    DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset(filesetName);
+    TimePartitionedFileSet tpfs = fileSetManager.get();
+
+
+    Schema input1 = Schema.recordOf("input1",
+                                    Schema.Field.of("body", Schema.of(Schema.Type.STRING)));
+
+    Schema output1 = Schema.recordOf("output1",
+                                     Schema.Field.of("key", Schema.of(Schema.Type.STRING)),
+                                     Schema.Field.of("value", Schema.of(Schema.Type.STRING)));
+
+    String inputDatasetName = "input-batchsinktest";
+    ETLStage source = new ETLStage("source", MockSource.getPlugin(inputDatasetName));
+
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "TPFSOrcSinkTest");
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+    DataSetManager<Table> inputManager = getDataset(inputDatasetName);
+
+    StructuredRecord structuredRecord = StructuredRecord.builder(input1)
+      .set("Key", "1")
+      .set("Value", "2").build();
+
+    // write input data
+    List<StructuredRecord> input = ImmutableList.of(
+      StructuredRecord.builder(input1)
+        .set("Key", "1")
+        .set("Value", "2").build()
+    );
+    MockSource.writeInput(inputManager, input);
+
+    DataSetManager<TimePartitionedFileSet> outputManager = getDataset("outputOrc");
+    TimePartitionedFileSet newFileSet = outputManager.get();
+    List<GenericRecord> newRecords = readOutput(newFileSet, recordSchema);
+    Assert.assertEquals(1, newRecords.size());
   }
 
   @Test

@@ -27,8 +27,8 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.hydrator.plugin.common.FileSetUtil;
-import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.orc.TypeDescription;
 import org.apache.orc.mapred.OrcStruct;
 
@@ -44,8 +44,6 @@ public class TimePartitionedFileSetDataSetORCSink extends TimePartitionedFileSet
 
   private static final String SCHEMA_DESC = "The ORC schema of the record being written to the Sink.";
   private final TPFSOrcSinkConfig config;
-  private StructuredToAvroTransformer recordTransformer;
-
   public TimePartitionedFileSetDataSetORCSink(TPFSOrcSinkConfig config) {
     super(config);
     this.config = config;
@@ -65,7 +63,15 @@ public class TimePartitionedFileSetDataSetORCSink extends TimePartitionedFileSet
   public void transform(StructuredRecord input,
                         Emitter<KeyValue<NullWritable, OrcStruct>> emitter) throws Exception {
     TypeDescription schema = TypeDescription.fromString("struct<key:string,value:string>");
+   /* TypeDescription schema = TypeDescription
+      .fromString(HiveSchemaConverter.
+        toHiveSchema(co.cask.cdap.api.data.schema.Schema.parseJson(input.getSchema().toString())));
+    for (Schema.Field fieldSchema : input.getSchema().getFields()) {
+
+    }*/
     OrcStruct pair = (OrcStruct) OrcStruct.createValue(schema);
+    pair.setFieldValue(0, new Text("key"));
+    pair.setFieldValue(1, new Text("val"));
     emitter.emit(new KeyValue<NullWritable, OrcStruct>(NullWritable.get(), pair));
   }
 
