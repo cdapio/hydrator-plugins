@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin;
 
 import co.cask.cdap.common.test.TestSuite;
+import co.cask.hydrator.plugin.db.batch.action.DBActionTestRun;
 import co.cask.hydrator.plugin.db.batch.action.DBQueryActionTestRun;
 import co.cask.hydrator.plugin.db.batch.sink.DBSinkTestRun;
 import co.cask.hydrator.plugin.db.batch.sink.DBSourceTestRun;
@@ -32,7 +33,8 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
   DBSinkTestRun.class,
   DBSourceTestRun.class,
-  DBQueryActionTestRun.class
+  DBQueryActionTestRun.class,
+  DBActionTestRun.class
 })
 public class DatabasePluginTestSuite extends DatabasePluginTestBase {
 
