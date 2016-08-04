@@ -76,6 +76,7 @@ public class LogisticRegressionTrainer extends SparkSink<StructuredRecord> {
       " 100.")
     private final Integer numFeatures;
 
+    @Nullable
     @Description("The number of classes to use in training the model. It must be of type integer. " +
       "The default value if none is provided will be 2.")
     private final Integer numClasses;
