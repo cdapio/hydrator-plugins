@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.action;
+package co.cask.hydrator.plugin.db.batch.action;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Macro;
@@ -25,9 +25,13 @@ import co.cask.cdap.etl.api.action.Action;
 import co.cask.cdap.etl.api.action.ActionContext;
 import co.cask.hydrator.plugin.ConnectionConfig;
 import co.cask.hydrator.plugin.DBManager;
+import com.ibatis.common.jdbc.ScriptRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
@@ -62,11 +66,10 @@ public class DBAction extends Action {
         if (!config.enableAutoCommit) {
           connection.setAutoCommit(false);
         }
-        try (Statement statement = connection.createStatement()) {
-          statement.execute(config.scriptPath);
-          if (!config.enableAutoCommit) {
-            connection.commit();
-          }
+        ScriptRunner runner = new ScriptRunner(connection, config.enableAutoCommit, true);
+        runner.runScript(new BufferedReader(new FileReader(config.scriptPath)));
+        if (!config.enableAutoCommit) {
+          connection.commit();
         }
       }
     } catch (Exception e) {
@@ -90,6 +93,9 @@ public class DBAction extends Action {
     dbManager.validateJDBCPluginPipeline(pipelineConfigurer, JDBC_PLUGIN_ID);
   }
 
+  /**
+   * Config for DBAction
+   */
   public class DBActionConfig extends ConnectionConfig {
     @Description("The file path of the script to run.")
     @Macro

@@ -77,6 +77,7 @@ import javax.sql.rowset.serial.SerialBlob;
 public class DatabasePluginTestBase extends HydratorTestBase {
   protected static final ArtifactId APP_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("etlbatch", "3.2.0");
   protected static final ArtifactSummary ETLBATCH_ARTIFACT = new ArtifactSummary("etlbatch", "3.2.0");
+  protected static final ArtifactSummary DATAPIPELINE_ARTIFACT = new ArtifactSummary("data-pipeline", "3.2.0");
   protected static final String CLOB_DATA =
     "this is a long string with line separators \n that can be used as \n a clob";
   protected static final long CURRENT_TS = System.currentTimeMillis();
