@@ -18,6 +18,8 @@ package co.cask.hydrator.plugin.db.batch.action;
 
 import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.action.Action;
+import co.cask.cdap.etl.api.batch.BatchSink;
+import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.mock.batch.MockSink;
 import co.cask.cdap.etl.mock.batch.MockSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
@@ -67,12 +69,14 @@ public class DBActionTestRun extends DatabasePluginTestBase {
 
     ETLStage source = new ETLStage("source", MockSource.getPlugin("actionInput"));
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin("actionOutput"));
-    ETLStage action = new ETLStage("DBAction", new ETLPlugin(
+    ETLStage action = new ETLStage("action", new ETLPlugin(
       "DBAction",
       Action.PLUGIN_TYPE,
-      ImmutableMap.of("connectionString", getConnectionURL(),
-                                      "jdbcPluginName", "hypersql",
-                                      "scriptPath", "scriptTest.txt"),
+      ImmutableMap.<String, String>builder()
+        .put("connectionString", getConnectionURL())
+        .put("jdbcPluginName", "hypersql")
+        .put("scriptPath", "delete from \"actionTest\" where day = '${logicalStartTime(yyyy-MM-dd,0m,UTC)}'")
+        .build(),
       null));
 
     ETLBatchConfig config = ETLBatchConfig.builder("* * * * *")
@@ -84,7 +88,7 @@ public class DBActionTestRun extends DatabasePluginTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbActionTest");
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "actionTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
