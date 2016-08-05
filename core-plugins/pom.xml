@@ -162,9 +162,9 @@
     </dependency>
     <!-- End for EMail -->
     <dependency>
-      <groupId>com.twitter</groupId>
+      <groupId>org.apache.parquet</groupId>
       <artifactId>parquet-avro</artifactId>
-      <version>1.6.0</version>
+      <version>1.7.0</version>
     </dependency>
     <dependency>
       <groupId>net.sf.uadetector</groupId>
@@ -221,7 +221,8 @@
               co.cask.hydrator.plugin.transform.*;
               co.cask.hydrator.plugin.validator.*;
               org.apache.avro.mapreduce;
-              parquet.avro.*;
+              org.apache.parquet.avro.*;
+              org.apache.parquet.hadoop.*;
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>

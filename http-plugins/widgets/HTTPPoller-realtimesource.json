@@ -108,7 +108,7 @@
               "type": "map",
               "keys": "string",
               "values": "string"
-            },
+            }
         },
         {
             "name": "body",
