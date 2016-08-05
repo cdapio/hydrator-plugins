@@ -19,6 +19,10 @@ package co.cask.hydrator.plugin;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.plugin.PluginClass;
 import co.cask.cdap.api.plugin.PluginPropertyField;
+import co.cask.cdap.datapipeline.DataPipelineApp;
+import co.cask.cdap.etl.api.PipelineConfigurable;
+import co.cask.cdap.etl.api.action.Action;
+import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.mock.test.HydratorTestBase;
@@ -36,6 +40,7 @@ import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestConfiguration;
+import co.cask.hydrator.plugin.db.batch.action.DBAction;
 import co.cask.hydrator.plugin.db.batch.action.QueryAction;
 import co.cask.hydrator.plugin.db.batch.sink.DBSink;
 import co.cask.hydrator.plugin.db.batch.sink.ETLDBOutputFormat;
@@ -77,6 +82,7 @@ import javax.sql.rowset.serial.SerialBlob;
 public class DatabasePluginTestBase extends HydratorTestBase {
   protected static final ArtifactId APP_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("etlbatch", "3.2.0");
   protected static final ArtifactSummary ETLBATCH_ARTIFACT = new ArtifactSummary("etlbatch", "3.2.0");
+  protected static final ArtifactId DATAPIPELINE_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("data-pipeline", "3.2.0");
   protected static final ArtifactSummary DATAPIPELINE_ARTIFACT = new ArtifactSummary("data-pipeline", "3.2.0");
   protected static final String CLOB_DATA =
     "this is a long string with line separators \n that can be used as \n a clob";
@@ -100,10 +106,22 @@ public class DatabasePluginTestBase extends HydratorTestBase {
     }
 
     setupBatchArtifacts(APP_ARTIFACT_ID, ETLBatchApplication.class);
+
     addPluginArtifact(NamespaceId.DEFAULT.artifact("database-plugins", "1.0.0"),
                       APP_ARTIFACT_ID,
                       DBSource.class, DBSink.class, DBRecord.class, ETLDBOutputFormat.class,
-                      DataDrivenETLDBInputFormat.class, DBRecord.class, QueryAction.class);
+                      DataDrivenETLDBInputFormat.class, DBRecord.class, QueryAction.class, DBAction.class);
+
+    // add the artifact for etl batch app
+    addAppArtifact(DATAPIPELINE_ARTIFACT_ID, DataPipelineApp.class,
+                   BatchSource.class.getPackage().getName(),
+                   Action.class.getPackage().getName(),
+                   PipelineConfigurable.class.getPackage().getName(),
+                   "org.apache.avro.mapred", "org.apache.avro", "org.apache.avro.generic", "org.apache.avro.io",
+                   // these are not real exports for the application, but are required for unit tests.
+                   // the stupid hive-exec jar pulled in by cdap-unit-test contains ParquetInputSplit...
+                   // without this, different classloaders will be used for ParquetInputSplit and we'll see errors
+                   "parquet.hadoop.api", "parquet.hadoop", "parquet.schema", "parquet.io.api");
 
     // add hypersql 3rd party plugin
     PluginClass hypersql = new PluginClass("jdbc", "hypersql", "hypersql jdbc driver", JDBCDriver.class.getName(),
