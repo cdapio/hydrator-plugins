@@ -20,19 +20,25 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.data.schema.UnsupportedTypeException;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
+import co.cask.hydrator.common.HiveSchemaConverter;
 import co.cask.hydrator.plugin.common.FileSetUtil;
-import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.orc.TypeDescription;
 import org.apache.orc.mapred.OrcStruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.util.List;
 import javax.annotation.Nullable;
 
 /**
@@ -44,7 +50,9 @@ import javax.annotation.Nullable;
 public class TimePartitionedFileSetDataSetORCSink extends TimePartitionedFileSetSink<NullWritable, OrcStruct> {
 
   private static final String SCHEMA_DESC = "The ORC schema of the record being written to the Sink.";
+  private static final Logger LOG = LoggerFactory.getLogger(TimePartitionedFileSetDataSetORCSink.class);
   private final TPFSOrcSinkConfig config;
+
   public TimePartitionedFileSetDataSetORCSink(TPFSOrcSinkConfig config) {
     super(config);
     this.config = config;
@@ -57,22 +65,31 @@ public class TimePartitionedFileSetDataSetORCSink extends TimePartitionedFileSet
 
   @Override
   protected void addFileSetProperties(FileSetProperties.Builder properties) {
-    FileSetUtil.configureORCFileSet(config.schema, properties);
+    try {
+      FileSetUtil.configureORCFileSet(config.schema, properties);
+    } catch (IOException e) {
+      LOG.debug("");
+    } catch (UnsupportedTypeException e) {
+      e.printStackTrace();
+    }
   }
 
   @Override
   public void transform(StructuredRecord input,
                         Emitter<KeyValue<NullWritable, OrcStruct>> emitter) throws Exception {
-    TypeDescription schema = TypeDescription.fromString("struct<key:string,value:string>");
-   /* TypeDescription schema = TypeDescription
-      .fromString(HiveSchemaConverter.
-        toHiveSchema(co.cask.cdap.api.data.schema.Schema.parseJson(input.getSchema().toString())));
-    for (Schema.Field fieldSchema : input.getSchema().getFields()) {
 
-    }*/
+    StringBuilder builder = new StringBuilder();
+    HiveSchemaConverter.appendType(builder, input.getSchema());
+    TypeDescription schema = TypeDescription.fromString(builder.toString());
     OrcStruct pair = (OrcStruct) OrcStruct.createValue(schema);
-    pair.setFieldValue(0, new Text("key"));
-    pair.setFieldValue(1, new Text("val"));
+    List<Schema.Field> fields = input.getSchema().getFields();
+
+    //populate ORC struct Pair object
+    //TODO Write schema transformer to support complex objects
+    for (int i = 0; i < fields.size(); i++) {
+      String fieldval = input.get(fields.get(i).getName());
+      pair.setFieldValue(fields.get(i).getName(), new Text(fieldval));
+    }
     emitter.emit(new KeyValue<NullWritable, OrcStruct>(NullWritable.get(), pair));
   }
 
@@ -90,5 +107,4 @@ public class TimePartitionedFileSetDataSetORCSink extends TimePartitionedFileSet
       this.schema = schema;
     }
   }
-
 }

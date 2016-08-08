@@ -86,16 +86,30 @@ public class FileSetUtil {
   }
 
   /**
-   * @param configuredSchema
-   * @param properties
+   * Configure a file set to use ORC file format with a given schema. The schema is parsed
+   * validated and converted into a Hive schema which is compatible with ORC format. The file set is configured to use
+   * ORC input and output format, and also configured for Explore to use Hive. The schema is added
+   * to the file set properties in all the different required ways:
+   * <ul>
+   * <li>As a top-level dataset property;</li>
+   * <li>As the schema for the input and output format;</li>
+   * <li>As the schema to be used by the ORC serde (which is used by Hive).</li>
+   * </ul>
+   * @param configuredSchema the original schema configured for the table
+   * @param properties       a builder for the file set properties
    */
-  public static void configureORCFileSet(String configuredSchema, FileSetProperties.Builder properties) {
+  public static void configureORCFileSet(String configuredSchema, FileSetProperties.Builder properties)
+    throws IOException, UnsupportedTypeException {
+    //TODO test if complex cases run with lowercase schema only
     String lowerCaseSchema = configuredSchema.toLowerCase();
-    //String newSchema = "struct<key:string,value:string>";
-    //  String lowerCaseSchema = newSchema.toLowerCase();
     String hiveSchema = parseHiveSchema(lowerCaseSchema, configuredSchema);
     hiveSchema = hiveSchema.substring(1, hiveSchema.length() - 1);
-    String orcSchema = "struct<key:string,value:string>";
+
+    //Convert to ORCSchema
+    co.cask.cdap.api.data.schema.Schema schemaObj = co.cask.cdap.api.data.schema.Schema.parseJson(configuredSchema);
+    StringBuilder builder = new StringBuilder();
+    HiveSchemaConverter.appendType(builder, schemaObj);
+    String orcSchema = builder.toString();
 
     properties.setInputFormat(OrcInputFormat.class)
       .setOutputFormat(OrcOutputFormat.class)

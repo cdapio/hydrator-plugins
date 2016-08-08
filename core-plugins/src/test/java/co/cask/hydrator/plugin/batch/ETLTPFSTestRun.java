@@ -241,8 +241,10 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
   @Test
   public void testOrc() throws Exception {
     Schema recordSchema = Schema.recordOf("record",
-                                          Schema.Field.of("key", Schema.of(Schema.Type.STRING)),
-                                          Schema.Field.of("value", Schema.of(Schema.Type.STRING))
+                                          Schema.Field.of("name", Schema.of(Schema.Type.STRING)),
+                                          Schema.Field.of("address", Schema.of(Schema.Type.STRING)),
+                                          Schema.Field.of("phone", Schema.of(Schema.Type.STRING)),
+                                          Schema.Field.of("contact", Schema.of(Schema.Type.STRING))
     );
 
     ETLPlugin sinkConfig = new ETLPlugin("TPFSOrc",
@@ -253,37 +255,8 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
                                          null);
 
     ETLStage sink = new ETLStage("sink", sinkConfig);
-
-
-    String lowerCaseSchema = recordSchema.toString().toLowerCase();
-    String hiveSchema = parseHiveSchema(lowerCaseSchema, "struct<key:string,value:string>");
-    hiveSchema = hiveSchema.substring(1, hiveSchema.length() - 1);
-
-    String filesetName = "tpfsOrc";
-
-    /*addDatasetInstance(TimePartitionedFileSet.class.getName(), filesetName, FileSetProperties.builder()
-      .setInputFormat(OrcInputFormat.class)
-      .setOutputFormat(OrcOutputFormat.class)
-      .setExploreInputFormat("org.apache.hadoop.hive.ql.io.orc.OrcInputFormat")
-      .setExploreOutputFormat("org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat")
-      .setSerDe("org.apache.hadoop.hive.ql.io.orc.OrcSerde")
-      .setExploreSchema(hiveSchema)
-      .setEnableExploreOnCreate(true)
-      .setInputProperty("orc.mapred.output.schema", hiveSchema)
-      .setOutputProperty("orc.mapred.output.schema", hiveSchema)
-      .build());
-
-    DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset(filesetName);
-    TimePartitionedFileSet tpfs = fileSetManager.get();*/
-
-
-    Schema output1 = Schema.recordOf("output1",
-                                     Schema.Field.of("key", Schema.of(Schema.Type.STRING)),
-                                     Schema.Field.of("value", Schema.of(Schema.Type.STRING)));
-
     String inputDatasetName = "input-batchsinktest";
     ETLStage source = new ETLStage("source", MockSource.getPlugin(inputDatasetName));
-
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
       .addStage(source)
       .addStage(sink)
@@ -294,16 +267,20 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "TPFSOrcSinkTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
     DataSetManager<Table> inputManager = getDataset(inputDatasetName);
-
-    Schema inputSchema = Schema.recordOf("input1",
-                                         Schema.Field.of("Key", Schema.of(Schema.Type.STRING)),
-                                         Schema.Field.of("Value", Schema.of(Schema.Type.STRING)));
+    Schema recordSchema2 = Schema.recordOf("record",
+                                           Schema.Field.of("name", Schema.of(Schema.Type.STRING)),
+                                           Schema.Field.of("address", Schema.of(Schema.Type.STRING)),
+                                           Schema.Field.of("phone", Schema.of(Schema.Type.STRING)),
+                                           Schema.Field.of("contact", Schema.of(Schema.Type.STRING))
+    );
 
     // write input data
     List<StructuredRecord> input = ImmutableList.of(
-      StructuredRecord.builder(inputSchema)
-        .set("Key", "1")
-        .set("Value", "2").build()
+      StructuredRecord.builder(recordSchema2)
+        .set("name", "a")
+        .set("address", "b")
+        .set("phone", "c")
+        .set("contact", "d").build()
     );
     MockSource.writeInput(inputManager, input);
 
@@ -315,13 +292,8 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     Connection connection = getQueryClient();
     ResultSet results = connection.prepareStatement("select * from dataset_outputOrc").executeQuery();
     results.next();
-
-    //DataSetManager<TimePartitionedFileSet> outputManager = getDataset("outputOrc");
-    //TimePartitionedFileSet newFileSet = outputManager.get();
-    //List<GenericRecord> newRecords = readOutput(newFileSet, recordSchema);
-    //Assert.assertEquals(1, newRecords.size());
     Assert.assertFalse(results == null);
-    Assert.assertEquals("key", results.getString(1));
+    Assert.assertEquals("a", results.getString(1));
   }
 
   @Test
