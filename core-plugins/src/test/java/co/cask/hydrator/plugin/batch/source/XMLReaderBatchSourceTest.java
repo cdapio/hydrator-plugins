@@ -47,6 +47,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.python.google.common.collect.ImmutableMap;
@@ -64,6 +65,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * Unit test for {@link XMLReaderBatchSource} class.
  */
+// TODO:(HYDRA-356) re-enable after fix
+@Ignore
 public class XMLReaderBatchSourceTest extends HydratorTestBase {
   private static final ArtifactVersion CURRENT_VERSION = new ArtifactVersion("3.4.0-SNAPSHOT");
   private static final ArtifactId BATCH_APP_ARTIFACT_ID =
