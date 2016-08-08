@@ -265,7 +265,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     private String inputFieldName;
     private Schema.Field field;
 
-    public OutputFieldInfo(String name, String stageName, String inputFieldName, Schema.Field field) {
+    OutputFieldInfo(String name, String stageName, String inputFieldName, Schema.Field field) {
       this.name = name;
       this.stageName = stageName;
       this.inputFieldName = inputFieldName;

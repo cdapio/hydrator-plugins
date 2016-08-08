@@ -89,7 +89,7 @@ public class SqsSourceTest {
     private final String sqsHostName;
     private final int port;
 
-    public SQSServer(int port) throws Exception {
+    SQSServer(int port) throws Exception {
       this.sqsHostName = InetAddress.getLocalHost().getHostName();
       this.port = port;
     }
