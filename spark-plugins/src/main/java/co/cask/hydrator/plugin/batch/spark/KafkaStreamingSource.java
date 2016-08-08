@@ -84,7 +84,7 @@ public class KafkaStreamingSource extends ReferenceStreamingSource<StructuredRec
 
     private final KafkaConfig conf;
 
-    public RecordTransform(KafkaConfig conf) {
+    RecordTransform(KafkaConfig conf) {
       this.conf = conf;
     }
 
@@ -108,7 +108,7 @@ public class KafkaStreamingSource extends ReferenceStreamingSource<StructuredRec
     private transient String keyField;
     private transient Schema schema;
 
-    public BytesFunction(long ts, KafkaConfig conf) {
+    BytesFunction(long ts, KafkaConfig conf) {
       this.ts = ts;
       this.conf = conf;
     }
@@ -153,7 +153,7 @@ public class KafkaStreamingSource extends ReferenceStreamingSource<StructuredRec
     private transient String keyField;
     private transient RecordFormat<StreamEvent, StructuredRecord> recordFormat;
 
-    public FormatFunction(long ts, KafkaConfig conf) {
+    FormatFunction(long ts, KafkaConfig conf) {
       this.ts = ts;
       this.conf = conf;
     }

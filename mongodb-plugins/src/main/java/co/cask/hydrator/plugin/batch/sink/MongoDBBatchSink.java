@@ -72,7 +72,7 @@ public class MongoDBBatchSink extends ReferenceBatchSink<StructuredRecord, NullW
   private static class MongoDBOutputFormatProvider implements OutputFormatProvider {
     private final Map<String, String> conf;
 
-    public MongoDBOutputFormatProvider(MongoDBSinkConfig config) {
+    MongoDBOutputFormatProvider(MongoDBSinkConfig config) {
       this.conf = new HashMap<>();
       conf.put("mongo.output.uri", config.connectionString);
     }
