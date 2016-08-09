@@ -105,26 +105,6 @@ public class ETLBatchTestBase extends HydratorTestBase {
 
     setupBatchArtifacts(ETLBATCH_ARTIFACT_ID, ETLBatchApplication.class);
     setupBatchArtifacts(DATAPIPELINE_ARTIFACT_ID, DataPipelineApp.class);
-    // add the artifact for etl batch app
-    /*addAppArtifact(ETLBATCH_ARTIFACT_ID, ETLBatchApplication.class,
-                   BatchSource.class.getPackage().getName(),
-                   PipelineConfigurable.class.getPackage().getName(),
-                   "org.apache.avro.mapred", "org.apache.avro", "org.apache.avro.generic", "org.apache.avro.io",
-                   // these are not real exports for the application, but are required for unit tests.
-                   // the stupid hive-exec jar pulled in by cdap-unit-test contains ParquetInputSplit...
-                   // without this, different classloaders will be used for ParquetInputSplit and we'll see errors
-                   "parquet.hadoop.api", "parquet.hadoop", "parquet.schema", "parquet.io.api");
-
-    // add the artifact for etl batch app
-    addAppArtifact(DATAPIPELINE_ARTIFACT_ID, DataPipelineApp.class,
-                   BatchSource.class.getPackage().getName(),
-                   Action.class.getPackage().getName(),
-                   PipelineConfigurable.class.getPackage().getName(),
-                   "org.apache.avro.mapred", "org.apache.avro", "org.apache.avro.generic", "org.apache.avro.io",
-                   // these are not real exports for the application, but are required for unit tests.
-                   // the stupid hive-exec jar pulled in by cdap-unit-test contains ParquetInputSplit...
-                   // without this, different classloaders will be used for ParquetInputSplit and we'll see errors
-                   "parquet.hadoop.api", "parquet.hadoop", "parquet.schema", "parquet.io.api");*/
 
     Set<ArtifactRange> parents = ImmutableSet.of(
       new ArtifactRange(Id.Namespace.DEFAULT, ETLBATCH_ARTIFACT_ID.getArtifact(),

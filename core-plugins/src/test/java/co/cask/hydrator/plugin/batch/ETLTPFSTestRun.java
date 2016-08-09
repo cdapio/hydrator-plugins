@@ -18,7 +18,6 @@ package co.cask.hydrator.plugin.batch;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.data.schema.UnsupportedTypeException;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.TimePartitionDetail;
 import co.cask.cdap.api.dataset.lib.TimePartitionOutput;
@@ -38,7 +37,6 @@ import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.WorkflowManager;
-import co.cask.hydrator.common.HiveSchemaConverter;
 import co.cask.hydrator.plugin.common.Properties;
 import co.cask.tephra.Transaction;
 import co.cask.tephra.TransactionAware;
@@ -67,15 +65,6 @@ import java.util.concurrent.TimeUnit;
 
 public class ETLTPFSTestRun extends ETLBatchTestBase {
 
-  private static String parseHiveSchema(String schemaString, String configuredSchema) {
-    try {
-      return HiveSchemaConverter.toHiveSchema(co.cask.cdap.api.data.schema.Schema.parseJson(schemaString));
-    } catch (UnsupportedTypeException e) {
-      throw new IllegalArgumentException("Schema " + configuredSchema + " is not supported as a Hive schema.", e);
-    } catch (Exception e) {
-      throw new IllegalArgumentException("Schema " + configuredSchema + " is invalid.", e);
-    }
-  }
 
   @Test
   public void testPartitionOffsetAndCleanup() throws Exception {
@@ -240,17 +229,21 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
 
   @Test
   public void testOrc() throws Exception {
-    Schema recordSchema = Schema.recordOf("record",
-                                          Schema.Field.of("name", Schema.of(Schema.Type.STRING)),
-                                          Schema.Field.of("address", Schema.of(Schema.Type.STRING)),
-                                          Schema.Field.of("phone", Schema.of(Schema.Type.STRING)),
-                                          Schema.Field.of("contact", Schema.of(Schema.Type.STRING))
+    Schema recordSchema2 = Schema.recordOf("record",
+                                           Schema.Field.of("name", Schema.of(Schema.Type.STRING)),
+                                           Schema.Field.of("floatTest", Schema.of(Schema.Type.FLOAT)),
+                                           Schema.Field.of("doubleTest", Schema.of(Schema.Type.DOUBLE)),
+                                           Schema.Field.of("boolTest", Schema.of(Schema.Type.BOOLEAN)),
+                                           Schema.Field.of("longTest", Schema.of(Schema.Type.LONG))
+
     );
+
+
 
     ETLPlugin sinkConfig = new ETLPlugin("TPFSOrc",
                                          BatchSink.PLUGIN_TYPE,
                                          ImmutableMap.of(
-                                           "schema", recordSchema.toString(),
+                                           "schema", recordSchema2.toString(),
                                            "name", "outputOrc"),
                                          null);
 
@@ -267,20 +260,16 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "TPFSOrcSinkTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
     DataSetManager<Table> inputManager = getDataset(inputDatasetName);
-    Schema recordSchema2 = Schema.recordOf("record",
-                                           Schema.Field.of("name", Schema.of(Schema.Type.STRING)),
-                                           Schema.Field.of("address", Schema.of(Schema.Type.STRING)),
-                                           Schema.Field.of("phone", Schema.of(Schema.Type.STRING)),
-                                           Schema.Field.of("contact", Schema.of(Schema.Type.STRING))
-    );
+
 
     // write input data
     List<StructuredRecord> input = ImmutableList.of(
       StructuredRecord.builder(recordSchema2)
         .set("name", "a")
-        .set("address", "b")
-        .set("phone", "c")
-        .set("contact", "d").build()
+        .set("floatTest", 3.6f)
+        .set("doubleTest", 4.2)
+        .set("boolTest", true)
+        .set("longTest", 23456789).build()
     );
     MockSource.writeInput(inputManager, input);
 
@@ -292,8 +281,11 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     Connection connection = getQueryClient();
     ResultSet results = connection.prepareStatement("select * from dataset_outputOrc").executeQuery();
     results.next();
-    Assert.assertFalse(results == null);
     Assert.assertEquals("a", results.getString(1));
+    Assert.assertEquals(3.6f, results.getFloat(2), 0.1);
+    Assert.assertEquals(4.2, results.getDouble(3), 0.1);
+    Assert.assertEquals(true, results.getBoolean(4));
+    Assert.assertEquals(23456789, results.getLong(5));
   }
 
   @Test

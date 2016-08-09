@@ -32,6 +32,8 @@ import org.apache.orc.mapreduce.OrcInputFormat;
 import org.apache.orc.mapreduce.OrcOutputFormat;
 import org.apache.parquet.avro.AvroParquetInputFormat;
 import org.apache.parquet.avro.AvroParquetOutputFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
@@ -43,15 +45,17 @@ import java.util.Map;
  */
 public class FileSetUtil {
 
+  private static final Logger LOG = LoggerFactory.getLogger(FileSetUtil.class);
+
   /**
    * Configure a file set to use Parquet file format with a given schema. The schema is lower-cased, parsed
    * as an Avro schema, validated and converted into a Hive schema. The file set is configured to use
    * Parquet input and output format, and also configured for Explore to use Parquet. The schema is added
    * to the file set properties in all the different required ways:
    * <ul>
-   * <li>As a top-level dataset property;</li>
-   * <li>As the schema for the input and output format;</li>
-   * <li>As the schema of the Hive table.</li>
+   *   <li>As a top-level dataset property;</li>
+   *   <li>As the schema for the input and output format;</li>
+   *   <li>As the schema of the Hive table.</li>
    * </ul>
    *
    * @param configuredSchema the original schema configured for the table
@@ -91,24 +95,33 @@ public class FileSetUtil {
    * ORC input and output format, and also configured for Explore to use Hive. The schema is added
    * to the file set properties in all the different required ways:
    * <ul>
-   * <li>As a top-level dataset property;</li>
-   * <li>As the schema for the input and output format;</li>
-   * <li>As the schema to be used by the ORC serde (which is used by Hive).</li>
+   *   <li>As a top-level dataset property;</li>
+   *   <li>As the schema for the input and output format;</li>
+   *   <li>As the schema to be used by the ORC serde (which is used by Hive).</li>
    * </ul>
+   *
    * @param configuredSchema the original schema configured for the table
    * @param properties       a builder for the file set properties
    */
-  public static void configureORCFileSet(String configuredSchema, FileSetProperties.Builder properties)
-    throws IOException, UnsupportedTypeException {
+  public static void configureORCFileSet(String configuredSchema, FileSetProperties.Builder properties) {
     //TODO test if complex cases run with lowercase schema only
     String lowerCaseSchema = configuredSchema.toLowerCase();
     String hiveSchema = parseHiveSchema(lowerCaseSchema, configuredSchema);
     hiveSchema = hiveSchema.substring(1, hiveSchema.length() - 1);
 
     //Convert to ORCSchema
-    co.cask.cdap.api.data.schema.Schema schemaObj = co.cask.cdap.api.data.schema.Schema.parseJson(configuredSchema);
+    co.cask.cdap.api.data.schema.Schema schemaObj = null;
+    try {
+      schemaObj = co.cask.cdap.api.data.schema.Schema.parseJson(configuredSchema);
+    } catch (IOException e) {
+      LOG.debug("{} is not a valid schema", configuredSchema, e);
+    }
     StringBuilder builder = new StringBuilder();
-    HiveSchemaConverter.appendType(builder, schemaObj);
+    try {
+      HiveSchemaConverter.appendType(builder, schemaObj);
+    } catch (UnsupportedTypeException e) {
+      LOG.debug("Could not create hive schema from {}", configuredSchema, e);
+    }
     String orcSchema = builder.toString();
 
     properties.setInputFormat(OrcInputFormat.class)
@@ -129,10 +142,10 @@ public class FileSetUtil {
    * Avro key input and output format, and also configured for Explore to use Avro. The schema is added
    * to the file set properties in all the different required ways:
    * <ul>
-   * <li>As a top-level dataset property;</li>
-   * <li>As the schema for the input and output format;</li>
-   * <li>As the schema of the Hive table;</li>
-   * <li>As the schema to be used by the Avro serde (which is used by Hive).</li>
+   *   <li>As a top-level dataset property;</li>
+   *   <li>As the schema for the input and output format;</li>
+   *   <li>As the schema of the Hive table;</li>
+   *   <li>As the schema to be used by the Avro serde (which is used by Hive).</li>
    * </ul>
    *
    * @param configuredSchema the original schema configured for the table
