@@ -17,7 +17,7 @@
           "name": "user"
         },
         {
-          "widget-type": "password",
+          "widget-type": "textbox",
           "label": "Password",
           "name": "password"
         }
