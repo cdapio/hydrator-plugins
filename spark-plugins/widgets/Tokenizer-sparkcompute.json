@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Tokenizer Properties",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Column To Be Tokenized",
+          "name": "columnToBeTokenized"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Delimiter",
+          "name": "delimiter"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Output Column Name",
+          "name": "outputColumn"
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}
