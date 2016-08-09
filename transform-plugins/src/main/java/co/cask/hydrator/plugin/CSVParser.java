@@ -210,6 +210,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
       // it's directly copied into the output, else field is parsed in from the CSV parser.
       if (in.get(name) != null) {
         builder.set(name, in.get(name));
+        continue;
       }
 
       String val = record.get(i);
