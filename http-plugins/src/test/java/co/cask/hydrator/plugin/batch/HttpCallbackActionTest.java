@@ -14,30 +14,41 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin;
+package co.cask.hydrator.plugin.batch;
 
 import co.cask.cdap.api.artifact.ArtifactVersion;
+import co.cask.cdap.etl.api.batch.PostAction;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
+import co.cask.cdap.etl.mock.batch.MockSink;
+import co.cask.cdap.etl.mock.batch.MockSource;
 import co.cask.cdap.etl.mock.test.HydratorTestBase;
+import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
+import co.cask.cdap.etl.proto.v2.ETLPlugin;
+import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
 import co.cask.cdap.proto.Id;
+import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactRange;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
 import co.cask.cdap.proto.id.ArtifactId;
 import co.cask.cdap.proto.id.NamespaceId;
+import co.cask.cdap.test.ApplicationManager;
+import co.cask.cdap.test.TestBase;
 import co.cask.cdap.test.TestConfiguration;
+import co.cask.cdap.test.WorkflowManager;
 import co.cask.http.HttpHandler;
 import co.cask.http.NettyHttpService;
-import co.cask.hydrator.plugin.batch.HTTPCallbackAction;
 import co.cask.hydrator.plugin.mock.MockFeedHandler;
 import co.cask.hydrator.plugin.realtime.HTTPPollerRealtimeSource;
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -48,12 +59,12 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import javax.ws.rs.HttpMethod;
 
 /**
- * Base test for http plugin tests.
  */
-public class BaseHttpTest extends HydratorTestBase {
+public class HttpCallbackActionTest extends HydratorTestBase {
 
   @ClassRule
   public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
@@ -115,6 +126,38 @@ public class BaseHttpTest extends HydratorTestBase {
   @After
   public void cleanupTest() throws IOException {
     resetFeeds();
+  }
+
+  @Test
+  public void testHTTPCallbackAction() throws Exception {
+    String body = "samuel jackson, dwayne johnson, christopher walken";
+    ETLStage action = new ETLStage(
+      "http",
+      new ETLPlugin("HTTPCallback", PostAction.PLUGIN_TYPE,
+                    ImmutableMap.of("url", baseURL + "/feeds/users",
+                                    "method", "PUT",
+                                    "body", body),
+                    null));
+
+    ETLStage source = new ETLStage("source", MockSource.getPlugin("httpCallbackInput"));
+    ETLStage sink = new ETLStage("sink", MockSink.getPlugin("httpCallbackOutput"));
+
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addPostAction(action)
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "actionTest");
+    ApplicationManager appManager = TestBase.deployApplication(appId, appRequest);
+
+    WorkflowManager manager = appManager.getWorkflowManager("ETLWorkflow");
+    manager.start();
+    manager.waitForFinish(5, TimeUnit.MINUTES);
+
+    Assert.assertEquals(body, getFeedContent("users"));
   }
 
   private int resetFeeds() throws IOException {

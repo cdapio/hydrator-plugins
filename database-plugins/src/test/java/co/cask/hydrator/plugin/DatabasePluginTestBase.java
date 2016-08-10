@@ -90,7 +90,7 @@ public class DatabasePluginTestBase extends HydratorTestBase {
   public static TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   @ClassRule
-  public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", true);
+  public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
 
   @BeforeClass
   public static void setupTest() throws Exception {

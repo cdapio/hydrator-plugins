@@ -93,7 +93,7 @@ public class ProjectionTransformTest {
     Assert.assertEquals(expectedSchema, mockConfigurer.getOutputSchema());
 
     // null input schema
-    mockConfigurer = new MockPipelineConfigurer((Schema) null);
+    mockConfigurer = new MockPipelineConfigurer(null);
     new ProjectionTransform(config).configurePipeline(mockConfigurer);
     Assert.assertNull(mockConfigurer.getOutputSchema());
   }

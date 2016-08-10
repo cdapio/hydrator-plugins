@@ -177,7 +177,7 @@ public class BatchCassandraSink
   private static class CassandraOutputFormatProvider implements OutputFormatProvider {
     private final Map<String, String> conf;
 
-    public CassandraOutputFormatProvider(CassandraBatchConfig config) {
+    CassandraOutputFormatProvider(CassandraBatchConfig config) {
       this.conf = new HashMap<>();
 
       conf.put("cassandra.output.thrift.port", config.port == null ? "9160" : Integer.toString(config.port));

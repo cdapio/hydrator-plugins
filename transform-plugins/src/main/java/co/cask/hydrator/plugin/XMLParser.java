@@ -151,7 +151,7 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
         if (value == null) {
           builder.set(fieldName, null);
         } else {
-          builder.set(fieldName, TypeConvertor.get(value, type));
+          builder.convertAndSet(fieldName, value);
         }
       }
       emitter.emit(builder.build());

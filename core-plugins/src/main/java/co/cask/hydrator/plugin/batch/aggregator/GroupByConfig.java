@@ -141,7 +141,7 @@ public class GroupByConfig extends AggregatorConfig {
     private final String field;
     private final Function function;
 
-    public FunctionInfo(String name, String field, Function function) {
+    FunctionInfo(String name, String field, Function function) {
       this.name = name;
       this.field = field;
       this.function = function;
