@@ -45,7 +45,7 @@ public class StructuredtoAvroTest {
              .build()
       )
       .build();
-    StructuredToAvroTransformer structuredToAvroTransformer = new StructuredToAvroTransformer(null);
+    StructuredToAvroTransformer structuredToAvroTransformer = new StructuredToAvroTransformer(schema.toString());
     GenericRecord result = structuredToAvroTransformer.transform(record);
     Assert.assertEquals(5, result.get("intField"));
     GenericRecord innerRecord = (GenericRecord) result.get("recordField");

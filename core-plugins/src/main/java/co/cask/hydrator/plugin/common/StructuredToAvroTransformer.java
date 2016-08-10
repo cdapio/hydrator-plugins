@@ -63,7 +63,12 @@ public class StructuredToAvroTransformer extends RecordConverter<StructuredRecor
       if (schemaField == null) {
         throw new IllegalArgumentException("Input record does not contain the " + fieldName + " field.");
       }
-      recordBuilder.set(fieldName, convertField(structuredRecord.get(fieldName), schemaField.getSchema()));
+      if (schemaField.getSchema().getType() == co.cask.cdap.api.data.schema.Schema.Type.RECORD) {
+        recordBuilder.set(fieldName, new StructuredToAvroTransformer(field.schema().toString())
+          .transform((StructuredRecord) structuredRecord.get(fieldName)));
+      } else {
+        recordBuilder.set(fieldName, convertField(structuredRecord.get(fieldName), schemaField.getSchema()));
+      }
     }
     return recordBuilder.build();
   }
