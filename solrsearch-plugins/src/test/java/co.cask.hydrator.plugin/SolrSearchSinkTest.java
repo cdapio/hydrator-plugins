@@ -497,9 +497,9 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
   @Test(expected = IllegalArgumentException.class)
   public void testInvalidSingleNodeSolrUrl() {
-    SolrSearchSinkConfig config = new SolrSearchSinkConfig("SolrSink", SolrSearchSinkConfig.SINGLE_NODE_MODE,
-                                                           "localhost:8983,localhost:8984", "collection1", "id", "100",
-                                                           "office address:address");
+    SolrSearchSink.BatchSolrSearchConfig config = new SolrSearchSink.BatchSolrSearchConfig
+      ("SolrSink", SolrSearchSinkConfig.SINGLE_NODE_MODE, "localhost:8983,localhost:8984", "collection1", "id",
+       "office address:address", "1000");
     SolrSearchSink sinkObject = new SolrSearchSink(config);
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
     sinkObject.configurePipeline(configurer);
@@ -507,9 +507,9 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
   @Test(expected = IllegalArgumentException.class)
   public void testWrongKeyFieldName() {
-    SolrSearchSinkConfig config = new SolrSearchSinkConfig("SolrSink", SolrSearchSinkConfig.SINGLE_NODE_MODE,
-                                                           "localhost:8983", "collection1", "wrong_id", "100",
-                                                           "office address:address");
+    SolrSearchSink.BatchSolrSearchConfig config = new SolrSearchSink.BatchSolrSearchConfig
+      ("SolrSink", SolrSearchSinkConfig.SINGLE_NODE_MODE, "localhost:8983", "collection1", "wrong_id",
+       "office address:address", "1000");
     SolrSearchSink sinkObject = new SolrSearchSink(config);
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
     sinkObject.configurePipeline(configurer);
@@ -524,9 +524,10 @@ public class SolrSearchSinkTest extends HydratorTestBase {
       Schema.Field.of("lastname", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("office address", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("pincode", Schema.nullableOf(Schema.of(Schema.Type.BYTES))));
-    SolrSearchSinkConfig config = new SolrSearchSinkConfig("SolrSink", SolrSearchSinkConfig.SINGLE_NODE_MODE,
-                                                           "localhost:8983", "collection1", "id", "100",
-                                                           "office address:address");
+
+    SolrSearchSink.BatchSolrSearchConfig config = new SolrSearchSink.BatchSolrSearchConfig
+      ("SolrSink", SolrSearchSinkConfig.SINGLE_NODE_MODE, "localhost:8983", "collection1", "id",
+       "office address:address", "1000");
     SolrSearchSink sinkObject = new SolrSearchSink(config);
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
     sinkObject.configurePipeline(configurer);

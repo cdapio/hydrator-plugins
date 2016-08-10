@@ -39,6 +39,7 @@ import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * Batch SolrSearch Sink Plugin - Writes data to a Sinlge Node Solr or to SolrCloud.
@@ -49,58 +50,66 @@ import java.util.Map;
   "The input fields coming from the previous stage of the pipeline are mapped to Solr fields. User can also specify " +
   "the mode of the Solr to connect to. For example, Single Node Solr or SolrCloud.")
 public class SolrSearchSink extends BatchSink<StructuredRecord, Text, Text> {
-  private final SolrSearchSinkConfig config;
+  private static final Gson GSON = new Gson();
+  private final BatchSolrSearchConfig batchConfig;
+  private Boolean flag = true;
 
-  public SolrSearchSink(SolrSearchSinkConfig config) {
-    this.config = config;
+  public SolrSearchSink(BatchSolrSearchConfig batchConfig) {
+    this.batchConfig = batchConfig;
   }
 
   @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
     Job job = context.getHadoopJob();
     job.setOutputFormatClass(NullOutputFormat.class);
-    context.addOutput(Output.of(config.referenceName, new SolrSearchSink.SolrOutputFormatProvider(config)));
+    context.addOutput(Output.of(batchConfig.referenceName, new SolrSearchSink.SolrOutputFormatProvider(batchConfig)));
   }
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
-    config.validateSolrConnectionString();
+    batchConfig.validateSolrConnectionString();
     if (inputSchema != null) {
-      config.validateKeyField(inputSchema);
-      config.validateInputFieldsDataType(inputSchema);
+      batchConfig.validateKeyField(inputSchema);
+      batchConfig.validateInputFieldsDataType(inputSchema);
     }
   }
 
   @Override
   public void transform(StructuredRecord structuredRecord, Emitter<KeyValue<Text, Text>> emitter) throws Exception {
-    Type schemaType = new TypeToken<Schema>() {
-    }.getType();
-    config.verifySolrConfiguration();
-    config.validateKeyField(structuredRecord.getSchema());
-    config.validateInputFieldsDataType(structuredRecord.getSchema());
+    Type schemaType = new TypeToken<Schema>() { }.getType();
+    if (flag) {
+      batchConfig.verifySolrConfiguration();
+      flag = false;
+    }
+    batchConfig.validateKeyField(structuredRecord.getSchema());
+    batchConfig.validateInputFieldsDataType(structuredRecord.getSchema());
 
-    if (structuredRecord.get(config.getKeyField()) == null) {
+    if (structuredRecord.get(batchConfig.getKeyField()) == null) {
       return;
     }
-    emitter.emit(new KeyValue<Text, Text>(new Text(new Gson().toJson(structuredRecord.getSchema(), schemaType)),
+    emitter.emit(new KeyValue<Text, Text>(new Text(GSON.toJson(structuredRecord.getSchema(), schemaType)),
                                           new Text(StructuredRecordStringConverter.toJsonString(structuredRecord))));
   }
 
   /**
-   * Output format provider for BatchSolrSearch Sink.
+   * Output format provider for Batch SolrSearch Sink.
    */
   private static class SolrOutputFormatProvider implements OutputFormatProvider {
     private Map<String, String> conf;
 
-    public SolrOutputFormatProvider(SolrSearchSinkConfig config) {
+    SolrOutputFormatProvider(BatchSolrSearchConfig batchConfig) {
       this.conf = new HashMap<>();
-      conf.put("solr.server.url", config.getSolrHost());
-      conf.put("solr.server.mode", config.getSolrMode());
-      conf.put("solr.server.collection", config.getCollectionName());
-      conf.put("solr.server.idfield", config.getKeyField());
-      conf.put("solr.output.field.mappings", config.getOutputFieldMappings());
-      conf.put("solr.batch.size", config.getBatchSize());
+      conf.put("solr.server.url", batchConfig.getSolrHost());
+      conf.put("solr.server.mode", batchConfig.getSolrMode());
+      conf.put("solr.server.collection", batchConfig.getCollectionName());
+      conf.put("solr.server.keyfield", batchConfig.getKeyField());
+      conf.put("solr.batch.size", batchConfig.getBatchSize());
+      if (batchConfig.getOutputFieldMappings() == null) {
+        conf.put("solr.output.field.mappings", "");
+      } else {
+        conf.put("solr.output.field.mappings", batchConfig.getOutputFieldMappings());
+      }
     }
 
     @Override
@@ -111,6 +120,32 @@ public class SolrSearchSink extends BatchSink<StructuredRecord, Text, Text> {
     @Override
     public Map<String, String> getOutputFormatConfiguration() {
       return conf;
+    }
+  }
+
+  /**
+   * Config class for Batch SolrSearch sink.
+   */
+  public static class BatchSolrSearchConfig extends SolrSearchSinkConfig {
+    @Description("Number of documents to create a batch and send it to Solr for indexing. After each batch, " +
+      "commit will be triggered. Default batch size is 10000.")
+    @Nullable
+    private final String batchSize;
+
+    public BatchSolrSearchConfig(String referenceName, String solrMode, String solrHost, String collectionName,
+                                 String keyField, String outputFieldMappings, String batchSize) {
+      super(referenceName, solrMode, solrHost, collectionName, keyField, outputFieldMappings);
+      this.batchSize = batchSize;
+    }
+
+    /**
+     * Returns the batch size given as input by user.
+     *
+     * @return batch size
+     */
+    @Nullable
+    public String getBatchSize() {
+      return batchSize;
     }
   }
 }

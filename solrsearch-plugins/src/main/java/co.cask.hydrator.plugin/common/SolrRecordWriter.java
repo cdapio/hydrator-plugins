@@ -40,10 +40,10 @@ public class SolrRecordWriter extends RecordWriter<Text, Text> {
   private static final String SERVER_URL = "solr.server.url";
   private static final String SERVER_MODE = "solr.server.mode";
   private static final String COLLECTION_NAME = "solr.server.collection";
-  private static final String KEY_FIELD = "solr.server.idfield";
+  private static final String KEY_FIELD = "solr.server.keyfield";
   private static final String FIELD_MAPPINGS = "solr.output.field.mappings";
   private static final String BATCH_SIZE = "solr.batch.size";
-
+  private static final Gson GSON = new Gson();
   private final SolrSearchSinkConfig config;
   List<SolrInputDocument> documentList = new ArrayList<SolrInputDocument>();
   private SolrClient solrClient;
@@ -52,7 +52,7 @@ public class SolrRecordWriter extends RecordWriter<Text, Text> {
   public SolrRecordWriter(TaskAttemptContext context) {
     conf = context.getConfiguration();
     config = new SolrSearchSinkConfig(null, conf.get(SERVER_MODE), conf.get(SERVER_URL), conf.get(COLLECTION_NAME),
-                                      conf.get(KEY_FIELD), conf.get(BATCH_SIZE), conf.get(FIELD_MAPPINGS));
+                                      conf.get(KEY_FIELD), conf.get(FIELD_MAPPINGS));
     solrClient = config.getSolrConnection();
   }
 
@@ -60,10 +60,9 @@ public class SolrRecordWriter extends RecordWriter<Text, Text> {
   public void write(Text key, Text value) throws IOException {
     String solrFieldName;
     SolrInputDocument document;
-    Type schemaType = new TypeToken<Schema>() {
-    }.getType();
+    Type schemaType = new TypeToken<Schema>() { }.getType();
 
-    Schema inputSchema = new Gson().fromJson(key.toString(), schemaType);
+    Schema inputSchema = GSON.fromJson(key.toString(), schemaType);
     StructuredRecord structuredRecord = StructuredRecordStringConverter.fromJsonString(value.toString(), inputSchema);
     document = new SolrInputDocument();
     for (Schema.Field field : structuredRecord.getSchema().getFields()) {
@@ -82,7 +81,8 @@ public class SolrRecordWriter extends RecordWriter<Text, Text> {
         documentList.clear();
       }
     } catch (SolrServerException e) {
-      e.printStackTrace();
+      throw new IllegalArgumentException("Exception while indexing the documents to Solr. For more details, Please " +
+                                           "check the logs.", e);
     }
   }
 
@@ -94,7 +94,8 @@ public class SolrRecordWriter extends RecordWriter<Text, Text> {
         solrClient.commit();
       }
     } catch (SolrServerException e) {
-      e.printStackTrace();
+      throw new IllegalArgumentException("Exception while indexing the documents to Solr. For more details, Please " +
+                                           "check the logs.", e);
     } finally {
       documentList.clear();
     }

@@ -46,23 +46,18 @@ public class SolrSearchSinkConfig extends ReferencePluginConfig {
   @Description("Field that will determine the unique key for the document to be indexed. It must match a " +
     "field name in the structured record of the input.")
   private final String keyField;
-  @Description("Number of documents to create a batch and send it to Solr for indexing. After each batch, commit will" +
-    " be triggered. Default batch size is 1000.")
-  @Nullable
-  private final String batchSize;
   @Description("List of the input fields to map to the output Solr fields. The key specifies the name of the field to" +
     " rename, with its corresponding value specifying the new name for that field.")
   @Nullable
   private final String outputFieldMappings;
 
   public SolrSearchSinkConfig(String referenceName, String solrMode, String solrHost, String collectionName,
-                              String keyField, String batchSize, String outputFieldMappings) {
+                              String keyField, String outputFieldMappings) {
     super(referenceName);
     this.solrMode = solrMode;
     this.solrHost = solrHost;
     this.collectionName = collectionName;
     this.keyField = keyField;
-    this.batchSize = batchSize;
     this.outputFieldMappings = outputFieldMappings;
   }
 
@@ -100,16 +95,6 @@ public class SolrSearchSinkConfig extends ReferencePluginConfig {
    */
   public String getKeyField() {
     return keyField;
-  }
-
-  /**
-   * Returns the batch size given as input by user.
-   *
-   * @return batch size
-   */
-  @Nullable
-  public String getBatchSize() {
-    return batchSize;
   }
 
   /**
@@ -186,7 +171,7 @@ public class SolrSearchSinkConfig extends ReferencePluginConfig {
       throw new IllegalArgumentException(
         String.format("Server refused connection at '%s'. Please make sure that either the Solr/Zookeeper services " +
                         "are properly running or the collection '%s' exists in the Solr Server.", solrHost,
-                      collectionName));
+                      collectionName), e);
     }
   }
 
@@ -198,7 +183,7 @@ public class SolrSearchSinkConfig extends ReferencePluginConfig {
   public void validateKeyField(Schema inputSchema) {
     if (inputSchema != null && inputSchema.getField(keyField) == null) {
       throw new IllegalArgumentException(
-        String.format("Keyfield '%s' does not exist in the input schema %s", keyField, inputSchema));
+        String.format("Key field '%s' does not exist in the input schema %s", keyField, inputSchema));
     }
   }
 
@@ -208,15 +193,13 @@ public class SolrSearchSinkConfig extends ReferencePluginConfig {
    * @param inputSchema
    */
   public void validateInputFieldsDataType(Schema inputSchema) {
-    /* Currently SolrSearch sink plugin supports CDAP primitives types only: BOOLEAN, INT, LONG,
-    FLOAT, DOUBLE and
+    /* Currently SolrSearch sink plugin supports CDAP primitives types only: BOOLEAN, INT, LONG, FLOAT, DOUBLE and
     STRING.*/
     Schema.Type schemaType;
     if (inputSchema != null) {
       for (Schema.Field field : inputSchema.getFields()) {
         schemaType = field.getSchema().isNullable() ? field.getSchema().getNonNullable().getType() :
           field.getSchema().getType();
-
         switch (schemaType) {
           case BOOLEAN:
           case INT:
@@ -229,7 +212,7 @@ public class SolrSearchSinkConfig extends ReferencePluginConfig {
           default:
             throw new IllegalArgumentException(
               String.format("Data type '%s' is not compatible for writing data to the Solr Server. Supported CDAP " +
-                              "data types are ' BOOLEAN, INT, LONG, FLOAT, DOUBLE and STRING '",
+                              "data types are ' BOOLEAN, INT, LONG, FLOAT, DOUBLE and STRING '.",
                             field.getSchema().getType()));
         }
       }

@@ -44,7 +44,7 @@
           "label": "Batch Size",
           "name": "batchSize",
           "widget-attributes": {
-            "default": "1000"
+            "default": "10000"
           }
         },
         {

@@ -28,8 +28,8 @@ zkHost1:2181,zkHost2:2181,zkHost3:2181 for SolrCloud.
 **keyField:** Field that will determine the unique key for the document to be indexed. It must match a field name
 in the structured record of the input.
 
-**batchSize** Number of documents to create a batch and send it to Solr for indexing. After each batch, commit will
-be triggered. Default batch size is 1000.
+**batchSize:** Number of documents to create a batch and send it to Solr for indexing. After each batch, commit will
+be triggered. Default batch size is 10000.
 
 **outputFieldMappings:** List of the input fields to map to the output Solr fields. The key specifies the name of the
 field to rename, with its corresponding value specifying the new name for that field.
@@ -57,7 +57,7 @@ data to the specified collection (test_collection). The data is indexed using th
           "solrHost": "localhost:8983",
           "collectionName": "test_collection",
           "keyField": "id",
-          "batchSize": "1000",
+          "batchSize": "10000",
 			    "outputFieldMappings": "office address:address"
         }
     }
