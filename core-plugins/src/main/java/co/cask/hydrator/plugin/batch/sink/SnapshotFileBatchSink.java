@@ -22,6 +22,7 @@ import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
+import co.cask.hydrator.common.TimeParser;
 import co.cask.hydrator.plugin.common.SnapshotFileSetConfig;
 import co.cask.hydrator.plugin.dataset.SnapshotFileSet;
 import com.google.gson.Gson;
@@ -29,6 +30,7 @@ import com.google.gson.reflect.TypeToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
@@ -56,6 +58,11 @@ public abstract class SnapshotFileBatchSink<KEY_OUT, VAL_OUT> extends BatchSink<
     FileSetProperties.Builder fileProperties = SnapshotFileSet.getBaseProperties(config);
     addFileProperties(fileProperties);
     pipelineConfigurer.createDataset(config.getName(), PartitionedFileSet.class, fileProperties.build());
+
+    // throw an exception on badly formatted time string
+    if (config.getCleanPartitionsOlderThan() != null) {
+      TimeParser.parseDuration(config.getCleanPartitionsOlderThan());
+    }
   }
 
   @Override
@@ -79,6 +86,17 @@ public abstract class SnapshotFileBatchSink<KEY_OUT, VAL_OUT> extends BatchSink<
         snapshotFileSet.onSuccess(context.getLogicalStartTime());
       } catch (Exception e) {
         LOG.error("Exception updating state file with value of latest snapshot, ", e);
+      }
+
+      try {
+        if (config.getCleanPartitionsOlderThan() != null) {
+          long cutoffTime =
+            context.getLogicalStartTime() - TimeParser.parseDuration(config.getCleanPartitionsOlderThan());
+          snapshotFileSet.deleteMatchingPartitionsByTime(cutoffTime);
+          LOG.info("Cleaning up snapshots older than {}", cutoffTime);
+        }
+      } catch (IOException e) {
+        LOG.error("Exception occurred while cleaning up older snapshots", e);
       }
     }
   }
