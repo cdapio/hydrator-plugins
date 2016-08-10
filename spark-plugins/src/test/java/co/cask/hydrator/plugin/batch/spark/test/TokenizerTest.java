@@ -45,7 +45,10 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -131,8 +134,14 @@ public class TokenizerTest extends HydratorTestBase {
         workflowManager.waitForFinish(5, TimeUnit.MINUTES);
         DataSetManager<Table> tokenizedTexts = getDataset(MULTIPLE);
         List<StructuredRecord> output = MockSink.readOutput(tokenizedTexts);
-        // Verify data
+        Set<List> results = new HashSet<>();
+        for (StructuredRecord structuredRecord : output) {
+            results.add((ArrayList) structuredRecord.get("words"));
+        }
+        //Create expected data
+        Set<List> expected = createExpectedData();
         StructuredRecord row1 = output.get(0);
+        Assert.assertEquals(results, expected);
         Assert.assertEquals(4, output.size());
         Assert.assertEquals(1, row1.getSchema().getFields().size());
         Assert.assertEquals("ARRAY", row1.getSchema().getField("words").getSchema().getType().toString());
@@ -166,10 +175,37 @@ public class TokenizerTest extends HydratorTestBase {
         workflowManager.waitForFinish(5, TimeUnit.MINUTES);
         DataSetManager<Table> tokenizedTextSingle = getDataset(SINGLE);
         List<StructuredRecord> output = MockSink.readOutput(tokenizedTextSingle);
-        // Verify data
-        StructuredRecord row1 = output.get(0);
+        Set<List> results = new HashSet<>();
+        for (StructuredRecord structuredRecord : output) {
+            results.add((ArrayList) structuredRecord.get("words"));
+        }
+        //Create expected data
+        Set<List> expected = createExpectedData();
+        StructuredRecord rowSingle = output.get(0);
+        Assert.assertEquals(results, expected);
         Assert.assertEquals(4, output.size());
-        Assert.assertEquals(1, row1.getSchema().getFields().size());
-        Assert.assertEquals("ARRAY", row1.getSchema().getField("words").getSchema().getType().toString());
+        Assert.assertEquals(1, rowSingle.getSchema().getFields().size());
+        Assert.assertEquals("ARRAY", rowSingle.getSchema().getField("words").getSchema().getType().toString());
+    }
+
+    private Set<List> createExpectedData() {
+        List list1 = new ArrayList();
+        list1.add("cask data ");
+        list1.add("application platform");
+        List list2 = new ArrayList();
+        list2.add("cask hydrator");
+        list2.add(" is webbased tool");
+        List list3 = new ArrayList();
+        list3.add("hydrator studio is visual ");
+        list3.add("development environment");
+        List list4 = new ArrayList();
+        list4.add("hydrator plugins ");
+        list4.add("are customizable modules");
+        Set<List> expected = new HashSet<>();
+        expected.add(list1);
+        expected.add(list2);
+        expected.add(list3);
+        expected.add(list4);
+        return expected;
     }
 }
