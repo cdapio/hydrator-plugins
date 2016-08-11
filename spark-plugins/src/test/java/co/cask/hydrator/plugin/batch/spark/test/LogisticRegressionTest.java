@@ -20,7 +20,9 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.datapipeline.DataPipelineApp;
 import co.cask.cdap.datapipeline.SmartWorkflow;
+import co.cask.cdap.etl.api.batch.SparkCompute;
 import co.cask.cdap.etl.api.batch.SparkSink;
+import co.cask.cdap.etl.mock.batch.MockSink;
 import co.cask.cdap.etl.mock.batch.MockSource;
 import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
@@ -35,28 +37,33 @@ import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkflowManager;
+import co.cask.hydrator.plugin.batch.spark.LogisticRegressionClassifier;
 import co.cask.hydrator.plugin.batch.spark.LogisticRegressionTrainer;
 import com.google.common.collect.ImmutableMap;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Tests for Logistic Regression Spark plugin.
  */
-
-public class LogisticRegressionTrainerTest extends HydratorTestBase {
+public class LogisticRegressionTest extends HydratorTestBase {
 
   @ClassRule
   public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
 
   protected static final ArtifactId DATAPIPELINE_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("data-pipeline", "3.2.0");
   protected static final ArtifactSummary DATAPIPELINE_ARTIFACT = new ArtifactSummary("data-pipeline", "3.2.0");
+
+  private static final String CLASSIFIED_TEXTS = "classifiedTexts";
 
   @BeforeClass
   public static void setupTest() throws Exception {
@@ -65,33 +72,37 @@ public class LogisticRegressionTrainerTest extends HydratorTestBase {
 
     // add artifact for spark plugins
     addPluginArtifact(NamespaceId.DEFAULT.artifact("spark-plugins", "1.0.0"), DATAPIPELINE_ARTIFACT_ID,
-                      LogisticRegressionTrainer.class);
+                      LogisticRegressionTrainer.class, LogisticRegressionClassifier.class);
   }
 
   @Test
   public void testSparkSinkAndCompute() throws Exception {
     // use the SparkSink to train a model using Logistic Regression
     testSinglePhaseWithSparkSink();
+    // use a SparkCompute to classify all records going through the pipeline, using the model build with the SparkSink
+    testSinglePhaseWithSparkCompute();
   }
 
   private void testSinglePhaseWithSparkSink() throws Exception {
     /*
      * source --> sparksink
      */
+    String fieldsToClassify =
+      LogisticRegressionSpamMessageModel.TEXT_FIELD + "," + LogisticRegressionSpamMessageModel.READ_FIELD;
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put("fileSetName", "modelFileSet")
       .put("path", "output")
-      .put("fieldsToClassify",
-           LogisticRegressionSpamMessageModel.TEXT_FIELD + ", " + LogisticRegressionSpamMessageModel.READ_FIELD)
+      .put("fieldsToClassify", fieldsToClassify)
       .put("predictionField", LogisticRegressionSpamMessageModel.SPAM_PREDICTION_FIELD)
       .put("numFeatures", LogisticRegressionSpamMessageModel.SPAM_FEATURES)
-      .put("numClasses", "10")
+      .put("numClasses", "2")
       .build();
 
+    ETLPlugin sink = new ETLPlugin(LogisticRegressionTrainer.PLUGIN_NAME, SparkSink.PLUGIN_TYPE,
+                                   sourceProperties, null);
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
       .addStage(new ETLStage("source", MockSource.getPlugin("messages")))
-      .addStage(new ETLStage("customsink", new ETLPlugin(LogisticRegressionTrainer.PLUGIN_NAME, SparkSink.PLUGIN_TYPE,
-                                                         sourceProperties, null)))
+      .addStage(new ETLStage("customsink", sink))
       .addConnection("source", "customsink")
       .build();
 
@@ -127,4 +138,65 @@ public class LogisticRegressionTrainerTest extends HydratorTestBase {
     workflowManager.waitForFinish(5, TimeUnit.MINUTES);
   }
 
+  private void testSinglePhaseWithSparkCompute() throws Exception {
+    String textsToClassify = "textsToClassify";
+    /*
+     * source --> sparkcompute --> sink
+     */
+    String fieldsToClassify =
+      LogisticRegressionSpamMessageModel.TEXT_FIELD + "," + LogisticRegressionSpamMessageModel.READ_FIELD;
+    Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
+      .put("fileSetName", "modelFileSet")
+      .put("path", "output")
+      .put("fieldsToClassify", fieldsToClassify)
+      .put("predictionField", LogisticRegressionSpamMessageModel.SPAM_PREDICTION_FIELD)
+      .put("numFeatures", LogisticRegressionSpamMessageModel.SPAM_FEATURES)
+      .build();
+
+    ETLPlugin sink = new ETLPlugin(LogisticRegressionClassifier.PLUGIN_NAME, SparkCompute.PLUGIN_TYPE,
+                                   sourceProperties, null);
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(new ETLStage("source", MockSource.getPlugin(textsToClassify)))
+      .addStage(new ETLStage("sparkcompute", sink))
+      .addStage(new ETLStage("sink", MockSink.getPlugin(CLASSIFIED_TEXTS)))
+      .addConnection("source", "sparkcompute")
+      .addConnection("sparkcompute", "sink")
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "SinglePhaseApp");
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+
+    // write some some messages to be classified
+    List<StructuredRecord> messagesToWrite = new ArrayList<>();
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel("how are you doing today", "no").toStructuredRecord());
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel("earn money", "yes").toStructuredRecord());
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel("what are you doing today", "no").toStructuredRecord());
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel("genuine report", "no").toStructuredRecord());
+
+    DataSetManager<Table> inputManager = getDataset(Id.Namespace.DEFAULT, textsToClassify);
+    MockSource.writeInput(inputManager, messagesToWrite);
+
+    // manually trigger the pipeline
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+
+    DataSetManager<Table> classifiedTexts = getDataset(CLASSIFIED_TEXTS);
+    List<StructuredRecord> structuredRecords = MockSink.readOutput(classifiedTexts);
+
+    Set<LogisticRegressionSpamMessageModel> results = new HashSet<>();
+    for (StructuredRecord structuredRecord : structuredRecords) {
+      results.add(LogisticRegressionSpamMessageModel.fromStructuredRecord(structuredRecord));
+    }
+
+    Set<LogisticRegressionSpamMessageModel> expected = new HashSet<>();
+    expected.add(new LogisticRegressionSpamMessageModel("how are you doing today", "no", 0.0));
+    // only 'earn money' should be predicated as spam
+    expected.add(new LogisticRegressionSpamMessageModel("earn money", "yes", 1.0));
+    expected.add(new LogisticRegressionSpamMessageModel("what are you doing today", "no", 0.0));
+    expected.add(new LogisticRegressionSpamMessageModel("genuine report", "no", 0.0));
+
+    Assert.assertEquals(expected, results);
+  }
 }

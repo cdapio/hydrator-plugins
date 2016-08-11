@@ -18,6 +18,7 @@ package co.cask.hydrator.plugin.batch.spark.test;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+
 import javax.annotation.Nullable;
 
 /**
@@ -29,9 +30,10 @@ public class LogisticRegressionSpamMessageModel {
   public static final String TEXT_FIELD = "text";
   public static final String READ_FIELD = "boolField";
   static final Schema SCHEMA = Schema.recordOf("simpleMessage",
-    Schema.Field.of(SPAM_PREDICTION_FIELD, Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
-    Schema.Field.of(TEXT_FIELD, Schema.of(Schema.Type.STRING)),
-    Schema.Field.of(READ_FIELD, Schema.of(Schema.Type.STRING))
+                                               Schema.Field.of(SPAM_PREDICTION_FIELD,
+                                                               Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
+                                               Schema.Field.of(TEXT_FIELD, Schema.of(Schema.Type.STRING)),
+                                               Schema.Field.of(READ_FIELD, Schema.of(Schema.Type.STRING))
   );
 
   private final String text;
@@ -39,6 +41,10 @@ public class LogisticRegressionSpamMessageModel {
 
   @Nullable
   private final Double spamPrediction;
+
+  public LogisticRegressionSpamMessageModel(String text, String read) {
+    this(text, read, null);
+  }
 
   public LogisticRegressionSpamMessageModel(String text, String read, @Nullable Double spamPrediction) {
     this.text = text;
@@ -56,6 +62,20 @@ public class LogisticRegressionSpamMessageModel {
     return builder.build();
   }
 
+  public static LogisticRegressionSpamMessageModel fromStructuredRecord(StructuredRecord structuredRecord) {
+    return new LogisticRegressionSpamMessageModel((String) structuredRecord.get(TEXT_FIELD),
+                                                  (String) structuredRecord.get(READ_FIELD),
+                                                  (Double) structuredRecord.get(SPAM_PREDICTION_FIELD));
+  }
+
+  @Override
+  public int hashCode() {
+    int result = text.hashCode();
+    result = 31 * result + read.hashCode();
+    result = 31 * result + spamPrediction.hashCode();
+    return result;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -70,14 +90,9 @@ public class LogisticRegressionSpamMessageModel {
     if (!text.equals(that.text)) {
       return false;
     }
-    return !(spamPrediction != null ? !spamPrediction.equals(that.spamPrediction) : that.spamPrediction != null);
-
-  }
-
-  @Override
-  public int hashCode() {
-    int result = text.hashCode();
-    result = 31 * result + (spamPrediction != null ? spamPrediction.hashCode() : 0);
-    return result;
+    if (!read.equals(that.read)) {
+      return false;
+    }
+    return spamPrediction.equals(that.spamPrediction);
   }
 }
