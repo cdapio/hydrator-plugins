@@ -172,11 +172,6 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     Configuration hConf = new Configuration();
     hConf.clear();
 
-    if (!sourceConfig.getImportQuery().contains("$CONDITIONS")) {
-      throw new IllegalArgumentException(String.format("Import Query %s must contain the string '$CONDITIONS'.",
-                                                       sourceConfig.importQuery));
-    }
-
     // Load the plugin class to make sure it is available.
     Class<? extends Driver> driverClass = context.loadPluginClass(getJDBCPluginId());
     if (sourceConfig.user == null && sourceConfig.password == null) {
@@ -189,6 +184,10 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
                                         sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery(),
                                         sourceConfig.getEnableAutoCommit());
     if (sourceConfig.numSplits == null || sourceConfig.numSplits != 1) {
+      if (!sourceConfig.getImportQuery().contains("$CONDITIONS")) {
+        throw new IllegalArgumentException(String.format("Import Query %s must contain the string '$CONDITIONS'.",
+                                                         sourceConfig.importQuery));
+      }
       hConf.set(DBConfiguration.INPUT_ORDER_BY_PROPERTY, sourceConfig.splitBy);
     }
     if (sourceConfig.numSplits != null) {
