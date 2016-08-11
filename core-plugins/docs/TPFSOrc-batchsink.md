@@ -8,8 +8,6 @@ Every time the pipeline runs, a new partition in the ``TimePartitionedFileSet``
 will be created based on the logical start time of the run.
 All data for the run will be written to that partition.
 
-Currently supports fields of type String only
-
 Use Case
 --------
 This sink is used whenever you want to write to a ``TimePartitionedFileSet`` in ORC format.

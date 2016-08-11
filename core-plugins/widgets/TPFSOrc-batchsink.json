@@ -51,8 +51,7 @@
           "float",
           "double",
           "bytes",
-          "string",
-          "map<string, string>"
+          "string"
         ],
         "schema-default-type": "string"
       }
