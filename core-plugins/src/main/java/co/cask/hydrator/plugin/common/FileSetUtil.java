@@ -59,7 +59,7 @@ public class FileSetUtil {
    * </ul>
    *
    * @param configuredSchema the original schema configured for the table
-   * @param properties       a builder for the file set properties
+   * @param properties a builder for the file set properties
    */
   public static void configureParquetFileSet(String configuredSchema, FileSetProperties.Builder properties) {
 
@@ -101,7 +101,7 @@ public class FileSetUtil {
    * </ul>
    *
    * @param configuredSchema the original schema configured for the table
-   * @param properties       a builder for the file set properties
+   * @param properties a builder for the file set properties
    */
   public static void configureORCFileSet(String configuredSchema, FileSetProperties.Builder properties) {
     //TODO test if complex cases run with lowercase schema only
@@ -149,7 +149,7 @@ public class FileSetUtil {
    * </ul>
    *
    * @param configuredSchema the original schema configured for the table
-   * @param properties       a builder for the file set properties
+   * @param properties a builder for the file set properties
    */
   public static void configureAvroFileSet(String configuredSchema, FileSetProperties.Builder properties) {
     // validate and parse schema as Avro, and attempt to convert it into a Hive schema

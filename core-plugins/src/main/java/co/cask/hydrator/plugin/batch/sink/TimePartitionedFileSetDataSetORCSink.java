@@ -30,8 +30,6 @@ import co.cask.hydrator.plugin.common.FileSetUtil;
 import co.cask.hydrator.plugin.common.StructuredToOrcTransformer;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.orc.mapred.OrcStruct;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
@@ -44,7 +42,6 @@ import javax.annotation.Nullable;
 public class TimePartitionedFileSetDataSetORCSink extends TimePartitionedFileSetSink<NullWritable, OrcStruct> {
 
   private static final String SCHEMA_DESC = "The ORC schema of the record being written to the Sink.";
-  private static final Logger LOG = LoggerFactory.getLogger(TimePartitionedFileSetDataSetORCSink.class);
   private final TPFSOrcSinkConfig config;
   private StructuredToOrcTransformer recordTransformer;
 
@@ -67,7 +64,6 @@ public class TimePartitionedFileSetDataSetORCSink extends TimePartitionedFileSet
   @Override
   public void transform(StructuredRecord input,
                         Emitter<KeyValue<NullWritable, OrcStruct>> emitter) throws Exception {
-    OrcStruct orcStruct = recordTransformer.transform(input);
     emitter.emit(new KeyValue<NullWritable, OrcStruct>(NullWritable.get(), recordTransformer.transform(input)));
   }
 

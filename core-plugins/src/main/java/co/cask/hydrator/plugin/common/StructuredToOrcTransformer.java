@@ -34,7 +34,6 @@ import org.apache.orc.mapred.OrcStruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.List;
 
 /**
@@ -45,17 +44,10 @@ public class StructuredToOrcTransformer extends RecordConverter<StructuredRecord
   private static final Logger LOG = LoggerFactory.getLogger(StructuredToOrcTransformer.class);
 
   @Override
-  public OrcStruct transform(StructuredRecord input) throws IOException {
-    StringBuilder builder = new StringBuilder();
-    try {
-      HiveSchemaConverter.appendType(builder, input.getSchema());
-    } catch (UnsupportedTypeException e) {
-      LOG.debug("Not a valid Schema {}", input.getSchema().toString(), e);
-    }
-    TypeDescription schema = TypeDescription.fromString(builder.toString());
-    OrcStruct pair = (OrcStruct) OrcStruct.createValue(schema);
-    List<Schema.Field> fields = input.getSchema().getFields();
+  public OrcStruct transform(StructuredRecord input) {
 
+    List<Schema.Field> fields = input.getSchema().getFields();
+    OrcStruct pair = parseOrcSchema(input.getSchema());
     //populate ORC struct Pair object
     for (int i = 0; i < fields.size(); i++) {
       Schema.Field field = fields.get(i);
@@ -66,6 +58,18 @@ public class StructuredToOrcTransformer extends RecordConverter<StructuredRecord
         LOG.debug(field.getName() + "is not a supported type", e);
       }
     }
+    return pair;
+  }
+
+  public OrcStruct parseOrcSchema(Schema inputSchema) {
+    StringBuilder builder = new StringBuilder();
+    try {
+      HiveSchemaConverter.appendType(builder, inputSchema);
+    } catch (UnsupportedTypeException e) {
+      LOG.debug("Not a valid Schema {}", inputSchema.toString(), e);
+    }
+    TypeDescription schema = TypeDescription.fromString(builder.toString());
+    OrcStruct pair = (OrcStruct) OrcStruct.createValue(schema);
     return pair;
   }
 
