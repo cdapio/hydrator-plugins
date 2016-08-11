@@ -25,21 +25,20 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
+import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.cdap.format.StructuredRecordStringConverter;
 import co.cask.hydrator.plugin.common.SolrOutputFormat;
+import co.cask.hydrator.plugin.common.SolrRecordWriter;
 import co.cask.hydrator.plugin.common.SolrSearchSinkConfig;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.Nullable;
 
 /**
  * Batch SolrSearch Sink Plugin - Writes data to a Sinlge Node Solr or to SolrCloud.
@@ -51,8 +50,8 @@ import javax.annotation.Nullable;
   "the mode of the Solr to connect to. For example, Single Node Solr or SolrCloud.")
 public class SolrSearchSink extends BatchSink<StructuredRecord, Text, Text> {
   private static final Gson GSON = new Gson();
+  private static final Type SCHEMA_TYPE = new TypeToken<Schema>() { }.getType();
   private final BatchSolrSearchConfig batchConfig;
-  private Boolean flag = true;
 
   public SolrSearchSink(BatchSolrSearchConfig batchConfig) {
     this.batchConfig = batchConfig;
@@ -60,8 +59,6 @@ public class SolrSearchSink extends BatchSink<StructuredRecord, Text, Text> {
 
   @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
-    Job job = context.getHadoopJob();
-    job.setOutputFormatClass(NullOutputFormat.class);
     context.addOutput(Output.of(batchConfig.referenceName, new SolrSearchSink.SolrOutputFormatProvider(batchConfig)));
   }
 
@@ -76,19 +73,19 @@ public class SolrSearchSink extends BatchSink<StructuredRecord, Text, Text> {
   }
 
   @Override
+  public void initialize(BatchRuntimeContext context) throws Exception {
+    batchConfig.verifySolrConfiguration();
+  }
+
+  @Override
   public void transform(StructuredRecord structuredRecord, Emitter<KeyValue<Text, Text>> emitter) throws Exception {
-    Type schemaType = new TypeToken<Schema>() { }.getType();
-    if (flag) {
-      batchConfig.verifySolrConfiguration();
-      flag = false;
-    }
     batchConfig.validateKeyField(structuredRecord.getSchema());
     batchConfig.validateInputFieldsDataType(structuredRecord.getSchema());
 
     if (structuredRecord.get(batchConfig.getKeyField()) == null) {
       return;
     }
-    emitter.emit(new KeyValue<Text, Text>(new Text(GSON.toJson(structuredRecord.getSchema(), schemaType)),
+    emitter.emit(new KeyValue<Text, Text>(new Text(GSON.toJson(structuredRecord.getSchema(), SCHEMA_TYPE)),
                                           new Text(StructuredRecordStringConverter.toJsonString(structuredRecord))));
   }
 
@@ -100,15 +97,15 @@ public class SolrSearchSink extends BatchSink<StructuredRecord, Text, Text> {
 
     SolrOutputFormatProvider(BatchSolrSearchConfig batchConfig) {
       this.conf = new HashMap<>();
-      conf.put("solr.server.url", batchConfig.getSolrHost());
-      conf.put("solr.server.mode", batchConfig.getSolrMode());
-      conf.put("solr.server.collection", batchConfig.getCollectionName());
-      conf.put("solr.server.keyfield", batchConfig.getKeyField());
-      conf.put("solr.batch.size", batchConfig.getBatchSize());
+      conf.put(SolrRecordWriter.SERVER_URL, batchConfig.getSolrHost());
+      conf.put(SolrRecordWriter.SERVER_MODE, batchConfig.getSolrMode());
+      conf.put(SolrRecordWriter.COLLECTION_NAME, batchConfig.getCollectionName());
+      conf.put(SolrRecordWriter.KEY_FIELD, batchConfig.getKeyField());
+      conf.put(SolrRecordWriter.BATCH_SIZE, batchConfig.getBatchSize());
       if (batchConfig.getOutputFieldMappings() == null) {
-        conf.put("solr.output.field.mappings", "");
+        conf.put(SolrRecordWriter.FIELD_MAPPINGS, "");
       } else {
-        conf.put("solr.output.field.mappings", batchConfig.getOutputFieldMappings());
+        conf.put(SolrRecordWriter.FIELD_MAPPINGS, batchConfig.getOutputFieldMappings());
       }
     }
 
@@ -129,7 +126,6 @@ public class SolrSearchSink extends BatchSink<StructuredRecord, Text, Text> {
   public static class BatchSolrSearchConfig extends SolrSearchSinkConfig {
     @Description("Number of documents to create a batch and send it to Solr for indexing. After each batch, " +
       "commit will be triggered. Default batch size is 10000.")
-    @Nullable
     private final String batchSize;
 
     public BatchSolrSearchConfig(String referenceName, String solrMode, String solrHost, String collectionName,
@@ -143,7 +139,6 @@ public class SolrSearchSink extends BatchSink<StructuredRecord, Text, Text> {
      *
      * @return batch size
      */
-    @Nullable
     public String getBatchSize() {
       return batchSize;
     }

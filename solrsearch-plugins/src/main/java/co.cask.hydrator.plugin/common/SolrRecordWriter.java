@@ -37,13 +37,14 @@ import java.util.List;
  * SolrRecordWriter - Instantiate a record writer that will build a Solr index.
  */
 public class SolrRecordWriter extends RecordWriter<Text, Text> {
-  private static final String SERVER_URL = "solr.server.url";
-  private static final String SERVER_MODE = "solr.server.mode";
-  private static final String COLLECTION_NAME = "solr.server.collection";
-  private static final String KEY_FIELD = "solr.server.keyfield";
-  private static final String FIELD_MAPPINGS = "solr.output.field.mappings";
-  private static final String BATCH_SIZE = "solr.batch.size";
+  public static final String SERVER_URL = "solr.server.url";
+  public static final String SERVER_MODE = "solr.server.mode";
+  public static final String COLLECTION_NAME = "solr.server.collection";
+  public static final String KEY_FIELD = "solr.server.keyfield";
+  public static final String FIELD_MAPPINGS = "solr.output.field.mappings";
+  public static final String BATCH_SIZE = "solr.batch.size";
   private static final Gson GSON = new Gson();
+  private static final Type SCHEMA_TYPE = new TypeToken<Schema>() { }.getType();
   private final SolrSearchSinkConfig config;
   List<SolrInputDocument> documentList = new ArrayList<SolrInputDocument>();
   private SolrClient solrClient;
@@ -59,12 +60,10 @@ public class SolrRecordWriter extends RecordWriter<Text, Text> {
   @Override
   public void write(Text key, Text value) throws IOException {
     String solrFieldName;
-    SolrInputDocument document;
-    Type schemaType = new TypeToken<Schema>() { }.getType();
+    SolrInputDocument document = new SolrInputDocument();
 
-    Schema inputSchema = GSON.fromJson(key.toString(), schemaType);
+    Schema inputSchema = GSON.fromJson(key.toString(), SCHEMA_TYPE);
     StructuredRecord structuredRecord = StructuredRecordStringConverter.fromJsonString(value.toString(), inputSchema);
-    document = new SolrInputDocument();
     for (Schema.Field field : structuredRecord.getSchema().getFields()) {
       solrFieldName = field.getName();
       if (config.getOutputFieldMap().containsKey(solrFieldName)) {
@@ -98,7 +97,7 @@ public class SolrRecordWriter extends RecordWriter<Text, Text> {
                                            "check the logs.", e);
     } finally {
       documentList.clear();
+      solrClient.shutdown();
     }
-    solrClient.shutdown();
   }
 }

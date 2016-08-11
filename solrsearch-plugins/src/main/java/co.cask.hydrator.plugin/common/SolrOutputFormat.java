@@ -15,55 +15,16 @@
  */
 package co.cask.hydrator.plugin.common;
 
-import org.apache.hadoop.mapreduce.JobContext;
-import org.apache.hadoop.mapreduce.OutputCommitter;
-import org.apache.hadoop.mapreduce.OutputFormat;
+import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
-
-import java.io.IOException;
+import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 
 /**
  * SolrOutputFormat - Output format class for Solr.
  */
-public class SolrOutputFormat extends OutputFormat {
+public class SolrOutputFormat extends NullOutputFormat {
   @Override
-  public SolrRecordWriter getRecordWriter(TaskAttemptContext context)
-    throws IOException, InterruptedException {
+  public RecordWriter getRecordWriter(TaskAttemptContext context) {
     return new SolrRecordWriter(context);
-  }
-
-  @Override
-  public void checkOutputSpecs(JobContext context)
-    throws IOException, InterruptedException {
-    // none
-  }
-
-  @Override
-  public OutputCommitter getOutputCommitter(TaskAttemptContext context)
-    throws IOException, InterruptedException {
-
-    //return an empty outputcommitter
-    return new OutputCommitter() {
-      @Override
-      public void setupTask(TaskAttemptContext arg0) throws IOException {
-      }
-
-      @Override
-      public void setupJob(JobContext arg0) throws IOException {
-      }
-
-      @Override
-      public boolean needsTaskCommit(TaskAttemptContext arg0) throws IOException {
-        return false;
-      }
-
-      @Override
-      public void commitTask(TaskAttemptContext arg0) throws IOException {
-      }
-
-      @Override
-      public void abortTask(TaskAttemptContext arg0) throws IOException {
-      }
-    };
   }
 }

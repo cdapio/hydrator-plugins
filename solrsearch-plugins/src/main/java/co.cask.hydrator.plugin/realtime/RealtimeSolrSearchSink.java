@@ -65,6 +65,7 @@ public class RealtimeSolrSearchSink extends RealtimeSink<StructuredRecord> {
     uniqueKey = config.getKeyField();
     outputFieldMap = config.getOutputFieldMap();
     solrClient = config.getSolrConnection();
+    config.verifySolrConfiguration();
   }
 
   @Override
@@ -73,8 +74,6 @@ public class RealtimeSolrSearchSink extends RealtimeSink<StructuredRecord> {
     String solrFieldName;
     List<SolrInputDocument> documentList = new ArrayList<SolrInputDocument>();
     SolrInputDocument document;
-
-    config.verifySolrConfiguration();
 
     for (StructuredRecord structuredRecord : structuredRecords) {
       config.validateKeyField(structuredRecord.getSchema());
