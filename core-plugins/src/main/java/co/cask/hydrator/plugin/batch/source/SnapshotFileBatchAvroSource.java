@@ -100,7 +100,7 @@ public class SnapshotFileBatchAvroSource extends SnapshotFileBatchSource<AvroKey
     private String schema;
 
     public SnapshotAvroConfig(String name, @Nullable String basePath, String schema) {
-      super(name, basePath, null);
+      super(name, basePath, null, null);
       this.schema = schema;
     }
   }

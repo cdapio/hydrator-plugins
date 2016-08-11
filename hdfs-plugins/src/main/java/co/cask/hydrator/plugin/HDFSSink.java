@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.batch.Output;
@@ -63,13 +64,13 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
     // Verify if the timeSuffix format is valid.
-    if (!Strings.isNullOrEmpty(config.timeSufix)) {
-      new SimpleDateFormat(config.timeSufix);
-    }
+    config.validate();
   }
 
   @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
+    // if user provided macro, need to still validate timeSuffix format
+    config.validate();
     context.addOutput(Output.of(config.referenceName, new SinkOutputFormatProvider(config, context)));
   }
 
@@ -122,18 +123,27 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
 
     @Name("path")
     @Description("HDFS Destination Path Prefix. For example, 'hdfs://mycluster.net:8020/output")
+    @Macro
     private String path;
 
     @Name("suffix")
     @Description("Time Suffix used for destination directory for each run. For example, 'YYYY-MM-dd-HH-mm'. " +
       "By default, no time suffix is used.")
     @Nullable
+    @Macro
     private String timeSufix;
 
     public HDFSSinkConfig(String referenceName, String path, String suffix, String outputFormat) {
       super(referenceName);
       this.path = path;
       this.timeSufix = suffix;
+    }
+
+    private void validate() {
+      // if macro provided, timeSuffix will be null at configure time
+      if (!Strings.isNullOrEmpty(timeSufix)) {
+        new SimpleDateFormat(timeSufix);
+      }
     }
   }
 }
