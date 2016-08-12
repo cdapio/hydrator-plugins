@@ -62,7 +62,7 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
 
   @Override
   public void prepareRun(BatchSinkContext context) {
-    Map<String, String> sinkArgs = new HashMap<>();
+    Map<String, String> sinkArgs = getAdditionalTPFSArguments();
     long outputPartitionTime = context.getLogicalStartTime();
     if (tpfsSinkConfig.partitionOffset != null) {
       outputPartitionTime -= TimeParser.parseDuration(tpfsSinkConfig.partitionOffset);
@@ -74,6 +74,14 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
                                                           tpfsSinkConfig.timeZone);
     }
     context.addOutput(Output.ofDataset(tpfsSinkConfig.name, sinkArgs));
+  }
+
+  /**
+   * @return any additional properties that need to be set for the sink. For example, avro sink requires
+   *         setting some schema output key.
+   */
+  protected Map<String, String> getAdditionalTPFSArguments() {
+    return new HashMap<>();
   }
 
   /**

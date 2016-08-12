@@ -30,6 +30,8 @@ import co.cask.hydrator.plugin.common.FileSetUtil;
 import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
 import org.apache.avro.generic.GenericRecord;
 
+import java.util.HashMap;
+import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -68,6 +70,12 @@ public class TimePartitionedFileSetDatasetParquetSink extends
     emitter.emit(new KeyValue<Void, GenericRecord>(null, recordTransformer.transform(input)));
   }
 
+  @Override
+  protected Map<String, String> getAdditionalTPFSArguments() {
+    Map<String, String> args = new HashMap<>();
+    args.put(FileSetProperties.OUTPUT_PROPERTIES_PREFIX + "parquet.avro.schema", config.schema.toLowerCase());
+    return args;
+  }
 
   /**
    * Config for TimePartitionedFileSetParquetSink
