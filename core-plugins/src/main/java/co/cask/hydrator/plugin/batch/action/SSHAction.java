@@ -63,7 +63,7 @@ public class SSHAction extends Action {
     // now that macros have been substituted, try validation again
     config.validate();
 
-    Connection connection = new Connection(config.host);
+    Connection connection = new Connection(config.host, config.port);
     try {
       connection.connect();
 
