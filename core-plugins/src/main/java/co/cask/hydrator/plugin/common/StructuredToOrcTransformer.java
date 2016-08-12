@@ -34,6 +34,7 @@ import org.apache.orc.mapred.OrcStruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
@@ -55,7 +56,7 @@ public class StructuredToOrcTransformer extends RecordConverter<StructuredRecord
         WritableComparable writable = convertToWritable(field, input);
         pair.setFieldValue(fields.get(i).getName(), writable);
       } catch (UnsupportedTypeException e) {
-        LOG.debug(field.getName() + "is not a supported type", e);
+        LOG.debug("{} is not a supported type", field.getName(), e);
       }
     }
     return pair;
@@ -75,37 +76,29 @@ public class StructuredToOrcTransformer extends RecordConverter<StructuredRecord
 
   private WritableComparable convertToWritable(Schema.Field field, StructuredRecord input)
     throws UnsupportedTypeException {
-    WritableComparable writable = null;
     Object fieldVal = input.get(field.getName());
     switch (field.getSchema().getType()) {
       case NULL:
         break;
       case STRING:
       case ENUM:
-        writable = new Text((String) fieldVal);
-        break;
+        return new Text((String) fieldVal);
       case BOOLEAN:
-        writable = new BooleanWritable((Boolean) fieldVal);
-        break;
+        return new BooleanWritable((Boolean) fieldVal);
       case INT:
-        writable = new IntWritable(Integer.valueOf((Integer) fieldVal));
-        break;
+        return new IntWritable((Integer) fieldVal);
       case LONG:
-        writable = new LongWritable(Long.valueOf((Long) fieldVal));
-        break;
+        return new LongWritable((Long) fieldVal);
       case FLOAT:
-        writable = new FloatWritable((Float) fieldVal);
-        break;
+        return new FloatWritable((Float) fieldVal);
       case DOUBLE:
-        writable = new DoubleWritable(Double.valueOf((Double) fieldVal));
-        break;
+        return new DoubleWritable((Double) fieldVal);
       case BYTES:
-        writable = new BytesWritable(((String) fieldVal).getBytes());
-        break;
+        return new BytesWritable(((String) fieldVal).getBytes(StandardCharsets.UTF_8));
       default:
-        throw new UnsupportedTypeException(field.getSchema().getType().name() +
-                                             "type is currently not supported in ORC");
+        throw new UnsupportedTypeException(String.format("{} type is currently not supported in ORC",
+                                                         field.getSchema().getType().name()));
           }
-    return writable;
+          return null;
   }
 }

@@ -103,7 +103,7 @@ public class FileSetUtil {
    * @param configuredSchema the original schema configured for the table
    * @param properties a builder for the file set properties
    */
-  public static void configureORCFileSet(String configuredSchema, FileSetProperties.Builder properties) {
+  public static void configureORCFileSet(String configuredSchema, FileSetProperties.Builder properties)  {
     //TODO test if complex cases run with lowercase schema only
     String lowerCaseSchema = configuredSchema.toLowerCase();
     String hiveSchema = parseHiveSchema(lowerCaseSchema, configuredSchema);
@@ -115,12 +115,14 @@ public class FileSetUtil {
       schemaObj = co.cask.cdap.api.data.schema.Schema.parseJson(configuredSchema);
     } catch (IOException e) {
       LOG.debug("{} is not a valid schema", configuredSchema, e);
+     // throw new IOException(e);
     }
     StringBuilder builder = new StringBuilder();
     try {
       HiveSchemaConverter.appendType(builder, schemaObj);
     } catch (UnsupportedTypeException e) {
       LOG.debug("Could not create hive schema from {}", configuredSchema, e);
+      //throw new UnsupportedTypeException(e);
     }
     String orcSchema = builder.toString();
 
@@ -208,5 +210,4 @@ public class FileSetUtil {
       throw Throwables.propagate(e);
     }
   }
-
 }
