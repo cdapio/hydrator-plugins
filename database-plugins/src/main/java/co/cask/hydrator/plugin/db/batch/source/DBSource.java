@@ -41,6 +41,7 @@ import co.cask.hydrator.plugin.DBUtils;
 import co.cask.hydrator.plugin.DriverCleanup;
 import co.cask.hydrator.plugin.FieldCase;
 import co.cask.hydrator.plugin.StructuredRecordUtils;
+import com.google.common.base.Strings;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.MRJobConfig;
@@ -83,7 +84,20 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
     dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId());
-    sourceConfig.validate();
+
+    // Only validate all properties if numSplits has no macro as all are dependent on numSplits
+    if (!sourceConfig.containsMacro("numSplits")) {
+      sourceConfig.validateProperty("numSplits");
+      if (!sourceConfig.containsMacro("importQuery")) {
+        sourceConfig.validateProperty("importQuery");
+      }
+      if (!sourceConfig.containsMacro("splitBy")) {
+        sourceConfig.validateProperty("splitBy");
+      }
+      if (!sourceConfig.containsMacro("boundingQuery")) {
+        sourceConfig.validateProperty("boundingQuery");
+      }
+    }
   }
 
   class GetSchemaRequest {
@@ -163,7 +177,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
-    sourceConfig.validate();
+    sourceConfig.validateProperties();
 
     LOG.debug("pluginType = {}; pluginName = {}; connectionString = {}; importQuery = {}; " +
                 "boundingQuery = {}",
@@ -270,29 +284,42 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
       return cleanQuery(boundingQuery);
     }
 
-    private void validate() {
-      boolean hasOneSplit = false;
-      if (!containsMacro("numSplits") && numSplits != null) {
-        if (numSplits < 1) {
-          throw new IllegalArgumentException(
-            "Invalid value for numSplits. Must be at least 1, but got " + numSplits);
-        }
-        if (numSplits == 1) {
-          hasOneSplit = true;
-        }
-      }
+    private void validateProperties() {
+      validateProperty("numSplits");
+      validateProperty("importQuery");
+      validateProperty("splitBy");
+      validateProperty("boundingQuery");
+    }
 
-      if (!hasOneSplit && !containsMacro("importQuery") && !getImportQuery().contains("$CONDITIONS")) {
-        throw new IllegalArgumentException(String.format("Import Query %s must contain the string '$CONDITIONS'.",
-                                                         importQuery));
-      }
+    private void validateProperty(String property) {
+      boolean hasOneSplit = numSplits != null && numSplits == 1;
 
-      if (!containsMacro("splitBy") && (splitBy == null || splitBy.isEmpty())) {
-        throw new IllegalArgumentException("The splitBy must be specified if numSplits is not set to 1.");
-      }
+      switch (property) {
+        case "numSplits":
+          if (numSplits != null && numSplits < 1) {
+            throw new IllegalArgumentException(
+              "Invalid value for numSplits. Must be at least 1, but got " + numSplits);
+          }
+          break;
 
-      if (!containsMacro("boundingQuery") && (boundingQuery == null || boundingQuery.isEmpty())) {
-        throw new IllegalArgumentException("The boundingQuery must be specified if numSplits is not set to 1.");
+        case "importQuery":
+          if (!hasOneSplit && !getImportQuery().contains("$CONDITIONS")) {
+            throw new IllegalArgumentException(String.format("Import Query %s must contain the string '$CONDITIONS'.",
+                                                             importQuery));
+          }
+          break;
+
+        case "splitBy":
+          if (!hasOneSplit && Strings.isNullOrEmpty(splitBy)) {
+            throw new IllegalArgumentException("The splitBy must be specified if numSplits is not set to 1.");
+          }
+          break;
+
+        case "boundingQuery":
+          if (!hasOneSplit && Strings.isNullOrEmpty(boundingQuery)) {
+            throw new IllegalArgumentException("The boundingQuery must be specified if numSplits is not set to 1.");
+          }
+          break;
       }
     }
   }

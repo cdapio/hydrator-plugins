@@ -47,10 +47,15 @@ public class QueryConfig extends ConnectionConfig {
     runCondition = Condition.SUCCESS.name();
   }
 
-  public void validate() {
-    // have to delegate instead of inherit, since we can't extend both ConditionConfig and ConnectionConfig.
-    if (!containsMacro("runCondition")) {
-      new ConditionConfig(runCondition).validate();
+  public void validateProperties() {
+    validateProperty("runCondition");
+  }
+
+  public void validateProperty(String property) {
+    switch(property) {
+      case "runCondition":
+        new ConditionConfig(runCondition).validate();
+        break;
     }
   }
 

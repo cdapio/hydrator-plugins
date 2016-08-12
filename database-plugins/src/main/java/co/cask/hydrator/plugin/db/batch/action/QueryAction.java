@@ -50,7 +50,7 @@ public class QueryAction extends PostAction {
 
   @Override
   public void run(BatchActionContext batchContext) throws Exception {
-    config.validate();
+    config.validateProperties();
 
     if (!config.shouldRun(batchContext)) {
       return;
@@ -90,7 +90,9 @@ public class QueryAction extends PostAction {
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
-    config.validate();
+    if (!config.containsMacro("runCondition")) {
+      config.validateProperty("runCondition");
+    }
     DBManager dbManager = new DBManager(config);
     dbManager.validateJDBCPluginPipeline(pipelineConfigurer, JDBC_PLUGIN_ID);
   }
