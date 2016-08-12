@@ -31,8 +31,8 @@ import co.cask.hydrator.common.HiveSchemaConverter;
 import co.cask.hydrator.plugin.common.SnapshotFileSetConfig;
 import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.parquet.avro.AvroParquetInputFormat;
-import org.apache.parquet.avro.AvroParquetOutputFormat;
+import parquet.avro.AvroParquetInputFormat;
+import parquet.avro.AvroParquetOutputFormat;
 
 import java.io.IOException;
 import javax.annotation.Nullable;
