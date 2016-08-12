@@ -16,6 +16,8 @@
 
 package co.cask.hydrator.plugin.batch;
 
+import co.cask.cdap.common.test.TestSuite;
+import co.cask.hydrator.plugin.batch.action.EmailActionTestRun;
 import co.cask.hydrator.plugin.batch.aggregator.DedupTestRun;
 import co.cask.hydrator.plugin.batch.aggregator.GroupByTestRun;
 import org.junit.runner.RunWith;
@@ -25,7 +27,7 @@ import org.junit.runners.Suite;
  * This is a test suite that runs all tests in for ETL batch. This avoids starting/stopping the unit-test framework
  * for every test class.
  */
-@RunWith(Suite.class)
+@RunWith(TestSuite.class)
 @Suite.SuiteClasses({
   ETLSnapshotTestRun.class,
   ETLStreamConversionTestRun.class,
@@ -33,7 +35,8 @@ import org.junit.runners.Suite;
   ETLMapReduceTestRun.class,
   GroupByTestRun.class,
   DedupTestRun.class,
-  ETLFTPTestRun.class
+  ETLFTPTestRun.class,
+  EmailActionTestRun.class
 })
 public class BatchPluginsTestSuite extends ETLBatchTestBase {
 }

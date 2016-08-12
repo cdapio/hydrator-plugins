@@ -16,6 +16,7 @@
 
 package co.cask.hydrator.plugin.batch.source;
 
+import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
@@ -68,7 +69,7 @@ public abstract class SnapshotFileBatchSource<KEY, VALUE> extends BatchSource<KE
       arguments = GSON.fromJson(config.getFileProperties(), MAP_TYPE);
     }
 
-    context.setInput(config.getName(), snapshotFileSet.getInputArguments(arguments));
+    context.setInput(Input.ofDataset(config.getName(), snapshotFileSet.getInputArguments(arguments)));
   }
 
   /**

@@ -18,7 +18,7 @@ package co.cask.hydrator.plugin.config;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
-import co.cask.hydrator.common.macro.MacroConfig;
+import co.cask.cdap.api.plugin.PluginConfig;
 import com.google.common.base.Strings;
 
 import java.net.MalformedURLException;
@@ -31,7 +31,7 @@ import javax.annotation.Nullable;
  * Base config class for HTTP plugins.
  */
 @SuppressWarnings("ConstantConditions")
-public class HTTPConfig extends MacroConfig {
+public class HTTPConfig extends PluginConfig {
   // Used for parsing requestHeadersString into map<string, string>
   // Should be the same as the widgets json config
   private static final String KV_DELIMITER = ":";
@@ -85,7 +85,6 @@ public class HTTPConfig extends MacroConfig {
 
   @SuppressWarnings("ConstantConditions")
   public void validate() {
-    super.validate();
     try {
       new URL(url);
     } catch (MalformedURLException e) {

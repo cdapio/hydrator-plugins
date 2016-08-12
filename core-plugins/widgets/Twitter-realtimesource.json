@@ -43,31 +43,65 @@
     {
       "widget-type": "non-editable-schema-editor",
       "schema": {
-        "id": "long",
-        "message": "string",
-        "lang": [
-          "string",
-          "null"
-        ],
-        "time": [
-          "long",
-          "null"
-        ],
-        "favCount": "int",
-        "rtCount": "int",
-        "source": [
-          "string",
-          "null"
-        ],
-        "geoLat": [
-          "double",
-          "null"
-        ],
-        "geoLong": [
-          "double",
-          "null"
-        ],
-        "isRetweet": "boolean"
+        "name": "etlSchemaBody",
+        "type": "record",
+        "fields": [
+          {
+            "name": "id",
+            "type": "long"
+          },
+          {
+            "name": "message",
+            "type": "string"
+          },
+          {
+            "name" : "lang",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          {
+            "name": "time",
+            "type": [
+              "long",
+              "null"
+            ]
+          },
+          {
+            "name": "favCount",
+            "type": "int"
+          },
+          {
+            "name": "rtCount",
+            "type": "int"
+          },
+          {
+            "name": "source",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          {
+            "name": "geoLat",
+            "type": [
+              "double",
+              "null"
+            ]
+          },
+          {
+            "name": "geoLong",
+            "type": [
+              "double",
+              "null"
+            ]
+          },
+          {
+            "name": "isRetweet",
+            "type": "boolean"
+          }
+        ]
       }
     }
   ]

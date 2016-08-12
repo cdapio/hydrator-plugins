@@ -46,7 +46,7 @@ public class DBConfigTest {
   private static class TestDBConfig extends DBConfig {
     private String query;
 
-    public TestDBConfig(String query) {
+    TestDBConfig(String query) {
       this.query = cleanQuery(query);
     }
   }

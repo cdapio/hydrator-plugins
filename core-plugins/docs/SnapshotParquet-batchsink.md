@@ -29,6 +29,12 @@ If it doesn't exist, it will be created.
 specified as a JSON object of string to string. These properties are set on the dataset if one is created.
 The properties are also passed to the dataset at runtime as arguments.
 
+**cleanPartitionsOlderThan:** Optional property that configures the sink to delete partitions older than a specified date-time after a successful run.
+If set, when a run successfully finishes, the sink will subtract this amount of time from the runtime and delete any delete any partitions for time partitions older than that.
+The format is expected to be a number followed by an 's', 'm', 'h', or 'd' specifying the time unit, with 's' for seconds,
+'m' for minutes, 'h' for hours, and 'd' for days. For example, if the pipeline is scheduled to run at midnight of January 1, 2016,
+and this property is set to 7d, the sink will delete any partitions for time partitions older than midnight Dec 25, 2015.
+
 
 Example
 -------

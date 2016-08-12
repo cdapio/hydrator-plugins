@@ -17,13 +17,14 @@
 package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.FormatSpecification;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.data.stream.Stream;
-import co.cask.cdap.api.data.stream.StreamBatchReadable;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.flow.flowlet.StreamEvent;
 import co.cask.cdap.api.plugin.PluginConfig;
@@ -33,6 +34,7 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.common.TimeParser;
+import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -66,7 +68,8 @@ public class StreamBatchSource extends BatchSource<Object, Object, StructuredRec
     Schema.Field.of("body", Schema.of(Schema.Type.BYTES))
   );
   private static final String NAME_DESCRIPTION = "Name of the stream. Must be a valid stream name. " +
-    "If it doesn't exist, it will be created.";
+    "If it doesn't exist, it will be created. " +
+    "If the name of the stream is provided during runtime through a macro, it has to exist before.";
   private static final String DURATION_DESCRIPTION = "Size of the time window to read with each run of the pipeline. " +
     "The format is expected to be a number followed by an 's', 'm', 'h', or 'd' specifying the time unit, with 's' " +
     "for seconds, 'm' for minutes, 'h' for hours, and 'd' for days. For example, a value of '5m' means each run of " +
@@ -94,7 +97,9 @@ public class StreamBatchSource extends BatchSource<Object, Object, StructuredRec
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
     streamBatchConfig.validate();
-    pipelineConfigurer.addStream(new Stream(streamBatchConfig.name));
+    if (!streamBatchConfig.containsMacro(Properties.Stream.NAME)) {
+      pipelineConfigurer.addStream(new Stream(streamBatchConfig.name));
+    }
     // if no format is specified then default schema is used, if otherwise its based on format spec.
     if (streamBatchConfig.format == null) {
       pipelineConfigurer.getStageConfigurer().setOutputSchema(DEFAULT_SCHEMA);
@@ -120,13 +125,9 @@ public class StreamBatchSource extends BatchSource<Object, Object, StructuredRec
 
     FormatSpecification formatSpec = streamBatchConfig.getFormatSpec();
 
-    StreamBatchReadable stream;
-    if (formatSpec == null) {
-      stream = new StreamBatchReadable(streamBatchConfig.name, startTime, endTime);
-    } else {
-      stream = new StreamBatchReadable(streamBatchConfig.name, startTime, endTime, formatSpec);
-    }
-    context.setInput(stream);
+    Input input = formatSpec == null ? Input.ofStream(streamBatchConfig.name, startTime, endTime) :
+      Input.ofStream(streamBatchConfig.name, startTime, endTime, formatSpec);
+    context.setInput(input);
   }
 
   @Override
@@ -180,14 +181,18 @@ public class StreamBatchSource extends BatchSource<Object, Object, StructuredRec
    */
   public static class StreamBatchConfig extends PluginConfig {
 
+    @Name(Properties.Stream.NAME)
     @Description(NAME_DESCRIPTION)
+    @Macro
     private String name;
 
     @Description(DURATION_DESCRIPTION)
+    @Macro
     private String duration;
 
     @Description(DELAY_DESCRIPTION)
     @Nullable
+    @Macro
     private String delay;
 
     @Description(FORMAT_DESCRIPTION)
@@ -204,9 +209,11 @@ public class StreamBatchSource extends BatchSource<Object, Object, StructuredRec
         parseSchema();
       }
       // check duration and delay
-      long durationInMs = TimeParser.parseDuration(duration);
-      Preconditions.checkArgument(durationInMs > 0, "Duration must be greater than 0");
-      if (!Strings.isNullOrEmpty(delay)) {
+      if (!this.containsMacro(duration)) {
+        long durationInMs = TimeParser.parseDuration(duration);
+        Preconditions.checkArgument(durationInMs > 0, "Duration must be greater than 0");
+      }
+      if (!this.containsMacro(delay) && !Strings.isNullOrEmpty(delay)) {
         TimeParser.parseDuration(delay);
       }
     }

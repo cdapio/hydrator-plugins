@@ -1,0 +1,29 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "properties": [
+	{
+          "name": "mapping",
+          "label": "Mapping",
+          "widget-type": "ds-multiplevalues",
+          "widget-attributes": {
+            "numValues": "3",
+            "placeholders": ["Source Field", "Mapping Table Name", "Target Field"]
+          }
+        },
+        {
+          "widget-type": "keyvalue",
+          "label": "Defaults",
+          "name": "defaults",
+          "widget-attributes": {
+            "showDelimiter": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": [ ]
+}

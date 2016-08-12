@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -17,7 +17,7 @@
 package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.data.batch.InputFormatProvider;
+import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
@@ -26,13 +26,11 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
-import co.cask.hydrator.common.SourceInputFormatProvider;
 import co.cask.hydrator.common.TimeParser;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 
-import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -49,6 +47,7 @@ public abstract class TimePartitionedFileSetSource<KEY, VALUE> extends BatchSour
   /**
    * Config for TimePartitionedFileSetDatasetAvroSource
    */
+  @SuppressWarnings("unused")
   public static class TPFSConfig extends PluginConfig {
     @Description("Name of the TimePartitionedFileSet to read.")
     private String name;
@@ -93,7 +92,6 @@ public abstract class TimePartitionedFileSetSource<KEY, VALUE> extends BatchSour
       properties.setBasePath(config.basePath);
     }
     addFileSetProperties(properties);
-
     pipelineConfigurer.createDataset(tpfsName, TimePartitionedFileSet.class.getName(), properties.build());
   }
 
@@ -106,20 +104,11 @@ public abstract class TimePartitionedFileSetSource<KEY, VALUE> extends BatchSour
     Map<String, String> sourceArgs = Maps.newHashMap();
     TimePartitionedFileSetArguments.setInputStartTime(sourceArgs, startTime);
     TimePartitionedFileSetArguments.setInputEndTime(sourceArgs, endTime);
-    TimePartitionedFileSet source = context.getDataset(config.name, sourceArgs);
-
-    Map<String, String> config = new HashMap<>(source.getInputFormatConfiguration());
-    addInputFormatConfiguration(config);
-    context.setInput(new SourceInputFormatProvider(source.getInputFormatClassName(), config));
+    context.setInput(Input.ofDataset(config.name, sourceArgs));
   }
 
   /**
    * Set file set specific properties, such as input/output format and explore properties.
    */
   protected abstract void addFileSetProperties(FileSetProperties.Builder properties);
-
-  /**
-   * Adds additional configuration for the {@link InputFormatProvider}.
-   */
-  protected abstract void addInputFormatConfiguration(Map<String, String> config);
 }

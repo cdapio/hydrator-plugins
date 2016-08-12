@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.db.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.batch.Input;
@@ -81,31 +82,8 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
-    // validate macro syntax
-    sourceConfig.validate();
     dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId());
-    boolean hasOneSplit = false;
-    if (sourceConfig.numSplits != null) {
-      if (sourceConfig.numSplits < 1) {
-        throw new IllegalArgumentException(
-          "Invalid value for numSplits. Must be at least 1, but got " + sourceConfig.numSplits);
-      }
-      if (sourceConfig.numSplits == 1) {
-        hasOneSplit = true;
-      }
-    }
-    if (!hasOneSplit) {
-      if (!sourceConfig.getImportQuery().contains("$CONDITIONS")) {
-        throw new IllegalArgumentException(String.format("Import Query %s must contain the string '$CONDITIONS'.",
-                                                         sourceConfig.importQuery));
-      }
-      if (sourceConfig.splitBy == null || sourceConfig.splitBy.isEmpty()) {
-        throw new IllegalArgumentException("The splitBy must be specified if numSplits is not set to 1.");
-      }
-      if (sourceConfig.boundingQuery == null || sourceConfig.boundingQuery.isEmpty()) {
-        throw new IllegalArgumentException("The boundingQuery must be specified if numSplits is not set to 1.");
-      }
-    }
+    sourceConfig.validate();
   }
 
   class GetSchemaRequest {
@@ -185,7 +163,8 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
-    sourceConfig.substituteMacros(context);
+    sourceConfig.validate();
+
     LOG.debug("pluginType = {}; pluginName = {}; connectionString = {}; importQuery = {}; " +
                 "boundingQuery = {}",
               sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName,
@@ -205,6 +184,10 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
                                         sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery(),
                                         sourceConfig.getEnableAutoCommit());
     if (sourceConfig.numSplits == null || sourceConfig.numSplits != 1) {
+      if (!sourceConfig.getImportQuery().contains("$CONDITIONS")) {
+        throw new IllegalArgumentException(String.format("Import Query %s must contain the string '$CONDITIONS'.",
+                                                         sourceConfig.importQuery));
+      }
       hConf.set(DBConfiguration.INPUT_ORDER_BY_PROPERTY, sourceConfig.splitBy);
     }
     if (sourceConfig.numSplits != null) {
@@ -254,6 +237,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
       "The Query should contain the '$CONDITIONS' string unless numSplits is set to one. " +
       "For example, 'SELECT * FROM table WHERE $CONDITIONS'. The '$CONDITIONS' string" +
       "will be replaced by 'splitBy' field limits specified by the bounding query.")
+    @Macro
     String importQuery;
 
     @Nullable
@@ -261,17 +245,21 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     @Description("Bounding Query should return the min and max of the " +
       "values of the 'splitBy' field. For example, 'SELECT MIN(id),MAX(id) FROM table'. " +
       "This is required unless numSplits is set to one.")
+    @Macro
     String boundingQuery;
 
     @Nullable
     @Name(SPLIT_BY)
     @Description("Field Name which will be used to generate splits. This is required unless numSplits is set to one.")
+    @Macro
     String splitBy;
 
     @Nullable
+    @Name(NUM_SPLITS)
     @Description("The number of splits to generate. If set to one, the boundingQuery is not needed, " +
       "and no $CONDITIONS string needs to be specified in the importQuery. If not specified, the " +
       "execution framework will pick a value.")
+    @Macro
     Integer numSplits;
 
     private String getImportQuery() {
@@ -280,6 +268,32 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
 
     private String getBoundingQuery() {
       return cleanQuery(boundingQuery);
+    }
+
+    private void validate() {
+      boolean hasOneSplit = false;
+      if (!containsMacro("numSplits") && numSplits != null) {
+        if (numSplits < 1) {
+          throw new IllegalArgumentException(
+            "Invalid value for numSplits. Must be at least 1, but got " + numSplits);
+        }
+        if (numSplits == 1) {
+          hasOneSplit = true;
+        }
+      }
+
+      if (!hasOneSplit && !containsMacro("importQuery") && !getImportQuery().contains("$CONDITIONS")) {
+        throw new IllegalArgumentException(String.format("Import Query %s must contain the string '$CONDITIONS'.",
+                                                         importQuery));
+      }
+
+      if (!containsMacro("splitBy") && (splitBy == null || splitBy.isEmpty())) {
+        throw new IllegalArgumentException("The splitBy must be specified if numSplits is not set to 1.");
+      }
+
+      if (!containsMacro("boundingQuery") && (boundingQuery == null || boundingQuery.isEmpty())) {
+        throw new IllegalArgumentException("The boundingQuery must be specified if numSplits is not set to 1.");
+      }
     }
   }
 }

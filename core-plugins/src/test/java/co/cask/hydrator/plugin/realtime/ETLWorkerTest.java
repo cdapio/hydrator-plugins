@@ -172,11 +172,11 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
                                                      co.cask.hydrator.common.Constants.Reference.REFERENCE_NAME, "DG"),
                                      null);
     ETLPlugin transform = new ETLPlugin(
-      "Script",
+      "JavaScript",
       Transform.PLUGIN_TYPE,
       ImmutableMap.of(
-        "script", "function transform(x, ctx) { " +
-          "x.name = x.name + '..hi..' + ctx.getLookup('lookupTable').lookup(x.name); return x; }",
+        "script", "function transform(x, emitter, ctx) { " +
+          "x.name = x.name + '..hi..' + ctx.getLookup('lookupTable').lookup(x.name); emitter.emit(x); }",
         "lookup", GSON.toJson(new LookupConfig(ImmutableMap.of(
           "lookupTable", new LookupTableConfig(LookupTableConfig.TableType.DATASET)
         )))),
@@ -270,7 +270,7 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
     Assert.assertNotNull(row.getLong("time"));
 
     Connection connection = getQueryClient();
-    ResultSet results = connection.prepareStatement("select binary,name,score from dataset_table1").executeQuery();
+    ResultSet results = connection.prepareStatement("select `binary`,name,score from dataset_table1").executeQuery();
     Assert.assertTrue(results.next());
     Assert.assertArrayEquals("Bob".getBytes(Charsets.UTF_8), results.getBytes(1));
     Assert.assertEquals("Bob", results.getString(2));
@@ -309,12 +309,13 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
                                                           Properties.Table.PROPERTY_SCHEMA, schema.toString()),
                                           null);
 
-    String script = "function transform(x, context) {  " +
-      "x.name = \"Rob\";" +
-      "x.id = 2;" +
-      "return x;" +
+    String script = "function transform(x, emitter, context) {  " +
+       "x.name = \"Rob\";" +
+       "x.id = 2;" +
+       "emitter.emit(x)" +
       "};";
-    ETLPlugin transformConfig = new ETLPlugin("Script", Transform.PLUGIN_TYPE, ImmutableMap.of("script", script), null);
+    ETLPlugin transformConfig = new ETLPlugin("JavaScript", Transform.PLUGIN_TYPE,
+                                              ImmutableMap.of("script", script), null);
 
     ETLRealtimeConfig etlConfig = ETLRealtimeConfig.builder()
       .addStage(new ETLStage("source", source))

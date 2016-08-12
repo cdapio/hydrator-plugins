@@ -28,7 +28,8 @@
           "label": "Body Fields",
           "name": "body",
           "widget-attributes": {
-            "delimiter": ","
+            "delimiter": ",",
+            "value-placeholder": "Field Name"
           }
         },
         {
@@ -36,7 +37,8 @@
           "label": "Header Fields",
           "name": "header",
           "widget-attributes": {
-            "delimiter": ","
+            "delimiter": ",",
+            "value-placeholder": "Field Name"
           }
         }
       ]
@@ -50,7 +52,7 @@
       "widget-attributes": {
         "schema-types": [
           "string",
-          "map<string,string>"
+          "map<string, string>"
         ],
         "schema-default-type": "string"
       }

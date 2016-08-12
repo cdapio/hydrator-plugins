@@ -33,28 +33,31 @@ import java.util.Map;
 public class StructuredToAvroTransformer extends RecordConverter<StructuredRecord, GenericRecord> {
 
   private final Map<Integer, Schema> schemaCache;
+  private final co.cask.cdap.api.data.schema.Schema outputCDAPSchema;
   private final Schema outputAvroSchema;
 
   public StructuredToAvroTransformer(String outputSchema) {
     this.schemaCache = Maps.newHashMap();
+    try {
+      this.outputCDAPSchema =
+        (outputSchema != null) ? co.cask.cdap.api.data.schema.Schema.parseJson(outputSchema) : null;
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Unable to parse schema: Reason: " + e.getMessage(), e);
+    }
     this.outputAvroSchema = (outputSchema != null) ? new Schema.Parser().parse(outputSchema) : null;
   }
 
   public GenericRecord transform(StructuredRecord structuredRecord) throws IOException {
+    return transform(structuredRecord,
+                     outputCDAPSchema == null ? structuredRecord.getSchema() : outputCDAPSchema);
+  }
+
+  @Override
+  public GenericRecord transform(StructuredRecord structuredRecord,
+                                 co.cask.cdap.api.data.schema.Schema schema) throws IOException {
     co.cask.cdap.api.data.schema.Schema structuredRecordSchema = structuredRecord.getSchema();
 
-    Schema avroSchema;
-    if (outputAvroSchema != null) {
-      avroSchema = outputAvroSchema;
-    } else {
-      int hashCode = structuredRecordSchema.hashCode();
-      if (schemaCache.containsKey(hashCode)) {
-        avroSchema = schemaCache.get(hashCode);
-      } else {
-        avroSchema = new Schema.Parser().parse(structuredRecordSchema.toString());
-        schemaCache.put(hashCode, avroSchema);
-      }
-    }
+    Schema avroSchema = getAvroSchema(schema);
 
     GenericRecordBuilder recordBuilder = new GenericRecordBuilder(avroSchema);
     for (Schema.Field field : avroSchema.getFields()) {
@@ -66,5 +69,16 @@ public class StructuredToAvroTransformer extends RecordConverter<StructuredRecor
       recordBuilder.set(fieldName, convertField(structuredRecord.get(fieldName), schemaField.getSchema()));
     }
     return recordBuilder.build();
+  }
+
+  private Schema getAvroSchema(co.cask.cdap.api.data.schema.Schema cdapSchema) {
+    int hashCode = cdapSchema.hashCode();
+    if (schemaCache.containsKey(hashCode)) {
+      return schemaCache.get(hashCode);
+    } else {
+      Schema avroSchema = new Schema.Parser().parse(cdapSchema.toString());
+      schemaCache.put(hashCode, avroSchema);
+      return avroSchema;
+    }
   }
 }

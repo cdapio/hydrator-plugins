@@ -20,7 +20,7 @@
 
   <groupId>co.cask.hydrator</groupId>
   <artifactId>hydrator-plugins</artifactId>
-  <version>1.3.2-SNAPSHOT</version>
+  <version>1.4.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Hydrator Plugin Collection</name>
   <description>A collection of plugins for Cask Hydrator.</description>
@@ -40,6 +40,7 @@
     <module>mongodb-plugins</module>
     <module>spark-plugins</module>
     <module>transform-plugins</module>
+    <module>copybookreader-plugins</module>
   </modules>
 
   <licenses>
@@ -98,7 +99,7 @@
     <cassandraunit.version>2.0.2.2</cassandraunit.version>
     <commons-codec.version>1.10</commons-codec.version>
     <commons-httpclient.version>3.1</commons-httpclient.version>
-    <cdap.version>3.4.1</cdap.version>
+    <cdap.version>3.5.0-SNAPSHOT</cdap.version>
     <datastax.version>2.0.5</datastax.version>
     <dumbster.version>1.6</dumbster.version>
     <es.version>1.6.0</es.version>
@@ -119,10 +120,12 @@
     <twitter4j.version>4.0.3</twitter4j.version>
     <zookeeper.version>3.4.5</zookeeper.version>
     <jython.version>2.5.2</jython.version>
+    <json-path.version>2.2.0</json-path.version>
+    <json.version>20160212</json.version>
     <!-- properties for script build step that creates the config files for the artifacts -->
     <widgets.dir>widgets</widgets.dir>
     <docs.dir>docs</docs.dir>
-    <app.parents>system:cdap-etl-batch[3.4.0,3.5.0-SNAPSHOT),system:cdap-etl-realtime[3.4.0,3.5.0-SNAPSHOT),system:cdap-data-pipeline[3.4.0,3.5.0-SNAPSHOT)</app.parents>
+    <app.parents>system:cdap-etl-batch[3.5.0-SNAPSHOT,3.6.0-SNAPSHOT),system:cdap-etl-realtime[3.5.0-SNAPSHOT,3.6.0-SNAPSHOT),system:cdap-data-pipeline[3.5.0-SNAPSHOT,3.6.0-SNAPSHOT),system:cdap-data-streams[3.5.0-SNAPSHOT,3.6.0-SNAPSHOT)</app.parents>
     <!-- this is here because project.basedir evaluates to null in the script build step -->
     <main.basedir>${project.basedir}</main.basedir>
   </properties>
@@ -183,6 +186,12 @@
       <dependency>
         <groupId>co.cask.cdap</groupId>
         <artifactId>cdap-data-pipeline</artifactId>
+        <version>${cdap.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>co.cask.cdap</groupId>
+        <artifactId>cdap-data-streams</artifactId>
         <version>${cdap.version}</version>
         <scope>test</scope>
       </dependency>
@@ -693,7 +702,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>2.12.1</version>
+        <version>2.17</version>
         <executions>
           <execution>
             <id>validate</id>
@@ -712,6 +721,13 @@
             </goals>
           </execution>
         </executions>
+        <dependencies>
+          <dependency>
+            <groupId>com.puppycrawl.tools</groupId>
+            <artifactId>checkstyle</artifactId>
+            <version>6.19</version>
+          </dependency>
+        </dependencies>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

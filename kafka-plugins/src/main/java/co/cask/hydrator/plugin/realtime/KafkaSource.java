@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.realtime;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.FormatSpecification;
@@ -190,20 +191,24 @@ public class KafkaSource extends ReferenceRealtimeSource<StructuredRecord> {
 
     @Name(KAFKA_PARTITIONS)
     @Description("Number of partitions.")
+    @Macro
     private final Integer partitions;
 
     @Name(KAFKA_TOPIC)
     @Description("Topic of the messages.")
+    @Macro
     private final String topic;
 
     @Name(KAFKA_ZOOKEEPER)
     @Description("The connect string location of ZooKeeper. Either that or the list of brokers is required.")
     @Nullable
+    @Macro
     private final String zkConnect;
 
     @Name(KAFKA_BROKERS)
     @Description("Comma-separated list of Kafka brokers. Either that or the ZooKeeper quorum is required.")
     @Nullable
+    @Macro
     private final String kafkaBrokers;
 
     @Name(KAFKA_INITIAL_OFFSET)
@@ -211,6 +216,7 @@ public class KafkaSource extends ReferenceRealtimeSource<StructuredRecord> {
       "Default value is 'kafka.api.OffsetRequest.EarliestTime' (-2L); value of -1L corresponds to " +
       "'kafka.api.OffsetRequest.LatestTime'.")
     @Nullable
+    @Macro
     private final Long defaultOffset;
 
     @Name(SCHEMA)
@@ -226,6 +232,7 @@ public class KafkaSource extends ReferenceRealtimeSource<StructuredRecord> {
       "If no format is given, Kafka message payloads will be treated as bytes, resulting in a two-field schema: " +
       "'key' of type string (which is nullable) and 'message' of type bytes.")
     @Nullable
+    @Macro
     private final String format;
 
     public KafkaPluginConfig(String zkConnect, String brokers, Integer partitions, String topic,

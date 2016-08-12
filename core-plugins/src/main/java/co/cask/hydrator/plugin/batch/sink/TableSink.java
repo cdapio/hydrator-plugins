@@ -50,6 +50,7 @@ public class TableSink extends BatchWritableSink<StructuredRecord, byte[], Put> 
   private RecordPutTransformer recordPutTransformer;
 
   public TableSink(TableSinkConfig tableSinkConfig) {
+    super(tableSinkConfig);
     this.tableSinkConfig = tableSinkConfig;
   }
 

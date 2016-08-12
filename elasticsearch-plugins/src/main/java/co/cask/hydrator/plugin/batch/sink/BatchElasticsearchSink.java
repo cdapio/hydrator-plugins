@@ -51,7 +51,7 @@ import java.io.IOException;
  * https://www.elastic.co/guide/en/elasticsearch/guide/current/_index_settings.html.
  * <p/>
  */
-@Plugin(type = "batchsink")
+@Plugin(type = BatchSink.PLUGIN_TYPE)
 @Name("Elasticsearch")
 @Description("Elasticsearch Batch Sink takes the structured record from the input source and converts it " +
   "to a JSON string, then indexes it in Elasticsearch using the index, type, and id specified by the user.")
@@ -83,8 +83,7 @@ public class BatchElasticsearchSink extends ReferenceBatchSink<StructuredRecord,
     conf.set("es.input.json", "yes");
     conf.set("es.mapping.id", config.idField);
 
-    context.addOutput(Output.of(config.referenceName, new SinkOutputFormatProvider(EsOutputFormat.class, conf))
-                        .alias(config.index));
+    context.addOutput(Output.of(config.referenceName, new SinkOutputFormatProvider(EsOutputFormat.class, conf)));
   }
 
   @Override

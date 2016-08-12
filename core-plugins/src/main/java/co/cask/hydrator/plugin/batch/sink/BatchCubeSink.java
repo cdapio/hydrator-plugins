@@ -67,6 +67,7 @@ public class BatchCubeSink extends BatchWritableSink<StructuredRecord, byte[], C
   private final CubeSinkConfig config;
 
   public BatchCubeSink(CubeSinkConfig config) {
+    super(config);
     this.config = config;
   }
 

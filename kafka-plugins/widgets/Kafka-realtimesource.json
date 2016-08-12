@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "spec-version": "1.0"
+    "spec-version": "1.3"
   },
   "configuration-groups": [
     {
@@ -56,7 +56,9 @@
           "name": "format",
           "widget-attributes": {
             "values": [
+              "",
               "avro",
+              "binary",
               "clf",
               "csv",
               "grok",
@@ -64,7 +66,7 @@
               "text",
               "tsv"
             ],
-            "default": "text"
+            "default": ""
           }
         }
       ]
@@ -75,16 +77,20 @@
       "name": "schema",
       "widget-type": "schema",
       "widget-attributes": {
-        "schema-types": [
-          "boolean",
-          "int",
-          "long",
-          "float",
-          "double",
-          "bytes",
-          "string",
-          "map<string, string>"
-        ],
+        "default-schema": {
+          "name": "etlSchemaBody",
+          "type": "record",
+          "fields": [
+            {
+              "name": "key",
+              "type": ["string", "null"]
+            },
+            {
+              "name": "message",
+              "type": "bytes"
+            }
+          ]
+        },
         "schema-default-type": "string",
         "property-watch": "format"
       }

@@ -28,6 +28,7 @@ import co.cask.cdap.api.dataset.table.Put;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
+import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.cdap.format.RecordPutTransformer;
 import co.cask.hydrator.common.ReferenceBatchSink;
@@ -54,7 +55,7 @@ import javax.annotation.Nullable;
 /**
  * Sink to write to HBase tables.
  */
-@Plugin(type = "batchsink")
+@Plugin(type = BatchSink.PLUGIN_TYPE)
 @Name("HBase")
 @Description("HBase Batch Sink")
 public class HBaseSink extends ReferenceBatchSink<StructuredRecord, NullWritable, Mutation> {
@@ -86,8 +87,7 @@ public class HBaseSink extends ReferenceBatchSink<StructuredRecord, NullWritable
     Configuration conf = job.getConfiguration();
     HBaseConfiguration.addHbaseResources(conf);
 
-    context.addOutput(Output.of(config.referenceName, new HBaseOutputFormatProvider(config, conf))
-                        .alias(config.columnFamily));
+    context.addOutput(Output.of(config.referenceName, new HBaseOutputFormatProvider(config, conf)));
   }
 
   @Override
@@ -106,7 +106,7 @@ public class HBaseSink extends ReferenceBatchSink<StructuredRecord, NullWritable
 
     private final Map<String, String> conf;
 
-    public HBaseOutputFormatProvider(HBaseSinkConfig config, Configuration configuration) {
+    HBaseOutputFormatProvider(HBaseSinkConfig config, Configuration configuration) {
       this.conf = new HashMap<>();
       conf.put(TableOutputFormat.OUTPUT_TABLE, config.tableName);
       String zkQuorum = !Strings.isNullOrEmpty(config.zkQuorum) ? config.zkQuorum : "localhost";

@@ -79,7 +79,7 @@ public class StructuredRecordToCubeFact {
     private final TimestampResolver timestampResolver;
     private final Collection<MeasurementResolver> measurementResolvers;
 
-    public CubeFactBuilder(Map<String, String> properties) {
+    CubeFactBuilder(Map<String, String> properties) {
       Map<String, String> props = new HashMap<>(properties);
       this.timestampResolver = new TimestampResolver(props);
       this.measurementResolvers = Lists.newArrayList();
@@ -149,7 +149,7 @@ public class StructuredRecordToCubeFact {
     private final String srcField;
     private final DateFormat dateFormat;
 
-    public TimestampResolver(Map<String, String> properties) {
+    TimestampResolver(Map<String, String> properties) {
       if (properties.containsKey(Properties.Cube.FACT_TS_FIELD)) {
         this.srcField = properties.get(Properties.Cube.FACT_TS_FIELD);
         if (properties.containsKey(Properties.Cube.FACT_TS_FORMAT)) {
@@ -203,7 +203,7 @@ public class StructuredRecordToCubeFact {
     private String name;
     private MeasureType type;
 
-    public MeasurementResolver(String measureProperty, String measureType) {
+    MeasurementResolver(String measureProperty, String measureType) {
       String measureName = measureProperty.substring(Properties.Cube.MEASUREMENT_PREFIX.length());
       if ("".equals(measureName)) {
         throw new IllegalArgumentException(

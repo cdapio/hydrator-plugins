@@ -1,0 +1,87 @@
+{
+  "metadata": {
+    "spec-version": "1.3"
+  },
+  "configuration-groups": [
+    {
+      "label": "Kafka Configuration",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Reference Name",
+          "name": "referenceName"
+        },
+        {
+          "widget-type": "csv",
+          "label": "Kafka Brokers",
+          "name": "brokers",
+          "widget-attributes": {
+            "delimiter": ","
+          }
+        },
+        {
+          "widget-type": "csv",
+          "label": "Kafka Topics",
+          "name": "topics",
+          "widget-attributes": {
+            "delimiter": ","
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Time Field",
+          "name": "timeField"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Key Field",
+          "name": "keyField"
+        }
+      ]
+    },
+    {
+      "label": "Format",
+      "properties": [
+        {
+          "widget-type": "select",
+          "label": "Format",
+          "name": "format",
+          "widget-attributes": {
+            "values": [
+              "",
+              "avro",
+              "binary",
+              "clf",
+              "csv",
+              "grok",
+              "syslog",
+              "text",
+              "tsv"
+            ],
+            "default": ""
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "default-schema": {
+          "name": "etlSchemaBody",
+          "type": "record",
+          "fields": [
+            {
+              "name": "message",
+              "type": ["bytes", "null"]
+            }
+          ]
+        },
+        "schema-default-type": "string",
+        "property-watch": "format"
+      }
+    }
+  ]
+}

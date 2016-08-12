@@ -7,6 +7,19 @@
       "label": "General",
       "properties": [
         {
+          "widget-type": "select",
+          "label": "Run Condition",
+          "name": "runCondition",
+          "widget-attributes": {
+            "values": [
+              "completion",
+              "success",
+              "failure"
+            ],
+            "default": "success"
+          }
+        },
+        {
           "widget-type": "textbox",
           "label": "Username",
           "name": "user"
@@ -22,19 +35,6 @@
           "name": "query",
           "widget-attributes": {
             "rows": "4"
-          }
-        },
-        {
-          "widget-type": "select",
-          "label": "Run Condition",
-          "name": "runCondition",
-          "widget-attributes": {
-            "values": [
-              "completion",
-              "success",
-              "failure"
-            ],
-            "default": "success"
           }
         }
       ]

@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.db.batch.sink;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.batch.Output;
@@ -28,6 +29,7 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
+import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.ReferencePluginConfig;
@@ -55,11 +57,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+
 
 /**
  * Sink that can be configured to export data to a database table.
  */
-@Plugin(type = "batchsink")
+@Plugin(type = BatchSink.PLUGIN_TYPE)
 @Name("Database")
 @Description("Writes records to a database table. Each record will be written to a row in the table.")
 public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullWritable> {
@@ -84,13 +88,11 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
-    dbSinkConfig.validate();
     dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId());
   }
 
   @Override
   public void prepareRun(BatchSinkContext context) {
-    dbSinkConfig.substituteMacros(context);
     LOG.debug("tableName = {}; pluginType = {}; pluginName = {}; connectionString = {}; columns = {}",
               dbSinkConfig.tableName, dbSinkConfig.jdbcPluginType, dbSinkConfig.jdbcPluginName,
               dbSinkConfig.connectionString, dbSinkConfig.columns);
@@ -107,8 +109,7 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
     } finally {
       DBUtils.cleanup(driverClass);
     }
-    context.addOutput(Output.of(dbSinkConfig.referenceName, new DBOutputFormatProvider(dbSinkConfig, driverClass))
-                        .alias(dbSinkConfig.tableName));
+    context.addOutput(Output.of(dbSinkConfig.referenceName, new DBOutputFormatProvider(dbSinkConfig, driverClass)));
   }
 
   @Override
@@ -148,8 +149,9 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
   }
 
   private void setResultSetMetadata() throws Exception {
+    Map<String, Integer> columnToType = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     dbManager.ensureJDBCDriverIsAvailable(driverClass);
-    Map<String, Integer> columnToType = new HashMap<>();
+
     Connection connection;
     if (dbSinkConfig.user == null) {
       connection = DriverManager.getConnection(dbSinkConfig.connectionString);
@@ -200,10 +202,12 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
 
     @Name(COLUMNS)
     @Description("Comma-separated list of columns in the specified table to export to.")
+    @Macro
     public String columns;
 
     @Name(TABLE_NAME)
     @Description("Name of the database table to write to.")
+    @Macro
     public String tableName;
 
   }
@@ -211,7 +215,7 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
   private static class DBOutputFormatProvider implements OutputFormatProvider {
     private final Map<String, String> conf;
 
-    public DBOutputFormatProvider(DBSinkConfig dbSinkConfig, Class<? extends Driver> driverClass) {
+    DBOutputFormatProvider(DBSinkConfig dbSinkConfig, Class<? extends Driver> driverClass) {
       this.conf = new HashMap<>();
 
       conf.put(ETLDBOutputFormat.AUTO_COMMIT_ENABLED, String.valueOf(dbSinkConfig.getEnableAutoCommit()));

@@ -88,11 +88,32 @@
     {
       "widget-type": "non-editable-schema-editor",
       "schema": {
-        "ts": "long",
-        "url": "string",
-        "responseCode": "int",
-        "headers": "map<string, string>",
-        "body": "string"
+        "name": "etlSchemaBody",
+        "type": "record",
+        "fields": [{
+            "name": "ts",
+            "type": "long"
+        },
+        {
+            "name": "url",
+            "type": "string"
+        },
+        {
+            "name": "responseCode",
+            "type": "int"
+        },
+        {
+            "name": "headers",
+            "type": {
+              "type": "map",
+              "keys": "string",
+              "values": "string"
+            }
+        },
+        {
+            "name": "body",
+            "type": "string"
+        }]
       }
     }
   ]

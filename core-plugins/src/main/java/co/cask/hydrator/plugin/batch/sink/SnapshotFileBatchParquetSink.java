@@ -96,7 +96,7 @@ public class SnapshotFileBatchParquetSink extends SnapshotFileBatchSink<Void, Ge
     private String schema;
 
     public SnapshotParquetConfig(String name, @Nullable String basePath, String schema) {
-      super(name, basePath, null);
+      super(name, basePath, null, null);
       this.schema = schema;
     }
   }

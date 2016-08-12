@@ -16,6 +16,7 @@
 
 package co.cask.hydrator.plugin.batch.source;
 
+import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.plugin.PluginProperties;
 import co.cask.cdap.etl.api.PipelineConfigurer;
@@ -58,6 +59,6 @@ public abstract class BatchReadableSource<KEY_IN, VAL_IN, OUT> extends BatchSour
   @Override
   public void prepareRun(BatchSourceContext context) {
     PluginProperties pluginProperties = context.getPluginProperties();
-    context.setInput(pluginProperties.getProperties().get(Properties.BatchReadableWritable.NAME));
+    context.setInput(Input.ofDataset(pluginProperties.getProperties().get(Properties.BatchReadableWritable.NAME)));
   }
 }

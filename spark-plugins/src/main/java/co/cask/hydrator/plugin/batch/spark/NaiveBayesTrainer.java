@@ -29,6 +29,7 @@ import co.cask.cdap.etl.api.batch.SparkPluginContext;
 import co.cask.cdap.etl.api.batch.SparkSink;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import org.apache.avro.reflect.Nullable;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
@@ -66,11 +67,19 @@ public final class NaiveBayesTrainer extends SparkSink<StructuredRecord> {
     @Description("The field from which to get the prediction. It must be of type double.")
     private final String predictionField;
 
-    public Config(String fileSetName, String path, String fieldToClassify, String predictionField) {
+    @Nullable
+    @Description("The number of features to use in training the model. It must be of type integer and equal to the" +
+                  " number of features used in NaiveBayesClassifier. The default value if none is provided will be" +
+                  " 100.")
+    private final Integer numFeatures;
+
+    public Config(String fileSetName, String path, String fieldToClassify, String predictionField,
+                  Integer numFeatures) {
       this.fileSetName = fileSetName;
       this.path = path;
       this.fieldToClassify = fieldToClassify;
       this.predictionField = predictionField;
+      this.numFeatures = numFeatures;
     }
   }
 
@@ -102,7 +111,7 @@ public final class NaiveBayesTrainer extends SparkSink<StructuredRecord> {
   public void run(SparkExecutionPluginContext context, JavaRDD<StructuredRecord> input) throws Exception {
     Preconditions.checkArgument(input.count() != 0, "Input RDD is empty.");
 
-    final HashingTF tf = new HashingTF(100);
+    final HashingTF tf = new HashingTF((config.numFeatures == null) ? 100 : config.numFeatures);
     JavaRDD<LabeledPoint> trainingData = input.map(new Function<StructuredRecord, LabeledPoint>() {
       @Override
       public LabeledPoint call(StructuredRecord record) throws Exception {

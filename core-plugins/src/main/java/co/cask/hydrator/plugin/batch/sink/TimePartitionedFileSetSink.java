@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -16,7 +16,9 @@
 
 package co.cask.hydrator.plugin.batch.sink;
 
+import co.cask.cdap.api.data.batch.Output;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.TimePartitionDetail;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSetArguments;
@@ -49,6 +51,13 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     tpfsSinkConfig.validate();
+    String tpfsName = tpfsSinkConfig.name;
+    FileSetProperties.Builder properties = FileSetProperties.builder();
+    if (!Strings.isNullOrEmpty(tpfsSinkConfig.basePath)) {
+      properties.setBasePath(tpfsSinkConfig.basePath);
+    }
+    addFileSetProperties(properties);
+    pipelineConfigurer.createDataset(tpfsName, TimePartitionedFileSet.class.getName(), properties.build());
   }
 
   @Override
@@ -64,7 +73,7 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
       TimePartitionedFileSetArguments.setOutputPathFormat(sinkArgs, tpfsSinkConfig.filePathFormat,
                                                           tpfsSinkConfig.timeZone);
     }
-    context.addOutput(tpfsSinkConfig.name, sinkArgs);
+    context.addOutput(Output.ofDataset(tpfsSinkConfig.name, sinkArgs));
   }
 
   /**
@@ -72,8 +81,16 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
    *         setting some schema output key.
    */
   protected Map<String, String> getAdditionalTPFSArguments() {
+    // release 1.4 hydrator plugins uses FileSetUtil to set all the properties that the input and output formats
+    // require when it creates the dataset, so it doesn't need to set those arguments at runtime. inorder to be
+    // backward compatible to older versions of the plugins we need to set this at runtime.
     return new HashMap<>();
   }
+
+  /**
+   * Set file set specific properties, such as input/output format and explore properties.
+   */
+  protected abstract void addFileSetProperties(FileSetProperties.Builder properties);
 
   @Override
   public void onRunFinish(boolean succeeded, BatchSinkContext context) {

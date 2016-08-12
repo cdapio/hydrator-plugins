@@ -35,7 +35,7 @@ import java.util.Map;
  */
 public abstract class RecordConverter<INPUT, OUTPUT> {
 
-  public abstract OUTPUT transform(INPUT record) throws IOException;
+  public abstract OUTPUT transform(INPUT record, Schema schema) throws IOException;
 
   private Object convertUnion(Object value, List<Schema> schemas) {
     boolean isNullable = false;
@@ -90,7 +90,7 @@ public abstract class RecordConverter<INPUT, OUTPUT> {
     Schema.Type fieldType = fieldSchema.getType();
     switch (fieldType) {
       case RECORD:
-        return transform((INPUT) field);
+        return transform((INPUT) field, fieldSchema);
       case ARRAY:
         return convertArray(field, fieldSchema.getComponentSchema());
       case MAP:

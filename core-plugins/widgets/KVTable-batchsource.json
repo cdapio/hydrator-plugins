@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "spec-version": "1.0"
+    "spec-version": "1.3"
   },
   "configuration-groups": [
     {
@@ -18,9 +18,24 @@
     {
       "widget-type": "non-editable-schema-editor",
       "schema": {
-        "key": "bytes",
-        "value": "bytes"
+        "name": "etlSchemaBody",
+        "type": "record",
+        "fields": [
+          {
+            "name": "key",
+            "type": "bytes"
+          },
+          {
+            "name": "value",
+            "type": "bytes"
+          }
+        ]
       }
     }
-  ]
+  ],
+  "jump-config": {
+    "datasets": [{
+      "ref-property-name": "name"
+    }]
+  }
 }

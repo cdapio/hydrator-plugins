@@ -50,10 +50,11 @@ public class QueryAction extends PostAction {
 
   @Override
   public void run(BatchActionContext batchContext) throws Exception {
+    config.validate();
+
     if (!config.shouldRun(batchContext)) {
       return;
     }
-    config.substituteMacros(batchContext);
 
     Class<? extends Driver> driverClass = batchContext.loadPluginClass(JDBC_PLUGIN_ID);
     DBManager dbManager = new DBManager(config);

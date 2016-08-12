@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -27,6 +27,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
+import com.google.common.base.Throwables;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.slf4j.Logger;
@@ -34,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
+import javax.annotation.Nullable;
 
 /**
  * Transformation that parses a field as CSV Record into {@link StructuredRecord}.
@@ -100,27 +102,54 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
                                            "DEFAULT, EXCEL, MYSQL, RFC4180, PDL & TDF");
     }
 
-    if (configurer.getStageConfigurer().getInputSchema() != null) {
-      Schema.Field inputSchemaField = configurer.getStageConfigurer().getInputSchema().getField(config.field);
+    Schema inputSchema = configurer.getStageConfigurer().getInputSchema();
+    validateInputSchema(inputSchema);
+    configurer.getStageConfigurer().setOutputSchema(parseAndValidateOutputSchema(inputSchema));
+  }
+
+  void validateInputSchema(Schema inputSchema) {
+    if (inputSchema != null) {
+      // Check the existence of field in input schema
+      Schema.Field inputSchemaField = inputSchema.getField(config.field);
       if (inputSchemaField == null) {
         throw new IllegalArgumentException(
           "Field " + config.field + " is not present in the input schema");
-      } else {
-        if (!inputSchemaField.getSchema().getType().equals(Schema.Type.STRING)) {
-          throw new IllegalArgumentException(
-            "Type for field  " + config.field + " must be String");
-        }
+      }
+
+      // Check that the field type is String or Nullable String
+      Schema fieldSchema = inputSchemaField.getSchema();
+      Schema.Type fieldType = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
+      if (!fieldType.equals(Schema.Type.STRING)) {
+        throw new IllegalArgumentException(
+          "Type for field  " + config.field + " must be String");
       }
     }
+  }
 
+  Schema parseAndValidateOutputSchema(Schema inputSchema) {
     // Check if schema specified is a valid schema or no.
     try {
       Schema outputSchema = Schema.parseJson(this.config.schema);
-      configurer.getStageConfigurer().setOutputSchema(outputSchema);
+
+      // When a input field is passed through to output, the type and name should be the same.
+      // If the type is not the same, then we fail.
+      if (inputSchema != null) {
+        for (Field field : inputSchema.getFields()) {
+          if (outputSchema.getField(field.getName()) != null) {
+            Schema out = outputSchema.getField(field.getName()).getSchema();
+            Schema in = field.getSchema();
+            if (!in.equals(out)) {
+              throw new IllegalArgumentException(
+                "Input field '" + field.getName() + "' does not have same output schema as input."
+              );
+            }
+          }
+        }
+      }
+      return outputSchema;
     } catch (IOException e) {
       throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
     }
-
   }
 
   @Override
@@ -173,29 +202,55 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
 
     // Parse the text as CSV and emit it as structured record.
     try {
-      org.apache.commons.csv.CSVParser parser = org.apache.commons.csv.CSVParser.parse(body, csvFormat);
-      List<CSVRecord> records = parser.getRecords();
-      for (CSVRecord record : records) {
-        if (fields.size() == record.size()) {
-          StructuredRecord sRecord = createStructuredRecord(record);
-          emitter.emit(sRecord);
-        } else {
-          LOG.warn("Skipping record as output schema specified has '{}' fields, while CSV record has '{}'",
-                   fields.size(), record.size());
-          // Write the record to error Dataset.
+      if (body == null) {
+        emitter.emit(createStructuredRecord(null, in));
+      } else {
+        org.apache.commons.csv.CSVParser parser = org.apache.commons.csv.CSVParser.parse(body, csvFormat);
+        List<CSVRecord> records = parser.getRecords();
+        for (CSVRecord record : records) {
+          emitter.emit(createStructuredRecord(record, in));
         }
       }
     } catch (IOException e) {
-      LOG.error("There was a issue parsing the record. ", e.getLocalizedMessage());
+      throw Throwables.propagate(e);
     }
   }
 
-  private StructuredRecord createStructuredRecord(CSVRecord record) {
+  private StructuredRecord createStructuredRecord(@Nullable CSVRecord record, StructuredRecord in) {
     StructuredRecord.Builder builder = StructuredRecord.builder(outSchema);
     int i = 0;
     for (Field field : fields) {
-      builder.set(field.getName(), TypeConvertor.get(record.get(i), field.getSchema().getType()));
-      ++i;
+      String name = field.getName();
+      // If the field specified in the output field is present in the input, then
+      // it's directly copied into the output, else field is parsed in from the CSV parser.
+      // If the input record is null, propagate all supplied input fields and null other fields
+      // assumed to be CSV-parsed fields
+      if (in.get(name) != null) {
+        builder.set(name, in.get(name));
+      } else if (record == null) {
+        builder.set(name, null);
+      } else {
+        String val = record.get(i);
+        Schema fieldSchema = field.getSchema();
+
+        if (val.isEmpty()) {
+          boolean isNullable = fieldSchema.isNullable();
+          Schema.Type fieldType = isNullable ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
+          // if the field is a string or a nullable string, set the value to the empty string
+          if (fieldType == Schema.Type.STRING) {
+            builder.set(field.getName(), "");
+          } else if (!isNullable) {
+            // otherwise, error out
+            throw new IllegalArgumentException(String.format(
+              "Field #%d (named '%s') is of non-nullable type '%s', " +
+                "but was parsed as an empty string for CSV record '%s'",
+              i, field.getName(), field.getSchema().getType(), record));
+          }
+        } else {
+          builder.convertAndSet(field.getName(), val);
+        }
+        ++i;
+      }
     }
     return builder.build();
   }
@@ -211,7 +266,8 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
     private final String format;
 
     @Name("field")
-    @Description("Specify the field that should be used for parsing into CSV.")
+    @Description("Specify the field that should be used for parsing into CSV. Input records with a null input field " +
+      "propagate all other fields and set fields that would otherwise be parsed by the CSVParser to null.")
     private final String field;
 
     @Name("schema")
