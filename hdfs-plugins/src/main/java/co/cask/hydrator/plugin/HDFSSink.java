@@ -64,13 +64,14 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
     // Verify if the timeSuffix format is valid.
-    config.validate();
+    if (!config.containsMacro("timeSuffix")) {
+      config.validateProperty("timeSuffix");
+    }
   }
 
   @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
-    // if user provided macro, need to still validate timeSuffix format
-    config.validate();
+    config.validateProperties();
     context.addOutput(Output.of(config.referenceName, new SinkOutputFormatProvider(config, context)));
   }
 
@@ -139,10 +140,17 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
       this.timeSufix = suffix;
     }
 
-    private void validate() {
-      // if macro provided, timeSuffix will be null at configure time
-      if (!Strings.isNullOrEmpty(timeSufix)) {
-        new SimpleDateFormat(timeSufix);
+    private void validateProperties() {
+      validateProperty("timeSuffix");
+    }
+
+    private void validateProperty(String property) {
+      switch (property) {
+        case "timeSuffix":
+          if (!Strings.isNullOrEmpty(timeSufix)) {
+            new SimpleDateFormat(timeSufix);
+          }
+          break;
       }
     }
   }
