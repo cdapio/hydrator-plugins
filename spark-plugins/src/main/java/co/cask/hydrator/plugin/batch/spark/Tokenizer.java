@@ -80,22 +80,11 @@ public class Tokenizer extends SparkCompute<StructuredRecord, StructuredRecord> 
         super.configurePipeline(pipelineConfigurer);
         Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
         if (inputSchema != null) {
-            validateSchema(inputSchema);
+            Schema.Type columnToBeTokenizedType = inputSchema.getField(config.columnToBeTokenized)
+                    .getSchema().getType();
+            Preconditions.checkArgument(columnToBeTokenizedType == Schema.Type.STRING,
+                    "Column ,to be tokenized, must be of type String, but was %s.", columnToBeTokenizedType);
         }
-    }
-
-    private void validateSchema(Schema inputSchema) {
-        Schema.Type columnToBeTokenizedType = inputSchema.getField(config.columnToBeTokenized).getSchema().getType();
-        Preconditions.checkArgument(columnToBeTokenizedType == Schema.Type.STRING,
-                "Column ,to be tokenized, must be of type String, but was %s.", columnToBeTokenizedType);
-    }
-
-    private void createOutputSchema() {
-        if (outputSchema != null) {
-            return;
-        }
-        outputSchema = Schema.recordOf("outputSchema",
-                Schema.Field.of(config.outputColumn, Schema.arrayOf(Schema.of(Schema.Type.STRING))));
     }
 
     @Override
@@ -103,9 +92,11 @@ public class Tokenizer extends SparkCompute<StructuredRecord, StructuredRecord> 
                                                JavaRDD<StructuredRecord> input) throws Exception {
         JavaSparkContext javaSparkContext = context.getSparkContext();
         SQLContext sqlContext = new SQLContext(javaSparkContext);
-        createOutputSchema();
+        //Create outputschema
+        outputSchema = Schema.recordOf("outputSchema", Schema.Field.of(config.outputColumn,
+                Schema.arrayOf(Schema.of(Schema.Type.STRING))));
         //Schema to be used to create dataframe
-        StructType schema = new StructType(new StructField[] {
+        StructType schema = new StructType(new StructField[]{
                 new StructField(config.columnToBeTokenized, DataTypes.StringType, false, Metadata.empty())});
         //Transform input i.e JavaRDD<StructuredRecord> to JavaRDD<Row>
         JavaRDD<Row> rowRDD = input.map(new Function<StructuredRecord, Row>() {
@@ -118,8 +109,8 @@ public class Tokenizer extends SparkCompute<StructuredRecord, StructuredRecord> 
         RegexTokenizer tokenizer = new RegexTokenizer().setInputCol(config.columnToBeTokenized)
                 .setOutputCol(config.outputColumn).setPattern(config.delimiter);
         DataFrame tokenizedDataFrame = tokenizer.transform(sentenceDataFrame);
-        JavaRDD<Row> tokenizedRDD = javaSparkContext
-                .parallelize(tokenizedDataFrame.select(config.outputColumn).collectAsList());
+        JavaRDD<Row> tokenizedRDD = javaSparkContext.parallelize(tokenizedDataFrame.
+                select(config.outputColumn).collectAsList());
         //Transform JavaRDD<Row> to JavaRDD<StructuredRecord>
         JavaRDD<StructuredRecord> output = tokenizedRDD.map(new Function<Row, StructuredRecord>() {
             @Override

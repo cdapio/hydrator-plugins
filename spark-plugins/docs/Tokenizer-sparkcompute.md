@@ -6,7 +6,7 @@ Description
 Tokenization is the process of taking text (such as a sentence)
 and breaking it into individual terms (usually words) on the basis of delimiter.
 
-Tokenizer tokenizes data on the basis of specified delimiter and emits the output as string array of tokens.
+Tokenizer splits data on the basis of specified delimiter and emits the output as string array of tokens.
 Tokenized data will be converted to lower case.
 
 Use Case

@@ -65,13 +65,20 @@ public class TokenizerTest extends HydratorTestBase {
 
     private static final String MULTIPLE = "MultipleColumns";
     private static final String SINGLE = "SingleColumn";
+    private static final String COMMA = "delimiter1";
+    private static final String SPACE = "delimiter2";
+    private static final String TAB = "delimiter3";
     private static final String OUTPUT_COLUMN = "words";
     private static final String COLUMN_TOKENIZED = "sentence";
     private static final String DELIMITER = "/";
     private static final String SENTENCE1 = "Cask Data /Application Platform";
+    private static final String SENTENCE11 = "Cask/Data/Application/Platform";
     private static final String SENTENCE2 = "Cask Hydrator/ is webbased tool";
     private static final String SENTENCE3 = "Hydrator Studio is visual /development environment";
     private static final String SENTENCE4 = "Hydrator plugins /are customizable modules";
+    private static final String SENTENCEWITHSPACE = "Cask Data Application Platform";
+    private static final String SENTENCEWITHCOMMA = "Cask,Data,Application,Platform";
+    private static final String SENTENCEWITHETAB = "Cask    Data    Application Platform";
 
     private static final Schema SOURCE_SCHEMA_SINGLE = Schema.recordOf("sourceRecord",
             Schema.Field.of("sentence", Schema.of(Schema.Type.STRING))
@@ -90,7 +97,7 @@ public class TokenizerTest extends HydratorTestBase {
                 Tokenizer.class);
     }
 
-    private ETLBatchConfig buildETLBatchConfig(String text, String dataSetType) {
+    private ETLBatchConfig buildETLBatchConfig(String text, String dataSetType, String delimiter) {
         ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
                 .addStage(new ETLStage("source", MockSource.getPlugin(text)))
                 .addStage(new ETLStage("sparkcompute",
@@ -98,7 +105,7 @@ public class TokenizerTest extends HydratorTestBase {
 
                                 ImmutableMap.of("outputColumn", OUTPUT_COLUMN,
                                         "columnToBeTokenized", COLUMN_TOKENIZED,
-                                        "delimiter", DELIMITER),
+                                        "delimiter", delimiter),
                                 null))).addStage(new ETLStage("sink", MockSink.getPlugin(dataSetType)))
                 .addConnection("source", "sparkcompute")
                 .addConnection("sparkcompute", "sink")
@@ -112,7 +119,7 @@ public class TokenizerTest extends HydratorTestBase {
     /*
      * source --> sparkcompute --> sink
      */
-        ETLBatchConfig etlConfig = buildETLBatchConfig(textForMultiple, MULTIPLE);
+        ETLBatchConfig etlConfig = buildETLBatchConfig(textForMultiple, MULTIPLE, DELIMITER);
         AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
         ApplicationId appId = NamespaceId.DEFAULT.app("TokenizerTest");
         ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
@@ -153,7 +160,7 @@ public class TokenizerTest extends HydratorTestBase {
     /*
      * source --> sparkcompute --> sink
      */
-        ETLBatchConfig etlConfig = buildETLBatchConfig(text, SINGLE);
+        ETLBatchConfig etlConfig = buildETLBatchConfig(text, SINGLE, DELIMITER);
         AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
         ApplicationId appId = NamespaceId.DEFAULT.app("TokenizerTest");
         ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
@@ -188,6 +195,51 @@ public class TokenizerTest extends HydratorTestBase {
         Assert.assertEquals("ARRAY", rowSingle.getSchema().getField("words").getSchema().getType().toString());
     }
 
+    @Test(expected = NullPointerException.class)
+    public void testNullDelimiter() throws Exception {
+        buildETLBatchConfig("NegativeTestForDelimiter", SINGLE, null);
+    }
+
+    @Test
+    public void testDelimiters() throws Exception {
+        testDelimiter("textForComma", COMMA, SENTENCEWITHCOMMA, ",");
+        testDelimiter("textForSpace", SPACE, SENTENCEWITHSPACE, " ");
+        testDelimiter("textForTab", TAB, SENTENCEWITHETAB, " ");
+    }
+
+    private void testDelimiter(String text, String textData, String sentence, String delimiter) throws Exception {
+    /*
+     * source --> sparkcompute --> sink
+     */
+        ETLBatchConfig etlConfig = buildETLBatchConfig(text, textData, delimiter);
+        AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+        ApplicationId appId = NamespaceId.DEFAULT.app("TokenizerTest");
+        ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
+        DataSetManager<Table> inputManager = getDataset(text);
+        List<StructuredRecord> input = ImmutableList.of(
+                StructuredRecord.builder(SOURCE_SCHEMA_MULTIPLE).set("sentence",
+                        sentence).set("name", "CDAP").build()
+        );
+        MockSource.writeInput(inputManager, input);
+        // manually trigger the pipeline
+        WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+        workflowManager.start();
+        workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+        DataSetManager<Table> tokenizedTexts = getDataset(textData);
+        List<StructuredRecord> output = MockSink.readOutput(tokenizedTexts);
+        Set<List> results = new HashSet<>();
+        for (StructuredRecord structuredRecord : output) {
+            results.add((ArrayList) structuredRecord.get("words"));
+        }
+        //Create expected data
+        Set<List> expected = createExpectedForVariousDelimiters();
+        StructuredRecord row1 = output.get(0);
+        Assert.assertEquals(results, expected);
+        Assert.assertEquals(1, output.size());
+        Assert.assertEquals(1, row1.getSchema().getFields().size());
+        Assert.assertEquals("ARRAY", row1.getSchema().getField("words").getSchema().getType().toString());
+    }
+
     private Set<List> createExpectedData() {
         List list1 = new ArrayList();
         list1.add("cask data ");
@@ -206,6 +258,17 @@ public class TokenizerTest extends HydratorTestBase {
         expected.add(list2);
         expected.add(list3);
         expected.add(list4);
+        return expected;
+    }
+
+    private Set<List> createExpectedForVariousDelimiters() {
+        List list = new ArrayList();
+        Set<List> expected = new HashSet<>();
+        list.add("cask");
+        list.add("data");
+        list.add("application");
+        list.add("platform");
+        expected.add(list);
         return expected;
     }
 }
