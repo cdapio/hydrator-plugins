@@ -41,6 +41,7 @@ import co.cask.hydrator.plugin.DBUtils;
 import co.cask.hydrator.plugin.DriverCleanup;
 import co.cask.hydrator.plugin.FieldCase;
 import co.cask.hydrator.plugin.StructuredRecordUtils;
+import com.google.common.base.Strings;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.MRJobConfig;
@@ -48,6 +49,7 @@ import org.apache.hadoop.mapreduce.lib.db.DBConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
@@ -107,6 +109,9 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
         throw new IllegalArgumentException("The boundingQuery must be specified if numSplits is not set to 1.");
       }
     }
+    if (!Strings.isNullOrEmpty(sourceConfig.outputSchema)) {
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(parseSchema());
+    }
   }
 
   class GetSchemaRequest {
@@ -157,6 +162,14 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     } catch (Exception e) {
       LOG.error("Exception while performing getSchema", e);
       throw e;
+    }
+  }
+
+  private Schema parseSchema() {
+    try {
+      return Schema.parseJson(sourceConfig.outputSchema);
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Invalid schema: " + e.getMessage());
     }
   }
 
@@ -252,6 +265,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     public static final String BOUNDING_QUERY = "boundingQuery";
     public static final String SPLIT_BY = "splitBy";
     public static final String NUM_SPLITS = "numSplits";
+    public static final String OUTPUT_SCHEMA = "outputSchema";
 
     @Name(IMPORT_QUERY)
     @Description("The SELECT query to use to import data from the specified table. " +
@@ -280,6 +294,11 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
       "and no $CONDITIONS string needs to be specified in the importQuery. If not specified, the " +
       "execution framework will pick a value.")
     Integer numSplits;
+
+    @Nullable
+    @Name(OUTPUT_SCHEMA)
+    @Description("Output schema for schema propogation")
+    String outputSchema;
 
     private String getImportQuery() {
       return cleanQuery(importQuery);
