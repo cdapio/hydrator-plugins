@@ -57,6 +57,7 @@ public class StructuredToOrcTransformer extends RecordConverter<StructuredRecord
         pair.setFieldValue(fields.get(i).getName(), writable);
       } catch (UnsupportedTypeException e) {
         LOG.debug("{} is not a supported type", field.getName(), e);
+        throw new IllegalArgumentException(String.format("{} is not a supported type", field.getName()), e);
       }
     }
     return pair;

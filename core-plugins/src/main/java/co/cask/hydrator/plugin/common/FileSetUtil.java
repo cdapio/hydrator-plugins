@@ -109,22 +109,7 @@ public class FileSetUtil {
     String hiveSchema = parseHiveSchema(lowerCaseSchema, configuredSchema);
     hiveSchema = hiveSchema.substring(1, hiveSchema.length() - 1);
 
-    //Convert to ORCSchema
-    co.cask.cdap.api.data.schema.Schema schemaObj = null;
-    try {
-      schemaObj = co.cask.cdap.api.data.schema.Schema.parseJson(configuredSchema);
-    } catch (IOException e) {
-      LOG.debug("{} is not a valid schema", configuredSchema, e);
-     // throw new IOException(e);
-    }
-    StringBuilder builder = new StringBuilder();
-    try {
-      HiveSchemaConverter.appendType(builder, schemaObj);
-    } catch (UnsupportedTypeException e) {
-      LOG.debug("Could not create hive schema from {}", configuredSchema, e);
-      //throw new UnsupportedTypeException(e);
-    }
-    String orcSchema = builder.toString();
+    String orcSchema = parseOrcSchema(configuredSchema);
 
     properties.setInputFormat(OrcInputFormat.class)
       .setOutputFormat(OrcOutputFormat.class)
@@ -189,6 +174,21 @@ public class FileSetUtil {
       return new Schema.Parser().parse(schemaString);
     } catch (Exception e) {
       throw new IllegalArgumentException("Schema " + configuredSchema + " is invalid.", e);
+    }
+  }
+
+  private static String parseOrcSchema(String configuredSchema) {
+    co.cask.cdap.api.data.schema.Schema schemaObj = null;
+    try {
+      schemaObj = co.cask.cdap.api.data.schema.Schema.parseJson(configuredSchema);
+      StringBuilder builder = new StringBuilder();
+      HiveSchemaConverter.appendType(builder, schemaObj);
+      return builder.toString();
+    } catch (IOException e) {
+      LOG.debug("{} is not a valid schema", configuredSchema, e);
+      throw new IllegalArgumentException(String.format("{} is not a valid schema", configuredSchema), e);
+    } catch (UnsupportedTypeException e) {
+      throw new IllegalArgumentException(String.format("Could not create hive schema from {}", configuredSchema), e);
     }
   }
 
