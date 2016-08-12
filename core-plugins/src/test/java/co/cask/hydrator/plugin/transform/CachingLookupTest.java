@@ -102,7 +102,7 @@ public class CachingLookupTest {
 
     private final Map<String, T> backing;
 
-    public MapLookup(Map<String, T> backing) {
+    MapLookup(Map<String, T> backing) {
       this.backing = backing;
     }
 

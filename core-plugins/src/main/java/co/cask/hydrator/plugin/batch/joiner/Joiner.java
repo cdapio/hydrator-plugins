@@ -23,15 +23,14 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.JoinConfig;
 import co.cask.cdap.etl.api.JoinElement;
-import co.cask.cdap.etl.api.PipelineConfigurer;
-import co.cask.cdap.etl.api.StageConfigurer;
+import co.cask.cdap.etl.api.MultiInputPipelineConfigurer;
+import co.cask.cdap.etl.api.MultiInputStageConfigurer;
 import co.cask.cdap.etl.api.batch.BatchJoiner;
 import co.cask.cdap.etl.api.batch.BatchJoinerContext;
 import co.cask.cdap.etl.api.batch.BatchJoinerRuntimeContext;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Table;
-import com.google.gson.Gson;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -53,7 +52,6 @@ import javax.ws.rs.Path;
   "records from non-required inputs will only be present if they match join criteria. If there are no required " +
   "inputs, outer join will be performed")
 public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, StructuredRecord> {
-  private static final Gson GSON = new Gson();
   private final JoinerConfig conf;
   private Map<String, Schema> inputSchemas;
   private Schema outputSchema;
@@ -67,8 +65,8 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
   }
 
   @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
+  public void configurePipeline(MultiInputPipelineConfigurer pipelineConfigurer) {
+    MultiInputStageConfigurer stageConfigurer = pipelineConfigurer.getMultiInputStageConfigurer();
     Map<String, Schema> inputSchemas = stageConfigurer.getInputSchemas();
     init(inputSchemas);
     //validate the input schema and get the output schema for it
@@ -157,7 +155,12 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     for (Map.Entry<String, List<String>> entry : perStageJoinKeys.entrySet()) {
       ArrayList<Schema> schemaList = new ArrayList<>();
       String stageName = entry.getKey();
+
       Schema schema = inputSchemas.get(stageName);
+      if (schema == null) {
+        throw new IllegalArgumentException(String.format("Input schema for input stage %s can not be null", stageName));
+      }
+
       for (String joinKey : entry.getValue()) {
         Schema.Field field = schema.getField(joinKey);
         schemaList.add(field.getSchema());
@@ -209,7 +212,6 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
       String alias = row.getValue();
       Schema inputSchema = inputs.get(stageName);
 
-      // TODO As per CDAP-6402 handle cases where input schema is null at configure time.
       if (inputSchema == null) {
         throw new IllegalArgumentException(String.format("Input schema for input stage %s can not be null", stageName));
       }
@@ -265,7 +267,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     private String inputFieldName;
     private Schema.Field field;
 
-    public OutputFieldInfo(String name, String stageName, String inputFieldName, Schema.Field field) {
+    OutputFieldInfo(String name, String stageName, String inputFieldName, Schema.Field field) {
       this.name = name;
       this.stageName = stageName;
       this.inputFieldName = inputFieldName;

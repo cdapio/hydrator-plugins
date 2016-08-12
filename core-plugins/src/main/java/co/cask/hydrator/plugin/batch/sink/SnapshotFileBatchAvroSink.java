@@ -93,7 +93,7 @@ public class SnapshotFileBatchAvroSink extends SnapshotFileBatchSink<AvroKey<Gen
     private String schema;
 
     public SnapshotAvroConfig(String name, @Nullable String basePath, String schema) {
-      super(name, basePath, null);
+      super(name, basePath, null, null);
       this.schema = schema;
     }
   }

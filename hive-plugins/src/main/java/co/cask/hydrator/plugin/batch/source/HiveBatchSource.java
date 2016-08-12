@@ -39,7 +39,6 @@ import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.hadoop.util.VersionInfo;
 import org.apache.hive.hcatalog.data.HCatRecord;
 import org.apache.hive.hcatalog.data.schema.HCatSchema;
 import org.apache.hive.hcatalog.mapreduce.HCatInputFormat;
@@ -83,38 +82,33 @@ public class HiveBatchSource extends ReferenceBatchSource<WritableComparable, HC
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
-    // This line is to load VersionInfo class here to make it available in the HCatInputFormat.setInput call. This is
-    // needed to support CDAP 3.2 where we were just exposing the classes of the plugin jar and not the resources.
-    LOG.trace("Hadoop version: {}", VersionInfo.getVersion());
-    Job job = JobUtils.createInstance();
-    Configuration conf = job.getConfiguration();
-
-    conf.set(HiveConf.ConfVars.METASTOREURIS.varname, config.metaStoreURI);
-
-    if (UserGroupInformation.isSecurityEnabled()) {
-      conf.set(HiveConf.ConfVars.METASTORE_USE_THRIFT_SASL.varname, "true");
-      conf.set("hive.metastore.token.signature", HiveAuthFactory.HS2_CLIENT_TOKEN);
-    }
-    // Use the current thread's classloader to ensure that when setInput is called it can access VersionInfo class
-    // loaded above. This is needed to support CDAP 3.2 where we were just exposing classes to plugin jars and not
-    // resources.
+    // TODO: remove after CDAP-5950 is fixed
     ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+    Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
     try {
-      Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
+      Job job = JobUtils.createInstance();
+      Configuration conf = job.getConfiguration();
+
+      conf.set(HiveConf.ConfVars.METASTOREURIS.varname, config.metaStoreURI);
+
+      if (UserGroupInformation.isSecurityEnabled()) {
+        conf.set(HiveConf.ConfVars.METASTORE_USE_THRIFT_SASL.varname, "true");
+        conf.set("hive.metastore.token.signature", HiveAuthFactory.HS2_CLIENT_TOKEN);
+      }
       HCatInputFormat.setInput(conf, config.dbName, config.tableName, config.partitions);
+
+      HCatSchema hCatSchema = HCatInputFormat.getTableSchema(conf);
+      if (config.schema != null) {
+        // if the user provided a schema then we should use that schema to read the table. This will allow user to
+        // drop non-primitive types and read the table.
+        hCatSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(config.schema), hCatSchema);
+        HCatInputFormat.setOutputSchema(job, hCatSchema);
+      }
+      HiveSchemaStore.storeHiveSchema(context, config.dbName, config.tableName, hCatSchema);
+      context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(HCatInputFormat.class, conf)));
     } finally {
       Thread.currentThread().setContextClassLoader(classLoader);
     }
-
-    HCatSchema hCatSchema = HCatInputFormat.getTableSchema(conf);
-    if (config.schema != null) {
-      // if the user provided a schema then we should use that schema to read the table. This will allow user to
-      // drop non-primitive types and read the table.
-      hCatSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(config.schema), hCatSchema);
-      HCatInputFormat.setOutputSchema(job, hCatSchema);
-    }
-    HiveSchemaStore.storeHiveSchema(context, config.dbName, config.tableName, hCatSchema);
-    context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(HCatInputFormat.class, conf)));
   }
 
   @Override
