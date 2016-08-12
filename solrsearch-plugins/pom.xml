@@ -46,6 +46,11 @@
       <version>2.6</version>
     </dependency>
     <dependency>
+      <groupId>org.apache.zookeeper</groupId>
+      <artifactId>zookeeper</artifactId>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-api</artifactId>
       <version>${cdap.version}</version>
