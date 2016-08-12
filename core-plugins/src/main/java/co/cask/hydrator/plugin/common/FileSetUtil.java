@@ -28,8 +28,8 @@ import org.apache.avro.mapreduce.AvroKeyInputFormat;
 import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.parquet.avro.AvroParquetInputFormat;
-import org.apache.parquet.avro.AvroParquetOutputFormat;
+import parquet.avro.AvroParquetInputFormat;
+import parquet.avro.AvroParquetOutputFormat;
 
 import java.io.IOException;
 import java.util.Map;

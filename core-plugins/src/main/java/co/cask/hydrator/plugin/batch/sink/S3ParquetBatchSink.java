@@ -29,7 +29,7 @@ import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
 import com.google.common.collect.Maps;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.apache.parquet.avro.AvroParquetOutputFormat;
+import parquet.avro.AvroParquetOutputFormat;
 
 import java.text.SimpleDateFormat;
 import java.util.Map;
