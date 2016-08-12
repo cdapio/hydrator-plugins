@@ -25,7 +25,7 @@
 
   <properties>
     <app.parents>system:cdap-data-pipeline[3.5.0-SNAPSHOT,3.6.0-SNAPSHOT),system:cdap-data-streams[3.5.0-SNAPSHOT,3.6.0-SNAPSHOT)</app.parents>
-    <spark.version>1.3.1</spark.version>
+    <spark.version>1.6.1</spark.version>
     <kafka.version>0.8.2.2</kafka.version>
   </properties>
 
@@ -178,6 +178,47 @@
             <goals>
               <goal>bundle</goal>
             </goals>
+          </execution>
+        </executions>
+      </plugin>
+	  <plugin>
+      <groupId>org.apache.rat</groupId>
+      <artifactId>apache-rat-plugin</artifactId>
+      <version>0.10</version>
+        <executions>
+          <execution>
+            <id>rat-check</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
+              <excludes>
+                <exclude>LICENSE*.txt</exclude>
+                <!-- This file should be not be there, but I am excluding it for now -->
+                <exclude>*.rst</exclude>
+                <exclude>*.md</exclude>
+                <exclude>**/*.cdap</exclude>
+                <exclude>**/*.yaml</exclude>
+                <exclude>**/*.md</exclude>
+                <exclude>logs/**</exclude>
+                <exclude>.git/**</exclude>
+                <exclude>.idea/**</exclude>
+                <exclude>**/grok/patterns/**</exclude>
+                <exclude>conf/**</exclude>
+                <exclude>data/**</exclude>
+                <exclude>plugins/**</exclude>
+                <exlcude>**/*.patch</exlcude>
+                <exclude>**/logrotate.d/**</exclude>
+                <exclude>**/limits.d/**</exclude>
+                <exclude>**/*.json</exclude>
+                <exclude>**/*.json.template</exclude>
+                <exclude>**/MANIFEST.MF</exclude>
+                <!-- exclude any hack classes -->
+                <exclude>**/org/apache/hadoop/**</exclude>
+                <exclude>**/resources/**</exclude>
+              </excludes>
+            </configuration>
           </execution>
         </executions>
       </plugin>
