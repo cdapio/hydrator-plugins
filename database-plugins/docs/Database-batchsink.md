@@ -47,6 +47,10 @@ Normally this setting does not matter. It only matters if you are using a jdbc d
 driver -- that will error when the commit operation is run, or a driver that will error when auto-commit is
 set to false. For drivers like those, you will need to set this to 'true'.
 
+**schema:** The schema of records output by the source. This will be used in place of whatever schema comes 
+back from the query. However, it must match the schema that comes back from the query, 
+except it can mark fields as nullable and can contain a subset of the fields. 
+
 Example
 -------
 This example connects to a database using the specified 'connectionString', which means
