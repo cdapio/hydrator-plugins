@@ -73,7 +73,6 @@ public class TimePartitionedFileSetDatasetAvroSink extends
 
   @Override
   protected Map<String, String> getAdditionalTPFSArguments() {
-    // Backward compatibility between older plugins requires setting the schema in runtime.
     Map<String, String> args = new HashMap<>();
     args.put(FileSetProperties.OUTPUT_PROPERTIES_PREFIX + "avro.schema.output.key", config.schema);
     return args;
