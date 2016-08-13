@@ -62,12 +62,6 @@ public class MockPipelineConfigurer implements PipelineConfigurer {
         return inputSchemas.entrySet().iterator().next().getValue();
       }
 
-      @Nullable
-      @Override
-      public Map<String, Schema> getInputSchemas() {
-        return inputSchemas;
-      }
-
       @Override
       public void setOutputSchema(@Nullable Schema schema) {
         outputSchema = schema;
