@@ -18,10 +18,10 @@ package co.cask.hydrator.plugin.common;
 
 
 import co.cask.cdap.api.TxRunnable;
-import co.cask.cdap.api.macro.MacroEvaluator;
 import co.cask.cdap.api.plugin.PluginProperties;
 import co.cask.cdap.api.security.store.SecureStoreData;
 import co.cask.cdap.api.security.store.SecureStoreMetadata;
+import co.cask.cdap.etl.api.StageMetrics;
 import co.cask.cdap.etl.api.action.ActionContext;
 import co.cask.cdap.etl.api.action.SettableArguments;
 import co.cask.cdap.etl.batch.customaction.BasicSettableArguments;
@@ -50,6 +50,21 @@ public class MockActionContext implements ActionContext {
   }
 
   @Override
+  public String getStageName() {
+    return null;
+  }
+
+  @Override
+  public StageMetrics getMetrics() {
+    return null;
+  }
+
+  @Override
+  public PluginProperties getPluginProperties() {
+    return null;
+  }
+
+  @Override
   public PluginProperties getPluginProperties(String pluginId) {
     return null;
   }
@@ -61,11 +76,6 @@ public class MockActionContext implements ActionContext {
 
   @Override
   public <T> T newPluginInstance(String pluginId) throws InstantiationException {
-    return null;
-  }
-
-  @Override
-  public <T> T newPluginInstance(String pluginId, MacroEvaluator evaluator) {
     return null;
   }
 
