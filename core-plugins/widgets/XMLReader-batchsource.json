@@ -51,8 +51,8 @@
           "name": "reprocessingRequired",
           "widget-attributes": {
             "values": [
-              "No",
-              "Yes"
+              "Yes",
+              "No"
             ],
             "default": "Yes"
           }
