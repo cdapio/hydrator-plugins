@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.etl.api.batch.BatchSource;
@@ -70,9 +71,11 @@ public class S3BatchSource extends FileBatchSource {
    */
   public static class S3BatchConfig extends FileBatchConfig {
     @Description(ACCESS_ID_DESCRIPTION)
+    @Macro
     private final String accessID;
 
     @Description(ACCESS_KEY_DESCRIPTION)
+    @Macro
     private final String accessKey;
 
     public S3BatchConfig(String referenceName, String accessID, String accessKey, String path) {

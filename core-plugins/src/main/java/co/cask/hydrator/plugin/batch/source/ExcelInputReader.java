@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.common.Bytes;
@@ -257,10 +258,7 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
 
-    if (excelInputreaderConfig.sheet.equalsIgnoreCase(SHEET_NO) &&
-      !StringUtils.isNumeric(excelInputreaderConfig.sheetValue)) {
-      throw new IllegalArgumentException("Invalid sheet number. The value should be greater than or equals to zero.");
-    }
+    excelInputreaderConfig.validate();
 
     if (Strings.isNullOrEmpty(excelInputreaderConfig.columnList) &&
       Strings.isNullOrEmpty(excelInputreaderConfig.outputSchema)) {
@@ -268,23 +266,7 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
                                            "input value of 'Columns To Be Extracted' is provided.");
     }
 
-    try {
-      if (!Strings.isNullOrEmpty(excelInputreaderConfig.errorDatasetName)) {
-        Map<String, String> properties = new HashMap<>();
-        properties.put(Properties.Table.PROPERTY_SCHEMA, errorRecordSchema.toString());
-        properties.put(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, KEY);
-        DatasetProperties datasetProperties = DatasetProperties.builder().addAll(properties).build();
-        pipelineConfigurer.createDataset(excelInputreaderConfig.errorDatasetName, Table.class, datasetProperties);
-
-      } else if (excelInputreaderConfig.ifErrorRecord.equalsIgnoreCase(WRITE_ERROR_DATASET)) {
-        throw new IllegalArgumentException("Error dataset name should not be empty while choosing write to error " +
-                                             "dataset for 'On Error' input.");
-      }
-      pipelineConfigurer.createDataset(excelInputreaderConfig.memoryTableName, KeyValueTable.class);
-    } catch (Exception e) {
-      throw new IllegalStateException("Exception while creating dataset.", e);
-    }
-
+    createDatasets(pipelineConfigurer, null);
     init();
     getOutputSchema();
     pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
@@ -292,6 +274,8 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
 
   @Override
   public void prepareRun(BatchSourceContext batchSourceContext) throws Exception {
+    excelInputreaderConfig.validate();
+    createDatasets(null, batchSourceContext);
 
     Job job = JobUtils.createInstance();
 
@@ -312,6 +296,40 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
                                                                                   job.getConfiguration());
     batchSourceContext.setInput(Input.of(excelInputreaderConfig.referenceName, inputFormatProvider));
 
+  }
+
+  private void createDatasets(@Nullable PipelineConfigurer pipelineConfigurer, @Nullable BatchSourceContext context) {
+    try {
+      if (!excelInputreaderConfig.containsMacro("errorDatasetName") &&
+        !Strings.isNullOrEmpty(excelInputreaderConfig.errorDatasetName)) {
+        Map<String, String> properties = new HashMap<>();
+        properties.put(Properties.Table.PROPERTY_SCHEMA, errorRecordSchema.toString());
+        properties.put(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, KEY);
+        DatasetProperties datasetProperties = DatasetProperties.builder().addAll(properties).build();
+
+        if (pipelineConfigurer != null) {
+          pipelineConfigurer.createDataset(excelInputreaderConfig.errorDatasetName, Table.class, datasetProperties);
+        } else if (context != null) {
+          context.createDataset(excelInputreaderConfig.errorDatasetName, Table.class.getName(), datasetProperties);
+        }
+
+      } else if (!excelInputreaderConfig.containsMacro("ifErrorRecord") &&
+        excelInputreaderConfig.ifErrorRecord.equalsIgnoreCase(WRITE_ERROR_DATASET)) {
+        throw new IllegalArgumentException("Error dataset name should not be empty while choosing write to error " +
+                                             "dataset for 'On Error' input.");
+      }
+
+      if (!excelInputreaderConfig.containsMacro("memoryTableName")) {
+        if (pipelineConfigurer != null) {
+          pipelineConfigurer.createDataset(excelInputreaderConfig.memoryTableName, KeyValueTable.class);
+        } else if (context != null) {
+          context.createDataset(excelInputreaderConfig.memoryTableName, KeyValueTable.class.getName(),
+                                DatasetProperties.EMPTY);
+        }
+      }
+    } catch (Exception e) {
+      throw new IllegalStateException("Exception while creating dataset.", e);
+    }
   }
 
   /**
@@ -368,24 +386,29 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
     @Name("filePath")
     @Description("Path of the excel file(s) to be read; for example: 'file:///home/cdap' for a " +
       "local path and 'hdfs://<namemode-hostname>:9000/cdap' for a path in hdfs.")
+    @Macro
     private String filePath;
 
     @Name("filePattern")
     @Description("Regex pattern to select specific file(s); for example: '.*'")
+    @Macro
     private String filePattern;
 
     @Name("memoryTableName")
     @Description("KeyValue table name to keep the track of processed files. This can be a new table or existing one;" +
       " for example: 'inventory-memory-table'")
+    @Macro
     private String memoryTableName;
 
     @Description("Expiry period (days) for data in the table. Default is 30 days." +
       "Example - For tableExpiryPeriod = 30, data before 30 days get deleted from the table.")
+    @Macro
     private String tableExpiryPeriod;
 
     @Name("reprocess")
     @Description("Specifies whether the file(s) should be reprocessed. " +
       "Options to select are true or false")
+    @Macro
     private boolean reprocess;
 
     @Name("sheet")
@@ -393,11 +416,13 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
       "Shift 'Options are' in next line: " +
       "Sheet Name" +
       "Sheet Number")
+    @Macro
     private String sheet;
 
     @Name("sheetValue")
     @Description("Specifies the value corresponding to 'sheet' input. Can be either sheet name or sheet no; " +
       "for example: 'Sheet1' or '1' in case user selects 'Sheet Name' or 'Sheet Number' as 'sheet' input respectively.")
+    @Macro
     private String sheetValue;
 
     @Nullable
@@ -414,16 +439,19 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
     @Name("skipFirstRow")
     @Description("Specify whether first row in the excel sheet is to be skipped or not. " +
       "Options to select are true or false.")
+    @Macro
     private boolean skipFirstRow;
 
     @Name("terminateIfEmptyRow")
     @Description("Specify whether processing needs to be terminated in case an empty row is encountered " +
       "while processing excel files. Options to select are true or false.")
+    @Macro
     private String terminateIfEmptyRow;
 
     @Nullable
     @Name("rowsLimit")
     @Description("Specify maximum number of rows to be processed for each sheet; for example: '100'.")
+    @Macro
     private String rowsLimit;
 
     @Nullable
@@ -438,15 +466,24 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
       "Ignore error and continue" +
       "Exit on error: Stops processing upon encountering an error" +
       "Write to error dataset:  Writes the error record to an error dataset and continues processing.")
+    @Macro
     private String ifErrorRecord;
 
     @Nullable
     @Name("errorDatasetName")
     @Description("Name of the table to store error record; for example: 'error-table-name'.")
+    @Macro
     private String errorDatasetName;
 
     public ExcelInputReaderConfig() {
       super(String.format("ExcelInputReader"));
+    }
+
+    public void validate() {
+      if (!containsMacro("sheet") && !containsMacro("sheetValue") &&
+        sheet.equalsIgnoreCase(SHEET_NO) && !StringUtils.isNumeric(sheetValue)) {
+        throw new IllegalArgumentException("Invalid sheet number. The value should be greater than or equals to zero.");
+      }
     }
   }
 }
