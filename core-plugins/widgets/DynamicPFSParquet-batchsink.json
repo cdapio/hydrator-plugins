@@ -1,0 +1,44 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Dynamic Partitioned Fileset - Parquet",
+      "properties": [
+        {
+          "widget-type": "dataset-selector",
+          "label": "Dataset Name",
+          "name": "name"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Dataset Base Path",
+          "name": "basePath"
+        },
+        {
+          "widget-type": "csv",
+          "label": "Field Names",
+          "name": "fieldNames"
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "boolean",
+          "int",
+          "long",
+          "float",
+          "double",
+          "string"
+        ],
+        "schema-default-type": "string"
+      }
+    }
+  ]
+}
