@@ -152,11 +152,7 @@ public class DBRecord implements Writable, DBWritable {
       switch (sqlColumnType) {
         case Types.SMALLINT:
         case Types.TINYINT:
-          if (original.getClass() == Short.class) {
-            return ((Short) original).intValue();
-          } else {
-            break;
-          }
+          return ((Number) original).intValue();
         case Types.NUMERIC:
         case Types.DECIMAL:
           return ((BigDecimal) original).doubleValue();
