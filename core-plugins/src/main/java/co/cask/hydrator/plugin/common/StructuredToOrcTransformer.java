@@ -46,7 +46,7 @@ import java.util.Map;
 public class StructuredToOrcTransformer extends RecordConverter<StructuredRecord, OrcStruct> {
 
   private static final Logger LOG = LoggerFactory.getLogger(StructuredToOrcTransformer.class);
-  private final Map<Schema, OrcStruct> schemaCache = new HashMap<>();
+  private final Map<Schema, TypeDescription> schemaCache = new HashMap<>();
 
   @Override
   public OrcStruct transform(StructuredRecord input) {
@@ -68,18 +68,21 @@ public class StructuredToOrcTransformer extends RecordConverter<StructuredRecord
 
   public OrcStruct parseOrcSchema(Schema inputSchema) {
     if (schemaCache.containsKey(inputSchema)) {
-      return schemaCache.get(inputSchema);
+      TypeDescription schema = schemaCache.get(inputSchema);
+      OrcStruct pair = (OrcStruct) OrcStruct.createValue(schema);
+      return pair;
+    } else {
+      StringBuilder builder = new StringBuilder();
+      try {
+        HiveSchemaConverter.appendType(builder, inputSchema);
+      } catch (UnsupportedTypeException e) {
+        throw new IllegalArgumentException(String.format("Not a valid Schema {}", inputSchema.toString()), e);
+      }
+      TypeDescription schema = TypeDescription.fromString(builder.toString());
+      OrcStruct pair = (OrcStruct) OrcStruct.createValue(schema);
+      schemaCache.put(inputSchema, schema);
+      return pair;
     }
-    StringBuilder builder = new StringBuilder();
-    try {
-      HiveSchemaConverter.appendType(builder, inputSchema);
-    } catch (UnsupportedTypeException e) {
-      throw new IllegalArgumentException(String.format("Not a valid Schema {}", inputSchema.toString()), e);
-    }
-    TypeDescription schema = TypeDescription.fromString(builder.toString());
-    OrcStruct pair = (OrcStruct) OrcStruct.createValue(schema);
-    schemaCache.put(inputSchema, pair);
-    return pair;
   }
 
   private WritableComparable convertToWritable(Schema.Field field, StructuredRecord input)

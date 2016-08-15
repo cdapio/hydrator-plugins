@@ -237,10 +237,25 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
                                            Schema.Field.of("boolTest", Schema.of(Schema.Type.BOOLEAN)),
                                            Schema.Field.of("longTest", Schema.of(Schema.Type.LONG)),
                                            Schema.Field.of("byteTest", Schema.of(Schema.Type.BYTES)),
-                                           Schema.Field.of("intTest", Schema.of(Schema.Type.INT))
-
+                                           Schema.Field.of("intTest", Schema.of(Schema.Type.INT)),
+                                           Schema.Field.of("unionStrTest", Schema.unionOf(Schema.of(Schema.Type.STRING),
+                                                                                    Schema.of(Schema.Type.NULL))),
+                                           Schema.Field.of("unionStrNullTest", Schema.unionOf(Schema.of(Schema.Type.STRING),
+                                                                                          Schema.of(Schema.Type.NULL))),
+                                           Schema.Field.of("unionIntTest", Schema.unionOf(Schema.of(Schema.Type.INT),
+                                                                                          Schema.of(Schema.Type.NULL))),
+                                           Schema.Field.of("unionIntNullTest", Schema.unionOf(Schema.of(Schema.Type.INT),
+                                                                                          Schema.of(Schema.Type.NULL))),
+                                           Schema.Field.of("unionFloatTest", Schema.unionOf(Schema.of(Schema.Type.FLOAT),
+                                                                                          Schema.of(Schema.Type.NULL))),
+                                           Schema.Field.of("unionFloatNullTest", Schema.unionOf(Schema.of(Schema.Type.FLOAT),
+                                                                                          Schema.of(Schema.Type.NULL))),
+                                           Schema.Field.of("unionDoublTest", Schema.unionOf(Schema.of(Schema.Type.DOUBLE),
+                                                                                                Schema.of(Schema.Type.NULL))),
+                                           Schema.Field.of("unionDoubleNullTest", Schema.unionOf(Schema.of(Schema.Type.DOUBLE),
+                                                                                                Schema.of(Schema.Type.NULL)))
+                                           //TODO test nullable of long and Bytes CDAP-7074
     );
-
 
     ETLPlugin sinkConfig = new ETLPlugin("TPFSOrc",
                                          BatchSink.PLUGIN_TYPE,
@@ -263,7 +278,6 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     ApplicationManager appManager = deployApplication(appId, appRequest);
     DataSetManager<Table> inputManager = getDataset(inputDatasetName);
 
-
     // write input data
     List<StructuredRecord> input = ImmutableList.of(
       StructuredRecord.builder(recordSchema2)
@@ -273,7 +287,16 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
         .set("boolTest", true)
         .set("longTest", 23456789)
         .set("intTest", 12)
-        .set("byteTest", Bytes.toBytes("abcd")).build()
+        .set("byteTest", Bytes.toBytes("abcd"))
+        .set("unionStrTest", "testUnion")
+        .set("unionStrNullTest", null)
+        .set("unionIntTest", 12)
+        .set("unionIntNullTest", null)
+        .set("unionFloatTest", 3.6f)
+        .set("unionFloatNullTest", null)
+        .set("unionDoublTest", 4.2)
+        .set("unionDoubleNullTest", null)
+        .build()
     );
     MockSource.writeInput(inputManager, input);
 
@@ -285,6 +308,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     Connection connection = getQueryClient();
     ResultSet results = connection.prepareStatement("select * from dataset_outputOrc").executeQuery();
     results.next();
+
     Assert.assertEquals("a", results.getString(1));
     Assert.assertEquals(3.6f, results.getFloat(2), 0.1);
     Assert.assertEquals(4.2, results.getDouble(3), 0.1);
@@ -292,6 +316,14 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     Assert.assertEquals(23456789, results.getLong(5));
     Assert.assertArrayEquals(Bytes.toBytes("abcd"), results.getBytes(6));
     Assert.assertEquals(12, results.getLong(7));
+    Assert.assertEquals("testUnion", results.getString(8));
+    Assert.assertNull(results.getString(9));
+    Assert.assertEquals(12, results.getLong(10));
+    Assert.assertEquals(0,results.getLong(11));
+    Assert.assertEquals(3.6f, results.getFloat(12), 0.1);
+    Assert.assertEquals(0.0,results.getFloat(13), 0.1);
+    Assert.assertEquals(4.2, results.getDouble(14), 0.1);
+    Assert.assertEquals(0,results.getDouble(15),0.1);
   }
 
   @Test
