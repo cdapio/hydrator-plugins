@@ -20,18 +20,6 @@
           "widget-type": "csv",
           "label": "Field Names",
           "name": "fieldNames"
-        },
-        {
-          "widget-type": "select",
-          "label": "Partition Format",
-          "name": "partitionFormat",
-          "widget-attributes": {
-            "values": [
-              "column_name=value",
-              "value"
-            ],
-            "default": "value"
-          }
         }
       ]
     }

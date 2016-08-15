@@ -25,11 +25,6 @@ If it doesn't exist, it will be created.
 
 **basePath:** Base path for the ``PartitionedFileSet``. Defaults to the name of the dataset.
 
-**filePathFormat:** Format for the partitions. The folder for the partition will be created
-using this format. For example, selecting ``column_name=value`` might create a partition
-like ``create_date=2016-08-11``.
-
-
 Example
 -------
 This example will write to a ``PartitionedFileSet`` named ``'users'`` using the original
@@ -41,7 +36,6 @@ This example will write to a ``PartitionedFileSet`` named ``'users'`` using the 
         "properties": {
             "name": "users",
             "fieldNames": "create_date",
-            "partitionFormat": "column_name=value",
             "schema": "{
                 \"type\":\"record\",
                 \"name\":\"user\",

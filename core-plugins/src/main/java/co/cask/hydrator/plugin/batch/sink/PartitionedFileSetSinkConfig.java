@@ -39,17 +39,9 @@ public abstract class PartitionedFileSetSinkConfig extends PluginConfig {
   @Nullable
   protected String basePath;
 
-  @Description("Format for the partitions. The folder for the partition will be created " +
-    "using this format. For example, selecting 'column_name=value' might create a partition " +
-    "like 'create_date=2016-08-11'.")
-  @Nullable
-  protected String partitionFormat;
-
-  public PartitionedFileSetSinkConfig(String name, @Nullable String basePath,
-                                      @Nullable String partitionFormat) {
+  public PartitionedFileSetSinkConfig(String name, @Nullable String basePath) {
     this.name = name;
     this.basePath = basePath;
-    this.partitionFormat = (partitionFormat == null) ? DEFAULT_FORMAT : partitionFormat;
   }
 
   public void validate() {

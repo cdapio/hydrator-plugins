@@ -41,6 +41,7 @@ import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.common.HiveSchemaConverter;
 import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
+import com.google.common.base.Strings;
 import org.apache.avro.generic.GenericRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,6 +62,7 @@ import javax.annotation.Nullable;
 public class DynamicPartitionFileSetParquetSink extends
   PartitionedFileSetSink<Void, GenericRecord> {
   public static final String NAME = "DynamicPFSParquet";
+  public static final String PARTITION_COL_PREFIX = "p_";
 
   private static final Logger LOG = LoggerFactory.getLogger(DynamicPartitionFileSetParquetSink.class);
   private static final String SCHEMA_DESC = "The Parquet schema of the record being written to the Sink as a JSON " +
@@ -101,7 +103,7 @@ public class DynamicPartitionFileSetParquetSink extends
     Partitioning.Builder partitionBuilder = Partitioning.builder();
     String[] partitionFields = config.fieldNames.split(",");
     for (int i = 0; i < partitionFields.length; i++) {
-      partitionBuilder.addStringField("partition_" + partitionFields[i]);
+      partitionBuilder.addStringField(PARTITION_COL_PREFIX + partitionFields[i]);
     }
 
     pipelineConfigurer.createDataset(pfsName, PartitionedFileSet.class.getName(),
@@ -147,9 +149,8 @@ public class DynamicPartitionFileSetParquetSink extends
     private String fieldNames;
 
     public DynamicPartitionParquetSinkConfig(String name, String schema, String fieldNames,
-                                             @Nullable String basePath,
-                                             @Nullable String pathFormat) {
-      super(name, basePath, pathFormat);
+                                             @Nullable String basePath) {
+      super(name, basePath);
       this.schema = schema;
       this.fieldNames = fieldNames;
     }
@@ -160,26 +161,27 @@ public class DynamicPartitionFileSetParquetSink extends
    */
   public static final class CustomDynamicPartitioner extends DynamicPartitioner<Void, GenericRecord> {
     private String[] fieldNames;
-    private String format;
 
     @Override
     public void initialize(MapReduceTaskContext mapReduceTaskContext) {
       fieldNames = mapReduceTaskContext
         .getPluginProperties(DynamicPartitionFileSetParquetSink.NAME)
         .getProperties().get("fieldNames").split(",");
-      format = mapReduceTaskContext
-        .getPluginProperties(DynamicPartitionFileSetParquetSink.NAME)
-        .getProperties().get("partitionFormat");
     }
 
     @Override
     public PartitionKey getPartitionKey(Void key, GenericRecord value) {
       PartitionKey.Builder keyBuilder = PartitionKey.builder();
       for (int i = 0; i < fieldNames.length; i++) {
-        String partitionValue = (format.equals("value")) ? String.valueOf(value.get(fieldNames[i]))
-          : String.format("%s=%s", fieldNames[i],
-                          value.get(fieldNames[i]).toString());
-        keyBuilder.addStringField("partition_" + fieldNames[i], partitionValue);
+        if (value.get(fieldNames[i]) == null) {
+          // This call will result in an exception but there's nothing else I can do
+          // [CDAP-7053]
+          keyBuilder.addStringField(DynamicPartitionFileSetParquetSink.PARTITION_COL_PREFIX + fieldNames[i],
+                                    null);
+        } else {
+          keyBuilder.addStringField(DynamicPartitionFileSetParquetSink.PARTITION_COL_PREFIX + fieldNames[i],
+                                    String.valueOf(value.get(fieldNames[i])));
+        }
       }
       return keyBuilder.build();
     }
