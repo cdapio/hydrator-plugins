@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -92,7 +93,9 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-    parseConfiguration(config.decompressor);
+    if (!config.containsMacro("decompressor")) {
+      parseConfiguration(config.decompressor);
+    }
 
     // Check if schema specified is a valid schema or no.
     try {
@@ -286,6 +289,7 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
     @Name("decompressor")
     @Description("Specify the field and decompression type combination. " +
       "Format is <field>:<decompressor-type>[,<field>:<decompressor-type>]*")
+    @Macro
     private final String decompressor;
 
     @Name("schema")

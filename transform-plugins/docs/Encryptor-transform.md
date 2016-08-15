@@ -9,7 +9,7 @@ that must be present on all nodes of the cluster.
 
 Configuration
 -------------
-**encyrptFields** Specifies the fields to encrypt, separated by commas.
+**encyrptFields** Specifies the fields to encrypt, separated by commas. (Macro-enabled)
 
 **transformation** Transformation algorithm/mode/padding. For example, AES/CBC/PKCS5Padding.
 

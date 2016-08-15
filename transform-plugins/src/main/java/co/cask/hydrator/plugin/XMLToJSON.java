@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -133,6 +134,7 @@ public final class XMLToJSON extends Transform<StructuredRecord, StructuredRecor
 
     @Name("outputField")
     @Description("The field containing the XML string to convert into a JSON string.")
+    @Macro
     private String outputField;
 
     @Name("schema")

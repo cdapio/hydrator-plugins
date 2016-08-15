@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -74,13 +75,7 @@ public final class StreamFormatter extends Transform<StructuredRecord, Structure
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-
-    // If the format specified is not of one of the allowed types, then throw an exception.
-    if (!config.format.equalsIgnoreCase("CSV") && !config.format.equalsIgnoreCase("TSV")
-      && !config.format.equalsIgnoreCase("JSON") && !config.format.equalsIgnoreCase("PSV")) {
-      throw new IllegalArgumentException("Invalid format '" + config.format + "', specified. Allowed values are " +
-                                           "CSV, TSV, PSV or JSON.");
-    }
+    config.validate();
 
     // Check if the output schema JSON is invalid
     try {
@@ -122,6 +117,7 @@ public final class StreamFormatter extends Transform<StructuredRecord, Structure
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
+    config.validate();
     try {
       outSchema = Schema.parseJson(config.schema);
     } catch (IOException e) {
@@ -210,14 +206,17 @@ public final class StreamFormatter extends Transform<StructuredRecord, Structure
     @Name("body")
     @Description("Specify the fields to be set in the body")
     @Nullable
+    @Macro
     private String body;
     
     @Name("header")
     @Description("Specify the fields to be set in the header")
+    @Macro
     private String header;
     
     @Name("format")
     @Description("Format of the body to be written to stream. Defaults CSV")
+    @Macro
     private String format;
 
     @Name("schema")
@@ -230,6 +229,15 @@ public final class StreamFormatter extends Transform<StructuredRecord, Structure
       this.body = body;
       this.format = format;
       this.schema = schema;
+    }
+
+    private void validate() {
+      // If the format specified is not of one of the allowed types, then throw an exception.
+      if (!containsMacro("format") && !format.equalsIgnoreCase("CSV") && !format.equalsIgnoreCase("TSV")
+        && !format.equalsIgnoreCase("JSON") && !format.equalsIgnoreCase("PSV")) {
+        throw new IllegalArgumentException("Invalid format '" + format + "', specified. Allowed values are " +
+                                             "CSV, TSV, PSV or JSON.");
+      }
     }
   }
 }

@@ -17,9 +17,9 @@ Reader Batch Source to extract values from XMLNews documents and create structur
 Properties
 ----------
 
-**input:** The field in the input record that is the source of the XML event or record.
+**input:** The field in the input record that is the source of the XML event or record. (Macro-enabled)
 
-**encoding:** The source XML character set encoding (default UTF-8).
+**encoding:** The source XML character set encoding (default UTF-8). (Macro-enabled)
 
 **xPathMappings:** Mapping of the field names to the XPaths of the XML record. A comma-separated list, each element of
 which is a field name, followed by a colon, followed by an XPath expression. XPath location paths can include predicates

@@ -9,7 +9,7 @@ that must be present on all nodes of the cluster.
 
 Configuration
 -------------
-**decryptFields** Specifies the fields to decrypt, separated by commas
+**decryptFields** Specifies the fields to decrypt, separated by commas (Macro-enabled)
 
 **schema** Schema to pull records from
 
