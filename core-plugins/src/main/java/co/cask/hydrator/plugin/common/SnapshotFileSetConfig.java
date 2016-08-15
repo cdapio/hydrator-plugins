@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.common;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.plugin.PluginConfig;
 
@@ -29,12 +30,14 @@ public abstract class SnapshotFileSetConfig extends PluginConfig {
   @Name(Properties.SnapshotFileSetSink.NAME)
   @Description("Name of the PartitionedFileset Dataset to which the records are written to. " +
     "If it doesn't exist, it will be created.")
+  @Macro
   protected String name;
 
   @Name(Properties.SnapshotFileSetSink.BASE_PATH)
   @Description("The path where the data will be recorded. " +
     "Defaults to the name of the dataset.")
   @Nullable
+  @Macro
   protected String basePath;
 
   @Name(Properties.SnapshotFileSetSink.FILE_PROPERTIES)
@@ -42,6 +45,7 @@ public abstract class SnapshotFileSetConfig extends PluginConfig {
   @Description("Advanced feature to specify any additional properties that should be used with the sink, " +
     "specified as a JSON object of string to string. These properties are set on the dataset if one is created. " +
     "The properties are also passed to the dataset at runtime as arguments.")
+  @Macro
   protected String fileProperties;
 
   @Description("Optional property that configures the sink to delete old partitions after successful runs. " +
@@ -52,6 +56,7 @@ public abstract class SnapshotFileSetConfig extends PluginConfig {
     "run at midnight of January 1, 2016, and this property is set to 7d, the sink will delete any partitions " +
     "for time partitions older than midnight Dec 25, 2015.")
   @Nullable
+  @Macro
   protected String cleanPartitionsOlderThan;
 
   public SnapshotFileSetConfig(String name, @Nullable String basePath, @Nullable String fileProperties,
