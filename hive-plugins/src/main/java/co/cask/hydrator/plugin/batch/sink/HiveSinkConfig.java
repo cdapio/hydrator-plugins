@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.sink;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.hydrator.plugin.batch.HiveConfig;
 
@@ -34,6 +35,7 @@ public class HiveSinkConfig extends HiveConfig {
     "To write multiple partitions simultaneously you can leave this empty, but all of the partitioning columns must " +
     "be present in the data you are writing to the sink.")
   @Nullable
+  @Macro
   public String partitions;
 
   @Name(Hive.SCHEMA)

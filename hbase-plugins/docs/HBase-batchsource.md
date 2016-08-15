@@ -19,9 +19,9 @@ Properties
 ----------
 **referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
 
-**tableName:** The name of the table to read from.
+**tableName:** The name of the table to read from. (Macro-enabled)
 
-**columnFamily:** The name of the column family to read from.
+**columnFamily:** The name of the column family to read from. (Macro-enabled)
 
 **schema:** Schema of records read from the table. Row columns map to record
 fields. For example, if the schema contains a field named 'user' of type string, the value
@@ -35,11 +35,11 @@ the schema, and must not be nullable.
 **zkQuorum:** The ZooKeeper quorum for the hbase instance you are reading from. This should
 be a comma separated list of hosts that make up the quorum. You can find the correct value
 by looking at the hbase.zookeeper.quorum setting in your hbase-site.xml file. This value
-defaults to 'localhost'.
+defaults to 'localhost'. (Macro-enabled)
 
 **zkClientPort:** The client port used to connect to the ZooKeeper quorum.
 You can find the correct value by looking at the hbase.zookeeper.quorum setting in your hbase-site.xml.
-This value defaults to 2181.
+This value defaults to 2181. (Macro-enabled)
 
 
 Example
