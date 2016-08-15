@@ -48,19 +48,19 @@ public class JoinerConfigTest {
     Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
     Schema.Field.of("category_name", Schema.of(Schema.Type.STRING)));
 
-  private static final String selectedFields = "film.film_id as film_id, film.film_name as film_name, " +
+  // output schema sorted by selected fields
+  private static final Schema outputSchema = Schema.recordOf(
+    "joined",
+    Schema.Field.of("film_id", Schema.of(Schema.Type.STRING)),
+    Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
+    Schema.Field.of("renamed_actor", Schema.of(Schema.Type.STRING)),
+    Schema.Field.of("renamed_category", Schema.of(Schema.Type.STRING)));
+
+  private static final String selectedFields = "film.film_id, film.film_name, " +
     "filmActor.actor_name as renamed_actor, filmCategory.category_name as renamed_category";
 
   @Test
   public void testJoinerConfig() {
-    // output schema sorted by selected fields
-    Schema outputSchema = Schema.recordOf(
-      "joined",
-      Schema.Field.of("film_id", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("renamed_actor", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("renamed_category", Schema.of(Schema.Type.STRING)));
-
     JoinerConfig config = new JoinerConfig("film.film_id=filmActor.film_id=filmCategory.film_id&" +
                                              "film.film_name=filmActor.film_name=filmCategory.film_name",
                                            selectedFields, "film,filmActor,filmCategory");
@@ -173,7 +173,7 @@ public class JoinerConfigTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void testJoinerConfigWithDuplicateOutputFields() {
-    String selectedFields = "film.film_id as id, film.film_name as name, " +
+    String selectedFields = "film.film_id, film.film_name, " +
       "filmActor.actor_name as name, filmCategory.category_name as name";
 
     JoinerConfig config = new JoinerConfig("film.film_id=filmActor.film_id=filmCategory.film_id&" +
@@ -202,9 +202,21 @@ public class JoinerConfigTest {
                                            selectedFields, "film,filmActor,filmCategory");
 
     Joiner joiner = new Joiner(config);
-    Map<String, Schema> inputSchemas = ImmutableMap.of("film", filmSchema, "filmActor", filmActorSchema,
-                                                       "filmCategory", filmCategorySchema);
     joiner.validateJoinKeySchemas(ImmutableMap.of("film", filmSchema, "filmActor", filmActorSchema,
-                                                  "filmCategory", filmCategorySchema));
+                                                  "filmCategory", filmCategorySchema), config.getPerStageJoinKeys());
+  }
+
+  @Test
+  public void testJoinerOutputSchema() {
+    Joiner.GetSchemaRequest getSchemaRequest = new Joiner.GetSchemaRequest();
+    getSchemaRequest.inputSchemas = ImmutableMap.of("film", filmSchema, "filmActor", filmActorSchema,
+                                                    "filmCategory", filmCategorySchema);
+    getSchemaRequest.joinKeys = "film.film_id=filmActor.film_id=filmCategory.film_id";
+    getSchemaRequest.selectedFields = "film.film_id, film.film_name, filmActor.actor_name as renamed_actor, " +
+      "filmCategory.category_name as renamed_category";
+    getSchemaRequest.requiredInputs = "film,filmActor,filmCategory";
+
+    Joiner joiner = new Joiner(null);
+    Assert.assertEquals(outputSchema, joiner.getOutputSchema(getSchemaRequest));
   }
 }
