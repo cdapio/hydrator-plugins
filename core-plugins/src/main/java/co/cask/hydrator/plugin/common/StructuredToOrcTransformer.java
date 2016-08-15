@@ -16,6 +16,7 @@
 
 package co.cask.hydrator.plugin.common;
 
+import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.data.schema.UnsupportedTypeException;
@@ -34,8 +35,10 @@ import org.apache.orc.mapred.OrcStruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.StandardCharsets;
+import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Creates ORCStruct records from StructuredRecords
@@ -43,10 +46,10 @@ import java.util.List;
 public class StructuredToOrcTransformer extends RecordConverter<StructuredRecord, OrcStruct> {
 
   private static final Logger LOG = LoggerFactory.getLogger(StructuredToOrcTransformer.class);
+  private final Map<Schema, OrcStruct> schemaCache = new HashMap<>();
 
   @Override
   public OrcStruct transform(StructuredRecord input) {
-
     List<Schema.Field> fields = input.getSchema().getFields();
     OrcStruct pair = parseOrcSchema(input.getSchema());
     //populate ORC struct Pair object
@@ -64,26 +67,39 @@ public class StructuredToOrcTransformer extends RecordConverter<StructuredRecord
   }
 
   public OrcStruct parseOrcSchema(Schema inputSchema) {
+    if (schemaCache.containsKey(inputSchema)) {
+      return schemaCache.get(inputSchema);
+    }
     StringBuilder builder = new StringBuilder();
     try {
       HiveSchemaConverter.appendType(builder, inputSchema);
     } catch (UnsupportedTypeException e) {
-      LOG.debug("Not a valid Schema {}", inputSchema.toString(), e);
+      throw new IllegalArgumentException(String.format("Not a valid Schema {}", inputSchema.toString()), e);
     }
     TypeDescription schema = TypeDescription.fromString(builder.toString());
     OrcStruct pair = (OrcStruct) OrcStruct.createValue(schema);
+    schemaCache.put(inputSchema, pair);
     return pair;
   }
 
   private WritableComparable convertToWritable(Schema.Field field, StructuredRecord input)
     throws UnsupportedTypeException {
     Object fieldVal = input.get(field.getName());
-    switch (field.getSchema().getType()) {
+    Schema fieldSchema = field.getSchema();
+    Schema.Type fieldType = fieldSchema.getType();
+    if (fieldSchema.isNullable()) {
+      if (fieldVal == null) {
+        return null;
+      }
+      fieldType = fieldSchema.getNonNullable().getType();
+    }
+    switch (fieldType) {
       case NULL:
-        break;
+        return null;
       case STRING:
-      case ENUM:
         return new Text((String) fieldVal);
+      case ENUM:
+        return new Text(fieldVal.toString());
       case BOOLEAN:
         return new BooleanWritable((Boolean) fieldVal);
       case INT:
@@ -95,11 +111,14 @@ public class StructuredToOrcTransformer extends RecordConverter<StructuredRecord
       case DOUBLE:
         return new DoubleWritable((Double) fieldVal);
       case BYTES:
-        return new BytesWritable(((String) fieldVal).getBytes(StandardCharsets.UTF_8));
+        if (fieldVal instanceof byte[]) {
+          return new BytesWritable((byte[]) fieldVal);
+        } else {
+          return new BytesWritable(Bytes.getBytes((ByteBuffer) fieldVal));
+        }
       default:
         throw new UnsupportedTypeException(String.format("{} type is currently not supported in ORC",
                                                          field.getSchema().getType().name()));
-          }
-          return null;
+    }
   }
 }

@@ -67,7 +67,6 @@ public class TimePartitionedFileSetDataSetORCSink extends TimePartitionedFileSet
     emitter.emit(new KeyValue<NullWritable, OrcStruct>(NullWritable.get(), recordTransformer.transform(input)));
   }
 
-
   /**
    * Config for TimePartitionedFileSetOrcSink
    */

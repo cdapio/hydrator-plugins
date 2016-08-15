@@ -16,6 +16,7 @@
 
 package co.cask.hydrator.plugin.batch;
 
+import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
@@ -234,10 +235,11 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
                                            Schema.Field.of("floatTest", Schema.of(Schema.Type.FLOAT)),
                                            Schema.Field.of("doubleTest", Schema.of(Schema.Type.DOUBLE)),
                                            Schema.Field.of("boolTest", Schema.of(Schema.Type.BOOLEAN)),
-                                           Schema.Field.of("longTest", Schema.of(Schema.Type.LONG))
+                                           Schema.Field.of("longTest", Schema.of(Schema.Type.LONG)),
+                                           Schema.Field.of("byteTest", Schema.of(Schema.Type.BYTES)),
+                                           Schema.Field.of("intTest", Schema.of(Schema.Type.INT))
 
     );
-
 
 
     ETLPlugin sinkConfig = new ETLPlugin("TPFSOrc",
@@ -269,7 +271,9 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
         .set("floatTest", 3.6f)
         .set("doubleTest", 4.2)
         .set("boolTest", true)
-        .set("longTest", 23456789).build()
+        .set("longTest", 23456789)
+        .set("intTest", 12)
+        .set("byteTest", Bytes.toBytes("abcd")).build()
     );
     MockSource.writeInput(inputManager, input);
 
@@ -286,6 +290,8 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     Assert.assertEquals(4.2, results.getDouble(3), 0.1);
     Assert.assertEquals(true, results.getBoolean(4));
     Assert.assertEquals(23456789, results.getLong(5));
+    Assert.assertArrayEquals(Bytes.toBytes("abcd"), results.getBytes(6));
+    Assert.assertEquals(12, results.getLong(7));
   }
 
   @Test
