@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015-2016 Cask Data, Inc.
+ * Copyright © 2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -16,15 +16,20 @@
 
 package co.cask.hydrator.plugin.batch;
 
+import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.TimePartitionDetail;
 import co.cask.cdap.api.dataset.lib.TimePartitionOutput;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
+import co.cask.cdap.api.dataset.table.Table;
+import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.batch.ETLWorkflow;
+import co.cask.cdap.etl.mock.batch.MockSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
@@ -37,6 +42,7 @@ import co.cask.hydrator.plugin.common.Properties;
 import co.cask.tephra.Transaction;
 import co.cask.tephra.TransactionAware;
 import co.cask.tephra.TransactionManager;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.avro.file.DataFileWriter;
 import org.apache.avro.generic.GenericDatumWriter;
@@ -53,10 +59,13 @@ import org.junit.Test;
 import parquet.avro.AvroParquetWriter;
 import parquet.hadoop.ParquetWriter;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class ETLTPFSTestRun extends ETLBatchTestBase {
+
 
   @Test
   public void testPartitionOffsetAndCleanup() throws Exception {
@@ -217,6 +226,112 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     List<GenericRecord> newRecords = readOutput(newFileSet, eventSchema);
     Assert.assertEquals(1, newRecords.size());
     Assert.assertEquals(Integer.MAX_VALUE, newRecords.get(0).get("int"));
+  }
+
+  @Test
+  public void testOrc() throws Exception {
+    Schema recordSchema2 = Schema.recordOf("record",
+                                           Schema.Field.of("name", Schema.of(Schema.Type.STRING)),
+                                           Schema.Field.of("floatTest", Schema.of(Schema.Type.FLOAT)),
+                                           Schema.Field.of("doubleTest", Schema.of(Schema.Type.DOUBLE)),
+                                           Schema.Field.of("boolTest", Schema.of(Schema.Type.BOOLEAN)),
+                                           Schema.Field.of("longTest", Schema.of(Schema.Type.LONG)),
+                                           Schema.Field.of("byteTest", Schema.of(Schema.Type.BYTES)),
+                                           Schema.Field.of("intTest", Schema.of(Schema.Type.INT)),
+                                           Schema.Field.of("unionStrTest",
+                                                           Schema.unionOf(Schema.of(Schema.Type.STRING),
+                                                                          Schema.of(Schema.Type.NULL))),
+                                           Schema.Field.of("unionStrNullTest",
+                                                           Schema.unionOf(Schema.of(Schema.Type.STRING),
+                                                                          Schema.of(Schema.Type.NULL))),
+                                           Schema.Field.of("unionIntTest",
+                                                           Schema.unionOf(Schema.of(Schema.Type.INT),
+                                                                          Schema.of(Schema.Type.NULL))),
+                                           Schema.Field.of("unionIntNullTest",
+                                                           Schema.unionOf(Schema.of(Schema.Type.INT),
+                                                                          Schema.of(Schema.Type.NULL))),
+                                           Schema.Field.of("unionFloatTest",
+                                                           Schema.unionOf(Schema.of(Schema.Type.FLOAT),
+                                                                          Schema.of(Schema.Type.NULL))),
+                                           Schema.Field.of("unionFloatNullTest",
+                                                           Schema.unionOf(Schema.of(Schema.Type.FLOAT),
+                                                                          Schema.of(Schema.Type.NULL))),
+                                           Schema.Field.of("unionDoublTest",
+                                                           Schema.unionOf(Schema.of(Schema.Type.DOUBLE),
+                                                                          Schema.of(Schema.Type.NULL))),
+                                           Schema.Field.of("unionDoubleNullTest",
+                                                           Schema.unionOf(Schema.of(Schema.Type.DOUBLE),
+                                                                          Schema.of(Schema.Type.NULL)))
+                                           //TODO test nullable of long and Bytes CDAP-7074
+    );
+
+    ETLPlugin sinkConfig = new ETLPlugin("TPFSOrc",
+                                         BatchSink.PLUGIN_TYPE,
+                                         ImmutableMap.of(
+                                           "schema", recordSchema2.toString(),
+                                           "name", "outputOrc"),
+                                         null);
+
+    ETLStage sink = new ETLStage("sink", sinkConfig);
+    String inputDatasetName = "input-batchsinktest";
+    ETLStage source = new ETLStage("source", MockSource.getPlugin(inputDatasetName));
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "TPFSOrcSinkTest");
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+    DataSetManager<Table> inputManager = getDataset(inputDatasetName);
+
+    // write input data
+    List<StructuredRecord> input = ImmutableList.of(
+      StructuredRecord.builder(recordSchema2)
+        .set("name", "a")
+        .set("floatTest", 3.6f)
+        .set("doubleTest", 4.2)
+        .set("boolTest", true)
+        .set("longTest", 23456789)
+        .set("intTest", 12)
+        .set("byteTest", Bytes.toBytes("abcd"))
+        .set("unionStrTest", "testUnion")
+        .set("unionStrNullTest", null)
+        .set("unionIntTest", 12)
+        .set("unionIntNullTest", null)
+        .set("unionFloatTest", 3.6f)
+        .set("unionFloatNullTest", null)
+        .set("unionDoublTest", 4.2)
+        .set("unionDoubleNullTest", null)
+        .build()
+    );
+    MockSource.writeInput(inputManager, input);
+
+    // run the pipeline
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForFinish(4, TimeUnit.MINUTES);
+
+    Connection connection = getQueryClient();
+    ResultSet results = connection.prepareStatement("select * from dataset_outputOrc").executeQuery();
+    results.next();
+
+    Assert.assertEquals("a", results.getString(1));
+    Assert.assertEquals(3.6f, results.getFloat(2), 0.1);
+    Assert.assertEquals(4.2, results.getDouble(3), 0.1);
+    Assert.assertEquals(true, results.getBoolean(4));
+    Assert.assertEquals(23456789, results.getLong(5));
+    Assert.assertArrayEquals(Bytes.toBytes("abcd"), results.getBytes(6));
+    Assert.assertEquals(12, results.getLong(7));
+    Assert.assertEquals("testUnion", results.getString(8));
+    Assert.assertNull(results.getString(9));
+    Assert.assertEquals(12, results.getLong(10));
+    Assert.assertEquals(0, results.getLong(11));
+    Assert.assertEquals(3.6f, results.getFloat(12), 0.1);
+    Assert.assertEquals(0.0, results.getFloat(13), 0.1);
+    Assert.assertEquals(4.2, results.getDouble(14), 0.1);
+    Assert.assertEquals(0, results.getDouble(15), 0.1);
   }
 
   @Test
