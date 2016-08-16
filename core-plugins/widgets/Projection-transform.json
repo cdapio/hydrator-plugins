@@ -26,6 +26,15 @@
           }
         },
         {
+          "widget-type": "csv",
+          "label": "Fields to keep",
+          "name": "keep",
+          "widget-attributes": {
+            "delimiter": ",",
+            "value-placeholder": "Field Name"
+          }
+        },
+        {
           "widget-type": "keyvalue",
           "label": "Fields to rename",
           "name": "rename",

@@ -12,22 +12,23 @@
           "label": "Key Field",
           "name": "keyField"
         },
-		{
+		    {
           "widget-type": "textbox",
           "label": "Input Name Field",
           "name": "nameField"
         },
-		{
+		    {
           "widget-type": "textbox",
           "label": "Input Value Field",
           "name": "valueField"
         },
-		{
+		    {
           "widget-type": "csv",
           "label": "Output fields to include",
           "name": "outputFields",
           "widget-attributes": {
-            "delimiter": ","
+            "delimiter": ",",
+            "value-placeholder": "Output Field Name"
           }
         },
         {
@@ -35,7 +36,9 @@
           "label": "Output fields to rename",
           "name": "fieldAliases",
           "widget-attributes": {
-			"showDelimiter": "false"
+            "showDelimiter": "false",
+            "key-placeholder": "Field Name",
+            "value-placeholder": "New Field Name"
           }
         }
       ]

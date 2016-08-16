@@ -87,7 +87,7 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
     delimMap.put("TAB", "\t");
     delimMap.put("VBAR", "|");
     delimMap.put("STAR", "*");
-    delimMap.put("CARROT", "^");
+    delimMap.put("CARET", "^");
     delimMap.put("DOLLAR", "$");
     delimMap.put("HASH", "#");
     delimMap.put("TILDE", "~");
