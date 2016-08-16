@@ -1,9 +1,9 @@
-# Twitter Real-time Source
+# Twitter Streaming Source
 
 
 Description
 -----------
-Samples tweets in real-time. Output records will have this schema:
+Samples tweets in real-time through Spark streaming. Output records will have this schema:
 
     +================================+
     | field name  | type             |
@@ -23,7 +23,7 @@ Samples tweets in real-time. Output records will have this schema:
 
 Use Case
 --------
-The source is used whenever you want to sample tweets from Twitter in real-time.
+The source is used whenever you want to sample tweets from Twitter in real-time using Spark streaming.
 For example, you may want to read tweets and store them in a table where they can
 be accessed by your data scientists to perform experiments.
 
@@ -40,13 +40,13 @@ the relevant app to find the consumer key and secret.
   [Twitter OAuth documentation]: https://dev.twitter.com/oauth/overview
   [your apps]: https://apps.twitter.com/
 
-**ConsumerKey:** Twitter Consumer Key. (Macro-enabled)
+**ConsumerKey:** Twitter Consumer Key.
 
-**ConsumerSecret:** Twitter Consumer Secret. (Macro-enabled)
+**ConsumerSecret:** Twitter Consumer Secret.
 
-**AccessToken:** Twitter Access Token. (Macro-enabled)
+**AccessToken:** Twitter Access Token.
 
-**AccessTokenSecret:** Twitter Access Token Secret. (Macro-enabled)
+**AccessTokenSecret:** Twitter Access Token Secret.
 
 
 Example
@@ -54,7 +54,7 @@ Example
 
     {
         "name": "Twitter",
-        "type": "realtimesource",
+        "type": "streamingsource",
         "properties": {
             "AccessToken": "GetAccessTokenFromTwitter",
             "AccessTokenSecret": "GetAccessTokenSecretFromTwitter",

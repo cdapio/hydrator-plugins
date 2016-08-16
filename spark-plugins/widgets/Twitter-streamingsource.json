@@ -1,0 +1,108 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "OAuth Access Tokens",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Reference Name",
+          "name": "referenceName"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Access Token",
+          "name": "AccessToken"
+        },
+        {
+          "widget-type": "password",
+          "label": "Access Token Secret",
+          "name": "AccessTokenSecret"
+        }
+      ]
+    },
+    {
+      "label": "OAuth Consumer Settings",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Consumer Key",
+          "name": "ConsumerKey"
+        },
+        {
+          "widget-type": "password",
+          "label": "Consumer Secret",
+          "name": "ConsumerSecret"
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "widget-type": "non-editable-schema-editor",
+      "schema": {
+        "name": "etlSchemaBody",
+        "type": "record",
+        "fields": [
+          {
+            "name": "id",
+            "type": "long"
+          },
+          {
+            "name": "message",
+            "type": "string"
+          },
+          {
+            "name" : "lang",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          {
+            "name": "time",
+            "type": [
+              "long",
+              "null"
+            ]
+          },
+          {
+            "name": "favCount",
+            "type": "int"
+          },
+          {
+            "name": "rtCount",
+            "type": "int"
+          },
+          {
+            "name": "source",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          {
+            "name": "geoLat",
+            "type": [
+              "double",
+              "null"
+            ]
+          },
+          {
+            "name": "geoLong",
+            "type": [
+              "double",
+              "null"
+            ]
+          },
+          {
+            "name": "isRetweet",
+            "type": "boolean"
+          }
+        ]
+      }
+    }
+  ]
+}
