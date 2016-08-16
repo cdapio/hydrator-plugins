@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -43,7 +44,7 @@ import javax.crypto.Cipher;
  */
 @Plugin(type = Transform.PLUGIN_TYPE)
 @Name("Decryptor")
-@Description("Decrypts records fields.")
+@Description("Decrypts fields of records.")
 public final class Decryptor extends Transform<StructuredRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(Decryptor.class);
   private final Conf conf;
@@ -99,8 +100,12 @@ public final class Decryptor extends Transform<StructuredRecord, StructuredRecor
    * Decryptor Plugin config.
    */
   public static class Conf extends KeystoreConf {
+    @Description("The fields to decrypt, separated by commas")
+    @Macro
     private String decryptFields;
 
+    @Description("Schema to pull fields from")
+    @Macro
     private String schema;
 
     private Set<String> getDecryptFields() {
