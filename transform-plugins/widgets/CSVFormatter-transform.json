@@ -27,7 +27,7 @@
           "name": "delimiter",
           "widget-attributes": {
             "values": [
-              "CARROT",
+              "CARET",
               "COMMA",
               "CTRL-A",
               "CTRL-B",
