@@ -17,6 +17,7 @@
 package co.cask.hydrator.common;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.plugin.PluginConfig;
 import com.google.common.annotations.VisibleForTesting;
 
@@ -26,27 +27,34 @@ import javax.annotation.Nullable;
  * Config for keystore properties.
  */
 public class KeystoreConf extends PluginConfig {
-  @Description("transformation algorithm/mode/padding. For example, AES/CBC/PKCS5Padding.")
+  @Description("Transformation algorithm, mode, and padding, separated by slashes; for example: AES/CBC/PKCS5Padding")
+  @Macro
   private String transformation;
 
   @Nullable
-  @Description("initialization vector if using CBC mode.")
+  @Description("Initialization vector if using CBC mode")
+  @Macro
   private String ivHex;
 
-  @Description("path to the keystore on local disk. The keystore must be present on every node in the cluster.")
+  @Description("Path to the keystore on local disk; the keystore must be present on every node of the cluster")
+  @Macro
   private String keystorePath;
 
   @Nullable
-  @Description("password for the keystore.")
+  @Description("Password for the keystore")
+  @Macro
   private String keystorePassword;
 
-  @Description("type of keystore. For example, JKS, or JCEKS.")
+  @Description("Type of keystore; for example: JKS or JCEKS")
+  @Macro
   private String keystoreType;
 
-  @Description("alias of the key to use in the keystore.")
+  @Description("Alias of the key to use in the keystore")
+  @Macro
   private String keyAlias;
 
-  @Description("password for the key to use in the keystore.")
+  @Description("Password for the key to use in the keystore")
+  @Macro
   private String keyPassword;
 
   public KeystoreConf() {
