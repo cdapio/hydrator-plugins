@@ -16,10 +16,10 @@ calculate those aggregates over every five seconds instead of every second.
 
 Properties
 ----------
-**width:** the width of the window in seconds. Must be a multiple of the batch interval.
+**width:** The width of the window in seconds. Must be a multiple of the batch interval.
 Each window generated will contain all the events from this many seconds.
 
-**slideInterval:** the sliding interval of the window in seconds. Must be a multiple of the batch interval.
+**slideInterval:** The sliding interval of the window in seconds. Must be a multiple of the batch interval.
 Every this number of seconds, a new window will be generated.
 
 Example
@@ -40,8 +40,7 @@ and slide interval must be multiples of the batch interval.
         }
     }
 
-With this setup, the plugin would generate the following windowed batches:
-
+With this setup, the plugin would generate these windowed batches:
 
     +====================================+
     | time | input | output              |
