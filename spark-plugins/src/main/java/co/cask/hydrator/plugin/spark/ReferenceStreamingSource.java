@@ -26,7 +26,7 @@ import co.cask.cdap.proto.id.DatasetId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.common.ReferencePluginConfig;
-import co.cask.tephra.TransactionFailureException;
+import org.apache.tephra.TransactionFailureException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
