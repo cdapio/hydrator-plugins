@@ -32,7 +32,6 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
 
   private final Map<Integer, Schema> schemaCache = Maps.newHashMap();
 
-  @Override
   public StructuredRecord transform(GenericRecord genericRecord) throws IOException {
     org.apache.avro.Schema genericRecordSchema = genericRecord.getSchema();
 
@@ -46,6 +45,11 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
       schemaCache.put(hashCode, structuredSchema);
     }
 
+    return transform(genericRecord, structuredSchema);
+  }
+
+  @Override
+  public StructuredRecord transform(GenericRecord genericRecord, Schema structuredSchema) throws IOException {
     StructuredRecord.Builder builder = StructuredRecord.builder(structuredSchema);
     for (Schema.Field field : structuredSchema.getFields()) {
       String fieldName = field.getName();

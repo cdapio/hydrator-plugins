@@ -41,10 +41,10 @@ import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.DatumReader;
 import org.apache.hadoop.fs.Path;
-import org.apache.parquet.avro.AvroParquetReader;
 import org.apache.twill.filesystem.Location;
 import org.junit.Assert;
 import org.junit.Test;
+import parquet.avro.AvroParquetReader;
 
 import java.io.IOException;
 import java.util.HashMap;

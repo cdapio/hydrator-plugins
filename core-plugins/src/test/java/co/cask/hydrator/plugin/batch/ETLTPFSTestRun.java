@@ -53,11 +53,11 @@ import org.apache.avro.mapreduce.AvroKeyInputFormat;
 import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.Path;
-import org.apache.parquet.avro.AvroParquetWriter;
-import org.apache.parquet.hadoop.ParquetWriter;
 import org.apache.twill.filesystem.Location;
 import org.junit.Assert;
 import org.junit.Test;
+import parquet.avro.AvroParquetWriter;
+import parquet.hadoop.ParquetWriter;
 
 import java.sql.Connection;
 import java.sql.ResultSet;

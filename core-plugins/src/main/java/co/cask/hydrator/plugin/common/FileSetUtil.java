@@ -1,5 +1,5 @@
 /*
- * Copyright © 2016 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -30,11 +30,11 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.orc.mapreduce.OrcInputFormat;
 import org.apache.orc.mapreduce.OrcOutputFormat;
-import org.apache.parquet.avro.AvroParquetInputFormat;
-import org.apache.parquet.avro.AvroParquetOutputFormat;
+import parquet.avro.AvroParquetInputFormat;
+import parquet.avro.AvroParquetOutputFormat;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.Map;
 
@@ -57,7 +57,6 @@ public class FileSetUtil {
    *   <li>As the schema for the input and output format;</li>
    *   <li>As the schema of the Hive table.</li>
    * </ul>
-   *
    * @param configuredSchema the original schema configured for the table
    * @param properties a builder for the file set properties
    */
@@ -134,7 +133,6 @@ public class FileSetUtil {
    *   <li>As the schema of the Hive table;</li>
    *   <li>As the schema to be used by the Avro serde (which is used by Hive).</li>
    * </ul>
-   *
    * @param configuredSchema the original schema configured for the table
    * @param properties a builder for the file set properties
    */

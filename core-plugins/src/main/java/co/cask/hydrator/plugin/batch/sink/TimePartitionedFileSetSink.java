@@ -61,7 +61,7 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
 
   @Override
   public void prepareRun(BatchSinkContext context) {
-    Map<String, String> sinkArgs = new HashMap<>();
+    Map<String, String> sinkArgs = getAdditionalTPFSArguments();
     long outputPartitionTime = context.getLogicalStartTime();
     if (tpfsSinkConfig.partitionOffset != null) {
       outputPartitionTime -= TimeParser.parseDuration(tpfsSinkConfig.partitionOffset);
@@ -73,6 +73,17 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
                                                           tpfsSinkConfig.timeZone);
     }
     context.addOutput(Output.ofDataset(tpfsSinkConfig.name, sinkArgs));
+  }
+
+  /**
+   * @return any additional properties that need to be set for the sink. For example, avro sink requires
+   *         setting some schema output key.
+   */
+  protected Map<String, String> getAdditionalTPFSArguments() {
+    // release 1.4 hydrator plugins uses FileSetUtil to set all the properties that the input and output formats
+    // require when it creates the dataset, so it doesn't need to set those arguments at runtime. inorder to be
+    // backward compatible to older versions of the plugins we need to set this at runtime.
+    return new HashMap<>();
   }
 
   /**

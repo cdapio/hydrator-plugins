@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015-2016 Cask Data, Inc.
+ * Copyright © 2015 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -70,12 +70,12 @@ import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.apache.hadoop.fs.Path;
 import org.apache.orc.mapred.OrcStruct;
 import org.apache.orc.mapreduce.OrcMapreduceRecordWriter;
-import org.apache.parquet.avro.AvroParquetInputFormat;
-import org.apache.parquet.avro.AvroParquetOutputFormat;
-import org.apache.parquet.avro.AvroParquetReader;
 import org.apache.twill.filesystem.Location;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import parquet.avro.AvroParquetInputFormat;
+import parquet.avro.AvroParquetOutputFormat;
+import parquet.avro.AvroParquetReader;
 
 import java.io.IOException;
 import java.util.List;

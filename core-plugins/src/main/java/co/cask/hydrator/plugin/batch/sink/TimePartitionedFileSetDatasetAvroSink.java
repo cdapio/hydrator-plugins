@@ -32,6 +32,8 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.hadoop.io.NullWritable;
 
+import java.util.HashMap;
+import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -67,6 +69,13 @@ public class TimePartitionedFileSetDatasetAvroSink extends
   public void transform(StructuredRecord input,
                         Emitter<KeyValue<AvroKey<GenericRecord>, NullWritable>> emitter) throws Exception {
     emitter.emit(new KeyValue<>(new AvroKey<>(recordTransformer.transform(input)), NullWritable.get()));
+  }
+
+  @Override
+  protected Map<String, String> getAdditionalTPFSArguments() {
+    Map<String, String> args = new HashMap<>();
+    args.put(FileSetProperties.OUTPUT_PROPERTIES_PREFIX + "avro.schema.output.key", config.schema);
+    return args;
   }
 
   /**
