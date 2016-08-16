@@ -150,6 +150,9 @@ public class DBRecord implements Writable, DBWritable {
   private Object transformValue(int sqlColumnType, Object original) throws SQLException {
     if (original != null) {
       switch (sqlColumnType) {
+        case Types.SMALLINT:
+        case Types.TINYINT:
+          return ((Number) original).intValue();
         case Types.NUMERIC:
         case Types.DECIMAL:
           return ((BigDecimal) original).doubleValue();
