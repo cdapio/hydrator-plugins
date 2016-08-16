@@ -64,7 +64,7 @@ public class TimePartitionedFileSetDataSetORCSink extends TimePartitionedFileSet
   @Override
   public void transform(StructuredRecord input,
                         Emitter<KeyValue<NullWritable, OrcStruct>> emitter) throws Exception {
-    emitter.emit(new KeyValue<NullWritable, OrcStruct>(NullWritable.get(), recordTransformer.transform(input)));
+    emitter.emit(new KeyValue<>(NullWritable.get(), recordTransformer.transform(input, input.getSchema())));
   }
 
   /**

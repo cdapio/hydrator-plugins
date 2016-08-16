@@ -119,7 +119,6 @@ public final class HiveSchemaConverter {
         }
     }
   }
-
   private static void appendField(StringBuilder builder, Schema.Field field, boolean inStruct)
     throws UnsupportedTypeException {
     String name = field.getName();

@@ -238,22 +238,30 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
                                            Schema.Field.of("longTest", Schema.of(Schema.Type.LONG)),
                                            Schema.Field.of("byteTest", Schema.of(Schema.Type.BYTES)),
                                            Schema.Field.of("intTest", Schema.of(Schema.Type.INT)),
-                                           Schema.Field.of("unionStrTest", Schema.unionOf(Schema.of(Schema.Type.STRING),
-                                                                                    Schema.of(Schema.Type.NULL))),
-                                           Schema.Field.of("unionStrNullTest", Schema.unionOf(Schema.of(Schema.Type.STRING),
-                                                                                          Schema.of(Schema.Type.NULL))),
-                                           Schema.Field.of("unionIntTest", Schema.unionOf(Schema.of(Schema.Type.INT),
-                                                                                          Schema.of(Schema.Type.NULL))),
-                                           Schema.Field.of("unionIntNullTest", Schema.unionOf(Schema.of(Schema.Type.INT),
-                                                                                          Schema.of(Schema.Type.NULL))),
-                                           Schema.Field.of("unionFloatTest", Schema.unionOf(Schema.of(Schema.Type.FLOAT),
-                                                                                          Schema.of(Schema.Type.NULL))),
-                                           Schema.Field.of("unionFloatNullTest", Schema.unionOf(Schema.of(Schema.Type.FLOAT),
-                                                                                          Schema.of(Schema.Type.NULL))),
-                                           Schema.Field.of("unionDoublTest", Schema.unionOf(Schema.of(Schema.Type.DOUBLE),
-                                                                                                Schema.of(Schema.Type.NULL))),
-                                           Schema.Field.of("unionDoubleNullTest", Schema.unionOf(Schema.of(Schema.Type.DOUBLE),
-                                                                                                Schema.of(Schema.Type.NULL)))
+                                           Schema.Field.of("unionStrTest",
+                                                           Schema.unionOf(Schema.of(Schema.Type.STRING),
+                                                                          Schema.of(Schema.Type.NULL))),
+                                           Schema.Field.of("unionStrNullTest",
+                                                           Schema.unionOf(Schema.of(Schema.Type.STRING),
+                                                                          Schema.of(Schema.Type.NULL))),
+                                           Schema.Field.of("unionIntTest",
+                                                           Schema.unionOf(Schema.of(Schema.Type.INT),
+                                                                          Schema.of(Schema.Type.NULL))),
+                                           Schema.Field.of("unionIntNullTest",
+                                                           Schema.unionOf(Schema.of(Schema.Type.INT),
+                                                                          Schema.of(Schema.Type.NULL))),
+                                           Schema.Field.of("unionFloatTest",
+                                                           Schema.unionOf(Schema.of(Schema.Type.FLOAT),
+                                                                          Schema.of(Schema.Type.NULL))),
+                                           Schema.Field.of("unionFloatNullTest",
+                                                           Schema.unionOf(Schema.of(Schema.Type.FLOAT),
+                                                                          Schema.of(Schema.Type.NULL))),
+                                           Schema.Field.of("unionDoublTest",
+                                                           Schema.unionOf(Schema.of(Schema.Type.DOUBLE),
+                                                                          Schema.of(Schema.Type.NULL))),
+                                           Schema.Field.of("unionDoubleNullTest",
+                                                           Schema.unionOf(Schema.of(Schema.Type.DOUBLE),
+                                                                          Schema.of(Schema.Type.NULL)))
                                            //TODO test nullable of long and Bytes CDAP-7074
     );
 
@@ -319,11 +327,11 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     Assert.assertEquals("testUnion", results.getString(8));
     Assert.assertNull(results.getString(9));
     Assert.assertEquals(12, results.getLong(10));
-    Assert.assertEquals(0,results.getLong(11));
+    Assert.assertEquals(0, results.getLong(11));
     Assert.assertEquals(3.6f, results.getFloat(12), 0.1);
-    Assert.assertEquals(0.0,results.getFloat(13), 0.1);
+    Assert.assertEquals(0.0, results.getFloat(13), 0.1);
     Assert.assertEquals(4.2, results.getDouble(14), 0.1);
-    Assert.assertEquals(0,results.getDouble(15),0.1);
+    Assert.assertEquals(0, results.getDouble(15), 0.1);
   }
 
   @Test

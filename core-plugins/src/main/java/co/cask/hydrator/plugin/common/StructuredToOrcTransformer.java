@@ -49,28 +49,28 @@ public class StructuredToOrcTransformer extends RecordConverter<StructuredRecord
   private final Map<Schema, TypeDescription> schemaCache = new HashMap<>();
 
   @Override
-  public OrcStruct transform(StructuredRecord input) {
+  public OrcStruct transform(StructuredRecord input, Schema schema) {
     List<Schema.Field> fields = input.getSchema().getFields();
-    OrcStruct pair = parseOrcSchema(input.getSchema());
-    //populate ORC struct Pair object
+    OrcStruct orcRecord = parseOrcSchema(input.getSchema());
+    //populate ORC struct orcRecord object
     for (int i = 0; i < fields.size(); i++) {
       Schema.Field field = fields.get(i);
       try {
         WritableComparable writable = convertToWritable(field, input);
-        pair.setFieldValue(fields.get(i).getName(), writable);
+        orcRecord.setFieldValue(fields.get(i).getName(), writable);
       } catch (UnsupportedTypeException e) {
         LOG.debug("{} is not a supported type", field.getName(), e);
         throw new IllegalArgumentException(String.format("{} is not a supported type", field.getName()), e);
       }
     }
-    return pair;
+    return orcRecord;
   }
 
-  public OrcStruct parseOrcSchema(Schema inputSchema) {
+  private OrcStruct parseOrcSchema(Schema inputSchema) {
+    OrcStruct orcRecord;
     if (schemaCache.containsKey(inputSchema)) {
       TypeDescription schema = schemaCache.get(inputSchema);
-      OrcStruct pair = (OrcStruct) OrcStruct.createValue(schema);
-      return pair;
+       orcRecord = (OrcStruct) OrcStruct.createValue(schema);
     } else {
       StringBuilder builder = new StringBuilder();
       try {
@@ -79,10 +79,10 @@ public class StructuredToOrcTransformer extends RecordConverter<StructuredRecord
         throw new IllegalArgumentException(String.format("Not a valid Schema {}", inputSchema.toString()), e);
       }
       TypeDescription schema = TypeDescription.fromString(builder.toString());
-      OrcStruct pair = (OrcStruct) OrcStruct.createValue(schema);
+      orcRecord = (OrcStruct) OrcStruct.createValue(schema);
       schemaCache.put(inputSchema, schema);
-      return pair;
     }
+    return orcRecord;
   }
 
   private WritableComparable convertToWritable(Schema.Field field, StructuredRecord input)
@@ -124,4 +124,5 @@ public class StructuredToOrcTransformer extends RecordConverter<StructuredRecord
                                                          field.getSchema().getType().name()));
     }
   }
+
 }
