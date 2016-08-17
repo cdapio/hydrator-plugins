@@ -264,6 +264,7 @@
               co.cask.hydrator.plugin.batch.*;
               co.cask.hydrator.plugin.common;
               co.cask.hydrator.plugin.realtime.*;
+              co.cask.hydrator.plugin.streaming.*;
               co.cask.hydrator.plugin.transform.*;
               co.cask.hydrator.plugin.validator.*;
               org.apache.avro.mapreduce;

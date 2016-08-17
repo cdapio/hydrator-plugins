@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.streaming;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.streaming.Windower;
 
 /**
@@ -47,7 +48,7 @@ public class Window extends Windower {
   /**
    * Config for window plugin.
    */
-  public static class Conf {
+  public static class Conf extends PluginConfig {
     @Description("Width of the window in seconds. Must be a multiple of the pipeline's batch interval. " +
       "Each window generated will contain all the events from this many seconds.")
     long width;
