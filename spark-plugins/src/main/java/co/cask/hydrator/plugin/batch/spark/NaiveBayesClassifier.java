@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.spark;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -66,9 +67,11 @@ public class NaiveBayesClassifier extends SparkCompute<StructuredRecord, Structu
   public static class Config extends PluginConfig {
 
     @Description("The name of the FileSet to load the model from.")
+    @Macro
     private final String fileSetName;
 
     @Description("Path of the FileSet to load the model from.")
+    @Macro
     private final String path;
 
     @Description("A space-separated sequence of words to classify.")
@@ -81,6 +84,7 @@ public class NaiveBayesClassifier extends SparkCompute<StructuredRecord, Structu
     @Description("The number of features to use in training the model. It must be of type integer and equal to the" +
                   " number of features used in NaiveBayesTrainer. The default value if none is provided will be" +
                   " 100.")
+    @Macro
     private final Integer numFeatures;
 
     public Config(String fileSetName, String path, String fieldToClassify, String predictionField,
