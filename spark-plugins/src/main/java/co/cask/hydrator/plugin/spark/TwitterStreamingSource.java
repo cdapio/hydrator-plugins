@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.spark;
+package co.cask.hydrator.plugin.spark;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Macro;
@@ -31,8 +31,6 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.twitter.TwitterUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import twitter4j.Status;
 import twitter4j.auth.Authorization;
 import twitter4j.auth.OAuthAuthorization;

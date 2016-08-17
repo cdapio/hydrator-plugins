@@ -177,7 +177,7 @@
         <configuration>
           <instructions>
             <_exportcontents>
-              co.cask.hydrator.plugin.batch.spark.*;org.apache.spark.streaming.kafka.*;org.apache.spark.streaming.scheduler.*;kafka.serializer.*;org.apache.spark.streaming.twitter.*;twitter4j.*;
+              co.cask.hydrator.plugin.spark.*;org.apache.spark.streaming.kafka.*;org.apache.spark.streaming.scheduler.*;kafka.serializer.*;org.apache.spark.streaming.twitter.*;twitter4j.*;
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
