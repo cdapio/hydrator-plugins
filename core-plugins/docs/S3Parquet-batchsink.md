@@ -19,19 +19,19 @@ Properties
 ----------
 **referenceName:** This will be used to uniquely identify this sink for lineage, annotating metadata, etc.
 
-**accessID:** Access ID of the Amazon S3 instance to connect to.
+**accessID:** Access ID of the Amazon S3 instance to connect to. (Macro-enabled)
 
-**accessKey:** Access Key of the Amazon S3 instance to connect to.
+**accessKey:** Access Key of the Amazon S3 instance to connect to. (Macro-enabled)
 
-**basePath:** The S3 path where the data is stored. Example: 's3n://logs'.
+**basePath:** The S3 path where the data is stored. Example: 's3n://logs'. (Macro-enabled)
 
 **fileSystemProperties:** A JSON string representing a map of properties needed for the
 distributed file system. The property names needed for S3 (*accessID* and *accessKey*)
-will be included as ``'fs.s3n.awsSecretAccessKey'`` and ``'fs.s3n.awsAccessKeyId'``.
+will be included as ``'fs.s3n.awsSecretAccessKey'`` and ``'fs.s3n.awsAccessKeyId'``. (Macro-enabled)
 
 **pathFormat:** The format for the path that will be suffixed to the basePath; for
 example: the format ``'yyyy-MM-dd-HH-mm'`` will create a file path ending in
-``'2015-01-01-20-42'``. Default format used is ``'yyyy-MM-dd-HH-mm'``.
+``'2015-01-01-20-42'``. Default format used is ``'yyyy-MM-dd-HH-mm'``. (Macro-enabled)
 
 **schema:** The Parquet schema of the record being written to the sink as a JSON object.
 
