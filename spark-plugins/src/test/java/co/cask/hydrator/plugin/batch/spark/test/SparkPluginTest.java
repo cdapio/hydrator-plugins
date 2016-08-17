@@ -49,6 +49,7 @@ import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.batch.spark.KafkaStreamingSource;
 import co.cask.hydrator.plugin.batch.spark.NaiveBayesClassifier;
 import co.cask.hydrator.plugin.batch.spark.NaiveBayesTrainer;
+import co.cask.hydrator.plugin.batch.spark.TwitterStreamingSource;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -122,7 +123,8 @@ public class SparkPluginTest extends HydratorTestBase {
     );
     addPluginArtifact(NamespaceId.DEFAULT.artifact("spark-plugins", "1.0.0"), parents,
                       NaiveBayesTrainer.class, NaiveBayesClassifier.class,
-                      KafkaStreamingSource.class, KafkaUtils.class, DefaultDecoder.class);
+                      KafkaStreamingSource.class, KafkaUtils.class, DefaultDecoder.class,
+                      TwitterStreamingSource.class);
 
     zkServer = InMemoryZKServer.builder().setDataDir(TMP_FOLDER.newFolder()).build();
     zkServer.startAndWait();
