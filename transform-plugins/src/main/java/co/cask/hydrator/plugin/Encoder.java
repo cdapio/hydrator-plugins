@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -94,7 +95,9 @@ public final class Encoder extends Transform<StructuredRecord, StructuredRecord>
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-    parseConfiguration(config.encode);
+    if (!config.containsMacro("encode")) {
+      parseConfiguration(config.encode);
+    }
 
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
     // for the fields in input schema, if they are to be encoded (if present in encodeMap)
@@ -228,6 +231,7 @@ public final class Encoder extends Transform<StructuredRecord, StructuredRecord>
     @Name("encode")
     @Description("Specify the field and encode type combination. " +
       "Format is <field>:<encode-type>[,<field>:<encode-type>]*")
+    @Macro
     private final String encode;
 
     @Name("schema")

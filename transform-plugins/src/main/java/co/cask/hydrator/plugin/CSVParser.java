@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -87,21 +88,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
   @Override
   public void configurePipeline(PipelineConfigurer configurer) throws IllegalArgumentException {
     super.configurePipeline(configurer);
-
-    // Check if the format specified is valid.
-    if (this.config.format == null || this.config.format.isEmpty()) {
-      throw new IllegalArgumentException("Format is not specified. Allowed values are DEFAULT, EXCEL, MYSQL," +
-                                           " RFC4180, PDL & TDF");
-    }
-
-    // Check if format is one of the allowed types.
-    if (!this.config.format.equalsIgnoreCase("DEFAULT") && !this.config.format.equalsIgnoreCase("EXCEL") &&
-      !this.config.format.equalsIgnoreCase("MYSQL") && !this.config.format.equalsIgnoreCase("RFC4180") &&
-      !this.config.format.equalsIgnoreCase("TDF") && !this.config.format.equalsIgnoreCase("PDL")) {
-      throw new IllegalArgumentException("Format specified is not one of the allowed values. Allowed values are " +
-                                           "DEFAULT, EXCEL, MYSQL, RFC4180, PDL & TDF");
-    }
-
+    config.validate();
     Schema inputSchema = configurer.getStageConfigurer().getInputSchema();
     validateInputSchema(inputSchema);
     configurer.getStageConfigurer().setOutputSchema(parseAndValidateOutputSchema(inputSchema));
@@ -155,6 +142,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
+    config.validate();
 
     String csvFormatString = config.format.toLowerCase();
     switch (csvFormatString) {
@@ -263,6 +251,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
     @Name("format")
     @Description("Specify one of the predefined formats. DEFAULT, EXCEL, MYSQL, RFC4180, PDL & TDF " +
       "are supported formats.")
+    @Macro
     private final String format;
 
     @Name("field")
@@ -278,6 +267,22 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
       this.format = format;
       this.field = field;
       this.schema = schema;
+    }
+
+    private void validate() {
+      // Check if the format specified is valid.
+      if (!containsMacro("format") && (format == null || format.isEmpty())) {
+        throw new IllegalArgumentException("Format is not specified. Allowed values are DEFAULT, EXCEL, MYSQL," +
+                                             " RFC4180, PDL & TDF");
+      }
+
+      // Check if format is one of the allowed types.
+      if (!containsMacro("format") && !format.equalsIgnoreCase("DEFAULT") && !format.equalsIgnoreCase("EXCEL") &&
+        !format.equalsIgnoreCase("MYSQL") && !format.equalsIgnoreCase("RFC4180") &&
+        !format.equalsIgnoreCase("TDF") && !format.equalsIgnoreCase("PDL")) {
+        throw new IllegalArgumentException("Format specified is not one of the allowed values. Allowed values are " +
+                                             "DEFAULT, EXCEL, MYSQL, RFC4180, PDL & TDF");
+      }
     }
   }
 }

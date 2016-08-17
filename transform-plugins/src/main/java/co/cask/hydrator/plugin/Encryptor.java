@@ -61,7 +61,9 @@ public final class Encryptor extends Transform<StructuredRecord, StructuredRecor
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
     Schema inputSchema = stageConfigurer.getInputSchema();
-    encryptFields = conf.getEncryptFields();
+    if (!conf.containsMacro("encryptFields")) {
+      encryptFields = conf.getEncryptFields();
+    }
     Schema outputSchema = inputSchema == null ? null : getOutputSchema(inputSchema);
     stageConfigurer.setOutputSchema(outputSchema);
   }
