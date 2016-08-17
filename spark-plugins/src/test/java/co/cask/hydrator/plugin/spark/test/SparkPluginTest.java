@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.spark.test;
+package co.cask.hydrator.plugin.spark.test;
 
 import co.cask.cdap.api.artifact.ArtifactVersion;
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -46,10 +46,10 @@ import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.SparkManager;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkflowManager;
-import co.cask.hydrator.plugin.batch.spark.KafkaStreamingSource;
-import co.cask.hydrator.plugin.batch.spark.NaiveBayesClassifier;
-import co.cask.hydrator.plugin.batch.spark.NaiveBayesTrainer;
-import co.cask.hydrator.plugin.batch.spark.TwitterStreamingSource;
+import co.cask.hydrator.plugin.spark.KafkaStreamingSource;
+import co.cask.hydrator.plugin.spark.NaiveBayesClassifier;
+import co.cask.hydrator.plugin.spark.NaiveBayesTrainer;
+import co.cask.hydrator.plugin.spark.TwitterStreamingSource;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;

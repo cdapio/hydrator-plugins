@@ -14,10 +14,10 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.spark.test;
+package co.cask.hydrator.plugin.spark.test;
 
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.hydrator.plugin.batch.spark.KafkaConfig;
+import co.cask.hydrator.plugin.spark.KafkaConfig;
 import org.junit.Assert;
 import org.junit.Test;
 
