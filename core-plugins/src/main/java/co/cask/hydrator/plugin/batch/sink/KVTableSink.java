@@ -113,14 +113,9 @@ public class KVTableSink extends BatchWritableSink<StructuredRecord, byte[], byt
 
   @Override
   protected Map<String, String> getProperties() {
-
     Map<String, String> properties;
-    // will be null only in tests
-    if (kvTableConfig.getProperties() == null) {
-      properties = new HashMap<>();
-    } else {
-      properties = new HashMap<>(kvTableConfig.getProperties().getProperties());
-    }
+    properties = new HashMap<>(kvTableConfig.getProperties().getProperties());
+
     properties.put(Properties.BatchReadableWritable.NAME, kvTableConfig.getName());
     properties.put(Properties.BatchReadableWritable.TYPE, KeyValueTable.class.getName());
     return properties;
