@@ -83,10 +83,8 @@ public class BatchCubeSink extends BatchWritableSink<StructuredRecord, byte[], C
   @Override
   protected Map<String, String> getProperties() {
     Map<String, String> properties = new HashMap<>();
-    // done only for testing
-    if (config.getProperties() != null) {
-      properties.putAll(config.getProperties().getProperties());
-    }
+    properties.putAll(config.getProperties().getProperties());
+
     // add aggregations
     if (!Strings.isNullOrEmpty(config.getAggregations())) {
       properties.remove(Properties.Cube.AGGREGATIONS);

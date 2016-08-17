@@ -58,12 +58,7 @@ public class RealtimeTableSink extends RealtimeSink<StructuredRecord> {
     super.configurePipeline(pipelineConfigurer);
 
     Map<String, String> properties;
-    if (tableSinkConfig.getProperties() == null) {
-      // NOTE : this is null only in unit-tests
-      properties = new HashMap<>();
-    } else {
-      properties = tableSinkConfig.getProperties().getProperties();
-    }
+    properties = tableSinkConfig.getProperties().getProperties();
 
     Preconditions.checkArgument(!Strings.isNullOrEmpty(tableSinkConfig.getName()), "Dataset name must be given.");
     Preconditions.checkArgument(!Strings.isNullOrEmpty(tableSinkConfig.getRowField()),

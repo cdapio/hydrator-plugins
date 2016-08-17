@@ -116,9 +116,7 @@ public class JmsSource extends ReferenceRealtimeSource<StructuredRecord> {
     super.initialize(context);
 
     Map<String, String> runtimeArguments = Maps.newHashMap();
-    if (config.getProperties() != null) {
-      runtimeArguments.putAll(config.getProperties().getProperties());
-    }
+    runtimeArguments.putAll(config.getProperties().getProperties());
 
     // if the JMS config has custom properties lets load it
     if (config.customProperties != null) {
