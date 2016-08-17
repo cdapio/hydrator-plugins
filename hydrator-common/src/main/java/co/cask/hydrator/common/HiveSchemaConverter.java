@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014 Cask Data, Inc.
+ * Copyright © 2014-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -55,7 +55,7 @@ public final class HiveSchemaConverter {
     return builder.toString();
   }
 
-  private static void appendType(StringBuilder builder, Schema schema) throws UnsupportedTypeException {
+  public static void appendType(StringBuilder builder, Schema schema) throws UnsupportedTypeException {
     switch (schema.getType()) {
       case NULL:
         break;
