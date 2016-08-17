@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.hydrator.plugin.batch.HiveConfig;
 
@@ -31,6 +32,7 @@ public class HiveSourceConfig extends HiveConfig {
     "partitioned on 'type' and you want to read 'type1' partition: 'type = \"type1\"'" +
     "This filter must reference only partition columns. Values from other columns will cause the pipeline to fail.")
   @Nullable
+  @Macro
   public String partitions;
 
   @Name(Hive.SCHEMA)
