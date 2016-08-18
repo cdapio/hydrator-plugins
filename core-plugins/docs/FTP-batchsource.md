@@ -16,15 +16,15 @@ Properties
 ----------
 **referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
 
-**path:** Path to file(s) to be read. Path is expected to be of the form prefix://username:password@hostname:port/path
+**path:** Path to file(s) to be read. Path is expected to be of the form prefix://username:password@hostname:port/path (Macro-enabled)
 
-**fileRegex:** Regex to filter out filenames in the path.
+**fileRegex:** Regex to filter out filenames in the path. (Macro-enabled)
 
 **fileSystemProperties:** A JSON string representing a map of properties
-needed for the distributed file system.
+needed for the distributed file system. (Macro-enabled)
 
 **inputFormatClassName:** Name of the input format class, which must be a subclass of FileInputFormat.
-Defaults to CombineTextInputFormat.
+Defaults to CombineTextInputFormat. (Macro-enabled)
 
 
 Example

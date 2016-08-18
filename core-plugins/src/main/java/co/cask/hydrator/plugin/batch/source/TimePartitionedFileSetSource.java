@@ -17,8 +17,10 @@
 package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.dataset.DatasetManagementException;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSetArguments;
@@ -50,16 +52,19 @@ public abstract class TimePartitionedFileSetSource<KEY, VALUE> extends BatchSour
   @SuppressWarnings("unused")
   public static class TPFSConfig extends PluginConfig {
     @Description("Name of the TimePartitionedFileSet to read.")
+    @Macro
     private String name;
 
     @Description("Base path for the TimePartitionedFileSet. Defaults to the name of the dataset.")
     @Nullable
+    @Macro
     private String basePath;
 
     @Description("Size of the time window to read with each run of the pipeline. " +
       "The format is expected to be a number followed by an 's', 'm', 'h', or 'd' specifying the time unit, with 's' " +
       "for seconds, 'm' for minutes, 'h' for hours, and 'd' for days. For example, a value of '5m' means each run of " +
       "the pipeline will read 5 minutes of events from the TPFS source.")
+    @Macro
     private String duration;
 
     @Description("Optional delay for reading from TPFS source. The value must be " +
@@ -67,13 +72,16 @@ public abstract class TimePartitionedFileSetSource<KEY, VALUE> extends BatchSour
       "of the pipeline will read 5 minutes of data from 15 minutes before its logical start time to 10 minutes " +
       "before its logical start time. The default value is 0.")
     @Nullable
+    @Macro
     private String delay;
 
     protected void validate() {
       // check duration and delay
-      long durationInMs = TimeParser.parseDuration(duration);
-      Preconditions.checkArgument(durationInMs > 0, "Duration must be greater than 0");
-      if (!Strings.isNullOrEmpty(delay)) {
+      if (!containsMacro("duration")) {
+        long durationInMs = TimeParser.parseDuration(duration);
+        Preconditions.checkArgument(durationInMs > 0, "Duration must be greater than 0");
+      }
+      if (!containsMacro("delay") && !Strings.isNullOrEmpty(delay)) {
         TimeParser.parseDuration(delay);
       }
     }
@@ -86,17 +94,32 @@ public abstract class TimePartitionedFileSetSource<KEY, VALUE> extends BatchSour
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     config.validate();
-    String tpfsName = config.name;
-    FileSetProperties.Builder properties = FileSetProperties.builder();
-    if (!Strings.isNullOrEmpty(config.basePath)) {
-      properties.setBasePath(config.basePath);
+    if (!config.containsMacro("name") && !config.containsMacro("basePath")) {
+      String tpfsName = config.name;
+      FileSetProperties.Builder properties = FileSetProperties.builder();
+      if (!Strings.isNullOrEmpty(config.basePath)) {
+        properties.setBasePath(config.basePath);
+      }
+      addFileSetProperties(properties);
+      pipelineConfigurer.createDataset(tpfsName, TimePartitionedFileSet.class.getName(), properties.build());
     }
-    addFileSetProperties(properties);
-    pipelineConfigurer.createDataset(tpfsName, TimePartitionedFileSet.class.getName(), properties.build());
   }
 
   @Override
-  public final void prepareRun(BatchSourceContext context) {
+  public final void prepareRun(BatchSourceContext context) throws DatasetManagementException {
+    config.validate();
+    // If macros provided at runtime, dataset still needs to be created
+    if (!context.datasetExists(config.name)) {
+      String tpfsName = config.name;
+      FileSetProperties.Builder properties = FileSetProperties.builder();
+      if (!Strings.isNullOrEmpty(config.basePath)) {
+        properties.setBasePath(config.basePath);
+      }
+      addFileSetProperties(properties);
+      context.createDataset(tpfsName, TimePartitionedFileSet.class.getName(), properties.build());
+    }
+
+
     long duration = TimeParser.parseDuration(config.duration);
     long delay = Strings.isNullOrEmpty(config.delay) ? 0 : TimeParser.parseDuration(config.delay);
     long endTime = context.getLogicalStartTime() - delay;

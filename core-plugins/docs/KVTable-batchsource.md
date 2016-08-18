@@ -15,7 +15,7 @@ you may want to periodically dump the contents of a KeyValueTable to a Table.
 
 Properties
 ----------
-**name:** KeyValueTable name. If the table does not already exist, it will be created.
+**name:** KeyValueTable name. If the table does not already exist, it will be created. (Macro-enabled)
 
 
 Example

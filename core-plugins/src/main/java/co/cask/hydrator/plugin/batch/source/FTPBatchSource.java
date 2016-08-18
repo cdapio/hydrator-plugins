@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.etl.api.batch.BatchSource;
@@ -69,18 +70,22 @@ public class FTPBatchSource extends FileBatchSource {
    */
   public static class FTPBatchSourceConfig extends ReferencePluginConfig {
     @Description(PATH_DESCRIPTION)
+    @Macro
     public String path;
 
     @Description(FileBatchSource.FILESYSTEM_PROPERTIES_DESCRIPTION)
     @Nullable
+    @Macro
     public String fileSystemProperties;
 
     @Description("Regex to filter out filenames in the path. Defaults to '.*'")
     @Nullable
+    @Macro
     public String fileRegex;
 
     @Description(FileBatchSource.INPUT_FORMAT_CLASS_DESCRIPTION)
     @Nullable
+    @Macro
     public String inputFormatClassName;
 
     public FTPBatchSourceConfig(String referenceName, String path, @Nullable String fileSystemProperties,

@@ -17,11 +17,13 @@
 package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.data.batch.Input;
+import co.cask.cdap.api.dataset.DatasetManagementException;
 import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.plugin.PluginProperties;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
+import co.cask.hydrator.plugin.common.BatchReadableWritableConfig;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
@@ -37,18 +39,27 @@ import java.util.Map;
  * @param <OUT> the type of output for the
  */
 public abstract class BatchReadableSource<KEY_IN, VAL_IN, OUT> extends BatchSource<KEY_IN, VAL_IN, OUT> {
+  private final BatchReadableWritableConfig batchReadableWritableConfig;
+
+  protected BatchReadableSource(BatchReadableWritableConfig batchReadableWritableConfig) {
+    this.batchReadableWritableConfig = batchReadableWritableConfig;
+  }
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    String name = getProperties().get(Properties.BatchReadableWritable.NAME);
-    Preconditions.checkArgument(name != null && !name.isEmpty(), "Dataset name must be given.");
-    String type = getProperties().get(Properties.BatchReadableWritable.TYPE);
-    Preconditions.checkArgument(type != null && !type.isEmpty(), "Dataset type must be given.");
+    if (!batchReadableWritableConfig.containsMacro(Properties.BatchReadableWritable.NAME)) {
+      String datasetName = batchReadableWritableConfig.getName();
+      Preconditions.checkArgument(datasetName != null && !datasetName.isEmpty(), "Dataset name must be given.");
+      String datasetType = getProperties().get(Properties.BatchReadableWritable.TYPE);
+      Preconditions.checkArgument(datasetType != null && !datasetType.isEmpty(), "Dataset type must be given.");
 
-    Map<String, String> properties = Maps.newHashMap(getProperties());
-    properties.remove(Properties.BatchReadableWritable.NAME);
-    properties.remove(Properties.BatchReadableWritable.TYPE);
-    pipelineConfigurer.createDataset(name, type, DatasetProperties.builder().addAll(properties).build());
+      Map<String, String> properties = Maps.newHashMap(getProperties());
+      properties.remove(Properties.BatchReadableWritable.NAME);
+      properties.remove(Properties.BatchReadableWritable.TYPE);
+
+      pipelineConfigurer.createDataset(datasetName, datasetType,
+                                       DatasetProperties.builder().addAll(properties).build());
+    }
   }
 
   /**
@@ -57,8 +68,15 @@ public abstract class BatchReadableSource<KEY_IN, VAL_IN, OUT> extends BatchSour
   protected abstract Map<String, String> getProperties();
 
   @Override
-  public void prepareRun(BatchSourceContext context) {
-    PluginProperties pluginProperties = context.getPluginProperties();
-    context.setInput(Input.ofDataset(pluginProperties.getProperties().get(Properties.BatchReadableWritable.NAME)));
+  public void prepareRun(BatchSourceContext context) throws DatasetManagementException {
+    Map<String, String> properties = getProperties();
+    // if macros were provided at runtime, dataset needs to be created now
+    if (!context.datasetExists(properties.get(Properties.BatchReadableWritable.NAME))) {
+      context.createDataset(properties.get(Properties.BatchReadableWritable.NAME),
+                            properties.get(Properties.BatchReadableWritable.TYPE),
+                            DatasetProperties.builder().addAll(properties).build());
+    }
+
+    context.setInput(Input.ofDataset(properties.get(Properties.BatchReadableWritable.NAME)));
   }
 }
