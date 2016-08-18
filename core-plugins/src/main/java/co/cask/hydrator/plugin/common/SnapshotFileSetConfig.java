@@ -48,23 +48,10 @@ public abstract class SnapshotFileSetConfig extends PluginConfig {
   @Macro
   protected String fileProperties;
 
-  @Description("Optional property that configures the sink to delete old partitions after successful runs. " +
-    "If set, when a run successfully finishes, the sink will subtract this amount of time from the runtime and " +
-    "delete any partitions older than that time. " +
-    "The format is expected to be a number followed by an 's', 'm', 'h', or 'd' specifying the time unit, with 's' " +
-    "for seconds, 'm' for minutes, 'h' for hours, and 'd' for days. For example, if the pipeline is scheduled to " +
-    "run at midnight of January 1, 2016, and this property is set to 7d, the sink will delete any partitions " +
-    "for time partitions older than midnight Dec 25, 2015.")
-  @Nullable
-  @Macro
-  protected String cleanPartitionsOlderThan;
-
-  public SnapshotFileSetConfig(String name, @Nullable String basePath, @Nullable String fileProperties,
-                               @Nullable String cleanPartitionsOlderThan) {
+  public SnapshotFileSetConfig(String name, @Nullable String basePath, @Nullable String fileProperties) {
     this.name = name;
     this.basePath = basePath;
     this.fileProperties = fileProperties;
-    this.cleanPartitionsOlderThan = cleanPartitionsOlderThan;
   }
 
   public String getName() {
@@ -79,10 +66,5 @@ public abstract class SnapshotFileSetConfig extends PluginConfig {
   @Nullable
   public String getFileProperties() {
     return fileProperties;
-  }
-
-  @Nullable
-  public String getCleanPartitionsOlderThan() {
-    return cleanPartitionsOlderThan;
   }
 }
