@@ -16,6 +16,8 @@
 
 package co.cask.hydrator.plugin.batch.sink;
 
+import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.DatasetManagementException;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
@@ -35,6 +37,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * Sink that stores snapshots on HDFS, and keeps track of which snapshot is the latest snapshot.
@@ -47,10 +50,10 @@ public abstract class SnapshotFileBatchSink<KEY_OUT, VAL_OUT> extends BatchSink<
   private static final Gson GSON = new Gson();
   private static final Type MAP_TYPE = new TypeToken<Map<String, String>>() { }.getType();
 
-  private final SnapshotFileSetConfig config;
+  private final SnapshotFileSetBatchSinkConfig config;
   private SnapshotFileSet snapshotFileSet;
 
-  public SnapshotFileBatchSink(SnapshotFileSetConfig config) {
+  public SnapshotFileBatchSink(SnapshotFileSetBatchSinkConfig config) {
     this.config = config;
   }
 
@@ -115,4 +118,30 @@ public abstract class SnapshotFileBatchSink<KEY_OUT, VAL_OUT> extends BatchSink<
    * add all fileset properties specific to the type of sink, such as schema and output format.
    */
   protected abstract void addFileProperties(FileSetProperties.Builder propertiesBuilder);
+
+  /**
+   * Config for SnapshotFileBatchSink
+   */
+  public static class SnapshotFileSetBatchSinkConfig extends SnapshotFileSetConfig {
+    @Description("Optional property that configures the sink to delete old partitions after successful runs. " +
+      "If set, when a run successfully finishes, the sink will subtract this amount of time from the runtime and " +
+      "delete any partitions older than that time. " +
+      "The format is expected to be a number followed by an 's', 'm', 'h', or 'd' specifying the time unit, with 's' " +
+      "for seconds, 'm' for minutes, 'h' for hours, and 'd' for days. For example, if the pipeline is scheduled to " +
+      "run at midnight of January 1, 2016, and this property is set to 7d, the sink will delete any partitions " +
+      "for time partitions older than midnight Dec 25, 2015.")
+    @Nullable
+    @Macro
+    protected String cleanPartitionsOlderThan;
+
+    public SnapshotFileSetBatchSinkConfig(String name, @Nullable String basePath,
+                                          @Nullable String cleanPartitionsOlderThan) {
+      super(name, basePath, null);
+      this.cleanPartitionsOlderThan = cleanPartitionsOlderThan;
+    }
+
+    public String getCleanPartitionsOlderThan() {
+      return cleanPartitionsOlderThan;
+    }
+  }
 }
