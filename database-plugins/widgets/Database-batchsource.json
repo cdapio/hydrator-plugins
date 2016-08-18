@@ -17,7 +17,7 @@
           "name": "user"
         },
         {
-          "widget-type": "textbox",
+          "widget-type": "password",
           "label": "Password",
           "name": "password"
         }
@@ -104,6 +104,24 @@
           }
         }
       ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "boolean",
+          "int",
+          "long",
+          "float",
+          "double",
+          "bytes",
+          "string"
+        ],
+        "schema-default-type": "string"
+      }
     }
   ]
 }

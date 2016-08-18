@@ -21,25 +21,25 @@ not to reprocess a particular file.
 Properties
 ----------
 
-**filePath:** Path of the excel file(s) to be read. Supports below formats:
+**filePath:** Path of the excel file(s) to be read. (Macro-enabled) Supports below formats:
 
       Microsoft Excel 97(-2007) file format
       Microsoft Excel XML (2007+) file format
 
 **filePattern:** Regex pattern to select specific excel file(s) from the path provided
-in **filePath** input.
+in **filePath** input. (Macro-enabled)
 
 **memoryTableName:** KeyValue table name to keep the track of processed files. This can be
-a new table or existing one.
+a new table or existing one. (Macro-enabled)
 
-**reprocess:** Specify whether the files mentioned in the memory table should be reprocessed or not.
+**reprocess:** Specify whether the files mentioned in the memory table should be reprocessed or not. (Macro-enabled)
 
-**sheet:** Specifies whether sheet has to be processed by sheet name or sheet no.
+**sheet:** Specifies whether sheet has to be processed by sheet name or sheet no. (Macro-enabled)
 
 **sheetValue:** Specifies the value corresponding to 'sheet' input. Value can be either actual
 sheet name or sheet no.
 for example: 'Sheet1' or '1' in case user selects 'Sheet Name' or 'Sheet Number' as 'sheet'
-input respectively.
+input respectively. (Macro-enabled)
 
 **columnList:** Specify the excel column names which needs to be extracted from the excel sheet.
 Column name has to be same as excel column name; for example: A, B, etc.
@@ -48,13 +48,13 @@ Column name has to be same as excel column name; for example: A, B, etc.
 excel column to be renamed, with its corresponding value specifying the new name for that column.
 Column name has to be same as excel column name; for example: A, B, etc.
 
-**skipFirstRow:** Specify whether the first row in the excel sheet needs to be processed or not.
+**skipFirstRow:** Specify whether the first row in the excel sheet needs to be processed or not. (Macro-enabled)
 
 **terminateIfEmptyRow:** Specify whether processing needs to be terminated in case an empty row is
-encountered while processing excel files.
+encountered while processing excel files. (Macro-enabled)
 
 **rowsLimit:** Maximum row limit for each sheet to be processed. If, the limit is not provided then
-all the rows in the sheet will be processed.
+all the rows in the sheet will be processed. (Macro-enabled)
 
 **outputSchema:** Mapping of excel column names in the output schema to data types. Consists of
 a comma-separated list. This input is mandatory if no inputs for 'columnList' has been provided.
@@ -63,9 +63,9 @@ Column name has to be same as excel column name; for example: A, B, etc.
 If type has not been provided for a column mentioned in **columnList** input, then output data type
 of that column will be **string**.
 
-**ifErrorRecord:** Specifies the action to be take in case of an error.
+**ifErrorRecord:** Specifies the action to be take in case of an error. (Macro-enabled)
 
-**errorDatasetName:** Table name to keep the error record encountered while processing the excel file(s).
+**errorDatasetName:** Table name to keep the error record encountered while processing the excel file(s). (Macro-enabled)
 
 
 Example

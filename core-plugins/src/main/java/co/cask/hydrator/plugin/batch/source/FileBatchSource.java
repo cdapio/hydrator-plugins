@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.common.Bytes;
@@ -112,7 +113,7 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
-    if (config.timeTable != null) {
+    if (!config.containsMacro("timeTable") && config.timeTable != null) {
       pipelineConfigurer.createDataset(config.timeTable, KeyValueTable.class, DatasetProperties.EMPTY);
     }
     pipelineConfigurer.getStageConfigurer().setOutputSchema(DEFAULT_SCHEMA);
@@ -120,6 +121,11 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
+    // Need to create dataset now if macro was provided at configure time
+    if (config.timeTable != null && !context.datasetExists(config.timeTable)) {
+      context.createDataset(config.timeTable, KeyValueTable.class.getName(), DatasetProperties.EMPTY);
+    }
+
     //SimpleDateFormat needs to be local because it is not threadsafe
     SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH");
 
@@ -202,26 +208,32 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
    */
   public static class FileBatchConfig extends ReferencePluginConfig {
     @Description(PATH_DESCRIPTION)
+    @Macro
     public String path;
 
     @Nullable
     @Description(FILESYSTEM_PROPERTIES_DESCRIPTION)
+    @Macro
     public String fileSystemProperties;
 
     @Nullable
     @Description(REGEX_DESCRIPTION)
+    @Macro
     public String fileRegex;
 
     @Nullable
     @Description(TABLE_DESCRIPTION)
+    @Macro
     public String timeTable;
 
     @Nullable
     @Description(INPUT_FORMAT_CLASS_DESCRIPTION)
+    @Macro
     public String inputFormatClass;
 
     @Nullable
     @Description(MAX_SPLIT_SIZE_DESCRIPTION)
+    @Macro
     public Long maxSplitSize;
 
     public FileBatchConfig() {

@@ -29,7 +29,7 @@ Properties
 **mapping:** A comma-separated list that defines the mapping of a source
 field to a target field and the mapping table name for looking up values.
 Contains three properties separated by a colon (":") as the source field, the
-mapping table name, and the target field:
+mapping table name, and the target field (Macro-enabled):
 
          <source-field>:<mapping-table-name>:<target-field>
 
@@ -39,7 +39,7 @@ Note: **source field** supports only STRING types.
 source field and its default value for cases where the source field
 value is either null or empty or if the mapping key-value is not present. If
 a default value has not been provided, the source field value will be
-mapped to the target field. Only STRING NULLABLE type values are accepted.
+mapped to the target field. Only STRING NULLABLE type values are accepted. (Macro-enabled)
 Example: <source field>:<defaultValue>
 
 

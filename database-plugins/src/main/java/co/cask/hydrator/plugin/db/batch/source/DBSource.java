@@ -41,6 +41,7 @@ import co.cask.hydrator.plugin.DBUtils;
 import co.cask.hydrator.plugin.DriverCleanup;
 import co.cask.hydrator.plugin.FieldCase;
 import co.cask.hydrator.plugin.StructuredRecordUtils;
+import com.google.common.base.Strings;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.MRJobConfig;
@@ -48,6 +49,7 @@ import org.apache.hadoop.mapreduce.lib.db.DBConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
@@ -84,6 +86,9 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     super.configurePipeline(pipelineConfigurer);
     dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId());
     sourceConfig.validate();
+    if (!Strings.isNullOrEmpty(sourceConfig.schema)) {
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(sourceConfig.getSchema());
+    }
   }
 
   class GetSchemaRequest {
@@ -193,6 +198,9 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     if (sourceConfig.numSplits != null) {
       hConf.setInt(MRJobConfig.NUM_MAPS, sourceConfig.numSplits);
     }
+    if (sourceConfig.schema != null) {
+      hConf.set(DBUtils.OVERRIDE_SCHEMA, sourceConfig.schema);
+    }
     context.setInput(Input.of(sourceConfig.referenceName,
                               new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf)));
   }
@@ -230,6 +238,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     public static final String BOUNDING_QUERY = "boundingQuery";
     public static final String SPLIT_BY = "splitBy";
     public static final String NUM_SPLITS = "numSplits";
+    public static final String SCHEMA = "schema";
 
     @Name(IMPORT_QUERY)
     @Description("The SELECT query to use to import data from the specified table. " +
@@ -262,6 +271,13 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     @Macro
     Integer numSplits;
 
+    @Nullable
+    @Name(SCHEMA)
+    @Description("The schema of records output by the source. This will be used in place of whatever schema comes " +
+      "back from the query. This should only be used if there is a bug in your jdbc driver. For example, if a column " +
+      "is not correctly getting marked as nullable.")
+    String schema;
+
     private String getImportQuery() {
       return cleanQuery(importQuery);
     }
@@ -293,6 +309,16 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
 
       if (!containsMacro("boundingQuery") && (boundingQuery == null || boundingQuery.isEmpty())) {
         throw new IllegalArgumentException("The boundingQuery must be specified if numSplits is not set to 1.");
+      }
+
+    }
+
+    private Schema getSchema() {
+      try {
+        return Schema.parseJson(schema);
+      } catch (IOException e) {
+        throw new IllegalArgumentException(String.format("Unable to parse schema '%s'. Reason: %s",
+                                                         schema, e.getMessage()), e);
       }
     }
   }

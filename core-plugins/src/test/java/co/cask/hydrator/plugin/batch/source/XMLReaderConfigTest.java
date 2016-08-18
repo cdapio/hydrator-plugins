@@ -46,7 +46,7 @@ public class XMLReaderConfigTest {
                                                                                            null, null, "Yes",
                                                                                            "XMLTrackingTable", "30",
                                                                                            "/tmp");
-    config.validateConfig();
+    config.validate();
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -56,7 +56,7 @@ public class XMLReaderConfigTest {
                                                                                            null, "", null, null,
                                                                                            "Yes", "XMLTrackingTable",
                                                                                            "30", "/tmp");
-    config.validateConfig();
+    config.validate();
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -67,7 +67,7 @@ public class XMLReaderConfigTest {
                                                                                            "Delete", null, "Yes",
                                                                                            "XMLTrackingTable", "30",
                                                                                            "/tmp");
-    config.validateConfig();
+    config.validate();
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -78,7 +78,7 @@ public class XMLReaderConfigTest {
                                                                                            "Move", "", "No",
                                                                                            "XMLTrackingTable", "30",
                                                                                            "/tmp");
-    config.validateConfig();
+    config.validate();
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -88,7 +88,7 @@ public class XMLReaderConfigTest {
                                                                                            null, "/catalog/book/",
                                                                                            "Delete", null, "No", null,
                                                                                            "30", "/tmp");
-    config.validateConfig();
+    config.validate();
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -99,6 +99,6 @@ public class XMLReaderConfigTest {
                                                                                            "Delete", null, "No",
                                                                                            "XMLTrackingTable", "30",
                                                                                            null);
-    config.validateConfig();
+    config.validate();
   }
 }

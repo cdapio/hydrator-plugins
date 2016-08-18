@@ -15,14 +15,14 @@ Configuration
 -------------
 **referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
 
-**es.host:** The hostname and port for the Elasticsearch instance.
+**es.host:** The hostname and port for the Elasticsearch instance. (Macro-enabled)
 
-**es.index:** The name of the index to query.
+**es.index:** The name of the index to query. (Macro-enabled)
 
-**es.type:** The name of the type where the data is stored.
+**es.type:** The name of the type where the data is stored. (Macro-enabled)
 
 **query:** The query to use to import data from the specified index and type;
-see Elasticsearch for additional query examples.
+see Elasticsearch for additional query examples. (Macro-enabled)
 
 **schema:** The schema or mapping of the data in Elasticsearch.
 

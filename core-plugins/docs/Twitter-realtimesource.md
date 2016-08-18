@@ -40,13 +40,13 @@ the relevant app to find the consumer key and secret.
   [Twitter OAuth documentation]: https://dev.twitter.com/oauth/overview
   [your apps]: https://apps.twitter.com/
 
-**ConsumerKey:** Twitter Consumer Key.
+**ConsumerKey:** Twitter Consumer Key. (Macro-enabled)
 
-**ConsumerSecret:** Twitter Consumer Secret.
+**ConsumerSecret:** Twitter Consumer Secret. (Macro-enabled)
 
-**AccessToken:** Twitter Access Token.
+**AccessToken:** Twitter Access Token. (Macro-enabled)
 
-**AccessTokenSecret:** Twitter Access Token Secret.
+**AccessTokenSecret:** Twitter Access Token Secret. (Macro-enabled)
 
 
 Example

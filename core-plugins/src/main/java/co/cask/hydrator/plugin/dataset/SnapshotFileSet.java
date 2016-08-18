@@ -66,16 +66,14 @@ public class SnapshotFileSet {
       propertiesBuilder.setBasePath(config.getBasePath());
     }
 
-    if (config.getProperties() != null) {
-      try {
-        Map<String, String> properties = GSON.fromJson(config.getFileProperties(), MAP_TYPE);
-        if (properties != null) {
-          propertiesBuilder.addAll(properties);
-        }
-      } catch (Exception e) {
-        throw new IllegalArgumentException("Could not decode the 'properties' setting. Please check that it " +
-          "is a JSON Object of string to string. Failed with error: " + e.getMessage(), e);
+    try {
+      Map<String, String> properties = GSON.fromJson(config.getFileProperties(), MAP_TYPE);
+      if (properties != null) {
+        propertiesBuilder.addAll(properties);
       }
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Could not decode the 'properties' setting. Please check that it " +
+        "is a JSON Object of string to string. Failed with error: " + e.getMessage(), e);
     }
 
     return propertiesBuilder;

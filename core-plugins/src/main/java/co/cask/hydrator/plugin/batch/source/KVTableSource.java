@@ -26,6 +26,7 @@ import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
+import co.cask.hydrator.plugin.common.BatchReadableWritableConfig;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.Maps;
 
@@ -45,17 +46,13 @@ public class KVTableSource extends BatchReadableSource<byte[], byte[], Structure
     Schema.Field.of("value", Schema.of(Schema.Type.BYTES))
   );
 
-  private static final String NAME_DESC = "Name of the dataset. If it does not already exist, one will be created.";
-
   /**
    * Config class for KVTableSource
    */
-  public static class KVTableConfig extends PluginConfig {
-    @Description(NAME_DESC)
-    String name;
+  public static class KVTableConfig extends BatchReadableWritableConfig {
 
     public KVTableConfig(String name) {
-      this.name = name;
+      super(name);
     }
   }
 
@@ -68,13 +65,14 @@ public class KVTableSource extends BatchReadableSource<byte[], byte[], Structure
   }
 
   public KVTableSource(KVTableConfig kvTableConfig) {
+    super(kvTableConfig);
     this.kvTableConfig = kvTableConfig;
   }
 
   @Override
   protected Map<String, String> getProperties() {
     Map<String, String> properties = Maps.newHashMap(kvTableConfig.getProperties().getProperties());
-    properties.put(Properties.BatchReadableWritable.NAME, kvTableConfig.name);
+    properties.put(Properties.BatchReadableWritable.NAME, kvTableConfig.getName());
     properties.put(Properties.BatchReadableWritable.TYPE, KeyValueTable.class.getName());
     return properties;
   }

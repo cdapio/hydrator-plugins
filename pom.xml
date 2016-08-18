@@ -598,6 +598,11 @@
         <artifactId>mail</artifactId>
         <version>${javamail.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.apache.spark</groupId>
+        <artifactId>spark-streaming-twitter_2.10</artifactId>
+        <version>1.6.2</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
