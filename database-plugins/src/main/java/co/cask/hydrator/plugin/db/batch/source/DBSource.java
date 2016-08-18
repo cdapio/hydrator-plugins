@@ -303,11 +303,11 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
                                                          importQuery));
       }
 
-      if (!containsMacro("splitBy") && (splitBy == null || splitBy.isEmpty())) {
+      if (!hasOneSplit && !containsMacro("splitBy") && (splitBy == null || splitBy.isEmpty())) {
         throw new IllegalArgumentException("The splitBy must be specified if numSplits is not set to 1.");
       }
 
-      if (!containsMacro("boundingQuery") && (boundingQuery == null || boundingQuery.isEmpty())) {
+      if (!hasOneSplit && !containsMacro("boundingQuery") && (boundingQuery == null || boundingQuery.isEmpty())) {
         throw new IllegalArgumentException("The boundingQuery must be specified if numSplits is not set to 1.");
       }
 
