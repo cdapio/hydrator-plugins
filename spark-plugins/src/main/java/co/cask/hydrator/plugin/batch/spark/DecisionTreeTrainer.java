@@ -42,6 +42,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Spark Sink plugin that trains a model based upon a label in the structured record using Decision Tree Regression.
@@ -61,26 +62,8 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
     pipelineConfigurer.createDataset(config.fileSetName, FileSet.class);
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
     if (inputSchema != null) {
-      validateSchema(inputSchema);
+      config.validate(inputSchema);
     }
-  }
-
-  private void validateSchema(Schema inputSchema) {
-    String[] fields = config.features.split(",");
-    for (String field : fields) {
-      Schema.Field inputField = inputSchema.getField(field);
-      if (inputField == null) {
-        throw new IllegalArgumentException(String.format("Field %s does not exists in the input schema", field));
-      }
-      Schema.Type features = inputField.getSchema().getType();
-      Preconditions.checkArgument(features.isSimpleType(), "Field to classify must be of simple type : String, int, " +
-        "double, float, long, bytes, boolean but was %s.", features);
-      Preconditions.checkArgument(!features.equals(Schema.Type.NULL), "Field to classify must not be of " +
-        "type null");
-    }
-    Schema.Type predictionFieldType = inputSchema.getField(config.predictionField).getSchema().getType();
-    Preconditions.checkArgument(predictionFieldType == Schema.Type.DOUBLE,
-                                "Prediction field must be of type Double, but was %s.", predictionFieldType);
   }
 
   @Override
@@ -98,6 +81,9 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
         @Override
         public Object call(StructuredRecord structuredRecord) throws Exception {
           Schema schema = structuredRecord.getSchema().getField(field).getSchema();
+          if (structuredRecord.get(field) == null && !schema.isNullable()) {
+            throw new IllegalArgumentException(String.format("null value found for non-nullable field %s", field));
+          }
           Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
           if (!(type.equals(Schema.Type.INT) || type.equals(Schema.Type.DOUBLE) || type.equals(Schema.Type.FLOAT) ||
             type.equals(Schema.Type.LONG))) {
@@ -108,8 +94,7 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
         }
       }).distinct().zipWithIndex().collectAsMap();
 
-      if (!(map == null ||
-        (map.size() == 1 && map.keySet().contains(null)))) {
+      if (!(map == null || (map.size() == 1 && map.keySet().contains(null)))) {
         categoricalFeaturesMap.put(field, map);
       }
     }
@@ -118,8 +103,9 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
       @Override
       public LabeledPoint call(StructuredRecord record) throws Exception {
         List<Double> doubles = new ArrayList<Double>();
+        Set<String> keys = categoricalFeaturesMap.keySet();
         for (String field : fields) {
-          if (categoricalFeaturesMap.keySet().contains(field)) {
+          if (keys.contains(field)) {
             doubles.add((categoricalFeaturesMap.get(field).get(record.get(field))).doubleValue());
           } else {
             doubles.add(new Double(record.get(field).toString()));
@@ -130,8 +116,8 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
     });
 
     trainingData.cache();
-
-    for (String key : categoricalFeaturesMap.keySet()) {
+    Set<String> keys = categoricalFeaturesMap.keySet();
+    for (String key : keys) {
       categoricalFeaturesInfo.put(categoricalFeaturesList.indexOf(key), categoricalFeaturesMap.get(key).size());
     }
 
@@ -164,7 +150,7 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
     private final String path;
 
     @Description("A comma-separated sequence of fields to use for training. Features to be used, must be of simple " +
-      "type: String, int, double, float, long, bytes, boolean.")
+      "type.")
     private final String features;
 
     @Description("The field from which to get the prediction. It must be of type double.")
@@ -188,6 +174,24 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
       this.predictionField = predictionField;
       this.maxDepth = maxDepth;
       this.maxBins = maxBins;
+    }
+
+    private void validate(Schema inputSchema) {
+      String[] fields = features.split(",");
+      for (String field : fields) {
+        Schema.Field inputField = inputSchema.getField(field);
+        if (inputField == null) {
+          throw new IllegalArgumentException(String.format("Field %s does not exists in the input schema", field));
+        }
+        Schema schema = inputField.getSchema();
+        Schema.Type features = schema.isNullableSimple() ? schema.getNonNullable().getType() : schema.getType();
+        Preconditions.checkArgument(features.isSimpleType(), "Field to classify must be of simple type : String, " +
+          "int, double, float, long, bytes, boolean but was %s.", features);
+        Preconditions.checkArgument(!features.equals(Schema.Type.NULL), "Field to classify must not be of type null");
+      }
+      Schema.Type predictionFieldType = inputSchema.getField(predictionField).getSchema().getType();
+      Preconditions.checkArgument(predictionFieldType == Schema.Type.DOUBLE, "Prediction field must be of type " +
+        "Double, but was %s.", predictionFieldType);
     }
   }
 }

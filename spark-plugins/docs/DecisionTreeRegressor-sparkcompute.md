@@ -16,8 +16,7 @@ Properties
 
 **path:** Path of the FileSet to load the model from.
 
-**features:** A comma-separated sequence of fields for regression. Features to be used, must be of simple type : String,
-int, double, float, long, bytes, boolean.
+**features:** A comma-separated sequence of fields for regression. Features to be used, must be of simple type.
 
 **predictionField:** The field on which to set the prediction. It will be of type double.
 
@@ -54,7 +53,7 @@ For example, suppose the regressor receives the input records, where each record
 Output records will contain all the fields along with the predicted field:
 
      +=================================================================================================================+
-     | DayOf | DayOf | Carrier | TailNum | FlightNum | Origin | Destination | Distance | Departure | Arrival | Dealyed |
+     | DayOf | DayOf | Carrier | TailNum | FlightNum | Origin | Destination | Distance | Departure | Arrival | Delayed |
      | Month | Week  |         |         |           |        |             |          |           |         |         |
      +=================================================================================================================+
      | 2     | 4     | DL      | N523US  | 1756      | ATL    | MLB         | 442      | 2058      | 2229    | 1.0     |

@@ -37,14 +37,13 @@ import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.linalg.Vectors;
 import org.apache.spark.mllib.tree.model.DecisionTreeModel;
 import org.apache.twill.filesystem.Location;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.ws.rs.Path;
 
 /**
@@ -52,7 +51,7 @@ import javax.ws.rs.Path;
  */
 @Plugin(type = SparkCompute.PLUGIN_TYPE)
 @Name(DecisionTreeRegressor.PLUGIN_NAME)
-@Description("Uses a trained Decision Tree Regression modal and regress records.")
+@Description("Uses a trained Decision Tree Regression model and regress records.")
 public class DecisionTreeRegressor extends SparkCompute<StructuredRecord, StructuredRecord> {
   public static final String PLUGIN_NAME = "DecisionTreeRegressor";
   private DecisionTreeRegressorConfig config;
@@ -68,29 +67,13 @@ public class DecisionTreeRegressor extends SparkCompute<StructuredRecord, Struct
       stageConfigurer.setOutputSchema(null);
       return;
     }
-    validateSchema(inputSchema);
+    config.validate(inputSchema);
     // otherwise, we have a constant input schema. Get the input schema and
     // add a field to it, on which the prediction will be set
     outputSchema = getOutputSchema(inputSchema);
     stageConfigurer.setOutputSchema(outputSchema);
   }
 
-  private void validateSchema(Schema inputSchema) {
-    String[] fields = config.features.split(",");
-    for (String field : fields) {
-      Schema.Field inputField = inputSchema.getField(field);
-      if (inputField == null) {
-        throw new IllegalArgumentException(String.format("Field %s does not exists in the input schema", field));
-      }
-      Schema.Type features = inputField.getSchema().getType();
-      Preconditions.checkArgument(features.isSimpleType(), "Field to classify must be of simple type : String, int, " +
-        "double, float, long, bytes, boolean but was %s.", features);
-      Preconditions.checkArgument(!features.equals(Schema.Type.NULL), "Field to classify must not be of type null");
-    }
-    Schema.Field predictionField = inputSchema.getField(config.predictionField);
-    Preconditions.checkArgument(predictionField == null, "Prediction field must not already exist in the input " +
-      "schema.");
-  }
 
   @Override
   public JavaRDD<StructuredRecord> transform(SparkExecutionPluginContext context,
@@ -110,6 +93,9 @@ public class DecisionTreeRegressor extends SparkCompute<StructuredRecord, Struct
         @Override
         public Object call(StructuredRecord structuredRecord) throws Exception {
           Schema schema = structuredRecord.getSchema().getField(field).getSchema();
+          if (structuredRecord.get(field) == null && !schema.isNullable()) {
+            throw new IllegalArgumentException(String.format("null value found for non-nullable field %s", field));
+          }
           Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
           if (!(type.equals(Schema.Type.INT) || type.equals(Schema.Type.DOUBLE) || type.equals(Schema.Type.FLOAT) ||
             type.equals(Schema.Type.LONG))) {
@@ -120,8 +106,7 @@ public class DecisionTreeRegressor extends SparkCompute<StructuredRecord, Struct
         }
       }).distinct().zipWithIndex().collectAsMap();
 
-      if (!(map == null ||
-        (map.size() == 1 && map.keySet().contains(null)))) {
+      if (!(map == null || (map.size() == 1 && map.keySet().contains(null)))) {
         categoricalFeaturesMap.put(field, map);
       }
     }
@@ -135,8 +120,9 @@ public class DecisionTreeRegressor extends SparkCompute<StructuredRecord, Struct
       @Override
       public StructuredRecord call(StructuredRecord record) throws Exception {
         List<Double> featureList = new ArrayList<Double>();
+        Set<String> keys = categoricalFeaturesMap.keySet();
         for (String field : fields) {
-          if (categoricalFeaturesMap.keySet().contains(field)) {
+          if (keys.contains(field)) {
             featureList.add((categoricalFeaturesMap.get(field).get(record.get(field))).doubleValue());
           } else {
             featureList.add(new Double(record.get(field).toString()));
@@ -155,10 +141,10 @@ public class DecisionTreeRegressor extends SparkCompute<StructuredRecord, Struct
   }
 
   /**
-  *Creates a builder based off the given record.
-  */
+   * Creates a builder based off the given record.
+   */
   private StructuredRecord.Builder cloneRecord(StructuredRecord record) {
-    Schema schemaToUse = outputSchema != null ? outputSchema : getOutputSchema(record.getSchema());
+    Schema schemaToUse = (outputSchema != null) ? outputSchema : getOutputSchema(record.getSchema());
     List<Schema.Field> fields = new ArrayList<>();
     fields.addAll(schemaToUse.getFields());
     fields.addAll(Arrays.asList(Schema.Field.of(config.predictionField, Schema.of(Schema.Type.DOUBLE))));
@@ -198,8 +184,7 @@ public class DecisionTreeRegressor extends SparkCompute<StructuredRecord, Struct
     @Description("Path of the FileSet to load the model from.")
     private final String path;
 
-    @Description("A comma-separated sequence of fields for regression. Features to be used, must be of simple type: " +
-      "String, int, double, float, long, bytes, boolean.")
+    @Description("A comma-separated sequence of fields for regression. Features to be used, must be of simple type.")
     private final String features;
 
     @Description("The field on which to set the prediction. It will be of type double.")
@@ -210,6 +195,23 @@ public class DecisionTreeRegressor extends SparkCompute<StructuredRecord, Struct
       this.path = path;
       this.features = features;
       this.predictionField = predictionField;
+    }
+
+    private void validate(Schema inputSchema) {
+      String[] fields = features.split(",");
+      for (String field : fields) {
+        Schema.Field inputField = inputSchema.getField(field);
+        if (inputField == null) {
+          throw new IllegalArgumentException(String.format("Field %s does not exists in the input schema", field));
+        }
+        Schema schema = inputField.getSchema();
+        Schema.Type features = schema.isNullableSimple() ? schema.getNonNullable().getType() : schema.getType();
+        Preconditions.checkArgument(features.isSimpleType(), "Field to classify must be of simple type : String, " +
+          "int, double, float, long, bytes, boolean but was %s.", features);
+        Preconditions.checkArgument(!features.equals(Schema.Type.NULL), "Field to classify must not be of type null");
+      }
+      Preconditions.checkArgument(inputSchema.getField(predictionField) == null, "Prediction field must not already " +
+        "exist in the input schema.");
     }
   }
 

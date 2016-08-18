@@ -7,8 +7,7 @@ Trains a regression model based upon a particular label and features of a record
 
 Use Case
 --------
-This sink can be used when you have a sample data and you want to use it, to build a Decision Tree Regression model.
-This model can be used further for predicting the label.
+This sink can be used when you have a sample data and you want to use it to build a Decision Tree Regression model.
 
 Properties
 ----------
@@ -16,8 +15,7 @@ Properties
 
 **path:** Path of the FileSet to save the model to.
 
-**features:** A comma-separated sequence of fields to use for training. Features to be used, must be of simple type :
-String, int, double, float, long, bytes, boolean.
+**features:** A comma-separated sequence of fields to use for training. Features to be used, must be of simple type.
 
 **predictionField:** The field from which to get the prediction. It must be of type double.
 
@@ -34,14 +32,14 @@ This example uses the fields ``dofM, dofW, scheduleDepTime, scheduledArrTime, ca
 the input record as features and ``delayed`` field as the label to train the model.
 
     {
-      "name": "DecisionTreeRegression",
-      "type": "sparkcompute",
-      "properties": {
-            "fileSetName": "decision-tree-model",
-            "path": "decisionTree",
-            "features": "dofM,dofW,scheduleDepTime,scheduledArrTime,carrier,elapsedTime,origin,dest",
-            "predictionField": "delayed",
-            "maxDept":9,
-            "maxBins"100
-       }
+        	"name": "DecisionTreeRegression",
+        	"type": "sparkcompute",
+        	"properties": {
+        		"fileSetName": "decision-tree-model",
+        		"path": "decisionTree",
+        		"features": "dofM,dofW,scheduleDepTime,scheduledArrTime,carrier,elapsedTime,origin,dest",
+        		"predictionField": "delayed",
+        		"maxDept": "9",
+        		"maxBins": "100"
+        	}
     }
