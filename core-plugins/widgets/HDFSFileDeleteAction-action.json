@@ -1,0 +1,35 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Properties",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Path to desired file(s) to be removed",
+          "name": "path"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Wildcard",
+          "name": "fileRegex"
+        },
+        {
+          "widget-type": "select",
+          "label": "Continue Pipeline Upon Error",
+          "name": "continueOnError",
+          "widget-attributes": {
+            "values": [
+              "true",
+              "false"
+            ],
+            "default": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}

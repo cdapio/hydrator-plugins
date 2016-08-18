@@ -16,7 +16,6 @@
 
 package co.cask.hydrator.plugin.batch.action;
 
-import co.cask.cdap.api.workflow.NodeStatus;
 import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.action.Action;
 import co.cask.cdap.etl.api.batch.BatchSink;
@@ -25,10 +24,6 @@ import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.proto.Id;
-import co.cask.cdap.proto.ProgramRunStatus;
-import co.cask.cdap.proto.ProgramType;
-import co.cask.cdap.proto.RunRecord;
-import co.cask.cdap.proto.WorkflowNodeStateDetail;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.WorkflowManager;
@@ -45,8 +40,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -115,17 +109,6 @@ public class HDFSFileMoveActionTestRun extends ETLBatchTestBase {
     WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     manager.start();
     manager.waitForFinish(3, TimeUnit.MINUTES);
-
-//    List<RunRecord> history = appManager.getHistory(new Id.Program(appId, ProgramType.WORKFLOW, SmartWorkflow.NAME),
-//                                                    ProgramRunStatus.FAILED);
-//    Assert.assertTrue(history.size() == 1);
-//
-//    Map<String, WorkflowNodeStateDetail> nodesInFailedProgram =
-//      manager.getWorkflowNodeStates(history.get(0).getPid());
-//    Assert.assertTrue(nodesInFailedProgram.size() == 1);
-//
-//    //check that HDFSFileMoveAction node failed
-//    Assert.assertTrue(nodesInFailedProgram.values().iterator().next().getNodeStatus().equals(NodeStatus.FAILED));
 
     Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/source/test.txt")));
     Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/source/test.json")));
@@ -213,19 +196,177 @@ public class HDFSFileMoveActionTestRun extends ETLBatchTestBase {
     manager.start();
     manager.waitForFinish(3, TimeUnit.MINUTES);
 
-//    List<RunRecord> history = appManager.getHistory(new Id.Program(appId, ProgramType.WORKFLOW, SmartWorkflow.NAME),
-//                                                    ProgramRunStatus.FAILED);
-//    Assert.assertTrue(history.size() == 1);
-//
-//    Map<String, WorkflowNodeStateDetail> nodesInFailedProgram =
-//      manager.getWorkflowNodeStates(history.get(0).getPid());
-//    Assert.assertTrue(nodesInFailedProgram.size() == 1);
-//
-//    //check that HDFSFileMoveAction node failed
-//    Assert.assertTrue(nodesInFailedProgram.values().iterator().next().getNodeStatus().equals(NodeStatus.FAILED));
-
     Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/source/test.txt")));
     Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/source/test2.txt")));
     Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/source/test.json")));
+  }
+
+  @Test
+  public void testHDFSDeleteAction() throws Exception {
+
+    Path outputDir = dfsCluster.getFileSystem().getHomeDirectory();
+
+    fileSystem.mkdirs(new Path("basicDir"));
+    fileSystem.createNewFile(new Path("basicDir/test.txt"));
+    fileSystem.createNewFile(new Path("basicDir/test2.txt"));
+    fileSystem.createNewFile(new Path("basicDir/test.json"));
+    Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/basicDir/test.json")));
+    Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/basicDir/test.txt")));
+    Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/basicDir/test2.txt")));
+
+    ETLStage action = new ETLStage(
+      "HDFSFileDeleteAction",
+      new ETLPlugin("HDFSFileDeleteAction", Action.PLUGIN_TYPE,
+                    ImmutableMap.of("path", outputDir.toUri().toString() + "/basicDir",
+                                    "fileRegex", ".*\\.txt",
+                                    "continueOnError", "false"),
+                    null));
+    ETLStage source = new ETLStage("source",
+                                   new ETLPlugin("KVTable", BatchSource.PLUGIN_TYPE,
+                                                 ImmutableMap.of("name", "hdfsTestSource"), null));
+    ETLStage sink = new ETLStage("sink", new ETLPlugin("KVTable", BatchSink.PLUGIN_TYPE,
+                                                       ImmutableMap.of("name", "hdfsTestSink"), null));
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addStage(action)
+      .addConnection(action.getName(), source.getName())
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "hdfsDeleteActionTest");
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+    WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    manager.start();
+    manager.waitForFinish(3, TimeUnit.MINUTES);
+
+    Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/basicDir/test.json")));
+    Assert.assertFalse(fileSystem.exists(new Path(outputDir.toUri().toString() + "/basicDir/test.txt")));
+    Assert.assertFalse(fileSystem.exists(new Path(outputDir.toUri().toString() + "/basicDir/test2.txt")));
+
+  }
+
+  @Test
+  public void testHDFSDeleteSingleFileNoRegexAction() throws Exception {
+
+    Path outputDir = dfsCluster.getFileSystem().getHomeDirectory();
+
+    fileSystem.mkdirs(new Path("dir"));
+    fileSystem.createNewFile(new Path("dir/test.txt"));
+    Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/dir/test.txt")));
+
+    ETLStage action = new ETLStage(
+      "HDFSFileDeleteAction",
+      new ETLPlugin("HDFSFileDeleteAction", Action.PLUGIN_TYPE,
+                    ImmutableMap.of("path", outputDir.toUri().toString() + "/dir/test.txt",
+                                    "continueOnError", "false"),
+                    null));
+    ETLStage source = new ETLStage("source",
+                                   new ETLPlugin("KVTable", BatchSource.PLUGIN_TYPE,
+                                                 ImmutableMap.of("name", "hdfsTestSource"), null));
+    ETLStage sink = new ETLStage("sink", new ETLPlugin("KVTable", BatchSink.PLUGIN_TYPE,
+                                                       ImmutableMap.of("name", "hdfsTestSink"), null));
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addStage(action)
+      .addConnection(action.getName(), source.getName())
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "hdfsDeleteActionTest");
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+    WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    manager.start();
+    manager.waitForFinish(3, TimeUnit.MINUTES);
+
+    Assert.assertFalse(fileSystem.exists(new Path(outputDir.toUri().toString() + "/dir/test.txt")));
+  }
+
+  @Test
+  public void testHDFSDeleteSingleFileAction() throws Exception {
+    Path outputDir = dfsCluster.getFileSystem().getHomeDirectory();
+
+    fileSystem.mkdirs(new Path("singleDir"));
+    fileSystem.createNewFile(new Path("singleDir/test.txt"));
+    fileSystem.createNewFile(new Path("singleDir/test2.txt"));
+    Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/singleDir/test.txt")));
+    Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/singleDir/test2.txt")));
+
+    ETLStage action = new ETLStage(
+      "HDFSFileDeleteAction",
+      new ETLPlugin("HDFSFileDeleteAction", Action.PLUGIN_TYPE,
+                    ImmutableMap.of("path", outputDir.toUri().toString() + "/singleDir/test.txt",
+                                    "fileRegex", ".*\\.txt",
+                                    "continueOnError", "false"),
+                    null));
+    ETLStage source = new ETLStage("source",
+                                   new ETLPlugin("KVTable", BatchSource.PLUGIN_TYPE,
+                                                 ImmutableMap.of("name", "hdfsTestSource"), null));
+    ETLStage sink = new ETLStage("sink", new ETLPlugin("KVTable", BatchSink.PLUGIN_TYPE,
+                                                       ImmutableMap.of("name", "hdfsTestSink"), null));
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addStage(action)
+      .addConnection(action.getName(), source.getName())
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "hdfsDeleteSingleFileActionTest");
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+    WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    manager.start();
+    manager.waitForFinish(3, TimeUnit.MINUTES);
+
+    Assert.assertFalse(fileSystem.exists(new Path(outputDir.toUri().toString() + "/singleDir/test.txt")));
+    Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/singleDir/test2.txt")));
+  }
+
+  @Test
+  public void testHDFSDeleteDirectoryAction() throws Exception {
+    Path outputDir = dfsCluster.getFileSystem().getHomeDirectory();
+
+    fileSystem.mkdirs(new Path("dir1/source/dir2"));
+    fileSystem.createNewFile(new Path("dir1/source/test.txt"));
+    fileSystem.createNewFile(new Path("dir1/source/test2.txt"));
+    fileSystem.createNewFile(new Path("dir1/source/dir2/test2.txt"));
+
+    Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/dir1/source/test.txt")));
+    Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/dir1/source/test2.txt")));
+    Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/dir1/source/dir2/test2.txt")));
+
+    ETLStage action = new ETLStage(
+      "HDFSFileDeleteAction",
+      new ETLPlugin("HDFSFileDeleteAction", Action.PLUGIN_TYPE,
+                    ImmutableMap.of("path", outputDir.toUri().toString() + "/dir1/source",
+                                    "continueOnError", "false"),
+                    null));
+    ETLStage source = new ETLStage("source",
+                                   new ETLPlugin("KVTable", BatchSource.PLUGIN_TYPE,
+                                                 ImmutableMap.of("name", "hdfsTestSource"), null));
+    ETLStage sink = new ETLStage("sink", new ETLPlugin("KVTable", BatchSink.PLUGIN_TYPE,
+                                                       ImmutableMap.of("name", "hdfsTestSink"), null));
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addStage(action)
+      .addConnection(action.getName(), source.getName())
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "hdfsDeleteDirectoryActionTest");
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+    WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    manager.start();
+    manager.waitForFinish(3, TimeUnit.MINUTES);
+
+    Assert.assertFalse(fileSystem.isDirectory(new Path(outputDir.toUri().toString() + "/dir1/source")));
+
+
   }
 }
