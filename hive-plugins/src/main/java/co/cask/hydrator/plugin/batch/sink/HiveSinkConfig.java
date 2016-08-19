@@ -35,7 +35,6 @@ public class HiveSinkConfig extends HiveConfig {
     "To write multiple partitions simultaneously you can leave this empty, but all of the partitioning columns must " +
     "be present in the data you are writing to the sink.")
   @Nullable
-  @Macro
   public String partitions;
 
   @Name(Hive.SCHEMA)

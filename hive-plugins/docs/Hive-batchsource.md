@@ -19,7 +19,7 @@ Example: ``thrift://somehost.net:9083``.
 **databaseName:** The name of the database. Defaults to 'default'.
 
 **partitions:** Optional Hive expression filter for scan. This filter must only reference partition columns.
-Values from other columns will cause the pipeline to fail. (Macro-enabled)
+Values from other columns will cause the pipeline to fail.
 
 **schema:** Optional schema to use while reading from the Hive table. If no schema is provided, then the schema of the
 table will be used. Note: if you want to use a Hive table which has non-primitive types as a source, then you

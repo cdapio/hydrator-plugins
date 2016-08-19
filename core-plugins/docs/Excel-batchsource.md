@@ -32,9 +32,9 @@ in **filePath** input. (Macro-enabled)
 **memoryTableName:** KeyValue table name to keep the track of processed files. This can be
 a new table or existing one. (Macro-enabled)
 
-**reprocess:** Specify whether the files mentioned in the memory table should be reprocessed or not. (Macro-enabled)
+**reprocess:** Specify whether the files mentioned in the memory table should be reprocessed or not.
 
-**sheet:** Specifies whether sheet has to be processed by sheet name or sheet no. (Macro-enabled)
+**sheet:** Specifies whether sheet has to be processed by sheet name or sheet no.
 
 **sheetValue:** Specifies the value corresponding to 'sheet' input. Value can be either actual
 sheet name or sheet no.
@@ -48,10 +48,10 @@ Column name has to be same as excel column name; for example: A, B, etc.
 excel column to be renamed, with its corresponding value specifying the new name for that column.
 Column name has to be same as excel column name; for example: A, B, etc.
 
-**skipFirstRow:** Specify whether the first row in the excel sheet needs to be processed or not. (Macro-enabled)
+**skipFirstRow:** Specify whether the first row in the excel sheet needs to be processed or not.
 
 **terminateIfEmptyRow:** Specify whether processing needs to be terminated in case an empty row is
-encountered while processing excel files. (Macro-enabled)
+encountered while processing excel files.
 
 **rowsLimit:** Maximum row limit for each sheet to be processed. If, the limit is not provided then
 all the rows in the sheet will be processed. (Macro-enabled)

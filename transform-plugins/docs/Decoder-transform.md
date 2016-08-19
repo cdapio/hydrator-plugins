@@ -10,7 +10,7 @@ Available decoding methods are ``STRING_BASE64``, ``BASE64``, ``BASE32``, ``STRI
 Configuration
 -------------
 **decode:** Specifies the configuration for decode fields; in JSON configuration, 
-this is specified as ``<field>:<decoder>[,<field>:<decoder>]*``. (Macro-enabled)
+this is specified as ``<field>:<decoder>[,<field>:<decoder>]*``.
 
 **schema:** Specifies the output schema; the fields that are decoded will have the same field 
 name but they will be of type ``BYTES`` or ``STRING``.

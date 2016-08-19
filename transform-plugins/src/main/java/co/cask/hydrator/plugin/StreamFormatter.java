@@ -206,17 +206,14 @@ public final class StreamFormatter extends Transform<StructuredRecord, Structure
     @Name("body")
     @Description("Specify the fields to be set in the body")
     @Nullable
-    @Macro
     private String body;
     
     @Name("header")
     @Description("Specify the fields to be set in the header")
-    @Macro
     private String header;
     
     @Name("format")
     @Description("Format of the body to be written to stream. Defaults CSV")
-    @Macro
     private String format;
 
     @Name("schema")
@@ -233,7 +230,7 @@ public final class StreamFormatter extends Transform<StructuredRecord, Structure
 
     private void validate() {
       // If the format specified is not of one of the allowed types, then throw an exception.
-      if (!containsMacro("format") && !format.equalsIgnoreCase("CSV") && !format.equalsIgnoreCase("TSV")
+      if (!format.equalsIgnoreCase("CSV") && !format.equalsIgnoreCase("TSV")
         && !format.equalsIgnoreCase("JSON") && !format.equalsIgnoreCase("PSV")) {
         throw new IllegalArgumentException("Invalid format '" + format + "', specified. Allowed values are " +
                                              "CSV, TSV, PSV or JSON.");

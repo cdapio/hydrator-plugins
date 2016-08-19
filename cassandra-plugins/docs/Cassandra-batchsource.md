@@ -41,7 +41,7 @@ If this is not empty, then you must supply a username. (Macro-enabled)
 **schema:** The schema for the data as it will be formatted in CDAP.
 
 **properties:** Any extra properties to include. The property-value pairs should be comma-separated,
-and each property should be separated by a colon from its corresponding value. (Macro-enabled)
+and each property should be separated by a colon from its corresponding value.
 
 
 Example

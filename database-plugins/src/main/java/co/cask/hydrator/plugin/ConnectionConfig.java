@@ -71,7 +71,6 @@ public class ConnectionConfig extends PluginConfig {
     "auto commit, or a driver that does not support the commit call. For example, the Hive jdbc driver will throw " +
     "an exception whenever a commit is called. For drivers like that, this should be set to true.")
   @Nullable
-  @Macro
   public Boolean enableAutoCommit;
 
   public ConnectionConfig() {

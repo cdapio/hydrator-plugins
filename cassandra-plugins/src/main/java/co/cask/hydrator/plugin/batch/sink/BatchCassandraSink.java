@@ -161,12 +161,10 @@ public class BatchCassandraSink
     @Name(Cassandra.COLUMNS)
     @Description("A comma-separated list of columns in the column family. " +
       "The columns should be listed in the same order as they are stored in the column family.")
-    @Macro
     private String columns;
 
     @Name(Cassandra.PRIMARY_KEY)
     @Description("A comma-separated list of primary keys. For example: \"key1,key2\".")
-    @Macro
     private String primaryKey;
 
     public CassandraBatchConfig(String referenceName, String partitioner, @Nullable Integer port, String columnFamily,

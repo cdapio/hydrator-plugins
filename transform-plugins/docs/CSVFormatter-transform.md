@@ -10,9 +10,9 @@ delimiters that a CSV Record should use for separating fields.
 
 Configuration
 -------------
-**format:** Specifies the format of the CSV Record to be generated. (Macro-enabled)
+**format:** Specifies the format of the CSV Record to be generated.
 
 **delimiter:** Specifies the delimiter to be used to generate a CSV Record; 
-this option is available when the format is specified as ``DELIMITED``. (Macro-enabled)
+this option is available when the format is specified as ``DELIMITED``.
 
 **schema:** Specifies the output schema. Output schema should only have fields of type String.

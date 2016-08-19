@@ -93,9 +93,7 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-    if (!config.containsMacro("decompressor")) {
-      parseConfiguration(config.decompressor);
-    }
+    parseConfiguration(config.decompressor);
 
     // Check if schema specified is a valid schema or no.
     try {
@@ -289,7 +287,6 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
     @Name("decompressor")
     @Description("Specify the field and decompression type combination. " +
       "Format is <field>:<decompressor-type>[,<field>:<decompressor-type>]*")
-    @Macro
     private final String decompressor;
 
     @Name("schema")

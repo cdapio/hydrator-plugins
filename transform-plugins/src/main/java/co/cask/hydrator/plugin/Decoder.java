@@ -98,9 +98,7 @@ public final class Decoder extends Transform<StructuredRecord, StructuredRecord>
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-    if (!config.containsMacro("decode")) {
-      parseConfiguration(config.decode);
-    }
+    parseConfiguration(config.decode);
 
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
 
@@ -231,7 +229,6 @@ public final class Decoder extends Transform<StructuredRecord, StructuredRecord>
     @Name("decode")
     @Description("Specify the field and decode type combination. " +
       "Format is <field>:<decode-type>[,<field>:<decode-type>]*")
-    @Macro
     private final String decode;
 
     @Name("schema")

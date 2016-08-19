@@ -242,7 +242,6 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       "1. Delete from the HDFS; " +
       "2. Archived to the target location; and " +
       "3. Moved to the target location.")
-    @Macro
     private final String actionAfterProcess;
 
     @Nullable
@@ -252,7 +251,6 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     private final String targetFolder;
 
     @Description("Specifies whether the file(s) should be reprocessed.")
-    @Macro
     private final String reprocessingRequired;
 
     @Description("Table name to be used to keep track of processed file(s).")
@@ -322,16 +320,14 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
         Preconditions.checkArgument(!Strings.isNullOrEmpty(temporaryFolder), "Temporary folder cannot be empty.");
       }
 
-      if (!containsMacro("actionAfterProcess")) {
-        boolean onlyOneActionRequired = !actionAfterProcess.equalsIgnoreCase("NONE") && isReprocessingRequired();
-        Preconditions.checkArgument(!onlyOneActionRequired, "Please select either 'After Processing Action' or " +
-          "'Reprocessing Required'; both cannot be applied at the same time.");
+      boolean onlyOneActionRequired = !actionAfterProcess.equalsIgnoreCase("NONE") && isReprocessingRequired();
+      Preconditions.checkArgument(!onlyOneActionRequired, "Please select either 'After Processing Action' or " +
+        "'Reprocessing Required'; both cannot be applied at the same time.");
 
-        boolean targetFolderEmpty = (actionAfterProcess.equalsIgnoreCase("ARCHIVE") ||
-          actionAfterProcess.equalsIgnoreCase("MOVE")) && Strings.isNullOrEmpty(targetFolder);
-        Preconditions.checkArgument(!targetFolderEmpty, "Target folder cannot be empty for Action = '" +
-          actionAfterProcess + "'.");
-      }
+      boolean targetFolderEmpty = (actionAfterProcess.equalsIgnoreCase("ARCHIVE") ||
+        actionAfterProcess.equalsIgnoreCase("MOVE")) && Strings.isNullOrEmpty(targetFolder);
+      Preconditions.checkArgument(!targetFolderEmpty, "Target folder cannot be empty for Action = '" +
+        actionAfterProcess + "'.");
     }
   }
 }

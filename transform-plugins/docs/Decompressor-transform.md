@@ -11,7 +11,7 @@ decompression of fields.
 Configuration
 -------------
 **decompressor:** Specifies the configuration for decompressing fields; in JSON configuration, 
-this is specified as ``<field>:<decompressor>[,<field>:<decompressor>]*``. (Macro-enabled)
+this is specified as ``<field>:<decompressor>[,<field>:<decompressor>]*``.
 
 **schema:** Specifies the output schema; the fields that are decompressed will have the same field 
 name but they will be of type ``BYTES`` or ``STRING``.

@@ -32,7 +32,6 @@ public class HiveSourceConfig extends HiveConfig {
     "partitioned on 'type' and you want to read 'type1' partition: 'type = \"type1\"'" +
     "This filter must reference only partition columns. Values from other columns will cause the pipeline to fail.")
   @Nullable
-  @Macro
   public String partitions;
 
   @Name(Hive.SCHEMA)
