@@ -1,0 +1,54 @@
+{
+  "metadata": {
+    "spec-version": "1.1",
+    "label": "Solr Search"
+  },
+  "configuration-groups": [
+    {
+      "label": "Solr Search Configuration",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Reference Name",
+          "name": "referenceName"
+        },
+        {
+          "widget-type": "select",
+          "label": "Solr Mode",
+          "name": "solrMode",
+          "widget-attributes": {
+            "values": [
+              "SingleNode",
+              "SolrCloud"
+            ],
+            "default": "SingleNode"
+          }
+        },
+        {
+          "widget-type": "csv",
+          "label": "Solr Host",
+          "name": "solrHost"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Collection",
+          "name": "collectionName"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Key Field",
+          "name": "keyField"
+        },
+        {
+          "widget-type": "keyvalue",
+          "label": "Fields to rename",
+          "name": "outputFieldMappings",
+          "widget-attributes": {
+            "showDelimiter": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}
