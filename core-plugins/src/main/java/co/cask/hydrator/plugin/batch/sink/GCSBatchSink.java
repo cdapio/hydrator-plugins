@@ -28,15 +28,14 @@ import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.common.batch.sink.SinkOutputFormatProvider;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -56,9 +55,9 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
   private static final String FILESYSTEM_PROPERTIES_DESCRIPTION = "A JSON string representing a map of properties " +
     "needed for the distributed file system.";
   private static final Gson GSON = new Gson();
-  private static final Logger LOG = LoggerFactory.getLogger(GCSBatchSink.class);
-  private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
 
+  private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
+  private static final Logger LOG = LoggerFactory.getLogger(GCSBatchSink.class);
 
   private final GCSSinkConfig config;
   protected GCSBatchSink(GCSSinkConfig config) {
