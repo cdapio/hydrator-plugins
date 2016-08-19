@@ -60,6 +60,8 @@ public class NaiveBayesClassifier extends SparkCompute<StructuredRecord, Structu
 
   private Config config;
   private Schema outputSchema;
+  private NaiveBayesModel loadedModel;
+  private HashingTF tf;
 
   /**
    * Configuration for the NaiveBayesClassifier.
@@ -116,6 +118,23 @@ public class NaiveBayesClassifier extends SparkCompute<StructuredRecord, Structu
     stageConfigurer.setOutputSchema(outputSchema);
   }
 
+  @Override
+  public void initialize(SparkExecutionPluginContext context) throws Exception {
+    FileSet fileSet = context.getDataset(config.fileSetName);
+    Location modelLocation = fileSet.getBaseLocation().append(config.path);
+    if (!modelLocation.exists()) {
+      throw new IllegalArgumentException(String.format(
+        "Failed to find model to use for classification. Location does not exist: %s.", modelLocation));
+    }
+
+    // load the model from a file in the model fileset
+    JavaSparkContext javaSparkContext = context.getSparkContext();
+    SparkContext sparkContext = JavaSparkContext.toSparkContext(javaSparkContext);
+    loadedModel = NaiveBayesModel.load(sparkContext, modelLocation.toURI().getPath());
+
+    tf = new HashingTF((config.numFeatures == null) ? 100 : config.numFeatures);
+  }
+
   private void validateSchema(Schema inputSchema) {
     Schema.Type fieldToClassifyType = inputSchema.getField(config.fieldToClassify).getSchema().getType();
     Preconditions.checkArgument(fieldToClassifyType == Schema.Type.STRING,
@@ -129,19 +148,6 @@ public class NaiveBayesClassifier extends SparkCompute<StructuredRecord, Structu
   @Override
   public JavaRDD<StructuredRecord> transform(SparkExecutionPluginContext context,
                                              JavaRDD<StructuredRecord> input) throws Exception {
-    FileSet fileSet = context.getDataset(config.fileSetName);
-    Location modelLocation = fileSet.getBaseLocation().append(config.path);
-    if (!modelLocation.exists()) {
-      LOG.warn("Failed to find model to use for classification. Location does not exist: {}.", modelLocation);
-      return input;
-    }
-
-    // load the model from a file in the model fileset
-    JavaSparkContext javaSparkContext = context.getSparkContext();
-    SparkContext sparkContext = JavaSparkContext.toSparkContext(javaSparkContext);
-    final NaiveBayesModel loadedModel = NaiveBayesModel.load(sparkContext, modelLocation.toURI().getPath());
-
-    final HashingTF tf = new HashingTF((config.numFeatures == null) ? 100 : config.numFeatures);
 
     JavaRDD<StructuredRecord> output = input.map(new Function<StructuredRecord, StructuredRecord>() {
       @Override

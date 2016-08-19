@@ -85,7 +85,7 @@ public class MockActionContext implements ActionContext {
   }
 
   @Override
-  public List<SecureStoreMetadata> listSecureData(String namespace) {
+  public Map<String, String> listSecureData(String namespace) {
     return null;
   }
 
