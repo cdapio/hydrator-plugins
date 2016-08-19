@@ -71,8 +71,9 @@ public class TokenizerTest extends HydratorTestBase {
     private static final String OUTPUT_COLUMN = "words";
     private static final String COLUMN_TOKENIZED = "sentence";
     private static final String DELIMITER = "/";
+    private static final String NAME_COLUMN = "name";
+    private static final String APP_NAME = "TokenizerTest";
     private static final String SENTENCE1 = "Cask Data /Application Platform";
-    private static final String SENTENCE11 = "Cask/Data/Application/Platform";
     private static final String SENTENCE2 = "Cask Hydrator/ is webbased tool";
     private static final String SENTENCE3 = "Hydrator Studio is visual /development environment";
     private static final String SENTENCE4 = "Hydrator plugins /are customizable modules";
@@ -81,11 +82,11 @@ public class TokenizerTest extends HydratorTestBase {
     private static final String SENTENCEWITHETAB = "Cask    Data    Application Platform";
 
     private static final Schema SOURCE_SCHEMA_SINGLE = Schema.recordOf("sourceRecord",
-            Schema.Field.of("sentence", Schema.of(Schema.Type.STRING))
+            Schema.Field.of(COLUMN_TOKENIZED, Schema.of(Schema.Type.STRING))
     );
     private static final Schema SOURCE_SCHEMA_MULTIPLE = Schema.recordOf("sourceRecord",
-            Schema.Field.of("name", Schema.of(Schema.Type.STRING)),
-            Schema.Field.of("sentence", Schema.of(Schema.Type.STRING))
+            Schema.Field.of(NAME_COLUMN, Schema.of(Schema.Type.STRING)),
+            Schema.Field.of(COLUMN_TOKENIZED, Schema.of(Schema.Type.STRING))
     );
 
     @BeforeClass
@@ -121,18 +122,18 @@ public class TokenizerTest extends HydratorTestBase {
      */
         ETLBatchConfig etlConfig = buildETLBatchConfig(textForMultiple, MULTIPLE, DELIMITER);
         AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-        ApplicationId appId = NamespaceId.DEFAULT.app("TokenizerTest");
+        ApplicationId appId = NamespaceId.DEFAULT.app(APP_NAME);
         ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
         DataSetManager<Table> inputManager = getDataset(textForMultiple);
         List<StructuredRecord> input = ImmutableList.of(
-                StructuredRecord.builder(SOURCE_SCHEMA_MULTIPLE).set("sentence",
-                        SENTENCE1).set("name", "CDAP").build(),
-                StructuredRecord.builder(SOURCE_SCHEMA_MULTIPLE).set("sentence",
-                        SENTENCE2).set("name", "Hydrator").build(),
-                StructuredRecord.builder(SOURCE_SCHEMA_MULTIPLE).set("sentence",
-                        SENTENCE3).set("name", "Studio").build(),
-                StructuredRecord.builder(SOURCE_SCHEMA_MULTIPLE).set("sentence",
-                        SENTENCE4).set("name", "Plugins").build()
+                StructuredRecord.builder(SOURCE_SCHEMA_MULTIPLE).set(COLUMN_TOKENIZED,
+                        SENTENCE1).set(NAME_COLUMN, "CDAP").build(),
+                StructuredRecord.builder(SOURCE_SCHEMA_MULTIPLE).set(COLUMN_TOKENIZED,
+                        SENTENCE2).set(NAME_COLUMN, "Hydrator").build(),
+                StructuredRecord.builder(SOURCE_SCHEMA_MULTIPLE).set(COLUMN_TOKENIZED,
+                        SENTENCE3).set(NAME_COLUMN, "Studio").build(),
+                StructuredRecord.builder(SOURCE_SCHEMA_MULTIPLE).set(COLUMN_TOKENIZED,
+                        SENTENCE4).set(NAME_COLUMN, "Plugins").build()
         );
         MockSource.writeInput(inputManager, input);
         // manually trigger the pipeline
@@ -143,7 +144,7 @@ public class TokenizerTest extends HydratorTestBase {
         List<StructuredRecord> output = MockSink.readOutput(tokenizedTexts);
         Set<List> results = new HashSet<>();
         for (StructuredRecord structuredRecord : output) {
-            results.add((ArrayList) structuredRecord.get("words"));
+            results.add((ArrayList) structuredRecord.get(OUTPUT_COLUMN));
         }
         //Create expected data
         Set<List> expected = createExpectedData();
@@ -151,7 +152,7 @@ public class TokenizerTest extends HydratorTestBase {
         Assert.assertEquals(results, expected);
         Assert.assertEquals(4, output.size());
         Assert.assertEquals(1, row1.getSchema().getFields().size());
-        Assert.assertEquals("ARRAY", row1.getSchema().getField("words").getSchema().getType().toString());
+        Assert.assertEquals("ARRAY", row1.getSchema().getField(OUTPUT_COLUMN).getSchema().getType().toString());
     }
 
     @Test
@@ -162,17 +163,17 @@ public class TokenizerTest extends HydratorTestBase {
      */
         ETLBatchConfig etlConfig = buildETLBatchConfig(text, SINGLE, DELIMITER);
         AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-        ApplicationId appId = NamespaceId.DEFAULT.app("TokenizerTest");
+        ApplicationId appId = NamespaceId.DEFAULT.app(APP_NAME);
         ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
         DataSetManager<Table> inputManager = getDataset(text);
         List<StructuredRecord> input = ImmutableList.of(
-                StructuredRecord.builder(SOURCE_SCHEMA_SINGLE).set("sentence",
+                StructuredRecord.builder(SOURCE_SCHEMA_SINGLE).set(COLUMN_TOKENIZED,
                         SENTENCE1).build(),
-                StructuredRecord.builder(SOURCE_SCHEMA_SINGLE).set("sentence",
+                StructuredRecord.builder(SOURCE_SCHEMA_SINGLE).set(COLUMN_TOKENIZED,
                         SENTENCE2).build(),
-                StructuredRecord.builder(SOURCE_SCHEMA_SINGLE).set("sentence",
+                StructuredRecord.builder(SOURCE_SCHEMA_SINGLE).set(COLUMN_TOKENIZED,
                         SENTENCE3).build(),
-                StructuredRecord.builder(SOURCE_SCHEMA_SINGLE).set("sentence",
+                StructuredRecord.builder(SOURCE_SCHEMA_SINGLE).set(COLUMN_TOKENIZED,
                         SENTENCE4).build()
         );
         MockSource.writeInput(inputManager, input);
@@ -184,7 +185,7 @@ public class TokenizerTest extends HydratorTestBase {
         List<StructuredRecord> output = MockSink.readOutput(tokenizedTextSingle);
         Set<List> results = new HashSet<>();
         for (StructuredRecord structuredRecord : output) {
-            results.add((ArrayList) structuredRecord.get("words"));
+            results.add((ArrayList) structuredRecord.get(OUTPUT_COLUMN));
         }
         //Create expected data
         Set<List> expected = createExpectedData();
@@ -192,7 +193,7 @@ public class TokenizerTest extends HydratorTestBase {
         Assert.assertEquals(results, expected);
         Assert.assertEquals(4, output.size());
         Assert.assertEquals(1, rowSingle.getSchema().getFields().size());
-        Assert.assertEquals("ARRAY", rowSingle.getSchema().getField("words").getSchema().getType().toString());
+        Assert.assertEquals("ARRAY", rowSingle.getSchema().getField(OUTPUT_COLUMN).getSchema().getType().toString());
     }
 
     @Test(expected = NullPointerException.class)
@@ -213,12 +214,12 @@ public class TokenizerTest extends HydratorTestBase {
      */
         ETLBatchConfig etlConfig = buildETLBatchConfig(text, textData, delimiter);
         AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-        ApplicationId appId = NamespaceId.DEFAULT.app("TokenizerTest");
+        ApplicationId appId = NamespaceId.DEFAULT.app(APP_NAME);
         ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
         DataSetManager<Table> inputManager = getDataset(text);
         List<StructuredRecord> input = ImmutableList.of(
-                StructuredRecord.builder(SOURCE_SCHEMA_MULTIPLE).set("sentence",
-                        sentence).set("name", "CDAP").build()
+                StructuredRecord.builder(SOURCE_SCHEMA_MULTIPLE).set(COLUMN_TOKENIZED,
+                        sentence).set(NAME_COLUMN, "CDAP").build()
         );
         MockSource.writeInput(inputManager, input);
         // manually trigger the pipeline
@@ -229,7 +230,7 @@ public class TokenizerTest extends HydratorTestBase {
         List<StructuredRecord> output = MockSink.readOutput(tokenizedTexts);
         Set<List> results = new HashSet<>();
         for (StructuredRecord structuredRecord : output) {
-            results.add((ArrayList) structuredRecord.get("words"));
+            results.add((ArrayList) structuredRecord.get(OUTPUT_COLUMN));
         }
         //Create expected data
         Set<List> expected = createExpectedForVariousDelimiters();
@@ -237,7 +238,7 @@ public class TokenizerTest extends HydratorTestBase {
         Assert.assertEquals(results, expected);
         Assert.assertEquals(1, output.size());
         Assert.assertEquals(1, row1.getSchema().getFields().size());
-        Assert.assertEquals("ARRAY", row1.getSchema().getField("words").getSchema().getType().toString());
+        Assert.assertEquals("ARRAY", row1.getSchema().getField(OUTPUT_COLUMN).getSchema().getType().toString());
     }
 
     private Set<List> createExpectedData() {
