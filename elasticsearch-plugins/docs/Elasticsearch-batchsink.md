@@ -16,16 +16,16 @@ Configuration
 -------------
 **referenceName:** This will be used to uniquely identify this sink for lineage, annotating metadata, etc.
 
-**es.host:** The hostname and port for the Elasticsearch instance.
+**es.host:** The hostname and port for the Elasticsearch instance. (Macro-enabled)
 
 **es.index:** The name of the index where the data will be stored; if the index does not
-already exist, it will be created using Elasticsearch's default properties.
+already exist, it will be created using Elasticsearch's default properties. (Macro-enabled)
 
 **es.type:** The name of the type where the data will be stored; if it does not already
-exist, it will be created.
+exist, it will be created. (Macro-enabled)
 
 **es.idField:** The field that will determine the id for the document; it should match a fieldname
-in the Structured Record of the input.
+in the Structured Record of the input. (Macro-enabled)
 
 
 Example

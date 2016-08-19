@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.batch.Input;
@@ -120,11 +121,13 @@ public class MongoDBBatchSource extends ReferenceBatchSource<Object, BSONObject,
     @Name(Properties.CONNECTION_STRING)
     @Description("MongoDB Connection String (see http://docs.mongodb.org/manual/reference/connection-string); " +
       "Example: 'mongodb://localhost:27017/analytics.users'.")
+    @Macro
     private String connectionString;
 
     @Name(Properties.AUTH_CONNECTION_STRING)
     @Nullable
     @Description("Auxiliary MongoDB connection string to authenticate against when constructing splits.")
+    @Macro
     private String authConnectionString;
 
     @Name(Properties.SCHEMA)
@@ -148,6 +151,7 @@ public class MongoDBBatchSource extends ReferenceBatchSource<Object, BSONObject,
     @Description("Optionally filter the input collection with a query. This query must be represented in JSON " +
       "format, and use the MongoDB extended JSON format to represent non-native JSON data types.")
     @Nullable
+    @Macro
     private String inputQuery;
 
 
@@ -155,12 +159,14 @@ public class MongoDBBatchSource extends ReferenceBatchSource<Object, BSONObject,
     @Nullable
     @Description("A projection document limiting the fields that appear in each document. " +
       "If no projection document is provided, all fields will be read.")
+    @Macro
     private String inputFields;
 
     @Name(Properties.SPLITTER_CLASS)
     @Nullable
     @Description("The name of the Splitter class to use. If left empty, the MongoDB Hadoop Connector will attempt " +
       "to make a best guess as to what Splitter to use.")
+    @Macro
     private String splitterClass;
 
     public MongoDBConfig(String referenceName, String connectionString, String authConnectionString,

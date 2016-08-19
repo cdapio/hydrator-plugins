@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.batch.Input;
@@ -175,41 +176,49 @@ public class BatchCassandraSource extends ReferenceBatchSource<Long, Row, Struct
   public static class CassandraSourceConfig extends ReferencePluginConfig {
     @Name(Cassandra.PARTITIONER)
     @Description("The partitioner for the keyspace")
+    @Macro
     private String partitioner;
 
     @Name(Cassandra.PORT)
     @Nullable
     @Description("The RPC port for Cassandra; for example: 9160 (default value). " +
       "Check the configuration to make sure that start_rpc is true in cassandra.yaml.")
+    @Macro
     private Integer port;
 
     @Name(Cassandra.COLUMN_FAMILY)
     @Description("The column family to select data from.")
+    @Macro
     private String columnFamily;
 
     @Name(Cassandra.KEYSPACE)
     @Description("The keyspace to select data from.")
+    @Macro
     private String keyspace;
 
     @Name(Cassandra.INITIAL_ADDRESS)
     @Description("The initial address to connect to. For example: \"10.11.12.13\".")
+    @Macro
     private String initialAddress;
 
     @Name(Cassandra.USERNAME)
     @Description("The username for the keyspace (if one exists). " +
       "If this is not empty, then you must supply a password.")
     @Nullable
+    @Macro
     private String username;
 
     @Name(Cassandra.PASSWORD)
     @Description("The password for the keyspace (if one exists). " +
       "If this is not empty, then you must supply a username.")
     @Nullable
+    @Macro
     private String password;
 
     @Name(Cassandra.QUERY)
     @Description("The query to select data on. For example: \'SELECT * from table " +
       "where token(id) > ? and token(id) <= ?\'")
+    @Macro
     private String query;
 
     @Name(Cassandra.SCHEMA)

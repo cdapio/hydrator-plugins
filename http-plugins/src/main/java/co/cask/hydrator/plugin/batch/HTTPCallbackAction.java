@@ -64,10 +64,10 @@ public class HTTPCallbackAction extends PostAction {
   @SuppressWarnings("ConstantConditions")
   @Override
   public void run(BatchActionContext batchActionContext) throws Exception {
+    conf.validate();
     if (!conf.shouldRun(batchActionContext)) {
       return;
     }
-    conf.validate();
 
     int retries = 0;
     Exception exception = null;
@@ -152,7 +152,7 @@ public class HTTPCallbackAction extends PostAction {
     @SuppressWarnings("ConstantConditions")
     public void validate() {
       super.validate();
-      if (!METHODS.contains(method.toUpperCase())) {
+      if (!containsMacro("method") && !METHODS.contains(method.toUpperCase())) {
         throw new IllegalArgumentException(String.format("Invalid request method %s, must be one of %s.",
                                                          method, Joiner.on(',').join(METHODS)));
       }
@@ -163,7 +163,11 @@ public class HTTPCallbackAction extends PostAction {
     }
 
     public boolean shouldRun(BatchActionContext context) {
-      return new ConditionConfig(runCondition).shouldRun(context);
+      if (!containsMacro("runCondition")) {
+        return new ConditionConfig(runCondition).shouldRun(context);
+      } else {
+        return false;
+      }
     }
   }
 }

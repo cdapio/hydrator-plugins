@@ -18,12 +18,12 @@ Properties
 ----------
 **referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
 
-**path:** Path to file(s) to be read. If a directory is specified, terminate the path name with a '/'.
+**path:** Path to file(s) to be read. If a directory is specified, terminate the path name with a '/'. (Macro-enabled)
 
 **nodePath:** Node path to emit as an individual event from the XML schema.
-Example: '/book/price' to read only the price from under the book node.
+Example: '/book/price' to read only the price from under the book node. (Macro-enabled)
 
-**pattern:** Pattern to select specific file(s). (Optional)
+**pattern:** Pattern to select specific file(s). (Optional) (Macro-enabled)
 Examples:
 
 1. Use '^' to select files with names starting with 'catalog', such as '^catalog'.
@@ -38,19 +38,19 @@ Possible actions are:
 3. Moved to the target location.
 
 **targetFolder:** Target folder path if user select action after process, either ARCHIVE or MOVE.
-Target folder must be an existing directory. (Optional)
+Target folder must be an existing directory. (Optional) (Macro-enabled)
 
 **reprocessingRequired:** Specifies whether the file(s) should be reprocessed.
 
-**tableName:** Table name to be used to keep track of processed file(s).
+**tableName:** Table name to be used to keep track of processed file(s). (Macro-enabled)
 
 **tableExpiryPeriod:** Expiry period (days) for data in the table. Default is 30 days.
-Example: For tableExpiryPeriod = 30, data before 30 days get deleted from the table.
+Example: For tableExpiryPeriod = 30, data before 30 days get deleted from the table. (Macro-enabled)
 
 **temporaryFolder:** An existing HDFS folder path with read and write access for the current user;
 required for storing temporary files containing paths of the processed XML files.
 These temporary files will be read at the end of the job to update the file track table.
-Default to /tmp.
+Default to /tmp. (Macro-enabled)
 
 Example
 -------

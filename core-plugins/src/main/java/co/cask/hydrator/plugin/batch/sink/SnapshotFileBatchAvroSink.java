@@ -25,7 +25,6 @@ import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
-import co.cask.hydrator.plugin.common.SnapshotFileSetConfig;
 import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaParseException;
@@ -88,7 +87,7 @@ public class SnapshotFileBatchAvroSink extends SnapshotFileBatchSink<AvroKey<Gen
   /**
    * Config for SnapshotFileBatchAvroSink
    */
-  public static class SnapshotAvroConfig extends SnapshotFileSetConfig {
+  public static class SnapshotAvroConfig extends SnapshotFileSetBatchSinkConfig {
     @Description("The Avro schema of the record being written to the Sink as a JSON Object.")
     private String schema;
 

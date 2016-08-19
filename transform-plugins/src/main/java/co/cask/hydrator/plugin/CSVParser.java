@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -35,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
+import javax.annotation.Nullable;
 
 /**
  * Transformation that parses a field as CSV Record into {@link StructuredRecord}.
@@ -86,40 +88,35 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
   @Override
   public void configurePipeline(PipelineConfigurer configurer) throws IllegalArgumentException {
     super.configurePipeline(configurer);
-
-    // Check if the format specified is valid.
-    if (this.config.format == null || this.config.format.isEmpty()) {
-      throw new IllegalArgumentException("Format is not specified. Allowed values are DEFAULT, EXCEL, MYSQL," +
-                                           " RFC4180, PDL & TDF");
-    }
-
-    // Check if format is one of the allowed types.
-    if (!this.config.format.equalsIgnoreCase("DEFAULT") && !this.config.format.equalsIgnoreCase("EXCEL") &&
-      !this.config.format.equalsIgnoreCase("MYSQL") && !this.config.format.equalsIgnoreCase("RFC4180") &&
-      !this.config.format.equalsIgnoreCase("TDF") && !this.config.format.equalsIgnoreCase("PDL")) {
-      throw new IllegalArgumentException("Format specified is not one of the allowed values. Allowed values are " +
-                                           "DEFAULT, EXCEL, MYSQL, RFC4180, PDL & TDF");
-    }
-
+    config.validate();
     Schema inputSchema = configurer.getStageConfigurer().getInputSchema();
+    validateInputSchema(inputSchema);
+    configurer.getStageConfigurer().setOutputSchema(parseAndValidateOutputSchema(inputSchema));
+  }
+
+  void validateInputSchema(Schema inputSchema) {
     if (inputSchema != null) {
+      // Check the existence of field in input schema
       Schema.Field inputSchemaField = inputSchema.getField(config.field);
       if (inputSchemaField == null) {
         throw new IllegalArgumentException(
           "Field " + config.field + " is not present in the input schema");
-      } else {
-        if (!inputSchemaField.getSchema().getType().equals(Schema.Type.STRING)) {
-          throw new IllegalArgumentException(
-            "Type for field  " + config.field + " must be String");
-        }
+      }
+
+      // Check that the field type is String or Nullable String
+      Schema fieldSchema = inputSchemaField.getSchema();
+      Schema.Type fieldType = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
+      if (!fieldType.equals(Schema.Type.STRING)) {
+        throw new IllegalArgumentException(
+          "Type for field  " + config.field + " must be String");
       }
     }
+  }
 
-
+  Schema parseAndValidateOutputSchema(Schema inputSchema) {
     // Check if schema specified is a valid schema or no.
     try {
       Schema outputSchema = Schema.parseJson(this.config.schema);
-      configurer.getStageConfigurer().setOutputSchema(outputSchema);
 
       // When a input field is passed through to output, the type and name should be the same.
       // If the type is not the same, then we fail.
@@ -136,6 +133,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
           }
         }
       }
+      return outputSchema;
     } catch (IOException e) {
       throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
     }
@@ -144,6 +142,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
+    config.validate();
 
     String csvFormatString = config.format.toLowerCase();
     switch (csvFormatString) {
@@ -191,27 +190,53 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
 
     // Parse the text as CSV and emit it as structured record.
     try {
-      org.apache.commons.csv.CSVParser parser = org.apache.commons.csv.CSVParser.parse(body, csvFormat);
-      List<CSVRecord> records = parser.getRecords();
-      for (CSVRecord record : records) {
-        emitter.emit(createStructuredRecord(record, in));
+      if (body == null) {
+        emitter.emit(createStructuredRecord(null, in));
+      } else {
+        org.apache.commons.csv.CSVParser parser = org.apache.commons.csv.CSVParser.parse(body, csvFormat);
+        List<CSVRecord> records = parser.getRecords();
+        for (CSVRecord record : records) {
+          emitter.emit(createStructuredRecord(record, in));
+        }
       }
     } catch (IOException e) {
       throw Throwables.propagate(e);
     }
   }
 
-  private StructuredRecord createStructuredRecord(CSVRecord record, StructuredRecord in) {
+  private StructuredRecord createStructuredRecord(@Nullable CSVRecord record, StructuredRecord in) {
     StructuredRecord.Builder builder = StructuredRecord.builder(outSchema);
     int i = 0;
     for (Field field : fields) {
       String name = field.getName();
       // If the field specified in the output field is present in the input, then
       // it's directly copied into the output, else field is parsed in from the CSV parser.
+      // If the input record is null, propagate all supplied input fields and null other fields
+      // assumed to be CSV-parsed fields
       if (in.get(name) != null) {
         builder.set(name, in.get(name));
+      } else if (record == null) {
+        builder.set(name, null);
       } else {
-        builder.set(name, TypeConvertor.get(record.get(i), field.getSchema().getType()));
+        String val = record.get(i);
+        Schema fieldSchema = field.getSchema();
+
+        if (val.isEmpty()) {
+          boolean isNullable = fieldSchema.isNullable();
+          Schema.Type fieldType = isNullable ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
+          // if the field is a string or a nullable string, set the value to the empty string
+          if (fieldType == Schema.Type.STRING) {
+            builder.set(field.getName(), "");
+          } else if (!isNullable) {
+            // otherwise, error out
+            throw new IllegalArgumentException(String.format(
+              "Field #%d (named '%s') is of non-nullable type '%s', " +
+                "but was parsed as an empty string for CSV record '%s'",
+              i, field.getName(), field.getSchema().getType(), record));
+          }
+        } else {
+          builder.convertAndSet(field.getName(), val);
+        }
         ++i;
       }
     }
@@ -229,7 +254,8 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
     private final String format;
 
     @Name("field")
-    @Description("Specify the field that should be used for parsing into CSV.")
+    @Description("Specify the field that should be used for parsing into CSV. Input records with a null input field " +
+      "propagate all other fields and set fields that would otherwise be parsed by the CSVParser to null.")
     private final String field;
 
     @Name("schema")
@@ -240,6 +266,22 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
       this.format = format;
       this.field = field;
       this.schema = schema;
+    }
+
+    private void validate() {
+      // Check if the format specified is valid.
+      if (format == null || format.isEmpty()) {
+        throw new IllegalArgumentException("Format is not specified. Allowed values are DEFAULT, EXCEL, MYSQL," +
+                                             " RFC4180, PDL & TDF");
+      }
+
+      // Check if format is one of the allowed types.
+      if (!format.equalsIgnoreCase("DEFAULT") && !format.equalsIgnoreCase("EXCEL") &&
+        !format.equalsIgnoreCase("MYSQL") && !format.equalsIgnoreCase("RFC4180") &&
+        !format.equalsIgnoreCase("TDF") && !format.equalsIgnoreCase("PDL")) {
+        throw new IllegalArgumentException("Format specified is not one of the allowed values. Allowed values are " +
+                                             "DEFAULT, EXCEL, MYSQL, RFC4180, PDL & TDF");
+      }
     }
   }
 }

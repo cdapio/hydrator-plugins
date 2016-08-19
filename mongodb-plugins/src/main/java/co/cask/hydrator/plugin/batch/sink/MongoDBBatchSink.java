@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.sink;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.batch.Output;
@@ -72,7 +73,7 @@ public class MongoDBBatchSink extends ReferenceBatchSink<StructuredRecord, NullW
   private static class MongoDBOutputFormatProvider implements OutputFormatProvider {
     private final Map<String, String> conf;
 
-    public MongoDBOutputFormatProvider(MongoDBSinkConfig config) {
+    MongoDBOutputFormatProvider(MongoDBSinkConfig config) {
       this.conf = new HashMap<>();
       conf.put("mongo.output.uri", config.connectionString);
     }
@@ -95,6 +96,7 @@ public class MongoDBBatchSink extends ReferenceBatchSink<StructuredRecord, NullW
     @Name(Properties.CONNECTION_STRING)
     @Description("MongoDB Connection String (see http://docs.mongodb.org/manual/reference/connection-string); " +
       "Example: 'mongodb://localhost:27017/analytics.users'.")
+    @Macro
     private String connectionString;
 
     public MongoDBSinkConfig(String referenceName, String connectionString) {

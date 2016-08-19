@@ -27,8 +27,6 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.StageConfigurer;
 import co.cask.hydrator.plugin.validator.CoreValidator;
 
-import java.util.HashMap;
-import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -36,16 +34,12 @@ import javax.annotation.Nullable;
  */
 public class MockPipelineConfigurer implements PipelineConfigurer {
   private static final String CORE_VALIDATOR = "core";
-  private final Map<String, Schema> inputSchemas = new HashMap<String, Schema>();
+  private final Schema inputSchema;
   private Schema outputSchema;
 
 
   public MockPipelineConfigurer(Schema inputSchema) {
-    this.inputSchemas.put("", inputSchema);
-  }
-
-  public MockPipelineConfigurer(Map<String, Schema> inputSchemas) {
-    this.inputSchemas.putAll(inputSchemas);
+    this.inputSchema = inputSchema;
   }
 
   @Nullable
@@ -59,13 +53,7 @@ public class MockPipelineConfigurer implements PipelineConfigurer {
       @Nullable
       @Override
       public Schema getInputSchema() {
-        return inputSchemas.entrySet().iterator().next().getValue();
-      }
-
-      @Nullable
-      @Override
-      public Map<String, Schema> getInputSchemas() {
-        return inputSchemas;
+        return inputSchema;
       }
 
       @Override

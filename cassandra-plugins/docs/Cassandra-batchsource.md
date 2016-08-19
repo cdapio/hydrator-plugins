@@ -19,24 +19,24 @@ Properties
 ----------
 **referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
 
-**initialAddress:** The initial address to connect to.
+**initialAddress:** The initial address to connect to. (Macro-enabled)
 
 **port:** The RPC port for Cassandra.
-Check the configuration to make sure that ``start_rpc`` is true in ``cassandra.yaml``.
+Check the configuration to make sure that ``start_rpc`` is true in ``cassandra.yaml``. (Macro-enabled)
 
-**keyspace:** The keyspace to select data from.
+**keyspace:** The keyspace to select data from. (Macro-enabled)
 
-**partitioner:** The partitioner for the keyspace.
+**partitioner:** The partitioner for the keyspace. (Macro-enabled)
 
 **username:** The username for the keyspace (if one exists).
-If this is not empty, then you must supply a password.
+If this is not empty, then you must supply a password. (Macro-enabled)
 
 **password:** The password for the keyspace (if one exists).
-If this is not empty, then you must supply a username.
+If this is not empty, then you must supply a username. (Macro-enabled)
 
-**columnFamily:** The column family or table to select data from.
+**columnFamily:** The column family or table to select data from. (Macro-enabled)
 
-**query:** The query to select data on.
+**query:** The query to select data on. (Macro-enabled)
 
 **schema:** The schema for the data as it will be formatted in CDAP.
 

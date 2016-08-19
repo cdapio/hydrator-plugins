@@ -12,17 +12,20 @@
         {
           "widget-type": "sql-select-fields",
           "label": "Fields",
-          "name": "selectedFields"
+          "name": "selectedFields",
+          "description": "List of fields to be selected and/or renamed in the Joiner output from each stages. There must not be a duplicate fields in the output."
         },
         {
           "widget-type": "join-types",
           "label": "Join Type",
-          "name": "requiredInputs"
+          "name": "requiredInputs",
+          "description": "Type of joins to be performed. Inner join means all stages are required, while Outer join allows for 0 or more input stages to be required input."
         },
         {
           "widget-type": "sql-conditions",
           "label": "Join Condition",
-          "name": "joinKeys"
+          "name": "joinKeys",
+          "description": "List of join keys to perform join operation."
         },
         {
           "widget-type": "textbox",

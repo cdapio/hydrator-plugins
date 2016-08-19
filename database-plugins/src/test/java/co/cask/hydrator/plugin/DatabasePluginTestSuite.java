@@ -16,6 +16,7 @@
 
 package co.cask.hydrator.plugin;
 
+import co.cask.cdap.common.test.TestSuite;
 import co.cask.hydrator.plugin.db.batch.action.DBQueryActionTestRun;
 import co.cask.hydrator.plugin.db.batch.sink.DBSinkTestRun;
 import co.cask.hydrator.plugin.db.batch.sink.DBSourceTestRun;
@@ -27,7 +28,7 @@ import org.junit.runners.Suite;
 /**
  * This is a test suite that runs all the tests for Database plugins.
  */
-@RunWith(Suite.class)
+@RunWith(TestSuite.class)
 @Suite.SuiteClasses({
   DBSinkTestRun.class,
   DBSourceTestRun.class,

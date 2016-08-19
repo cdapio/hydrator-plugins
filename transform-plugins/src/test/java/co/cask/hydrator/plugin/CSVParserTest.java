@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -69,6 +69,52 @@ public class CSVParserTest {
                                                         Schema.Field.of("d", Schema.of(Schema.Type.DOUBLE)),
                                                         Schema.Field.of("e", Schema.of(Schema.Type.BOOLEAN)),
                                                         Schema.Field.of("offset", Schema.of(Schema.Type.INT)));
+
+  // Input schema with nullable field to parse
+  private static final Schema NULLABLE_INPUT = Schema.recordOf("nullableInput",
+                                                               Schema.Field.of("body", Schema.nullableOf(
+                                                                 Schema.of(Schema.Type.STRING))));
+
+  @Test
+  public void testNullableFields() throws Exception {
+    Schema schema = Schema.recordOf("nullables",
+                                    Schema.Field.of("int", Schema.nullableOf(Schema.of(Schema.Type.INT))),
+                                    Schema.Field.of("long", Schema.nullableOf(Schema.of(Schema.Type.LONG))),
+                                    Schema.Field.of("float", Schema.nullableOf(Schema.of(Schema.Type.FLOAT))),
+                                    Schema.Field.of("double", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
+                                    Schema.Field.of("bool", Schema.nullableOf(Schema.of(Schema.Type.BOOLEAN))),
+                                    Schema.Field.of("string", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
+    CSVParser.Config config = new CSVParser.Config("DEFAULT", "body", schema.toString());
+    Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
+    transform.initialize(null);
+
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+
+    transform.transform(StructuredRecord.builder(INPUT1).set("body", "1,2,3,4,true,abc").build(), emitter);
+    StructuredRecord expected = StructuredRecord.builder(schema)
+      .set("int", 1)
+      .set("long", 2L)
+      .set("float", 3f)
+      .set("double", 4d)
+      .set("bool", true)
+      .set("string", "abc")
+      .build();
+    Assert.assertEquals(1, emitter.getEmitted().size());
+    Assert.assertEquals(expected, emitter.getEmitted().get(0));
+
+    emitter.clear();
+    transform.transform(StructuredRecord.builder(INPUT1).set("body", ",,,,,").build(), emitter);
+    expected = StructuredRecord.builder(schema)
+      .set("int", null)
+      .set("long", null)
+      .set("float", null)
+      .set("double", null)
+      .set("bool", null)
+      .set("string", "")
+      .build();
+    Assert.assertEquals(1, emitter.getEmitted().size());
+    Assert.assertEquals(expected, emitter.getEmitted().get(0));
+  }
 
   @Test
   public void testDefaultCSVParser() throws Exception {
@@ -201,11 +247,17 @@ public class CSVParserTest {
   @Test
   public void testSchemaValidation() throws Exception {
     CSVParser.Config config = new CSVParser.Config("DEFAULT", "body", OUTPUT1.toString());
-    Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
+    CSVParser csvParser = new CSVParser(config);
+    csvParser.validateInputSchema(INPUT1);
+    Assert.assertEquals(OUTPUT1, csvParser.parseAndValidateOutputSchema(INPUT1));
+  }
 
-    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT1);
-    transform.configurePipeline(mockPipelineConfigurer);
-    Assert.assertEquals(OUTPUT1, mockPipelineConfigurer.getOutputSchema());
+  @Test
+  public void testNullableFieldSchemaValidation() throws Exception {
+    CSVParser.Config config = new CSVParser.Config("DEFAULT", "body", OUTPUT1.toString());
+    CSVParser csvParser = new CSVParser(config);
+    csvParser.validateInputSchema(NULLABLE_INPUT);
+    Assert.assertEquals(OUTPUT1, csvParser.parseAndValidateOutputSchema(NULLABLE_INPUT));
   }
 
   @Test
