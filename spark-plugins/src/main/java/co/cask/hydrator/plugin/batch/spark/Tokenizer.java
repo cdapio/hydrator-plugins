@@ -116,8 +116,8 @@ public class Tokenizer extends SparkCompute<StructuredRecord, StructuredRecord> 
             @Override
             public StructuredRecord call(Row row) throws Exception {
                 StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
-                for (Schema.Field f : outputSchema.getFields()) {
-                    builder.set(f.getName(), row.getList(0));
+                for (Schema.Field field : outputSchema.getFields()) {
+                    builder.set(field.getName(), row.getList(0));
                 }
                 return builder.build();
             }
