@@ -408,7 +408,6 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
     @Name("reprocess")
     @Description("Specifies whether the file(s) should be reprocessed. " +
       "Options to select are true or false")
-    @Macro
     private boolean reprocess;
 
     @Name("sheet")
@@ -416,7 +415,6 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
       "Shift 'Options are' in next line: " +
       "Sheet Name" +
       "Sheet Number")
-    @Macro
     private String sheet;
 
     @Name("sheetValue")
@@ -439,13 +437,11 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
     @Name("skipFirstRow")
     @Description("Specify whether first row in the excel sheet is to be skipped or not. " +
       "Options to select are true or false.")
-    @Macro
     private boolean skipFirstRow;
 
     @Name("terminateIfEmptyRow")
     @Description("Specify whether processing needs to be terminated in case an empty row is encountered " +
       "while processing excel files. Options to select are true or false.")
-    @Macro
     private String terminateIfEmptyRow;
 
     @Nullable
@@ -480,8 +476,7 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
     }
 
     public void validate() {
-      if (!containsMacro("sheet") && !containsMacro("sheetValue") &&
-        sheet.equalsIgnoreCase(SHEET_NO) && !StringUtils.isNumeric(sheetValue)) {
+      if (!containsMacro("sheetValue") && sheet.equalsIgnoreCase(SHEET_NO) && !StringUtils.isNumeric(sheetValue)) {
         throw new IllegalArgumentException("Invalid sheet number. The value should be greater than or equals to zero.");
       }
     }

@@ -33,9 +33,9 @@ Create the keyspace before starting the adapter. (Macro-enabled)
 Create the column family before starting the adapter. (Macro-enabled)
 
 **columns:** A comma-separated list of columns in the column family.
-The columns should be listed in the same order as they are stored in the column family. (Macro-enabled)
+The columns should be listed in the same order as they are stored in the column family.
 
-**primaryKey:** A comma-separated list of primary keys. (Macro-enabled)
+**primaryKey:** A comma-separated list of primary keys.
 
 
 Example

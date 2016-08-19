@@ -101,7 +101,6 @@ public final class Decryptor extends Transform<StructuredRecord, StructuredRecor
    */
   public static class Conf extends KeystoreConf {
     @Description("The fields to decrypt, separated by commas")
-    @Macro
     private String decryptFields;
 
     @Description("Schema to pull fields from")

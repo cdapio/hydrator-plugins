@@ -202,7 +202,6 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
 
     @Name(COLUMNS)
     @Description("Comma-separated list of columns in the specified table to export to.")
-    @Macro
     public String columns;
 
     @Name(TABLE_NAME)

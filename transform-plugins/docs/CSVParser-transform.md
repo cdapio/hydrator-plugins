@@ -10,7 +10,7 @@ Supports these CSV Record types: ``DEFAULT``, ``EXCEL``, ``MYSQL``, ``RFC4180``,
 
 Configuration
 -------------
-**format:** Specifies the format of the CSV Record the input should be parsed as. (Macro-enabled)
+**format:** Specifies the format of the CSV Record the input should be parsed as.
 
 **field:** Specifies the input field that should be parsed as a CSV Record. 
 Input records with a null input field propagate all other fields and set fields that

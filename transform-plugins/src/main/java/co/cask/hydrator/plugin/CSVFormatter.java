@@ -196,12 +196,10 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
 
     @Name("format")
     @Description("Specify one of the predefined formats. DEFAULT, EXCEL, MYSQL, RFC4180 & TDF are supported formats.")
-    @Macro
     private final String format;
 
     @Name("delimiter")
     @Description("Specify delimiter to be used for separating fields.")
-    @Macro
     private final String delimiter;
 
     @Name("schema")
@@ -215,18 +213,18 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
     }
 
     private void validate() {
-      if (!containsMacro("delimiter") && !delimMap.containsKey(delimiter)) {
+      if (!delimMap.containsKey(delimiter)) {
         throw new IllegalArgumentException("Unknown delimiter '" + delimiter + "' specified. Allowed values are " +
                                              Joiner.on(", ").join(delimMap.keySet()));
       }
 
       // Check if the format specified is valid.
-      if (!containsMacro("format") && (format == null || format.isEmpty())) {
+      if (format == null || format.isEmpty()) {
         throw new IllegalArgumentException("Format is not specified. Allowed values are DELIMITED, EXCEL, MYSQL," +
                                              " RFC4180 & TDF");
       }
 
-      if (!containsMacro("format") && !format.equalsIgnoreCase("DELIMITED") && !format.equalsIgnoreCase("EXCEL") &&
+      if (!format.equalsIgnoreCase("DELIMITED") && !format.equalsIgnoreCase("EXCEL") &&
         !format.equalsIgnoreCase("MYSQL") && !format.equalsIgnoreCase("RFC4180") &&
         !format.equalsIgnoreCase("TDF")) {
         throw new IllegalArgumentException("Format specified is not one of the allowed values. Allowed values are " +

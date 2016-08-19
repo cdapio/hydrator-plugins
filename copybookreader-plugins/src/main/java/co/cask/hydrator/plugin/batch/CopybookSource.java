@@ -252,7 +252,6 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, Abstra
 
     @Nullable
     @Description("Comma-separated list of fields to drop. For example: 'field1,field2,field3'.")
-    @Macro
     private String drop;
 
     @Nullable

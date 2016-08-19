@@ -114,12 +114,10 @@ public final class Hasher extends Transform<StructuredRecord, StructuredRecord> 
     @Name("hash")
     @Description("Specifies the Hash method for hashing fields.")
     @Nullable
-    @Macro
     private final String hash;
     
     @Name("fields")
     @Description("List of fields to hash. Only string fields are allowed")
-    @Macro
     private final String fields;
     
     public Config(String hash, String fields) {
@@ -129,7 +127,7 @@ public final class Hasher extends Transform<StructuredRecord, StructuredRecord> 
 
     private void validate() {
       // Checks if hash specified is one of the supported types.
-      if (!containsMacro("hash") && !hash.equalsIgnoreCase("md2") && !hash.equalsIgnoreCase("md5") &&
+      if (!hash.equalsIgnoreCase("md2") && !hash.equalsIgnoreCase("md5") &&
         !hash.equalsIgnoreCase("sha1") && !hash.equalsIgnoreCase("sha256") &&
         !hash.equalsIgnoreCase("sha384") && !hash.equalsIgnoreCase("sha512")) {
         throw new IllegalArgumentException("Invalid hasher '" + hash + "' specified. Allowed hashers are md2, " +

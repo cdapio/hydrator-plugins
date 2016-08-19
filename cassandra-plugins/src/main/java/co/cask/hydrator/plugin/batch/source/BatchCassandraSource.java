@@ -243,7 +243,6 @@ public class BatchCassandraSource extends ReferenceBatchSource<Long, Row, Struct
       "and each property should be separated by a colon from its corresponding value. " +
       "For example: \'cassandra.consistencylevel.read:LOCAL_ONE,cassandra.input.native.port:9042\'")
     @Nullable
-    @Macro
     private String properties;
 
     public CassandraSourceConfig(String referenceName, String partitioner, Integer port, String columnFamily,

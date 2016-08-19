@@ -116,9 +116,8 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-    if (!config.containsMacro("compressor")) {
-      parseConfiguration(config.compressor);
-    }
+    parseConfiguration(config.compressor);
+
     // Check if schema specified is a valid schema or no. 
     try {
       Schema outputSchema = Schema.parseJson(config.schema);
@@ -286,7 +285,6 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
     @Name("compressor")
     @Description("Specify the field and compression type combination. " +
       "Format is <field>:<compressor-type>[,<field>:<compressor-type>]*")
-    @Macro
     private final String compressor;
 
     @Name("schema")

@@ -18,7 +18,7 @@ Properties
 ----------
 **referenceName:** This will be used to uniquely identify this sink for lineage, annotating metadata, etc.
 
-**tableName:** Name of the table to export to.
+**tableName:** Name of the table to export to. (Macro-enabled)
 
 **columns:** Comma-separated list of columns in the specified table to export to.
 
@@ -28,13 +28,13 @@ the names returned from the database are used as-is. Note that setting this prop
 of column name cases across different databases but might result in column name conflicts if multiple column
 names are the same when the case is ignored (optional).
 
-**connectionString:** JDBC connection string including database name.
+**connectionString:** JDBC connection string including database name. (Macro-enabled)
 
 **user:** User identity for connecting to the specified database. Required for databases that need
-authentication. Optional for databases that do not require authentication.
+authentication. Optional for databases that do not require authentication. (Macro-enabled)
 
 **password:** Password to use to connect to the specified database. Required for databases
-that need authentication. Optional for databases that do not require authentication.
+that need authentication. Optional for databases that do not require authentication. (Macro-enabled)
 
 **jdbcPluginName:** Name of the JDBC plugin to use. This is the value of the 'name' key
 defined in the JSON file for the JDBC plugin.

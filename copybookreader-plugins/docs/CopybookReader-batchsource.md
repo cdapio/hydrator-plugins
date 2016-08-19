@@ -25,7 +25,7 @@ of a COBOL copybook or redefines or iterators in the structure.
 **binaryFilePath:** Complete path of the .bin to be read. This will be a fixed-length binary format file that matches
 the copybook. Supports compressed files using a native compressed codec. (Macro-enabled)
 
-**drop:** Comma-separated list of fields to drop. For example: 'field1,field2,field3'. (Macro-enabled)
+**drop:** Comma-separated list of fields to drop. For example: 'field1,field2,field3'.
 
 **maxSplitSize:** Maximum split-size(MB) for each mapper in the MapReduce Job. Defaults to 1MB. (Macro-enabled)
 

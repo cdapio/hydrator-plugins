@@ -95,9 +95,7 @@ public final class Encoder extends Transform<StructuredRecord, StructuredRecord>
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-    if (!config.containsMacro("encode")) {
-      parseConfiguration(config.encode);
-    }
+    parseConfiguration(config.encode);
 
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
     // for the fields in input schema, if they are to be encoded (if present in encodeMap)
@@ -231,7 +229,6 @@ public final class Encoder extends Transform<StructuredRecord, StructuredRecord>
     @Name("encode")
     @Description("Specify the field and encode type combination. " +
       "Format is <field>:<encode-type>[,<field>:<encode-type>]*")
-    @Macro
     private final String encode;
 
     @Name("schema")

@@ -30,7 +30,7 @@ Examples:
 2. Use '$' to select files with names ending with 'catalog.xml', such as 'catalog.xml$'.
 3. Use '\*' to select file with name contains 'catalogBook', such as 'catalogBook*'.
 
-**actionAfterProcess:** Action to be taken after processing of the XML file. (Macro-enabled)
+**actionAfterProcess:** Action to be taken after processing of the XML file.
 Possible actions are:
 
 1. Delete from the HDFS;
@@ -40,7 +40,7 @@ Possible actions are:
 **targetFolder:** Target folder path if user select action after process, either ARCHIVE or MOVE.
 Target folder must be an existing directory. (Optional) (Macro-enabled)
 
-**reprocessingRequired:** Specifies whether the file(s) should be reprocessed. (Macro-enabled)
+**reprocessingRequired:** Specifies whether the file(s) should be reprocessed.
 
 **tableName:** Table name to be used to keep track of processed file(s). (Macro-enabled)
 

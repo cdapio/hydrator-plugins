@@ -65,14 +65,12 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
             "[,<source-field>:<lookup-table-name>:<target-field>]*" +
             "Source and target field can only of type string." +
             "For example: lang_code:language_code_lookup:lang_desc,country_code:country_lookup:country_name")
-    @Macro
     private final String mapping;
 
     @Name("defaults")
     @Description("Specify the defaults for source fields if the lookup does not exist or inputs are NULL or EMPTY. " +
             "Format is <source-field>:<default-value>[,<source-field>:<default-value>]*" +
             "For example: lang_code:English,country_code:Britain")
-    @Macro
     private final String defaults;
 
     public Config(String mapping, String defaults) {

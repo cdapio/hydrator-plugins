@@ -9,11 +9,11 @@ It will include a header and body configurations. The body of the Stream event c
 
 Configuration
 -------------
-**body:** Specifies the input Structured Record fields that should be included in the body of the Stream event. (Macro-enabled)
+**body:** Specifies the input Structured Record fields that should be included in the body of the Stream event.
 
-**header:** Specifies the input Structured Record fields that should be included in the header of the Stream event. (Macro-enabled)
+**header:** Specifies the input Structured Record fields that should be included in the header of the Stream event.
 
-**format:** Specifies the format of the body. Currently supported formats are ``JSON``, ``CSV``, ``TSV``, and ``PSV``. (Macro-enabled)
+**format:** Specifies the format of the body. Currently supported formats are ``JSON``, ``CSV``, ``TSV``, and ``PSV``.
 
 **schema:** Specifies the output schema; the output schema can have only two fields: one of type ``STRING`` 
 and the other of type ``MAP<STRING, STRING>``.

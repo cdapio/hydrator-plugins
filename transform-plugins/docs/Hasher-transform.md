@@ -8,6 +8,6 @@ Hashes fields using a digest algorithm such as ``MD2``, ``MD5``, ``SHA1``, ``SHA
 
 Configuration
 -------------
-**fields:** Specifies the fields to be hashed. (Macro-enabled)
+**fields:** Specifies the fields to be hashed.
 
-**hash:** Specifies the hashing algorithm. (Macro-enabled)
+**hash:** Specifies the hashing algorithm.

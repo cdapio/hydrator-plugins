@@ -21,7 +21,7 @@ Example: ``thrift://somehost.net:9083``.
 partition keys and values for that partition. For example: if the partition column is 'type', then this property
 should be specified as ``{"type": "typeOne"}``.
 To write multiple partitions simultaneously you can leave this empty; but all of the partitioning columns must
-be present in the data you are writing to the sink. (Macro-enabled)
+be present in the data you are writing to the sink.
 
 **schema:** Optional schema to use while writing to the Hive table. If no schema is provided, then the schema of the
 table will be used and it should match the schema of the data being written.

@@ -251,7 +251,6 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
     @Name("format")
     @Description("Specify one of the predefined formats. DEFAULT, EXCEL, MYSQL, RFC4180, PDL & TDF " +
       "are supported formats.")
-    @Macro
     private final String format;
 
     @Name("field")
@@ -271,13 +270,13 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
 
     private void validate() {
       // Check if the format specified is valid.
-      if (!containsMacro("format") && (format == null || format.isEmpty())) {
+      if (format == null || format.isEmpty()) {
         throw new IllegalArgumentException("Format is not specified. Allowed values are DEFAULT, EXCEL, MYSQL," +
                                              " RFC4180, PDL & TDF");
       }
 
       // Check if format is one of the allowed types.
-      if (!containsMacro("format") && !format.equalsIgnoreCase("DEFAULT") && !format.equalsIgnoreCase("EXCEL") &&
+      if (!format.equalsIgnoreCase("DEFAULT") && !format.equalsIgnoreCase("EXCEL") &&
         !format.equalsIgnoreCase("MYSQL") && !format.equalsIgnoreCase("RFC4180") &&
         !format.equalsIgnoreCase("TDF") && !format.equalsIgnoreCase("PDL")) {
         throw new IllegalArgumentException("Format specified is not one of the allowed values. Allowed values are " +
