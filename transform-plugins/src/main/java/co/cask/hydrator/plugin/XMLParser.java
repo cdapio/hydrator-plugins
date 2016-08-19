@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -223,9 +224,11 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
 
     @Name("input")
     @Description("The field in the input record that is the source of the XML event or record.")
+    @Macro
     private final String inputField;
 
     @Description("The source XML character set encoding (default UTF-8).")
+    @Macro
     private final String encoding;
 
     @Name("xPathMappings")

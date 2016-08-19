@@ -15,7 +15,7 @@ you may want to periodically dump the contents of a CDAP Table to a relational d
 
 Properties
 ----------
-**name:** Table name. If the table does not already exist, it will be created.
+**name:** Table name. If the table does not already exist, it will be created. (Macro-enabled)
 
 **schema:** Schema of records read from the table. Row columns map to record
 fields. For example, if the schema contains a field named 'user' of type string, the value

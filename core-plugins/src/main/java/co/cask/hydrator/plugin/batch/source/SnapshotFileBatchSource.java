@@ -52,14 +52,24 @@ public abstract class SnapshotFileBatchSource<KEY, VALUE> extends BatchSource<KE
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    PartitionedFileSetProperties.Builder fileProperties = SnapshotFileSet.getBaseProperties(config);
-    addFileProperties(fileProperties);
+    if (!config.containsMacro("name") && !config.containsMacro("basePath") && !config.containsMacro("fileProperties")) {
+      PartitionedFileSetProperties.Builder fileProperties = SnapshotFileSet.getBaseProperties(config);
+      addFileProperties(fileProperties);
 
-    pipelineConfigurer.createDataset(config.getName(), PartitionedFileSet.class, fileProperties.build());
+      pipelineConfigurer.createDataset(config.getName(), PartitionedFileSet.class, fileProperties.build());
+    }
   }
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
+    // Dataset must still be created if macros provided at configure time
+    if (!context.datasetExists(config.getName())) {
+      PartitionedFileSetProperties.Builder fileProperties = SnapshotFileSet.getBaseProperties(config);
+      addFileProperties(fileProperties);
+
+      context.createDataset(config.getName(), PartitionedFileSet.class.getName(), fileProperties.build());
+    }
+
     PartitionedFileSet partitionedFileSet = context.getDataset(config.getName());
     SnapshotFileSet snapshotFileSet = new SnapshotFileSet(partitionedFileSet);
 

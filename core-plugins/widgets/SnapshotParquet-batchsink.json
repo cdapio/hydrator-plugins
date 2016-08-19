@@ -20,6 +20,11 @@
           "widget-type": "json-editor",
           "label": "FileSet Properties",
           "name": "fileProperties"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Clean Partitions Older Than",
+          "name": "cleanPartitionsOlderThan"
         }
       ]
     }

@@ -34,8 +34,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.parquet.avro.AvroParquetInputFormat;
-import org.apache.parquet.avro.AvroParquetOutputFormat;
+import parquet.avro.AvroParquetInputFormat;
+import parquet.avro.AvroParquetOutputFormat;
 
 import javax.annotation.Nullable;
 

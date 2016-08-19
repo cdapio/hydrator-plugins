@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -27,6 +28,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
+import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.csv.CSVFormat;
@@ -87,7 +89,7 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
     delimMap.put("TAB", "\t");
     delimMap.put("VBAR", "|");
     delimMap.put("STAR", "*");
-    delimMap.put("CARROT", "^");
+    delimMap.put("CARET", "^");
     delimMap.put("DOLLAR", "$");
     delimMap.put("HASH", "#");
     delimMap.put("TILDE", "~");
@@ -101,23 +103,7 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-
-    if (!delimMap.containsKey(config.delimiter)) {
-      throw new IllegalArgumentException("Unknown delimiter '" + config.delimiter + "' specified. ");
-    }
-
-    // Check if the format specified is valid.
-    if (config.format == null || config.format.isEmpty()) {
-      throw new IllegalArgumentException("Format is not specified. Allowed values are DELIMITED, EXCEL, MYSQL," +
-                                           " RFC4180 & TDF");
-    }
-
-    if (!config.format.equalsIgnoreCase("DELIMITED") && !config.format.equalsIgnoreCase("EXCEL") &&
-      !config.format.equalsIgnoreCase("MYSQL") && !config.format.equalsIgnoreCase("RFC4180") &&
-      !config.format.equalsIgnoreCase("TDF")) {
-      throw new IllegalArgumentException("Format specified is not one of the allowed values. Allowed values are " +
-                                           "DELIMITED, EXCEL, MYSQL, RFC4180 & TDF");
-    }
+    config.validate();
 
     // Check if schema specified is a valid schema or no.
     try {
@@ -139,6 +125,7 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
+    config.validate();
 
     try {
       outSchema = Schema.parseJson(config.schema);
@@ -223,6 +210,26 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
       this.format = format;
       this.delimiter = delimiter;
       this.schema = schema;
+    }
+
+    private void validate() {
+      if (!delimMap.containsKey(delimiter)) {
+        throw new IllegalArgumentException("Unknown delimiter '" + delimiter + "' specified. Allowed values are " +
+                                             Joiner.on(", ").join(delimMap.keySet()));
+      }
+
+      // Check if the format specified is valid.
+      if (format == null || format.isEmpty()) {
+        throw new IllegalArgumentException("Format is not specified. Allowed values are DELIMITED, EXCEL, MYSQL," +
+                                             " RFC4180 & TDF");
+      }
+
+      if (!format.equalsIgnoreCase("DELIMITED") && !format.equalsIgnoreCase("EXCEL") &&
+        !format.equalsIgnoreCase("MYSQL") && !format.equalsIgnoreCase("RFC4180") &&
+        !format.equalsIgnoreCase("TDF")) {
+        throw new IllegalArgumentException("Format specified is not one of the allowed values. Allowed values are " +
+                                             "DELIMITED, EXCEL, MYSQL, RFC4180 & TDF");
+      }
     }
   }
 }

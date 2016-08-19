@@ -50,12 +50,12 @@
           "name": "format",
           "widget-attributes": {
             "values": [
-              "JSON",
               "CSV",
               "EXCEL",
+              "JSON",
               "MYSQL",
-              "TDF",
-              "RFC4180"
+              "RFC4180",
+              "TDF"
             ],
             "default": "CSV"
           }

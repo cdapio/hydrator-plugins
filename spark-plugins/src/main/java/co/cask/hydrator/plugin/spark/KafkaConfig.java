@@ -14,9 +14,10 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.spark;
+package co.cask.hydrator.plugin.spark;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.data.format.FormatSpecification;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.format.RecordFormats;
@@ -44,9 +45,11 @@ public class KafkaConfig extends ReferencePluginConfig implements Serializable {
   private static final long serialVersionUID = 8069169417140954175L;
 
   @Description("Comma-separated list of Kafka brokers specified in host1:port1,host2:port2 form.")
+  @Macro
   private String brokers;
 
   @Description("Comma-separated list of Kafka topics to read from.")
+  @Macro
   private String topics;
 
   @Description("Output schema of the source, including the timeField and keyField. " +

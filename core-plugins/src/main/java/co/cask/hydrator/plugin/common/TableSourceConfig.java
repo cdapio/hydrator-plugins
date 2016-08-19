@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.common;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.hydrator.plugin.batch.sink.TableSink;
@@ -28,10 +29,7 @@ import javax.annotation.Nullable;
 /**
  * {@link PluginConfig} for {@link TableSource}, {@link TableSink} and {@link RealtimeTableSink}
  */
-public class TableSourceConfig extends PluginConfig {
-  @Name(Properties.Table.NAME)
-  @Description("Name of the table. If the table does not already exist, one will be created.")
-  private String name;
+public class TableSourceConfig extends BatchReadableWritableConfig {
 
   @Name(Properties.Table.PROPERTY_SCHEMA)
   @Description("Optional schema of the table as a JSON Object. If the table does not already exist, one will be " +
@@ -43,10 +41,13 @@ public class TableSourceConfig extends PluginConfig {
   @Description("Optional field name indicating that the field value should come from the row key instead of a " +
     "row column. The field name specified must be present in the schema, and must not be nullable.")
   @Nullable
+  @Macro
   private String rowField;
 
-  public String getName() {
-    return name;
+  public TableSourceConfig(String name, String rowField, @Nullable String schemaStr) {
+    super(name);
+    this.rowField = rowField;
+    this.schemaStr = schemaStr;
   }
 
   @Nullable

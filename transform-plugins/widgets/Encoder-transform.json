@@ -13,10 +13,10 @@
           "widget-attributes": {
             "showDelimiter": "false",
             "dropdownOptions": [
-              "BASE64",
               "BASE32",
-              "STRING_BASE64",
+              "BASE64",
               "STRING_BASE32",
+              "STRING_BASE64",
               "HEX",
               "NONE"
             ],

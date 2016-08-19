@@ -86,7 +86,8 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
   @SuppressWarnings("ConstantConditions")
   public void testDBSource() throws Exception {
     String importQuery = "SELECT ID, NAME, SCORE, GRADUATED, TINY, SMALL, BIG, FLOAT_COL, REAL_COL, NUMERIC_COL, " +
-      "DECIMAL_COL, BIT_COL, DATE_COL, TIME_COL, TIMESTAMP_COL, BINARY_COL, BLOB_COL, CLOB_COL FROM \"my_table\"" +
+      "DECIMAL_COL, BIT_COL, DATE_COL, TIME_COL, TIMESTAMP_COL, BINARY_COL, LONGVARBINARY_COL, BLOB_COL, " +
+      "CLOB_COL, CHAR_COL, LONGVARCHAR_COL, VARBINARY_COL FROM \"my_table\"" +
       "WHERE ID < 3 AND $CONDITIONS";
     String boundingQuery = "SELECT MIN(ID),MAX(ID) from \"my_table\"";
     String splitBy = "ID";
@@ -122,6 +123,10 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     // Verify data
     Assert.assertEquals("user1", row1.get("NAME"));
     Assert.assertEquals("user2", row2.get("NAME"));
+    Assert.assertEquals("longvarchar1", row1.get("LONGVARCHAR_COL"));
+    Assert.assertEquals("longvarchar2", row2.get("LONGVARCHAR_COL"));
+    Assert.assertEquals("char1", ((String) row1.get("CHAR_COL")).trim());
+    Assert.assertEquals("char2", ((String) row2.get("CHAR_COL")).trim());
     Assert.assertEquals(124.45, (double) row1.get("SCORE"), 0.000001);
     Assert.assertEquals(125.45, (double) row2.get("SCORE"), 0.000001);
     Assert.assertEquals(false, row1.get("GRADUATED"));
@@ -161,6 +166,10 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     // verify binary columns
     Assert.assertEquals("user1", Bytes.toString((byte[]) row1.get("BINARY_COL"), 0, 5));
     Assert.assertEquals("user2", Bytes.toString((byte[]) row2.get("BINARY_COL"), 0, 5));
+    Assert.assertEquals("user1", Bytes.toString((byte[]) row1.get("LONGVARBINARY_COL"), 0, 5));
+    Assert.assertEquals("user2", Bytes.toString((byte[]) row2.get("LONGVARBINARY_COL"), 0, 5));
+    Assert.assertEquals("user1", Bytes.toString((byte[]) row1.get("VARBINARY_COL"), 0, 5));
+    Assert.assertEquals("user2", Bytes.toString((byte[]) row2.get("VARBINARY_COL"), 0, 5));
     Assert.assertEquals("user1", Bytes.toString((byte[]) row1.get("BLOB_COL"), 0, 5));
     Assert.assertEquals("user2", Bytes.toString((byte[]) row2.get("BLOB_COL"), 0, 5));
     Assert.assertEquals(CLOB_DATA, row1.get("CLOB_COL"));

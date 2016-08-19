@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.plugin.sink.HBaseSink;
 import co.cask.hydrator.plugin.source.HBaseSource;
@@ -28,9 +29,11 @@ import javax.annotation.Nullable;
 */
 public class HBaseConfig extends ReferencePluginConfig {
   @Description("Name of the HBase Table")
+  @Macro
   public String tableName;
 
   @Description("Name of the Column Family")
+  @Macro
   public String columnFamily;
 
   @Description("Schema of the Record to be emitted (in case of Source) or received (in case of Sink)")
@@ -41,10 +44,12 @@ public class HBaseConfig extends ReferencePluginConfig {
 
   @Description("Zookeeper Quorum. By default it is set to 'localhost'")
   @Nullable
+  @Macro
   public String zkQuorum;
 
   @Description("Zookeeper Client Port. By default it is set to 2181")
   @Nullable
+  @Macro
   public String zkClientPort;
 
   public HBaseConfig(String referenceName, String tableName, String rowField, @Nullable String schema) {

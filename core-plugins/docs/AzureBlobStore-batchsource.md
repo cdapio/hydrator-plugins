@@ -20,12 +20,12 @@ Properties
 
 **account:** The Microsoft Azure Blob Storage account to use. This is of the form 
 `mystorageaccount.blob.core.windows.net`, where `mystorageaccount` is the Microsoft 
-Azure Storage account name.
+Azure Storage account name. (Macro-enabled)
 
-**container:** The container to use on the specified Microsoft Azure Storage account.
+**container:** The container to use on the specified Microsoft Azure Storage account. (Macro-enabled)
 
 **storageKey:** The storage key for the specified container on the Microsoft Azure Storage account. 
-Must be a valid base64 encoded storage key provided by Microsoft Azure.
+Must be a valid base64 encoded storage key provided by Microsoft Azure. (Macro-enabled)
 
 Example
 -------

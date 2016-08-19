@@ -16,12 +16,16 @@
 
 package co.cask.hydrator.plugin.batch.sink;
 
+import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.dataset.DatasetManagementException;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
+import co.cask.hydrator.common.TimeParser;
 import co.cask.hydrator.plugin.common.SnapshotFileSetConfig;
 import co.cask.hydrator.plugin.dataset.SnapshotFileSet;
 import com.google.gson.Gson;
@@ -29,9 +33,11 @@ import com.google.gson.reflect.TypeToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * Sink that stores snapshots on HDFS, and keeps track of which snapshot is the latest snapshot.
@@ -44,22 +50,36 @@ public abstract class SnapshotFileBatchSink<KEY_OUT, VAL_OUT> extends BatchSink<
   private static final Gson GSON = new Gson();
   private static final Type MAP_TYPE = new TypeToken<Map<String, String>>() { }.getType();
 
-  private final SnapshotFileSetConfig config;
+  private final SnapshotFileSetBatchSinkConfig config;
   private SnapshotFileSet snapshotFileSet;
 
-  public SnapshotFileBatchSink(SnapshotFileSetConfig config) {
+  public SnapshotFileBatchSink(SnapshotFileSetBatchSinkConfig config) {
     this.config = config;
   }
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    FileSetProperties.Builder fileProperties = SnapshotFileSet.getBaseProperties(config);
-    addFileProperties(fileProperties);
-    pipelineConfigurer.createDataset(config.getName(), PartitionedFileSet.class, fileProperties.build());
+    if (!config.containsMacro("name") && !config.containsMacro("basePath") && !config.containsMacro("fileProperties")) {
+      FileSetProperties.Builder fileProperties = SnapshotFileSet.getBaseProperties(config);
+      addFileProperties(fileProperties);
+      pipelineConfigurer.createDataset(config.getName(), PartitionedFileSet.class, fileProperties.build());
+    }
+
+    // throw an exception on badly formatted time string
+    if (config.getCleanPartitionsOlderThan() != null) {
+      TimeParser.parseDuration(config.getCleanPartitionsOlderThan());
+    }
   }
 
   @Override
-  public void prepareRun(BatchSinkContext context) {
+  public void prepareRun(BatchSinkContext context) throws DatasetManagementException {
+    // if macros were provided, the dataset still needs to be created
+    if (!context.datasetExists(config.getName())) {
+      FileSetProperties.Builder fileProperties = SnapshotFileSet.getBaseProperties(config);
+      addFileProperties(fileProperties);
+      context.createDataset(config.getName(), PartitionedFileSet.class.getName(), fileProperties.build());
+    }
+
     PartitionedFileSet files = context.getDataset(config.getName());
     snapshotFileSet = new SnapshotFileSet(files);
 
@@ -80,6 +100,17 @@ public abstract class SnapshotFileBatchSink<KEY_OUT, VAL_OUT> extends BatchSink<
       } catch (Exception e) {
         LOG.error("Exception updating state file with value of latest snapshot, ", e);
       }
+
+      try {
+        if (config.getCleanPartitionsOlderThan() != null) {
+          long cutoffTime =
+            context.getLogicalStartTime() - TimeParser.parseDuration(config.getCleanPartitionsOlderThan());
+          snapshotFileSet.deleteMatchingPartitionsByTime(cutoffTime);
+          LOG.info("Cleaning up snapshots older than {}", cutoffTime);
+        }
+      } catch (IOException e) {
+        LOG.error("Exception occurred while cleaning up older snapshots", e);
+      }
     }
   }
 
@@ -87,4 +118,30 @@ public abstract class SnapshotFileBatchSink<KEY_OUT, VAL_OUT> extends BatchSink<
    * add all fileset properties specific to the type of sink, such as schema and output format.
    */
   protected abstract void addFileProperties(FileSetProperties.Builder propertiesBuilder);
+
+  /**
+   * Config for SnapshotFileBatchSink
+   */
+  public static class SnapshotFileSetBatchSinkConfig extends SnapshotFileSetConfig {
+    @Description("Optional property that configures the sink to delete old partitions after successful runs. " +
+      "If set, when a run successfully finishes, the sink will subtract this amount of time from the runtime and " +
+      "delete any partitions older than that time. " +
+      "The format is expected to be a number followed by an 's', 'm', 'h', or 'd' specifying the time unit, with 's' " +
+      "for seconds, 'm' for minutes, 'h' for hours, and 'd' for days. For example, if the pipeline is scheduled to " +
+      "run at midnight of January 1, 2016, and this property is set to 7d, the sink will delete any partitions " +
+      "for time partitions older than midnight Dec 25, 2015.")
+    @Nullable
+    @Macro
+    protected String cleanPartitionsOlderThan;
+
+    public SnapshotFileSetBatchSinkConfig(String name, @Nullable String basePath,
+                                          @Nullable String cleanPartitionsOlderThan) {
+      super(name, basePath, null);
+      this.cleanPartitionsOlderThan = cleanPartitionsOlderThan;
+    }
+
+    public String getCleanPartitionsOlderThan() {
+      return cleanPartitionsOlderThan;
+    }
+  }
 }

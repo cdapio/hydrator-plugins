@@ -16,22 +16,22 @@ reads the newly-arrived files, performs data validation and cleansing, and then 
 
 Properties
 ----------
-**name:** Name of the TimePartitionedFileSet from which the records are to be read from.
+**name:** Name of the TimePartitionedFileSet from which the records are to be read from. (Macro-enabled)
 
 **schema:** The Parquet schema of the record being read from the source as a JSON Object.
 
 **basePath:** Base path for the TimePartitionedFileSet. Defaults to the name of the
-dataset.
+dataset. (Macro-enabled)
 
 **duration:** Size of the time window to read with each run of the pipeline. The format is
 expected to be a number followed by an 's', 'm', 'h', or 'd' (specifying the time unit), with
 's' for seconds, 'm' for minutes, 'h' for hours, and 'd' for days. For example, a value of
-'5m' means each run of the pipeline will read 5 minutes of events from the TPFS source.
+'5m' means each run of the pipeline will read 5 minutes of events from the TPFS source. (Macro-enabled)
 
 **delay:** Optional delay for reading from TPFS source. The value must be of the same
 format as the duration value. For example, a duration of '5m' and a delay of '10m' means
 each run of the pipeline will read events for 5 minutes of data from 15 minutes before its logical
-start time to 10 minutes before its logical start time. The default value is 0.
+start time to 10 minutes before its logical start time. The default value is 0. (Macro-enabled)
 
 
 Example

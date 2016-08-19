@@ -1,0 +1,65 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Time Partitioned Fileset - ORC",
+      "properties": [
+        {
+          "widget-type": "dataset-selector",
+          "label": "Dataset Name",
+          "name": "name"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Dataset Base Path",
+          "name": "basePath"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Partition Directory Format",
+          "name": "filePathFormat"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Time Zone",
+          "name": "timeZone"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Partition Offset",
+          "name": "partitionOffset"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Clean Partitions Older Than",
+          "name": "cleanPartitionsOlderThan"
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "boolean",
+          "int",
+          "long",
+          "float",
+          "double",
+          "bytes",
+          "string"
+        ],
+        "schema-default-type": "string"
+      }
+    }
+  ],
+  "jump-config": {
+    "datasets": [{
+      "ref-property-name": "name"
+    }]
+  }
+}

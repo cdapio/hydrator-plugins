@@ -48,8 +48,7 @@ public abstract class BatchWritableSink<IN, KEY_OUT, VAL_OUT> extends BatchSink<
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     // null check for tests, as macro fields map and properties are null in test cases
-    if (batchReadableWritableConfig.getProperties() != null &&
-      !batchReadableWritableConfig.containsMacro(Properties.BatchReadableWritable.NAME)) {
+    if (!batchReadableWritableConfig.containsMacro(Properties.BatchReadableWritable.NAME)) {
       String datasetName = getProperties().get(Properties.BatchReadableWritable.NAME);
       Preconditions.checkArgument(datasetName != null && !datasetName.isEmpty(), "Dataset name must be given.");
       String datasetType = getProperties().get(Properties.BatchReadableWritable.TYPE);

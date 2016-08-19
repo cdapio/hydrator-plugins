@@ -44,12 +44,14 @@ public class ConnectionConfig extends PluginConfig {
   @Description("User to use to connect to the specified database. Required for databases that " +
     "need authentication. Optional for databases that do not require authentication.")
   @Nullable
+  @Macro
   public String user;
 
   @Name(PASSWORD)
   @Description("Password to use to connect to the specified database. Required for databases that " +
     "need authentication. Optional for databases that do not require authentication.")
   @Nullable
+  @Macro
   public String password;
 
   @Name(JDBC_PLUGIN_NAME)
@@ -69,7 +71,6 @@ public class ConnectionConfig extends PluginConfig {
     "auto commit, or a driver that does not support the commit call. For example, the Hive jdbc driver will throw " +
     "an exception whenever a commit is called. For drivers like that, this should be set to true.")
   @Nullable
-  @Macro
   public Boolean enableAutoCommit;
 
   public ConnectionConfig() {
