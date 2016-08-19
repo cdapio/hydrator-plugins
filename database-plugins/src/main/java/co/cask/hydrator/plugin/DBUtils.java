@@ -18,11 +18,12 @@ package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.data.schema.UnsupportedTypeException;
-import com.google.common.base.Throwables;
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -48,6 +49,7 @@ import javax.management.ReflectionException;
  */
 public final class DBUtils {
   private static final Logger LOG = LoggerFactory.getLogger(DBUtils.class);
+  public static final String OVERRIDE_SCHEMA = "co.cask.hydrator.db.override.schema";
 
   /**
    * Performs any Database related cleanup
@@ -98,6 +100,52 @@ public final class DBUtils {
    * Given the result set, get the metadata of the result set and return
    * list of {@link co.cask.cdap.api.data.schema.Schema.Field},
    * where name of the field is same as column name and type of the field is obtained using {@link DBUtils#getType(int)}
+   *
+   * @param resultSet result set of executed query
+   * @param schemaStr schema string to override resultant schema
+   * @return list of schema fields
+   * @throws SQLException
+   * @throws IOException
+   */
+  public static List<Schema.Field> getSchemaFields(ResultSet resultSet, @Nullable String schemaStr)
+    throws SQLException {
+    Schema resultsetSchema = Schema.recordOf("resultset", getSchemaFields(resultSet));
+    Schema schema;
+
+    if (!Strings.isNullOrEmpty(schemaStr)) {
+      try {
+        schema = Schema.parseJson(schemaStr);
+      } catch (IOException e) {
+        throw new IllegalArgumentException(String.format("Unable to parse schema string %s", schemaStr), e);
+      }
+      for (Schema.Field field : schema.getFields()) {
+        Schema.Field resultsetField = resultsetSchema.getField(field.getName());
+        if (resultsetField == null) {
+          throw new IllegalArgumentException(String.format("Schema field %s is not present in input record",
+                                                           field.getName()));
+        }
+        Schema resultsetFieldSchema = resultsetField.getSchema().isNullable() ?
+          resultsetField.getSchema().getNonNullable() : resultsetField.getSchema();
+        Schema simpleSchema = field.getSchema().isNullable() ? field.getSchema().getNonNullable() : field.getSchema();
+
+        if (!resultsetFieldSchema.equals(simpleSchema)) {
+          throw new IllegalArgumentException(String.format("Schema field %s has type %s but in input record found " +
+                                                             "type %s ",
+                                                           field.getName(), simpleSchema.getType(),
+                                                           resultsetFieldSchema.getType()));
+        }
+      }
+      return schema.getFields();
+
+    }
+    return resultsetSchema.getFields();
+  }
+
+  /**
+   * Given the result set, get the metadata of the result set and return
+   * list of {@link co.cask.cdap.api.data.schema.Schema.Field},
+   * where name of the field is same as column name and type of the field is obtained using {@link DBUtils#getType(int)}
+   *
    * @param resultSet result set of executed query
    * @return list of schema fields
    * @throws SQLException

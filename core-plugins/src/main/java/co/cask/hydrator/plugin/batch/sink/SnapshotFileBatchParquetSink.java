@@ -28,7 +28,6 @@ import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.hydrator.common.HiveSchemaConverter;
-import co.cask.hydrator.plugin.common.SnapshotFileSetConfig;
 import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
 import org.apache.avro.generic.GenericRecord;
 import parquet.avro.AvroParquetInputFormat;
@@ -91,12 +90,12 @@ public class SnapshotFileBatchParquetSink extends SnapshotFileBatchSink<Void, Ge
   /**
    * Config for SnapshotFileBatchParquetSink.
    */
-  public static class SnapshotParquetConfig extends SnapshotFileSetConfig {
+  public static class SnapshotParquetConfig extends SnapshotFileSetBatchSinkConfig {
     @Description("The Parquet schema of the record being written to the Sink as a JSON Object.")
     private String schema;
 
     public SnapshotParquetConfig(String name, @Nullable String basePath, String schema) {
-      super(name, basePath, null, null);
+      super(name, basePath, null);
       this.schema = schema;
     }
   }

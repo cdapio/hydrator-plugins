@@ -1,0 +1,75 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Encode",
+      "properties": [
+        {
+          "widget-type": "csv",
+          "label": "Fields to Encrypt",
+          "name": "encryptFields",
+          "description": "List of fields to encrypt.",
+          "widget-attributes": {
+            "delimiter": ","
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "transformation",
+          "name": "transformation"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "ivHex",
+          "name": "ivHex"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "keystorePath",
+          "name": "keystorePath"
+        },
+        {
+          "widget-type": "password",
+          "label": "keystorePassword",
+          "name": "keystorePassword"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "keystoreType",
+          "name": "keystoreType"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "keyAlias",
+          "name": "keyAlias"
+        },
+        {
+          "widget-type": "password",
+          "label": "keyPassword",
+          "name": "keyPassword"
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "boolean",
+          "bytes",
+          "int",
+          "long",
+          "float",
+          "double",
+          "string",
+          "map<string, string>"
+        ],
+        "schema-default-type": "string"
+      }
+    }
+  ]
+}

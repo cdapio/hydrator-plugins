@@ -14,13 +14,15 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.spark;
+package co.cask.hydrator.plugin.spark;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.FileSet;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.PipelineConfigurer;
@@ -56,9 +58,11 @@ public final class NaiveBayesTrainer extends SparkSink<StructuredRecord> {
   public static class Config extends PluginConfig {
 
     @Description("The name of the FileSet to save the model to.")
+    @Macro
     private final String fileSetName;
 
     @Description("Path of the FileSet to save the model to.")
+    @Macro
     private final String path;
 
     @Description("A space-separated sequence of words to use for training.")
@@ -71,6 +75,7 @@ public final class NaiveBayesTrainer extends SparkSink<StructuredRecord> {
     @Description("The number of features to use in training the model. It must be of type integer and equal to the" +
                   " number of features used in NaiveBayesClassifier. The default value if none is provided will be" +
                   " 100.")
+    @Macro
     private final Integer numFeatures;
 
     public Config(String fileSetName, String path, String fieldToClassify, String predictionField,
@@ -85,7 +90,9 @@ public final class NaiveBayesTrainer extends SparkSink<StructuredRecord> {
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    pipelineConfigurer.createDataset(config.fileSetName, FileSet.class);
+    if (!config.containsMacro("fileSetName")) {
+      pipelineConfigurer.createDataset(config.fileSetName, FileSet.class);
+    }
 
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
     if (inputSchema != null) {
@@ -104,7 +111,10 @@ public final class NaiveBayesTrainer extends SparkSink<StructuredRecord> {
 
   @Override
   public void prepareRun(SparkPluginContext context) throws Exception {
-    // no-op; no need to do anything
+    // if macros were provided at configure time
+    if (!context.datasetExists(config.fileSetName)) {
+      context.createDataset(config.fileSetName, FileSet.class.getName(), DatasetProperties.EMPTY);
+    }
   }
 
   @Override

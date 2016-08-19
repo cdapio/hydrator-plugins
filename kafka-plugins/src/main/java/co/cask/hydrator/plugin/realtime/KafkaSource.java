@@ -279,19 +279,15 @@ public class KafkaSource extends ReferenceRealtimeSource<StructuredRecord> {
         // try to parse the schema if there is one
         Schema schemaObj = parseSchema();
 
-        if (getProperties() != null) {
-          // strip format.settings. from any properties and use them in the format spec
-          ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
-          for (Map.Entry<String, String> entry : getProperties().getProperties().entrySet()) {
-            if (entry.getKey().startsWith(FORMAT_SETTING_PREFIX)) {
-              String key = entry.getKey();
-              builder.put(key.substring(FORMAT_SETTING_PREFIX.length(), key.length()), entry.getValue());
-            }
+        // strip format.settings. from any properties and use them in the format spec
+        ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
+        for (Map.Entry<String, String> entry : getProperties().getProperties().entrySet()) {
+          if (entry.getKey().startsWith(FORMAT_SETTING_PREFIX)) {
+            String key = entry.getKey();
+            builder.put(key.substring(FORMAT_SETTING_PREFIX.length(), key.length()), entry.getValue());
           }
-          formatSpec = new FormatSpecification(format, schemaObj, builder.build());
-        } else {
-          formatSpec = new FormatSpecification(format, schemaObj, null);
         }
+        formatSpec = new FormatSpecification(format, schemaObj, builder.build());
       }
       return formatSpec;
     }

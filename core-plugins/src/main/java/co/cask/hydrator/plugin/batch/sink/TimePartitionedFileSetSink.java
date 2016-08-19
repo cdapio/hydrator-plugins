@@ -18,6 +18,7 @@ package co.cask.hydrator.plugin.batch.sink;
 
 import co.cask.cdap.api.data.batch.Output;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.dataset.DatasetManagementException;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.TimePartitionDetail;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
@@ -51,17 +52,33 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     tpfsSinkConfig.validate();
-    String tpfsName = tpfsSinkConfig.name;
-    FileSetProperties.Builder properties = FileSetProperties.builder();
-    if (!Strings.isNullOrEmpty(tpfsSinkConfig.basePath)) {
-      properties.setBasePath(tpfsSinkConfig.basePath);
+    // create the dataset at configure time if no macros were provided on necessary fields
+    if (!tpfsSinkConfig.containsMacro("name") && !tpfsSinkConfig.containsMacro("basePath")) {
+      String tpfsName = tpfsSinkConfig.name;
+      FileSetProperties.Builder properties = FileSetProperties.builder();
+      if (!Strings.isNullOrEmpty(tpfsSinkConfig.basePath)) {
+        properties.setBasePath(tpfsSinkConfig.basePath);
+      }
+      addFileSetProperties(properties);
+      pipelineConfigurer.createDataset(tpfsName, TimePartitionedFileSet.class.getName(), properties.build());
     }
-    addFileSetProperties(properties);
-    pipelineConfigurer.createDataset(tpfsName, TimePartitionedFileSet.class.getName(), properties.build());
   }
 
   @Override
-  public void prepareRun(BatchSinkContext context) {
+  public void prepareRun(BatchSinkContext context) throws DatasetManagementException {
+    tpfsSinkConfig.validate();
+
+    // if macros were provided and the dataset doesn't exist, create it now
+    if (!context.datasetExists(tpfsSinkConfig.name)) {
+      String tpfsName = tpfsSinkConfig.name;
+      FileSetProperties.Builder properties = FileSetProperties.builder();
+      if (!Strings.isNullOrEmpty(tpfsSinkConfig.basePath)) {
+        properties.setBasePath(tpfsSinkConfig.basePath);
+      }
+      addFileSetProperties(properties);
+      context.createDataset(tpfsName, TimePartitionedFileSet.class.getName(), properties.build());
+    }
+
     Map<String, String> sinkArgs = getAdditionalTPFSArguments();
     long outputPartitionTime = context.getLogicalStartTime();
     if (tpfsSinkConfig.partitionOffset != null) {

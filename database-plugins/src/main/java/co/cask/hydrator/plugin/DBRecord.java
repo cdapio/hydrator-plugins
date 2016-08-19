@@ -19,6 +19,8 @@ package co.cask.hydrator.plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import com.google.common.base.Preconditions;
+import org.apache.hadoop.conf.Configurable;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.lib.db.DBWritable;
 
@@ -48,9 +50,11 @@ import javax.sql.rowset.serial.SerialBlob;
  * @see org.apache.hadoop.mapreduce.lib.db.DBOutputFormat DBOutputFormat
  * @see DBWritable DBWritable
  */
-public class DBRecord implements Writable, DBWritable {
+public class DBRecord implements Writable, DBWritable, Configurable {
 
   private StructuredRecord record;
+  private Configuration conf;
+
   /**
    * Need to cache {@link ResultSetMetaData} of the record for use during writing to a table.
    * This is because we cannot rely on JDBC drivers to properly set metadata in the {@link PreparedStatement}
@@ -93,7 +97,7 @@ public class DBRecord implements Writable, DBWritable {
    */
   public void readFields(ResultSet resultSet) throws SQLException {
     ResultSetMetaData metadata = resultSet.getMetaData();
-    List<Schema.Field> schemaFields = DBUtils.getSchemaFields(resultSet);
+    List<Schema.Field> schemaFields = DBUtils.getSchemaFields(resultSet, conf.get(DBUtils.OVERRIDE_SCHEMA));
     Schema schema = Schema.recordOf("dbRecord", schemaFields);
     StructuredRecord.Builder recordBuilder = StructuredRecord.builder(schema);
     for (int i = 0; i < schemaFields.size(); i++) {
@@ -150,6 +154,9 @@ public class DBRecord implements Writable, DBWritable {
   private Object transformValue(int sqlColumnType, Object original) throws SQLException {
     if (original != null) {
       switch (sqlColumnType) {
+        case Types.SMALLINT:
+        case Types.TINYINT:
+          return ((Number) original).intValue();
         case Types.NUMERIC:
         case Types.DECIMAL:
           return ((BigDecimal) original).doubleValue();
@@ -308,5 +315,15 @@ public class DBRecord implements Writable, DBWritable {
         stmt.setLong(sqlIndex, longValue);
         break;
     }
+  }
+
+  @Override
+  public void setConf(Configuration conf) {
+    this.conf = conf;
+  }
+
+  @Override
+  public Configuration getConf() {
+    return conf;
   }
 }

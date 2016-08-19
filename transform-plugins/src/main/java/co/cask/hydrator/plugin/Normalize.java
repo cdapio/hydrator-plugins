@@ -61,7 +61,7 @@ public class Normalize extends Transform<StructuredRecord, StructuredRecord> {
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-    config.validateConfig();
+    config.validate();
 
     try {
       outputSchema = Schema.parseJson(config.outputSchema);
@@ -228,7 +228,7 @@ public class Normalize extends Transform<StructuredRecord, StructuredRecord> {
       this.outputSchema = outputSchema;
     }
 
-    void validateConfig() {
+    private void validate() {
       Preconditions.checkArgument(!Strings.isNullOrEmpty(fieldMapping), "Fields to mapped cannot be empty.");
       Preconditions.checkArgument(!Strings.isNullOrEmpty(fieldNormalizing), "Fields to normalized cannot be empty.");
       Preconditions.checkArgument(!Strings.isNullOrEmpty(outputSchema), "Output schema cannot be empty.");

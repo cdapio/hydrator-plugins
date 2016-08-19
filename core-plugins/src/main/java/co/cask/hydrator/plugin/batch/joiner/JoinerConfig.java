@@ -53,7 +53,7 @@ public class JoinerConfig extends PluginConfig {
     "For example: customers.id as customer_id, customer.name as customer_name, item.id as item_id, " +
     "<stageName>.inputFieldName as alias. The output will have same order of fields as selected in selectedFields." +
     "There must not be any duplicate fields in output.";
-  private static final String REQUIRED_INPUTS_DESC = "Comma-separated list of stages for which required input stages." +
+  private static final String REQUIRED_INPUTS_DESC = "Comma-separated list of stages." +
     " Required input stages decide the type of the join. If all the input stages are present in required inputs, " +
     "inner join will be performed. Otherwise, outer join will be performed considering non-required inputs as " +
     "optional.";

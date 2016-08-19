@@ -48,6 +48,7 @@ public class TableSource extends BatchReadableSource<byte[], Row, StructuredReco
   private final TableSourceConfig tableConfig;
 
   public TableSource(TableSourceConfig tableConfig) {
+    super(tableConfig);
     this.tableConfig = tableConfig;
   }
 

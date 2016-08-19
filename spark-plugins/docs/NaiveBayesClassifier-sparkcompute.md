@@ -11,16 +11,16 @@ This transform can be used when you have a saved NaiveBayes model and want to cl
 
 Properties
 ----------
-**fileSetName:** The name of the FileSet to load the model from.
+**fileSetName:** The name of the FileSet to load the model from. (Macro-enabled)
 
-**path:** Path of the FileSet to load the model from.
+**path:** Path of the FileSet to load the model from. (Macro-enabled)
 
 **fieldToClassify:** A space-separated sequence of words to classify.
 
 **predictionField:** The field on which to set the prediction. It will be of type double.
 
 **numFeatures:** The number of features to use when classifying with the trained model. This should be the same as
-the number of features used to train the model in NaiveBayesTrainer. The default value if none is provided will be 100.
+the number of features used to train the model in NaiveBayesTrainer. The default value if none is provided will be 100. (Macro-enabled)
 
 
 Example

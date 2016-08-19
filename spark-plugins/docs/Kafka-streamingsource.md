@@ -18,9 +18,9 @@ Properties
 ----------
 **referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
 
-**brokers:** Comma-separated list of Kafka brokers specified in host1:port1,host2:port2 form.
+**brokers:** Comma-separated list of Kafka brokers specified in host1:port1,host2:port2 form. (Macro-enabled)
 
-**topics:** Comma-separated list of Kafka topics to read from.
+**topics:** Comma-separated list of Kafka topics to read from. (Macro-enabled)
 
 **schema:** Output schema of the source. If you would like the output records to contain a field with the
 Kafka message key, the schema must include a field of type bytes or nullable bytes, and you must set the

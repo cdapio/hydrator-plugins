@@ -30,12 +30,12 @@
           "name": "method",
           "widget-attributes": {
             "values": [
+              "DELETE",
               "GET",
-              "PUT",
-              "POST",
               "HEAD",
               "OPTIONS",
-              "DELETE"
+              "POST",
+              "PUT"
             ],
             "default": "POST"
           }

@@ -109,11 +109,11 @@
             "showDelimiter": "false",
             "dropdownOptions": [
               "boolean",
+              "bytes",
+              "double",
+              "float",
               "int",
               "long",
-              "float",
-              "double",
-              "bytes",
               "string"
             ],
             "key-placeholder": "Field Name"

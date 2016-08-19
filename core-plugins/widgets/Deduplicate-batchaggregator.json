@@ -25,10 +25,10 @@
             "kv-delimiter" : ":",
             "delimiter" : ";",
             "dropdownOptions": [
-              "Min",
-              "Max",
               "First",
-              "Last"
+              "Last",
+              "Max",
+              "Min"
             ],
             "key-placeholder": "Field Name"
           }

@@ -83,12 +83,8 @@ public class TableSink extends BatchWritableSink<StructuredRecord, byte[], Put> 
   @Override
   protected Map<String, String> getProperties() {
     Map<String, String> properties;
-    if (tableSinkConfig.getProperties() == null) {
-      // NOTE : this is null only in unit-tests
-      properties = new HashMap<>();
-    } else {
-      properties = new HashMap<>(tableSinkConfig.getProperties().getProperties());
-    }
+    properties = new HashMap<>(tableSinkConfig.getProperties().getProperties());
+
     properties.put(Properties.BatchReadableWritable.NAME, tableSinkConfig.getName());
     properties.put(Properties.BatchReadableWritable.TYPE, Table.class.getName());
     return properties;

@@ -13,16 +13,16 @@ can be used for classification later on.
 
 Properties
 ----------
-**fileSetName:** The name of the FileSet to save the model to.
+**fileSetName:** The name of the FileSet to save the model to. (Macro-enabled)
 
-**path:** Path of the FileSet to save the model to.
+**path:** Path of the FileSet to save the model to. (Macro-enabled)
 
 **fieldToClassify:** A space-separated sequence of words to use for training.
 
 **predictionField:** The field from which to get the prediction. It must be of type double.
 
 **numFeatures:** The number of features to train the model with. This should be the same as the number of features
-used for the NaiveBayesClassifier. The default value if none is provided will be 100.
+used for the NaiveBayesClassifier. The default value if none is provided will be 100. (Macro-enabled)
 
 
 Example
