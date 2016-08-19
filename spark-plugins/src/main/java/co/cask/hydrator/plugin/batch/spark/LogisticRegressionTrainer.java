@@ -51,7 +51,11 @@ import java.util.List;
 public class LogisticRegressionTrainer extends SparkSink<StructuredRecord> {
   public static final String PLUGIN_NAME = "LogisticRegressionTrainer";
 
-  private Config config;
+  private final Config config;
+
+  public LogisticRegressionTrainer(Config config) {
+    this.config = config;
+  }
 
   /**
    * Configuration for the LogisticRegressionTrainer.

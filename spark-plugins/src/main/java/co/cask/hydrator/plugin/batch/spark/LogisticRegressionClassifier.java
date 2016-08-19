@@ -52,8 +52,12 @@ public class LogisticRegressionClassifier extends SparkCompute<StructuredRecord,
 
   public static final String PLUGIN_NAME = "LogisticRegressionClassifier";
 
-  private Config config;
+  private final Config config;
   private Schema outputSchema;
+
+  public LogisticRegressionClassifier(Config config) {
+    this.config = config;
+  }
 
   /**
    * Configuration for the LogisticRegressionClassifier.
