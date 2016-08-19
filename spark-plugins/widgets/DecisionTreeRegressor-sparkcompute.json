@@ -17,9 +17,13 @@
           "name": "path"
         },
         {
-          "widget-type": "textbox",
-          "label": "Features to Train",
-          "name": "features"
+          "widget-type": "csv",
+          "label": "Features to be used for Prediction",
+          "name": "features",
+          "widget-attributes": {
+            "delimiter": ",",
+            "value-placeholder": "Field Name"
+          }
         },
         {
           "widget-type": "textbox",
