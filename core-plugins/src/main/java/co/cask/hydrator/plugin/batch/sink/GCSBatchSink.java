@@ -29,10 +29,14 @@ import co.cask.hydrator.common.batch.sink.SinkOutputFormatProvider;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 
+
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -52,6 +56,7 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
   private static final String FILESYSTEM_PROPERTIES_DESCRIPTION = "A JSON string representing a map of properties " +
     "needed for the distributed file system.";
   private static final Gson GSON = new Gson();
+  private static final Logger LOG = LoggerFactory.getLogger(GCSBatchSink.class);
   private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
 
 
@@ -76,13 +81,14 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
       Map<String, String> properties = GSON.fromJson(config.fileSystemProperties, MAP_STRING_STRING_TYPE);
       outputConfig.putAll(properties);
     }
+    LOG.debug("test the outputconfig {}", outputConfig);
     context.addOutput(Output.of(config.referenceName, new SinkOutputFormatProvider(
       outputFormatProvider.getOutputFormatClassName(), outputConfig)));
   }
 
   protected abstract OutputFormatProvider createOutputFormatProvider(BatchSinkContext context);
 
-  private static String updateFileSystemProperties( @Nullable String fileSystemProperties,
+  private static String updateFileSystemProperties(@Nullable String fileSystemProperties,
                                                     String projectId, String bucketKey,
                                                     String serviceEmail, String p12Key) {
     Map<String, String> providedProperties;
@@ -98,6 +104,9 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
     return GSON.toJson(providedProperties);
   }
 
+  /**
+   * GCS Sink configuration.
+   */
   public static class GCSSinkConfig extends ReferencePluginConfig {
 
     @Name("Bucket_Key")

@@ -107,6 +107,9 @@ public class GCSAvroBatchSink extends GCSBatchSink<AvroKey<GenericRecord>, NullW
       conf = Maps.newHashMap();
       conf.put(JobContext.OUTPUT_KEY_CLASS, AvroKey.class.getName());
       conf.put("avro.schema.output.key", config.schema);
+      conf.put(FileOutputFormat.OUTDIR,
+               String.format("gs://%s", config.bucketKey));
+
     }
 
     @Override

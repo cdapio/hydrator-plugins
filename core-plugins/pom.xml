@@ -273,6 +273,7 @@
               co.cask.hydrator.plugin.transform.*;
               co.cask.hydrator.plugin.validator.*;
               org.apache.avro.mapreduce;
+              com.google.cloud.hadoop.*;
               parquet.avro.*;
               org.apache.orc.*
             </_exportcontents>
