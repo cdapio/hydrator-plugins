@@ -32,7 +32,7 @@ import java.sql.Driver;
  * Action that runs a db command
  */
 @Plugin(type = Action.PLUGIN_TYPE)
-@Name("DatabaseAction")
+@Name("Database")
 @Description("Action that runs a db command")
 public class DBAction extends Action {
   private static final Logger LOG = LoggerFactory.getLogger(DBAction.class);
