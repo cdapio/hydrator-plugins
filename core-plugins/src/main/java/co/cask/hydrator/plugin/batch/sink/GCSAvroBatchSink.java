@@ -122,5 +122,6 @@ public class GCSAvroBatchSink extends GCSBatchSink<AvroKey<GenericRecord>, NullW
       return conf;
     }
   }
+
 }
 

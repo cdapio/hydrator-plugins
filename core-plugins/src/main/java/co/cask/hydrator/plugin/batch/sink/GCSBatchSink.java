@@ -157,4 +157,5 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
                                                              serviceEmail, serviceKeyFile);
     }
   }
+
 }
