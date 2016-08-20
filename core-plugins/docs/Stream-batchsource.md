@@ -82,7 +82,7 @@ records with this schema:
     | remote_host    | nullable string     |
     | remote_login   | nullable string     |
     | auth_user      | nullable string     |
-    | date           | nullable string     |
+    | request_time   | nullable string     |
     | request        | nullable string     |
     | status         | nullable string     |
     | content_length | nullable string     |
