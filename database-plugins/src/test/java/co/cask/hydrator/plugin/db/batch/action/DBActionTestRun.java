@@ -57,7 +57,7 @@ public class DBActionTestRun extends DatabasePluginTestBase {
     ETLStage source = new ETLStage("source", MockSource.getPlugin("actionInput"));
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin("actionOutput"));
     ETLStage action = new ETLStage("action", new ETLPlugin(
-      "DatabaseAction",
+      "Database",
       Action.PLUGIN_TYPE,
       ImmutableMap.<String, String>builder()
         .put("connectionString", getConnectionURL())
