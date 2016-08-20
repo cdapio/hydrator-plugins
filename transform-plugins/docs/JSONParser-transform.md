@@ -139,10 +139,10 @@ can be only be applied where the expression results in an array.
 
 #### Configuration
 
-    +=============================================================================================+ 
-    | Config   | Description                                                                      |
-    |----------|----------------------------------------------------------------------------------|
-    | field    | Specifies the input field that should be parsed as a CSV Record                  |
-    | mapping  | Mapping specifying output field name to input JSON path for extracting the field |
-    | schema   | Specifies the output schema for the JSON Record                                  |
-    +=============================================================================================+ 
+    +============================================================================================+ 
+    | Config  | Description                                                                      |
+    |---------|----------------------------------------------------------------------------------|
+    | field   | Specifies the input field that should be parsed as a CSV Record                  |
+    | mapping | Mapping specifying output field name to input JSON path for extracting the field |
+    | schema  | Specifies the output schema for the JSON Record                                  |
+    +============================================================================================+ 
