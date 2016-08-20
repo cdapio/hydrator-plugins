@@ -38,6 +38,7 @@ import javax.annotation.Nullable;
 
 
 
+
 /**
  * /**
  * {@link GCSBatchSink} that stores the data to Google Cloud Storage Bucket.
@@ -50,7 +51,7 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
   public static final String PROJECT_ID_DES = "Google Cloud Project ID with access to configured GCS buckets";
   public static final String SERVICE_EMAIL_DES = "The email address is associated with the service " +
                                              "account used for GCS access";
-  public static final String SERVICE_KEY_FILE_DES = "The PKCS12 (p12) certificate file of the " +
+  public static final String SERVICE_KEY_FILE_DES = "The Json_Key_File certificate file of the " +
                                                 "service account used for GCS access";
   private static final String FILESYSTEM_PROPERTIES_DESCRIPTION = "A JSON string representing a map of properties " +
     "needed for the distributed file system.";
@@ -68,7 +69,7 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
       !this.config.containsMacro("P12_key_file")) {
       this.config.fileSystemProperties = updateFileSystemProperties(this.config.fileSystemProperties,
                                                                     this.config.projectId, this.config.bucketKey,
-                                                                    this.config.serviceEmail, this.config.p12Key);
+                                                                    this.config.serviceEmail, this.config.jsonKey);
     }
     }
 
@@ -89,7 +90,7 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
 
   private static String updateFileSystemProperties(@Nullable String fileSystemProperties,
                                                     String projectId, String bucketKey,
-                                                    String serviceEmail, String p12Key) {
+                                                    String serviceEmail, String jsonKey) {
     Map<String, String> providedProperties;
     if (fileSystemProperties == null) {
       providedProperties = new HashMap<>();
@@ -99,7 +100,7 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
     providedProperties.put("fs.gs.project.id", projectId);
     providedProperties.put("fs.gs.system.bucket", bucketKey);
     providedProperties.put("google.cloud.auth.service.account.email", serviceEmail);
-    providedProperties.put("google.cloud.auth.service.account.keyfile", p12Key);
+    providedProperties.put("google.cloud.auth.service.account.keyfile", jsonKey);
     return GSON.toJson(providedProperties);
   }
 
@@ -123,10 +124,16 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
     @Macro
     protected String serviceEmail;
 
-    @Name("P12_key_file")
+    @Name("Json_Key_File")
     @Description(SERVICE_KEY_FILE_DES)
     @Macro
-    protected String p12Key;
+    protected String jsonKey;
+
+    @Name("path_to_store")
+    @Description("path to store inside bucket")
+    @Macro
+    protected String path;
+
 
     @Description(FILESYSTEM_PROPERTIES_DESCRIPTION)
     @Nullable
@@ -135,16 +142,17 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
 
     public GCSSinkConfig() {
       super("");
-      this.fileSystemProperties = updateFileSystemProperties(null, projectId, bucketKey, serviceEmail, p12Key);
+      this.fileSystemProperties = updateFileSystemProperties(null, projectId, bucketKey, serviceEmail, jsonKey);
     }
 
     public GCSSinkConfig(String referenceName, String bucketKey, String projectId, String serviceEmail,
-                              String serviceKeyFile, @Nullable String fileSystemProperties) {
+                              String serviceKeyFile, @Nullable String fileSystemProperties, String path) {
       super(referenceName);
       this.bucketKey = bucketKey;
       this.projectId = projectId;
       this.serviceEmail = serviceEmail;
-      this.p12Key = serviceKeyFile;
+      this.jsonKey = serviceKeyFile;
+      this.path = path;
       this.fileSystemProperties = updateFileSystemProperties(fileSystemProperties, projectId, bucketKey,
                                                              serviceEmail, serviceKeyFile);
     }

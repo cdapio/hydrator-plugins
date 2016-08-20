@@ -90,8 +90,8 @@ public class GCSAvroBatchSink extends GCSBatchSink<AvroKey<GenericRecord>, NullW
 
     @SuppressWarnings("unused")
     public GCSAvroSinkConfig(String referenceName, String bucketKey, String schema, String projectId,
-                             String serviceEmail,  String serviceKeyFile, String filesystemProperties) {
-      super(referenceName, bucketKey, projectId, serviceEmail, serviceKeyFile, filesystemProperties);
+                             String serviceEmail,  String serviceKeyFile, String filesystemProperties, String path) {
+      super(referenceName, bucketKey, projectId, serviceEmail, serviceKeyFile, filesystemProperties, path);
       this.schema = schema;
     }
   }
@@ -108,7 +108,7 @@ public class GCSAvroBatchSink extends GCSBatchSink<AvroKey<GenericRecord>, NullW
       conf.put(JobContext.OUTPUT_KEY_CLASS, AvroKey.class.getName());
       conf.put("avro.schema.output.key", config.schema);
       conf.put(FileOutputFormat.OUTDIR,
-               String.format("gs://%s", config.bucketKey));
+               String.format("gs://%s/%s", config.bucketKey, config.path));
 
     }
 
