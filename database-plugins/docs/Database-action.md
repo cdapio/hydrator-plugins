@@ -43,9 +43,9 @@ it will connect to the 'prod' database of a PostgreSQL instance running on 'loca
 It will run an update command to set the price of record with ID 6 to 20.
 
     {
-        "name": "DBAction",
+        "name": "Database",
         "plugin": {
-            "name": "DBAction",
+            "name": "Database",
             "type": "action",
             "properties": {
                 "query": "UPDATE table_name SET price = 20 WHERE ID = 6",

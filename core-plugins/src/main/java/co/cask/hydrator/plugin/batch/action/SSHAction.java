@@ -47,7 +47,7 @@ import javax.annotation.Nullable;
  * Options include port and machine URL.
  */
 @Plugin(type = Action.PLUGIN_TYPE)
-@Name("SSHAction")
+@Name("SSH")
 @Description("Action to run a script on remote machine")
 public class SSHAction extends Action {
   private final SSHActionConfig config;
