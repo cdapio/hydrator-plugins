@@ -309,7 +309,7 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
 
         if (pipelineConfigurer != null) {
           pipelineConfigurer.createDataset(excelInputreaderConfig.errorDatasetName, Table.class, datasetProperties);
-        } else if (context != null) {
+        } else if (context != null && !context.datasetExists(excelInputreaderConfig.errorDatasetName)) {
           context.createDataset(excelInputreaderConfig.errorDatasetName, Table.class.getName(), datasetProperties);
         }
 
@@ -322,7 +322,7 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
       if (!excelInputreaderConfig.containsMacro("memoryTableName")) {
         if (pipelineConfigurer != null) {
           pipelineConfigurer.createDataset(excelInputreaderConfig.memoryTableName, KeyValueTable.class);
-        } else if (context != null) {
+        } else if (context != null && !context.datasetExists(excelInputreaderConfig.memoryTableName)) {
           context.createDataset(excelInputreaderConfig.memoryTableName, KeyValueTable.class.getName(),
                                 DatasetProperties.EMPTY);
         }
