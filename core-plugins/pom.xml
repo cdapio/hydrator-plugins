@@ -52,11 +52,14 @@
       <version>1.3.2-hadoop1</version>
     </dependency>
     <dependency>
+<<<<<<< HEAD
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
       <version>19.0</version>
     </dependency>
     <dependency>
+=======
+>>>>>>> 09e88705f10b9785bf9c57d45501b27b74afd9be
       <groupId>co.cask.cdap</groupId>
       <artifactId>hydrator-test</artifactId>
     </dependency>
