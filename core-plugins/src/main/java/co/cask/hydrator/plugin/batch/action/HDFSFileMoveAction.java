@@ -42,7 +42,7 @@ import javax.annotation.Nullable;
  * Optionals include fileRegex
  */
 @Plugin(type = Action.PLUGIN_TYPE)
-@Name("HDFSFileMoveAction")
+@Name("HDFSFileMove")
 @Description("Action to move files within HDFS")
 public class HDFSFileMoveAction extends Action {
   private static final Logger LOG = LoggerFactory.getLogger(HDFSFileMoveAction.class);

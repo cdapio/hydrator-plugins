@@ -42,7 +42,7 @@ import javax.annotation.Nullable;
  * Optionals include fileRegex
  */
 @Plugin(type = Action.PLUGIN_TYPE)
-@Name("HDFSFileDeleteAction")
+@Name("HDFSFileDelete")
 @Description("Action to delete files on HDFS")
 public class HDFSFileDeleteAction extends Action {
   private static final Logger LOG = LoggerFactory.getLogger(HDFSFileDeleteAction.class);

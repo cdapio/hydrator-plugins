@@ -29,9 +29,9 @@ Example
 This example deletes all files ending in `.txt` from `/source/path`:
 
     {
-        "name": "HDFSFileDeleteAction",
+        "name": "HDFSFileDelete",
         "plugin": {
-            "name": "HDFSFileDeleteAction",
+            "name": "HDFSFileDelete",
             "type": "action",
             "artifact": {
                 "name": "core-plugins",

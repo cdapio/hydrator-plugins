@@ -33,9 +33,9 @@ Example
 This example moves a file from `/source/path` to `/dest/path`:
 
     {
-        "name": "HDFSAction",
+        "name": "HDFSFileMove",
         "plugin": {
-            "name": "HDFSAction",
+            "name": "HDFSFileMove",
             "type": "action",
             "artifact": {
                 "name": "core-plugins",
