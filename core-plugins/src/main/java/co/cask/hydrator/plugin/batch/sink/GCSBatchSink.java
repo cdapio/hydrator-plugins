@@ -38,10 +38,7 @@ import javax.annotation.Nullable;
 
 
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 09e88705f10b9785bf9c57d45501b27b74afd9be
 /**
  * /**
  * {@link GCSBatchSink} that stores the data to Google Cloud Storage Bucket.
@@ -53,13 +50,9 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
   public static final String BUCKET_DES = "GCS bucket to use as a default bucket if fs.default.name is not a gs: uri.";
   public static final String PROJECT_ID_DES = "Google Cloud Project ID with access to configured GCS buckets";
   public static final String SERVICE_EMAIL_DES = "The email address is associated with the service " +
-                                             "account used for GCS access";
-<<<<<<< HEAD
+    "account used for GCS access";
   public static final String SERVICE_KEY_FILE_DES = "The Json_Key_File certificate file of the " +
-=======
-  public static final String SERVICE_KEY_FILE_DES = "The PKCS12 (p12) certificate file of the " +
->>>>>>> 09e88705f10b9785bf9c57d45501b27b74afd9be
-                                                "service account used for GCS access";
+    "service account used for GCS access";
   private static final String FILESYSTEM_PROPERTIES_DESCRIPTION = "A JSON string representing a map of properties " +
     "needed for the distributed file system.";
   private static final Gson GSON = new Gson();
@@ -76,13 +69,9 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
       !this.config.containsMacro("P12_key_file")) {
       this.config.fileSystemProperties = updateFileSystemProperties(this.config.fileSystemProperties,
                                                                     this.config.projectId, this.config.bucketKey,
-<<<<<<< HEAD
                                                                     this.config.serviceEmail, this.config.jsonKey);
-=======
-                                                                    this.config.serviceEmail, this.config.p12Key);
->>>>>>> 09e88705f10b9785bf9c57d45501b27b74afd9be
     }
-    }
+  }
 
   @Override
   public final void prepareRun(BatchSinkContext context) {
@@ -100,12 +89,8 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
   protected abstract OutputFormatProvider createOutputFormatProvider(BatchSinkContext context);
 
   private static String updateFileSystemProperties(@Nullable String fileSystemProperties,
-                                                    String projectId, String bucketKey,
-<<<<<<< HEAD
-                                                    String serviceEmail, String jsonKey) {
-=======
-                                                    String serviceEmail, String p12Key) {
->>>>>>> 09e88705f10b9785bf9c57d45501b27b74afd9be
+                                                   String projectId, String bucketKey,
+                                                   String serviceEmail, String jsonKey) {
     Map<String, String> providedProperties;
     if (fileSystemProperties == null) {
       providedProperties = new HashMap<>();
@@ -115,11 +100,7 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
     providedProperties.put("fs.gs.project.id", projectId);
     providedProperties.put("fs.gs.system.bucket", bucketKey);
     providedProperties.put("google.cloud.auth.service.account.email", serviceEmail);
-<<<<<<< HEAD
     providedProperties.put("google.cloud.auth.service.account.keyfile", jsonKey);
-=======
-    providedProperties.put("google.cloud.auth.service.account.keyfile", p12Key);
->>>>>>> 09e88705f10b9785bf9c57d45501b27b74afd9be
     return GSON.toJson(providedProperties);
   }
 
@@ -143,7 +124,6 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
     @Macro
     protected String serviceEmail;
 
-<<<<<<< HEAD
     @Name("Json_Key_File")
     @Description(SERVICE_KEY_FILE_DES)
     @Macro
@@ -154,12 +134,6 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
     @Macro
     protected String path;
 
-=======
-    @Name("P12_key_file")
-    @Description(SERVICE_KEY_FILE_DES)
-    @Macro
-    protected String p12Key;
->>>>>>> 09e88705f10b9785bf9c57d45501b27b74afd9be
 
     @Description(FILESYSTEM_PROPERTIES_DESCRIPTION)
     @Nullable
@@ -168,29 +142,17 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
 
     public GCSSinkConfig() {
       super("");
-<<<<<<< HEAD
       this.fileSystemProperties = updateFileSystemProperties(null, projectId, bucketKey, serviceEmail, jsonKey);
     }
 
     public GCSSinkConfig(String referenceName, String bucketKey, String projectId, String serviceEmail,
-                              String serviceKeyFile, @Nullable String fileSystemProperties, String path) {
-=======
-      this.fileSystemProperties = updateFileSystemProperties(null, projectId, bucketKey, serviceEmail, p12Key);
-    }
-
-    public GCSSinkConfig(String referenceName, String bucketKey, String projectId, String serviceEmail,
-                              String serviceKeyFile, @Nullable String fileSystemProperties) {
->>>>>>> 09e88705f10b9785bf9c57d45501b27b74afd9be
+                         String serviceKeyFile, @Nullable String fileSystemProperties, String path) {
       super(referenceName);
       this.bucketKey = bucketKey;
       this.projectId = projectId;
       this.serviceEmail = serviceEmail;
-<<<<<<< HEAD
       this.jsonKey = serviceKeyFile;
       this.path = path;
-=======
-      this.p12Key = serviceKeyFile;
->>>>>>> 09e88705f10b9785bf9c57d45501b27b74afd9be
       this.fileSystemProperties = updateFileSystemProperties(fileSystemProperties, projectId, bucketKey,
                                                              serviceEmail, serviceKeyFile);
     }
