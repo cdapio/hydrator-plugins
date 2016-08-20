@@ -40,13 +40,12 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Test for {@link HDFSFileMoveAction}
+ * Test for {@link HDFSAction}
  */
-public class HDFSFileMoveActionTestRun extends ETLBatchTestBase {
+public class HDFSActionTestRun extends ETLBatchTestBase {
   @ClassRule
   public static TemporaryFolder folder = new TemporaryFolder();
 
@@ -83,8 +82,8 @@ public class HDFSFileMoveActionTestRun extends ETLBatchTestBase {
     fileSystem.createNewFile(new Path("source/test.json"));
 
     ETLStage action = new ETLStage(
-      "HDFSFileMoveAction",
-      new ETLPlugin("HDFSFileMoveAction", Action.PLUGIN_TYPE,
+      "HDFSMove",
+      new ETLPlugin("HDFSMove", Action.PLUGIN_TYPE,
                     ImmutableMap.of("sourcePath", outputDir.toUri().toString() + "/test",
                                     "destPath", outputDir.toUri().toString() + "/",
                                     "fileRegex", ".*\\.txt",
@@ -125,8 +124,8 @@ public class HDFSFileMoveActionTestRun extends ETLBatchTestBase {
     fileSystem.createNewFile(new Path("source/test.json"));
 
     ETLStage action = new ETLStage(
-      "HDFSFileMoveAction",
-      new ETLPlugin("HDFSFileMoveAction", Action.PLUGIN_TYPE,
+      "HDFSMove",
+      new ETLPlugin("HDFSMove", Action.PLUGIN_TYPE,
                     ImmutableMap.of("sourcePath", outputDir.toUri().toString() + "/source",
                                     "destPath", outputDir.toUri().toString() + "/dest",
                                     "fileRegex", ".*\\.txt",
@@ -169,8 +168,8 @@ public class HDFSFileMoveActionTestRun extends ETLBatchTestBase {
     fileSystem.createNewFile(new Path("dest/dest.txt"));
 
     ETLStage action = new ETLStage(
-      "HDFSFileMoveAction",
-      new ETLPlugin("HDFSFileMoveAction", Action.PLUGIN_TYPE,
+      "HDFSMove",
+      new ETLPlugin("HDFSMove", Action.PLUGIN_TYPE,
                     ImmutableMap.of("sourcePath", outputDir.toUri().toString() + "/source",
                                     "destPath", outputDir.toUri().toString() + "/dest/dest.txt",
                                     "fileRegex", ".*\\.txt",
@@ -215,8 +214,8 @@ public class HDFSFileMoveActionTestRun extends ETLBatchTestBase {
     Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/basicDir/test2.txt")));
 
     ETLStage action = new ETLStage(
-      "HDFSFileDeleteAction",
-      new ETLPlugin("HDFSFileDeleteAction", Action.PLUGIN_TYPE,
+      "HDFSDelete",
+      new ETLPlugin("HDFSDelete", Action.PLUGIN_TYPE,
                     ImmutableMap.of("path", outputDir.toUri().toString() + "/basicDir",
                                     "fileRegex", ".*\\.txt",
                                     "continueOnError", "false"),
@@ -257,8 +256,8 @@ public class HDFSFileMoveActionTestRun extends ETLBatchTestBase {
     Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/dir/test.txt")));
 
     ETLStage action = new ETLStage(
-      "HDFSFileDeleteAction",
-      new ETLPlugin("HDFSFileDeleteAction", Action.PLUGIN_TYPE,
+      "HDFSDelete",
+      new ETLPlugin("HDFSDelete", Action.PLUGIN_TYPE,
                     ImmutableMap.of("path", outputDir.toUri().toString() + "/dir/test.txt",
                                     "continueOnError", "false"),
                     null));
@@ -296,8 +295,8 @@ public class HDFSFileMoveActionTestRun extends ETLBatchTestBase {
     Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/singleDir/test2.txt")));
 
     ETLStage action = new ETLStage(
-      "HDFSFileDeleteAction",
-      new ETLPlugin("HDFSFileDeleteAction", Action.PLUGIN_TYPE,
+      "HDFSDelete",
+      new ETLPlugin("HDFSDelete", Action.PLUGIN_TYPE,
                     ImmutableMap.of("path", outputDir.toUri().toString() + "/singleDir/test.txt",
                                     "fileRegex", ".*\\.txt",
                                     "continueOnError", "false"),
@@ -340,8 +339,8 @@ public class HDFSFileMoveActionTestRun extends ETLBatchTestBase {
     Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/dir1/source/dir2/test2.txt")));
 
     ETLStage action = new ETLStage(
-      "HDFSFileDeleteAction",
-      new ETLPlugin("HDFSFileDeleteAction", Action.PLUGIN_TYPE,
+      "HDFSDelete",
+      new ETLPlugin("HDFSDelete", Action.PLUGIN_TYPE,
                     ImmutableMap.of("path", outputDir.toUri().toString() + "/dir1/source",
                                     "continueOnError", "false"),
                     null));
