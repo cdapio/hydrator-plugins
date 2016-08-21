@@ -1,4 +1,4 @@
-# Microsoft Azure Blob Storage Batch Source
+# MicrosoftAzureBlobStorage Batch Source
 
 Description
 -----------
