@@ -15,10 +15,11 @@ if the pipeline run failed.
 
 Properties
 ----------
-**runCondition:**" When to run the action. Must be 'completion', 'success', or 'failure'. Defaults to 'completion'.
-If set to 'completion', the action will be executed regardless of whether the pipeline run succeeded or failed.
-If set to 'success', the action will only be executed if the pipeline run succeeded.
-If set to 'failure', the action will only be executed if the pipeline run failed.
+**runCondition:** When to run the action. Must be one of 'completion', 'success', or 'failure'. Defaults to 'completion'.
+
+- If set to 'completion', the action will be executed regardless of whether the pipeline run succeeded or failed.
+- If set to 'success', the action will be executed only if the pipeline run succeeded.
+- If set to 'failure', the action will be executed only if the pipeline run failed.
 
 **url:** The URL to call.
 
