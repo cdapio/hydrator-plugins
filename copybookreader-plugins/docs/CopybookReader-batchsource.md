@@ -1,4 +1,4 @@
-# CopybookReader Batch Source
+# Copybook Reader Batch Source
 
 
 Description

@@ -1,4 +1,4 @@
-# URL Fetch Real-time Source
+# HTTP Poller Real-time Source
 
 Description
 -----------
@@ -22,7 +22,7 @@ Properties
 **interval:** Required The time to wait between fetching data from the URL in seconds.
 
 **requestHeaders:** An optional string of header values to send in each request where the keys and values are
-delimited by : and each pair is delimited by a newline (\n).
+delimited by a colon (":") and each pair is delimited by a newline ("\n").
 
 **charset:** The charset of the content returned by the URL. Defaults to UTF-8.
 
@@ -34,7 +34,7 @@ delimited by : and each pair is delimited by a newline (\n).
 
 Example
 -------
-This example fetches data from a url every hour using a custom user agent:
+This example fetches data from a URL every hour using a custom user agent:
 
     {
         "name": "HTTPPoller",
@@ -58,4 +58,4 @@ The contents will output records with this schema:
     | body           | string              |
     +======================================+
 
-All fields will be always be present, but body might be an empty string.
+All fields will be always be included, but the body might be an empty string.
