@@ -1,4 +1,4 @@
-# HDFS Action
+# HDFS Move Action
 
 
 Description
