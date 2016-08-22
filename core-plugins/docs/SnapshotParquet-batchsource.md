@@ -1,4 +1,4 @@
-# SnapshotParquet Batch Source
+# Snapshot Parquet Batch Source
 
 
 Description

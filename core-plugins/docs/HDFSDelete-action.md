@@ -1,4 +1,4 @@
-# HDFS File Delete Action
+# HDFS Delete Action
 
 
 Description
