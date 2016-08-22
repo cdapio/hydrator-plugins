@@ -17,12 +17,14 @@
 package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.CloseableIterator;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
@@ -103,13 +105,20 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
-    config.validateConfig();
+    config.validate();
     pipelineConfigurer.getStageConfigurer().setOutputSchema(DEFAULT_XML_SCHEMA);
-    pipelineConfigurer.createDataset(config.tableName, KeyValueTable.class.getName());
+    if (!config.containsMacro("tableName")) {
+      pipelineConfigurer.createDataset(config.tableName, KeyValueTable.class.getName());
+    }
   }
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
+    config.validate();
+    // Create dataset if macros were provided at configure time
+    if (!context.datasetExists(config.tableName)) {
+      context.createDataset(config.tableName, KeyValueTable.class.getName(), DatasetProperties.EMPTY);
+    }
     Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();
     conf.set(XMLInputFormat.XML_INPUTFORMAT_PATH_NAME, config.path);
@@ -211,6 +220,7 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
    */
   public static class XMLReaderConfig extends ReferencePluginConfig {
     @Description("Path to file(s) to be read. If a directory is specified, terminate the path name with a \'/\'.")
+    @Macro
     private final String path;
 
     @Nullable
@@ -219,10 +229,12 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       "1. Use '^' to select files with names starting with 'catalog', such as '^catalog'. " +
       "2. Use '$' to select files with names ending with 'catalog.xml', such as 'catalog.xml$'. " +
       "3. Use '*' to select file with name contains 'catalogBook', such as 'catalogBook*'.")
+    @Macro
     private final String pattern;
 
     @Description("Node path to emit as an individual event from the XML schema. " +
       "Example: '/book/price' to read only price under the book node")
+    @Macro
     private final String nodePath;
 
     @Description("Action to be taken after processing of the XML file. " +
@@ -235,21 +247,25 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     @Nullable
     @Description("Target folder path if user select action after process, either ARCHIVE or MOVE. " +
       "Target folder must be an existing directory.")
+    @Macro
     private final String targetFolder;
 
     @Description("Specifies whether the file(s) should be reprocessed.")
     private final String reprocessingRequired;
 
     @Description("Table name to be used to keep track of processed file(s).")
+    @Macro
     private final String tableName;
 
     @Description("Expiry period (days) for data in the table. Default is 30 days. " +
       "Example: For tableExpiryPeriod = 30, data before 30 days get deleted from the table.")
+    @Macro
     private final String tableExpiryPeriod;
 
     @Description("An existing HDFS folder path with read and write access for the current user; required for storing " +
       "temporary files containing paths of the processed XML files. These temporary files will be read at the end of " +
       "the job to update the file track table. Default to /tmp.")
+    @Macro
     private final String temporaryFolder;
 
     @VisibleForTesting
@@ -287,12 +303,22 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       return nodePath;
     }
 
-    void validateConfig() {
-      Preconditions.checkArgument(!Strings.isNullOrEmpty(path), "Path cannot be empty.");
-      Preconditions.checkArgument(!Strings.isNullOrEmpty(nodePath), "Node path cannot be empty.");
-      Preconditions.checkArgument(!Strings.isNullOrEmpty(tableName), "Table name cannot be empty.");
-      Preconditions.checkArgument(tableExpiryPeriod != null, "Table expiry period cannot be empty.");
-      Preconditions.checkArgument(!Strings.isNullOrEmpty(temporaryFolder), "Temporary folder cannot be empty.");
+    void validate() {
+      if (!containsMacro("path")) {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(path), "Path cannot be empty.");
+      }
+      if (!containsMacro("nodePath")) {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(nodePath), "Node path cannot be empty.");
+      }
+      if (!containsMacro("tableName")) {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(tableName), "Table name cannot be empty.");
+      }
+      if (!containsMacro("tableExpiryPeriod")) {
+        Preconditions.checkArgument(tableExpiryPeriod != null, "Table expiry period cannot be empty.");
+      }
+      if (!containsMacro("temporaryFolder")) {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(temporaryFolder), "Temporary folder cannot be empty.");
+      }
 
       boolean onlyOneActionRequired = !actionAfterProcess.equalsIgnoreCase("NONE") && isReprocessingRequired();
       Preconditions.checkArgument(!onlyOneActionRequired, "Please select either 'After Processing Action' or " +

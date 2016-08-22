@@ -54,6 +54,7 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
+import java.sql.Array;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.DriverManager;
@@ -69,6 +70,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import javax.sql.rowset.serial.SerialArray;
 import javax.sql.rowset.serial.SerialBlob;
 
 /**
@@ -90,7 +92,7 @@ public class DatabasePluginTestBase extends HydratorTestBase {
   public static TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   @ClassRule
-  public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", true);
+  public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
 
   @BeforeClass
   public static void setupTest() throws Exception {
@@ -144,8 +146,12 @@ public class DatabasePluginTestBase extends HydratorTestBase {
                              Schema.Field.of("TIME_COL", nullableLong),
                              Schema.Field.of("TIMESTAMP_COL", nullableLong),
                              Schema.Field.of("BINARY_COL", nullableBytes),
+                             Schema.Field.of("LONGVARBINARY_COL", nullableBytes),
                              Schema.Field.of("BLOB_COL", nullableBytes),
-                             Schema.Field.of("CLOB_COL", nullableString));
+                             Schema.Field.of("CLOB_COL", nullableString),
+                             Schema.Field.of("CHAR_COL", nullableString),
+                             Schema.Field.of("LONGVARCHAR_COL", nullableString),
+                             Schema.Field.of("VARBINARY_COL", nullableBytes));
 
   }
 
@@ -177,9 +183,13 @@ public class DatabasePluginTestBase extends HydratorTestBase {
                      "DATE_COL DATE, " +
                      "TIME_COL TIME, " +
                      "TIMESTAMP_COL TIMESTAMP, " +
-                     "BINARY_COL BINARY(100)," +
+                     "BINARY_COL Binary(100)," +
+                     "LONGVARBINARY_COL LONGVARBINARY(100)," +
                      "BLOB_COL BLOB(100), " +
-                     "CLOB_COL CLOB(100)" +
+                     "CLOB_COL CLOB(100)," +
+                     "CHAR_COL CHAR(100)," +
+                     "LONGVARCHAR_COL LONGVARCHAR," +
+                     "VARBINARY_COL VARBINARY(20)" +
                      ")");
       stmt.execute("CREATE TABLE \"MY_DEST_TABLE\" AS (" +
                      "SELECT * FROM \"my_table\") WITH DATA");
@@ -192,10 +202,10 @@ public class DatabasePluginTestBase extends HydratorTestBase {
     try (
       PreparedStatement pStmt1 =
         conn.prepareStatement("INSERT INTO \"my_table\" " +
-                                "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                                "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
       PreparedStatement pStmt2 =
         conn.prepareStatement("INSERT INTO \"your_table\" " +
-                                "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                                "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
     ) {
       // insert the same data into both tables: my_table and your_table
       final PreparedStatement[] preparedStatements = {pStmt1, pStmt2};
@@ -223,8 +233,12 @@ public class DatabasePluginTestBase extends HydratorTestBase {
           pStmt.setTime(15, new Time(CURRENT_TS));
           pStmt.setTimestamp(16, new Timestamp(CURRENT_TS));
           pStmt.setBytes(17, name.getBytes(Charsets.UTF_8));
-          pStmt.setBlob(18, new SerialBlob(name.getBytes(Charsets.UTF_8)));
-          pStmt.setClob(19, new InputStreamReader(new ByteArrayInputStream(CLOB_DATA.getBytes(Charsets.UTF_8))));
+          pStmt.setBytes(18, name.getBytes(Charsets.UTF_8));
+          pStmt.setBlob(19, new SerialBlob(name.getBytes(Charsets.UTF_8)));
+          pStmt.setClob(20, new InputStreamReader(new ByteArrayInputStream(CLOB_DATA.getBytes(Charsets.UTF_8))));
+          pStmt.setString(21, "char" + i);
+          pStmt.setString(22, "longvarchar" + i);
+          pStmt.setBytes(23, name.getBytes(Charsets.UTF_8));
           pStmt.executeUpdate();
         }
       }

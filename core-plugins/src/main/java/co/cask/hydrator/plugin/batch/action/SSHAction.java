@@ -44,7 +44,7 @@ import javax.annotation.Nullable;
 /**
  * SSH into a remote machine and execute a script on that machine.
  * A user must specify username and keypair authentication credentials.
- * Optionals include port and machine URL
+ * Options include port and machine URL.
  */
 @Plugin(type = Action.PLUGIN_TYPE)
 @Name("SSHAction")
@@ -60,10 +60,10 @@ public class SSHAction extends Action {
 
   @Override
   public void run(final ActionContext context) throws Exception {
-    // now that macros have been substituted, try validation again
+    // Now that macros have been substituted, try validation again
     config.validate();
 
-    Connection connection = new Connection(config.host);
+    Connection connection = new Connection(config.host, config.port);
     try {
       connection.connect();
 
@@ -96,7 +96,7 @@ public class SSHAction extends Action {
                                             config.command, config.host, exitCode));
       }
 
-      //removes the carriage return at the end of the line
+      // Removes the carriage return at the end of the line
       out = out.endsWith("\n") ? out.substring(0, out.length() - 1) : out;
       context.getArguments().set(config.outputKey, out);
     } finally {
@@ -115,12 +115,10 @@ public class SSHAction extends Action {
    * Config class that contains all the properties needed to SSH into the remote machine and run the script.
    */
   public static class SSHActionConfig extends PluginConfig {
-    @Description("Command to be executed on the remote host. Should include filepath of script and any arguments")
-    @Macro
+    @Description("Command to be executed on the remote host, including file path of script and any arguments")
     private String command;
 
-    @Description("Host name of the remote machine where the command needs to be executed.")
-    @Macro
+    @Description("Host name of the remote machine where the command is to be executed")
     private String host;
 
     @Nullable
@@ -132,20 +130,20 @@ public class SSHAction extends Action {
     @Macro
     private String user;
 
-    @Description("The private key to be used to perform the secure shell action. Users can also specify a macro that " +
-      "will pull the private key from the secure key management store in CDAP such as ${secure(myPrivateKey)}.")
+    @Description("The private key to be used to perform the secure shell action. Can be a macro that " +
+      "will pull the private key from the secure key management store in CDAP, such as ${secure(myPrivateKey)}.")
     @Macro
     private String privateKey;
 
     @Nullable
-    @Description("Passphrase used to decrypt the provided private key associated with \"privateKeyLookupKey\"")
+    @Description("Passphrase (if one) used to decrypt the provided private key associated with \"privateKey\"")
     @Macro
     private String passphrase;
 
     @Nullable
     @Description("The key used to store the output of the command run by the action. Plugins that run at later " +
-      "stages in the pipeline can retrieve the command's output using this key through macro substitution " +
-      "${outputKey} where \"outputKey\" is the key specified. Defaults to \"sshOutput\".")
+      "stages in the pipeline can retrieve the command's output using this key through macro substitution: " +
+      "${sshOutput} where \"sshOutput\" is the key specified. Defaults to \"sshOutput\".")
     @Macro
     private String outputKey;
 
@@ -167,7 +165,7 @@ public class SSHAction extends Action {
     }
 
     public void validate() {
-      //check that port is not negative
+      // Check that port is not negative
       if (port < 0) {
         throw new IllegalArgumentException("Port cannot be negative");
       }

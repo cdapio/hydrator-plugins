@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.common.Bytes;
@@ -116,6 +117,7 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
     parseConfiguration(config.compressor);
+
     // Check if schema specified is a valid schema or no. 
     try {
       Schema outputSchema = Schema.parseJson(config.schema);

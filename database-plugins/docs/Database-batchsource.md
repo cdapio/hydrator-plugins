@@ -22,14 +22,14 @@ Properties
 You can specify an arbitrary number of columns to import, or import all columns using \*. The Query should
 contain the '$CONDITIONS' string. For example, 'SELECT * FROM table WHERE $CONDITIONS'.
 The '$CONDITIONS' string will be replaced by 'splitBy' field limits specified by the bounding query.
-The '$CONDITIONS' string is not required if numSplits is set to one.
+The '$CONDITIONS' string is not required if numSplits is set to one. (Macro-enabled)
 
 **boundingQuery:** Bounding Query should return the min and max of the values of the 'splitBy' field.
-For example, 'SELECT MIN(id),MAX(id) FROM table'. Not required if numSplits is set to one.
+For example, 'SELECT MIN(id),MAX(id) FROM table'. Not required if numSplits is set to one. (Macro-enabled)
 
-**splitBy:** Field Name which will be used to generate splits. Not required if numSplits is set to one.
+**splitBy:** Field Name which will be used to generate splits. Not required if numSplits is set to one. (Macro-enabled)
 
-**numSplits:** Number of splits to generate.
+**numSplits:** Number of splits to generate. (Macro-enabled)
 
 **columnCase:** Sets the case of the column names returned from the query.
 Possible options are ``upper`` or ``lower``. By default or for any other input, the column names are not modified and
@@ -37,13 +37,13 @@ the names returned from the database are used as-is. Note that setting this prop
 of column name cases across different databases but might result in column name conflicts if multiple column
 names are the same when the case is ignored (optional).
 
-**connectionString:** JDBC connection string including database name.
+**connectionString:** JDBC connection string including database name. (Macro-enabled)
 
 **user:** User identity for connecting to the specified database. Required for databases that need
-authentication. Optional for databases that do not require authentication.
+authentication. Optional for databases that do not require authentication. (Macro-enabled)
 
 **password:** Password to use to connect to the specified database. Required for databases
-that need authentication. Optional for databases that do not require authentication.
+that need authentication. Optional for databases that do not require authentication. (Macro-enabled)
 
 **jdbcPluginName:** Name of the JDBC plugin to use. This is the value of the 'name' key
 defined in the JSON file for the JDBC plugin.

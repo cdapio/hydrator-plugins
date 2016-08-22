@@ -106,7 +106,7 @@ public class DedupConfig extends AggregatorConfig {
     private final String field;
     private final Function function;
 
-    public DedupFunctionInfo(String field, Function function) {
+    DedupFunctionInfo(String field, Function function) {
       this.field = field;
       this.function = function;
     }

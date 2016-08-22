@@ -17,12 +17,12 @@ Properties
 ----------
 **referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
 
-**accessID:** Access ID of the Amazon S3 instance to connect to.
+**accessID:** Access ID of the Amazon S3 instance to connect to. (Macro-enabled)
 
-**accessKey:** Access Key of the Amazon S3 instance to connect to.
+**accessKey:** Access Key of the Amazon S3 instance to connect to. (Macro-enabled)
 
 **path:** Path to file(s) to be read. If a directory is specified,
-terminate the path name with a '/'.
+terminate the path name with a '/'. (Macro-enabled)
 
 **fileRegex:** Regex to filter out filenames in the path.
 To use the *TimeFilter*, input ``timefilter``. The TimeFilter assumes that it is
@@ -30,15 +30,15 @@ reading in files with the File log naming convention of *YYYY-MM-DD-HH-mm-SS-Tag
 The TimeFilter reads in files from the previous hour if the field ``timeTable`` is
 left blank. If it is currently *2015-06-16-15* (June 16th 2015, 3pm), it will read
 in files that contain *2015-06-16-14* in the filename. If the field ``timeTable`` is
-present, then it will read in files that have not yet been read.
+present, then it will read in files that have not yet been read. (Macro-enabled)
 
 **timeTable:** Name of the Table that keeps track of the last time files
-were read in.
+were read in. (Macro-enabled)
 
 **inputFormatClass:** Name of the input format class, which must be a
-subclass of FileInputFormat. Defaults to TextInputFormat.
+subclass of FileInputFormat. Defaults to TextInputFormat. (Macro-enabled)
 
-**maxSplitSize:** Maximum split-size for each mapper in the MapReduce Job. Defaults to 128MB.
+**maxSplitSize:** Maximum split-size for each mapper in the MapReduce Job. Defaults to 128MB. (Macro-enabled)
 
 
 Example

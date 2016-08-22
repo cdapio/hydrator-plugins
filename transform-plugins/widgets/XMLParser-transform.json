@@ -17,8 +17,8 @@
           "name": "encoding",
           "widget-attributes": {
             "values": [
-              "UTF-8",
               "ISO-8859-1",
+              "UTF-8",
               "UTF-8 (using character entities)",
               "UTF-16 (Unicode with byte-order mark)"
             ],
@@ -41,11 +41,11 @@
             "showDelimiter": "false",
             "dropdownOptions": [
               "boolean",
+              "bytes",
+              "double",
+              "float",
               "int",
               "long",
-              "float",
-              "double",
-              "bytes",
               "string"
             ],
             "key-placeholder": "Field Name"
@@ -67,5 +67,8 @@
       ]
     }
   ],
+  "errorDataset": {
+    "errorDatasetTooltip": "Dataset that collects error messages from emitter."
+  },
   "outputs": []
 }

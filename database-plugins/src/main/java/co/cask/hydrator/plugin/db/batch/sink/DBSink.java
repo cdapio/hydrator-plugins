@@ -202,7 +202,6 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
 
     @Name(COLUMNS)
     @Description("Comma-separated list of columns in the specified table to export to.")
-    @Macro
     public String columns;
 
     @Name(TABLE_NAME)
@@ -215,7 +214,7 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
   private static class DBOutputFormatProvider implements OutputFormatProvider {
     private final Map<String, String> conf;
 
-    public DBOutputFormatProvider(DBSinkConfig dbSinkConfig, Class<? extends Driver> driverClass) {
+    DBOutputFormatProvider(DBSinkConfig dbSinkConfig, Class<? extends Driver> driverClass) {
       this.conf = new HashMap<>();
 
       conf.put(ETLDBOutputFormat.AUTO_COMMIT_ENABLED, String.valueOf(dbSinkConfig.getEnableAutoCommit()));

@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.etl.api.batch.BatchSource;
@@ -69,13 +70,16 @@ public class AzureBatchSource extends FileBatchSource {
    */
   public static class AzureBatchConfig extends FileBatchConfig {
     @Description("The Microsoft Azure Storage account to use.")
+    @Macro
     private final String account;
 
     @Description("The container to use on the specified Microsoft Azure Storage account.")
+    @Macro
     private final String container;
 
     @Description("The storage key for the specified container on the specified Azure Storage account. Must be a " +
       "valid base64 encoded storage key provided by Microsoft Azure.")
+    @Macro
     private final String storageKey;
 
     public AzureBatchConfig(String referenceName, String path, String account, String container, String storageKey) {

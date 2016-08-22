@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.dataset;
 
 import co.cask.cdap.api.dataset.lib.PartitionDetail;
+import co.cask.cdap.api.dataset.lib.PartitionFilter;
 import co.cask.cdap.api.dataset.lib.PartitionKey;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSetArguments;
@@ -36,6 +37,7 @@ import java.io.OutputStream;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
@@ -64,16 +66,14 @@ public class SnapshotFileSet {
       propertiesBuilder.setBasePath(config.getBasePath());
     }
 
-    if (config.getProperties() != null) {
-      try {
-        Map<String, String> properties = GSON.fromJson(config.getFileProperties(), MAP_TYPE);
-        if (properties != null) {
-          propertiesBuilder.addAll(properties);
-        }
-      } catch (Exception e) {
-        throw new IllegalArgumentException("Could not decode the 'properties' setting. Please check that it " +
-          "is a JSON Object of string to string. Failed with error: " + e.getMessage(), e);
+    try {
+      Map<String, String> properties = GSON.fromJson(config.getFileProperties(), MAP_TYPE);
+      if (properties != null) {
+        propertiesBuilder.addAll(properties);
       }
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Could not decode the 'properties' setting. Please check that it " +
+        "is a JSON Object of string to string. Failed with error: " + e.getMessage(), e);
     }
 
     return propertiesBuilder;
@@ -134,6 +134,16 @@ public class SnapshotFileSet {
       return args;
     } finally {
       lock.delete();
+    }
+  }
+
+  public void deleteMatchingPartitionsByTime(long upperLimit) throws IOException {
+    if (upperLimit > 0 && upperLimit < Long.MAX_VALUE) {
+      PartitionFilter filter = PartitionFilter.builder().addRangeCondition("millisecond", null, upperLimit).build();
+      Set<PartitionDetail> partitions = files.getPartitions(filter);
+      for (PartitionDetail partition : partitions) {
+        files.dropPartition(partition.getPartitionKey());
+      }
     }
   }
 

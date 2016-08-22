@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.sink;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.hydrator.common.TimeParser;
 import com.google.common.base.Strings;
@@ -31,11 +32,13 @@ public abstract class TPFSSinkConfig extends PluginConfig {
 
   @Description("Name of the Time Partitioned FileSet Dataset to which the records " +
     "are written to. If it doesn't exist, it will be created.")
+  @Macro
   protected String name;
 
   @Description("The base path for the Time Partitioned FileSet. Defaults to the " +
     "name of the dataset.")
   @Nullable
+  @Macro
   protected String basePath;
 
   @Description("The format for the path; for example: " +
@@ -44,6 +47,7 @@ public abstract class TPFSSinkConfig extends PluginConfig {
     "If left blank, the partitions will be of the form '2015-01-01/20-42.142017372000'. " +
     "Note that each partition must have a unique file path or a runtime exception will be thrown.")
   @Nullable
+  @Macro
   protected String filePathFormat;
 
   @Description("The time zone to format the partition. " +
@@ -51,6 +55,7 @@ public abstract class TPFSSinkConfig extends PluginConfig {
     "Note that the time zone provided must be recognized by TimeZone.getTimeZone(String); " +
     "for example: \"America/Los_Angeles\"")
   @Nullable
+  @Macro
   protected String timeZone;
 
   @Description("Amount of time to subtract from the pipeline runtime to determine the output partition. " +
@@ -59,6 +64,7 @@ public abstract class TPFSSinkConfig extends PluginConfig {
     "For example, if the pipeline is scheduled to run at midnight of January 1, 2016, and the offset is set to '1d', " +
     "data will be written to the partition for midnight Dec 31, 2015.")
   @Nullable
+  @Macro
   protected String partitionOffset;
 
   @Description("Optional property that configures the sink to delete old partitions after successful runs. " +
@@ -69,6 +75,7 @@ public abstract class TPFSSinkConfig extends PluginConfig {
     "run at midnight of January 1, 2016, and this property is set to 7d, the sink will delete any partitions " +
     "for time partitions older than midnight Dec 25, 2015.")
   @Nullable
+  @Macro
   protected String cleanPartitionsOlderThan;
 
   public TPFSSinkConfig(String name, @Nullable String basePath,
@@ -80,9 +87,11 @@ public abstract class TPFSSinkConfig extends PluginConfig {
   }
 
   public void validate() {
-    if (!Strings.isNullOrEmpty(timeZone) && Strings.isNullOrEmpty(filePathFormat)) {
+    if (!containsMacro("filePathFormat") && !Strings.isNullOrEmpty(timeZone) && Strings.isNullOrEmpty(filePathFormat)) {
       throw new IllegalArgumentException("The filePathFormat setting must be set in order to set timeZone.");
     }
+
+    // no macro checks necessary as at config time, string properties configured with macros are null
     if (partitionOffset != null) {
       TimeParser.parseDuration(partitionOffset);
     }

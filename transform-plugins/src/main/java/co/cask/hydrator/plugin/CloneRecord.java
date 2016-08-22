@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -25,6 +26,7 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
+import co.cask.cdap.etl.api.TransformContext;
 
 import java.util.List;
 
@@ -45,11 +47,14 @@ public final class CloneRecord extends Transform<StructuredRecord, StructuredRec
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-    if (config.copies == 0 || config.copies > Integer.MAX_VALUE) {
-      throw new IllegalArgumentException("Number of copies specified '" + config.copies + "' is incorrect. Specify " +
-                                       "proper integer range");
-    }
+    config.validate();
     pipelineConfigurer.getStageConfigurer().setOutputSchema(pipelineConfigurer.getStageConfigurer().getInputSchema());
+  }
+
+  @Override
+  public void initialize(TransformContext context) throws Exception {
+    super.initialize(context);
+    config.validate();
   }
 
   @Override
@@ -71,10 +76,18 @@ public final class CloneRecord extends Transform<StructuredRecord, StructuredRec
   public static class Config extends PluginConfig {
     @Name("copies")
     @Description("Specifies number of copies to be made of every record.")
+    @Macro
     private final int copies;
     
     public Config(int copies) {
       this.copies = copies;
+    }
+
+    private void validate() {
+      if (!containsMacro("copies") && (copies == 0 || copies > Integer.MAX_VALUE)) {
+        throw new IllegalArgumentException("Number of copies specified '" + copies + "' is incorrect. Specify " +
+                                             "proper integer range");
+      }
     }
   }
 }

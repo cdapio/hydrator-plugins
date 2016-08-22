@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -53,6 +54,7 @@ public final class Hasher extends Transform<StructuredRecord, StructuredRecord> 
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
+    config.validate();
     // Split the fields to be hashed.
     String[] fields = config.fields.split(",");
     for (String field : fields) {
@@ -63,14 +65,7 @@ public final class Hasher extends Transform<StructuredRecord, StructuredRecord> 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-    
-    // Checks if hash specified is one of the supported types. 
-    if (!config.hash.equalsIgnoreCase("md2") && !config.hash.equalsIgnoreCase("md5") &&
-        !config.hash.equalsIgnoreCase("sha1") && !config.hash.equalsIgnoreCase("sha256") &&
-        !config.hash.equalsIgnoreCase("sha384") && !config.hash.equalsIgnoreCase("sha512")) {
-      throw new IllegalArgumentException("Invalid hasher '" + config.hash + "' specified. Allowed hashers are md2, " +
-                                           "md5, sha1, sha256, sha384 and sha512");  
-    }
+    config.validate();
     pipelineConfigurer.getStageConfigurer().setOutputSchema(pipelineConfigurer.getStageConfigurer().getInputSchema());
   }
 
@@ -128,6 +123,16 @@ public final class Hasher extends Transform<StructuredRecord, StructuredRecord> 
     public Config(String hash, String fields) {
       this.hash = hash;
       this.fields = fields;
+    }
+
+    private void validate() {
+      // Checks if hash specified is one of the supported types.
+      if (!hash.equalsIgnoreCase("md2") && !hash.equalsIgnoreCase("md5") &&
+        !hash.equalsIgnoreCase("sha1") && !hash.equalsIgnoreCase("sha256") &&
+        !hash.equalsIgnoreCase("sha384") && !hash.equalsIgnoreCase("sha512")) {
+        throw new IllegalArgumentException("Invalid hasher '" + hash + "' specified. Allowed hashers are md2, " +
+                                             "md5, sha1, sha256, sha384 and sha512");
+      }
     }
   }
 }

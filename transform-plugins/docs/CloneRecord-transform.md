@@ -9,4 +9,4 @@ This transform does not change any record fields or types. It's an identity tran
 
 Configuration
 -------------
-**copies:** Specifies the numbers of copies of the input record that are to be emitted.
+**copies:** Specifies the numbers of copies of the input record that are to be emitted. (Macro-enabled)

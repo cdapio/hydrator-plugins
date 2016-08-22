@@ -19,18 +19,18 @@ Properties
 ----------
 **referenceName:** This will be used to uniquely identify this sink for lineage, annotating metadata, etc.
 
-**initialAddress:** The initial address to connect to.
+**initialAddress:** The initial address to connect to. (Macro-enabled)
 
 **port:** The RPC port for Cassandra.
-Check the configuration to make sure that ``start_rpc`` is true in ``cassandra.yaml``.
+Check the configuration to make sure that ``start_rpc`` is true in ``cassandra.yaml``. (Macro-enabled)
 
 **keyspace:** The keyspace to inject data into.
-Create the keyspace before starting the adapter.
+Create the keyspace before starting the adapter. (Macro-enabled)
 
-**partitioner:** The partitioner for the keyspace.
+**partitioner:** The partitioner for the keyspace. (Macro-enabled)
 
 **columnFamily:** The column family or table to inject data into.
-Create the column family before starting the adapter.
+Create the column family before starting the adapter. (Macro-enabled)
 
 **columns:** A comma-separated list of columns in the column family.
 The columns should be listed in the same order as they are stored in the column family.

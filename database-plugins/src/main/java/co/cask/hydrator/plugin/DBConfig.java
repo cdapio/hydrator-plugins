@@ -39,7 +39,6 @@ public class DBConfig extends ConnectionConfig {
     "of column name cases across different databases but might result in column name conflicts if multiple column " +
     "names are the same when the case is ignored.")
   @Nullable
-  @Macro
   public String columnNameCase;
 
   public DBConfig() {

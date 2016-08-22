@@ -106,7 +106,7 @@ public class HBaseSink extends ReferenceBatchSink<StructuredRecord, NullWritable
 
     private final Map<String, String> conf;
 
-    public HBaseOutputFormatProvider(HBaseSinkConfig config, Configuration configuration) {
+    HBaseOutputFormatProvider(HBaseSinkConfig config, Configuration configuration) {
       this.conf = new HashMap<>();
       conf.put(TableOutputFormat.OUTPUT_TABLE, config.tableName);
       String zkQuorum = !Strings.isNullOrEmpty(config.zkQuorum) ? config.zkQuorum : "localhost";
