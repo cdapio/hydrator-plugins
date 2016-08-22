@@ -20,7 +20,7 @@
   <parent>
     <artifactId>hydrator-plugins</artifactId>
     <groupId>co.cask.hydrator</groupId>
-    <version>1.4.0-SNAPSHOT</version>
+    <version>1.4.0</version>
   </parent>
 
   <name>CopybookReader Plugins</name>
@@ -31,7 +31,6 @@
     <jrecord.version>0.80.8</jrecord.version>
     <cb2xml.version>0.80.8-jrecord</cb2xml.version>
     <main.basedir>${project.basedir}</main.basedir>
-    <project-version>3.5.0-SNAPSHOT</project-version>
   </properties>
 
   <repositories>
@@ -46,7 +45,6 @@
     <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-api</artifactId>
-      <version>${project-version}</version>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
@@ -98,7 +96,6 @@
     <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-etl-proto</artifactId>
-      <version>${project-version}</version>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
