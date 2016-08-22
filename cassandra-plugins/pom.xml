@@ -21,7 +21,7 @@
   <parent>
     <groupId>co.cask.hydrator</groupId>
     <artifactId>hydrator-plugins</artifactId>
-    <version>1.4.0-SNAPSHOT</version>
+    <version>1.4.0</version>
   </parent>
 
   <name>Cassandra Plugins</name>
