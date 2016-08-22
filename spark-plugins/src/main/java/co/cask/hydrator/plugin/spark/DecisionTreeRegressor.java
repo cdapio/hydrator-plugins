@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.spark;
+package co.cask.hydrator.plugin.spark;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
@@ -92,13 +92,17 @@ public class DecisionTreeRegressor extends SparkCompute<StructuredRecord, Struct
       Map<Object, Long> map = input.map(new Function<StructuredRecord, Object>() {
         @Override
         public Object call(StructuredRecord structuredRecord) throws Exception {
-          Schema schema = structuredRecord.getSchema().getField(field).getSchema();
+          Schema.Field inputField = structuredRecord.getSchema().getField(field);
+          if (inputField == null) {
+            throw new IllegalArgumentException(String.format("Field %s does not exists in the input schema",
+                                                             inputField));
+          }
+          Schema schema = inputField.getSchema();
           if (structuredRecord.get(field) == null && !schema.isNullable()) {
             throw new IllegalArgumentException(String.format("null value found for non-nullable field %s", field));
           }
           Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
-          if (!(type.equals(Schema.Type.INT) || type.equals(Schema.Type.DOUBLE) || type.equals(Schema.Type.FLOAT) ||
-            type.equals(Schema.Type.LONG))) {
+          if (type.equals(Schema.Type.STRING) || type.equals(Schema.Type.BOOLEAN)) {
             return structuredRecord.get(field);
           } else {
             return null;
@@ -125,7 +129,7 @@ public class DecisionTreeRegressor extends SparkCompute<StructuredRecord, Struct
           if (keys.contains(field)) {
             featureList.add((categoricalFeaturesMap.get(field).get(record.get(field))).doubleValue());
           } else {
-            featureList.add(new Double(record.get(field).toString()));
+            featureList.add(Double.valueOf(record.get(field).toString()));
           }
         }
 

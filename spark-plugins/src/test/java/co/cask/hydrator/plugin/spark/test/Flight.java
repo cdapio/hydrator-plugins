@@ -15,7 +15,7 @@
  */
 
 
-package co.cask.hydrator.plugin.batch.spark.test;
+package co.cask.hydrator.plugin.spark.test;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;

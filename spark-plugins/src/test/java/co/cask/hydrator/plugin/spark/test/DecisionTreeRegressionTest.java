@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.spark.test;
+package co.cask.hydrator.plugin.spark.test;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.table.Table;
@@ -37,8 +37,9 @@ import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkflowManager;
-import co.cask.hydrator.plugin.batch.spark.DecisionTreeRegressor;
-import co.cask.hydrator.plugin.batch.spark.DecisionTreeTrainer;
+import co.cask.hydrator.plugin.spark.DecisionTreeRegressor;
+import co.cask.hydrator.plugin.spark.DecisionTreeTrainer;
+import co.cask.hydrator.plugin.spark.TwitterStreamingSource;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -65,8 +66,8 @@ public class DecisionTreeRegressionTest extends HydratorTestBase {
   @ClassRule
   public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
 
-  protected static final ArtifactId DATAPIPELINE_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("data-pipeline", "3.2.0");
-  protected static final ArtifactSummary DATAPIPELINE_ARTIFACT = new ArtifactSummary("data-pipeline", "3.2.0");
+  protected static final ArtifactId DATAPIPELINE_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("data-pipeline", "3.5.0");
+  protected static final ArtifactSummary DATAPIPELINE_ARTIFACT = new ArtifactSummary("data-pipeline", "3.5.0");
   private static final String LABELED_RECORDS = "labeledRecords";
 
   @BeforeClass
@@ -75,7 +76,7 @@ public class DecisionTreeRegressionTest extends HydratorTestBase {
     setupBatchArtifacts(DATAPIPELINE_ARTIFACT_ID, DataPipelineApp.class);
     // add artifact for spark plugins
     addPluginArtifact(NamespaceId.DEFAULT.artifact("spark-plugins", "1.0.0"), DATAPIPELINE_ARTIFACT_ID,
-                      DecisionTreeTrainer.class, DecisionTreeRegressor.class);
+                      DecisionTreeTrainer.class, DecisionTreeRegressor.class, TwitterStreamingSource.class);
   }
 
   @Test

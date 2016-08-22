@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package co.cask.hydrator.plugin.batch.spark;
+package co.cask.hydrator.plugin.spark;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
@@ -55,6 +55,8 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
   public static final String PLUGIN_NAME = "DecisionTreeTrainer";
   //Impurity measure of the homogeneity of the labels at the node. Expected value for regression is "variance".
   private static final String IMPURITY = "variance";
+  private static final int DEFAULT_MAX_DEPTH = 10;
+  private static final int DEFAULT_MAX_BINS = 100;
   private DecisionTreeTrainerConfig config;
 
   @Override
@@ -80,13 +82,17 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
       Map<Object, Long> map = input.map(new Function<StructuredRecord, Object>() {
         @Override
         public Object call(StructuredRecord structuredRecord) throws Exception {
-          Schema schema = structuredRecord.getSchema().getField(field).getSchema();
+          Schema.Field inputField = structuredRecord.getSchema().getField(field);
+          if (inputField == null) {
+            throw new IllegalArgumentException(String.format("Field %s does not exists in the input schema",
+                                                             inputField));
+          }
+          Schema schema = inputField.getSchema();
           if (structuredRecord.get(field) == null && !schema.isNullable()) {
             throw new IllegalArgumentException(String.format("null value found for non-nullable field %s", field));
           }
           Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
-          if (!(type.equals(Schema.Type.INT) || type.equals(Schema.Type.DOUBLE) || type.equals(Schema.Type.FLOAT) ||
-            type.equals(Schema.Type.LONG))) {
+          if (type.equals(Schema.Type.STRING) || type.equals(Schema.Type.BOOLEAN)) {
             return structuredRecord.get(field);
           } else {
             return null;
@@ -102,16 +108,17 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
     JavaRDD<LabeledPoint> trainingData = input.map(new Function<StructuredRecord, LabeledPoint>() {
       @Override
       public LabeledPoint call(StructuredRecord record) throws Exception {
-        List<Double> doubles = new ArrayList<Double>();
+        List<Double> featureList = new ArrayList<Double>();
         Set<String> keys = categoricalFeaturesMap.keySet();
         for (String field : fields) {
           if (keys.contains(field)) {
-            doubles.add((categoricalFeaturesMap.get(field).get(record.get(field))).doubleValue());
+            featureList.add((categoricalFeaturesMap.get(field).get(record.get(field))).doubleValue());
           } else {
-            doubles.add(new Double(record.get(field).toString()));
+            featureList.add(Double.valueOf(record.get(field).toString()));
           }
         }
-        return new LabeledPoint((Double) record.get(config.predictionField), Vectors.dense(Doubles.toArray(doubles)));
+        return new LabeledPoint((Double) record.get(config.predictionField),
+                                Vectors.dense(Doubles.toArray(featureList)));
       }
     });
 
@@ -121,8 +128,8 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
       categoricalFeaturesInfo.put(categoricalFeaturesList.indexOf(key), categoricalFeaturesMap.get(key).size());
     }
 
-    config.maxDepth = config.maxDepth == null ? 10 : config.maxDepth;
-    config.maxBins = config.maxBins == null ? 100 : config.maxBins;
+    config.maxDepth = config.maxDepth == null ? DEFAULT_MAX_DEPTH : config.maxDepth;
+    config.maxBins = config.maxBins == null ? DEFAULT_MAX_BINS : config.maxBins;
     final DecisionTreeModel model = DecisionTree.trainRegressor(trainingData, categoricalFeaturesInfo, IMPURITY,
                                                                 config.maxDepth, config.maxBins);
     // save the model to a file in the output FileSet
