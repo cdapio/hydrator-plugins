@@ -1,0 +1,26 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Order By Configuration",
+      "properties": [
+        {
+          "widget-type": "keyvalue-dropdown",
+          "label": "Field Name And Sort Order",
+          "name": "sortFields",
+          "widget-attributes": {
+            "showDelimiter": "false",
+            "dropdownOptions": [
+              "asc",
+              "desc"
+            ],
+            "key-placeholder": "Field Name"
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}
