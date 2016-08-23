@@ -49,8 +49,6 @@ import javax.annotation.Nullable;
 public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<StructuredRecord, KEY_OUT, VAL_OUT> {
   public static final String BUCKET_DES = "GCS bucket to use to store the data";
   public static final String PROJECT_ID_DES = "Google Cloud Project ID with access to configured GCS buckets";
-  public static final String SERVICE_EMAIL_DES = "The email address is associated with the service " +
-    "account used for GCS access, if jsonKeyFile is provided, do not provide this";
   public static final String SERVICE_KEY_FILE_DES = "The Json_Key_File certificate file of the " +
     "service account used for GCS access";
   private static final String FILESYSTEM_PROPERTIES_DESCRIPTION = "A JSON string representing a map of properties " +
@@ -65,12 +63,10 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
     super(config);
     this.config = config;
     if (!this.config.containsMacro("fileSystemProperties") && !this.config.containsMacro("Bucket_Key") &&
-      !this.config.containsMacro("Project_Id") && !this.config.containsMacro("Service_Email") &&
-      !this.config.containsMacro("P12_key_file") && !this.config.containsMacro("System_Bucket")) {
+      !this.config.containsMacro("Project_Id")) {
       this.config.fileSystemProperties = updateFileSystemProperties(this.config.fileSystemProperties,
-                                                                    this.config.systemBucket,
                                                                     this.config.projectId,
-                                                                    this.config.serviceEmail, this.config.jsonKey);
+                                                                    this.config.jsonKey);
     }
   }
 
@@ -89,19 +85,13 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
 
   protected abstract OutputFormatProvider createOutputFormatProvider(BatchSinkContext context);
 
-  private static String updateFileSystemProperties(@Nullable String fileSystemProperties, @Nullable String systemBucket,
-                                                   String projectId, @Nullable String serviceEmail, String jsonKey) {
+  private static String updateFileSystemProperties(@Nullable String fileSystemProperties,
+                                                   String projectId, String jsonKey) {
     Map<String, String> providedProperties;
     if (fileSystemProperties == null) {
       providedProperties = new HashMap<>();
     } else {
       providedProperties = GSON.fromJson(fileSystemProperties, MAP_STRING_STRING_TYPE);
-    }
-    if (systemBucket != null) {
-      providedProperties.put("fs.gs.system.bucket", systemBucket);
-    }
-    if (serviceEmail != null) {
-      providedProperties.put("google.cloud.auth.service.account.email", serviceEmail);
     }
     providedProperties.put("fs.gs.project.id", projectId);
     providedProperties.put("google.cloud.auth.service.account.json.keyfile", jsonKey);
@@ -118,22 +108,11 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
     @Macro
     protected String bucketKey;
 
-    @Name("System_Bucket")
-    @Description("system bucket")
-    @Nullable
-    @Macro
-    protected String systemBucket;
-
     @Name("Project_Id")
     @Description(PROJECT_ID_DES)
     @Macro
     protected String projectId;
 
-    @Name("Service_Email")
-    @Description(SERVICE_EMAIL_DES)
-    @Nullable
-    @Macro
-    protected String serviceEmail;
 
     @Name("Json_Key_File")
     @Description(SERVICE_KEY_FILE_DES)
@@ -153,21 +132,19 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
 
     public GCSSinkConfig() {
       super("");
-      this.fileSystemProperties = updateFileSystemProperties(null, null, projectId, null, jsonKey);
+      this.fileSystemProperties = updateFileSystemProperties(null, projectId, jsonKey);
     }
 
-    public GCSSinkConfig(String referenceName, String bucketKey, String projectId, @Nullable String email,
+    public GCSSinkConfig(String referenceName, String bucketKey, String projectId,
                          String serviceKeyFile, @Nullable String fileSystemProperties,
-                         @Nullable  String systemBucket, String path) {
+                         String path) {
       super(referenceName);
       this.bucketKey = bucketKey;
-      this.systemBucket = systemBucket;
-      this.serviceEmail = email;
       this.projectId = projectId;
       this.jsonKey = serviceKeyFile;
       this.path = path;
-      this.fileSystemProperties = updateFileSystemProperties(fileSystemProperties, systemBucket, projectId,
-                                                             email, serviceKeyFile);
+      this.fileSystemProperties = updateFileSystemProperties(fileSystemProperties, projectId,
+                                                             serviceKeyFile);
     }
   }
 
