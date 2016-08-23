@@ -139,13 +139,13 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
   }
 
   void init(Map<String, Schema> inputSchemas) {
-    validateJoinKeySchemas(inputSchemas);
+    validateJoinKeySchemas(inputSchemas, conf.getPerStageJoinKeys());
     requiredInputs = conf.getInputs();
     perStageSelectedFields = conf.getPerStageSelectedFields();
   }
 
-  void validateJoinKeySchemas(Map<String, Schema> inputSchemas) {
-    perStageJoinKeys = conf.getPerStageJoinKeys();
+  void validateJoinKeySchemas(Map<String, Schema> inputSchemas, Map<String, List<String>> joinKeys) {
+    perStageJoinKeys = joinKeys;
 
     if (perStageJoinKeys.size() != inputSchemas.size()) {
       throw new IllegalArgumentException("There should be join keys present from each stage");
@@ -163,6 +163,10 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
 
       for (String joinKey : entry.getValue()) {
         Schema.Field field = schema.getField(joinKey);
+        if (field == null) {
+          throw new IllegalArgumentException(String.format("Join key field %s is not present in input of stage %s",
+                                                           joinKey, stageName));
+        }
         schemaList.add(field.getSchema());
       }
       if (prevSchemaList != null && !prevSchemaList.equals(schemaList)) {
@@ -178,7 +182,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
   @Path("outputSchema")
   public Schema getOutputSchema(GetSchemaRequest request) {
     try {
-      validateJoinKeySchemas(request.inputSchemas);
+      validateJoinKeySchemas(request.inputSchemas, request.getPerStageJoinKeys());
       requiredInputs = request.getInputs();
       perStageSelectedFields = request.getPerStageSelectedFields();
       duplicateFields = ArrayListMultimap.create();

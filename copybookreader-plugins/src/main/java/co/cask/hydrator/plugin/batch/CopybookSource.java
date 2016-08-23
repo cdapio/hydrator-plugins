@@ -16,6 +16,7 @@
 package co.cask.hydrator.plugin.batch;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.batch.Input;
@@ -231,6 +232,7 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, Abstra
       "or 'file:///home/cdap/DTAR020_FB.bin'.\n " +
       "This will be a fixed-length binary format file that matches the copybook.\n" +
       "(This is done to accept files present on a remote HDFS location.)")
+    @Macro
     private String binaryFilePath;
 
     @Description("Contents of the COBOL copybook file which will contain the data structure. For example: \n" +
@@ -254,6 +256,7 @@ public class CopybookSource extends BatchSource<LongWritable, Map<String, Abstra
 
     @Nullable
     @Description("Maximum split-size(MB) for each mapper in the MapReduce Job. Defaults to 1MB.")
+    @Macro
     private Long maxSplitSize;
 
     public CopybookSourceConfig() {

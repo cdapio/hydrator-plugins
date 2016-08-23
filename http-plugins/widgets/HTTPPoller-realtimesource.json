@@ -41,12 +41,12 @@
           "name": "charset",
           "widget-attributes" : {
             "values": [
-              "US-ASCII",
               "ISO-8859-1",
+              "US-ASCII",
               "UTF-8",
+              "UTF-16",
               "UTF-16BE",
-              "UTF-16LE",
-              "UTF-16"
+              "UTF-16LE"
             ],
             "default": "UTF-8"
           }

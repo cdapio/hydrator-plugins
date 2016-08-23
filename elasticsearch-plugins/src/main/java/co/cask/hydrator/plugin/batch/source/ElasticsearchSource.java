@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.batch.Input;
@@ -123,18 +124,22 @@ public class ElasticsearchSource extends ReferenceBatchSource<Text, MapWritable,
   public static class ESConfig extends ReferencePluginConfig {
     @Name(ESProperties.HOST)
     @Description(HOST_DESCRIPTION)
+    @Macro
     private String hostname;
 
     @Name(ESProperties.INDEX_NAME)
     @Description(INDEX_DESCRIPTION)
+    @Macro
     private String index;
 
     @Name(ESProperties.TYPE_NAME)
     @Description(TYPE_DESCRIPTION)
+    @Macro
     private String type;
 
     @Name(ESProperties.QUERY)
     @Description(QUERY_DESCRIPTION)
+    @Macro
     private String query;
 
     @Name(ESProperties.SCHEMA)

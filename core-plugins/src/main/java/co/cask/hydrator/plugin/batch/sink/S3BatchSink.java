@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.sink;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.data.batch.Output;
 import co.cask.cdap.api.data.batch.OutputFormatProvider;
@@ -60,8 +61,12 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<S
     this.config = config;
     // update fileSystemProperties to include accessID and accessKey, so prepareRun can only set fileSystemProperties
     // in configuration, and not deal with accessID and accessKey separately
-    this.config.fileSystemProperties = updateFileSystemProperties(this.config.fileSystemProperties,
-                                                                  this.config.accessID, this.config.accessKey);
+    // do not create file system properties if macros were provided unless in a test case
+    if (!this.config.containsMacro("fileSystemProperties") && !this.config.containsMacro("accessID") &&
+        !this.config.containsMacro("accessKey")) {
+      this.config.fileSystemProperties = updateFileSystemProperties(this.config.fileSystemProperties,
+                                                                    this.config.accessID, this.config.accessKey);
+    }
   }
 
   @Override
@@ -107,23 +112,28 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<S
 
     @Name(Properties.S3BatchSink.BASE_PATH)
     @Description(PATH_DESC)
+    @Macro
     protected String basePath;
 
     @Name(Properties.S3.ACCESS_ID)
     @Description(ACCESS_ID_DESCRIPTION)
+    @Macro
     protected String accessID;
 
     @Name(Properties.S3.ACCESS_KEY)
     @Description(ACCESS_KEY_DESCRIPTION)
+    @Macro
     protected String accessKey;
 
     @Name(Properties.S3BatchSink.PATH_FORMAT)
     @Description(PATH_FORMAT_DESCRIPTION)
     @Nullable
+    @Macro
     protected String pathFormat;
 
     @Description(FILESYSTEM_PROPERTIES_DESCRIPTION)
     @Nullable
+    @Macro
     protected String fileSystemProperties;
 
     public S3BatchSinkConfig() {

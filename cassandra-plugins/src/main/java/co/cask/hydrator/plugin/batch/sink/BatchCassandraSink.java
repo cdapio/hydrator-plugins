@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.sink;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.batch.Output;
@@ -132,24 +133,29 @@ public class BatchCassandraSink
   public static class CassandraBatchConfig extends ReferencePluginConfig {
     @Name(Cassandra.PARTITIONER)
     @Description("The partitioner for the keyspace")
+    @Macro
     private String partitioner;
 
     @Name(Cassandra.PORT)
     @Nullable
     @Description("The RPC port for Cassandra. For example, 9160. " +
       "Please also check the configuration to make sure that start_rpc is true in cassandra.yaml.")
+    @Macro
     private Integer port;
 
     @Name(Cassandra.COLUMN_FAMILY)
     @Description("The column family to inject data into. Create the column family before starting the application.")
+    @Macro
     private String columnFamily;
 
     @Name(Cassandra.KEYSPACE)
     @Description("The keyspace to inject data into. Create the keyspace before starting the application.")
+    @Macro
     private String keyspace;
 
     @Name(Cassandra.INITIAL_ADDRESS)
     @Description("The initial address to connect to. For example: \"10.11.12.13\".")
+    @Macro
     private String initialAddress;
 
     @Name(Cassandra.COLUMNS)

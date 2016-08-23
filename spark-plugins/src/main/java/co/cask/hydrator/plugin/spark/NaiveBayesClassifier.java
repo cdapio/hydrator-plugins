@@ -14,9 +14,10 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.spark;
+package co.cask.hydrator.plugin.spark;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -59,6 +60,8 @@ public class NaiveBayesClassifier extends SparkCompute<StructuredRecord, Structu
 
   private Config config;
   private Schema outputSchema;
+  private NaiveBayesModel loadedModel;
+  private HashingTF tf;
 
   /**
    * Configuration for the NaiveBayesClassifier.
@@ -66,9 +69,11 @@ public class NaiveBayesClassifier extends SparkCompute<StructuredRecord, Structu
   public static class Config extends PluginConfig {
 
     @Description("The name of the FileSet to load the model from.")
+    @Macro
     private final String fileSetName;
 
     @Description("Path of the FileSet to load the model from.")
+    @Macro
     private final String path;
 
     @Description("A space-separated sequence of words to classify.")
@@ -81,6 +86,7 @@ public class NaiveBayesClassifier extends SparkCompute<StructuredRecord, Structu
     @Description("The number of features to use in training the model. It must be of type integer and equal to the" +
                   " number of features used in NaiveBayesTrainer. The default value if none is provided will be" +
                   " 100.")
+    @Macro
     private final Integer numFeatures;
 
     public Config(String fileSetName, String path, String fieldToClassify, String predictionField,
@@ -112,6 +118,23 @@ public class NaiveBayesClassifier extends SparkCompute<StructuredRecord, Structu
     stageConfigurer.setOutputSchema(outputSchema);
   }
 
+  @Override
+  public void initialize(SparkExecutionPluginContext context) throws Exception {
+    FileSet fileSet = context.getDataset(config.fileSetName);
+    Location modelLocation = fileSet.getBaseLocation().append(config.path);
+    if (!modelLocation.exists()) {
+      throw new IllegalArgumentException(String.format(
+        "Failed to find model to use for classification. Location does not exist: %s.", modelLocation));
+    }
+
+    // load the model from a file in the model fileset
+    JavaSparkContext javaSparkContext = context.getSparkContext();
+    SparkContext sparkContext = JavaSparkContext.toSparkContext(javaSparkContext);
+    loadedModel = NaiveBayesModel.load(sparkContext, modelLocation.toURI().getPath());
+
+    tf = new HashingTF((config.numFeatures == null) ? 100 : config.numFeatures);
+  }
+
   private void validateSchema(Schema inputSchema) {
     Schema.Type fieldToClassifyType = inputSchema.getField(config.fieldToClassify).getSchema().getType();
     Preconditions.checkArgument(fieldToClassifyType == Schema.Type.STRING,
@@ -125,19 +148,6 @@ public class NaiveBayesClassifier extends SparkCompute<StructuredRecord, Structu
   @Override
   public JavaRDD<StructuredRecord> transform(SparkExecutionPluginContext context,
                                              JavaRDD<StructuredRecord> input) throws Exception {
-    FileSet fileSet = context.getDataset(config.fileSetName);
-    Location modelLocation = fileSet.getBaseLocation().append(config.path);
-    if (!modelLocation.exists()) {
-      LOG.warn("Failed to find model to use for classification. Location does not exist: {}.", modelLocation);
-      return input;
-    }
-
-    // load the model from a file in the model fileset
-    JavaSparkContext javaSparkContext = context.getSparkContext();
-    SparkContext sparkContext = JavaSparkContext.toSparkContext(javaSparkContext);
-    final NaiveBayesModel loadedModel = NaiveBayesModel.load(sparkContext, modelLocation.toURI().getPath());
-
-    final HashingTF tf = new HashingTF((config.numFeatures == null) ? 100 : config.numFeatures);
 
     JavaRDD<StructuredRecord> output = input.map(new Function<StructuredRecord, StructuredRecord>() {
       @Override
