@@ -236,7 +236,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
           inputFieldName, stageName, inputSchema));
       }
       // set nullable fields for non-required inputs
-      if (requiredInputs.contains(stageName)) {
+      if (requiredInputs.contains(stageName) || inputField.getSchema().isNullable()) {
         outputFieldInfo.put(alias, new OutputFieldInfo(alias, stageName, inputFieldName,
                                                        Schema.Field.of(alias, inputField.getSchema())));
       } else {

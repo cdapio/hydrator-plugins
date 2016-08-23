@@ -219,4 +219,31 @@ public class JoinerConfigTest {
     Joiner joiner = new Joiner(null);
     Assert.assertEquals(outputSchema, joiner.getOutputSchema(getSchemaRequest));
   }
+
+  @Test
+  public void testJoinerWithNullableSchema() {
+    Schema filmCategorySchema = Schema.recordOf(
+      "filmCategory",
+      Schema.Field.of("film_id", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("category_name", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
+
+    Joiner.GetSchemaRequest getSchemaRequest = new Joiner.GetSchemaRequest();
+    getSchemaRequest.inputSchemas = ImmutableMap.of("film", filmSchema, "filmActor", filmActorSchema,
+                                                    "filmCategory", filmCategorySchema);
+    getSchemaRequest.joinKeys = "film.film_id=filmActor.film_id=filmCategory.film_id";
+    getSchemaRequest.selectedFields = "film.film_id, film.film_name, filmActor.actor_name as renamed_actor, " +
+      "filmCategory.category_name as renamed_category";
+
+    Schema outputSchema = Schema.recordOf(
+      "joined",
+      Schema.Field.of("film_id", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("renamed_actor", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("renamed_category", filmCategorySchema.getField("category_name").getSchema()));
+    getSchemaRequest.requiredInputs = "film,filmActor";
+
+    Joiner joiner = new Joiner(null);
+    Assert.assertEquals(outputSchema, joiner.getOutputSchema(getSchemaRequest));
+  }
 }
