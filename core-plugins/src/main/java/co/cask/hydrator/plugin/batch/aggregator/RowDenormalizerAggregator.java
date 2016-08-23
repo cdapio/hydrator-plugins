@@ -21,13 +21,20 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.DatasetProperties;
+import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchAggregator;
 import co.cask.cdap.etl.api.batch.BatchAggregatorContext;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
+import co.cask.cdap.format.StructuredRecordStringConverter;
+import co.cask.hydrator.plugin.common.Properties;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -45,13 +52,19 @@ import java.util.Set;
   "'ADDRESS' in the input is mapped to 'addr' in the output schema. The denormalized data is easier to query.")
 public class RowDenormalizerAggregator extends BatchAggregator<String, StructuredRecord, StructuredRecord> {
 
+  private static final String KEY = "key";
+  private static final String RECORD = "record";
   private final RowDenormalizerConfig conf;
+  private final Schema errorRecordSchema = Schema.recordOf("schema", Schema.Field.of(KEY, Schema.of(Schema.Type.INT)),
+                                                           Schema.Field.of(RECORD, Schema.of(Schema.Type.STRING)));
+  private BatchRuntimeContext batchRuntimeContext;
   private Map<String, String> outputMappings;
   private Set<String> outputFields;
   private Schema outputSchema;
   private String keyField;
   private String nameField;
   private String valueField;
+  private int recordCounter = 1;
 
   public RowDenormalizerAggregator(RowDenormalizerConfig conf) {
     this.conf = conf;
@@ -68,10 +81,14 @@ public class RowDenormalizerAggregator extends BatchAggregator<String, Structure
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     validateInputFields(pipelineConfigurer.getStageConfigurer().getInputSchema());
     pipelineConfigurer.getStageConfigurer().setOutputSchema(initializeOutputSchema());
+    Preconditions.checkArgument(!Strings.isNullOrEmpty(conf.getErrorDataset()),
+                                "Error dataset name can not be null or empty.");
+    createDataset(pipelineConfigurer);
   }
 
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
+    batchRuntimeContext = context;
     outputFields = conf.getOutputSchemaFields();
     outputMappings = conf.getFieldAliases();
     keyField = conf.getKeyField();
@@ -87,6 +104,11 @@ public class RowDenormalizerAggregator extends BatchAggregator<String, Structure
         throw new IllegalArgumentException(
           String.format("Keyfield '%s' does not exist in input schema %s", keyField, record.getSchema()));
       }
+      StructuredRecord.Builder droppedRecordBuilder = StructuredRecord.builder(errorRecordSchema);
+      droppedRecordBuilder.set(KEY, recordCounter++);
+      droppedRecordBuilder.set(RECORD, StructuredRecordStringConverter.toJsonString(record));
+      Table errorTable = batchRuntimeContext.getDataset(conf.getErrorDataset());
+      errorTable.write(droppedRecordBuilder.build());
       return;
     }
     if (record.get(nameField) == null && record.getSchema().getField(nameField) == null) {
@@ -172,6 +194,24 @@ public class RowDenormalizerAggregator extends BatchAggregator<String, Structure
       throw new IllegalArgumentException(
         String.format("Valuefield '%s' in the input record must be of type String or Nullable String",
                       conf.getValueField()));
+    }
+  }
+
+  /**
+   * Creates dataset with the name given as input by user.
+   *
+   * @param pipelineConfigurer
+   */
+  private void createDataset(PipelineConfigurer pipelineConfigurer) {
+    String errorDatasetName = conf.getErrorDataset();
+    try {
+      Map<String, String> properties = new HashMap<>();
+      properties.put(Properties.Table.PROPERTY_SCHEMA, errorRecordSchema.toString());
+      properties.put(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, KEY);
+      DatasetProperties datasetProperties = DatasetProperties.builder().addAll(properties).build();
+      pipelineConfigurer.createDataset(errorDatasetName, Table.class, datasetProperties);
+    } catch (Exception e) {
+      throw new IllegalStateException(String.format("Exception while creating dataset '%s'.", errorDatasetName), e);
     }
   }
 }

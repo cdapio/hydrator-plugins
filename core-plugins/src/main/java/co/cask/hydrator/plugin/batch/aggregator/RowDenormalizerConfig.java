@@ -59,14 +59,18 @@ public class RowDenormalizerConfig extends AggregatorConfig {
   @Nullable
   private final String fieldAliases;
 
+  @Description("Name of the dataset that collects dropped records, when value for the 'Key Field' is null.")
+  private final String errorDataset;
+
   @VisibleForTesting
   RowDenormalizerConfig(String keyField, String nameField, String valueField, String outputFields,
-                        String fieldAliases) {
+                        String fieldAliases, String errorDataset) {
     this.keyField = keyField;
     this.nameField = nameField;
     this.valueField = valueField;
     this.outputFields = outputFields;
     this.fieldAliases = fieldAliases;
+    this.errorDataset = errorDataset;
   }
 
   /**
@@ -94,6 +98,15 @@ public class RowDenormalizerConfig extends AggregatorConfig {
    */
   String getValueField() {
     return valueField;
+  }
+
+  /**
+   * Returns name of the error dataset given as input by user.
+   *
+   * @return error dataset
+   */
+  public String getErrorDataset() {
+    return errorDataset;
   }
 
   /**
