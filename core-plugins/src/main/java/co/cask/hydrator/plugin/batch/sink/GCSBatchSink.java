@@ -66,9 +66,10 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
     this.config = config;
     if (!this.config.containsMacro("fileSystemProperties") && !this.config.containsMacro("Bucket_Key") &&
       !this.config.containsMacro("Project_Id") && !this.config.containsMacro("Service_Email") &&
-      !this.config.containsMacro("P12_key_file")) {
+      !this.config.containsMacro("P12_key_file") && !this.config.containsMacro("System_Bucket")) {
       this.config.fileSystemProperties = updateFileSystemProperties(this.config.fileSystemProperties,
-                                                                    this.config.projectId, this.config.bucketKey,
+                                                                    this.config.systemBucket,
+                                                                    this.config.projectId,
                                                                     this.config.serviceEmail, this.config.jsonKey);
     }
   }
@@ -88,19 +89,22 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
 
   protected abstract OutputFormatProvider createOutputFormatProvider(BatchSinkContext context);
 
-  private static String updateFileSystemProperties(@Nullable String fileSystemProperties,
-                                                   String projectId, String bucketKey,
-                                                   String serviceEmail, String jsonKey) {
+  private static String updateFileSystemProperties(@Nullable String fileSystemProperties, @Nullable String systemBucket,
+                                                   String projectId, @Nullable String serviceEmail, String jsonKey) {
     Map<String, String> providedProperties;
     if (fileSystemProperties == null) {
       providedProperties = new HashMap<>();
     } else {
       providedProperties = GSON.fromJson(fileSystemProperties, MAP_STRING_STRING_TYPE);
     }
+    if (systemBucket != null) {
+      providedProperties.put("fs.gs.system.bucket", systemBucket);
+    }
+    if (serviceEmail != null) {
+      providedProperties.put("google.cloud.auth.service.account.email", serviceEmail);
+    }
     providedProperties.put("fs.gs.project.id", projectId);
-    providedProperties.put("fs.gs.system.bucket", bucketKey);
-    providedProperties.put("google.cloud.auth.service.account.email", serviceEmail);
-    providedProperties.put("google.cloud.auth.service.account.keyfile", jsonKey);
+    providedProperties.put("google.cloud.auth.service.account.json.keyfile", jsonKey);
     return GSON.toJson(providedProperties);
   }
 
@@ -114,6 +118,12 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
     @Macro
     protected String bucketKey;
 
+    @Name("System_Bucket")
+    @Description("system bucket")
+    @Nullable
+    @Macro
+    protected String systemBucket;
+
     @Name("Project_Id")
     @Description(PROJECT_ID_DES)
     @Macro
@@ -121,6 +131,7 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
 
     @Name("Service_Email")
     @Description(SERVICE_EMAIL_DES)
+    @Nullable
     @Macro
     protected String serviceEmail;
 
@@ -142,19 +153,21 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
 
     public GCSSinkConfig() {
       super("");
-      this.fileSystemProperties = updateFileSystemProperties(null, projectId, bucketKey, serviceEmail, jsonKey);
+      this.fileSystemProperties = updateFileSystemProperties(null, null, projectId, null, jsonKey);
     }
 
-    public GCSSinkConfig(String referenceName, String bucketKey, String projectId, String serviceEmail,
-                         String serviceKeyFile, @Nullable String fileSystemProperties, String path) {
+    public GCSSinkConfig(String referenceName, String bucketKey, String projectId, @Nullable String email,
+                         String serviceKeyFile, @Nullable String fileSystemProperties,
+                         @Nullable  String systemBucket, String path) {
       super(referenceName);
       this.bucketKey = bucketKey;
+      this.systemBucket = systemBucket;
+      this.serviceEmail = email;
       this.projectId = projectId;
-      this.serviceEmail = serviceEmail;
       this.jsonKey = serviceKeyFile;
       this.path = path;
-      this.fileSystemProperties = updateFileSystemProperties(fileSystemProperties, projectId, bucketKey,
-                                                             serviceEmail, serviceKeyFile);
+      this.fileSystemProperties = updateFileSystemProperties(fileSystemProperties, systemBucket, projectId,
+                                                             email, serviceKeyFile);
     }
   }
 
