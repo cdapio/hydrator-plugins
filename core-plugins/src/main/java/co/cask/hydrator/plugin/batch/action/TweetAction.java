@@ -23,10 +23,16 @@ import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.etl.api.batch.BatchActionContext;
 import co.cask.cdap.etl.api.batch.PostAction;
 import co.cask.hydrator.common.batch.action.ConditionConfig;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.firefox.FirefoxDriver;
+import twitter4j.StatusUpdate;
 import twitter4j.Twitter;
 import twitter4j.TwitterFactory;
 import twitter4j.auth.AccessToken;
 
+import java.io.File;
 import javax.annotation.Nullable;
 
 /**
@@ -51,13 +57,25 @@ public class TweetAction extends PostAction {
     // Cask Data does not support sweat shops.
     Twitter twitter = new TwitterFactory().getInstance();
 
-    // Do some fancy stuff with authorization, because not just ANYBODY can post to your account (You're special).
+    // Do some fancy stuff with authorization, because not just ANYBODY can post to your account (you're special).
     twitter.setOAuthConsumer(config.consumerKey, config.consumerSecret);
     AccessToken accessToken = new AccessToken(config.accessToken, config.accessTokenSecret);
     twitter.setOAuthAccessToken(accessToken);
 
+    // Begin creating the status to end all statuses
+    StatusUpdate status = new StatusUpdate(config.tweet);
+
+    // Take that fancy screenshot to make all your friends jealous at your big data prowess
+    if (config.namespace != null && config.pipelineName != null) {
+      WebDriver webDriver = new FirefoxDriver();
+      String pipelineURL = "http://localhost:9999/ns/" + config.namespace + "/hydrator/view/" + config.pipelineName;
+      webDriver.get(pipelineURL);
+      File screenshot = ((TakesScreenshot)webDriver).getScreenshotAs(OutputType.FILE);
+      status.setMedia(screenshot);
+    }
+
     // Just do it.
-    twitter.updateStatus(config.tweet);
+    twitter.updateStatus(status);
   }
 
   /**
@@ -84,10 +102,23 @@ public class TweetAction extends PostAction {
     @Macro
     private String accessTokenSecret;
 
+    @Name("Tweet")
     @Description("The message to post with the Tweet, do you need any more explanation?")
     @Macro
     @Nullable
     private String tweet;
+
+    @Name("Namespace")
+    @Description("The namespace this pipeline will be run in.")
+    @Macro
+    @Nullable
+    private String namespace;
+
+    @Name("PipelineName")
+    @Description("The name of the pipeline.")
+    @Macro
+    @Nullable
+    private String pipelineName;
 
     public Config() {
       tweet = "Just finished running a #BigData pipeline with #CaskHydrator.";

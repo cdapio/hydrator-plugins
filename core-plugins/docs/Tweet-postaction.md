@@ -38,6 +38,10 @@ the relevant app to find the consumer key and secret.
 
 **Tweet:** The text to post in the Tweet.
 
+**Namespace:** The namespace the pipeline will be run in.
+
+**PipelineName:** The name of the pipeline.
+
 Example
 -------
 This example sends an email from 'team-ops@example.com' to 'team-alerts@example.com' whenever a run fails:

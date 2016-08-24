@@ -60,6 +60,21 @@
           "name": "ConsumerSecret"
         }
       ]
+    },
+    {
+      "label": "Pipeline Screenshot Settings",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Namespace",
+          "name": "namespace"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Pipeline Name",
+          "name": "pipelineName"
+        }
+      ]
     }
   ],
   "outputs": []
