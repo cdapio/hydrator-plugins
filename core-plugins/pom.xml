@@ -274,7 +274,8 @@
               co.cask.hydrator.plugin.validator.*;
               org.apache.avro.mapreduce;
               parquet.avro.*;
-              org.apache.orc.*
+              org.apache.orc.*;
+              org.openqa.selenium.*;
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
