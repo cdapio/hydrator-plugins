@@ -251,7 +251,6 @@
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-firefox-driver</artifactId>
-      <version>3.0.0-beta2</version>
     </dependency>
 
   </dependencies>
