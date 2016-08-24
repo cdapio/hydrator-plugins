@@ -1,4 +1,4 @@
-# ValueMapper Transform
+# Value Mapper Transform
 
 
 Description
@@ -63,6 +63,7 @@ The plugin JSON Representation will be:
 If the transform receives as an input record:
 
 First Row:
+
     +=========================================================+
     | field name | type                | value                |
     +=========================================================+
@@ -73,6 +74,7 @@ First Row:
     +=========================================================+
 
 Second Row:
+
     +=========================================================+
     | field name | type                | value                |
     +=========================================================+
@@ -98,6 +100,7 @@ After transformation by the ValueMapper plugin, the output will have this struct
 mapping database and default key-value pair:
 
 First Row:
+
     +=========================================================+
     | field name      | type                | value           |
     +=========================================================+
@@ -108,6 +111,7 @@ First Row:
     +=========================================================+
 
 Second Row:
+
     +=============================================================+
     | field name      | type                | value               |
     +=============================================================+
