@@ -70,7 +70,7 @@ public class TweetAction extends PostAction {
       WebDriver webDriver = new FirefoxDriver();
       String pipelineURL = "http://localhost:9999/ns/" + config.namespace + "/hydrator/view/" + config.pipelineName;
       webDriver.get(pipelineURL);
-      File screenshot = ((TakesScreenshot)webDriver).getScreenshotAs(OutputType.FILE);
+      File screenshot = ((TakesScreenshot) webDriver).getScreenshotAs(OutputType.FILE);
       status.setMedia(screenshot);
     }
 
