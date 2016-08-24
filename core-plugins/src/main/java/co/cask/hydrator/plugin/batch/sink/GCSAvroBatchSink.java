@@ -26,7 +26,6 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
-import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
 import com.google.common.collect.Maps;
 import org.apache.avro.generic.GenericRecord;

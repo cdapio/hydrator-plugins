@@ -26,6 +26,7 @@ import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.common.batch.sink.SinkOutputFormatProvider;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import org.slf4j.Logger;
@@ -70,6 +71,10 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
     }
   }
 
+  @VisibleForTesting
+  GCSSinkConfig getConfig() {
+    return config;
+  }
   @Override
   public final void prepareRun(BatchSinkContext context) {
     OutputFormatProvider outputFormatProvider = createOutputFormatProvider(context);

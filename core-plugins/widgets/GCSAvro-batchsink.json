@@ -47,7 +47,9 @@
           "double",
           "bytes",
           "string",
-          "map<string, string>"
+          "map<string, string>",
+          "array<string>",
+          "record"
         ],
         "schema-default-type": "string"
       }
