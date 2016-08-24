@@ -37,9 +37,6 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 
-
-
-
 /**
  * /**
  * {@link GCSBatchSink} that stores the data to Google Cloud Storage Bucket.
@@ -83,7 +80,6 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
       Map<String, String> properties = GSON.fromJson(config.fileSystemProperties, MAP_STRING_STRING_TYPE);
       outputConfig.putAll(properties);
     }
-    LOG.debug("test the outputconfig {}", outputConfig);
     context.addOutput(Output.of(config.referenceName, new SinkOutputFormatProvider(
       outputFormatProvider.getOutputFormatClassName(), outputConfig)));
   }
@@ -108,27 +104,25 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
    */
   public static class GCSSinkConfig extends ReferencePluginConfig {
 
-    @Name("Bucket_Key")
+    @Name("BucketKey")
     @Description(BUCKET_DES)
     @Macro
     protected String bucketKey;
 
-    @Name("Project_Id")
+    @Name("ProjectId")
     @Description(PROJECT_ID_DES)
     @Macro
     protected String projectId;
 
-
-    @Name("Json_Key_File")
+    @Name("JsonKeyFile")
     @Description(SERVICE_KEY_FILE_DES)
     @Macro
     protected String jsonKey;
 
-    @Name("path_to_store")
+    @Name("PathToStore")
     @Description("path to store inside bucket")
     @Macro
     protected String path;
-
 
     @Description(FILESYSTEM_PROPERTIES_DESCRIPTION)
     @Nullable

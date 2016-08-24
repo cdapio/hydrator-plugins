@@ -83,11 +83,6 @@ public class GCSAvroBatchSink extends GCSBatchSink<AvroKey<GenericRecord>, NullW
     private String schema;
 
     @SuppressWarnings("unused")
-    public GCSAvroSinkConfig() {
-      super();
-    }
-
-    @SuppressWarnings("unused")
     public GCSAvroSinkConfig(String referenceName, String bucketKey, String schema, String projectId,
                              String serviceKeyFile,
                              String filesystemProperties, String path) {

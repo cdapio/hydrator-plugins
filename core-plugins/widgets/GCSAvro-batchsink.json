@@ -14,17 +14,17 @@
         {
           "widget-type": "textbox",
           "label": "Project ID",
-          "name": "Project_Id"
+          "name": "ProjectId"
         },
         {
           "widget-type": "textbox",
           "label": "Json Key File",
-          "name": "Json_Key_File"
+          "name": "JsonKeyFile"
         },
         {
           "widget-type": "textbox",
           "label": "Path to Store",
-          "name": "path_to_store"
+          "name": "PathToStore"
         },
         {
           "widget-type": "json-editor",
