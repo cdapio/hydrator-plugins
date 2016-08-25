@@ -16,7 +16,6 @@
 
 package co.cask.hydrator.plugin.sink;
 
-
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
@@ -36,6 +35,7 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -48,9 +48,6 @@ public class GCSAvroBatchSink extends GCSBatchSink<AvroKey<GenericRecord>, NullW
 
   private StructuredToAvroTransformer recordTransformer;
   private final GCSAvroSinkConfig config;
-
-  private static final String SCHEMA_DESC = "The Avro schema of the record being written to the sink as a JSON " +
-    "object.";
 
   public GCSAvroBatchSink(GCSAvroSinkConfig config) {
     super(config);
@@ -80,7 +77,7 @@ public class GCSAvroBatchSink extends GCSBatchSink<AvroKey<GenericRecord>, NullW
   public static class GCSAvroSinkConfig extends GCSSinkConfig {
 
     @Name("schema")
-    @Description(SCHEMA_DESC)
+    @Description("The Avro schema of the record being written to the sink as a JSON object")
     private String schema;
 
     @SuppressWarnings("unused")
@@ -101,7 +98,7 @@ public class GCSAvroBatchSink extends GCSBatchSink<AvroKey<GenericRecord>, NullW
     private final Map<String, String> conf;
 
     public GCSAvroOutputFormatProvider(GCSAvroSinkConfig config, BatchSinkContext context) {
-      conf = Maps.newHashMap();
+      conf = new HashMap<>();
       conf.put(JobContext.OUTPUT_KEY_CLASS, AvroKey.class.getName());
       conf.put("avro.schema.output.key", config.schema);
       conf.put(FileOutputFormat.OUTDIR,

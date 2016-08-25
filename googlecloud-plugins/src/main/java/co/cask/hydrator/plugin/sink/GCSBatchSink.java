@@ -38,7 +38,6 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
- * /**
  * {@link GCSBatchSink} that stores the data to Google Cloud Storage Bucket.
  * @param <KEY_OUT> the type of key the sink outputs
  * @param <VAL_OUT> the type of value the sink outputs
@@ -54,17 +53,16 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
   private static final Gson GSON = new Gson();
 
   private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
-  private static final Logger LOG = LoggerFactory.getLogger(GCSBatchSink.class);
 
   private final GCSSinkConfig config;
+
   protected GCSBatchSink(GCSSinkConfig config) {
     super(config);
     this.config = config;
     if (!this.config.containsMacro("fileSystemProperties") && !this.config.containsMacro("Bucket_Key") &&
       !this.config.containsMacro("Project_Id")) {
       this.config.fileSystemProperties = updateFileSystemProperties(this.config.fileSystemProperties,
-                                                                    this.config.projectId,
-                                                                    this.config.jsonKey);
+                                                                    this.config.projectId, this.config.jsonKey);
     }
   }
 
@@ -72,6 +70,7 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
   GCSSinkConfig getConfig() {
     return config;
   }
+
   @Override
   public final void prepareRun(BatchSinkContext context) {
     OutputFormatProvider outputFormatProvider = createOutputFormatProvider(context);
