@@ -40,9 +40,9 @@ This example runs a script on demo@example.com:
     {
         "name": "SSHAction",
           "plugin": {
-            "name": "SSHAction",
+            "name": "SSH",
             "type": "action",
-            "label": "SSHAction",
+            "label": "SSH",
             "artifact": {
               "name": "core-plugins",
               "version": "1.4.0-SNAPSHOT",

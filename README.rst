@@ -22,11 +22,16 @@ This repository is a collection of Hydrator plugins that were built by the team 
 people in the CDAP community. If you are interested in building and contributing a plugin, you are more 
 than welcome to do so. If you would like to build plugins, here are links to get you started:
 
-- `Overview of Hydrator <http://docs.cask.co/cdap/current/en/cdap-apps/hydrator/index.html>`__
-- `How to build custom Hydrator plugins <http://docs.cask.co/cdap/current/en/cdap-apps/hydrator/custom.html>`__
-- `How to test a plugin <http://docs.cask.co/cdap/current/en/cdap-apps/hydrator/custom.html#test-framework-for-plugins>`__
-- `How to package and deploy <http://docs.cask.co/cdap/current/en/cdap-apps/hydrator/custom.html#plugin-packaging-and-deployment>`__
-- `How to include third-party JARs <http://docs.cask.co/cdap/current/en/cdap-apps/hydrator/hydrator-plugins/third-party.html>`__
+- `Overview of Hydrator <http://docs.cask.co/cdap/current/en/hydrator-manual/index.html>`__
+- `How to build custom Hydrator plugins
+  <http://docs.cask.co/cdap/current/en/hydrator-manual/developing-plugins/index.html>`__
+- `How to test a plugin <http://docs.cask.co/cdap/current/en/hydrator-manual/developing-plugins/testing-plugins.html>`__
+- `How to package a plugin 
+  <http://docs.cask.co/cdap/current/en/hydrator-manual/developing-plugins/packaging-plugins.html>`__
+- `How to deploy a plugin
+  <http://docs.cask.co/cdap/current/en/hydrator-manual/plugin-management.html#deploying-plugins>`__
+- `How to include (deploy) third-party JARs
+  <http://docs.cask.co/cdap/current/en/hydrator-manual/plugin-management.html#deploying-third-party-jars>`__
 - `CDAP Developers' Manual: Plugins <http://docs.cask.co/cdap/current/en/developers-manual/building-blocks/plugins.html>`__
 
 

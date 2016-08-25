@@ -18,43 +18,26 @@ package co.cask.hydrator.plugin.db.batch.action;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Macro;
-import co.cask.cdap.etl.api.batch.BatchActionContext;
-import co.cask.hydrator.common.batch.action.Condition;
-import co.cask.hydrator.common.batch.action.ConditionConfig;
 import co.cask.hydrator.plugin.ConnectionConfig;
+import co.cask.hydrator.plugin.DBManager;
+import org.slf4j.Logger;
 
-import javax.annotation.Nullable;
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 /**
- * Config for {@link QueryAction}.
+ * Config for Actions running database commands
  */
 public class QueryConfig extends ConnectionConfig {
 
-  @Description("The query to run.")
+  @Description("The database command to run.")
   @Macro
   public String query;
 
-  @Nullable
-  @Description("When to run the action. Must be 'completion', 'success', or 'failure'. Defaults to 'success'. " +
-    "If set to 'completion', the action will be executed regardless of whether the pipeline run succeeded or failed." +
-    "If set to 'success', the action will only be executed if the pipeline run succeeded. " +
-    "If set to 'failure', the action will only be executed if the pipeline run failed.")
-  @Macro
-  public String runCondition;
-
   public QueryConfig() {
     super();
-    runCondition = Condition.SUCCESS.name();
-  }
-
-  public void validate() {
-    // have to delegate instead of inherit, since we can't extend both ConditionConfig and ConnectionConfig.
-    if (!containsMacro("runCondition")) {
-      new ConditionConfig(runCondition).validate();
-    }
-  }
-
-  public boolean shouldRun(BatchActionContext actionContext) {
-    return new ConditionConfig(runCondition).shouldRun(actionContext);
   }
 }

@@ -24,7 +24,7 @@
   </parent>
 
   <properties>
-    <app.parents>system:cdap-data-pipeline[3.5.0-SNAPSHOT,3.6.0-SNAPSHOT),system:cdap-data-streams[3.5.0-SNAPSHOT,3.6.0-SNAPSHOT)</app.parents>
+    <app.parents>system:cdap-data-pipeline[4.0.0-SNAPSHOT,4.1.0-SNAPSHOT),system:cdap-data-streams[4.0.0-SNAPSHOT,4.1.0-SNAPSHOT)</app.parents>
     <spark.version>1.3.1</spark.version>
     <kafka.version>0.8.2.2</kafka.version>
   </properties>

@@ -1,13 +1,13 @@
-# NaiveBayesClassifier
+# Naive Bayes Classifier
 
 
 Description
 -----------
-Loads a NaiveBayes model from a file of a FileSet dataset and uses it to classify records.
+Loads a Naive Bayes model from a file of a FileSet dataset and uses it to classify records.
 
 Use Case
 --------
-This transform can be used when you have a saved NaiveBayes model and want to classify data.
+This transform can be used when you have a saved Naive Bayes model and want to classify data.
 
 Properties
 ----------
@@ -20,7 +20,7 @@ Properties
 **predictionField:** The field on which to set the prediction. It will be of type double.
 
 **numFeatures:** The number of features to use when classifying with the trained model. This should be the same as
-the number of features used to train the model in NaiveBayesTrainer. The default value if none is provided will be 100. (Macro-enabled)
+the number of features used to train the model in Naive Bayes Trainer. The default value if none is provided will be 100. (Macro-enabled)
 
 
 Example

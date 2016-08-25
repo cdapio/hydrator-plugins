@@ -2,7 +2,7 @@
 
 Description
 -----------
-Deduplicates input records so that all output records are distinct.
+De-duplicates input records so that all output records are distinct.
 Can optionally take a list of fields, which will project out all other fields and perform a distinct on just those fields.
 
 
