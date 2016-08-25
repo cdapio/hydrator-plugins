@@ -1,4 +1,4 @@
-# NaiveBayesTrainer
+# Naive Bayes Trainer
 
 
 Description
@@ -22,7 +22,7 @@ Properties
 **predictionField:** The field from which to get the prediction. It must be of type double.
 
 **numFeatures:** The number of features to train the model with. This should be the same as the number of features
-used for the NaiveBayesClassifier. The default value if none is provided will be 100. (Macro-enabled)
+used for the Naive Bayes Classifier. The default value if none is provided will be 100. (Macro-enabled)
 
 
 Example

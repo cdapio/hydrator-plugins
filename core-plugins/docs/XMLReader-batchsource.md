@@ -1,4 +1,4 @@
-# XMLReader Batch Source
+# XML Reader Batch Source
 
 
 Description

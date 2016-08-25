@@ -1,4 +1,4 @@
-# SnapshotAvro Batch Source
+# Snapshot Avro Batch Source
 
 
 Description
