@@ -27,6 +27,8 @@ import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import twitter4j.StatusUpdate;
 import twitter4j.Twitter;
 import twitter4j.TwitterFactory;
@@ -42,6 +44,9 @@ import javax.annotation.Nullable;
 @Name("Tweet")
 @Description("Posts a Tweet after a pipeline run.")
 public class TweetAction extends PostAction {
+
+  private static final Logger LOG = LoggerFactory.getLogger(TweetAction.class);
+  private static final int SLEEP_MILLIS = 10000;
 
   private final Config config;
 
@@ -62,20 +67,32 @@ public class TweetAction extends PostAction {
     AccessToken accessToken = new AccessToken(config.accessToken, config.accessTokenSecret);
     twitter.setOAuthAccessToken(accessToken);
 
-    // Begin creating the status to end all statuses
-    StatusUpdate status = new StatusUpdate(config.tweet);
-
     // Take that fancy screenshot to make all your friends jealous at your big data prowess
-    if (config.namespace != null && config.pipelineName != null) {
+    if (config.namespace != null && config.pipelineName != null && config.geckoDriverPath != null) {
+      // Begin creating the status to end all statuses
+      StatusUpdate status = new StatusUpdate(config.tweet);
+
+      // Better look for that fancy web driver, or else nothing's gonna go your way
+      System.setProperty("webdriver.gecko.driver", config.geckoDriverPath);
+
       WebDriver webDriver = new FirefoxDriver();
       String pipelineURL = "http://localhost:9999/ns/" + config.namespace + "/hydrator/view/" + config.pipelineName;
       webDriver.get(pipelineURL);
+
+      // Hold your horses, the page has to load
+      Thread.sleep(SLEEP_MILLIS);
+
       File screenshot = ((TakesScreenshot) webDriver).getScreenshotAs(OutputType.FILE);
       status.setMedia(screenshot);
-    }
 
-    // Just do it.
-    twitter.updateStatus(status);
+      // Make sure you tell people what you're doing, they love to listen
+      LOG.info("Posting Tweet with pipeline screenshot.");
+      twitter.updateStatus(status);
+    } else {
+      // Make sure you tell people what you're doing here too, they love that stuff.
+      LOG.info("Posting Tweet with just text.");
+      twitter.updateStatus(config.tweet);
+    }
   }
 
   /**
@@ -119,6 +136,12 @@ public class TweetAction extends PostAction {
     @Macro
     @Nullable
     private String pipelineName;
+
+    @Name("GeckoDriverPath")
+    @Description("Path to the Gecko driver used by Selenium.")
+    @Macro
+    @Nullable
+    private String geckoDriverPath;
 
     public Config() {
       tweet = "Just finished running a #BigData pipeline with #CaskHydrator.";

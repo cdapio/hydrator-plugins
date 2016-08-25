@@ -42,6 +42,8 @@ the relevant app to find the consumer key and secret.
 
 **PipelineName:** The name of the pipeline.
 
+**GeckoDriverPath:** The path to the Gecko driver used by Selenium.
+
 Example
 -------
 This example sends an email from 'team-ops@example.com' to 'team-alerts@example.com' whenever a run fails:

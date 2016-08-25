@@ -73,6 +73,11 @@
           "widget-type": "textbox",
           "label": "Pipeline Name",
           "name": "pipelineName"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Gecko Driver Path",
+          "name": "geckoDriverPath"
         }
       ]
     }
