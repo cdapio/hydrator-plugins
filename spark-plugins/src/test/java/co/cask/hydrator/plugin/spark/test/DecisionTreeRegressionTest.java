@@ -31,6 +31,7 @@ import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
+import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.ArtifactId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
@@ -109,8 +110,8 @@ public class DecisionTreeRegressionTest extends HydratorTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "SinglePhaseApp");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
+    ApplicationId appId = NamespaceId.DEFAULT.app("SinglePhaseApp");
+    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
 
     // send records from sample data to train the model
     List<StructuredRecord> messagesToWrite = new ArrayList<>();
@@ -170,8 +171,8 @@ public class DecisionTreeRegressionTest extends HydratorTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "SinglePhaseApp");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
+    ApplicationId appId = NamespaceId.DEFAULT.app("SinglePhaseApp");
+    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
 
     // Flight records to be labeled.
     Set<StructuredRecord> messagesToWrite = new LinkedHashSet<>();
@@ -218,5 +219,81 @@ public class DecisionTreeRegressionTest extends HydratorTestBase {
     expected.add(new Flight(2, 4, "DL", "N933DN", 1791, "10397", "ATL", "15376", "TUS", 1855, 2014.0, 79.0, 2108.0,
                             2159.0, 51.0, 253.0, 1541, 1.0));
     Assert.assertEquals(expected, results);
+  }
+
+  @Test
+  public void testInvalidPredictionField() throws Exception {
+    Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+      .put("fileSetName", "decision-tree-regression-model")
+      .put("path", "decisionTreeRegression")
+      .put("features", "dofM,dofW,scheduleDepTime,scheduledArrTime,carrier,elapsedTime,origin,dest")
+      .put("predictionField", "dealyed")
+      .put("maxBins", "100")
+      .put("maxDepth", "9")
+      .build();
+
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(new ETLStage("source", MockSource.getPlugin("flightRecords")))
+      .addStage(new ETLStage("customsink", new ETLPlugin(DecisionTreeTrainer.PLUGIN_NAME, SparkSink.PLUGIN_TYPE,
+                                                         properties, null)))
+      .addConnection("source", "customsink")
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app("DecisionTreeTest");
+    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
+
+    // send records from sample data to train the model
+    List<StructuredRecord> messagesToWrite = new ArrayList<>();
+    messagesToWrite.addAll(getInputData());
+
+    // write records to source
+    DataSetManager<Table> inputManager = getDataset(Id.Namespace.DEFAULT, "flightRecords");
+    MockSource.writeInput(inputManager, messagesToWrite);
+
+    // manually trigger the pipeline
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+
+    Assert.assertEquals("FAILED", workflowManager.getHistory().get(0).getStatus().name());
+  }
+
+  @Test
+  public void testInvalidFeatures() throws Exception {
+    Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+      .put("fileSetName", "decision-tree-regression-model")
+      .put("path", "decisionTreeRegression")
+      .put("features", "dofM,dofW,scheduleDepTime,scheduledArrTime,carrier,elapsedTime,origin,destination ")
+      .put("predictionField", "delayed")
+      .put("maxBins", "100")
+      .put("maxDepth", "9")
+      .build();
+
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(new ETLStage("source", MockSource.getPlugin("flightRecords")))
+      .addStage(new ETLStage("customsink", new ETLPlugin(DecisionTreeTrainer.PLUGIN_NAME, SparkSink.PLUGIN_TYPE,
+                                                         properties, null)))
+      .addConnection("source", "customsink")
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app("DecisionTreeTest");
+    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
+
+    // send records from sample data to train the model
+    List<StructuredRecord> messagesToWrite = new ArrayList<>();
+    messagesToWrite.addAll(getInputData());
+
+    // write records to source
+    DataSetManager<Table> inputManager = getDataset(Id.Namespace.DEFAULT, "flightRecords");
+    MockSource.writeInput(inputManager, messagesToWrite);
+
+    // manually trigger the pipeline
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+
+    Assert.assertEquals("FAILED", workflowManager.getHistory().get(0).getStatus().name());
   }
 }

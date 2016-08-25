@@ -82,18 +82,18 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
       Map<Object, Long> map = input.map(new Function<StructuredRecord, Object>() {
         @Override
         public Object call(StructuredRecord structuredRecord) throws Exception {
-          Schema.Field inputField = structuredRecord.getSchema().getField(field);
+          Schema.Field inputField = structuredRecord.getSchema().getField(field.trim());
           if (inputField == null) {
             throw new IllegalArgumentException(String.format("Field %s does not exists in the input schema",
-                                                             inputField));
+                                                             field));
           }
           Schema schema = inputField.getSchema();
-          if (structuredRecord.get(field) == null && !schema.isNullable()) {
+          if (structuredRecord.get(field.trim()) == null && !schema.isNullable()) {
             throw new IllegalArgumentException(String.format("null value found for non-nullable field %s", field));
           }
           Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
           if (type.equals(Schema.Type.STRING) || type.equals(Schema.Type.BOOLEAN)) {
-            return structuredRecord.get(field);
+            return structuredRecord.get(field.trim());
           } else {
             return null;
           }
@@ -101,7 +101,7 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
       }).distinct().zipWithIndex().collectAsMap();
 
       if (!(map == null || (map.size() == 1 && map.keySet().contains(null)))) {
-        categoricalFeaturesMap.put(field, map);
+        categoricalFeaturesMap.put(field.trim(), map);
       }
     }
 
@@ -111,14 +111,31 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
         List<Double> featureList = new ArrayList<Double>();
         Set<String> keys = categoricalFeaturesMap.keySet();
         for (String field : fields) {
+          field = field.trim();
           if (keys.contains(field)) {
             featureList.add((categoricalFeaturesMap.get(field).get(record.get(field))).doubleValue());
           } else {
             featureList.add(Double.valueOf(record.get(field).toString()));
           }
         }
-        return new LabeledPoint((Double) record.get(config.predictionField),
-                                Vectors.dense(Doubles.toArray(featureList)));
+        Schema.Field predictionField = record.getSchema().getField(config.predictionField);
+        if (predictionField == null) {
+          throw new IllegalArgumentException(String.format("Prediction field %s does not exists in the input schema",
+                                                           config.predictionField));
+        }
+        Schema predictionSchema = predictionField.getSchema();
+        Schema.Type predictionFieldType = predictionSchema.isNullableSimple() ?
+          predictionSchema.getNonNullable().getType() : predictionSchema.getType();
+        if (predictionFieldType != Schema.Type.DOUBLE) {
+          throw new IllegalArgumentException(String.format("Prediction field must be of type Double, but was %s.",
+                                                           predictionFieldType));
+        }
+        Double prediction = record.get(config.predictionField);
+        if (prediction == null) {
+          throw new IllegalArgumentException(String.format("Value of Prediction field %s value must not be null",
+                                                           config.predictionField));
+        }
+        return new LabeledPoint(prediction, Vectors.dense(Doubles.toArray(featureList)));
       }
     });
 
@@ -186,6 +203,7 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
     private void validate(Schema inputSchema) {
       String[] fields = features.split(",");
       for (String field : fields) {
+        field = field.trim();
         Schema.Field inputField = inputSchema.getField(field);
         if (inputField == null) {
           throw new IllegalArgumentException(String.format("Field %s does not exists in the input schema", field));
@@ -196,7 +214,14 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
           "int, double, float, long, bytes, boolean but was %s.", features);
         Preconditions.checkArgument(!features.equals(Schema.Type.NULL), "Field to classify must not be of type null");
       }
-      Schema.Type predictionFieldType = inputSchema.getField(predictionField).getSchema().getType();
+      Schema.Field prediction = inputSchema.getField(predictionField);
+      if (prediction == null) {
+        throw new IllegalArgumentException(String.format("Prediction field %s does not exists in the input schema",
+                                                         predictionField));
+      }
+      Schema predictionSchema = prediction.getSchema();
+      Schema.Type predictionFieldType = predictionSchema.isNullableSimple() ?
+        predictionSchema.getNonNullable().getType() : predictionSchema.getType();
       Preconditions.checkArgument(predictionFieldType == Schema.Type.DOUBLE, "Prediction field must be of type " +
         "Double, but was %s.", predictionFieldType);
     }
