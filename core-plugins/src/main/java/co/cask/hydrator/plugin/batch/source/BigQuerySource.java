@@ -129,7 +129,7 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, JsonObjec
     job.setOutputValueClass(JsonObject.class);
     job.setJarByClass(BigQuerySource.class);
     job.setInputFormatClass(GsonBigQueryInputFormat.class);
-    LOG.debug("output Key class is {}", jobConf.getPropertySources(MRJobConfig.OUTPUT_KEY_CLASS));
+    LOG.info("output Key class is {}", jobConf.getOutputKeyClass().toString());
 //    job.setOutputKeyClass(LongWritable.class);
 //    job.setOutputValueClass(JsonObject.class);
     context.setInput(Input.of(sourceConfig.referenceName,
@@ -209,14 +209,14 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, JsonObjec
     String bucketKey;
 
     @Name("tmp bucket path")
-    @Description("GCS temp path this connector uses")
+    @Description("GCS Temp Path this connector uses")
     @Nullable
     @Macro
     String tmpBucketPath;
   }
 
   private void getOutputSchema() {
-    if (outputSchema == null) {
+    if (this.outputSchema == null) {
       List<Schema.Field> outputFields = Lists.newArrayList();
       try {
         for (String fieldName : outputSchemaMapping.keySet()) {
