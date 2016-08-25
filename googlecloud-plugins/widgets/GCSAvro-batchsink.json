@@ -49,7 +49,9 @@
           "string",
           "map<string, string>",
           "array<string>",
-          "record"
+          "record",
+          "union",
+          "enum"
         ],
         "schema-default-type": "string"
       }
