@@ -38,8 +38,10 @@ public abstract class ReferenceBatchSink<IN, KEY_OUT, VAL_OUT> extends BatchSink
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
-    // Verify that reference name meets dataset id constraints
-    @SuppressWarnings("unused")
-    DatasetId datasetId = new DatasetId(NamespaceId.DEFAULT.getNamespace(), config.referenceName);
+    if (!config.containsMacro(Constants.Reference.REFERENCE_NAME)) {
+      // Verify that reference name meets dataset id constraints
+      @SuppressWarnings("unused")
+      DatasetId datasetId = new DatasetId(NamespaceId.DEFAULT.getNamespace(), config.referenceName);
+    }
   }
 }

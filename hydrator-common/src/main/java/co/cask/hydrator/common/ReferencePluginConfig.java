@@ -17,6 +17,7 @@
 package co.cask.hydrator.common;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.plugin.PluginConfig;
 
@@ -28,6 +29,7 @@ public class ReferencePluginConfig extends PluginConfig {
 
   @Name(Constants.Reference.REFERENCE_NAME)
   @Description(Constants.Reference.REFERENCE_NAME_DESCRIPTION)
+  @Macro
   public String referenceName;
 
   public ReferencePluginConfig(String referenceName) {
