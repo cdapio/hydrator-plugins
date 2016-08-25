@@ -14,7 +14,8 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.sink;
+package co.cask.hydrator.plugin.sink;
+
 
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;

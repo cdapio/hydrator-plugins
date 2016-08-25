@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.sink;
+package co.cask.hydrator.plugin.sink;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Macro;
@@ -45,7 +45,7 @@ import javax.annotation.Nullable;
  */
 
 public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<StructuredRecord, KEY_OUT, VAL_OUT> {
-  public static final String BUCKET_DES = "GCS bucket to use to store the data";
+  public static final String BUCKET_DES = "GCS Bucket to use to store the data";
   public static final String PROJECT_ID_DES = "Google Cloud Project ID with access to configured GCS buckets";
   public static final String SERVICE_KEY_FILE_DES = "The Json_Key_File certificate file of the " +
     "service account used for GCS access";
@@ -148,3 +148,4 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
   }
 
 }
+
