@@ -29,6 +29,8 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
+import co.cask.cdap.proto.id.DatasetId;
+import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import com.google.common.base.Joiner;
@@ -72,6 +74,9 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
     // if user provided macro, need to still validate timeSuffix format
     config.validate();
     context.addOutput(Output.of(config.referenceName, new SinkOutputFormatProvider(config, context)));
+    // Verify that reference name meets dataset id constraints
+    @SuppressWarnings("unused")
+    DatasetId datasetId = new DatasetId(NamespaceId.DEFAULT.getNamespace(), config.referenceName);
   }
 
   @Override
