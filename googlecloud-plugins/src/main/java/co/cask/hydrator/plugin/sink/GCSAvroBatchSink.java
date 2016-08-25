@@ -27,6 +27,7 @@ import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroKey;
@@ -80,7 +81,7 @@ public class GCSAvroBatchSink extends GCSBatchSink<AvroKey<GenericRecord>, NullW
     @Description("The Avro schema of the record being written to the sink as a JSON object")
     private String schema;
 
-    @SuppressWarnings("unused")
+    @VisibleForTesting
     public GCSAvroSinkConfig(String referenceName, String bucketKey, String schema, String projectId,
                              String serviceKeyFile,
                              String filesystemProperties, String path) {
