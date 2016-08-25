@@ -19,7 +19,7 @@ Properties
 ----------
 **referenceName:** This will be used to uniquely identify this sink for lineage, annotating metadata, etc.
 
-**projectID:** Google Cloud Project ID which has the access to a specified bucket. (Macro-enabled)
+**projectId:** Google Cloud Project ID which has the access to a specified bucket. (Macro-enabled)
 
 **jsonKey:** The json certificate file of the service account used for GCS access. (Macro-enabled)
 
@@ -58,10 +58,10 @@ should specified a new directory name.
                 \"fields\":[
                 {\"name\":\"ts\",\"type\":\"long\"},
                 {\"name\":\"body\",\"type\":\"string\"}]}",
-                "Bucket_Key": "bucket",
-                "path_to_store": "directory",
-                "Project_Id": "projectid",
-                "Json_Key_File": "path_to_jsonKeyFile",
+                "BucketKey": "bucket",
+                "PathTo_Store": "directory",
+                "ProjectId": "projectid",
+                "JsonKeyFile": "path_to_jsonKeyFile",
                 "referenceName": "name"
          }
       }
