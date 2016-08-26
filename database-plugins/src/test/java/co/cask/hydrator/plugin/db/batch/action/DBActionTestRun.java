@@ -16,8 +16,8 @@
 
 package co.cask.hydrator.plugin.db.batch.action;
 
-import co.cask.cdap.etl.api.batch.PostAction;
-import co.cask.cdap.etl.batch.ETLWorkflow;
+import co.cask.cdap.datapipeline.SmartWorkflow;
+import co.cask.cdap.etl.api.action.Action;
 import co.cask.cdap.etl.mock.batch.MockSink;
 import co.cask.cdap.etl.mock.batch.MockSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
@@ -38,54 +38,53 @@ import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * Test for DBAction Plugin
  */
-public class DBQueryActionTestRun extends DatabasePluginTestBase {
+public class DBActionTestRun extends DatabasePluginTestBase {
 
   @Test
-  public void testAction() throws Exception {
+  public void testDBAction() throws Exception {
     // create a table that the action will truncate at the end of the run
     try (Connection connection = getConnection()) {
       try (Statement statement = connection.createStatement()) {
-        statement.execute("create table \"postActionTest\" (x int, day varchar(10))");
+        statement.execute("create table \"dbActionTest\" (x int, day varchar(10))");
       }
       try (Statement statement = connection.createStatement()) {
-        statement.execute("insert into \"postActionTest\" values (1, '1970-01-01')");
+        statement.execute("insert into \"dbActionTest\" values (1, '1970-01-01')");
       }
     }
 
     ETLStage source = new ETLStage("source", MockSource.getPlugin("actionInput"));
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin("actionOutput"));
     ETLStage action = new ETLStage("action", new ETLPlugin(
-      "DatabaseQuery",
-      PostAction.PLUGIN_TYPE,
+      "Database",
+      Action.PLUGIN_TYPE,
       ImmutableMap.<String, String>builder()
         .put("connectionString", getConnectionURL())
         .put("jdbcPluginName", "hypersql")
-        .put("jdbcPluginType", "jdbc")
-        .put("query", "delete from \"postActionTest\" where day = '${logicalStartTime(yyyy-MM-dd,0m,UTC)}'")
-        .put("enableAutoCommit", "false")
-        .put("runCondition", "success")
+        .put("query", "delete from \"dbActionTest\" where day = '${logicalStartTime(yyyy-MM-dd,0m,UTC)}'")
         .build(),
       null));
 
     ETLBatchConfig config = ETLBatchConfig.builder("* * * * *")
       .addStage(source)
       .addStage(sink)
-      .addPostAction(action)
+      .addStage(action)
+      .addConnection(sink.getName(), action.getName())
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, config);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "postActionTest");
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "actionTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
-    WorkflowManager workflowManager = appManager.getWorkflowManager(ETLWorkflow.NAME);
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start(ImmutableMap.of("logical.start.time", "0"));
     workflowManager.waitForFinish(5, TimeUnit.MINUTES);
 
     try (Connection connection = getConnection()) {
       try (Statement statement = connection.createStatement()) {
-        try (ResultSet results = statement.executeQuery("select * from \"postActionTest\"")) {
+        try (ResultSet results = statement.executeQuery("select * from \"dbActionTest\"")) {
           Assert.assertFalse(results.next());
         }
       }

@@ -25,7 +25,7 @@
 
   <properties>
     <!-- properties for script build step that creates the config files for the artifacts -->
-    <app.parents>system:cdap-etl-batch[3.5.0-SNAPSHOT,3.6.0-SNAPSHOT),system:cdap-data-pipeline[3.5.0-SNAPSHOT,3.6.0-SNAPSHOT),system:cdap-data-streams[3.5.0-SNAPSHOT,3.6.0-SNAPSHOT)</app.parents>
+    <app.parents>system:cdap-etl-batch[4.0.0-SNAPSHOT,4.1.0-SNAPSHOT),system:cdap-data-pipeline[4.0.0-SNAPSHOT,4.1.0-SNAPSHOT),system:cdap-data-streams[4.0.0-SNAPSHOT,4.1.0-SNAPSHOT)</app.parents>
   </properties>
 
   <name>Database Plugins</name>
@@ -43,12 +43,13 @@
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
-      <artifactId>cdap-proto</artifactId>
+      <artifactId>cdap-data-pipeline</artifactId>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-etl-batch</artifactId>
     </dependency>
+
     <dependency>
       <groupId>co.cask.hydrator</groupId>
       <artifactId>hydrator-common</artifactId>
