@@ -35,6 +35,7 @@ import com.google.cloud.hadoop.io.bigquery.BigQueryConfiguration;
 import com.google.cloud.hadoop.io.bigquery.BigQueryInputFormat;
 import com.google.cloud.hadoop.io.bigquery.GsonBigQueryInputFormat;
 import com.google.common.collect.Lists;
+import com.google.common.reflect.TypeToken;
 import com.google.gson.JsonObject;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -49,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.security.GeneralSecurityException;
 import java.util.HashMap;
 import java.util.List;
@@ -72,8 +74,9 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, JsonObjec
     Schema.Field.of("title", Schema.of(Schema.Type.STRING)),
     Schema.Field.of("unique_words", Schema.of(Schema.Type.INT))
   );
+  private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
   private Map<String, String> outputSchemaMapping = new HashMap<>();
-  private Schema outputSchema;
+  private static Schema outputSchema;
   public BigQuerySource(BQSourceConfig config) {
     super(new ReferencePluginConfig(config.referenceName));
     this.sourceConfig = config;
@@ -83,6 +86,7 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, JsonObjec
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
     init();
+    LOG.info("inside initialize, outputSchemaMapping is {}", outputSchemaMapping);
   }
 
   private void init() {
@@ -91,6 +95,7 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, JsonObjec
       String[] columns = schema.split(":");
       outputSchemaMapping.put(columns[0], columns[1]);
     }
+    LOG.info("inside init, outputSchemamapping is {}", outputSchemaMapping);
   }
 
   @Override
@@ -98,7 +103,8 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, JsonObjec
     super.configurePipeline(pipelineConfigurer);
     init();
     getOutputSchema();
-    pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
+    LOG.info("inside configuepipeline, outputschema is {}", outputSchema);
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(DEFAULT_SCHEMA);
   }
 
   @Override
@@ -125,35 +131,36 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, JsonObjec
     jobConf.set("fs.gs.project.id", sourceConfig.projectId);
     BigQueryConfiguration.configureBigQueryInput(jobConf, sourceConfig.fullyQualifiedInputTableId);
     job.setOutputKeyClass(LongWritable.class);
-    jobConf.setOutputKeyClass(LongWritable.class);
     job.setOutputValueClass(JsonObject.class);
     job.setJarByClass(BigQuerySource.class);
     job.setInputFormatClass(GsonBigQueryInputFormat.class);
+//    init();
+//    getOutputSchema();
     LOG.info("output Key class is {}", jobConf.getOutputKeyClass().toString());
-//    job.setOutputKeyClass(LongWritable.class);
-//    job.setOutputValueClass(JsonObject.class);
+    LOG.info("in prepareRun, outputschema is {}", this.outputSchema);
+    LOG.info("inside prepareRun, outputMapping is {}", this.outputSchemaMapping);
     context.setInput(Input.of(sourceConfig.referenceName,
                               new SourceInputFormatProvider(GsonBigQueryInputFormat.class, jobConf)));
-//    job.waitForCompletion(true);
-//    GsonBigQueryInputFormat.cleanupJob(job);
   }
 
 
   @Override
   public void transform(KeyValue<LongWritable, JsonObject> input, Emitter<StructuredRecord> emitter) {
-//    getOutputSchema();
+    getOutputSchema();
 //    LOG.debug("input is {}", input.getValue());
-    StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
-    for (Schema.Field field : outputSchema.getFields()) {
-      String fieldName = field.getName();
-      builder.set(fieldName, null);
-    }
-    emitter.emit(builder.build());
+    emitter.emit(jsonTransform(input.getValue()));
+//    LOG.info("in transform, outputschema is {}", this.outputSchema);
+//    StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
+//    for (Schema.Field field : outputSchema.getFields()) {
+//      String fieldName = field.getName();
+//      builder.set(fieldName, null);
+//    }
+//    emitter.emit(builder.build());
   }
 
   private StructuredRecord jsonTransform(JsonObject jsonObject) {
-    StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
-    for (Schema.Field field : outputSchema.getFields()) {
+    StructuredRecord.Builder builder = StructuredRecord.builder(DEFAULT_SCHEMA);
+    for (Schema.Field field : DEFAULT_SCHEMA.getFields()) {
       String fieldName = field.getName();
       builder.set(fieldName, jsonObject.get(fieldName));
     }
