@@ -22,9 +22,8 @@ import co.cask.cdap.api.data.DatasetContext;
 import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.streaming.StreamingSource;
-import co.cask.cdap.proto.id.DatasetId;
-import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.hydrator.common.Constants;
+import co.cask.hydrator.common.IdUtils;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import org.apache.tephra.TransactionFailureException;
 import org.slf4j.Logger;
@@ -48,8 +47,7 @@ public abstract class ReferenceStreamingSource<T> extends StreamingSource<T> {
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
     // Verify that reference name meets dataset id constraints
-    @SuppressWarnings("unused")
-    DatasetId datasetId = new DatasetId(NamespaceId.DEFAULT.getNamespace(), conf.referenceName);
+    IdUtils.validateId(conf.referenceName);
     pipelineConfigurer.createDataset(conf.referenceName, Constants.EXTERNAL_DATASET_TYPE, DatasetProperties.EMPTY);
   }
 
