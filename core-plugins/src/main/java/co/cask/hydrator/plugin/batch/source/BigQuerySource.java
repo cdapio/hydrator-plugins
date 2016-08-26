@@ -132,6 +132,8 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, JsonObjec
     BigQueryConfiguration.configureBigQueryInput(jobConf, sourceConfig.fullyQualifiedInputTableId);
     job.setOutputKeyClass(LongWritable.class);
     job.setOutputValueClass(JsonObject.class);
+    job.setMapOutputKeyClass(LongWritable.class);
+    job.setMapOutputValueClass(JsonObject.class);
     job.setJarByClass(BigQuerySource.class);
     job.setInputFormatClass(GsonBigQueryInputFormat.class);
 //    init();
