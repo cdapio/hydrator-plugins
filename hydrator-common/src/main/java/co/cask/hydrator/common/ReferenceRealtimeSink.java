@@ -23,8 +23,6 @@ import co.cask.cdap.api.worker.WorkerContext;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.realtime.RealtimeContext;
 import co.cask.cdap.etl.api.realtime.RealtimeSink;
-import co.cask.cdap.proto.id.DatasetId;
-import co.cask.cdap.proto.id.NamespaceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,8 +45,7 @@ public abstract class ReferenceRealtimeSink<I> extends RealtimeSink<I> {
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
     // Verify that reference name meets dataset id constraints
-    @SuppressWarnings("unused")
-    DatasetId datasetId = new DatasetId(NamespaceId.DEFAULT.getNamespace(), config.referenceName);
+    IdUtils.validateId(config.referenceName);
     pipelineConfigurer.createDataset(config.referenceName, Constants.EXTERNAL_DATASET_TYPE, DatasetProperties.EMPTY);
   }
 
