@@ -59,8 +59,11 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
   protected GCSBatchSink(GCSSinkConfig config) {
     super(config);
     this.config = config;
-    if (!this.config.containsMacro("fileSystemProperties") && !this.config.containsMacro("Bucket_Key") &&
-      !this.config.containsMacro("Project_Id")) {
+    // update fileSystemProperties to include ProjectId and JsonKeyFile, so prepareRun can only set
+    // fileSystemProperties in configuration, and not deal with projectId and JsonKeyFile separately
+    // do not create file system properties if macros were provided unless in a test case
+    if (!this.config.containsMacro("fileSystemProperties") && !this.config.containsMacro("JsonKeyFile") &&
+      !this.config.containsMacro("ProjectId")) {
       this.config.fileSystemProperties = updateFileSystemProperties(this.config.fileSystemProperties,
                                                                     this.config.projectId, this.config.jsonKey);
     }
@@ -128,8 +131,8 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
     @Macro
     protected String fileSystemProperties;
 
-    public GCSSinkConfig() {
-      super("");
+    public GCSSinkConfig(String referenceName) {
+      super(referenceName);
       this.fileSystemProperties = updateFileSystemProperties(null, projectId, jsonKey);
     }
 
