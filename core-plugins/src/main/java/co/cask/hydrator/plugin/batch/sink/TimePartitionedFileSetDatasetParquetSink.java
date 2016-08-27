@@ -45,6 +45,9 @@ public class TimePartitionedFileSetDatasetParquetSink extends
 
   private static final String SCHEMA_DESC = "The Parquet schema of the record being written to the Sink as a JSON " +
     "Object.";
+  private static final String SNAPPY_CODEC = "org.apache.hadoop.io.compress.SnappyCodec";
+  private static final String GZIP_CODEC = "org.apache.hadoop.io.compress.GzipCodec";
+  private static final String LZO_CODEC = "com.hadoop.compression.lzo.LzopCodec";
   private StructuredToAvroTransformer recordTransformer;
   private final TPFSParquetSinkConfig config;
 
@@ -56,6 +59,23 @@ public class TimePartitionedFileSetDatasetParquetSink extends
   @Override
   protected void addFileSetProperties(FileSetProperties.Builder properties) {
     FileSetUtil.configureParquetFileSet(config.schema, properties);
+    if (config.compressionCodec != null && !config.compressionCodec.equals("None")) {
+      properties.setOutputProperty("mapreduce.output.fileoutputformat.compress", "true");
+      properties.setOutputProperty("mapreduce.output.fileoutputformat.compress.type", config.compressionType);
+      switch (config.compressionCodec) {
+        case "Snappy":
+          properties.setOutputProperty("mapreduce.output.fileoutputformat.compress.codec", SNAPPY_CODEC);
+          break;
+        case "GZip":
+          properties.setOutputProperty("mapreduce.output.fileoutputformat.compress.codec", GZIP_CODEC);
+          break;
+        case "LZO":
+          properties.setOutputProperty("mapreduce.output.fileoutputformat.compress.codec", LZO_CODEC);
+          break;
+        default:
+          throw new IllegalArgumentException("Unsupported compression codec " + config.compressionCodec);
+      }
+    }
   }
 
   @Override
@@ -85,10 +105,19 @@ public class TimePartitionedFileSetDatasetParquetSink extends
     @Description(SCHEMA_DESC)
     private String schema;
 
+    @Description("Used to specify the compression codec to be used for the final dataset.")
+    private String compressionCodec;
+
+    @Description("Used to specify the compression type to be used for the final dataset.")
+    private String compressionType;
+
     public TPFSParquetSinkConfig(String name, String schema, @Nullable String basePath, @Nullable String pathFormat,
-                                 @Nullable String timeZone) {
+                                 @Nullable String timeZone, @Nullable String compressionCodec,
+                                 @Nullable String compressionType) {
       super(name, basePath, pathFormat, timeZone);
       this.schema = schema;
+      this.compressionCodec = compressionCodec;
+      this.compressionType = compressionType;
     }
   }
 
