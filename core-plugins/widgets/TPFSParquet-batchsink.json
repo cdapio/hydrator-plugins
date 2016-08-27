@@ -35,6 +35,33 @@
           "widget-type": "textbox",
           "label": "Clean Partitions Older Than",
           "name": "cleanPartitionsOlderThan"
+        },
+        {
+          "widget-type": "select",
+          "label": "Compression Codec",
+          "name": "compressionCodec",
+          "widget-attributes": {
+            "values": [
+              "None",
+              "Snappy",
+              "GZip",
+              "LZO"
+            ],
+            "default": "None"
+          }
+        },
+        {
+          "widget-type": "select",
+          "label": "Compression Type",
+          "name": "compressionType",
+          "widget-attributes": {
+            "values": [
+              "BLOCK",
+              "RECORD",
+              "NONE"
+            ],
+            "default": "BLOCK"
+          }
         }
       ]
     }

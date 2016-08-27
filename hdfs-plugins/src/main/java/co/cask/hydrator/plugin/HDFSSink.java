@@ -98,6 +98,9 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
       String timeSuffix = !Strings.isNullOrEmpty(config.timeSufix) ?
         new SimpleDateFormat(config.timeSufix).format(context.getLogicalStartTime()) : "";
       conf.put(FileOutputFormat.OUTDIR, String.format("%s/%s", config.path, timeSuffix));
+      conf.put("mapreduce.output.fileoutputformat.compress", "true");
+      conf.put("mapreduce.output.fileoutputformat.compress.codec", "org.apache.hadoop.io.compress.SnappyCodec");
+      conf.put("mapreduce.output.fileoutputformat.compress.type", "BLOCK");
     }
 
     @Override

@@ -52,12 +52,19 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     tpfsSinkConfig.validate();
+    Map<String, String> sinkArgs = getAdditionalTPFSArguments();
     // create the dataset at configure time if no macros were provided on necessary fields
     if (!tpfsSinkConfig.containsMacro("name") && !tpfsSinkConfig.containsMacro("basePath")) {
       String tpfsName = tpfsSinkConfig.name;
       FileSetProperties.Builder properties = FileSetProperties.builder();
       if (!Strings.isNullOrEmpty(tpfsSinkConfig.basePath)) {
         properties.setBasePath(tpfsSinkConfig.basePath);
+      }
+      if (sinkArgs != null) {
+        for (Map.Entry<String, String> arg : sinkArgs.entrySet()) {
+          LOG.info(String.format("Adding file property %s with value %s", arg.getKey(), arg.getValue()));
+          //properties.setOutputProperty(arg.getKey(), arg.getValue());
+        }
       }
       addFileSetProperties(properties);
       pipelineConfigurer.createDataset(tpfsName, TimePartitionedFileSet.class.getName(), properties.build());
@@ -67,7 +74,7 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
   @Override
   public void prepareRun(BatchSinkContext context) throws DatasetManagementException {
     tpfsSinkConfig.validate();
-
+    Map<String, String> sinkArgs = getAdditionalTPFSArguments();
     // if macros were provided and the dataset doesn't exist, create it now
     if (!context.datasetExists(tpfsSinkConfig.name)) {
       String tpfsName = tpfsSinkConfig.name;
@@ -75,11 +82,16 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
       if (!Strings.isNullOrEmpty(tpfsSinkConfig.basePath)) {
         properties.setBasePath(tpfsSinkConfig.basePath);
       }
+      if (sinkArgs != null) {
+        for (Map.Entry<String, String> arg : sinkArgs.entrySet()) {
+          LOG.info(String.format("Adding file property %s with value %s", arg.getKey(), arg.getValue()));
+          //properties.setOutputProperty(arg.getKey(), arg.getValue());
+        }
+      }
       addFileSetProperties(properties);
       context.createDataset(tpfsName, TimePartitionedFileSet.class.getName(), properties.build());
     }
 
-    Map<String, String> sinkArgs = getAdditionalTPFSArguments();
     long outputPartitionTime = context.getLogicalStartTime();
     if (tpfsSinkConfig.partitionOffset != null) {
       outputPartitionTime -= TimeParser.parseDuration(tpfsSinkConfig.partitionOffset);
