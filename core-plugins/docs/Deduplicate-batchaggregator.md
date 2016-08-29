@@ -3,7 +3,7 @@
 
 Description
 -----------
-Deduplicates records either using one or more fields or by using the record as a whole. Additionally, it supports logically
+De-duplicates records either using one or more fields or by using the record as a whole. Additionally, it supports logically
 choosing a record out of the duplicate records based on a filter field. Supported logical functions are `max`, `min`,
 `first`, and `last`.
 

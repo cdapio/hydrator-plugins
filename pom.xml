@@ -99,7 +99,7 @@
     <cassandraunit.version>2.0.2.2</cassandraunit.version>
     <commons-codec.version>1.10</commons-codec.version>
     <commons-httpclient.version>3.1</commons-httpclient.version>
-    <cdap.version>3.6.0-SNAPSHOT</cdap.version>
+    <cdap.version>4.0.0-SNAPSHOT</cdap.version>
     <datastax.version>2.0.5</datastax.version>
     <dumbster.version>1.6</dumbster.version>
     <es.version>1.6.0</es.version>
@@ -125,7 +125,7 @@
     <!-- properties for script build step that creates the config files for the artifacts -->
     <widgets.dir>widgets</widgets.dir>
     <docs.dir>docs</docs.dir>
-    <app.parents>system:cdap-etl-batch[3.5.0-SNAPSHOT,3.6.0-SNAPSHOT),system:cdap-etl-realtime[3.5.0-SNAPSHOT,3.6.0-SNAPSHOT),system:cdap-data-pipeline[3.5.0-SNAPSHOT,3.6.0-SNAPSHOT),system:cdap-data-streams[3.5.0-SNAPSHOT,3.6.0-SNAPSHOT)</app.parents>
+    <app.parents>system:cdap-etl-batch[4.0.0-SNAPSHOT,4.1.0-SNAPSHOT),system:cdap-etl-realtime[4.0.0-SNAPSHOT,4.1.0-SNAPSHOT),system:cdap-data-pipeline[4.0.0-SNAPSHOT,4.1.0-SNAPSHOT),system:cdap-data-streams[4.0.0-SNAPSHOT,4.1.0-SNAPSHOT)</app.parents>
     <!-- this is here because project.basedir evaluates to null in the script build step -->
     <main.basedir>${project.basedir}</main.basedir>
   </properties>
@@ -212,11 +212,6 @@
         <artifactId>hydrator-test</artifactId>
         <version>${cdap.version}</version>
         <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>co.cask.cdap</groupId>
-        <artifactId>cdap-proto</artifactId>
-        <version>${cdap.version}</version>
       </dependency>
       <dependency>
         <groupId>co.cask.cdap</groupId>

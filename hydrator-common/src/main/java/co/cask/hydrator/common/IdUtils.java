@@ -14,30 +14,24 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.db.batch.action;
+package co.cask.hydrator.common;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
-import co.cask.hydrator.plugin.ConnectionConfig;
-import co.cask.hydrator.plugin.DBManager;
-import org.slf4j.Logger;
-
-import java.sql.Connection;
-import java.sql.Driver;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.util.regex.Pattern;
 
 /**
- * Config for Actions running database commands
+ * Utility class for Id related operations.
  */
-public class QueryConfig extends ConnectionConfig {
+public final class IdUtils {
 
-  @Description("The database command to run.")
-  @Macro
-  public String query;
+  private IdUtils() {
+  }
 
-  public QueryConfig() {
-    super();
+  private static final Pattern datasetIdPattern = Pattern.compile("[$\\.a-zA-Z0-9_-]+");
+
+  public static void validateId(String id) throws IllegalArgumentException {
+    if (!datasetIdPattern.matcher(id).matches()) {
+      throw new IllegalArgumentException(String.format("%s is not a valid id. Allowed characters are letters, " +
+                                                         "numbers, and _, -, ., or $.", id));
+    }
   }
 }

@@ -47,7 +47,7 @@ import javax.annotation.Nullable;
  * Options include port and machine URL.
  */
 @Plugin(type = Action.PLUGIN_TYPE)
-@Name("SSHAction")
+@Name("SSH")
 @Description("Action to run a script on remote machine")
 public class SSHAction extends Action {
   private final SSHActionConfig config;
@@ -116,9 +116,11 @@ public class SSHAction extends Action {
    */
   public static class SSHActionConfig extends PluginConfig {
     @Description("Command to be executed on the remote host, including file path of script and any arguments")
+    @Macro
     private String command;
 
     @Description("Host name of the remote machine where the command is to be executed")
+    @Macro
     private String host;
 
     @Nullable
@@ -166,7 +168,7 @@ public class SSHAction extends Action {
 
     public void validate() {
       // Check that port is not negative
-      if (port < 0) {
+      if (!containsMacro("port") && port < 0) {
         throw new IllegalArgumentException("Port cannot be negative");
       }
     }
