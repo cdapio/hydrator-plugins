@@ -15,9 +15,11 @@
  */
 
 package co.cask.hydrator.plugin.batch.source;
+
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
+import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
@@ -31,21 +33,18 @@ import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.common.ReferenceBatchSource;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.common.SourceInputFormatProvider;
+import co.cask.hydrator.common.batch.JobUtils;
+import co.cask.hydrator.plugin.common.AvroToStructuredTransformer;
 import com.google.cloud.hadoop.io.bigquery.BigQueryConfiguration;
-import com.google.cloud.hadoop.io.bigquery.BigQueryInputFormat;
-import com.google.cloud.hadoop.io.bigquery.GsonBigQueryInputFormat;
+import com.google.cloud.hadoop.io.bigquery.JsonTextBigQueryInputFormat;
 import com.google.common.collect.Lists;
 import com.google.common.reflect.TypeToken;
-import com.google.gson.JsonObject;
+import com.google.gson.Gson;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.JobID;
-import org.apache.hadoop.mapreduce.MRJobConfig;
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,20 +59,22 @@ import javax.annotation.Nullable;
 /**
  * Batch source to read from a BigQuery table
  */
-@co.cask.cdap.api.annotation.Plugin(type = "batchsource")
+@Plugin(type = "batchsource")
 @Name("BigQuerySource")
 @Description("Reads from a database table(s) using a configurable BigQuery." +
   " Outputs one record for each row returned by the query.")
-public class BigQuerySource extends ReferenceBatchSource<LongWritable, JsonObject, StructuredRecord> {
+public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(BigQuerySource.class);
   private final BQSourceConfig sourceConfig;
   private static final String MRBQ_JSON_KEY = "mapred.bq.auth.service.account.json.keyfile";
   private static final String FSGS_JSON_KEY = "google.cloud.auth.service.account.json.keyfile";
+  private static final Gson GSON = new Gson();
   private static final Schema DEFAULT_SCHEMA = Schema.recordOf(
     "event",
     Schema.Field.of("title", Schema.of(Schema.Type.STRING)),
     Schema.Field.of("unique_words", Schema.of(Schema.Type.INT))
   );
+  private AvroToStructuredTransformer recordTransformer;
   private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
   private Map<String, String> outputSchemaMapping = new HashMap<>();
   private static Schema outputSchema;
@@ -84,8 +85,8 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, JsonObjec
 
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
-    super.initialize(context);
     init();
+    recordTransformer = new AvroToStructuredTransformer();
     LOG.info("inside initialize, outputSchemaMapping is {}", outputSchemaMapping);
   }
 
@@ -110,61 +111,60 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, JsonObjec
   @Override
   public void prepareRun(BatchSourceContext context) throws IOException, GeneralSecurityException,
     ClassNotFoundException, InterruptedException {
-    Job job = Job.getInstance();
+    Job job = JobUtils.createInstance();
     int id = 1;
     JobID jobID = new JobID("bigquery", id);
     job.setJobID(jobID);
     Configuration conf = job.getConfiguration();
-    JobConf jobConf = new JobConf(conf, BigQuerySource.class);
-    jobConf.set(MRBQ_JSON_KEY, sourceConfig.jsonFilePath);
-    jobConf.set(FSGS_JSON_KEY, sourceConfig.jsonFilePath);
-    jobConf.set(BigQueryConfiguration.PROJECT_ID_KEY, sourceConfig.projectId);
+
+    conf.set(MRBQ_JSON_KEY, sourceConfig.jsonFilePath);
+    conf.set(FSGS_JSON_KEY, sourceConfig.jsonFilePath);
+    conf.set(BigQueryConfiguration.PROJECT_ID_KEY, sourceConfig.projectId);
     if (sourceConfig.importQuery != null) {
-      jobConf.set(BigQueryConfiguration.INPUT_QUERY_KEY, sourceConfig.importQuery);
+      conf.set(BigQueryConfiguration.INPUT_QUERY_KEY, sourceConfig.importQuery);
     }
     if (sourceConfig.bucketKey != null) {
-      jobConf.set(BigQueryConfiguration.GCS_BUCKET_KEY, sourceConfig.bucketKey);
+      conf.set(BigQueryConfiguration.GCS_BUCKET_KEY, sourceConfig.bucketKey);
     }
     if (sourceConfig.tmpBucketPath != null) {
-      jobConf.set(BigQueryConfiguration.TEMP_GCS_PATH_KEY, sourceConfig.tmpBucketPath);
+      conf.set(BigQueryConfiguration.TEMP_GCS_PATH_KEY, sourceConfig.tmpBucketPath);
     }
-    jobConf.set("fs.gs.project.id", sourceConfig.projectId);
-    BigQueryConfiguration.configureBigQueryInput(jobConf, sourceConfig.fullyQualifiedInputTableId);
+    conf.set("fs.gs.project.id", sourceConfig.projectId);
+    BigQueryConfiguration.configureBigQueryInput(conf, sourceConfig.fullyQualifiedInputTableId);
     job.setOutputKeyClass(LongWritable.class);
-    job.setOutputValueClass(JsonObject.class);
-    job.setMapOutputKeyClass(LongWritable.class);
-    job.setMapOutputValueClass(JsonObject.class);
-    job.setJarByClass(BigQuerySource.class);
-    job.setInputFormatClass(GsonBigQueryInputFormat.class);
-//    init();
-//    getOutputSchema();
-    LOG.info("output Key class is {}", jobConf.getOutputKeyClass().toString());
-    LOG.info("in prepareRun, outputschema is {}", this.outputSchema);
-    LOG.info("inside prepareRun, outputMapping is {}", this.outputSchemaMapping);
+    job.setOutputValueClass(Text.class);
     context.setInput(Input.of(sourceConfig.referenceName,
-                              new SourceInputFormatProvider(GsonBigQueryInputFormat.class, jobConf)));
+                              new SourceInputFormatProvider(JsonTextBigQueryInputFormat.class, conf)));
   }
 
 
   @Override
-  public void transform(KeyValue<LongWritable, JsonObject> input, Emitter<StructuredRecord> emitter) {
+  public void transform(KeyValue<LongWritable, Text> input, Emitter<StructuredRecord> emitter) throws IOException {
     getOutputSchema();
-//    LOG.debug("input is {}", input.getValue());
-    emitter.emit(jsonTransform(input.getValue()));
-//    LOG.info("in transform, outputschema is {}", this.outputSchema);
-//    StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
-//    for (Schema.Field field : outputSchema.getFields()) {
-//      String fieldName = field.getName();
-//      builder.set(fieldName, null);
-//    }
-//    emitter.emit(builder.build());
+    LOG.info("inside transform, input value is {}", input.getValue());
+    LOG.info("inside transform, input key is {}", input.getKey());
+    StructuredRecord record = jsonTransform(input.getValue());
+    LOG.info("the transformed record schema is {}", record.getSchema());
+    LOG.info("the title is {}", record.get("title"));
+    LOG.info("the unique_words is {}", record.get("unique_words"));
+    emitter.emit(record);
+
   }
 
-  private StructuredRecord jsonTransform(JsonObject jsonObject) {
+  private StructuredRecord jsonTransform(Text jsonText) {
+    Map<String, String> map;
+    map = GSON.fromJson(jsonText.toString(), MAP_STRING_STRING_TYPE);
     StructuredRecord.Builder builder = StructuredRecord.builder(DEFAULT_SCHEMA);
     for (Schema.Field field : DEFAULT_SCHEMA.getFields()) {
       String fieldName = field.getName();
-      builder.set(fieldName, jsonObject.get(fieldName));
+      Schema schema = field.getSchema();
+      LOG.info("inside transform helper, field name is {}", fieldName);
+      LOG.info("inside transform helper, schema is {}", schema.toString());
+      if (schema.getType() == Schema.Type.INT) {
+        builder.set(fieldName, Integer.parseInt(map.get(fieldName)));
+      } else {
+        builder.set(fieldName, map.get(fieldName));
+      }
     }
     return builder.build();
   }
@@ -225,13 +225,12 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, JsonObjec
   }
 
   private void getOutputSchema() {
-    if (this.outputSchema == null) {
+    if (outputSchema == null) {
       List<Schema.Field> outputFields = Lists.newArrayList();
       try {
         for (String fieldName : outputSchemaMapping.keySet()) {
-          String columnName = fieldName;
           Schema fieldType = Schema.of(Schema.Type.valueOf(outputSchemaMapping.get(fieldName).toUpperCase()));
-          outputFields.add(Schema.Field.of(columnName, fieldType));
+          outputFields.add(Schema.Field.of(fieldName, fieldType));
         }
 
       } catch (Exception e) {
