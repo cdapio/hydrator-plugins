@@ -20,6 +20,7 @@ import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.api.dataset.table.Put;
+import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.datapipeline.SmartWorkflow;
@@ -162,14 +163,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
       }
     }
 
-    DataSetManager<Table> recordsManager = getDataset(errorDatasetName);
-    Table dropRecordsTable = recordsManager.get();
-    Scanner scanner = dropRecordsTable.scan(null, null);
-    int counter = 0;
-    while (scanner.next() != null) {
-      counter++;
-    }
-    Assert.assertEquals("Expected drop records", 0, counter);
+    Assert.assertEquals("Expected drop records", 0, getErrorDatasetSize(errorDatasetName));
   }
 
   @Test
@@ -295,14 +289,14 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
       }
     }
 
+    Assert.assertEquals("Expected drop records", 1, getErrorDatasetSize(errorDatasetName));
+
     DataSetManager<Table> recordsManager = getDataset(errorDatasetName);
     Table dropRecordsTable = recordsManager.get();
-    Scanner scanner = dropRecordsTable.scan(null, null);
-    int counter = 0;
-    while (scanner.next() != null) {
-      counter++;
-    }
-    Assert.assertEquals("Expected drop records", 1, counter);
+    Row droppedRecord = dropRecordsTable.get(Bytes.toBytes(1));
+
+    String expectedErrorRecord = "{\"NameField\":\"Lastname\",\"ValueField\":\"XYZ2\"}";
+    Assert.assertEquals("Expected dropped record", expectedErrorRecord, droppedRecord.getString("record"));
   }
 
   @Test
@@ -391,6 +385,17 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
     Assert.assertEquals("XYZ", outputRecords.get(0).get("Lastname").toString());
     Assert.assertEquals("PQR place near XYZ", outputRecords.get(0).get("Address").toString());
 
+    Assert.assertEquals("Expected drop records", 0, getErrorDatasetSize(errorDatasetName));
+  }
+
+  /**
+   * Returns the count of records present in the error dataset.
+   *
+   * @param errorDatasetName
+   * @return size of the error dataset
+   * @throws Exception
+   */
+  private int getErrorDatasetSize(String errorDatasetName) throws Exception {
     DataSetManager<Table> recordsManager = getDataset(errorDatasetName);
     Table dropRecordsTable = recordsManager.get();
     Scanner scanner = dropRecordsTable.scan(null, null);
@@ -398,6 +403,6 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
     while (scanner.next() != null) {
       counter++;
     }
-    Assert.assertEquals("Expected drop records", 0, counter);
+    return counter;
   }
 }
