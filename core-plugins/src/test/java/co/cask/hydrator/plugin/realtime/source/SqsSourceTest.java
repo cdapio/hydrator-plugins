@@ -18,8 +18,8 @@ package co.cask.hydrator.plugin.realtime.source;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.etl.api.realtime.SourceState;
-import co.cask.hydrator.common.test.MockEmitter;
-import co.cask.hydrator.common.test.MockRealtimeContext;
+import co.cask.cdap.etl.mock.common.MockEmitter;
+import co.cask.cdap.etl.mock.realtime.MockRealtimeContext;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import org.elasticmq.Node;
