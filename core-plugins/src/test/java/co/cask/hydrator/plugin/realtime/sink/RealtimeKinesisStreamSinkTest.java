@@ -34,10 +34,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Test default configuration
+ * Tests for {@link RealtimeKinesisStreamSink}
  */
 public class RealtimeKinesisStreamSinkTest extends ETLRealtimeTestBase {
-
 
   @Test(expected = IllegalStateException.class)
   public void kinesisSinkWithinvalidKeys() throws Exception {
@@ -47,7 +46,6 @@ public class RealtimeKinesisStreamSinkTest extends ETLRealtimeTestBase {
                                                      Constants.Reference.REFERENCE_NAME, "DG"),
                                      null);
 
-
     Map<String, String> properties = new HashMap<>();
     properties.put(Properties.KinesisRealtimeSink.NAME, "unitTest");
     properties.put(Properties.KinesisRealtimeSink.ACCESS_ID, "accessId");
@@ -56,8 +54,7 @@ public class RealtimeKinesisStreamSinkTest extends ETLRealtimeTestBase {
     properties.put(Properties.KinesisRealtimeSink.SHARD_COUNT, "1");
     properties.put(Properties.KinesisRealtimeSink.PARTITION_KEY, "part");
 
-    ETLPlugin sink = new ETLPlugin("KinesisSink", RealtimeSink.PLUGIN_TYPE, properties
-      , null);
+    ETLPlugin sink = new ETLPlugin("KinesisSink", RealtimeSink.PLUGIN_TYPE, properties, null);
 
     ETLRealtimeConfig etlConfig = ETLRealtimeConfig.builder()
       .addStage(new ETLStage("source", source))

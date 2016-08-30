@@ -42,7 +42,6 @@ import java.nio.ByteBuffer;
 import javax.annotation.Nullable;
 
 
-
 /**
  * A {@link RealtimeSink} that writes data to a Amazon Kinesis stream.
  * If Kinesis Stream does not exist, it will be created using properties provided with this sink.
@@ -92,7 +91,8 @@ public class RealtimeKinesisStreamSink extends RealtimeSink<StructuredRecord> {
     Schema.Type fieldType = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
     if (!fieldType.isSimpleType()) {
       throw new IllegalArgumentException(String.format(
-        "Type %s for field %s is not supported. Supported types are Boolean, INT, LONG, FLOAT, DOUBLE, STRING, Bytes",
+        "Type %s for field %s is not supported. Supported types are %s, %s, %s, %s, %s, %s, %s", Schema.Type.BOOLEAN,
+        Schema.Type.INT, Schema.Type.LONG, Schema.Type.FLOAT, Schema.Type.DOUBLE, Schema.Type.STRING, Schema.Type.BYTES,
         fieldType, config.bodyField));
     }
   }
@@ -171,7 +171,7 @@ public class RealtimeKinesisStreamSink extends RealtimeSink<StructuredRecord> {
       return 1;
     } catch (Exception e) {
       LOG.warn("could not write data to stream {}", putRecordRequest.getStreamName(), e);
-      return  0;
+      return 0;
     }
   }
 
@@ -205,7 +205,7 @@ public class RealtimeKinesisStreamSink extends RealtimeSink<StructuredRecord> {
     private String partition;
 
     KinesisConfig(String name, String bodyField, String awsAccessKey,
-                  String awsAccessSecret,  String partition, int shardCount) {
+                  String awsAccessSecret, String partition, int shardCount) {
       this.name = name;
       this.bodyField = bodyField;
       this.awsAccessKey = awsAccessKey;
