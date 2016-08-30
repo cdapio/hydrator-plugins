@@ -20,7 +20,6 @@ package co.cask.hydrator.plugin.common;
 import co.cask.cdap.api.TxRunnable;
 import co.cask.cdap.api.plugin.PluginProperties;
 import co.cask.cdap.api.security.store.SecureStoreData;
-import co.cask.cdap.api.security.store.SecureStoreMetadata;
 import co.cask.cdap.etl.api.StageMetrics;
 import co.cask.cdap.etl.api.action.ActionContext;
 import co.cask.cdap.etl.api.action.SettableArguments;
@@ -28,7 +27,6 @@ import co.cask.cdap.etl.batch.customaction.BasicSettableArguments;
 import co.cask.cdap.proto.id.NamespaceId;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class MockActionContext implements ActionContext {
