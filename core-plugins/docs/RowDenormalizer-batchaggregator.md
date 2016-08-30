@@ -114,8 +114,8 @@ Output records will contain all the output fields specified by user:
 
 The dropped records will be collected by error dataset 'dropped-records-table'.
 
-    +===================================================+
-    | key       | record                                |
-    +===================================================+
-    | 1         | {attribute":"Lastname","value":"Lee"} |
-    +===================================================+
+    +========================================================+
+    | ts             | record                                |
+    +========================================================+
+    | 1472560903383  | {attribute":"Lastname","value":"Lee"} |
+    +========================================================+

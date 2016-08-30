@@ -52,10 +52,10 @@ import java.util.Set;
   "'ADDRESS' in the input is mapped to 'addr' in the output schema. The denormalized data is easier to query.")
 public class RowDenormalizerAggregator extends BatchAggregator<String, StructuredRecord, StructuredRecord> {
 
-  private static final String KEY = "key";
+  private static final String TS = "ts";
   private static final String RECORD = "record";
   private final RowDenormalizerConfig conf;
-  private final Schema errorRecordSchema = Schema.recordOf("schema", Schema.Field.of(KEY, Schema.of(Schema.Type.INT)),
+  private final Schema errorRecordSchema = Schema.recordOf("schema", Schema.Field.of(TS, Schema.of(Schema.Type.LONG)),
                                                            Schema.Field.of(RECORD, Schema.of(Schema.Type.STRING)));
   private BatchRuntimeContext batchRuntimeContext;
   private Map<String, String> outputMappings;
@@ -64,7 +64,6 @@ public class RowDenormalizerAggregator extends BatchAggregator<String, Structure
   private String keyField;
   private String nameField;
   private String valueField;
-  private int recordCounter = 1;
 
   public RowDenormalizerAggregator(RowDenormalizerConfig conf) {
     this.conf = conf;
@@ -105,7 +104,7 @@ public class RowDenormalizerAggregator extends BatchAggregator<String, Structure
           String.format("Keyfield '%s' does not exist in input schema %s", keyField, record.getSchema()));
       }
       StructuredRecord.Builder droppedRecordBuilder = StructuredRecord.builder(errorRecordSchema);
-      droppedRecordBuilder.set(KEY, recordCounter++);
+      droppedRecordBuilder.set(TS, System.currentTimeMillis());
       droppedRecordBuilder.set(RECORD, StructuredRecordStringConverter.toJsonString(record));
       Table errorTable = batchRuntimeContext.getDataset(conf.getErrorDataset());
       errorTable.write(droppedRecordBuilder.build());
@@ -207,7 +206,7 @@ public class RowDenormalizerAggregator extends BatchAggregator<String, Structure
     try {
       Map<String, String> properties = new HashMap<>();
       properties.put(Properties.Table.PROPERTY_SCHEMA, errorRecordSchema.toString());
-      properties.put(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, KEY);
+      properties.put(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, RECORD);
       DatasetProperties datasetProperties = DatasetProperties.builder().addAll(properties).build();
       pipelineConfigurer.createDataset(errorDatasetName, Table.class, datasetProperties);
     } catch (Exception e) {

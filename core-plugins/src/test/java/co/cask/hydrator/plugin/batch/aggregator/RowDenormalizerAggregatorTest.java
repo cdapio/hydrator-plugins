@@ -163,7 +163,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
       }
     }
 
-    Assert.assertEquals("Expected drop records", 0, getErrorDatasetSize(errorDatasetName));
+    Assert.assertEquals("Expected dropped records", 0, getErrorDatasetSize(errorDatasetName));
   }
 
   @Test
@@ -289,14 +289,14 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
       }
     }
 
-    Assert.assertEquals("Expected drop records", 1, getErrorDatasetSize(errorDatasetName));
-
-    DataSetManager<Table> recordsManager = getDataset(errorDatasetName);
-    Table dropRecordsTable = recordsManager.get();
-    Row droppedRecord = dropRecordsTable.get(Bytes.toBytes(1));
+    Assert.assertEquals("Expected dropped records", 1, getErrorDatasetSize(errorDatasetName));
 
     String expectedErrorRecord = "{\"NameField\":\"Lastname\",\"ValueField\":\"XYZ2\"}";
-    Assert.assertEquals("Expected dropped record", expectedErrorRecord, droppedRecord.getString("record"));
+    DataSetManager<Table> recordsManager = getDataset(errorDatasetName);
+    Table dropRecordsTable = recordsManager.get();
+    Row droppedRecord = dropRecordsTable.get(Bytes.toBytes(expectedErrorRecord));
+
+    Assert.assertNotNull("Expected dropped record", droppedRecord);
   }
 
   @Test
@@ -385,7 +385,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
     Assert.assertEquals("XYZ", outputRecords.get(0).get("Lastname").toString());
     Assert.assertEquals("PQR place near XYZ", outputRecords.get(0).get("Address").toString());
 
-    Assert.assertEquals("Expected drop records", 0, getErrorDatasetSize(errorDatasetName));
+    Assert.assertEquals("Expected dropped records", 0, getErrorDatasetSize(errorDatasetName));
   }
 
   /**
