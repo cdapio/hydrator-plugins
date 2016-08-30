@@ -17,10 +17,8 @@
 package co.cask.hydrator.plugin.common;
 
 import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.plugin.PluginConfig;
-import co.cask.cdap.api.plugin.PluginProperties;
 import co.cask.hydrator.plugin.batch.sink.TableSink;
 import co.cask.hydrator.plugin.realtime.sink.RealtimeTableSink;
 

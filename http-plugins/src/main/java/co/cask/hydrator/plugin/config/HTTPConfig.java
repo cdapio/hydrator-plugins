@@ -17,7 +17,6 @@
 package co.cask.hydrator.plugin.config;
 
 import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.plugin.PluginConfig;
 import com.google.common.base.Strings;
 
