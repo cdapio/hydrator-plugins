@@ -55,7 +55,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
- * A {@link BigQuerySource} that reads from Amazon S3.
+ * A {@link BigQuerySource} that reads from Google Bigquery.
  */
 @Plugin(type = "batchsource")
 @Name("BigQuery")
