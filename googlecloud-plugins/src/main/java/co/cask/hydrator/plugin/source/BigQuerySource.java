@@ -98,7 +98,6 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
     ClassNotFoundException, InterruptedException {
     Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();
-
     conf.set(MRBQ_JSON_KEY, sourceConfig.jsonFilePath);
     conf.set(FSGS_JSON_KEY, sourceConfig.jsonFilePath);
     conf.set(BigQueryConfiguration.PROJECT_ID_KEY, sourceConfig.projectId);
@@ -113,7 +112,6 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
     context.setInput(Input.of(sourceConfig.referenceName,
                               new SourceInputFormatProvider(JsonTextBigQueryInputFormat.class, conf)));
   }
-
 
   @Override
   public void transform(KeyValue<LongWritable, Text> input, Emitter<StructuredRecord> emitter) throws IOException {
