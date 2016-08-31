@@ -115,7 +115,7 @@
         <configuration>
           <instructions>
             <_exportcontents>
-              co.cask.hydrator.plugin.source.*;
+              co.cask.hydrator.plugin.sink.*;
               com.google.cloud.hadoop.*;
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
