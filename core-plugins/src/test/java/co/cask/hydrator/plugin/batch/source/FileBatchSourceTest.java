@@ -37,4 +37,16 @@ public class FileBatchSourceTest {
     Assert.assertNotNull(fileBatchConfig.maxSplitSize);
     Assert.assertEquals(FileBatchSource.DEFAULT_MAX_SPLIT_SIZE, (long) fileBatchConfig.maxSplitSize);
   }
+
+  @Test
+  public void testDefaults2() {
+    FileBatchSource.FileBatchConfig config = new FileBatchSource.FileBatchConfig();
+    FileBatchSource fileBatchSource = new FileBatchSource(config);
+    FileBatchSource.FileBatchConfig fileBatchConfig = fileBatchSource.getConfig();
+    Assert.assertEquals(new Gson().toJson(ImmutableMap.<String, String>of()), fileBatchConfig.fileSystemProperties);
+    Assert.assertEquals(".*", fileBatchConfig.fileRegex);
+    Assert.assertEquals(CombineTextInputFormat.class.getName(), fileBatchConfig.inputFormatClass);
+    Assert.assertNotNull(fileBatchConfig.maxSplitSize);
+    Assert.assertEquals(FileBatchSource.DEFAULT_MAX_SPLIT_SIZE, (long) fileBatchConfig.maxSplitSize);
+  }
 }
