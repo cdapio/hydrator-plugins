@@ -34,7 +34,6 @@ import co.cask.hydrator.common.ReferenceBatchSource;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.common.SourceInputFormatProvider;
 import co.cask.hydrator.common.batch.JobUtils;
-import co.cask.hydrator.plugin.common.AvroToStructuredTransformer;
 import com.google.cloud.hadoop.io.bigquery.BigQueryConfiguration;
 import com.google.cloud.hadoop.io.bigquery.JsonTextBigQueryInputFormat;
 import com.google.common.collect.Lists;
@@ -44,7 +43,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.JobID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,27 +55,20 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
- * Batch source to read from a BigQuery table
+ * A {@link BigQuerySource} that reads from Amazon S3.
  */
 @Plugin(type = "batchsource")
-@Name("BigQuerySource")
+@Name("BigQuery")
 @Description("Reads from a database table(s) using a configurable BigQuery." +
   " Outputs one record for each row returned by the query.")
 public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, StructuredRecord> {
-  private static final Logger LOG = LoggerFactory.getLogger(BigQuerySource.class);
   private final BQSourceConfig sourceConfig;
   private static final String MRBQ_JSON_KEY = "mapred.bq.auth.service.account.json.keyfile";
   private static final String FSGS_JSON_KEY = "google.cloud.auth.service.account.json.keyfile";
   private static final Gson GSON = new Gson();
-  private static final Schema DEFAULT_SCHEMA = Schema.recordOf(
-    "event",
-    Schema.Field.of("title", Schema.of(Schema.Type.STRING)),
-    Schema.Field.of("unique_words", Schema.of(Schema.Type.INT))
-  );
-  private AvroToStructuredTransformer recordTransformer;
   private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
   private Map<String, String> outputSchemaMapping = new HashMap<>();
-  private static Schema outputSchema;
+  private  Schema outputSchema;
   public BigQuerySource(BQSourceConfig config) {
     super(new ReferencePluginConfig(config.referenceName));
     this.sourceConfig = config;
@@ -86,8 +77,6 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     init();
-    recordTransformer = new AvroToStructuredTransformer();
-    LOG.info("inside initialize, outputSchemaMapping is {}", outputSchemaMapping);
   }
 
   private void init() {
@@ -96,7 +85,6 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
       String[] columns = schema.split(":");
       outputSchemaMapping.put(columns[0], columns[1]);
     }
-    LOG.info("inside init, outputSchemamapping is {}", outputSchemaMapping);
   }
 
   @Override
@@ -104,8 +92,7 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
     super.configurePipeline(pipelineConfigurer);
     init();
     getOutputSchema();
-    LOG.info("inside configuepipeline, outputschema is {}", outputSchema);
-    pipelineConfigurer.getStageConfigurer().setOutputSchema(DEFAULT_SCHEMA);
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
   }
 
   @Override
@@ -120,9 +107,7 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
     if (sourceConfig.importQuery != null) {
       conf.set(BigQueryConfiguration.INPUT_QUERY_KEY, sourceConfig.importQuery);
     }
-    if (sourceConfig.tmpBucketPath != null) {
       conf.set(BigQueryConfiguration.TEMP_GCS_PATH_KEY, sourceConfig.tmpBucketPath);
-    }
     conf.set("fs.gs.project.id", sourceConfig.projectId);
     BigQueryConfiguration.configureBigQueryInput(conf, sourceConfig.fullyQualifiedInputTableId);
     job.setOutputKeyClass(LongWritable.class);
@@ -135,12 +120,7 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
   @Override
   public void transform(KeyValue<LongWritable, Text> input, Emitter<StructuredRecord> emitter) throws IOException {
     getOutputSchema();
-    LOG.info("inside transform, input value is {}", input.getValue());
-    LOG.info("inside transform, input key is {}", input.getKey());
     StructuredRecord record = jsonTransform(input.getValue());
-    LOG.info("the transformed record schema is {}", record.getSchema());
-    LOG.info("the title is {}", record.get("title"));
-    LOG.info("the unique_words is {}", record.get("unique_words"));
     emitter.emit(record);
 
   }
@@ -148,12 +128,10 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
   private StructuredRecord jsonTransform(Text jsonText) {
     Map<String, String> map;
     map = GSON.fromJson(jsonText.toString(), MAP_STRING_STRING_TYPE);
-    StructuredRecord.Builder builder = StructuredRecord.builder(DEFAULT_SCHEMA);
-    for (Schema.Field field : DEFAULT_SCHEMA.getFields()) {
+    StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
+    for (Schema.Field field : outputSchema.getFields()) {
       String fieldName = field.getName();
       Schema schema = field.getSchema();
-      LOG.info("inside transform helper, field name is {}", fieldName);
-      LOG.info("inside transform helper, schema is {}", schema.toString());
       if (schema.getType() == Schema.Type.INT) {
         builder.set(fieldName, Integer.parseInt(map.get(fieldName)));
       } else {
@@ -172,21 +150,26 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
     private static final String INPUT_TABLE_ID = "InputTableId";
     private static final String JSON_FILE_PATH = "jsonFilePath";
     private static final String TEMP_BUCKET = "tempBuketPath";
+    private static final String OUTPUT_SCHEMA = "outputSchema";
     private static final String PROJECTID_DESC = "The ID of the project in Google Cloud";
-    private static final String TEMP_BUCKET_DESC = "the tempory bucket to store the query result, example: " +
-                                              "gs://bucketname/directoryname, the directory should not be existed";
-    private static final String IMPORT_QUERY_DESC = "The SELECT query to use to import data from the specified table."+
+    private static final String TEMP_BUCKET_DESC = "the tempory google cloud storage directory to store the " +
+                                                   "intermediate result. Example: gs://bucketname/directoryname, " +
+                                                   "the directory should not be existed. User should delete this " +
+                                                   "directory afterward manually to avoid extra google storage charge.";
+    private static final String IMPORT_QUERY_DESC = "The SELECT query to use to import data from the specified table." +
                                                     " example: SELECT TOP(corpus, 10) as title, COUNT(*) as " +
                                                     "unique_words FROM [publicdata:samples.shakespeare], where " +
                                                     "publicdata is the project name, smalples is the dataset name, " +
                                                     "shakespare is the table name. This is optional, if empty, just " +
-                                                    "read the fullyimputtable";
+                                                    "read the inputTable configured";
     private static final String JSON_KEYFILE_DESC = "the credential json key file path";
     private static final String INPUT_TABLE_DESC = "The BigQuery table to read from, in the form " +
                                                    "[optional projectId]:[datasetId].[tableId]. Example: " +
                                                    "publicdata:samples.shakespeare. Note that if the import query is " +
                                                    "specified, this table should be a empty table with the " +
                                                    "query result schema. User need to first create such a table";
+    private static final String OUTPUTSCHEMA_DESC = "Comma separated mapping of column names in the output schema to " +
+                                                   "the data types; for example: 'A:string,B:int'";
     @Name(Constants.Reference.REFERENCE_NAME)
     @Description(Constants.Reference.REFERENCE_NAME_DESCRIPTION)
     public String referenceName;
@@ -202,10 +185,8 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
     @Macro
     String projectId;
 
-    @Name("outputSchema")
-    @Description("Comma separated mapping of column names in the output schema to the data types;" +
-      "for example: 'A:string,B:int'. This input is required if no inputs " +
-      "for 'columnList' has been provided.")
+    @Name(OUTPUT_SCHEMA)
+    @Description(OUTPUTSCHEMA_DESC)
     @Macro
     private String outputSchema;
 
@@ -221,7 +202,6 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
 
     @Name(TEMP_BUCKET)
     @Description(TEMP_BUCKET_DESC)
-    @Nullable
     @Macro
     String tmpBucketPath;
   }

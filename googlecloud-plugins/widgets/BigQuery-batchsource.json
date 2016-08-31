@@ -1,0 +1,48 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "BigQuery",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Reference Name",
+          "name": "referenceName"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Project ID",
+          "name": "projectId"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Json Key File Path",
+          "name": "jsonFilePath"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Google Storage Temp Path",
+          "name": "tempBuketPath"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Fully Qualified Input Table ID",
+          "name": "InputTableId"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Import Query",
+          "name": "importQuery"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Output Schema",
+          "name": "outputSchema"
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}
