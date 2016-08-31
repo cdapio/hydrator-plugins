@@ -31,7 +31,6 @@ import co.cask.hydrator.plugin.batch.aggregator.function.SelectionFunction;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Path;
 
 /**
@@ -129,11 +128,7 @@ public class DedupAggregator extends RecordAggregator {
 
   @Path("outputSchema")
   public Schema getOutputSchema(GetSchemaRequest request) {
-    try {
-      return getOutputSchema(request.inputSchema);
-    } catch (IllegalArgumentException e) {
-      throw new BadRequestException(e.getMessage(), e);
-    }
+    return getOutputSchema(request.inputSchema);
   }
 
   private Schema getGroupKeySchema(Schema inputSchema) {
