@@ -39,7 +39,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Path;
 
 /**
@@ -181,15 +180,11 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
 
   @Path("outputSchema")
   public Schema getOutputSchema(GetSchemaRequest request) {
-    try {
-      validateJoinKeySchemas(request.inputSchemas, request.getPerStageJoinKeys());
-      requiredInputs = request.getInputs();
-      perStageSelectedFields = request.getPerStageSelectedFields();
-      duplicateFields = ArrayListMultimap.create();
-      return getOutputSchema(request.inputSchemas);
-    } catch (IllegalArgumentException e) {
-        throw new BadRequestException(e.getMessage());
-    }
+    validateJoinKeySchemas(request.inputSchemas, request.getPerStageJoinKeys());
+    requiredInputs = request.getInputs();
+    perStageSelectedFields = request.getPerStageSelectedFields();
+    duplicateFields = ArrayListMultimap.create();
+    return getOutputSchema(request.inputSchemas);
   }
 
   /**
