@@ -21,7 +21,7 @@
   <parent>
     <groupId>co.cask.hydrator</groupId>
     <artifactId>hydrator-plugins</artifactId>
-    <version>1.4.0</version>
+    <version>1.4.1-SNAPSHOT</version>
   </parent>
 
   <name>Transform Plugins</name>
