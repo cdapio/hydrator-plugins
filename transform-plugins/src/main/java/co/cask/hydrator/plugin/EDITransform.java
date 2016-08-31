@@ -15,7 +15,7 @@
  */
 
 
-package cdap.poc.plugin;
+package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
