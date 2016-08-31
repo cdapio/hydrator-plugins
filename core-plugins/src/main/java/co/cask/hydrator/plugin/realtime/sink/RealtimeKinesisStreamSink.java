@@ -139,7 +139,7 @@ public class RealtimeKinesisStreamSink extends RealtimeSink<StructuredRecord> {
           numRecordsWritten += writeString(putRecordRequest, String.valueOf(data));
           break;
         default:
-          throw new UnsupportedTypeException(String.format("Type {} is not supported for writing to stream",
+          throw new UnsupportedTypeException(String.format("Type %s is not supported for writing to stream",
                                                            data.getClass().getName()));
       }
     }
@@ -158,7 +158,7 @@ public class RealtimeKinesisStreamSink extends RealtimeSink<StructuredRecord> {
     } else if (data instanceof byte[]) {
       buffer = ByteBuffer.wrap((byte[]) data);
     } else {
-      throw new IllegalStateException(String.format("Type {} is not supported for writing to stream",
+      throw new IllegalStateException(String.format("Type %s is not supported for writing to stream",
                                                     data.getClass().getName()));
     }
     putRecordRequest.setData(buffer);

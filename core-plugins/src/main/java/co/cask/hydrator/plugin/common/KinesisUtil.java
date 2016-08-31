@@ -89,7 +89,7 @@ public final class KinesisUtil {
         return;
       }
     }
-    throw new IllegalStateException(String.format("TimedOut waithing for stream to be in %s state", expectedStatus));
+    throw new IllegalStateException(String.format("Timed out waiting for stream to be in %s state", expectedStatus));
   }
 
   private static void createStream(String streamName, int shardCount, AmazonKinesisClient kinesisClient) {
