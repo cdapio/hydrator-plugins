@@ -53,7 +53,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
- * A {@link BigQuerySource} that reads from Google Bigquery.
+ * A {@link BigQuerySource} that reads from Google BigQuery.
  */
 @Plugin(type = "batchsource")
 @Name("BigQuery")
@@ -118,7 +118,6 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
     getOutputSchema();
     StructuredRecord record = jsonTransform(input.getValue());
     emitter.emit(record);
-
   }
 
   private StructuredRecord jsonTransform(Text jsonText) {
@@ -183,7 +182,6 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
 
     @Name(OUTPUT_SCHEMA)
     @Description(OUTPUTSCHEMA_DESC)
-    @Macro
     private String outputSchema;
 
     @Name(INPUT_TABLE_ID)

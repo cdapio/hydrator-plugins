@@ -1,14 +1,14 @@
-# Google Big Query Batch Source
+# Google BigQuery Batch Source
 
 
 Description
 -----------
-Batch source to use Google Big Query as a Source.
-
+Batch source to use Google BigQuery as a Source.
+[link to BigQuery Docs](https://cloud.google.com/bigquery/docs/)
 
 Use Case
 --------
-This source is used whenever you need to read from a Google Bigquery table or a Bigquery result.
+This source is used whenever you need to read from a Google BigQuery table or a BigQuery result.
 
 
 Properties
@@ -17,17 +17,18 @@ Properties
 
 **projectID:** The ID of the project in Google Cloud. (Macro-enabled)
 
-**jsonKeyFilePath:** the credential json key file path. (Macro-enabled)
+**jsonKeyFilePath:** The credential json key file path. (Macro-enabled)
+[How to get the keyfile](https://cloud.google.com/storage/docs/authentication#generating-a-private-key)
 
 **inputTableId:** The BigQuery table to read from, in the form [optional projectId]:[datasetId].[tableId], Example:
 publicdata:samples.shakespeare. Note that if the import query is specified, this table should be a empty table
 with the query result schema. User need to first create such a table.(Macro-enabled)
 
-**tempBucketPath:** the tempory google cloud storage directory to store the intermediate result.
-Example: gs://bucketname/directoryname, the directory should not be existed. User
-should delete this directory afterward manually to avoid extra google storage charge. (Macro-enabled)
+**tempBucketPath:** The temporary Google Cloud Storage (GCS) directory to store the intermediate result.
+e.g. gs://bucketname/directoryname. The directory should not exist.
+shUser should delete this directory afterward manually to avoid extra google storage charge. (Macro-enabled)
 
-**importQuery:** The SELECT query to use to import data from the specified table. Example:
+**importQuery:** The SELECT query to use to import data from the specified table. e.g.
 SELECT TOP(corpus, 10) as title, COUNT(*) as unique_words FROM [publicdata:samples.shakespeare].
 'publicdata' is the project name, smalples is the dataset name, shakespare is the table name.
 This is optional, if empty, just read the  inputTable configured. (Macro-enabled)
@@ -38,9 +39,9 @@ This is optional, if empty, just read the  inputTable configured. (Macro-enabled
 Example
 -------
 This example will process the import query on the [publicdata:samples.shakespeare], store the result in the inputTable,
-then down load the inputTable to the tempBuckePath in google cloud storage and finally reads the file in the temporary
-Google Cloud Storage directory. User should first create a empty table in bigquery as the inputTable, and the table
-should have the schema: title:string, unique_words:int. Make sure to delete the temporary google cloud storage directory
+then download the inputTable to the tempBucketPath in Google Cloud Storage and finally reads the file in the temporary
+Google Cloud Storage directory. User should first create a empty table in BigQuery as the inputTable, and the table
+should have the schema: title:string, unique_words:int. Make sure to delete the temporary Google Cloud Storage directory
 after reading.
 
       {
