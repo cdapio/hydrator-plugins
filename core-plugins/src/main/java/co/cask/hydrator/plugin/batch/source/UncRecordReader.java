@@ -14,12 +14,13 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.common;
+package co.cask.hydrator.plugin.batch.source;
 
 import jcifs.smb.NtlmPasswordAuthentication;
 import jcifs.smb.SmbFile;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
@@ -27,14 +28,13 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Map;
 
 /**
  * Created by Abhinav on 9/1/16.
  */
-public class UncRecordReader extends RecordReader<LongWritable, Map<String, String>> {
+public class UncRecordReader extends RecordReader<LongWritable, Text> {
 
-  private Map<String, String> currentValue;
+  private Text currentValue;
   private LongWritable currentKey;
 
   @Override
@@ -48,7 +48,7 @@ public class UncRecordReader extends RecordReader<LongWritable, Map<String, Stri
     String sharedFolder = "abhi";
     InputStream in = null;
     try {
-      String path = "smb://10.150.3.112/" + sharedFolder + "/test.txt";
+      String path = "smb://10.150.3.167/" + sharedFolder + "/test.txt";
       NtlmPasswordAuthentication auth = new NtlmPasswordAuthentication("", user, user);
       SmbFile smbFile = new SmbFile(path, auth);
 
@@ -60,7 +60,7 @@ public class UncRecordReader extends RecordReader<LongWritable, Map<String, Stri
         buf.write((byte) result);
         result = bis.read();
       }
-      currentValue.put("test.txt", buf.toString());
+      currentValue = new Text(buf.toString());
     } catch (Exception e) {
     } finally {
       if (in != null) {
@@ -76,7 +76,7 @@ public class UncRecordReader extends RecordReader<LongWritable, Map<String, Stri
   }
 
   @Override
-  public Map<String, String> getCurrentValue() throws IOException, InterruptedException {
+  public Text getCurrentValue() throws IOException, InterruptedException {
     return currentValue;
   }
 
