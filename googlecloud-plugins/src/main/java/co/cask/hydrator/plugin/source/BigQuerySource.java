@@ -57,15 +57,15 @@ import javax.annotation.Nullable;
  */
 @Plugin(type = "batchsource")
 @Name("BigQuery")
-@Description("Reads from a database table(s) using a configurable BigQuery." +
-  " Outputs one record for each row returned by the query.")
+@Description("Reads from BigQuery table(s) specified by a configurable BigQuery." +
+  " Outputs one record for each row returned by the query..")
 public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, StructuredRecord> {
   private final BQSourceConfig sourceConfig;
   private static final String MRBQ_JSON_KEY = "mapred.bq.auth.service.account.json.keyfile";
   private static final String FSGS_JSON_KEY = "google.cloud.auth.service.account.json.keyfile";
   private static final Gson GSON = new Gson();
   private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
-  private Map<String, String> outputSchemaMapping = new HashMap<>();
+  private final Map<String, String> outputSchemaMapping = new HashMap<>();
   private  Schema outputSchema;
   public BigQuerySource(BQSourceConfig config) {
     super(new ReferencePluginConfig(config.referenceName));
@@ -208,7 +208,6 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
           Schema fieldType = Schema.of(Schema.Type.valueOf(outputSchemaMapping.get(fieldName).toUpperCase()));
           outputFields.add(Schema.Field.of(fieldName, fieldType));
         }
-
       } catch (Exception e) {
         throw new IllegalArgumentException("Exception while creating output schema " +
                                              "Invalid output " + "schema: " + e.getMessage(), e);
