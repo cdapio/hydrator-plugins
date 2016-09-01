@@ -16,11 +16,18 @@
 
 package co.cask.hydrator.plugin.batch.source;
 
+import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Macro;
+import co.cask.cdap.api.annotation.Name;
+import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.common.ReferenceBatchSource;
 import co.cask.hydrator.common.ReferencePluginConfig;
+import co.cask.hydrator.common.SourceInputFormatProvider;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 
 
@@ -28,18 +35,28 @@ import org.apache.hadoop.io.LongWritable;
 /**
  * Created by Abhinav on 8/30/16.
  */
+@Plugin(type = BatchSource.PLUGIN_TYPE)
+@Name("Unc")
+@Description("Batch source for File Systems")
 public class UncBatchSource extends ReferenceBatchSource<LongWritable, Object, StructuredRecord> {
 
-  public UncBatchSource(ReferencePluginConfig config) {
+  private final Uncconfig uncconfig;
+
+  public UncBatchSource(Uncconfig config) {
     super(config);
+    this.uncconfig = config;
   }
 
   @Override
   public void prepareRun(BatchSourceContext batchSourceContext) throws Exception {
-
+    Configuration conf = new Configuration();
+    batchSourceContext.setInput(Input.of(uncconfig.referenceName, new
+      SourceInputFormatProvider(UncInputFormat.class, conf)));
   }
 
-
+  /**
+   * config file for unc
+   */
   public static class Uncconfig extends ReferencePluginConfig {
 
 

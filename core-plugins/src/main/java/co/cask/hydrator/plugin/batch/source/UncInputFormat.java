@@ -14,10 +14,11 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.common;
+package co.cask.hydrator.plugin.batch.source;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -25,20 +26,19 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
 import java.io.IOException;
-import java.util.Map;
 
 /**
  * Created by Abhinav on 8/31/16.
  */
-public class UncInputFormat extends FileInputFormat<LongWritable, Map<String, String>> {
+public class UncInputFormat extends FileInputFormat<LongWritable, Text> {
   @Override
-  public RecordReader<LongWritable, Map<String, String>> createRecordReader
+  public RecordReader<LongWritable, Text> createRecordReader
     (InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
-    return null;
+    return new UncRecordReader();
   }
 
   protected boolean isSplitable(JobContext context, Path file) {
-    //XML files are not splittable hence returning false.
+    //for now we are not splitting the files
     return false;
   }
 }
