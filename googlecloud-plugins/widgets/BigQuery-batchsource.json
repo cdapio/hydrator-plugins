@@ -18,18 +18,18 @@
         },
         {
           "widget-type": "textbox",
-          "label": "Json Key File Path",
+          "label": "JSON Key File Path",
           "name": "jsonFilePath"
         },
         {
           "widget-type": "textbox",
-          "label": "Google Storage Temp Path",
-          "name": "tempBuketPath"
+          "label": "Google Temporary Storage Path",
+          "name": "tempBucketPath"
         },
         {
           "widget-type": "textbox",
-          "label": "Fully Qualified Input Table ID",
-          "name": "InputTableId"
+          "label": "Fully-qualified Input Table ID",
+          "name": "inputTableId"
         },
         {
           "widget-type": "textbox",

@@ -3,8 +3,7 @@
 
 Description
 -----------
-Batch source to use Google BigQuery as a Source.
-[link to BigQuery Docs](https://cloud.google.com/bigquery/docs/)
+Batch source to use Google Cloud Platforms's [BigQuery](https://cloud.google.com/bigquery/docs/) as a Source.
 
 Use Case
 --------
@@ -17,32 +16,36 @@ Properties
 
 **projectID:** The ID of the project in Google Cloud. (Macro-enabled)
 
-**jsonKeyFilePath:** The credential json key file path. (Macro-enabled)
-[How to get the keyfile](https://cloud.google.com/storage/docs/authentication#generating-a-private-key)
+**jsonKeyFilePath:** The credential JSON key file path. (Macro-enabled)
+See Google's documentation on [Service account credentials](https://cloud.google.com/storage/docs/authentication#generating-a-private-key) for details.
+Note that user should upload his credential file to the same path of all nodes.
 
-**inputTableId:** The BigQuery table to read from, in the form [optional projectId]:[datasetId].[tableId], Example:
-publicdata:samples.shakespeare. Note that if the import query is specified, this table should be a empty table
-with the query result schema. User need to first create such a table.(Macro-enabled)
+**inputTableId:** The BigQuery table to read from, in the form '<projectId (optional)>:<datasetId>.<tableId>'.
+The 'projectId' is optional. Example: 'myproject:mydataset.mytable'.Note: if the import query is provided,
+then the inputTable should be a blank table with the query result schema so as to store the intermediate result.
+If the import query is not provided, BigQuery source will read the content from the inputTable.
 
-**tempBucketPath:** The temporary Google Cloud Storage (GCS) directory to store the intermediate result.
-e.g. gs://bucketname/directoryname. The directory should not exist.
-shUser should delete this directory afterward manually to avoid extra google storage charge. (Macro-enabled)
 
-**importQuery:** The SELECT query to use to import data from the specified table. e.g.
-SELECT TOP(corpus, 10) as title, COUNT(*) as unique_words FROM [publicdata:samples.shakespeare].
-'publicdata' is the project name, smalples is the dataset name, shakespare is the table name.
-This is optional, if empty, just read the  inputTable configured. (Macro-enabled)
+this table should already exist and be an empty table with the query result schema.(Macro-enabled)
 
-**outputSchema:** Comma separated mapping of column names in the output schema to the data types; for example:
-'A:string,B:int'. (Macro-enabled)
+**tempBucketPath:** The temporary Google Storage directory to be used for storing the intermediate results.
+e.g. 'gs://bucketname/directoryname'. The directory should not already exist. Users should manually delete
+this directory afterwards to avoid any extra Google Storage charges.(Macro-enabled)
+
+**importQuery:** The SELECT query to use to import data from the specified table.
+For example: 'SELECT TOP(corpus, 10) as title, COUNT(*) as unique_words FROM publicdata:samples.shakespeare',
+where 'publicdata' is the project name (optional), 'samples' is the dataset name, and 'shakespare' is the table name.
+If this query is not provided, reads instead from the configured inputTable.(Macro-enabled)
+
+**outputSchema:** Comma-separated mapping of output schema column names to data types; for example: 'A:string,B:int'.
 
 Example
 -------
-This example will process the import query on the [publicdata:samples.shakespeare], store the result in the inputTable,
-then download the inputTable to the tempBucketPath in Google Cloud Storage and finally reads the file in the temporary
-Google Cloud Storage directory. User should first create a empty table in BigQuery as the inputTable, and the table
-should have the schema: title:string, unique_words:int. Make sure to delete the temporary Google Cloud Storage directory
-after reading.
+This example will process the import query on the [publicdata:samples.shakespeare], the query result is then stored in
+Google BigQuery inputTable: projectName:datasetName.tableName, then inputTable is downloaded to the tempBucketPath
+in Google Cloud Storage and finally CDAP BigQuery Source reads the file in the temporary Google Cloud Storage directory.
+User should first create a empty table in Google BigQuery as the inputTable, and the table should have the schema:
+title:string, unique_words:int. Make sure to delete the temporary Google Cloud Storage directory after reading.
 
       {
         "name": "BigQuery",
@@ -58,11 +61,11 @@ after reading.
           "properties": {
             "referenceName": "bigquery",
             "projectId": "projectId",
-            "tempBuketPath": "gs://bucketName.datasetName/tableName",
+            "tempBucketPath": "gs://bucketName.datasetName/tableName",
             "jsonFilePath": "/path/to/jsonkeyfile",
             "importQuery":"SELECT TOP(corpus, 10) as title, COUNT(*) as
              unique_words FROM [publicdata:samples.shakespeare]",
-            "InputTableId": "projectName:datasetName.tableName",
+            "inputTableId": "projectName:datasetName.tableName",
             "outputSchema": "title:string,unique_words:int"
           }
         }
