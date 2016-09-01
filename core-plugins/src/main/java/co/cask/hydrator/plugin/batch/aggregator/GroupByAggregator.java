@@ -33,7 +33,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Path;
 
 /**
@@ -117,11 +116,7 @@ public class GroupByAggregator extends RecordAggregator {
 
   @Path("outputSchema")
   public Schema getOutputSchema(GetSchemaRequest request) {
-    try {
-      return getOutputSchema(request.inputSchema, request.getGroupByFields(), request.getAggregates());
-    } catch (IllegalArgumentException e) {
-      throw new BadRequestException(e.getMessage());
-    }
+    return getOutputSchema(request.inputSchema, request.getGroupByFields(), request.getAggregates());
   }
 
   private Schema getOutputSchema(Schema inputSchema, List<String> groupByFields,

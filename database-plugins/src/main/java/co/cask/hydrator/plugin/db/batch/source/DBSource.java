@@ -55,10 +55,8 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.SQLSyntaxErrorException;
 import java.sql.Statement;
 import javax.annotation.Nullable;
-import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Path;
 
 /**
@@ -116,13 +114,11 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
    * @throws SQLException
    * @throws InstantiationException
    * @throws IllegalAccessException
-   * @throws BadRequestException If executing the query threw {@link SQLSyntaxErrorException}
-   * we get the message and throw it as BadRequestException
    */
   @Path("getSchema")
   public Schema getSchema(GetSchemaRequest request,
                           EndpointPluginContext pluginContext) throws IllegalAccessException,
-    SQLException, InstantiationException, BadRequestException {
+    SQLException, InstantiationException {
     DriverCleanup driverCleanup;
     try {
       driverCleanup = loadPluginClassAndGetDriver(request, pluginContext);
@@ -131,8 +127,6 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
         statement.setMaxRows(1);
         ResultSet resultSet = statement.executeQuery(request.query);
         return Schema.recordOf("outputSchema", DBUtils.getSchemaFields(resultSet));
-      } catch (SQLSyntaxErrorException e) {
-        throw new BadRequestException(e.getMessage());
       } finally {
         driverCleanup.destroy();
       }
