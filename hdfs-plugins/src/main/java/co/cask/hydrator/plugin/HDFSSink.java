@@ -122,7 +122,9 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
   public static class HDFSSinkConfig extends ReferencePluginConfig {
 
     @Name("path")
-    @Description("HDFS Destination Path Prefix. For example, 'hdfs://mycluster.net:8020/output")
+    @Description("HDFS Destination Path Prefix. File system name should come from 'fs.DefaultFS' property in the" +
+      "'core-site.xml'. For example, 'hdfs://mycluster.net:8020/output', where value of property 'fs.DefaultFS' in" +
+      " the 'core-site.xml' is 'hdfs://mycluster.net:8020'.")
     @Macro
     private String path;
 
