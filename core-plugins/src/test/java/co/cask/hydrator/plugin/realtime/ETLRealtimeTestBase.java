@@ -24,6 +24,7 @@ import co.cask.cdap.proto.id.ArtifactId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.TestBase;
 import co.cask.hydrator.plugin.realtime.sink.RealtimeCubeSink;
+import co.cask.hydrator.plugin.realtime.sink.RealtimeKinesisStreamSink;
 import co.cask.hydrator.plugin.realtime.sink.RealtimeTableSink;
 import co.cask.hydrator.plugin.realtime.sink.StreamSink;
 import co.cask.hydrator.plugin.realtime.source.DataGeneratorSource;
@@ -56,6 +57,7 @@ public class ETLRealtimeTestBase extends TestBase {
                    PipelineConfigurable.class.getPackage().getName());
 
     addPluginArtifact(NamespaceId.DEFAULT.artifact("core-plugins", "1.0.0"), APP_ARTIFACT_ID,
+                      RealtimeKinesisStreamSink.class,
                       DataGeneratorSource.class, JmsSource.class,
                       TwitterSource.class, SqsSource.class,
                       RealtimeCubeSink.class, RealtimeTableSink.class,

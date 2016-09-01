@@ -1,0 +1,55 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "AWS Kinesis Stream RealTime Sink",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Reference Name",
+          "name": "name"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Input field to Store",
+          "name": "bodyField"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Access ID",
+          "name": "accessID"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Access Key",
+          "name": "accessKey"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Shard count",
+          "name": "shardCount"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Partition Key",
+          "name": "partitionKey"
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "string",
+          "bytes"
+        ],
+        "schema-default-type": "string"
+      }
+    }
+  ]
+}
