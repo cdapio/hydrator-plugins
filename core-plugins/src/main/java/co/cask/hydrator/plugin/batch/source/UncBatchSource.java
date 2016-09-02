@@ -32,8 +32,6 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
 import java.lang.reflect.Type;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -46,44 +44,16 @@ import javax.annotation.Nullable;
 @Name("Unc")
 @Description("Batch source for File Systems")
 public class UncBatchSource extends FileBatchSource {
-  private Date prevHour;
-  private final FileBatchConfig config;
   private static final Gson GSON = new Gson();
   private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() {
   }.getType();
+  private final UncBatchConfig uncBatchConfig;
 
-
-  public UncBatchSource(FileBatchConfig config) {
-    super(new FileBatchConfig(config.referenceName, config.path, config.fileRegex, null, UncInputFormat.class.getName(),
-                              limitSplits(config.fileSystemProperties), null));
-    this.config = config;
-
+  public UncBatchSource(UncBatchConfig uncBatchConfig) {
+    super(new FileBatchConfig(uncBatchConfig.referenceName, uncBatchConfig.path, uncBatchConfig.fileRegex, null,
+                              UncInputFormat.class.getName(), limitSplits(uncBatchConfig.fileSystemProperties), null));
+    this.uncBatchConfig = uncBatchConfig;
   }
-
-  @Override
-  public void prepareRun(BatchSourceContext context) throws Exception {
-
-    //SimpleDateFormat needs to be local because it is not threadsafe
-    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH");
-
-
-
-      Job job = JobUtils.createInstance();
-      Configuration conf = job.getConfiguration();
-
-      conf.set(INPUT_REGEX_CONFIG, config.fileRegex);
-      conf.set(INPUT_NAME_CONFIG, config.path);
-      //conf.set(CUTOFF_READ_TIME, dateFormat.format(prevHour));
-
-      //FileInputFormat.setInputPathFilter(job, BatchFileFilter.class);
-      FileInputFormat.addInputPath(job, new Path("file:///tmp/unctest/"));
-      if (config.maxSplitSize != null) {
-        FileInputFormat.setMaxInputSplitSize(job, config.maxSplitSize);
-      }
-      context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(UncInputFormat.class,
-                                                                                    conf)));
-    }
-
 
   private static String limitSplits(@Nullable String fsProperties) {
     Map<String, String> providedProperties;
@@ -96,4 +66,55 @@ public class UncBatchSource extends FileBatchSource {
     return GSON.toJson(providedProperties);
   }
 
+  @Override
+  public void prepareRun(BatchSourceContext context) throws Exception {
+
+      Job job = JobUtils.createInstance();
+      Configuration conf = job.getConfiguration();
+
+      conf.set(INPUT_REGEX_CONFIG, uncBatchConfig.fileRegex);
+      conf.set(INPUT_NAME_CONFIG, uncBatchConfig.path);
+      UncInputFormat.setConfigurations(job, uncBatchConfig.user, uncBatchConfig.password, uncBatchConfig.uncpath);
+
+      FileInputFormat.addInputPath(job, new Path(uncBatchConfig.path));
+
+
+
+      context.setInput(Input.of(uncBatchConfig.referenceName, new SourceInputFormatProvider(UncInputFormat.class,
+                                                                                    conf)));
+    }
+
+  /**
+   *
+   */
+  public static class UncBatchConfig extends FTPBatchSource.FTPBatchSourceConfig {
+    @Nullable
+    @Name("username")
+    @Description("username")
+    public String user;
+
+    @Nullable
+    @Name("uncpath")
+    @Description("uncpath")
+    public String uncpath;
+
+    @Nullable
+    @Description("password")
+    @Name("password")
+    public String password;
+
+    public UncBatchConfig(String referenceName, String path, @Nullable String fileSystemProperties,
+                          @Nullable String fileRegex, @Nullable String inputFormatClassName) {
+      super(referenceName, path, fileSystemProperties, fileRegex, inputFormatClassName);
+    }
+
+    public UncBatchConfig(String referenceName, String path, @Nullable String fileSystemProperties, String uncpath,
+                          @Nullable String fileRegex, @Nullable String inputFormatClassName, String user,
+                          String password) {
+      super(referenceName, path, fileSystemProperties, fileRegex, inputFormatClassName);
+      this.user = user;
+      this.password = password;
+      this.uncpath = uncpath;
+    }
+  }
 }
