@@ -44,7 +44,7 @@ import javax.annotation.Nullable;
  */
 
 public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<StructuredRecord, KEY_OUT, VAL_OUT> {
-  public static final String BUCKET_DES = "GCS Bucket to use to store the data";
+  public static final String BUCKET_DES = "GCS Bucket used to store the data";
   public static final String PROJECT_ID_DES = "Google Cloud Project ID with access to configured GCS buckets";
   public static final String SERVICE_KEY_FILE_DES = "The Json_Key_File certificate file of the " +
     "service account used for GCS access";
@@ -121,10 +121,10 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
     @Macro
     protected String jsonKey;
 
-    @Name("PathToStore")
-    @Description("path to store inside bucket")
+    @Name("BucketDir")
+    @Description("the directory inside the bucket where the data is stored. Need to be a new directory.")
     @Macro
-    protected String path;
+    protected String bucketDir;
 
     @Description(FILESYSTEM_PROPERTIES_DESCRIPTION)
     @Nullable
@@ -138,12 +138,12 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
 
     public GCSSinkConfig(String referenceName, String bucketKey, String projectId,
                          String serviceKeyFile, @Nullable String fileSystemProperties,
-                         String path) {
+                         String bucketDir) {
       super(referenceName);
       this.bucketKey = bucketKey;
       this.projectId = projectId;
       this.jsonKey = serviceKeyFile;
-      this.path = path;
+      this.bucketDir = bucketDir;
       this.fileSystemProperties = updateFileSystemProperties(fileSystemProperties, projectId,
                                                              serviceKeyFile);
     }

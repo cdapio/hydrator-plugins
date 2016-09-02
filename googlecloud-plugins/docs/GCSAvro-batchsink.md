@@ -21,11 +21,13 @@ Properties
 
 **projectId:** Google Cloud Project ID which has the access to a specified bucket. (Macro-enabled)
 
-**jsonKey:** The json certificate file of the service account used for GCS access. (Macro-enabled)
+**jsonKey:** The JSON certificate file of the service account used for GCS access. See Google's documentation
+on [Service account credentials](https://cloud.google.com/storage/docs/authentication#generating-a-private-key) for details.
+Note that user should upload his credential file to the same path of all nodes. (Macro-enabled)
 
 **bucketKey:** The bucket inside google cloud storage to store the data.
 
-**path:** the directory inside the bucket where the data is stored. Need to be a new directory. (Macro-enabled)
+**bucketDir:** the directory inside the bucket where the data is stored. Need to be a new directory. (Macro-enabled)
 
 **fileSystemProperties:** A JSON string representing a map of properties needed for the
 distributed file system. The property names needed for Google Cloud Storage (*projectID* and *jsonKeyFile*)
@@ -59,9 +61,9 @@ should specified a new directory name.
                 {\"name\":\"ts\",\"type\":\"long\"},
                 {\"name\":\"body\",\"type\":\"string\"}]}",
                 "BucketKey": "bucket",
-                "PathTo_Store": "directory",
+                "BucketDir": "directory",
                 "ProjectId": "projectid",
-                "JsonKeyFile": "path_to_jsonKeyFile",
+                "JsonKeyFile": "path/to/jsonKeyFile",
                 "referenceName": "name"
          }
       }

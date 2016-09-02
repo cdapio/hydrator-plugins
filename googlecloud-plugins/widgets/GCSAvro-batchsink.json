@@ -23,8 +23,8 @@
         },
         {
           "widget-type": "textbox",
-          "label": "Path to Store",
-          "name": "PathToStore"
+          "label": "Target Bucket Directory",
+          "name": "BucketDir"
         },
         {
           "widget-type": "json-editor",

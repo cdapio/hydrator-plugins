@@ -42,21 +42,9 @@
       <version>1.5.0-SNAPSHOT</version>
     </dependency>
     <dependency>
-      <groupId>com.google.cloud.bigdataoss</groupId>
-      <artifactId>gcs-connector</artifactId>
-      <version>1.5.1-hadoop2</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google.cloud.bigdataoss</groupId>
-      <artifactId>bigquery-connector</artifactId>
-      <version>0.7.7-hadoop2</version>
-    </dependency>
-    <!--Google Hadoop Filesystem need this dependency to get a splitter-->
-    <!--guava 19 needed-->
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>19.0</version>
+      <groupId>co.cask.hydrator</groupId>
+      <artifactId>hydrator-common</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
@@ -76,17 +64,29 @@
       <artifactId>cdap-formats</artifactId>
     </dependency>
     <dependency>
-      <groupId>co.cask.hydrator</groupId>
-      <artifactId>hydrator-common</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-etl-batch</artifactId>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-data-pipeline</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.cloud.bigdataoss</groupId>
+      <artifactId>gcs-connector</artifactId>
+      <version>1.5.1-hadoop2</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.cloud.bigdataoss</groupId>
+      <artifactId>bigquery-connector</artifactId>
+      <version>0.7.7-hadoop2</version>
+    </dependency>
+    <!--Google Hadoop Filesystem need this dependency to get a splitter-->
+    <!--guava 19 needed-->
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>19.0</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -101,8 +101,6 @@
       <artifactId>avro-mapred</artifactId>
       <classifier>hadoop2</classifier>
     </dependency>
-
-
   </dependencies>
 
   <build>
