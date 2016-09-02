@@ -94,8 +94,8 @@ public class LogisticRegressionTest extends HydratorTestBase {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put("fileSetName", "modelFileSet")
       .put("path", "output")
-      .put("fieldsToClassify", fieldsToClassify)
-      .put("predictionField", LogisticRegressionSpamMessageModel.SPAM_PREDICTION_FIELD)
+      .put("featureFields", fieldsToClassify)
+      .put("labelField", LogisticRegressionSpamMessageModel.SPAM_PREDICTION_FIELD)
       .put("numFeatures", LogisticRegressionSpamMessageModel.SPAM_FEATURES)
       .put("numClasses", "2")
       .build();

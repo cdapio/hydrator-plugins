@@ -19,12 +19,12 @@
         {
           "widget-type": "csv",
           "label": "Fields to classify",
-          "name": "fieldsToClassify"
+          "name": "featureFields"
         },
         {
           "widget-type": "textbox",
           "label": "Prediction Field",
-          "name": "predictionField"
+          "name": "labelField"
         },
         {
           "widget-type": "textbox",

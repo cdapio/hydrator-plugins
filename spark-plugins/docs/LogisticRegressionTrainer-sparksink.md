@@ -17,9 +17,9 @@ Properties
 
 **path:** Path of the FileSet to save the model to.
 
-**fieldsToClassify:** A space-separated sequence of fields to use for training.
+**featureFields:** A space-separated sequence of fields to use for training.
 
-**predictionField:** The field from which to get the prediction. It must be of type double.
+**labelField:** The field from which to get the prediction. It must be of type double.
 
 **numFeatures:** The number of features to train the model with. This should be the same as the number of features
 used for the LogisticRegressionClassifier. The default value if none is provided will be 100.
@@ -38,8 +38,8 @@ as the label to train the model.
         "properties": {
             "fileSetName": "modelFileSet",
             "path": "output",
-            "fieldsToClassify": "text,impMsg",
-            "predictionField": "isSpam",
+            "featureFields": "text,impMsg",
+            "labelField": "isSpam",
             "numFeatures": "100",
             "numClasses": "2"
         }

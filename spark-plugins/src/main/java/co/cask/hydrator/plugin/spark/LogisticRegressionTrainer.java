@@ -69,10 +69,10 @@ public class LogisticRegressionTrainer extends SparkSink<StructuredRecord> {
     private final String path;
 
     @Description("A comma-separated sequence of fields to use for training.")
-    private final String fieldsToClassify;
+    private final String featureFields;
 
     @Description("The field from which to get the prediction. It must be of type double.")
-    private final String predictionField;
+    private final String labelField;
 
     @Nullable
     @Description("The number of features to use in training the model. It must be of type integer and equal to the" +
@@ -85,12 +85,12 @@ public class LogisticRegressionTrainer extends SparkSink<StructuredRecord> {
       "The default value if none is provided will be 2.")
     private final Integer numClasses;
 
-    public Config(String fileSetName, String path, String fieldsToClassify, String predictionField,
+    public Config(String fileSetName, String path, String featureFields, String labelField,
                   Integer numFeatures, Integer numClasses) {
       this.fileSetName = fileSetName;
       this.path = path;
-      this.fieldsToClassify = fieldsToClassify;
-      this.predictionField = predictionField;
+      this.featureFields = featureFields;
+      this.labelField = labelField;
       this.numFeatures = numFeatures;
       this.numClasses = numClasses;
     }
@@ -102,7 +102,7 @@ public class LogisticRegressionTrainer extends SparkSink<StructuredRecord> {
 
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
     if (inputSchema != null) {
-      Schema.Type predictionFieldType = inputSchema.getField(config.predictionField).getSchema().getType();
+      Schema.Type predictionFieldType = inputSchema.getField(config.labelField).getSchema().getType();
       Preconditions.checkArgument(predictionFieldType == Schema.Type.DOUBLE,
                                   "Prediction field must be of type DOUBLE, but was %s.", predictionFieldType);
     }
@@ -117,16 +117,15 @@ public class LogisticRegressionTrainer extends SparkSink<StructuredRecord> {
   public void run(SparkExecutionPluginContext context, JavaRDD<StructuredRecord> input) throws Exception {
     final HashingTF tf = new HashingTF((config.numFeatures == null) ? 100 : config.numFeatures);
 
-    final String[] columns = config.fieldsToClassify.split(",");
+    final String[] columns = config.featureFields.split(",");
     JavaRDD<LabeledPoint> trainingData = input.map(new Function<StructuredRecord, LabeledPoint>() {
       @Override
       public LabeledPoint call(StructuredRecord record) throws Exception {
         List<String> result = new ArrayList<>();
         for (String column : columns) {
-          result.add(String.valueOf(record.get(column)));
+            result.add(String.valueOf(record.get(column)));
         }
-        return new LabeledPoint((Double) record.get(config.predictionField),
-                                tf.transform(result));
+        return new LabeledPoint((Double) record.get(config.labelField), tf.transform(result));
       }
     });
 
