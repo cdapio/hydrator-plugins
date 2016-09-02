@@ -37,6 +37,7 @@ import co.cask.hydrator.common.SourceInputFormatProvider;
 import co.cask.hydrator.common.batch.JobUtils;
 import com.google.cloud.hadoop.io.bigquery.BigQueryConfiguration;
 import com.google.cloud.hadoop.io.bigquery.JsonTextBigQueryInputFormat;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
@@ -219,7 +220,8 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
 
   private  void validate() {
     Splitter.on(",").omitEmptyStrings().trimResults()
-      .withKeyValueSeparator(":").split(sourceConfig.outputSchema);
+                    .withKeyValueSeparator(":").split(sourceConfig.outputSchema);
+    Preconditions.checkState(sourceConfig.tmpBucketPath.startsWith("gs://"));
   }
 
   private void init() {
