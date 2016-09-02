@@ -32,17 +32,32 @@
           "name": "inputTableId"
         },
         {
-          "widget-type": "textbox",
+          "widget-type": "textarea",
           "label": "Import Query",
-          "name": "importQuery"
-        },
-        {
-          "widget-type": "textbox",
-          "label": "Output Schema",
-          "name": "outputSchema"
+          "name": "importQuery",
+          "widget-attributes": {
+            "rows": "4"
+          }
         }
       ]
     }
   ],
-  "outputs": []
+  "outputs": [
+    {
+      "name": "outputSchema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "boolean",
+          "int",
+          "long",
+          "float",
+          "double",
+          "bytes",
+          "string"
+        ],
+        "schema-default-type": "string"
+      }
+    }
+  ]
 }

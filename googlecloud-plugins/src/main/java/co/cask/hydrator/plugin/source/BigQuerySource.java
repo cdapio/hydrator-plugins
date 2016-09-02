@@ -38,6 +38,9 @@ import co.cask.hydrator.common.SourceInputFormatProvider;
 import co.cask.hydrator.common.batch.JobUtils;
 import com.google.cloud.hadoop.io.bigquery.BigQueryConfiguration;
 import com.google.cloud.hadoop.io.bigquery.JsonTextBigQueryInputFormat;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
@@ -71,8 +74,8 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
   private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
 
   private final BQSourceConfig sourceConfig;
-  private final Map<String, String> outputSchemaMapping = new HashMap<>();
-  private static Schema outputSchema;
+//  private final Map<String, String> outputSchemaMapping = new HashMap<>();
+//  private static Schema outputSchema;
 
   public BigQuerySource(BQSourceConfig config) {
     super(new ReferencePluginConfig(config.referenceName));
@@ -81,25 +84,27 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    init();
-    getOutputSchema();
-    pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
-  }
-
-  @Override
-  public void initialize(BatchRuntimeContext context) throws Exception {
-    if (outputSchemaMapping.isEmpty()) {
-      init();
+    super.configurePipeline(pipelineConfigurer);
+    sourceConfig.validate();
+    if (!Strings.isNullOrEmpty(sourceConfig.outputSchema)) {
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(sourceConfig.getSchema());
     }
   }
 
-  private void init() {
-    String[] schemaList = sourceConfig.outputSchema.split(",");
-    for (String schema : schemaList) {
-      String[] columns = schema.split(":");
-      outputSchemaMapping.put(columns[0], columns[1]);
-    }
-  }
+//  @Override
+//  public void initialize(BatchRuntimeContext context) throws Exception {
+//    if (outputSchemaMapping.isEmpty()) {
+//      init();
+//    }
+//  }
+
+//  private void init() {
+//    String[] schemaList = sourceConfig.outputSchema.split(",");
+//    for (String schema : schemaList) {
+//      String[] columns = schema.split(":");
+//      outputSchemaMapping.put(columns[0], columns[1]);
+//    }
+//  }
 
   @Override
   public void prepareRun(BatchSourceContext context) throws IOException, GeneralSecurityException,
@@ -123,13 +128,13 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
 
   @Override
   public void transform(KeyValue<LongWritable, Text> input, Emitter<StructuredRecord> emitter) throws IOException {
-    getOutputSchema();
     StructuredRecord record = convertToStructuredRecord(input.getValue());
     emitter.emit(record);
   }
 
   private StructuredRecord convertToStructuredRecord(Text jsonText) {
     Map<String, String> map = GSON.fromJson(jsonText.toString(), MAP_STRING_STRING_TYPE);
+    Schema outputSchema = sourceConfig.getSchema();
     StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
     for (Schema.Field field : outputSchema.getFields()) {
       String fieldName = field.getName();
@@ -138,44 +143,33 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
       switch (fieldType) {
         case INT:
           builder.set(fieldName, Integer.parseInt(map.get(fieldName)));
+          break;
         case BYTES:
           builder.set(fieldName, Byte.parseByte(map.get(fieldName)));
+          break;
         case LONG:
           builder.set(fieldName, Long.parseLong(map.get(fieldName)));
+          break;
         case FLOAT:
           builder.set(fieldName, Float.parseFloat(map.get(fieldName)));
+          break;
         case DOUBLE:
           builder.set(fieldName, Double.parseDouble(map.get(fieldName)));
+          break;
         case BOOLEAN:
           builder.set(fieldName, Boolean.parseBoolean(map.get(fieldName)));
+          break;
         case NULL:
           builder.set(fieldName, null);
+          break;
         case STRING:
           builder.set(fieldName, map.get(fieldName));
+          break;
         default:
           throw new UnexpectedFormatException("field type " + fieldType + " is not supported.");
       }
     }
     return builder.build();
-  }
-
-  protected Object convertField(Object field, Schema fieldSchema) throws IOException {
-    Schema.Type fieldType = fieldSchema.getType();
-    switch (fieldType) {
-      case NULL:
-        return null;
-      case STRING:
-        return field.toString();
-      case BYTES:
-      case INT:
-      case LONG:
-      case FLOAT:
-      case DOUBLE:
-      case BOOLEAN:
-        return field;
-      default:
-        throw new UnexpectedFormatException("field type " + fieldType + " is not supported.");
-    }
   }
 
   /**
@@ -236,21 +230,36 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
     @Description(TEMP_BUCKET_DESC)
     @Macro
     String tmpBucketPath;
+
+    private Schema getSchema() {
+      try {
+        return Schema.parseJson(outputSchema);
+      } catch (IOException e) {
+        throw new IllegalArgumentException(String.format("Unable to parse schema '%s'. Reason: %s",
+                                                         outputSchema, e.getMessage()), e);
+      }
+    }
+
+    private  void validate() {
+      Preconditions.checkState(tmpBucketPath.startsWith("gs://"));
+    }
+
   }
 
-  private void getOutputSchema() {
-    if (outputSchema == null) {
-      List<Schema.Field> outputFields = new ArrayList<>();
-      try {
-        for (String fieldName : outputSchemaMapping.keySet()) {
-          Schema fieldType = Schema.of(Schema.Type.valueOf(outputSchemaMapping.get(fieldName).toUpperCase()));
-          outputFields.add(Schema.Field.of(fieldName, fieldType));
-        }
-      } catch (Exception e) {
-        throw new IllegalArgumentException("Error while parsing output schema: invalid output schema " +
-                                             e.getMessage(), e);
-      }
-      outputSchema = Schema.recordOf("outputSchema", outputFields);
-    }
-  }
+
+//  private void getOutputSchema() {
+//    if (outputSchema == null) {
+//      List<Schema.Field> outputFields = new ArrayList<>();
+//      try {
+//        for (String fieldName : outputSchemaMapping.keySet()) {
+//          Schema fieldType = Schema.of(Schema.Type.valueOf(outputSchemaMapping.get(fieldName).toUpperCase()));
+//          outputFields.add(Schema.Field.of(fieldName, fieldType));
+//        }
+//      } catch (Exception e) {
+//        throw new IllegalArgumentException("Error while parsing output schema: invalid output schema " +
+//                                             e.getMessage(), e);
+//      }
+//      outputSchema = Schema.recordOf("outputSchema", outputFields);
+//    }
+//  }
 }
