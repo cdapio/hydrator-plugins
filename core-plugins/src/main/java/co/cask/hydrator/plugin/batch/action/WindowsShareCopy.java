@@ -21,6 +21,7 @@ import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.plugin.PluginConfig;
+import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.action.Action;
 import co.cask.cdap.etl.api.action.ActionContext;
 import com.google.common.annotations.VisibleForTesting;
@@ -93,6 +94,11 @@ public class WindowsShareCopy extends Action {
     for (String file : dir.list()) {
       copyFileToHDFS(hdfs, file, hdfsDir, conf);
     }
+  }
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
+    super.configurePipeline(pipelineConfigurer);
   }
 
   private void copyFileToHDFS(FileSystem hdfs, String smbSourceFile, Path dest, Configuration conf) {
