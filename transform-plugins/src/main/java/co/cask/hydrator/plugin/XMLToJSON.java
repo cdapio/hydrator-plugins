@@ -33,7 +33,6 @@ import org.json.XML;
 
 import java.io.IOException;
 import java.util.List;
-import javax.annotation.Nullable;
 
 /**
  * A transform that parses an XML String field into a stringified JSON Object.

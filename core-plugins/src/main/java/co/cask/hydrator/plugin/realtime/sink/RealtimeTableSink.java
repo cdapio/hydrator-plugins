@@ -34,7 +34,6 @@ import co.cask.hydrator.plugin.common.TableSinkConfig;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**

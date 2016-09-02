@@ -17,7 +17,6 @@
 package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -29,6 +28,7 @@ import co.cask.cdap.etl.api.LookupTableConfig;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
