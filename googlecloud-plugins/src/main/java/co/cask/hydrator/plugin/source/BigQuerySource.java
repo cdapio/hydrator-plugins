@@ -39,6 +39,7 @@ import com.google.cloud.hadoop.io.bigquery.BigQueryConfiguration;
 import com.google.cloud.hadoop.io.bigquery.JsonTextBigQueryInputFormat;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import org.apache.hadoop.conf.Configuration;
@@ -69,8 +70,6 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
   private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
 
   private final BQSourceConfig sourceConfig;
-  private final Map<String, String> outputSchemaMapping = new HashMap<>();
-  private static Schema outputSchema;
 
   public BigQuerySource(BQSourceConfig config) {
     super(new ReferencePluginConfig(config.referenceName));
@@ -79,16 +78,10 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    init();
-    validate();
-    getOutputSchema();
-    pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
-  }
-
-  @Override
-  public void initialize(BatchRuntimeContext context) throws Exception {
-    if (outputSchemaMapping.isEmpty()) {
-      init();
+    super.configurePipeline(pipelineConfigurer);
+    sourceConfig.validate();
+    if (!Strings.isNullOrEmpty(sourceConfig.outputSchema)) {
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(sourceConfig.getSchema());
     }
   }
 
@@ -114,13 +107,13 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
 
   @Override
   public void transform(KeyValue<LongWritable, Text> input, Emitter<StructuredRecord> emitter) throws IOException {
-    getOutputSchema();
     StructuredRecord record = convertToStructuredRecord(input.getValue());
     emitter.emit(record);
   }
 
   private StructuredRecord convertToStructuredRecord(Text jsonText) {
     Map<String, String> map = GSON.fromJson(jsonText.toString(), MAP_STRING_STRING_TYPE);
+    Schema outputSchema = sourceConfig.getSchema();
     StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
     for (Schema.Field field : outputSchema.getFields()) {
       String fieldName = field.getName();
@@ -216,35 +209,18 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
     @Description(TEMP_BUCKET_DESC)
     @Macro
     String tmpBucketPath;
-  }
 
-  private  void validate() {
-    Splitter.on(",").omitEmptyStrings().trimResults()
-                    .withKeyValueSeparator(":").split(sourceConfig.outputSchema);
-    Preconditions.checkState(sourceConfig.tmpBucketPath.startsWith("gs://"));
-  }
-
-  private void init() {
-    String[] schemaList = sourceConfig.outputSchema.split(",");
-    for (String schema : schemaList) {
-      String[] columns = schema.split(":");
-      outputSchemaMapping.put(columns[0], columns[1]);
-    }
-  }
-
-  private void getOutputSchema() {
-    if (outputSchema == null) {
-      List<Schema.Field> outputFields = new ArrayList<>();
+    private Schema getSchema() {
       try {
-        for (String fieldName : outputSchemaMapping.keySet()) {
-          Schema fieldType = Schema.of(Schema.Type.valueOf(outputSchemaMapping.get(fieldName).toUpperCase()));
-          outputFields.add(Schema.Field.of(fieldName, fieldType));
-        }
-      } catch (Exception e) {
-        throw new IllegalArgumentException("Error while parsing output schema: invalid output schema " +
-                                             e.getMessage(), e);
+        return Schema.parseJson(outputSchema);
+      } catch (IOException e) {
+        throw new IllegalArgumentException(String.format("Unable to parse schema '%s'. Reason: %s",
+                                                         outputSchema, e.getMessage()), e);
       }
-      outputSchema = Schema.recordOf("outputSchema", outputFields);
+    }
+
+    private  void validate() {
+      Preconditions.checkState(tmpBucketPath.startsWith("gs://"));
     }
   }
 }
