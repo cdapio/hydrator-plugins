@@ -35,6 +35,19 @@
           "widget-type": "textbox",
           "label": "Clean Partitions Older Than",
           "name": "cleanPartitionsOlderThan"
+        },
+        {
+          "widget-type": "select",
+          "label": "Compression Codec",
+          "name": "compressionCodec",
+          "widget-attributes": {
+            "values": [
+              "None",
+              "Snappy",
+              "Deflate"
+            ],
+            "default": "None"
+          }
         }
       ]
     }

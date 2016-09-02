@@ -35,6 +35,8 @@ The format is expected to be a number followed by an 's', 'm', 'h', or 'd' speci
 'm' for minutes, 'h' for hours, and 'd' for days. For example, if the pipeline is scheduled to run at midnight of January 1, 2016,
 and this property is set to 7d, the sink will delete any partitions for time partitions older than midnight Dec 25, 2015. (Macro-enabled)
 
+**compressionCodec:** Optional parameter to determine the compression codec to use on the resulting data. 
+Valid values are None, Snappy, and Deflate.
 
 Example
 -------
@@ -47,6 +49,7 @@ a new partition in the PartitionedFileSet:
         "type": "batchsink",
         "properties": {
             "name": "users",
+            "compressionCodec": "Snappy",
             "schema": "{
                 \"type\":\"record\",
                 \"name\":\"user\",

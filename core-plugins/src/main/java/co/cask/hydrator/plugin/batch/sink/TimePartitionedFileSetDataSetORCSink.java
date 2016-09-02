@@ -31,6 +31,8 @@ import co.cask.hydrator.plugin.common.FileSetUtil;
 import co.cask.hydrator.plugin.common.StructuredToOrcTransformer;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.orc.mapred.OrcStruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
@@ -41,6 +43,7 @@ import javax.annotation.Nullable;
 @Name("TPFSOrc")
 @Description("Sink for a TimePartitionedFileSet that writes data in ORC format.")
 public class TimePartitionedFileSetDataSetORCSink extends TimePartitionedFileSetSink<NullWritable, OrcStruct> {
+  private static final Logger LOG = LoggerFactory.getLogger(TimePartitionedFileSetDataSetORCSink.class);
 
   private static final String SCHEMA_DESC = "The ORC schema of the record being written to the Sink.";
   private final TPFSOrcSinkConfig config;
@@ -60,6 +63,31 @@ public class TimePartitionedFileSetDataSetORCSink extends TimePartitionedFileSet
   @Override
   protected void addFileSetProperties(FileSetProperties.Builder properties) {
     FileSetUtil.configureORCFileSet(config.schema, properties);
+    if (config.compressionCodec != null && !config.compressionCodec.equals("None")) {
+      LOG.info("Config: {}", config);
+      switch (config.compressionCodec) {
+        case "Snappy":
+          properties.setOutputProperty("orc.compress", "SNAPPY");
+          break;
+        case "ZLIB":
+          properties.setOutputProperty("orc.compress", "ZLIB");
+          break;
+        default:
+          throw new IllegalArgumentException("Unsupported compression codec " + config.compressionCodec);
+      }
+      if (config.compressionChunkSize != null) {
+        properties.setOutputProperty("orc.compress.size", config.compressionChunkSize.toString());
+      }
+      if (config.stripeSize != null) {
+        properties.setOutputProperty("orc.compress.size", config.stripeSize.toString());
+      }
+      if (config.indexStride != null) {
+        properties.setOutputProperty("orc.row.index.stride", config.indexStride.toString());
+      }
+      if (config.createIndex != null) {
+        properties.setOutputProperty("orc.create.index", config.indexStride.toString());
+      }
+    }
   }
 
   @Override
@@ -76,10 +104,40 @@ public class TimePartitionedFileSetDataSetORCSink extends TimePartitionedFileSet
     @Description(SCHEMA_DESC)
     private String schema;
 
+    @Nullable
+    @Description("Used to specify the compression codec to be used for the final dataset.")
+    private String compressionCodec;
+
+    @Nullable
+    @Description("Number of bytes in each compression chunk.")
+    private Long compressionChunkSize;
+
+    @Nullable
+    @Description("Number of bytes in each stripe.")
+    private Long stripeSize;
+
+    @Nullable
+    @Description("Number of rows between index entries (must be >= 1,000)")
+    private Long indexStride;
+
+    @Nullable
+    @Description("Whether to create inline indexes")
+    private Boolean createIndex;
+
     public TPFSOrcSinkConfig(String name, String schema, @Nullable String basePath, @Nullable String pathFormat,
-                             @Nullable String timeZone) {
+                             @Nullable String timeZone,
+                             @Nullable String compressionCodec,
+                             @Nullable Long compressionChunkSize,
+                             @Nullable Long stripeSize,
+                             @Nullable Long indexStride,
+                             @Nullable String createIndex) {
       super(name, basePath, pathFormat, timeZone);
       this.schema = schema;
+      this.compressionCodec = compressionCodec;
+      this.compressionChunkSize = compressionChunkSize;
+      this.stripeSize = stripeSize;
+      this.indexStride = indexStride;
+      this.createIndex = (createIndex != null && createIndex.equals("True"));
     }
   }
 }
