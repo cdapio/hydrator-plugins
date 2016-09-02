@@ -17,19 +17,26 @@
 package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.batch.Input;
-import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
-import co.cask.hydrator.common.ReferenceBatchSource;
-import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.common.SourceInputFormatProvider;
+import co.cask.hydrator.common.batch.JobUtils;
+import com.google.common.reflect.TypeToken;
+import com.google.gson.Gson;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
+import java.lang.reflect.Type;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import javax.annotation.Nullable;
 
 
 /**
@@ -38,38 +45,55 @@ import org.apache.hadoop.io.LongWritable;
 @Plugin(type = BatchSource.PLUGIN_TYPE)
 @Name("Unc")
 @Description("Batch source for File Systems")
-public class UncBatchSource extends ReferenceBatchSource<LongWritable, Object, StructuredRecord> {
+public class UncBatchSource extends FileBatchSource {
+  private Date prevHour;
+  private final FileBatchConfig config;
+  private static final Gson GSON = new Gson();
+  private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() {
+  }.getType();
 
-  private final Uncconfig uncconfig;
 
-  public UncBatchSource(Uncconfig config) {
-    super(config);
-    this.uncconfig = config;
+  public UncBatchSource(FileBatchConfig config) {
+    super(new FileBatchConfig(config.referenceName, config.path, config.fileRegex, null, UncInputFormat.class.getName(),
+                              limitSplits(config.fileSystemProperties), null));
+    this.config = config;
+
   }
 
   @Override
-  public void prepareRun(BatchSourceContext batchSourceContext) throws Exception {
-    Configuration conf = new Configuration();
-    batchSourceContext.setInput(Input.of(uncconfig.referenceName, new
-      SourceInputFormatProvider(UncInputFormat.class, conf)));
-  }
+  public void prepareRun(BatchSourceContext context) throws Exception {
 
-  /**
-   * config file for unc
-   */
-  public static class Uncconfig extends ReferencePluginConfig {
+    //SimpleDateFormat needs to be local because it is not threadsafe
+    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH");
 
 
-    @Macro
-    public String path;
 
-    public Uncconfig(String referenceName, String path) {
-      super(referenceName);
-      this.path = path;
+      Job job = JobUtils.createInstance();
+      Configuration conf = job.getConfiguration();
+
+      conf.set(INPUT_REGEX_CONFIG, config.fileRegex);
+      conf.set(INPUT_NAME_CONFIG, config.path);
+      //conf.set(CUTOFF_READ_TIME, dateFormat.format(prevHour));
+
+      //FileInputFormat.setInputPathFilter(job, BatchFileFilter.class);
+      FileInputFormat.addInputPath(job, new Path("file:///tmp/unctest/"));
+      if (config.maxSplitSize != null) {
+        FileInputFormat.setMaxInputSplitSize(job, config.maxSplitSize);
+      }
+      context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(UncInputFormat.class,
+                                                                                    conf)));
     }
 
-    public Uncconfig(String referenceName) {
-      super(referenceName);
+
+  private static String limitSplits(@Nullable String fsProperties) {
+    Map<String, String> providedProperties;
+    if (fsProperties == null) {
+      providedProperties = new HashMap<>();
+    } else {
+      providedProperties = GSON.fromJson(fsProperties, MAP_STRING_STRING_TYPE);
     }
+    providedProperties.put(FileInputFormat.SPLIT_MINSIZE, Long.toString(Long.MAX_VALUE));
+    return GSON.toJson(providedProperties);
   }
+
 }

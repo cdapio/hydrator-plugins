@@ -30,10 +30,10 @@ import java.io.IOException;
 /**
  * Created by Abhinav on 8/31/16.
  */
-public class UncInputFormat extends FileInputFormat<LongWritable, Text> {
+public class UncInputFormat extends FileInputFormat {
   @Override
   public RecordReader<LongWritable, Text> createRecordReader
-    (InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
+    (InputSplit split, TaskAttemptContext context) throws IOException {
     return new UncRecordReader();
   }
 

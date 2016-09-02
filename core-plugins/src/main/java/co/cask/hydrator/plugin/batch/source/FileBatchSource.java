@@ -191,7 +191,7 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
       if (lastTimeRead != null) {
         existing = GSON.fromJson(lastTimeRead, ARRAYLIST_DATE_TYPE);
       }
-      List<Date> failed = GSON.fromJson(datesToRead, ARRAYLIST_DATE_TYPE);
+        List<Date> failed = GSON.fromJson(datesToRead, ARRAYLIST_DATE_TYPE);
       failed.add(prevHour);
       failed.addAll(existing);
       table.write(LAST_TIME_READ, GSON.toJson(failed, ARRAYLIST_DATE_TYPE));

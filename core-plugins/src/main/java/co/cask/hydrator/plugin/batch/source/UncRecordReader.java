@@ -25,9 +25,10 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
-import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 
 /**
  * Created by Abhinav on 9/1/16.
@@ -35,44 +36,46 @@ import java.io.InputStream;
 public class UncRecordReader extends RecordReader<LongWritable, Text> {
 
   private Text currentValue;
+  private long counter;
   private LongWritable currentKey;
+  private ByteArrayOutputStream buf;
+  private BufferedReader bis;
 
   @Override
   public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
+    String user = "vagrant";
+    String sharedFolder = "abhi";
+    InputStream in = null;
+    String path = "smb://10.150.3.167/" + sharedFolder + "/test.txt";
+    NtlmPasswordAuthentication auth = new NtlmPasswordAuthentication("", user, user);
+    SmbFile smbFile = new SmbFile(path, auth);
 
+    in = smbFile.getInputStream();
+    bis = new BufferedReader(new InputStreamReader(in));
   }
 
   @Override
   public boolean nextKeyValue() throws IOException, InterruptedException {
-    String user = "vagrant";
-    String sharedFolder = "abhi";
-    InputStream in = null;
+    String line = null;
     try {
-      String path = "smb://10.150.3.167/" + sharedFolder + "/test.txt";
-      NtlmPasswordAuthentication auth = new NtlmPasswordAuthentication("", user, user);
-      SmbFile smbFile = new SmbFile(path, auth);
-
-      in = smbFile.getInputStream();
-      BufferedInputStream bis = new BufferedInputStream(in);
-      ByteArrayOutputStream buf = new ByteArrayOutputStream();
-      int result = bis.read();
-      while (result != -1) {
-        buf.write((byte) result);
-        result = bis.read();
+      line = bis.readLine();
+      if (line != null) {
+        currentValue = new Text(line);
+        counter = counter + 1;
+        currentKey = new LongWritable(counter);
+        return true;
+      } else {
+        bis.close();
       }
-      currentValue = new Text(buf.toString());
     } catch (Exception e) {
-    } finally {
-      if (in != null) {
-        in.close();
-      }
-      return false;
+      e.printStackTrace();
     }
+    return false;
   }
 
   @Override
   public LongWritable getCurrentKey() throws IOException, InterruptedException {
-    return null;
+    return currentKey;
   }
 
   @Override
@@ -87,6 +90,5 @@ public class UncRecordReader extends RecordReader<LongWritable, Text> {
 
   @Override
   public void close() throws IOException {
-
   }
 }
