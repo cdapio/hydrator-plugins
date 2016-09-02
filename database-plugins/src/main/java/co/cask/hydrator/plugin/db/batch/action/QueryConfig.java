@@ -19,14 +19,6 @@ package co.cask.hydrator.plugin.db.batch.action;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Macro;
 import co.cask.hydrator.plugin.ConnectionConfig;
-import co.cask.hydrator.plugin.DBManager;
-import org.slf4j.Logger;
-
-import java.sql.Connection;
-import java.sql.Driver;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
 
 /**
  * Config for Actions running database commands
