@@ -37,6 +37,7 @@ import co.cask.hydrator.common.SourceInputFormatProvider;
 import co.cask.hydrator.common.batch.JobUtils;
 import com.google.cloud.hadoop.io.bigquery.BigQueryConfiguration;
 import com.google.cloud.hadoop.io.bigquery.JsonTextBigQueryInputFormat;
+import com.google.common.base.Splitter;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import org.apache.hadoop.conf.Configuration;
@@ -78,6 +79,7 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     init();
+    validate();
     getOutputSchema();
     pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
   }
@@ -86,14 +88,6 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
   public void initialize(BatchRuntimeContext context) throws Exception {
     if (outputSchemaMapping.isEmpty()) {
       init();
-    }
-  }
-
-  private void init() {
-    String[] schemaList = sourceConfig.outputSchema.split(",");
-    for (String schema : schemaList) {
-      String[] columns = schema.split(":");
-      outputSchemaMapping.put(columns[0], columns[1]);
     }
   }
 
@@ -221,6 +215,19 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
     @Description(TEMP_BUCKET_DESC)
     @Macro
     String tmpBucketPath;
+  }
+
+  private  void validate() {
+    Splitter.on(",").omitEmptyStrings().trimResults()
+      .withKeyValueSeparator(":").split(sourceConfig.outputSchema);
+  }
+
+  private void init() {
+    String[] schemaList = sourceConfig.outputSchema.split(",");
+    for (String schema : schemaList) {
+      String[] columns = schema.split(":");
+      outputSchemaMapping.put(columns[0], columns[1]);
+    }
   }
 
   private void getOutputSchema() {
