@@ -43,6 +43,9 @@ The format is expected to be a number followed by an 's', 'm', 'h', or 'd' speci
 'm' for minutes, 'h' for hours, and 'd' for days. For example, if the pipeline is scheduled to run at midnight of January 1, 2016,
 and this property is set to 7d, the sink will delete any partitions for time partitions older than midnight Dec 25, 2015. (Macro-enabled)
 
+**compressionCodec:** Optional parameter to determine the compression codec to use on the resulting data. 
+Valid values are None, Snappy, and Deflate.
+
 Example
 -------
 This example will write to a ``TimePartitionedFileSet`` named ``'users'``:
@@ -54,6 +57,7 @@ This example will write to a ``TimePartitionedFileSet`` named ``'users'``:
             "name": "users",
             "filePathFormat": "yyyy-MM-dd/HH-mm",
             "timeZone": "America/Los_Angeles",
+            "compressionCodec": "Snappy",
             "schema": "{
                 \"type\":\"record\",
                 \"name\":\"user\",
@@ -69,7 +73,7 @@ This example will write to a ``TimePartitionedFileSet`` named ``'users'``:
 It will write data in Avro format using the given schema. Every time the pipeline runs, a
 new partition in the ``TimePartitionedFileSet`` will be created based on the logical start
 time of the run with the output directory ending with the date formatted as specified. All
-data for the run will be written to that partition.
+data for the run will be written to that partition compressed using the Snappy codec.
 
 For example, if the pipeline was scheduled to run at 10:00am on January 1, 2015 in Los
 Angeles, a new partition will be created with year 2015, month 1, day 1, hour 10, and

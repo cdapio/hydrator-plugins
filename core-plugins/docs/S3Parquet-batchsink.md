@@ -35,6 +35,9 @@ example: the format ``'yyyy-MM-dd-HH-mm'`` will create a file path ending in
 
 **schema:** The Parquet schema of the record being written to the sink as a JSON object.
 
+**compressionCodec:** Optional parameter to determine the compression codec to use on the resulting data. 
+Valid values are None, Snappy, GZip, and LZO.
+
 
 Example
 -------
@@ -51,6 +54,7 @@ corresponding to the start time in ``yyyy-MM-dd-HH-mm`` format:
             "accessID": "ID",
             "basePath": "s3n://logs",
             "pathFormat": "yyyy-MM-dd-HH-mm",
+            "compressionCodec": "Snappy",
             "schema": "{
                 \"type\":\"record\",
                 \"name\":\"user\",

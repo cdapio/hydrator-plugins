@@ -49,19 +49,6 @@
             ],
             "default": "None"
           }
-        },
-        {
-          "widget-type": "select",
-          "label": "Compression Type",
-          "name": "compressionType",
-          "widget-attributes": {
-            "values": [
-              "BLOCK",
-              "RECORD",
-              "NONE"
-            ],
-            "default": "BLOCK"
-          }
         }
       ]
     }

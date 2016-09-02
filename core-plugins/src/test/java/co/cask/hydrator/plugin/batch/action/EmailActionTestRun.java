@@ -57,7 +57,8 @@ public class EmailActionTestRun extends ETLBatchTestBase {
 
     ETLStage action = new ETLStage(
       "email",
-      new ETLPlugin("Email", PostAction.PLUGIN_TYPE,
+      new ETLPlugin("Email",
+                    PostAction.PLUGIN_TYPE,
                     ImmutableMap.of("recipients", "to@test.com",
                                     "sender", "from@test.com",
                                     "message", "Run for ${logicalStartTime(yyyy-MM-dd,0m,UTC)} completed.",
