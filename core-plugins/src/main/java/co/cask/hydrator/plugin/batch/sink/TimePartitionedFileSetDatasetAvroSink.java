@@ -57,6 +57,19 @@ public class TimePartitionedFileSetDatasetAvroSink extends
   @Override
   protected void addFileSetProperties(FileSetProperties.Builder properties) {
     FileSetUtil.configureAvroFileSet(config.schema, properties);
+    if (config.compressionCodec != null && !config.compressionCodec.equals("None")) {
+      properties.setOutputProperty("mapred.output.compress", "true");
+      switch (config.compressionCodec) {
+        case "Snappy":
+          properties.setOutputProperty("avro.output.codec", "snappy");
+          break;
+        case "Deflate":
+          properties.setOutputProperty("avro.output.codec", "deflate");
+          break;
+        default:
+          throw new IllegalArgumentException("Unsupported compression codec " + config.compressionCodec);
+      }
+    }
   }
 
   @Override
@@ -86,10 +99,15 @@ public class TimePartitionedFileSetDatasetAvroSink extends
     @Description(SCHEMA_DESC)
     private String schema;
 
+    @Nullable
+    @Description("Used to specify the compression codec to be used for the final dataset.")
+    private String compressionCodec;
+
     public TPFSAvroSinkConfig(String name, String schema, @Nullable String basePath, @Nullable String pathFormat,
-                              @Nullable String timeZone) {
+                              @Nullable String timeZone, @Nullable String compressionCodec) {
       super(name, basePath, pathFormat, timeZone);
       this.schema = schema;
+      this.compressionCodec = compressionCodec;
     }
   }
 

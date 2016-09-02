@@ -33,6 +33,7 @@ import parquet.avro.AvroParquetOutputFormat;
 
 import java.text.SimpleDateFormat;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * {@link S3ParquetBatchSink} that stores data in parquet format to S3.
@@ -78,6 +79,10 @@ public class S3ParquetBatchSink extends S3BatchSink<Void, GenericRecord> {
     @Description(SCHEMA_DESC)
     private String schema;
 
+    @Nullable
+    @Description("Used to specify the compression codec to be used for the final dataset.")
+    private String compressionCodec;
+
     @SuppressWarnings("unused")
     public S3ParquetSinkConfig() {
       super();
@@ -85,9 +90,10 @@ public class S3ParquetBatchSink extends S3BatchSink<Void, GenericRecord> {
 
     @SuppressWarnings("unused")
     public S3ParquetSinkConfig(String referenceName, String basePath, String schema, String accessID, String accessKey,
-                               String pathFormat, String fileSystemProperties) {
+                               String pathFormat, String fileSystemProperties, String compressionCodec) {
       super(referenceName, basePath, accessID, accessKey, pathFormat, fileSystemProperties);
       this.schema = schema;
+      this.compressionCodec = compressionCodec;
     }
   }
 
@@ -104,6 +110,21 @@ public class S3ParquetBatchSink extends S3BatchSink<Void, GenericRecord> {
 
       conf = Maps.newHashMap();
       conf.put("parquet.avro.schema", config.schema);
+      if (config.compressionCodec != null && !config.compressionCodec.equals("None")) {
+        switch (config.compressionCodec) {
+          case "Snappy":
+            conf.put("parquet.compression", "SNAPPY");
+            break;
+          case "GZip":
+            conf.put("parquet.compression", "GZIP");
+            break;
+          case "LZO":
+            conf.put("parquet.compression", "LZO");
+            break;
+          default:
+            throw new IllegalArgumentException("Unsupported compression codec " + config.compressionCodec);
+        }
+      }
       conf.put(FileOutputFormat.OUTDIR,
                String.format("%s/%s", config.basePath, format.format(context.getLogicalStartTime())));
     }
