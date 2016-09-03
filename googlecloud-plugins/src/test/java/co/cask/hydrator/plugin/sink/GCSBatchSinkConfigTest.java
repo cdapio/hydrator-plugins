@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.sink;
 
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -36,15 +37,16 @@ public class GCSBatchSinkConfigTest {
   public void testFileSystemProperties() {
     String projectID = "projectID";
     String jsonKey = "jsonKey";
-    String path = "/path";
+    String path = "path";
     String schema = "schema";
     String bucket = "bucket";
     // Test default properties
     GCSAvroBatchSink.GCSAvroSinkConfig gcsAvroConfig =
       new GCSAvroBatchSink.GCSAvroSinkConfig("gcstest", bucket, schema, projectID, jsonKey, null, path);
-    Map<String, String> fsProperties = GSON.fromJson(gcsAvroConfig.fileSystemProperties, MAP_STRING_STRING_TYPE);
+    Map<String, String> fsProperties = GSON.fromJson(gcsAvroConfig.getFileSystemProperties(null, projectID, jsonKey), MAP_STRING_STRING_TYPE);
     Assert.assertNotNull(fsProperties);
     Assert.assertEquals(3, fsProperties.size());
+    Assert.assertEquals("gs://bucket/path", fsProperties.get(FileOutputFormat.OUTDIR) );
     Assert.assertEquals(projectID, fsProperties.get("fs.gs.project.id"));
     Assert.assertEquals(jsonKey, fsProperties.get("google.cloud.auth.service.account.json.keyfile"));
   }
