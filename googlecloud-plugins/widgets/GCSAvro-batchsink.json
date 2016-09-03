@@ -27,7 +27,7 @@
           "name": "BucketDir"
         },
         {
-          "widget-type": "json-editor",
+          "widget-type": "keyvalue",
           "label": "File System Properties",
           "name": "fileSystemProperties"
         }
