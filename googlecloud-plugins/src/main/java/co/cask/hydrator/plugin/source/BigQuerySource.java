@@ -31,7 +31,6 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.common.Constants;
-import co.cask.hydrator.common.RecordConverter;
 import co.cask.hydrator.common.ReferenceBatchSource;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.common.SourceInputFormatProvider;
@@ -41,15 +40,12 @@ import com.google.cloud.hadoop.io.bigquery.JsonTextBigQueryInputFormat;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -74,8 +70,6 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
   private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
 
   private final BQSourceConfig sourceConfig;
-//  private final Map<String, String> outputSchemaMapping = new HashMap<>();
-//  private static Schema outputSchema;
 
   public BigQuerySource(BQSourceConfig config) {
     super(new ReferencePluginConfig(config.referenceName));
@@ -90,21 +84,6 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
       pipelineConfigurer.getStageConfigurer().setOutputSchema(sourceConfig.getSchema());
     }
   }
-
-//  @Override
-//  public void initialize(BatchRuntimeContext context) throws Exception {
-//    if (outputSchemaMapping.isEmpty()) {
-//      init();
-//    }
-//  }
-
-//  private void init() {
-//    String[] schemaList = sourceConfig.outputSchema.split(",");
-//    for (String schema : schemaList) {
-//      String[] columns = schema.split(":");
-//      outputSchemaMapping.put(columns[0], columns[1]);
-//    }
-//  }
 
   @Override
   public void prepareRun(BatchSourceContext context) throws IOException, GeneralSecurityException,
@@ -176,7 +155,7 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
    * {@link PluginConfig} class for {@link BigQuerySource}
    */
   public static class BQSourceConfig extends PluginConfig {
-    private static final String PROJECTID_DESC = "The ID of the project in Google Cloud Platform";
+    private static final String PROJECTID_DESC = "The ID of the project in Google Cloud";
     private static final String TEMP_BUCKET_DESC = "The temporary Google Cloud Storage directory to be used for " +
       "storing the intermediate results. " +
       "e.g. 'gs://bucketname/directoryname'. The directory should not " +
@@ -243,23 +222,5 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
     private  void validate() {
       Preconditions.checkState(tmpBucketPath.startsWith("gs://"));
     }
-
   }
-
-
-//  private void getOutputSchema() {
-//    if (outputSchema == null) {
-//      List<Schema.Field> outputFields = new ArrayList<>();
-//      try {
-//        for (String fieldName : outputSchemaMapping.keySet()) {
-//          Schema fieldType = Schema.of(Schema.Type.valueOf(outputSchemaMapping.get(fieldName).toUpperCase()));
-//          outputFields.add(Schema.Field.of(fieldName, fieldType));
-//        }
-//      } catch (Exception e) {
-//        throw new IllegalArgumentException("Error while parsing output schema: invalid output schema " +
-//                                             e.getMessage(), e);
-//      }
-//      outputSchema = Schema.recordOf("outputSchema", outputFields);
-//    }
-//  }
 }
