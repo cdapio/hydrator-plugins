@@ -25,12 +25,9 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.ReferencePluginConfig;
-import co.cask.hydrator.common.batch.sink.SinkOutputFormatProvider;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 import java.lang.reflect.Type;
 import java.util.HashMap;
@@ -42,9 +39,7 @@ import javax.annotation.Nullable;
  * @param <KEY_OUT> the type of key the sink outputs
  * @param <VAL_OUT> the type of value the sink outputs
  */
-
 public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<StructuredRecord, KEY_OUT, VAL_OUT> {
-  public static final String BUCKET_DES = "GCS Bucket to use to store the data";
   public static final String PROJECT_ID_DES = "Google Cloud Project ID with access to configured GCS buckets";
   public static final String SERVICE_KEY_FILE_DES = "The Json_Key_File certificate file of the " +
     "service account used for GCS access";
@@ -64,64 +59,42 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
     // do not create file system properties if macros were provided unless in a test case
     if (!this.config.containsMacro("fileSystemProperties") && !this.config.containsMacro("JsonKeyFile") &&
       !this.config.containsMacro("ProjectId")) {
-      this.config.fileSystemProperties = updateFileSystemProperties(this.config.fileSystemProperties,
+      this.config.fileSystemProperties = this.config.getFileSystemProperties(this.config.fileSystemProperties,
                                                                     this.config.projectId, this.config.jsonKey);
     }
   }
 
-  @VisibleForTesting
-  GCSSinkConfig getConfig() {
-    return config;
-  }
-
   @Override
   public final void prepareRun(BatchSinkContext context) {
-    OutputFormatProvider outputFormatProvider = createOutputFormatProvider(context);
-    Map<String, String> outputConfig = new HashMap<>(outputFormatProvider.getOutputFormatConfiguration());
-    if (config.fileSystemProperties != null) {
-      Map<String, String> properties = GSON.fromJson(config.fileSystemProperties, MAP_STRING_STRING_TYPE);
-      outputConfig.putAll(properties);
-    }
-    context.addOutput(Output.of(config.referenceName, new SinkOutputFormatProvider(
-      outputFormatProvider.getOutputFormatClassName(), outputConfig)));
+    OutputFormatProvider outputFormatProvider = createOutputFormatProvider(context, config.fileSystemProperties);
+    context.addOutput(Output.of(config.referenceName, outputFormatProvider));
   }
 
-  protected abstract OutputFormatProvider createOutputFormatProvider(BatchSinkContext context);
+  protected abstract OutputFormatProvider createOutputFormatProvider(BatchSinkContext context,
+                                                                     String fileSystemProperties);
 
-  private static String updateFileSystemProperties(@Nullable String fileSystemProperties,
-                                                   String projectId, String jsonKey) {
-    Map<String, String> providedProperties;
-    if (fileSystemProperties == null) {
-      providedProperties = new HashMap<>();
-    } else {
-      providedProperties = GSON.fromJson(fileSystemProperties, MAP_STRING_STRING_TYPE);
-    }
-    providedProperties.put("fs.gs.project.id", projectId);
-    providedProperties.put("google.cloud.auth.service.account.json.keyfile", jsonKey);
-    return GSON.toJson(providedProperties);
-  }
 
   /**
    * GCS Sink configuration.
    */
   public static class GCSSinkConfig extends ReferencePluginConfig {
 
-    @Name("BucketKey")
-    @Description(BUCKET_DES)
+    @Name("bucketKey")
+    @Description("GCS Bucket to use to store the data")
     @Macro
     protected String bucketKey;
 
-    @Name("ProjectId")
+    @Name("projectId")
     @Description(PROJECT_ID_DES)
     @Macro
     protected String projectId;
 
-    @Name("JsonKeyFile")
+    @Name("jsonKeyFile")
     @Description(SERVICE_KEY_FILE_DES)
     @Macro
     protected String jsonKey;
 
-    @Name("PathToStore")
+    @Name("pathToStore")
     @Description("path to store inside bucket")
     @Macro
     protected String path;
@@ -131,9 +104,19 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
     @Macro
     protected String fileSystemProperties;
 
-    public GCSSinkConfig(String referenceName) {
-      super(referenceName);
-      this.fileSystemProperties = updateFileSystemProperties(null, projectId, jsonKey);
+    private String getFileSystemProperties(@Nullable String fileSystemProperties,
+                                                     String projectId, String jsonKey) {
+      Map<String, String> providedProperties;
+      if (fileSystemProperties == null) {
+        providedProperties = new HashMap<>();
+      } else {
+        providedProperties = GSON.fromJson(fileSystemProperties, MAP_STRING_STRING_TYPE);
+      }
+      providedProperties.put("fs.gs.project.id", projectId);
+      providedProperties.put("google.cloud.auth.service.account.json.keyfile", jsonKey);
+      providedProperties.put(FileOutputFormat.OUTDIR,
+                             String.format("gs://%s/%s", bucketKey, path));
+      return GSON.toJson(providedProperties);
     }
 
     public GCSSinkConfig(String referenceName, String bucketKey, String projectId,
@@ -144,7 +127,7 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
       this.projectId = projectId;
       this.jsonKey = serviceKeyFile;
       this.path = path;
-      this.fileSystemProperties = updateFileSystemProperties(fileSystemProperties, projectId,
+      this.fileSystemProperties = getFileSystemProperties(fileSystemProperties, projectId,
                                                              serviceKeyFile);
     }
   }

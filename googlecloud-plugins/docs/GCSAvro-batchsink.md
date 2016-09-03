@@ -42,27 +42,29 @@ should specified a new directory name.
 
     {
     	 "name": "GCSAvro",
-            "plugin": {
-              "name": "GCSAvro",
-              "type": "batchsink",
-              "label": "GCSAvro",
-              "artifact": {
-                "name": "core-plugins",
-                "version": "1.4.0-SNAPSHOT",
-                "scope": "SYSTEM"
-              },
-              "properties": {
-                "schema": "{
+       "plugin": {
+          "name": "GCSAvro",
+          "type": "batchsink",
+          "label": "GCSAvro",
+          "artifact": {
+             "name": "core-plugins",
+             "version": "1.4.0-SNAPSHOT",
+             "scope": "SYSTEM"
+           },
+          "properties": {
+             "schema": "{
                 \"type\":\"record\",
                 \"name\":\"etlSchemaBody\",
                 \"fields\":[
                 {\"name\":\"ts\",\"type\":\"long\"},
-                {\"name\":\"body\",\"type\":\"string\"}]}",
-                "BucketKey": "bucket",
-                "PathTo_Store": "directory",
-                "ProjectId": "projectid",
-                "JsonKeyFile": "path_to_jsonKeyFile",
-                "referenceName": "name"
+                {\"name\":\"body\",\"type\":\"string\"}
+                ]
+               }",
+             "BucketKey": "bucket",
+             "PathTo_Store": "directory",
+             "ProjectId": "projectid",
+             "JsonKeyFile": "path_to_jsonKeyFile",
+             "referenceName": "name"
          }
       }
     }

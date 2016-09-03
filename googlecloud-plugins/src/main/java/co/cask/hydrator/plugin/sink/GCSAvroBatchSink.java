@@ -28,14 +28,15 @@ import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Maps;
+import com.google.common.reflect.TypeToken;
+import com.google.gson.Gson;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapred.JobContext;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,6 +48,8 @@ import java.util.Map;
 @Description("Batch sink to write to Google Cloud Storage in Avro format.")
 public class GCSAvroBatchSink extends GCSBatchSink<AvroKey<GenericRecord>, NullWritable> {
 
+  private static final Gson GSON = new Gson();
+  private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
   private StructuredToAvroTransformer recordTransformer;
   private final GCSAvroSinkConfig config;
 
@@ -62,8 +65,9 @@ public class GCSAvroBatchSink extends GCSBatchSink<AvroKey<GenericRecord>, NullW
   }
 
   @Override
-  protected OutputFormatProvider createOutputFormatProvider(BatchSinkContext context) {
-    return new GCSAvroOutputFormatProvider(config, context);
+  protected OutputFormatProvider createOutputFormatProvider(BatchSinkContext context,
+                                                            String fileSystemProperties) {
+    return new GCSAvroOutputFormatProvider(config, fileSystemProperties);
   }
 
   @Override
@@ -98,15 +102,15 @@ public class GCSAvroBatchSink extends GCSBatchSink<AvroKey<GenericRecord>, NullW
 
     private final Map<String, String> conf;
 
-    public GCSAvroOutputFormatProvider(GCSAvroSinkConfig config, BatchSinkContext context) {
+    public GCSAvroOutputFormatProvider(GCSAvroSinkConfig config, String fileSystemProperties) {
       conf = new HashMap<>();
       conf.put(JobContext.OUTPUT_KEY_CLASS, AvroKey.class.getName());
       conf.put("avro.schema.output.key", config.schema);
-      conf.put(FileOutputFormat.OUTDIR,
-               String.format("gs://%s/%s", config.bucketKey, config.path));
-
+      if (fileSystemProperties != null) {
+        Map<String, String> propertyMap = GSON.fromJson(fileSystemProperties, MAP_STRING_STRING_TYPE);
+        conf.putAll(propertyMap);
+      }
     }
-
     @Override
     public String getOutputFormatClassName() {
       return AvroKeyOutputFormat.class.getName();

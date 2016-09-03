@@ -28,7 +28,7 @@ import java.util.Map;
 /**
  * Tests for {@link GCSBatchSink} configuration.
  */
-public class GCSBatchSinkTest {
+public class GCSBatchSinkConfigTest {
   private static final Gson GSON = new Gson();
   private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
 
@@ -42,11 +42,9 @@ public class GCSBatchSinkTest {
     // Test default properties
     GCSAvroBatchSink.GCSAvroSinkConfig gcsAvroConfig =
       new GCSAvroBatchSink.GCSAvroSinkConfig("gcstest", bucket, schema, projectID, jsonKey, null, path);
-    GCSAvroBatchSink gcsAvroBatchSink = new GCSAvroBatchSink(gcsAvroConfig);
-    GCSBatchSink.GCSSinkConfig gcsSinkConfig = gcsAvroBatchSink.getConfig();
-    Map<String, String> fsProperties = GSON.fromJson(gcsSinkConfig.fileSystemProperties, MAP_STRING_STRING_TYPE);
+    Map<String, String> fsProperties = GSON.fromJson(gcsAvroConfig.fileSystemProperties, MAP_STRING_STRING_TYPE);
     Assert.assertNotNull(fsProperties);
-    Assert.assertEquals(2, fsProperties.size());
+    Assert.assertEquals(3, fsProperties.size());
     Assert.assertEquals(projectID, fsProperties.get("fs.gs.project.id"));
     Assert.assertEquals(jsonKey, fsProperties.get("google.cloud.auth.service.account.json.keyfile"));
   }
