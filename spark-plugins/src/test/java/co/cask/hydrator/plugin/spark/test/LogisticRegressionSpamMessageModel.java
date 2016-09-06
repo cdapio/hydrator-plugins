@@ -33,20 +33,20 @@ public class LogisticRegressionSpamMessageModel {
                                                Schema.Field.of(SPAM_PREDICTION_FIELD,
                                                                Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
                                                Schema.Field.of(TEXT_FIELD, Schema.of(Schema.Type.STRING)),
-                                               Schema.Field.of(READ_FIELD, Schema.of(Schema.Type.STRING))
+                                               Schema.Field.of(READ_FIELD, Schema.of(Schema.Type.DOUBLE))
   );
 
   private final String text;
-  private final String read;
+  private final Double read;
 
   @Nullable
   private final Double spamPrediction;
 
-  public LogisticRegressionSpamMessageModel(String text, String read) {
+  public LogisticRegressionSpamMessageModel(String text, Double read) {
     this(text, read, null);
   }
 
-  public LogisticRegressionSpamMessageModel(String text, String read, @Nullable Double spamPrediction) {
+  public LogisticRegressionSpamMessageModel(String text, Double read, @Nullable Double spamPrediction) {
     this.text = text;
     this.read = read;
     this.spamPrediction = spamPrediction;
@@ -64,7 +64,7 @@ public class LogisticRegressionSpamMessageModel {
 
   public static LogisticRegressionSpamMessageModel fromStructuredRecord(StructuredRecord structuredRecord) {
     return new LogisticRegressionSpamMessageModel((String) structuredRecord.get(TEXT_FIELD),
-                                                  (String) structuredRecord.get(READ_FIELD),
+                                                  (Double) structuredRecord.get(READ_FIELD),
                                                   (Double) structuredRecord.get(SPAM_PREDICTION_FIELD));
   }
 

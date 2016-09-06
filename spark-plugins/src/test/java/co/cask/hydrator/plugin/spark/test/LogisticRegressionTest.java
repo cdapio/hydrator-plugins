@@ -114,20 +114,20 @@ public class LogisticRegressionTest extends HydratorTestBase {
 
     // set up five spam messages and five non-spam messages to be used for classification
     List<StructuredRecord> messagesToWrite = new ArrayList<>();
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("buy our clothes", "yes", 1.0).toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("sell your used books to us", "yes", 1.0)
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel("buy our clothes", 0.0, 1.0).toStructuredRecord());
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel("sell your used books to us", 0.0, 1.0)
                           .toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("earn money for free", "yes", 1.0).toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("this is definitely not spam", "yes", 1.0)
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel("earn money for free", 0.0, 1.0).toStructuredRecord());
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel("this is definitely not spam", 0.0, 1.0)
                           .toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("you won the lottery", "yes", 1.0).toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("how was your day", "no", 0.0).toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("what are you up to", "no", 0.0).toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("this is a genuine message", "no", 0.0)
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel("you won the lottery", 0.0, 1.0).toStructuredRecord());
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel("how was your day", 1.0, 0.0).toStructuredRecord());
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel("what are you up to", 1.0, 0.0).toStructuredRecord());
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel("this is a genuine message", 1.0, 0.0)
                           .toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("this is an even more genuine message", "no", 0.0)
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel("this is an even more genuine message", 1.0, 0.0)
                           .toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("could you send me the report", "no", 0.0)
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel("could you send me the report", 1.0, 0.0)
                           .toStructuredRecord());
 
     // write records to source
@@ -171,10 +171,10 @@ public class LogisticRegressionTest extends HydratorTestBase {
 
     // write some some messages to be classified
     List<StructuredRecord> messagesToWrite = new ArrayList<>();
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("how are you doing today", "no").toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("earn money", "yes").toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("what are you doing today", "no").toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("genuine report", "no").toStructuredRecord());
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel("how are you doing today", 1.0).toStructuredRecord());
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel("earn money", 0.0).toStructuredRecord());
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel("what are you doing today", 1.0).toStructuredRecord());
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel("genuine report", 1.0).toStructuredRecord());
 
     DataSetManager<Table> inputManager = getDataset(Id.Namespace.DEFAULT, textsToClassify);
     MockSource.writeInput(inputManager, messagesToWrite);
@@ -193,11 +193,11 @@ public class LogisticRegressionTest extends HydratorTestBase {
     }
 
     Set<LogisticRegressionSpamMessageModel> expected = new HashSet<>();
-    expected.add(new LogisticRegressionSpamMessageModel("how are you doing today", "no", 0.0));
+    expected.add(new LogisticRegressionSpamMessageModel("how are you doing today", 1.0, 0.0));
     // only 'earn money' should be predicated as spam
-    expected.add(new LogisticRegressionSpamMessageModel("earn money", "yes", 1.0));
-    expected.add(new LogisticRegressionSpamMessageModel("what are you doing today", "no", 0.0));
-    expected.add(new LogisticRegressionSpamMessageModel("genuine report", "no", 0.0));
+    expected.add(new LogisticRegressionSpamMessageModel("earn money", 0.0, 1.0));
+    expected.add(new LogisticRegressionSpamMessageModel("what are you doing today", 1.0, 0.0));
+    expected.add(new LogisticRegressionSpamMessageModel("genuine report", 1.0, 0.0));
 
     Assert.assertEquals(expected, results);
   }

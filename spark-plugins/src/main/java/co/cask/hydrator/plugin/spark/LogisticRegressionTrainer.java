@@ -121,9 +121,13 @@ public class LogisticRegressionTrainer extends SparkSink<StructuredRecord> {
     JavaRDD<LabeledPoint> trainingData = input.map(new Function<StructuredRecord, LabeledPoint>() {
       @Override
       public LabeledPoint call(StructuredRecord record) throws Exception {
-        List<String> result = new ArrayList<>();
+        List<Object> result = new ArrayList<>();
         for (String column : columns) {
+          if (record.getSchema().getField(column).getSchema().getType() != Schema.Type.DOUBLE) {
             result.add(String.valueOf(record.get(column)));
+          } else {
+            result.add(record.get(column));
+          }
         }
         return new LabeledPoint((Double) record.get(config.labelField), tf.transform(result));
       }

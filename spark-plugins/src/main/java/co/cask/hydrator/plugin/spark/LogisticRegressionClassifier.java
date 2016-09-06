@@ -136,9 +136,13 @@ public class LogisticRegressionClassifier extends SparkCompute<StructuredRecord,
     JavaRDD<StructuredRecord> output = input.map(new Function<StructuredRecord, StructuredRecord>() {
       @Override
       public StructuredRecord call(StructuredRecord structuredRecord) throws Exception {
-        List<String> result = new ArrayList<>();
+        List<Object> result = new ArrayList<>();
         for (String column : columns) {
-          result.add(String.valueOf(structuredRecord.get(column)));
+          if (structuredRecord.getSchema().getField(column).getSchema().getType() != Schema.Type.DOUBLE) {
+            result.add(String.valueOf(structuredRecord.get(column)));
+          } else {
+            result.add(structuredRecord.get(column));
+          }
         }
         double prediction = loadedModel.predict(tf.transform(result));
         return cloneRecord(structuredRecord).set(config.predictionField, prediction).build();
