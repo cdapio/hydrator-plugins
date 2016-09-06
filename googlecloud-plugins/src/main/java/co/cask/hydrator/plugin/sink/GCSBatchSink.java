@@ -54,9 +54,9 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
   protected GCSBatchSink(GCSSinkConfig config) {
     super(config);
     this.config = config;
-    // update fileSystemProperties to include ProjectId and JsonKeyFile, so prepareRun can only set
-    // fileSystemProperties in configuration, and not deal with projectId and JsonKeyFile separately
-    // do not create file system properties if macros were provided unless in a test case
+    // Update the fileSystemProperties to include the projectId and jsonKeyFile, so that prepareRun only sets
+    // the fileSystemProperties in the configuration, and not deal with projectId and jsonKeyFile separately.
+    // Do not create file system properties if macros were provided unless in a test case.
     if (!this.config.containsMacro("fileSystemProperties") && !this.config.containsMacro("jsonKeyFile") &&
       !this.config.containsMacro("projectId")) {
       this.config.fileSystemProperties = this.config.getFileSystemProperties(this.config.fileSystemProperties,
