@@ -40,9 +40,9 @@ import javax.annotation.Nullable;
  * @param <VAL_OUT> the type of value the sink outputs
  */
 public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<StructuredRecord, KEY_OUT, VAL_OUT> {
-  public static final String PROJECT_ID_DES = "Google Cloud Project ID with access to configured GCS buckets";
-  public static final String SERVICE_KEY_FILE_DES = "The Json_Key_File certificate file of the " +
-    "service account used for GCS access";
+  public static final String PROJECT_ID_DES = "Google Cloud Project ID with access to configured GCS buckets.";
+  public static final String SERVICE_KEY_FILE_DES = "The JSON certificate file of the " +
+    "service account used for GCS access.";
   private static final String FILESYSTEM_PROPERTIES_DESCRIPTION = "A JSON string representing a map of properties " +
     "needed for the distributed file system.";
   private static final Gson GSON = new Gson();
@@ -57,10 +57,11 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
     // update fileSystemProperties to include ProjectId and JsonKeyFile, so prepareRun can only set
     // fileSystemProperties in configuration, and not deal with projectId and JsonKeyFile separately
     // do not create file system properties if macros were provided unless in a test case
-    if (!this.config.containsMacro("fileSystemProperties") && !this.config.containsMacro("JsonKeyFile") &&
-      !this.config.containsMacro("ProjectId")) {
+    if (!this.config.containsMacro("fileSystemProperties") && !this.config.containsMacro("jsonKeyFile") &&
+      !this.config.containsMacro("projectId")) {
       this.config.fileSystemProperties = this.config.getFileSystemProperties(this.config.fileSystemProperties,
-                                                                             this.config.projectId, this.config.jsonKey);
+                                                                             this.config.projectId,
+                                                                             this.config.jsonKeyFile);
     }
   }
 
@@ -91,7 +92,7 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
     @Name("jsonKeyFile")
     @Description(SERVICE_KEY_FILE_DES)
     @Macro
-    protected String jsonKey;
+    protected String jsonKeyFile;
 
     @Name("pathToStore")
     @Description("path to store inside bucket")
@@ -124,7 +125,7 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
       super(referenceName);
       this.bucketKey = bucketKey;
       this.projectId = projectId;
-      this.jsonKey = serviceKeyFile;
+      this.jsonKeyFile = serviceKeyFile;
       this.bucketDir = bucketDir;
       this.fileSystemProperties = getFileSystemProperties(fileSystemProperties, projectId,
                                                           serviceKeyFile);

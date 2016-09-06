@@ -14,17 +14,17 @@
         {
           "widget-type": "textbox",
           "label": "Project ID",
-          "name": "ProjectId"
+          "name": "projectId"
         },
         {
           "widget-type": "textbox",
-          "label": "Json Key File",
-          "name": "JsonKeyFile"
+          "label": "JSON Key File",
+          "name": "jsonKeyFile"
         },
         {
           "widget-type": "textbox",
           "label": "Target Bucket Directory",
-          "name": "BucketDir"
+          "name": "pathToStore"
         },
         {
           "widget-type": "keyvalue",

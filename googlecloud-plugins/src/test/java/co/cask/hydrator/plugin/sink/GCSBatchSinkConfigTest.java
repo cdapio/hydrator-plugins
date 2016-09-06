@@ -35,19 +35,20 @@ public class GCSBatchSinkConfigTest {
 
   @Test
   public void testFileSystemProperties() {
-    String projectID = "projectID";
+    String projectId = "projectId";
     String jsonKey = "jsonKey";
     String path = "path";
     String schema = "schema";
     String bucket = "bucket";
     // Test default properties
     GCSAvroBatchSink.GCSAvroSinkConfig gcsAvroConfig =
-      new GCSAvroBatchSink.GCSAvroSinkConfig("gcstest", bucket, schema, projectID, jsonKey, null, path);
-    Map<String, String> fsProperties = GSON.fromJson(gcsAvroConfig.getFileSystemProperties(null, projectID, jsonKey), MAP_STRING_STRING_TYPE);
+      new GCSAvroBatchSink.GCSAvroSinkConfig("gcstest", bucket, schema, projectId, jsonKey, null, path);
+    Map<String, String> fsProperties = GSON.fromJson(gcsAvroConfig.getFileSystemProperties(null, projectId, jsonKey),
+                                                     MAP_STRING_STRING_TYPE);
     Assert.assertNotNull(fsProperties);
     Assert.assertEquals(3, fsProperties.size());
-    Assert.assertEquals("gs://bucket/path", fsProperties.get(FileOutputFormat.OUTDIR) );
-    Assert.assertEquals(projectID, fsProperties.get("fs.gs.project.id"));
+    Assert.assertEquals("gs://bucket/path", fsProperties.get(FileOutputFormat.OUTDIR));
+    Assert.assertEquals(projectId, fsProperties.get("fs.gs.project.id"));
     Assert.assertEquals(jsonKey, fsProperties.get("google.cloud.auth.service.account.json.keyfile"));
   }
 }
