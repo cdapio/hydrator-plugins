@@ -49,7 +49,7 @@
           "name": "username"
         },
         {
-          "widget-type": "passwordbox",
+          "widget-type": "textbox",
           "label": "Password",
           "name": "password"
         },
