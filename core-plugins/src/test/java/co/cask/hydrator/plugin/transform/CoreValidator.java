@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.validator;
+package co.cask.hydrator.plugin.transform;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
@@ -42,6 +42,8 @@ import org.apache.commons.validator.routines.UrlValidator;
 @Name("core")
 @Description("Core Validator functions.")
 public class CoreValidator implements Validator {
+
+  public static final String ID = "core";
 
   private static final EmailValidator EMAIL_VALIDATOR = EmailValidator.getInstance();
   private static final DateValidator DATE_VALIDATOR = new DateValidator();
