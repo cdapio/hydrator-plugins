@@ -105,7 +105,7 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
     protected String fileSystemProperties;
 
     public String getFileSystemProperties(@Nullable String fileSystemProperties,
-                                          String projectId, String jsonKey) {
+                                          String projectId, String jsonKeyFile) {
       Map<String, String> providedProperties;
       if (fileSystemProperties == null) {
         providedProperties = new HashMap<>();
@@ -113,7 +113,7 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
         providedProperties = GSON.fromJson(fileSystemProperties, MAP_STRING_STRING_TYPE);
       }
       providedProperties.put("fs.gs.project.id", projectId);
-      providedProperties.put("google.cloud.auth.service.account.json.keyfile", jsonKey);
+      providedProperties.put("google.cloud.auth.service.account.json.keyfile", jsonKeyFile);
       providedProperties.put(FileOutputFormat.OUTDIR,
                              String.format("gs://%s/%s", bucketKey, bucketDir));
       return GSON.toJson(providedProperties);
