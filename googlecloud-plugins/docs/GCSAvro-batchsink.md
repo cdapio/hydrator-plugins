@@ -8,7 +8,7 @@ A batch sink for writing to Google Cloud Storage in Avro format.
 
 Use Case
 --------
-This source is used whenever you need to write to Google Cloud Storage in Avro format.
+This sink is woused whenever you need to write to Google Cloud Storage in Avro format.
 For example, you might want to create daily snapshots of a database by reading the
 entire contents of a table, writing to this sink, and then other programs can analyze
 the contents of the specified file. The output of the run will be stored in a directory
