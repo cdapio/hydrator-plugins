@@ -19,7 +19,7 @@
         {
           "widget-type": "textbox",
           "label": "JSON Key File Path",
-          "name": "jsonFilePath"
+          "name": "jsonKeyFilePath"
         },
         {
           "widget-type": "textbox",
@@ -29,7 +29,7 @@
         {
           "widget-type": "textbox",
           "label": "Fully-qualified Input Table ID",
-          "name": "inputTableId"
+          "name": "inputTable"
         },
         {
           "widget-type": "textarea",

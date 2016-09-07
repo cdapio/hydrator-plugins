@@ -150,15 +150,15 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
    * {@link PluginConfig} class for {@link BigQuerySource}
    */
   public static class BQSourceConfig extends PluginConfig {
-    private static final String PROJECTID_DESC = "The ID of the project in Google Cloud";
-    private static final String TEMP_BUCKET_DESC = "The temporary Google Cloud Storage directory to be used for " +
-                                                   "storing the intermediate results. " +
-                                                   "e.g. 'gs://bucketname/directoryname'. The directory should not " +
+    private static final String PROJECTID_DESC = "The ID of the project in Google Cloud.";
+    private static final String TEMP_BUCKET_DESC = "The temporary Google Storage directory to be used for storing " +
+                                                   "the intermediate results. For example: " +
+                                                   "'gs://bucketname/directoryname'. The directory should not " +
                                                    "already exist. Users should manually delete this directory " +
                                                    "afterwards to avoid any extra Google Storage charges.";
-    private static final String IMPORT_QUERY_DESC = "The SELECT query to use to import data from the specified table." +
-                                                    " For example: 'SELECT TOP(corpus, 10) as title, COUNT(*) as " +
-                                                    "unique_words FROM publicdata:samples.shakespeare', where " +
+    private static final String IMPORT_QUERY_DESC = "The SELECT query to use to import data from the specified " +
+                                                    "table. For example: 'SELECT TOP(corpus, 10) as title, COUNT(*) " +
+                                                    "as unique_words FROM publicdata:samples.shakespeare', where " +
                                                     "'publicdata' is the project name (optional), 'samples' is the " +
                                                     "dataset name, and 'shakespare' is the table name. If this query " +
                                                     "is not provided, reads instead from the configured inputTable.";
@@ -190,7 +190,7 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
     @Description(OUTPUTSCHEMA_DESC)
     private String outputSchema;
 
-    @Name("inputTableId")
+    @Name("inputTable")
     @Description(INPUT_TABLE_DESC)
     @Macro
     String inputTable;
