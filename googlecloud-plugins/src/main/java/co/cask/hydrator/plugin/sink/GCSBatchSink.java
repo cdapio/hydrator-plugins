@@ -40,11 +40,6 @@ import javax.annotation.Nullable;
  * @param <VAL_OUT> the type of value the sink outputs
  */
 public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<StructuredRecord, KEY_OUT, VAL_OUT> {
-  public static final String PROJECT_ID_DES = "Google Cloud Project ID with access to configured GCS buckets.";
-  public static final String SERVICE_KEY_FILE_DES = "The JSON certificate file of the " +
-    "service account used for GCS access.";
-  private static final String FILESYSTEM_PROPERTIES_DESCRIPTION = "A JSON string representing a map of properties " +
-    "needed for the distributed file system.";
   private static final Gson GSON = new Gson();
 
   private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
@@ -85,21 +80,21 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
     protected String bucketKey;
 
     @Name("projectId")
-    @Description(PROJECT_ID_DES)
+    @Description("Google Cloud Project ID with access to configured GCS buckets.")
     @Macro
     protected String projectId;
 
     @Name("jsonKeyFile")
-    @Description(SERVICE_KEY_FILE_DES)
+    @Description("The JSON certificate file of the service account used for GCS access.")
     @Macro
     protected String jsonKeyFile;
 
     @Name("pathToStore")
-    @Description("path to store inside bucket")
+    @Description("Path to store inside bucket")
     @Macro
     protected String bucketDir;
 
-    @Description(FILESYSTEM_PROPERTIES_DESCRIPTION)
+    @Description("A JSON string representing a map of properties needed for the distributed file system." )
     @Nullable
     @Macro
     protected String fileSystemProperties;

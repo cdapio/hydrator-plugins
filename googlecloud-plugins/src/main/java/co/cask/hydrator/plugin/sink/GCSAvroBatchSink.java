@@ -82,7 +82,7 @@ public class GCSAvroBatchSink extends GCSBatchSink<AvroKey<GenericRecord>, NullW
   public static class GCSAvroSinkConfig extends GCSSinkConfig {
 
     @Name("schema")
-    @Description("The Avro schema of the record being written to the sink as a JSON object")
+    @Description("The Avro schema of the record being written to the sink as a JSON object.")
     private String schema;
 
     @VisibleForTesting

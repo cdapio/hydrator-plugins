@@ -31,7 +31,7 @@ for details. Note: you should upload the credential file to the same path on all
 **bucketDir:** The directory inside the bucket where the data is to be stored. Needs to be a new directory. (Macro-enabled)
 
 **fileSystemProperties:** A JSON string representing a map of properties needed for the
-distributed file system. The property names needed for Google Cloud Storage (*projectID* and *jsonKeyFile*)
+distributed file system. The property names needed for Google Cloud Storage (*projectId* and *jsonKeyFile*)
 will be included as ``'fs.gs.project.id'`` and ``'google.cloud.auth.service.account.json.keyfile'``. (Macro-enabled)
 
 **schema:** The Avro schema of the record being written to the sink, as a JSON object.
