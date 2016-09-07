@@ -28,7 +28,7 @@
         },
         {
           "widget-type": "textbox",
-          "label": "Fully-qualified Input Table ID",
+          "label": "Input Table",
           "name": "inputTable"
         },
         {
