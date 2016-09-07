@@ -21,7 +21,7 @@ See Google's documentation on [Service account credentials](https://cloud.google
 Note that user should upload his credential file to the same path of all nodes.
 
 **inputTableId:** The BigQuery table to read from, in the form '<projectId (optional)>:<datasetId>.<tableId>'.
-The 'projectId' is optional. Example: 'myproject:mydataset.mytable'.Note: if the import query is provided,
+The 'projectId' is optional. Example: 'myproject:mydataset.mytable'. Note: if the import query is provided,
 then the inputTable should be a blank table with the query result schema so as to store the intermediate result.
 If the import query is not provided, BigQuery source will read the content from the inputTable.
 
