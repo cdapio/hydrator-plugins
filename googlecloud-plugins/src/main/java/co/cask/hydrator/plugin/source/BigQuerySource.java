@@ -161,14 +161,18 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
                                                     "as unique_words FROM publicdata:samples.shakespeare', where " +
                                                     "'publicdata' is the project name (optional), 'samples' is the " +
                                                     "dataset name, and 'shakespare' is the table name. If this query " +
-                                                    "is not provided, reads instead from the configured inputTable.";
+                                                    "is not provided, it instead reads from the configured inputTable.";
     private static final String JSON_KEYFILE_DESC = "JSON key file path for credentials, Note that user should " +
                                                     "upload his credential file to the same path of all nodes.";
     private static final String INPUT_TABLE_DESC = "The BigQuery table to read from, in the form " +
                                                    "'<projectId (optional)>:<datasetId>.<tableId>'. The 'projectId' " +
-                                                   "is optional. Example: 'publicdata:samples.shakespeare'. Note: if " +
-                                                   "the import query is specified, this table should already exist " +
-                                                   "and be an empty table with the query result schema.";
+                                                   "is optional. Example: 'myproject:mydataset.mytable'. Note: if " +
+                                                   "the import query is provided, then the inputTable should be a " +
+                                                   "blank table with the query result schema so as to store the " +
+                                                   "intermediate result. If the import query is not provided, " +
+                                                   "BigQuery source will read the content from the inputTable. " +
+                                                   "This table should be an existing blank table with the query " +
+                                                   "result schema, for storing the intermediate result.";
     private static final String OUTPUTSCHEMA_DESC = "Comma-separated mapping of output schema column names to " +
                                                     "data types; for example: 'A:string,B:int'.";
     @Name(Constants.Reference.REFERENCE_NAME)
