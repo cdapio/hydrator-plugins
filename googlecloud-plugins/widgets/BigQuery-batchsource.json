@@ -23,13 +23,18 @@
         },
         {
           "widget-type": "textbox",
-          "label": "Google Temporary Storage Path",
+          "label": "Temporary Google Storage Path",
           "name": "tempBucketPath"
         },
         {
           "widget-type": "textbox",
           "label": "Fully-qualified Input Table ID",
           "name": "inputTable"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Intermediate Table",
+          "name": "intermediateTable"
         },
         {
           "widget-type": "textarea",

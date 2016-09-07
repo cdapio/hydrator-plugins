@@ -19,11 +19,14 @@ Properties
 See Google's documentation on [Service account credentials](https://cloud.google.com/storage/docs/authentication#generating-a-private-key) for details.
 Note that user should upload his credential file to the same path of all nodes.
 
-**inputTable:** The BigQuery table to read from, in the form '<projectId (optional)>:<datasetId>.<tableId>'.
+**inputTable:** The BigQuery table to read from, in the form 'projectId (optional):datasetId.tableId'.
 The 'projectId' is optional. Example: 'myproject:mydataset.mytable'. Note: if the import query is provided,
-then the inputTable should be a blank table with the query result schema so as to store the intermediate result.
-If the import query is not provided, BigQuery source will read the content from the inputTable.
-This table should be an existing blank table with the query result schema, for storing the intermediate result.(Macro-enabled)
+then this property should be left empty. If the import query is not provided, BigQuery source will read the content from the inputTable.(Macro-enabled)
+
+**intermediateTable:** An intermediate table to store the query result, in the form 'projectId (optional):datasetId.tableId'. 
+The 'projectId' is optional. Example: 'myproject:mydataset.mytable'. Note: if the import query is provided, this table should be provided, 
+it should be a blank table with the query result schema so as to store the intermediate result. If the import query is not provided, this 
+property should be left empty.
 
 **tempBucketPath:** The temporary Google Storage directory to be used for storing the intermediate results.
 For example: 'gs://bucketname/directoryname'. The directory should not already exist. Users should manually delete
@@ -64,7 +67,7 @@ to avoid any additional charges from Google.
           "jsonFilePath": "/path/to/jsonkeyfile",
           "importQuery":"SELECT TOP(corpus, 10) as title, COUNT(*) as
            unique_words FROM [publicdata:samples.shakespeare]",
-          "inputTable": "projectName:datasetName.tableName",
+          "intermediateTable": "projectName:datasetName.tableName",
           "outputSchema": "title:string,unique_words:int"
         }
       }

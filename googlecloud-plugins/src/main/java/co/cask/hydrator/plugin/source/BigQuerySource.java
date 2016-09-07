@@ -93,7 +93,7 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
     }
     conf.set(BigQueryConfiguration.TEMP_GCS_PATH_KEY, sourceConfig.tmpBucketPath);
     conf.set("fs.gs.project.id", sourceConfig.projectId);
-    BigQueryConfiguration.configureBigQueryInput(conf, sourceConfig.inputTable);
+    BigQueryConfiguration.configureBigQueryInput(conf, sourceConfig.tableToRead);
     job.setOutputKeyClass(LongWritable.class);
     job.setOutputValueClass(Text.class);
     context.setInput(Input.of(sourceConfig.referenceName,
@@ -150,6 +150,7 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
    * {@link PluginConfig} class for {@link BigQuerySource}
    */
   public static class BQSourceConfig extends PluginConfig {
+    public static String tableToRead;
     private static final String PROJECTID_DESC = "The ID of the project in Google Cloud.";
     private static final String TEMP_BUCKET_DESC = "The temporary Google Storage directory to be used for storing " +
                                                    "the intermediate results. For example: " +
@@ -167,14 +168,19 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
     private static final String INPUT_TABLE_DESC = "The BigQuery table to read from, in the form " +
                                                    "'<projectId (optional)>:<datasetId>.<tableId>'. The 'projectId' " +
                                                    "is optional. Example: 'myproject:mydataset.mytable'. Note: if " +
-                                                   "the import query is provided, then the inputTable should be a " +
-                                                   "blank table with the query result schema so as to store the " +
-                                                   "intermediate result. If the import query is not provided, " +
-                                                   "BigQuery source will read the content from the inputTable. " +
-                                                   "This table should be an existing blank table with the query " +
-                                                   "result schema, for storing the intermediate result.";
+                                                   "the import query is provided, then this property should be left " +
+                                                   "empty. If the import query is not provided, " +
+                                                   "BigQuery source will read the content from the inputTable.";
     private static final String OUTPUTSCHEMA_DESC = "Comma-separated mapping of output schema column names to " +
                                                     "data types; for example: 'A:string,B:int'.";
+    private static final String INTERMEDIATE_TABLE_DESC = "An intermediate table to store the query result, in the " +
+                                                          "form '<projectId (optional)>:<datasetId>.<tableId>'. The" +
+                                                          "'projectId' is optional. Example: 'myproject:mydataset." +
+                                                          "mytable'. Note: if the import query is provided, this " +
+                                                          "table should be provided, it should be a blank table with " +
+                                                          "the query result schema so as to store the intermediate " +
+                                                          "result. If the import query is not provided, this " +
+                                                          "property should be left empty.";
     @Name(Constants.Reference.REFERENCE_NAME)
     @Description(Constants.Reference.REFERENCE_NAME_DESCRIPTION)
     String referenceName;
@@ -196,6 +202,7 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
 
     @Name("inputTable")
     @Description(INPUT_TABLE_DESC)
+    @Nullable
     @Macro
     String inputTable;
 
@@ -209,6 +216,11 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
     @Macro
     String tmpBucketPath;
 
+    @Name("intermediateTable")
+    @Nullable
+    @Description(INTERMEDIATE_TABLE_DESC)
+    String intermediateTable;
+
     private Schema getSchema() {
       try {
         return Schema.parseJson(outputSchema);
@@ -219,7 +231,18 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
     }
 
     private  void validate() {
-      Preconditions.checkState(tmpBucketPath.startsWith("gs://"));
+      Preconditions.checkArgument(tmpBucketPath.startsWith("gs://"), "Google Storage Path should start with 'gs://'");
+      if (importQuery != null) {
+        Preconditions.checkArgument(intermediateTable != null && inputTable == null,
+                                    "If import query is provided, intermediateTable should be provided while " +
+                                     "inputTable should not");
+        tableToRead = intermediateTable;
+      } else {
+        Preconditions.checkArgument(intermediateTable == null && inputTable != null,
+                                    "If import query is not provided, inputTable should be provided while " +
+                                    "intermediateTable should not");
+        tableToRead = inputTable;
+      }
     }
   }
 }
