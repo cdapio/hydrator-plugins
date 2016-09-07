@@ -94,7 +94,7 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
     @Macro
     protected String bucketDir;
 
-    @Description("A JSON string representing a map of properties needed for the distributed file system." )
+    @Description("A JSON string representing a map of properties needed for the distributed file system.")
     @Nullable
     @Macro
     protected String fileSystemProperties;
