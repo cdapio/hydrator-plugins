@@ -23,6 +23,11 @@
         },
         {
           "widget-type": "textbox",
+          "label": "GCS Bucket",
+          "name": "bucketKey"
+        },
+        {
+          "widget-type": "textbox",
           "label": "Target Bucket Directory",
           "name": "bucketDir"
         },
