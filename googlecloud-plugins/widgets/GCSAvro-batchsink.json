@@ -18,13 +18,13 @@
         },
         {
           "widget-type": "textbox",
-          "label": "JSON Key File",
-          "name": "jsonKeyFile"
+          "label": "JSON Key File Path",
+          "name": "jsonKeyFilePath"
         },
         {
           "widget-type": "textbox",
           "label": "Target Bucket Directory",
-          "name": "pathToStore"
+          "name": "bucketDir"
         },
         {
           "widget-type": "keyvalue",

@@ -75,22 +75,22 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
   public static class GCSSinkConfig extends ReferencePluginConfig {
 
     @Name("bucketKey")
-    @Description("GCS Bucket to use to store the data")
+    @Description("The bucket inside Google Cloud Storage used to store the data.")
     @Macro
     protected String bucketKey;
 
     @Name("projectId")
-    @Description("Google Cloud Project ID with access to configured GCS buckets.")
+    @Description("Google Cloud Project ID which has access to the specified bucket.")
     @Macro
     protected String projectId;
 
-    @Name("jsonKeyFile")
+    @Name("jsonKeyFilePath")
     @Description("The JSON certificate file of the service account used for GCS access.")
     @Macro
     protected String jsonKeyFile;
 
-    @Name("pathToStore")
-    @Description("Path to store inside bucket")
+    @Name("bucketDir")
+    @Description("The directory inside the bucket where the data is to be stored. Needs to be a new directory.")
     @Macro
     protected String bucketDir;
 

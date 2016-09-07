@@ -21,7 +21,7 @@ Properties
 
 **projectId:** Google Cloud Project ID which has access to the specified bucket. (Macro-enabled)
 
-**jsonKeyFile:** The JSON certificate file of the service account used for GCS access.
+**jsonKeyFilePath:** The JSON certificate file of the service account used for GCS access.
 See Google's documentation on 
 [Service account credentials](https://cloud.google.com/storage/docs/authentication#generating-a-private-key)
 for details. Note: you should upload the credential file to the same path on all nodes. (Macro-enabled)
@@ -31,7 +31,7 @@ for details. Note: you should upload the credential file to the same path on all
 **bucketDir:** The directory inside the bucket where the data is to be stored. Needs to be a new directory. (Macro-enabled)
 
 **fileSystemProperties:** A JSON string representing a map of properties needed for the
-distributed file system. The property names needed for Google Cloud Storage (*projectId* and *jsonKeyFile*)
+distributed file system. The property names needed for Google Cloud Storage (*projectId* and *jsonKeyFilePath*)
 will be included as ``'fs.gs.project.id'`` and ``'google.cloud.auth.service.account.json.keyfile'``. (Macro-enabled)
 
 **schema:** The Avro schema of the record being written to the sink, as a JSON object.
@@ -66,7 +66,7 @@ should specified a new directory name.
                 "bucketKey": "bucket",
                 "bucketDir": "directory",
                 "projectId": "projectid",
-                "jsonKeyFile": "path/to/jsonKeyFile",
+                "jsonKeyFilePath": "path/to/jsonKeyFile",
                 "referenceName": "name"
             }
         }
