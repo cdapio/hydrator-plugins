@@ -9,7 +9,6 @@ Use Case
 --------
 This source is used whenever you need to read from a Google BigQuery table or a BigQuery result.
 
-
 Properties
 ----------
 **referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
