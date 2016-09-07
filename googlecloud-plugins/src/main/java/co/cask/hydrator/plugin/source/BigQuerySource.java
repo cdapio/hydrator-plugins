@@ -85,8 +85,8 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
     ClassNotFoundException, InterruptedException {
     Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();
-    conf.set(MAPREDUCE_BIGQUERY_JSON_KEY, sourceConfig.jsonFilePath);
-    conf.set(GCS_ACCOUNT_JSON_KEY, sourceConfig.jsonFilePath);
+    conf.set(MAPREDUCE_BIGQUERY_JSON_KEY, sourceConfig.jsonKeyFilePath);
+    conf.set(GCS_ACCOUNT_JSON_KEY, sourceConfig.jsonKeyFilePath);
     conf.set(BigQueryConfiguration.PROJECT_ID_KEY, sourceConfig.projectId);
     if (sourceConfig.importQuery != null) {
       conf.set(BigQueryConfiguration.INPUT_QUERY_KEY, sourceConfig.importQuery);
@@ -199,10 +199,10 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
     @Macro
     String inputTable;
 
-    @Name("jsonFilePath")
+    @Name("jsonKeyFilePath")
     @Description(JSON_KEYFILE_DESC)
     @Macro
-    String jsonFilePath;
+    String jsonKeyFilePath;
 
     @Name("tempBucketPath")
     @Description(TEMP_BUCKET_DESC)
