@@ -19,7 +19,7 @@ package co.cask.hydrator.sinks;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.realtime.RealtimeSink;
-import co.cask.hydrator.common.test.MockRealtimeContext;
+import co.cask.cdap.etl.mock.realtime.MockRealtimeContext;
 import co.cask.hydrator.plugin.realtime.KafkaProducer;
 import com.clearspring.analytics.util.Lists;
 import com.google.common.base.Charsets;

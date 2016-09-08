@@ -18,12 +18,12 @@ package co.cask.hydrator.plugin.realtime;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.etl.api.realtime.SourceState;
+import co.cask.cdap.etl.mock.common.MockEmitter;
+import co.cask.cdap.etl.mock.realtime.MockRealtimeContext;
 import co.cask.cdap.test.TestBase;
 import co.cask.http.AbstractHttpHandler;
 import co.cask.http.HttpResponder;
 import co.cask.http.NettyHttpService;
-import co.cask.hydrator.common.test.MockEmitter;
-import co.cask.hydrator.common.test.MockRealtimeContext;
 import co.cask.hydrator.plugin.realtime.config.HTTPPollConfig;
 import com.google.common.collect.ImmutableList;
 import org.jboss.netty.handler.codec.http.HttpRequest;

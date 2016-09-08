@@ -20,7 +20,7 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.InvalidEntry;
 import co.cask.cdap.etl.api.realtime.SourceState;
-import co.cask.hydrator.common.test.MockRealtimeContext;
+import co.cask.cdap.etl.mock.realtime.MockRealtimeContext;
 import co.cask.hydrator.plugin.realtime.jms.JmsProvider;
 import com.google.common.collect.Lists;
 import org.junit.After;
