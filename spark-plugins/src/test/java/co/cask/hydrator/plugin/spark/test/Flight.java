@@ -24,12 +24,12 @@ public class Flight {
   private final Schema schema =
     Schema.recordOf("flightData", Schema.Field.of("dofM", Schema.nullableOf(Schema.of(Schema.Type.INT))),
                     Schema.Field.of("dofW", Schema.nullableOf(Schema.of(Schema.Type.INT))),
-                    Schema.Field.of("carrier", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                    Schema.Field.of("carrier", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
                     Schema.Field.of("tailNum", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
                     Schema.Field.of("flightNum", Schema.nullableOf(Schema.of(Schema.Type.INT))),
-                    Schema.Field.of("originID", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                    Schema.Field.of("originId", Schema.nullableOf(Schema.of(Schema.Type.INT))),
                     Schema.Field.of("origin", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
-                    Schema.Field.of("destId", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                    Schema.Field.of("destId", Schema.nullableOf(Schema.of(Schema.Type.INT))),
                     Schema.Field.of("dest", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
                     Schema.Field.of("scheduleDepTime", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
                     Schema.Field.of("deptime", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
@@ -40,14 +40,14 @@ public class Flight {
                     Schema.Field.of("elapsedTime", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
                     Schema.Field.of("distance", Schema.nullableOf(Schema.of(Schema.Type.INT))),
                     Schema.Field.of("delayed", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))));
-  public int dofM;
-  public String carrier;
+  private int dofM;
   private int dofW;
+  private Double carrier;
   private String tailNum;
   private int flightNum;
-  private String originID;
+  private int originId;
   private String origin;
-  private String destId;
+  private int destId;
   private String dest;
   private double scheduleDepTime;
   private Double deptime;
@@ -59,8 +59,8 @@ public class Flight {
   private int distance;
   private Double delayed;
 
-  public Flight(int dofM, int dofW, String carrier, String tailNum, int flightNum, String originID, String origin,
-                String destId, String dest, double scheduleDepTime, Double deptime, Double depDelayMins,
+  public Flight(int dofM, int dofW, Double carrier, String tailNum, int flightNum, int originId, String origin,
+                int destId, String dest, double scheduleDepTime, Double deptime, Double depDelayMins,
                 Double scheduledArrTime, Double arrTime, Double arrDelay, Double elapsedTime, int distance,
                 double delayed) {
     this.dofM = dofM;
@@ -68,7 +68,7 @@ public class Flight {
     this.carrier = carrier;
     this.tailNum = tailNum;
     this.flightNum = flightNum;
-    this.originID = originID;
+    this.originId = originId;
     this.origin = origin;
     this.destId = destId;
     this.dest = dest;
@@ -83,15 +83,15 @@ public class Flight {
     this.delayed = delayed;
   }
 
-  public Flight(int dofM, int dofW, String carrier, String tailNum, int flightNum, String originID, String origin,
-                String destId, String dest, double scheduleDepTime, Double deptime, Double depDelayMins,
+  public Flight(int dofM, int dofW, Double carrier, String tailNum, int flightNum, int originId, String origin,
+                int destId, String dest, double scheduleDepTime, Double deptime, Double depDelayMins,
                 Double scheduledArrTime, Double arrTime, Double arrDelay, Double elapsedTime, int distance) {
     this.dofM = dofM;
     this.dofW = dofW;
     this.carrier = carrier;
     this.tailNum = tailNum;
     this.flightNum = flightNum;
-    this.originID = originID;
+    this.originId = originId;
     this.origin = origin;
     this.destId = destId;
     this.dest = dest;
@@ -109,12 +109,12 @@ public class Flight {
   public static Flight fromStructuredRecord(StructuredRecord structuredRecord) {
     return new Flight((Integer) structuredRecord.get("dofM"),
                       (Integer) structuredRecord.get("dofW"),
-                      (String) structuredRecord.get("carrier"),
+                      (Double) structuredRecord.get("carrier"),
                       (String) structuredRecord.get("tailNum"),
                       (Integer) structuredRecord.get("flightNum"),
-                      (String) structuredRecord.get("originID"),
+                      (Integer) structuredRecord.get("originId"),
                       (String) structuredRecord.get("origin"),
-                      (String) structuredRecord.get("destId"),
+                      (Integer) structuredRecord.get("destId"),
                       (String) structuredRecord.get("dest"),
                       (Double) structuredRecord.get("scheduleDepTime"),
                       (Double) structuredRecord.get("deptime"),
@@ -147,6 +147,12 @@ public class Flight {
     if (flightNum != flight.flightNum) {
       return false;
     }
+    if (originId != flight.originId) {
+      return false;
+    }
+    if (destId != flight.destId) {
+      return false;
+    }
     if (Double.compare(flight.scheduleDepTime, scheduleDepTime) != 0) {
       return false;
     }
@@ -156,41 +162,35 @@ public class Flight {
     if (!carrier.equals(flight.carrier)) {
       return false;
     }
-    if (tailNum != null ? !tailNum.equals(flight.tailNum) : flight.tailNum != null) {
-      return false;
-    }
-    if (originID != null ? !originID.equals(flight.originID) : flight.originID != null) {
+    if (!tailNum.equals(flight.tailNum)) {
       return false;
     }
     if (!origin.equals(flight.origin)) {
       return false;
     }
-    if (destId != null ? !destId.equals(flight.destId) : flight.destId != null) {
-      return false;
-    }
     if (!dest.equals(flight.dest)) {
       return false;
     }
-    if (deptime != null ? !deptime.equals(flight.deptime) : flight.deptime != null) {
+    if (!deptime.equals(flight.deptime)) {
       return false;
     }
     if (!depDelayMins.equals(flight.depDelayMins)) {
       return false;
     }
-    if (scheduledArrTime != null ? !scheduledArrTime.equals(flight.scheduledArrTime) :
-      flight.scheduledArrTime != null) {
+    if (!scheduledArrTime.equals(flight.scheduledArrTime)) {
       return false;
     }
-    if (arrTime != null ? !arrTime.equals(flight.arrTime) : flight.arrTime != null) {
+    if (!arrTime.equals(flight.arrTime)) {
       return false;
     }
-    if (arrDelay != null ? !arrDelay.equals(flight.arrDelay) : flight.arrDelay != null) {
+    if (!arrDelay.equals(flight.arrDelay)) {
       return false;
     }
-    if (elapsedTime != null ? !elapsedTime.equals(flight.elapsedTime) : flight.elapsedTime != null) {
+    if (!elapsedTime.equals(flight.elapsedTime)) {
       return false;
     }
-    return delayed.equals(flight.delayed);
+    return delayed != null ? delayed.equals(flight.delayed) : flight.delayed == null;
+
   }
 
   @Override
@@ -198,24 +198,24 @@ public class Flight {
     int result;
     long temp;
     result = dofM;
-    result = 31 * result + carrier.hashCode();
     result = 31 * result + dofW;
-    result = 31 * result + (tailNum != null ? tailNum.hashCode() : 0);
+    result = 31 * result + carrier.hashCode();
+    result = 31 * result + tailNum.hashCode();
     result = 31 * result + flightNum;
-    result = 31 * result + (originID != null ? originID.hashCode() : 0);
+    result = 31 * result + originId;
     result = 31 * result + origin.hashCode();
-    result = 31 * result + (destId != null ? destId.hashCode() : 0);
+    result = 31 * result + destId;
     result = 31 * result + dest.hashCode();
     temp = Double.doubleToLongBits(scheduleDepTime);
     result = 31 * result + (int) (temp ^ (temp >>> 32));
-    result = 31 * result + (deptime != null ? deptime.hashCode() : 0);
+    result = 31 * result + deptime.hashCode();
     result = 31 * result + depDelayMins.hashCode();
-    result = 31 * result + (scheduledArrTime != null ? scheduledArrTime.hashCode() : 0);
-    result = 31 * result + (arrTime != null ? arrTime.hashCode() : 0);
-    result = 31 * result + (arrDelay != null ? arrDelay.hashCode() : 0);
-    result = 31 * result + (elapsedTime != null ? elapsedTime.hashCode() : 0);
+    result = 31 * result + scheduledArrTime.hashCode();
+    result = 31 * result + arrTime.hashCode();
+    result = 31 * result + arrDelay.hashCode();
+    result = 31 * result + elapsedTime.hashCode();
     result = 31 * result + distance;
-    result = 31 * result + delayed.hashCode();
+    result = 31 * result + (delayed != null ? delayed.hashCode() : 0);
     return result;
   }
 
@@ -226,7 +226,7 @@ public class Flight {
     builder.set("carrier", carrier);
     builder.set("tailNum", tailNum);
     builder.set("flightNum", flightNum);
-    builder.set("originID", originID);
+    builder.set("originId", originId);
     builder.set("origin", origin);
     builder.set("destId", destId);
     builder.set("dest", dest);
@@ -242,6 +242,30 @@ public class Flight {
       builder.set("delayed", delayed);
     }
     return builder.build();
+  }
+
+  @Override
+  public String toString() {
+    return "Flight{" +
+      " dofM=" + dofM +
+      ", carrier=" + carrier +
+      ", dofW=" + dofW +
+      ", tailNum='" + tailNum + '\'' +
+      ", flightNum=" + flightNum +
+      ", originId=" + originId +
+      ", origin='" + origin + '\'' +
+      ", destId=" + destId +
+      ", dest='" + dest + '\'' +
+      ", scheduleDepTime=" + scheduleDepTime +
+      ", deptime=" + deptime +
+      ", depDelayMins=" + depDelayMins +
+      ", scheduledArrTime=" + scheduledArrTime +
+      ", arrTime=" + arrTime +
+      ", arrDelay=" + arrDelay +
+      ", elapsedTime=" + elapsedTime +
+      ", distance=" + distance +
+      ", delayed=" + delayed +
+      '}';
   }
 }
 

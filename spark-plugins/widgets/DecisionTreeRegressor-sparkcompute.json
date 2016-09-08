@@ -18,8 +18,17 @@
         },
         {
           "widget-type": "csv",
-          "label": "Features to be used for Prediction",
-          "name": "features",
+          "label": "Features to Include for Prediction",
+          "name": "featuresToInclude",
+          "widget-attributes": {
+            "delimiter": ",",
+            "value-placeholder": "Field Name"
+          }
+        },
+        {
+          "widget-type": "csv",
+          "label": "Features to Exclude while Prediction",
+          "name": "featuresToExclude",
           "widget-attributes": {
             "delimiter": ",",
             "value-placeholder": "Field Name"

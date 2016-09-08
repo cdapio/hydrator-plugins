@@ -29,6 +29,8 @@ import co.cask.cdap.etl.api.batch.SparkCompute;
 import co.cask.cdap.etl.api.batch.SparkExecutionPluginContext;
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Doubles;
+import joptsimple.internal.Strings;
+import org.apache.avro.reflect.Nullable;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -40,10 +42,7 @@ import org.apache.twill.filesystem.Location;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import javax.ws.rs.Path;
 
 /**
@@ -84,36 +83,7 @@ public class DecisionTreeRegressor extends SparkCompute<StructuredRecord, Struct
       throw new IllegalArgumentException(String.format("Failed to find model to use for Regression. Location does " +
                                                          "not exist: {}.", modelLocation));
     }
-
-    final HashMap<String, Map<Object, Long>> categoricalFeaturesMap = new HashMap<>();
-    final String[] fields = config.features.split(",");
-
-    for (final String field : fields) {
-      Map<Object, Long> map = input.map(new Function<StructuredRecord, Object>() {
-        @Override
-        public Object call(StructuredRecord structuredRecord) throws Exception {
-          Schema.Field inputField = structuredRecord.getSchema().getField(field);
-          if (inputField == null) {
-            throw new IllegalArgumentException(String.format("Field %s does not exists in the input schema",
-                                                             inputField));
-          }
-          Schema schema = inputField.getSchema();
-          if (structuredRecord.get(field) == null && !schema.isNullable()) {
-            throw new IllegalArgumentException(String.format("null value found for non-nullable field %s", field));
-          }
-          Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
-          if (type.equals(Schema.Type.STRING) || type.equals(Schema.Type.BOOLEAN)) {
-            return structuredRecord.get(field);
-          } else {
-            return null;
-          }
-        }
-      }).distinct().zipWithIndex().collectAsMap();
-
-      if (!(map == null || (map.size() == 1 && map.keySet().contains(null)))) {
-        categoricalFeaturesMap.put(field, map);
-      }
-    }
+    final List<String> fields = config.getFeatureList(input.first().getSchema());
 
     // load the model from a file in the model fileset
     JavaSparkContext javaSparkContext = context.getSparkContext();
@@ -123,14 +93,9 @@ public class DecisionTreeRegressor extends SparkCompute<StructuredRecord, Struct
     JavaRDD<StructuredRecord> output = input.map(new Function<StructuredRecord, StructuredRecord>() {
       @Override
       public StructuredRecord call(StructuredRecord record) throws Exception {
-        List<Double> featureList = new ArrayList<Double>();
-        Set<String> keys = categoricalFeaturesMap.keySet();
+        List<Double> featureList = new ArrayList<>();
         for (String field : fields) {
-          if (keys.contains(field)) {
-            featureList.add((categoricalFeaturesMap.get(field).get(record.get(field))).doubleValue());
-          } else {
-            featureList.add(Double.valueOf(record.get(field).toString()));
-          }
+          featureList.add(Double.valueOf(record.get(field).toString()));
         }
 
         Vector vector = Vectors.dense(Doubles.toArray(featureList));
@@ -188,34 +153,83 @@ public class DecisionTreeRegressor extends SparkCompute<StructuredRecord, Struct
     @Description("Path of the FileSet to load the model from.")
     private final String path;
 
-    @Description("A comma-separated sequence of fields for regression. Features to be used, must be of simple type.")
-    private final String features;
+    @Nullable
+    @Description("A comma-separated sequence of fields to be used for Decision Tree Regression. Features to be used, " +
+      "must be from one of the following type: int, long, float or double. Both featuresToInclude and " +
+      "featuresToExclude fields cannot be specified.")
+    private final String featuresToInclude;
+
+    @Nullable
+    @Description("A comma-separated sequence of fields to be excluded when calculating prediction. Both " +
+      "featuresToInclude and featuresToExclude fields cannot be specified.")
+    private final String featuresToExclude;
 
     @Description("The field on which to set the prediction. It will be of type double.")
     private final String predictionField;
 
-    public DecisionTreeRegressorConfig(String fileSetName, String path, String features, String predictionField) {
+    public DecisionTreeRegressorConfig(String fileSetName, String path, String featuresToInclude,
+                                       String featuresToExclude, String predictionField) {
       this.fileSetName = fileSetName;
       this.path = path;
-      this.features = features;
+      this.featuresToInclude = featuresToInclude;
+      this.featuresToExclude = featuresToExclude;
       this.predictionField = predictionField;
     }
 
     private void validate(Schema inputSchema) {
-      String[] fields = features.split(",");
+      if (!Strings.isNullOrEmpty(featuresToExclude) && !Strings.isNullOrEmpty(featuresToInclude)) {
+        throw new IllegalArgumentException("Cannot specify values for both featuresToInclude and featuresToExclude. " +
+                                             "Please specify fields for one");
+      }
+      List<String> fields = getFeatureList(inputSchema);
       for (String field : fields) {
-        Schema.Field inputField = inputSchema.getField(field);
-        if (inputField == null) {
-          throw new IllegalArgumentException(String.format("Field %s does not exists in the input schema", field));
-        }
-        Schema schema = inputField.getSchema();
+        Schema schema = inputSchema.getField(field).getSchema();
         Schema.Type features = schema.isNullableSimple() ? schema.getNonNullable().getType() : schema.getType();
-        Preconditions.checkArgument(features.isSimpleType(), "Field to classify must be of simple type : String, " +
-          "int, double, float, long, bytes, boolean but was %s.", features);
+        Preconditions.checkArgument(features.isSimpleType(), "Field to be used must be of type number: int, long, " +
+          "float, double but was of type %s for field %s ", features, field);
+        if (features.equals(Schema.Type.BYTES) || features.equals(Schema.Type.STRING) ||
+          features.equals(Schema.Type.BOOLEAN)) {
+          throw new IllegalArgumentException(String.format("Field to classify must be of type : int, double, " +
+                                                             "float, long but was of type %s for field %s ", features,
+                                                           field));
+        }
         Preconditions.checkArgument(!features.equals(Schema.Type.NULL), "Field to classify must not be of type null");
       }
       Preconditions.checkArgument(inputSchema.getField(predictionField) == null, "Prediction field must not already " +
         "exist in the input schema.");
+    }
+
+    private List<String> getFeatureList(Schema inputSchema) {
+      List<String> fields = new ArrayList<>();
+      List<Schema.Field> inputSchemaFields = inputSchema.getFields();
+      List<String> excludeFeatures = new ArrayList<>();
+      if (!Strings.isNullOrEmpty(featuresToInclude)) {
+        fields = Arrays.asList(featuresToInclude.split(","));
+        for (String field : fields) {
+          field = field.trim();
+          Schema.Field inputField = inputSchema.getField(field);
+          if (inputField == null) {
+            throw new IllegalArgumentException(String.format("Field %s does not exists in the input schema", field));
+          }
+        }
+      } else {
+        if (!Strings.isNullOrEmpty(featuresToExclude)) {
+          excludeFeatures = Arrays.asList(featuresToExclude.split(","));
+        }
+        for (Schema.Field field : inputSchemaFields) {
+          String fieldName = field.getName();
+          if (!fieldName.equals(predictionField)) {
+            if (!excludeFeatures.isEmpty()) {
+              if (!excludeFeatures.contains(fieldName)) {
+                fields.add(fieldName);
+              }
+            } else {
+              fields.add(fieldName);
+            }
+          }
+        }
+      }
+      return fields;
     }
   }
 

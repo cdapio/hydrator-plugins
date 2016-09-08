@@ -16,7 +16,13 @@ Properties
 
 **path:** Path of the FileSet to load the model from.
 
-**features:** A comma-separated sequence of fields for regression. Features to be used, must be of simple type.
+**featuresToInclude:** A comma-separated sequence of fields for Decision Tree Regression. Features to be used, must be
+from one of the following type: int, long, float or double. Both *featuresToInclude* and *featuresToExclude* fields
+annot be specified.
+
+**featuresToExclude:** A comma-separated sequence of fields to be excluded when calculating prediction. If empty, all
+the fields will be considered for calculating  prediction. Both *featuresToInclude* and *featuresToExclude* fields 
+cannot be specified.
 
 **predictionField:** The field on which to set the prediction. It will be of type double.
 
@@ -24,7 +30,7 @@ Properties
 Example
 -------
 This example uses ``dofM, dofW, scheduleDepTime, scheduledArrTime, carrier, elapsedTime, origin, dest`` fields from the
-input record as features to predict ``delayed`` field.
+input record as featuresToInclude to predict ``delayed`` field.
 
     {
       "name": "DecisionTreeRegression",
@@ -32,7 +38,7 @@ input record as features to predict ``delayed`` field.
       "properties": {
             "fileSetName": "decision-tree-model",
             "path": "decisionTree",
-            "features": "dofM,dofW,scheduleDepTime,scheduledArrTime,carrier,elapsedTime,origin,dest",
+            "featuresToInclude": "dofM,dofW,scheduleDepTime,scheduledArrTime,carrier,elapsedTime,origin,dest",
             "predictionField": "delayed"
        }
     }

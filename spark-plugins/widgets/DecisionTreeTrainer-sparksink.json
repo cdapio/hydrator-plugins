@@ -18,17 +18,34 @@
         },
         {
           "widget-type": "csv",
-          "label": "Features to Train",
-          "name": "features",
+          "label": "Features to Include for training",
+          "name": "featuresToInclude",
           "widget-attributes": {
             "delimiter": ",",
             "value-placeholder": "Field Name"
           }
         },
         {
+          "widget-type": "csv",
+          "label": "Features to Exclude while training",
+          "name": "featuresToExclude",
+          "widget-attributes": {
+            "delimiter": ",",
+            "value-placeholder": "Field Name"
+          }
+        },
+        {
+          "widget-type": "keyvalue",
+          "label": "Categorical Feature Cardinality Mapping",
+          "name": "cardinalityMapping",
+          "widget-attributes": {
+            "showDelimiter": "false"
+          }
+        },
+        {
           "widget-type": "textbox",
-          "label": "Prediction Field",
-          "name": "predictionField"
+          "label": "Label Field",
+          "name": "labelField"
         },
         {
           "widget-type": "number",
