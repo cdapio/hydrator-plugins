@@ -46,7 +46,7 @@ public class GCSBatchSinkConfigTest {
     Map<String, String> fsProperties = GSON.fromJson(gcsAvroConfig.getFileSystemProperties(null, projectId, jsonKey),
                                                      MAP_STRING_STRING_TYPE);
     Assert.assertNotNull(fsProperties);
-    Assert.assertEquals(3, fsProperties.size());
+    Assert.assertEquals(5, fsProperties.size());
     Assert.assertEquals("gs://bucket/path", fsProperties.get(FileOutputFormat.OUTDIR));
     Assert.assertEquals(projectId, fsProperties.get("fs.gs.project.id"));
     Assert.assertEquals(jsonKey, fsProperties.get("google.cloud.auth.service.account.json.keyfile"));

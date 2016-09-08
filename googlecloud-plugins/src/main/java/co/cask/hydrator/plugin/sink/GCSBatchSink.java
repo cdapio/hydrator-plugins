@@ -109,6 +109,10 @@ public abstract class GCSBatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<
       }
       providedProperties.put("fs.gs.project.id", projectId);
       providedProperties.put("google.cloud.auth.service.account.json.keyfile", jsonKeyFile);
+      //Add the following two properties to use Google Hadoop File System.
+      //See https://cloud.google.com/hadoop/google-cloud-storage-connector#configuringhadoop for details.
+      providedProperties.put("fs.gs.impl", "com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem");
+      providedProperties.put("fs.AbstractFileSystem.gs.impl", "com.google.cloud.hadoop.fs.gcs.GoogleHadoopFS");
       providedProperties.put(FileOutputFormat.OUTDIR,
                              String.format("gs://%s/%s", bucketKey, bucketDir));
       return GSON.toJson(providedProperties);
