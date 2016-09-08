@@ -93,6 +93,10 @@ public class BigQuerySource extends ReferenceBatchSource<LongWritable, Text, Str
     }
     conf.set(BigQueryConfiguration.TEMP_GCS_PATH_KEY, sourceConfig.tmpBucketPath);
     conf.set("fs.gs.project.id", sourceConfig.projectId);
+    // Add the following two properties to use Google Hadoop File System.
+    //See https://cloud.google.com/hadoop/google-cloud-storage-connector#configuringhadoop for details.
+    conf.set("fs.gs.impl", "com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem");
+    conf.set("fs.AbstractFileSystem.gs.impl", "com.google.cloud.hadoop.fs.gcs.GoogleHadoopFS");
     BigQueryConfiguration.configureBigQueryInput(conf, sourceConfig.tableToRead);
     job.setOutputKeyClass(LongWritable.class);
     job.setOutputValueClass(Text.class);
