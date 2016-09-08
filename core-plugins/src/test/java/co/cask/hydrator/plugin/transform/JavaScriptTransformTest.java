@@ -28,6 +28,7 @@ import co.cask.cdap.etl.mock.common.MockEmitter;
 import co.cask.cdap.etl.mock.common.MockLookupProvider;
 import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
 import co.cask.cdap.etl.mock.transform.MockTransformContext;
+import co.cask.hydrator.plugin.validator.CoreValidator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;

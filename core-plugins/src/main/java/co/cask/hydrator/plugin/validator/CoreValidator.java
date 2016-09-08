@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.transform;
+package co.cask.hydrator.plugin.validator;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
