@@ -55,7 +55,7 @@
       <artifactId>bigquery-connector</artifactId>
       <version>0.7.7-hadoop2</version>
     </dependency>
-    <!--Google Hadoop Filesystem need this dependency to get a splitter-->
+    <!--Google Hadoop Filesystem need guava 19 version of Splitter APIs-->
     <!--guava 19 needed-->
     <dependency>
       <groupId>com.google.guava</groupId>
