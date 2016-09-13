@@ -74,8 +74,7 @@ public class ExcelInputFormat extends FileInputFormat {
   }
 
   @Override
-  protected List<FileStatus> listStatus(JobContext job
-  ) throws IOException {
+  protected List<FileStatus> listStatus(JobContext job) throws IOException {
     List<FileStatus> result = new ArrayList<FileStatus>();
     Path[] dirs = getInputPaths(job);
     if (dirs.length == 0) {
@@ -83,8 +82,7 @@ public class ExcelInputFormat extends FileInputFormat {
     }
 
     // get tokens for all the required FileSystems..
-    TokenCache.obtainTokensForNamenodes(job.getCredentials(), dirs,
-                                        job.getConfiguration());
+    TokenCache.obtainTokensForNamenodes(job.getCredentials(), dirs, job.getConfiguration());
 
     // Whether we need to recursive look into the directory structure
     boolean recursive = getInputDirRecursive(job);
@@ -112,14 +110,12 @@ public class ExcelInputFormat extends FileInputFormat {
       } else {
         for (FileStatus globStat: matches) {
           if (globStat.isDirectory()) {
-            RemoteIterator<LocatedFileStatus> iter =
-              fs.listLocatedStatus(globStat.getPath());
+            RemoteIterator<LocatedFileStatus> iter = fs.listLocatedStatus(globStat.getPath());
             while (iter.hasNext()) {
               LocatedFileStatus stat = iter.next();
               if (inputFilter.accept(stat.getPath())) {
                 if (recursive && stat.isDirectory()) {
-                  addInputPathRecursively(result, fs, stat.getPath(),
-                                          inputFilter);
+                  addInputPathRecursively(result, fs, stat.getPath(), inputFilter);
                 } else {
                   result.add(stat);
                 }
