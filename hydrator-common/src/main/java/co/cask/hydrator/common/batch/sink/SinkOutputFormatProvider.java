@@ -17,11 +17,11 @@
 package co.cask.hydrator.common.batch.sink;
 
 import co.cask.cdap.api.data.batch.OutputFormatProvider;
+import co.cask.hydrator.common.batch.ConfigurationUtils;
 import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.OutputFormat;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -37,13 +37,8 @@ public final class SinkOutputFormatProvider implements OutputFormatProvider {
   }
 
   public SinkOutputFormatProvider(String outputFormatClassName, Configuration hConf) {
-    Map<String, String> config = new HashMap<>();
-    for (Map.Entry<String, String> entry : hConf) {
-      config.put(entry.getKey(), entry.getValue());
-    }
-
     this.outputFormatClassName = outputFormatClassName;
-    this.configuration = config;
+    this.configuration = ConfigurationUtils.getNonDefaultConfigurations(hConf);
   }
 
   public SinkOutputFormatProvider(String outputFormatClassName, Map<String, String> configuration) {
