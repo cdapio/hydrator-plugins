@@ -19,7 +19,7 @@ package co.cask.hydrator.plugin.realtime.sink;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
 import co.cask.hydrator.plugin.common.TableSinkConfig;
-import co.cask.hydrator.plugin.transform.CoreValidator;
+import co.cask.hydrator.plugin.validator.CoreValidator;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
 import org.junit.Test;

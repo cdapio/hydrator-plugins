@@ -18,7 +18,7 @@ package co.cask.hydrator.plugin.batch.aggregator;
 
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
-import co.cask.hydrator.plugin.transform.CoreValidator;
+import co.cask.hydrator.plugin.validator.CoreValidator;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Assert;
