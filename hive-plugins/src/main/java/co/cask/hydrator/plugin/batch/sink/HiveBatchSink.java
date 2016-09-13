@@ -32,11 +32,10 @@ import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.common.ReferenceBatchSink;
+import co.cask.hydrator.common.batch.ConfigurationUtils;
 import co.cask.hydrator.common.batch.JobUtils;
 import co.cask.hydrator.plugin.batch.commons.HiveSchemaConverter;
 import co.cask.hydrator.plugin.batch.commons.HiveSchemaStore;
-import com.google.common.collect.MapDifference;
-import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.hadoop.conf.Configuration;
@@ -45,7 +44,6 @@ import org.apache.hadoop.hive.thrift.DelegationTokenSelector;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.security.token.TokenIdentifier;
@@ -59,7 +57,6 @@ import org.apache.hive.service.auth.HiveAuthFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -159,7 +156,7 @@ public class HiveBatchSink extends ReferenceBatchSink<StructuredRecord, NullWrit
         hiveSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(config.schema), hiveSchema);
       }
       HCatOutputFormat.setSchema(modifiedConf, hiveSchema);
-      conf = getConfigurationDiff(originalConf, modifiedConf);
+      conf = ConfigurationUtils.getNonDefaultConfigurations(modifiedConf);
     }
 
     private void addSecureHiveProperties(Configuration modifiedConf) throws IOException {
@@ -176,36 +173,12 @@ public class HiveBatchSink extends ReferenceBatchSink<StructuredRecord, NullWrit
       ugi.addToken(noServiceHiveToken);
     }
 
-    private Map<String, String> getConfigurationDiff(Configuration originalConf, Configuration modifiedConf) {
-      MapDifference<String, String> mapDifference = Maps.difference(getConfigurationAsMap(originalConf),
-                                                                    getConfigurationAsMap(modifiedConf));
-      // new keys in the modified configurations
-      Map<String, String> newEntries = mapDifference.entriesOnlyOnRight();
-      // keys whose values got changed in the modified config
-      Map<String, MapDifference.ValueDifference<String>> stringValueDifferenceMap = mapDifference.entriesDiffering();
-      Map<String, String> result = new HashMap<>();
-      for (Map.Entry<String, MapDifference.ValueDifference<String>> stringValueDifferenceEntry :
-        stringValueDifferenceMap.entrySet()) {
-        result.put(stringValueDifferenceEntry.getKey(), stringValueDifferenceEntry.getValue().rightValue());
-      }
-      result.putAll(newEntries);
-      return result;
-    }
-
     private Map<String, String> getPartitions(HiveSinkConfig config) {
       Map<String, String> partitionValues = null;
       if (config.partitions != null) {
         partitionValues = GSON.fromJson(config.partitions, STRING_MAP_TYPE);
       }
       return partitionValues;
-    }
-
-    private Map<String, String> getConfigurationAsMap(Configuration conf) {
-      Map<String, String> map = new HashMap<>();
-      for (Map.Entry<String, String> entry : conf) {
-        map.put(entry.getKey(), entry.getValue());
-      }
-      return map;
     }
 
     /**

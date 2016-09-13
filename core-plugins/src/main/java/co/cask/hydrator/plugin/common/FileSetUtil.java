@@ -76,6 +76,7 @@ public class FileSetUtil {
 
     Job job = createJobForConfiguration();
     Configuration hConf = job.getConfiguration();
+    hConf.clear();
     AvroParquetInputFormat.setAvroReadSchema(job, avroSchema);
     for (Map.Entry<String, String> entry : hConf) {
       properties.setInputProperty(entry.getKey(), entry.getValue());
@@ -153,6 +154,7 @@ public class FileSetUtil {
 
     Job job = createJobForConfiguration();
     Configuration hConf = job.getConfiguration();
+    hConf.clear();
     AvroJob.setInputKeySchema(job, avroSchema);
     for (Map.Entry<String, String> entry : hConf) {
       properties.setInputProperty(entry.getKey(), entry.getValue());
