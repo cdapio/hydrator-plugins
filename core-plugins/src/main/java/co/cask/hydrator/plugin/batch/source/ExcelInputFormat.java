@@ -15,19 +15,25 @@ package co.cask.hydrator.plugin.batch.source;
  * the License.
  */
 
-import com.google.common.base.Strings;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
+import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.InputSplit;
-import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+import org.apache.hadoop.mapreduce.lib.input.InvalidInputException;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.security.TokenCache;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -36,7 +42,9 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.ss.util.CellReference;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 
 /**
@@ -45,7 +53,7 @@ import java.util.Iterator;
  * The {@link ExcelInputFormat.ExcelRecordReader} reads a given sheet, and within a sheet reads
  * all columns and all rows.
  */
-public class ExcelInputFormat extends TextInputFormat {
+public class ExcelInputFormat extends FileInputFormat {
 
   public static final String SHEET_NAME = "Sheet Name";
   public static final String RE_PROCESS = "reprocess";
@@ -58,32 +66,97 @@ public class ExcelInputFormat extends TextInputFormat {
   public static final String FILE_PATTERN = "filePattern";
   public static final String SHEET = "sheet";
   public static final String SHEET_VALUE = "sheetValue";
+  public static String filePath = "";
 
   @Override
   public RecordReader<LongWritable, Text> createRecordReader(InputSplit split, TaskAttemptContext context) {
     return new ExcelRecordReader();
   }
 
-  public static void setConfigurations(Job job, String filePattern, String sheet, boolean reprocess,
-                                       String sheetValue, String columnList, boolean skipFirstRow,
-                                       String terminateIfEmptyRow, String rowLimit, String ifErrorRecord,
-                                       String processedFiles) {
-
-    Configuration configuration = job.getConfiguration();
-    configuration.set(FILE_PATTERN, filePattern);
-    configuration.set(SHEET, sheet);
-    configuration.setBoolean(RE_PROCESS, reprocess);
-    configuration.set(SHEET_VALUE, sheetValue);
-    configuration.set(COLUMN_LIST, columnList);
-    configuration.setBoolean(SKIP_FIRST_ROW, skipFirstRow);
-    configuration.set(TERMINATE_IF_EMPTY_ROW, terminateIfEmptyRow);
-
-    if (!Strings.isNullOrEmpty(rowLimit)) {
-      configuration.set(ROWS_LIMIT, rowLimit);
+  @Override
+  protected List<FileStatus> listStatus(JobContext job
+  ) throws IOException {
+    List<FileStatus> result = new ArrayList<FileStatus>();
+    Path[] dirs = getInputPaths(job);
+    if (dirs.length == 0) {
+      throw new IOException("No input paths specified in job");
     }
 
-    configuration.set(IF_ERROR_RECORD, ifErrorRecord);
-    configuration.set(PROCESSED_FILES, processedFiles);
+    // get tokens for all the required FileSystems..
+    TokenCache.obtainTokensForNamenodes(job.getCredentials(), dirs,
+                                        job.getConfiguration());
+
+    // Whether we need to recursive look into the directory structure
+    boolean recursive = getInputDirRecursive(job);
+
+    List<IOException> errors = new ArrayList<IOException>();
+
+    // creates a MultiPathFilter with the hiddenFileFilter and the
+    // user provided one (if any).
+    List<PathFilter> filters = new ArrayList<PathFilter>();
+
+    PathFilter jobFilter = getInputPathFilter(job);
+    if (jobFilter != null) {
+      filters.add(jobFilter);
+    }
+    PathFilter inputFilter = new MultiPathFilter(filters);
+
+    for (int i = 0; i < dirs.length; ++i) {
+      Path p = dirs[i];
+      FileSystem fs = p.getFileSystem(job.getConfiguration());
+      FileStatus[] matches = fs.globStatus(new Path(filePath));
+      if (matches == null) {
+        errors.add(new IOException("Input path does not exist: " + p));
+      } else if (matches.length == 0) {
+        errors.add(new IOException("Input Pattern " + p + " matches 0 files"));
+      } else {
+        for (FileStatus globStat: matches) {
+          if (globStat.isDirectory()) {
+            RemoteIterator<LocatedFileStatus> iter =
+              fs.listLocatedStatus(globStat.getPath());
+            while (iter.hasNext()) {
+              LocatedFileStatus stat = iter.next();
+              if (inputFilter.accept(stat.getPath())) {
+                if (recursive && stat.isDirectory()) {
+                  addInputPathRecursively(result, fs, stat.getPath(),
+                                          inputFilter);
+                } else {
+                  result.add(stat);
+                }
+              }
+            }
+          } else {
+            result.add(globStat);
+          }
+        }
+      }
+    }
+
+    if (!errors.isEmpty()) {
+      throw new InvalidInputException(errors);
+    }
+    return result;
+  }
+
+  private static class MultiPathFilter implements PathFilter {
+    private List<PathFilter> filters;
+
+    MultiPathFilter(List<PathFilter> filters) {
+      this.filters = filters;
+    }
+
+    public boolean accept(Path path) {
+      for (PathFilter filter : filters) {
+        if (!filter.accept(path)) {
+          return false;
+        }
+      }
+      return true;
+    }
+  }
+
+  public static void setConfig(String path) {
+    filePath = path;
   }
 
 
@@ -222,7 +295,7 @@ public class ExcelInputFormat extends TextInputFormat {
 
     @Override
     public float getProgress() throws IOException {
-        return rowIdx / lastRowNum;
+      return rowIdx / lastRowNum;
     }
 
     @Override
