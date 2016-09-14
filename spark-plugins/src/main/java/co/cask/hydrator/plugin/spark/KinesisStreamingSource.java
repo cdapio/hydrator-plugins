@@ -22,11 +22,14 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.streaming.StreamingContext;
 import co.cask.cdap.etl.api.streaming.StreamingSource;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.Duration;
@@ -56,11 +59,55 @@ public class KinesisStreamingSource extends ReferenceStreamingSource<StructuredR
     this.config = config;
   }
 
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
+    Preconditions.checkArgument(!Strings.isNullOrEmpty(config.streamName),
+                                "Stream name should be non-null, non-empty.");
+    Preconditions.checkArgument(!Strings.isNullOrEmpty(config.awsAccessKeyId),
+                                "Access Key should be non-null, non-empty.");
+    Preconditions.checkArgument(!Strings.isNullOrEmpty(config.awsAccessSecret),
+                                "Access Key secret should be non-null, non-empty.");
+    Preconditions.checkArgument(!Strings.isNullOrEmpty(config.appName),
+                                "Application name should be non-null, non-empty.");
+    Preconditions.checkArgument(!Strings.isNullOrEmpty(config.endpoint),
+                                "Endpoint url should be non-null, non-empty.");
+  }
+
   @Override
   public JavaDStream<StructuredRecord> getStream(StreamingContext streamingContext) throws Exception {
     registerUsage(streamingContext);
+ //   BasicAWSCredentials awsCred = new BasicAWSCredentials(config.awsAccessKeyId, config.awsAccessSecret);
+  //  AmazonKinesisClient kinesisClient = new AmazonKinesisClient(awsCred);
     JavaStreamingContext javaStreamingContext = streamingContext.getSparkStreamingContext();
     Duration kinesisCheckpointInterval = new Duration(config.duration);
+
+/*    int numShards = kinesisClient.describeStream(config.streamName).getStreamDescription().getShards().size();
+    List<JavaDStream<byte[]>> streamsList = new ArrayList<>(numShards);
+
+    for (int i = 0; i < numShards; i++) {
+      streamsList.add(
+        KinesisUtils.createStream(javaStreamingContext, config.appName,
+                                  config.streamName, config.endpoint,
+                                  config.getRegionName(),
+                                  config.getInitialPosition(),
+                                  kinesisCheckpointInterval,
+                                  StorageLevel.MEMORY_AND_DISK_2(),
+                                  config.awsAccessKeyId,
+                                  config.awsAccessSecret)
+      );
+    }
+
+    // Union all the streams if there is more than 1 stream
+    JavaDStream<byte[]> kinesisStream;
+    if (streamsList.size() > 1) {
+      kinesisStream = javaStreamingContext.union(streamsList.get(0), streamsList.subList(1, streamsList.size()));
+    } else {
+      // Otherwise, just use the 1 stream
+      kinesisStream = streamsList.get(0);
+    }*/
+
     JavaReceiverInputDStream<byte[]> kinesisStream = KinesisUtils.createStream(javaStreamingContext, config.appName,
                                                                                config.streamName, config.endpoint,
                                                                                config.getRegionName(),
@@ -100,6 +147,7 @@ public class KinesisStreamingSource extends ReferenceStreamingSource<StructuredR
 
     @Name("endpointUrl")
     @Description("Valid Kinesis endpoints URL")
+    @Macro
     private String endpoint;
 
     @Name("duration")
