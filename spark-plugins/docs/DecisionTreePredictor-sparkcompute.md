@@ -1,4 +1,4 @@
-# DecisionTreeRegressor
+# DecisionTreePredictor
 
 
 Description
@@ -18,11 +18,11 @@ Properties
 
 **featuresToInclude:** A comma-separated sequence of fields for Decision Tree Regression. Features to be used, must be
 from one of the following type: int, long, float or double. Both *featuresToInclude* and *featuresToExclude* fields
-annot be specified.
+cannot be specified.
 
 **featuresToExclude:** A comma-separated sequence of fields to be excluded when calculating prediction. If empty, all
-the fields will be considered for calculating  prediction. Both *featuresToInclude* and *featuresToExclude* fields 
-cannot be specified.
+the fields will be considered for prediction. Both *featuresToInclude* and *featuresToExclude* fields cannot be 
+specified.
 
 **predictionField:** The field on which to set the prediction. It will be of type double.
 
@@ -33,14 +33,14 @@ This example uses ``dofM, dofW, scheduleDepTime, scheduledArrTime, carrier, elap
 input record as featuresToInclude to predict ``delayed`` field.
 
     {
-      "name": "DecisionTreeRegression",
-      "type": "sparkcompute",
-      "properties": {
+        "name": "DecisionTreeRegression",
+        "type": "sparkcompute",
+        "properties": {
             "fileSetName": "decision-tree-model",
             "path": "decisionTree",
             "featuresToInclude": "dofM,dofW,scheduleDepTime,scheduledArrTime,carrier,elapsedTime,origin,dest",
             "predictionField": "delayed"
-       }
+        }
     }
 
 
@@ -66,3 +66,4 @@ Output records will contain all the fields along with the predicted field:
      | 20    | 1     | AA      | N3GEAA  | 1162      | DEN    | DFW         | 641      | 905       | 1205    | 0.0     |
      | 4     | 6     | AA      | N3CBAA  | 1314      | MIA    | IAH         | 964      | 1225      | 1420    | 1.0     |
      +=================================================================================================================+
+     

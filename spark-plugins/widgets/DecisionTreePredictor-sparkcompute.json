@@ -4,7 +4,7 @@
   },
   "configuration-groups": [
     {
-      "label": "Decision Tree Regressor Properties",
+      "label": "Decision Tree Predictor Properties",
       "properties": [
         {
           "widget-type": "textbox",

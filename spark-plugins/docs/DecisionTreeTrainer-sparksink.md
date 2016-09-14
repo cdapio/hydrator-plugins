@@ -25,7 +25,7 @@ be considered for training.  Both *featuresToInclude* and *featuresToExclude* fi
 **labelField:** The field from which to get the prediction. It must be of type double.
 
 **maxDepth:** Maximum depth of the tree.
-              For example, depth 0 means 1 leaf node; depth 1 means 1 internal node + 2 leaf nodes. Default is 10.
+For example, depth 0 means 1 leaf node; depth 1 means 1 internal node + 2 leaf nodes. Default is 10.
 
 **maxBins:** Maximum number of bins used for splitting when discretizing continuous featuresToInclude. DecisionTree
 requires maxBins to be at least as large as the number of values in each categorical feature. Default is 100.
@@ -37,14 +37,14 @@ This example uses the fields ``dofM, dofW, scheduleDepTime, scheduledArrTime, ca
 the input record as featuresToInclude and ``delayed`` field as the label to train the model.
 
     {
-        	"name": "DecisionTreeRegression",
-        	"type": "sparkcompute",
-        	"properties": {
-        		"fileSetName": "decision-tree-model",
+        "name": "DecisionTreeRegression",
+        "type": "sparksink",
+        "properties": {
+            "fileSetName": "decision-tree-model",
         		"path": "decisionTree",
         		"featuresToInclude": "dofM,dofW,scheduleDepTime,scheduledArrTime,carrier,elapsedTime,origin,dest",
         		"labelField": "delayed",
-        		"maxDept": "9",
+        		"maxDepth": "9",
         		"maxBins": "100"
-        	}
+        }
     }

@@ -28,8 +28,10 @@ import co.cask.cdap.etl.api.batch.SparkPluginContext;
 import co.cask.cdap.etl.api.batch.SparkSink;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 import com.google.common.primitives.Doubles;
-import joptsimple.internal.Strings;
+import com.google.common.primitives.Ints;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
@@ -39,9 +41,7 @@ import org.apache.spark.mllib.tree.DecisionTree;
 import org.apache.spark.mllib.tree.model.DecisionTreeModel;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -57,22 +57,22 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
   public static final String PLUGIN_NAME = "DecisionTreeTrainer";
   //Impurity measure of the homogeneity of the labels at the node. Expected value for regression is "variance".
   private static final String IMPURITY = "variance";
-  private static final int DEFAULT_MAX_DEPTH = 10;
-  private static final int DEFAULT_MAX_BINS = 100;
   private DecisionTreeTrainerConfig config;
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     pipelineConfigurer.createDataset(config.fileSetName, FileSet.class);
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
-    if (inputSchema != null) {
-      config.validate(inputSchema);
-    }
+    Preconditions.checkArgument(inputSchema != null, "Input Schema must be a known constant.");
+    config.validate(inputSchema);
   }
 
   @Override
-  public void run(SparkExecutionPluginContext context, final JavaRDD<StructuredRecord> input) throws Exception {
+  public void run(final SparkExecutionPluginContext context, final JavaRDD<StructuredRecord> input) throws Exception {
 
+    if (input == null) {
+      throw new IllegalArgumentException("Input java rdd is null");
+    }
     Schema schema = input.first().getSchema();
     //categoricalFeaturesInfo : Specifies which features are categorical and how many categorical values each of those
     //features can take. This is given as a map from feature index to the number of categories for that feature.
@@ -84,22 +84,26 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
       @Override
       public LabeledPoint call(StructuredRecord record) throws Exception {
         List<Double> featureList = new ArrayList<>();
+        List<Integer> featureIndex = new ArrayList<>();
+        int counter = 0;
         for (String field : fields) {
-          featureList.add(Double.valueOf(record.get(field).toString()));
+          if (record.get(field) != null) {
+            featureList.add(((Number) record.get(field)).doubleValue());
+            featureIndex.add(counter);
+          }
+          counter++;
         }
         Double prediction = record.get(config.labelField);
         if (prediction == null) {
-          throw new IllegalArgumentException(String.format("Value of Prediction field %s value must not be null",
+          throw new IllegalArgumentException(String.format("Value of Label field %s value must not be null.",
                                                            config.labelField));
         }
-        return new LabeledPoint(prediction, Vectors.dense(Doubles.toArray(featureList)));
+        return new LabeledPoint(prediction, Vectors.sparse(counter, Ints.toArray(featureIndex),
+                                                           Doubles.toArray(featureList)));
       }
     });
 
     trainingData.cache();
-
-    config.maxDepth = config.maxDepth == null ? DEFAULT_MAX_DEPTH : config.maxDepth;
-    config.maxBins = config.maxBins == null ? DEFAULT_MAX_BINS : config.maxBins;
     final DecisionTreeModel model = DecisionTree.trainRegressor(trainingData, categoricalFeaturesInfo, IMPURITY,
                                                                 config.maxDepth, config.maxBins);
     // save the model to a file in the output FileSet
@@ -121,28 +125,28 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
   public static class DecisionTreeTrainerConfig extends PluginConfig {
 
     @Description("The name of the FileSet to save the model to.")
-    private final String fileSetName;
+    private String fileSetName;
 
     @Description("Path of the FileSet to save the model to.")
-    private final String path;
+    private String path;
 
     @Nullable
-    @Description("A comma-separated sequence of fields to use for training. If empty, all the fields will be " +
-      "considered for training. Features to be used, must be from one of the following type: int, long, float or " +
+    @Description("A comma-separated sequence of fields to use for training. If empty, all fields except the label " +
+      "will be used for training. Features to be used, must be from one of the following type: int, long, float or " +
       "double. Both featuresToInclude and featuresToExclude fields cannot be specified.")
-    private final String featuresToInclude;
+    private String featuresToInclude;
 
     @Nullable
-    @Description("A comma-separated sequence of fields to exclude when training. If empty, all the fields will be " +
-      "considered for training. Both featuresToInclude and featuresToExclude fields cannot be specified.")
-    private final String featuresToExclude;
+    @Description("A comma-separated sequence of fields to exclude when training. If empty, all fields except the " +
+      "label will be used for training. Both featuresToInclude and featuresToExclude fields cannot be specified.")
+    private String featuresToExclude;
 
     @Nullable
     @Description("Mapping of the feature to the cardinality of that feature; required for categorical features.")
-    private final String cardinalityMapping;
+    private String cardinalityMapping;
 
     @Description("The field from which to get the prediction. It must be of type double.")
-    private final String labelField;
+    private String labelField;
 
     @Nullable
     @Description("Maximum depth of the tree.\n For example, depth 0 means 1 leaf node; depth 1 means 1 internal node " +
@@ -154,6 +158,11 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
       "DecisionTree requires maxBins to be at least as large as the number of values in each categorical feature. " +
       "Default is 100.")
     private Integer maxBins;
+
+    public DecisionTreeTrainerConfig() {
+      maxDepth = 10;
+      maxBins = 100;
+    }
 
     public DecisionTreeTrainerConfig(String fileSetName, String path, String featuresToInclude,
                                      String featuresToExclude, String cardinalityMapping, String labelField,
@@ -168,68 +177,59 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
       this.maxBins = maxBins;
     }
 
-    private void validate(Schema inputSchema) {
+    public void validate(Schema inputSchema) {
       if (!Strings.isNullOrEmpty(featuresToExclude) && !Strings.isNullOrEmpty(featuresToInclude)) {
         throw new IllegalArgumentException("Cannot specify values for both featuresToInclude and featuresToExclude. " +
-                                             "Please specify fields for one");
+                                             "Please specify fields for one.");
       }
       List<String> fields = getFeatureList(inputSchema);
       for (String field : fields) {
         Schema.Field inputField = inputSchema.getField(field);
         Schema schema = inputField.getSchema();
         Schema.Type features = schema.isNullableSimple() ? schema.getNonNullable().getType() : schema.getType();
-        Preconditions.checkArgument(features.isSimpleType(), "Field to be used for training must be of type number: " +
-          "int, long, float, double but was of type %s for field %s ", features, field);
-        if (features.equals(Schema.Type.BYTES) || features.equals(Schema.Type.STRING) ||
-          features.equals(Schema.Type.BOOLEAN)) {
-          throw new IllegalArgumentException(String.format("Field to be used for training must be of type : int," +
-                                                             " double, float, long but was of type %s for field %s ",
-                                                           features, field));
+        if (!(features.equals(Schema.Type.INT) || features.equals(Schema.Type.LONG) ||
+          features.equals(Schema.Type.FLOAT) || features.equals(Schema.Type.DOUBLE))) {
+          throw new IllegalArgumentException(String.format("Field to classify must be of type : int, double, " +
+                                                             "float, long but was of type %s for field %s.", features,
+                                                           field));
         }
-        Preconditions.checkArgument(!features.equals(Schema.Type.NULL), "Field to classify must not be of type null");
       }
       Schema.Field prediction = inputSchema.getField(labelField);
-      if (labelField == null) {
-        throw new IllegalArgumentException(String.format("Prediction field %s does not exists in the input schema",
+      if (prediction == null) {
+        throw new IllegalArgumentException(String.format("Label field %s does not exists in the input schema.",
                                                          labelField));
       }
       Schema predictionSchema = prediction.getSchema();
       Schema.Type predictionFieldType = predictionSchema.isNullableSimple() ?
         predictionSchema.getNonNullable().getType() : predictionSchema.getType();
       if (predictionFieldType != Schema.Type.DOUBLE) {
-        throw new IllegalArgumentException(String.format("Prediction field must be of type Double, but was %s.",
+        throw new IllegalArgumentException(String.format("Label field must be of type Double, but was %s.",
                                                          predictionFieldType));
       }
     }
 
     private List<String> getFeatureList(Schema inputSchema) {
-      List<String> fields = new LinkedList<>();
+      List<String> fields = new ArrayList<>();
       List<Schema.Field> inputSchemaFields = inputSchema.getFields();
       List<String> excludeFeatures = new ArrayList<>();
-
       if (!Strings.isNullOrEmpty(featuresToInclude)) {
-        fields = Arrays.asList(featuresToInclude.split(","));
-        for (String field : fields) {
-          field = field.trim();
+        for (String field : Splitter.on(',').trimResults().split(featuresToInclude)) {
           Schema.Field inputField = inputSchema.getField(field);
           if (inputField == null) {
-            throw new IllegalArgumentException(String.format("Field %s does not exists in the input schema", field));
+            throw new IllegalArgumentException(String.format("Field %s does not exists in the input schema.", field));
+          }
+          if (!field.equals(labelField)) {
+            fields.add(field);
           }
         }
       } else {
         if (!Strings.isNullOrEmpty(featuresToExclude)) {
-          excludeFeatures = Arrays.asList(featuresToExclude.split(","));
+          excludeFeatures.addAll(Lists.newArrayList(Splitter.on(',').trimResults().split(featuresToExclude)));
         }
         for (Schema.Field field : inputSchemaFields) {
           String fieldName = field.getName();
-          if (!fieldName.equals(labelField)) {
-            if (!excludeFeatures.isEmpty()) {
-              if (!excludeFeatures.contains(fieldName)) {
-                fields.add(fieldName);
-              }
-            } else {
-              fields.add(fieldName);
-            }
+          if (!fieldName.equals(labelField) && !excludeFeatures.contains(fieldName)) {
+            fields.add(fieldName);
           }
         }
       }
@@ -243,11 +243,16 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
         for (String field : Splitter.on(',').trimResults().split(cardinalityMapping)) {
           String[] value = field.split(":");
           if (value.length == 2) {
-            outputFieldMappings.put(featureList.indexOf(value[0]), Integer.parseInt(value[1]));
+            try {
+              outputFieldMappings.put(featureList.indexOf(value[0]), Integer.parseInt(value[1]));
+            } catch (NumberFormatException e) {
+              throw new IllegalArgumentException(
+                String.format("Invalid cardinality %s. Please specify valid integer for cardinality.", value[1]));
+            }
           } else {
             throw new IllegalArgumentException(
-              String.format("Either key or value is missing for 'Categorical Feature  Cardinality Mapping'. Please " +
-                              "make sure both key and value are present."));
+              String.format("Invalid categorical feature mapping '%s'. Please make sure it is in the format " +
+                              "'feature':'cardinality'.", field));
           }
         }
       }
@@ -255,5 +260,3 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
     }
   }
 }
-
-

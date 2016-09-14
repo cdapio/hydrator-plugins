@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.spark.test;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.datapipeline.DataPipelineApp;
 import co.cask.cdap.datapipeline.SmartWorkflow;
@@ -38,7 +39,7 @@ import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkflowManager;
-import co.cask.hydrator.plugin.spark.DecisionTreeRegressor;
+import co.cask.hydrator.plugin.spark.DecisionTreePredictor;
 import co.cask.hydrator.plugin.spark.DecisionTreeTrainer;
 import co.cask.hydrator.plugin.spark.TwitterStreamingSource;
 import com.google.common.collect.ImmutableMap;
@@ -59,7 +60,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Unit tests for {@Link DecisionTreeTrainer} and {@link DecisionTreeRegressor} classes.
+ * Unit tests for {@Link DecisionTreeTrainer} and {@link DecisionTreePredictor} classes.
  */
 public class DecisionTreeRegressionTest extends HydratorTestBase {
 
@@ -69,6 +70,24 @@ public class DecisionTreeRegressionTest extends HydratorTestBase {
   protected static final ArtifactId DATAPIPELINE_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("data-pipeline", "3.5.0");
   protected static final ArtifactSummary DATAPIPELINE_ARTIFACT = new ArtifactSummary("data-pipeline", "3.5.0");
   private static final String LABELED_RECORDS = "labeledRecords";
+  private final Schema schema =
+    Schema.recordOf("flightData", Schema.Field.of("dofM", Schema.nullableOf(Schema.of(Schema.Type.INT))),
+                    Schema.Field.of("dofW", Schema.nullableOf(Schema.of(Schema.Type.INT))),
+                    Schema.Field.of("carrier", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
+                    Schema.Field.of("tailNum", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                    Schema.Field.of("flightNum", Schema.nullableOf(Schema.of(Schema.Type.INT))),
+                    Schema.Field.of("originId", Schema.nullableOf(Schema.of(Schema.Type.INT))),
+                    Schema.Field.of("origin", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                    Schema.Field.of("destId", Schema.nullableOf(Schema.of(Schema.Type.INT))),
+                    Schema.Field.of("dest", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                    Schema.Field.of("scheduleDepTime", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
+                    Schema.Field.of("deptime", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
+                    Schema.Field.of("depDelayMins", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
+                    Schema.Field.of("scheduledArrTime", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
+                    Schema.Field.of("arrTime", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
+                    Schema.Field.of("arrDelay", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
+                    Schema.Field.of("elapsedTime", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
+                    Schema.Field.of("distance", Schema.nullableOf(Schema.of(Schema.Type.INT))));
 
   @BeforeClass
   public static void setupTest() throws Exception {
@@ -76,14 +95,14 @@ public class DecisionTreeRegressionTest extends HydratorTestBase {
     setupBatchArtifacts(DATAPIPELINE_ARTIFACT_ID, DataPipelineApp.class);
     // add artifact for spark plugins
     addPluginArtifact(NamespaceId.DEFAULT.artifact("spark-plugins", "1.0.0"), DATAPIPELINE_ARTIFACT_ID,
-                      DecisionTreeTrainer.class, DecisionTreeRegressor.class, TwitterStreamingSource.class);
+                      DecisionTreeTrainer.class, DecisionTreePredictor.class, TwitterStreamingSource.class);
   }
 
   @Test
   public void testSparkSinkAndCompute() throws Exception {
     // use the SparkSink(DecisionTreeTrainer) to train a model
     testSinglePhaseWithSparkSink();
-    // use a SparkCompute(DecisionTreeRegressor) to label all records going through the pipeline, using the model
+    // use a SparkCompute(DecisionTreePredictor) to label all records going through the pipeline, using the model
     // build with the SparkSink
     testSinglePhaseWithSparkCompute();
   }
@@ -102,7 +121,7 @@ public class DecisionTreeRegressionTest extends HydratorTestBase {
       .build();
 
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(new ETLStage("source", MockSource.getPlugin("flightRecords")))
+      .addStage(new ETLStage("source", MockSource.getPlugin("flightRecords", getTrainerSchema(schema))))
       .addStage(new ETLStage("customsink", new ETLPlugin(DecisionTreeTrainer.PLUGIN_NAME, SparkSink.PLUGIN_TYPE,
                                                          properties, null)))
       .addConnection("source", "customsink")
@@ -155,9 +174,9 @@ public class DecisionTreeRegressionTest extends HydratorTestBase {
      * source --> sparkcompute --> sink
      */
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(new ETLStage("source", MockSource.getPlugin(features)))
+      .addStage(new ETLStage("source", MockSource.getPlugin(features, schema)))
       .addStage(new ETLStage("sparkcompute",
-                             new ETLPlugin(DecisionTreeRegressor.PLUGIN_NAME, SparkCompute.PLUGIN_TYPE,
+                             new ETLPlugin(DecisionTreePredictor.PLUGIN_NAME, SparkCompute.PLUGIN_TYPE,
                                            ImmutableMap.of("fileSetName", "decision-tree-regression-model",
                                                            "path", "decisionTreeRegression",
                                                            "featuresToExclude", "tailNum,flightNum,origin,dest," +
@@ -220,119 +239,9 @@ public class DecisionTreeRegressionTest extends HydratorTestBase {
     Assert.assertEquals(expected, results);
   }
 
-  @Test
-  public void testInvalidPredictionField() throws Exception {
-    Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-      .put("fileSetName", "decision-tree-regression-model")
-      .put("path", "decisionTreeRegression")
-      .put("featuresToInclude", "dofM,dofW,scheduleDepTime,scheduledArrTime,carrier,elapsedTime,originId,destId")
-      .put("labelField", "dealyed")
-      .put("maxBins", "100")
-      .put("maxDepth", "9")
-      .build();
-
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(new ETLStage("source", MockSource.getPlugin("flightRecords")))
-      .addStage(new ETLStage("customsink", new ETLPlugin(DecisionTreeTrainer.PLUGIN_NAME, SparkSink.PLUGIN_TYPE,
-                                                         properties, null)))
-      .addConnection("source", "customsink")
-      .build();
-
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("DecisionTreeTest");
-    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
-
-    // send records from sample data to train the model
-    List<StructuredRecord> messagesToWrite = new ArrayList<>();
-    messagesToWrite.addAll(getInputData());
-
-    // write records to source
-    DataSetManager<Table> inputManager = getDataset(Id.Namespace.DEFAULT, "flightRecords");
-    MockSource.writeInput(inputManager, messagesToWrite);
-
-    // manually trigger the pipeline
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
-
-    Assert.assertEquals("FAILED", workflowManager.getHistory().get(0).getStatus().name());
-  }
-
-  @Test
-  public void testInvalidFeatures() throws Exception {
-    Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-      .put("fileSetName", "decision-tree-regression-model")
-      .put("path", "decisionTreeRegression")
-      .put("featuresToInclude", "dofM,dofW,scheduleDepTime,scheduledArrTime,carrier,elapsedTime,originId,destinationId")
-      .put("labelField", "delayed")
-      .put("maxBins", "100")
-      .put("maxDepth", "9")
-      .build();
-
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(new ETLStage("source", MockSource.getPlugin("flightRecords")))
-      .addStage(new ETLStage("customsink", new ETLPlugin(DecisionTreeTrainer.PLUGIN_NAME, SparkSink.PLUGIN_TYPE,
-                                                         properties, null)))
-      .addConnection("source", "customsink")
-      .build();
-
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("DecisionTreeTest");
-    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
-
-    // send records from sample data to train the model
-    List<StructuredRecord> messagesToWrite = new ArrayList<>();
-    messagesToWrite.addAll(getInputData());
-
-    // write records to source
-    DataSetManager<Table> inputManager = getDataset(Id.Namespace.DEFAULT, "flightRecords");
-    MockSource.writeInput(inputManager, messagesToWrite);
-
-    // manually trigger the pipeline
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
-
-    Assert.assertEquals("FAILED", workflowManager.getHistory().get(0).getStatus().name());
-  }
-
-  @Test
-  public void testIncludeAllFeatures() throws Exception {
-    /*
-     * source --> sparksink
-     */
-    Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-      .put("fileSetName", "decision-tree-regression-model")
-      .put("path", "decisionTreeRegression")
-      .put("labelField", "delayed")
-      .put("maxBins", "100")
-      .put("maxDepth", "9")
-      .build();
-
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(new ETLStage("source", MockSource.getPlugin("flightRecords")))
-      .addStage(new ETLStage("customsink", new ETLPlugin(DecisionTreeTrainer.PLUGIN_NAME, SparkSink.PLUGIN_TYPE,
-                                                         properties, null)))
-      .addConnection("source", "customsink")
-      .build();
-
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("SinglePhaseApp");
-    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
-
-    // send records from sample data to train the model
-    List<StructuredRecord> messagesToWrite = new ArrayList<>();
-    messagesToWrite.addAll(getInputData());
-
-    // write records to source
-    DataSetManager<Table> inputManager = getDataset(Id.Namespace.DEFAULT, "flightRecords");
-    MockSource.writeInput(inputManager, messagesToWrite);
-
-    // manually trigger the pipeline
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
-    //featurs can only have type: int, long, float, double
-    Assert.assertEquals("FAILED", workflowManager.getHistory().get(0).getStatus().name());
+  private Schema getTrainerSchema(Schema schema) {
+    List<Schema.Field> fields = new ArrayList<>(schema.getFields());
+    fields.add(Schema.Field.of("delayed", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))));
+    return Schema.recordOf(schema.getRecordName() + ".predicted", fields);
   }
 }
