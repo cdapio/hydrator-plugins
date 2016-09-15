@@ -1,0 +1,48 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Kinesis Configuration",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Application Name",
+          "name": "appName"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Stream Name",
+          "name": "streamName"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Kinesis endpoint url",
+          "name": "endpointUrl"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Checkpoint interval duration",
+          "name": "duration"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Initial position in stream",
+          "name": "initialPosition"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "AWS access key id",
+          "name": "awsAccessKeyId"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "AWS access secret",
+          "name": "awsAccessSecret"
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}

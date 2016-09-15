@@ -26,7 +26,6 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.streaming.StreamingContext;
 import co.cask.cdap.etl.api.streaming.StreamingSource;
 import co.cask.hydrator.common.ReferencePluginConfig;
-import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -34,7 +33,6 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.api.java.JavaDStream;
-import org.apache.spark.streaming.api.java.JavaReceiverInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kinesis.KinesisUtils;
 import org.slf4j.Logger;
@@ -46,19 +44,18 @@ import java.io.Serializable;
  * Spark streaming source to get data from AWS Kinesis streams
  */
 @Plugin(type = StreamingSource.PLUGIN_TYPE)
-@Name("KinesisSpark")
+@Name("KinesisSource")
 @Description("Kinesis streaming source.")
 public class KinesisStreamingSource extends ReferenceStreamingSource<StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(KinesisStreamingSource.class);
+  private static final String BODY = "body";
   private static final Schema SCHEMA = Schema.recordOf("kinesis",
-                                                       Schema.Field.of("body", Schema.of(Schema.Type.STRING)));
+                                                       Schema.Field.of(BODY, Schema.of(Schema.Type.STRING)));
   private final KinesisStreamConfig config;
-
   public KinesisStreamingSource(KinesisStreamConfig config) {
     super(config);
     this.config = config;
   }
-
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
@@ -78,14 +75,16 @@ public class KinesisStreamingSource extends ReferenceStreamingSource<StructuredR
   @Override
   public JavaDStream<StructuredRecord> getStream(StreamingContext streamingContext) throws Exception {
     registerUsage(streamingContext);
- //   BasicAWSCredentials awsCred = new BasicAWSCredentials(config.awsAccessKeyId, config.awsAccessSecret);
-  //  AmazonKinesisClient kinesisClient = new AmazonKinesisClient(awsCred);
+    //BasicAWSCredentials awsCred = new BasicAWSCredentials(config.awsAccessKeyId, config.awsAccessSecret);
+    //AmazonKinesisClient kinesisClient = new AmazonKinesisClient(awsCred);
+
     JavaStreamingContext javaStreamingContext = streamingContext.getSparkStreamingContext();
     Duration kinesisCheckpointInterval = new Duration(config.duration);
 
 /*    int numShards = kinesisClient.describeStream(config.streamName).getStreamDescription().getShards().size();
     List<JavaDStream<byte[]>> streamsList = new ArrayList<>(numShards);
-
+    LOG.info("creating {} spark executors for {} shards", numShards, numShards);
+    //Creating spark executors based on the number of shards in the stream
     for (int i = 0; i < numShards; i++) {
       streamsList.add(
         KinesisUtils.createStream(javaStreamingContext, config.appName,
@@ -108,24 +107,23 @@ public class KinesisStreamingSource extends ReferenceStreamingSource<StructuredR
       kinesisStream = streamsList.get(0);
     }*/
 
-    JavaReceiverInputDStream<byte[]> kinesisStream = KinesisUtils.createStream(javaStreamingContext, config.appName,
-                                                                               config.streamName, config.endpoint,
-                                                                               config.getRegionName(),
-                                                                               config.getInitialPosition(),
-                                                                               kinesisCheckpointInterval,
-                                                                               StorageLevel.MEMORY_AND_DISK_2(),
-                                                                               config.awsAccessKeyId,
-                                                                               config.awsAccessSecret);
-
+    JavaDStream<byte[]> kinesisStream = KinesisUtils.createStream(javaStreamingContext, config.appName,
+                              config.streamName, config.endpoint,
+                              config.getRegionName(),
+                              config.getInitialPosition(),
+                              kinesisCheckpointInterval,
+                              StorageLevel.MEMORY_AND_DISK_2(),
+                              config.awsAccessKeyId,
+                              config.awsAccessSecret);
     return kinesisStream.map(new Function<byte[], StructuredRecord>() {
                                public StructuredRecord call(byte[] data) {
-                                 return convertText(data);
+                                 return recordTransform(data);
                                }
                              }
     );
   }
 
-  private StructuredRecord convertText(byte[] data) {
+  private StructuredRecord recordTransform(byte[] data) {
     StructuredRecord.Builder recordBuilder = StructuredRecord.builder(SCHEMA);
     recordBuilder.set("body", new String(data));
     return recordBuilder.build();
@@ -141,12 +139,12 @@ public class KinesisStreamingSource extends ReferenceStreamingSource<StructuredR
     private String appName;
 
     @Name("streamName")
-    @Description("The name of the Kinesis stream to output to. The stream should be active")
+    @Description("The name of the Kinesis stream to the get the data from. The stream should be active")
     @Macro
     private String streamName;
 
     @Name("endpointUrl")
-    @Description("Valid Kinesis endpoints URL")
+    @Description("Valid Kinesis endpoints URL eg. kinesis.us-east-1.amazonaws.com")
     @Macro
     private String endpoint;
 
@@ -183,7 +181,7 @@ public class KinesisStreamingSource extends ReferenceStreamingSource<StructuredR
     }
 
     public String getRegionName() {
-      return RegionUtils.getRegionByEndpoint(endpoint).getName();
+      return "us-east-1";
     }
 
     public InitialPositionInStream getInitialPosition() {
