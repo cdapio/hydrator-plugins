@@ -24,9 +24,11 @@ import co.cask.cdap.etl.api.Lookup;
 import co.cask.cdap.etl.api.LookupConfig;
 import co.cask.cdap.etl.api.LookupTableConfig;
 import co.cask.cdap.etl.api.Transform;
-import co.cask.hydrator.common.test.MockEmitter;
-import co.cask.hydrator.common.test.MockLookupProvider;
-import co.cask.hydrator.common.test.MockTransformContext;
+import co.cask.cdap.etl.mock.common.MockEmitter;
+import co.cask.cdap.etl.mock.common.MockLookupProvider;
+import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
+import co.cask.cdap.etl.mock.transform.MockTransformContext;
+import co.cask.hydrator.plugin.validator.CoreValidator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -180,7 +182,9 @@ public class JavaScriptTransformTest {
       Schema.Field.of("y", Schema.of(Schema.Type.LONG)),
       Schema.Field.of("z", Schema.of(Schema.Type.DOUBLE)));
 
-    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema,
+                                                                   ImmutableMap.<String, Object>of(
+                                                                     CoreValidator.ID, new CoreValidator()));
     new JavaScriptTransform(config).configurePipeline(configurer);
     Assert.assertEquals(outputSchema, configurer.getOutputSchema());
 

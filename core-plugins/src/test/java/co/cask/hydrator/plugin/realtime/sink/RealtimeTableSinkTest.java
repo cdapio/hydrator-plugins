@@ -17,8 +17,10 @@
 package co.cask.hydrator.plugin.realtime.sink;
 
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
 import co.cask.hydrator.plugin.common.TableSinkConfig;
-import co.cask.hydrator.plugin.transform.MockPipelineConfigurer;
+import co.cask.hydrator.plugin.validator.CoreValidator;
+import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -45,7 +47,10 @@ public class RealtimeTableSinkTest {
     TableSinkConfig tableSinkConfig = new TableSinkConfig("tableSink", "rowkey", outputSchema.toString());
     RealtimeTableSink tableSink = new RealtimeTableSink(tableSinkConfig);
 
-    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema,
+                                                                               ImmutableMap.<String, Object>of(
+                                                                                 CoreValidator.ID,
+                                                                                 new CoreValidator()));
     tableSink.configurePipeline(mockPipelineConfigurer);
   }
 
@@ -66,7 +71,10 @@ public class RealtimeTableSinkTest {
     TableSinkConfig tableSinkConfig = new TableSinkConfig("tableSink", "rowkey", outputSchema.toString());
     RealtimeTableSink tableSink = new RealtimeTableSink(tableSinkConfig);
 
-    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema,
+                                                                               ImmutableMap.<String, Object>of(
+                                                                                 CoreValidator.ID,
+                                                                                 new CoreValidator()));
     tableSink.configurePipeline(mockPipelineConfigurer);
   }
 
@@ -89,7 +97,10 @@ public class RealtimeTableSinkTest {
     TableSinkConfig tableSinkConfig = new TableSinkConfig("tableSink", "rowkey", outputSchema.toString());
     RealtimeTableSink tableSink = new RealtimeTableSink(tableSinkConfig);
 
-    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema,
+                                                                               ImmutableMap.<String, Object>of(
+                                                                                 CoreValidator.ID,
+                                                                                 new CoreValidator()));
     tableSink.configurePipeline(mockPipelineConfigurer);
   }
 
@@ -112,7 +123,10 @@ public class RealtimeTableSinkTest {
     TableSinkConfig tableSinkConfig = new TableSinkConfig("tableSink", "rowkey", outputSchema.toString());
     RealtimeTableSink tableSink = new RealtimeTableSink(tableSinkConfig);
 
-    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema,
+                                                                               ImmutableMap.<String, Object>of(
+                                                                                 CoreValidator.ID,
+                                                                                 new CoreValidator()));
     tableSink.configurePipeline(mockPipelineConfigurer);
   }
 
@@ -135,7 +149,10 @@ public class RealtimeTableSinkTest {
     TableSinkConfig tableSinkConfig = new TableSinkConfig("tableSink", "rowkey", outputSchema.toString());
     RealtimeTableSink tableSink = new RealtimeTableSink(tableSinkConfig);
 
-    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema,
+                                                                               ImmutableMap.<String, Object>of(
+                                                                                 CoreValidator.ID,
+                                                                                 new CoreValidator()));
     tableSink.configurePipeline(mockPipelineConfigurer);
   }
 
@@ -144,7 +161,10 @@ public class RealtimeTableSinkTest {
     TableSinkConfig tableSinkConfig = new TableSinkConfig("tableSink", "rowkey", null);
     RealtimeTableSink tableSink = new RealtimeTableSink(tableSinkConfig);
 
-    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(null);
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(null,
+                                                                               ImmutableMap.<String, Object>of(
+                                                                                 CoreValidator.ID,
+                                                                                 new CoreValidator()));
     tableSink.configurePipeline(mockPipelineConfigurer);
   }
 
@@ -167,7 +187,10 @@ public class RealtimeTableSinkTest {
     TableSinkConfig tableSinkConfig = new TableSinkConfig("tableSink", "rowkey", outputSchema.toString());
     RealtimeTableSink tableSink = new RealtimeTableSink(tableSinkConfig);
 
-    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema,
+                                                                               ImmutableMap.<String, Object>of(
+                                                                                 CoreValidator.ID,
+                                                                                 new CoreValidator()));
     tableSink.configurePipeline(mockPipelineConfigurer);
     Assert.assertEquals(outputSchema, mockPipelineConfigurer.getOutputSchema());
   }

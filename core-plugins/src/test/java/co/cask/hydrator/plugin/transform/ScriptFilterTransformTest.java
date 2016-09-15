@@ -20,8 +20,10 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
-import co.cask.hydrator.common.test.MockEmitter;
-import co.cask.hydrator.common.test.MockTransformContext;
+import co.cask.cdap.etl.mock.common.MockEmitter;
+import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
+import co.cask.cdap.etl.mock.transform.MockTransformContext;
+import co.cask.hydrator.plugin.validator.CoreValidator;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
@@ -162,7 +164,9 @@ public class ScriptFilterTransformTest {
     config.script = "function shouldFilter(inputRecord) { return inputRecord.x * 1024 < 2048; }";
     Schema schema = Schema.recordOf("number", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
     ScriptFilterTransform transform = new ScriptFilterTransform(config);
-    MockPipelineConfigurer pipelineConfigurer = new MockPipelineConfigurer(schema);
+    MockPipelineConfigurer pipelineConfigurer = new MockPipelineConfigurer(schema,
+                                                                           ImmutableMap.<String, Object>of(
+                                                                             CoreValidator.ID, new CoreValidator()));
     transform.configurePipeline(pipelineConfigurer);
     Assert.assertEquals(schema, pipelineConfigurer.getOutputSchema());
   }

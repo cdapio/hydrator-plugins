@@ -20,8 +20,11 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.TransformContext;
-import co.cask.hydrator.common.test.MockEmitter;
-import co.cask.hydrator.common.test.MockTransformContext;
+import co.cask.cdap.etl.mock.common.MockEmitter;
+import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
+import co.cask.cdap.etl.mock.transform.MockTransformContext;
+import co.cask.hydrator.plugin.validator.CoreValidator;
+import com.google.common.collect.ImmutableMap;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.Assert;
 import org.junit.Test;
@@ -61,7 +64,10 @@ public class StructuredRecordToGenericRecordTransformTest {
   @Test
   public void testSchemaValidation() throws Exception {
     StructuredRecordToGenericRecordTransform transformer = new StructuredRecordToGenericRecordTransform();
-    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(eventSchema);
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(eventSchema,
+                                                                               ImmutableMap.<String, Object>of(
+                                                                                 CoreValidator.ID,
+                                                                                 new CoreValidator()));
     transformer.configurePipeline(mockPipelineConfigurer);
     Assert.assertEquals(eventSchema, mockPipelineConfigurer.getOutputSchema());
   }

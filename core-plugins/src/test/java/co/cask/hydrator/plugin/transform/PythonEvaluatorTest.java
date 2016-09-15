@@ -21,9 +21,10 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.InvalidEntry;
 import co.cask.cdap.etl.api.Transform;
-import co.cask.hydrator.common.MockPipelineConfigurer;
-import co.cask.hydrator.common.test.MockEmitter;
-import co.cask.hydrator.common.test.MockTransformContext;
+import co.cask.cdap.etl.mock.common.MockEmitter;
+import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
+import co.cask.cdap.etl.mock.transform.MockTransformContext;
+import co.cask.hydrator.plugin.validator.CoreValidator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -153,7 +154,9 @@ public class PythonEvaluatorTest {
       Schema.Field.of("longField", Schema.of(Schema.Type.LONG)),
       Schema.Field.of("doubleField", Schema.of(Schema.Type.DOUBLE)));
 
-    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema,
+                                                                   ImmutableMap.<String, Object>of(
+                                                                     CoreValidator.ID, new CoreValidator()));
     new PythonEvaluator(config).configurePipeline(configurer);
     Assert.assertEquals(outputSchema, configurer.getOutputSchema());
 

@@ -21,8 +21,11 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
-import co.cask.hydrator.common.test.MockEmitter;
-import co.cask.hydrator.common.test.MockTransformContext;
+import co.cask.cdap.etl.mock.common.MockEmitter;
+import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
+import co.cask.cdap.etl.mock.transform.MockTransformContext;
+import co.cask.hydrator.plugin.validator.CoreValidator;
+import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -55,7 +58,9 @@ public class ProjectionTransformTest {
                                     Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
                                     Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
 
-    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema);
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema,
+                                                                       ImmutableMap.<String, Object>of(
+                                                                         CoreValidator.ID, new CoreValidator()));
 
     // test drop
     ProjectionTransform.ProjectionTransformConfig config =
@@ -93,7 +98,8 @@ public class ProjectionTransformTest {
     Assert.assertEquals(expectedSchema, mockConfigurer.getOutputSchema());
 
     // null input schema
-    mockConfigurer = new MockPipelineConfigurer(null);
+    mockConfigurer = new MockPipelineConfigurer(null, ImmutableMap.<String, Object>of(CoreValidator.ID,
+                                                                                      new CoreValidator()));
     new ProjectionTransform(config).configurePipeline(mockConfigurer);
     Assert.assertNull(mockConfigurer.getOutputSchema());
   }
@@ -207,7 +213,9 @@ public class ProjectionTransformTest {
                                     Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
                                     Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
 
-    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema);
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema,
+                                                                       ImmutableMap.<String, Object>of(
+                                                                         CoreValidator.ID, new CoreValidator()));
 
     // This should give an Exception
     ProjectionTransform.ProjectionTransformConfig config =

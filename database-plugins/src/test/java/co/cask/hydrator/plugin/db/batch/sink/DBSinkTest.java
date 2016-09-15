@@ -19,7 +19,7 @@ package co.cask.hydrator.plugin.db.batch.sink;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
-import co.cask.hydrator.common.test.MockEmitter;
+import co.cask.cdap.etl.mock.common.MockEmitter;
 import co.cask.hydrator.plugin.DBRecord;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;

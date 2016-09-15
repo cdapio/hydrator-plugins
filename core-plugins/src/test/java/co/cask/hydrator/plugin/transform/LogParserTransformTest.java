@@ -20,7 +20,10 @@ import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Transform;
-import co.cask.hydrator.common.test.MockEmitter;
+import co.cask.cdap.etl.mock.common.MockEmitter;
+import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
+import co.cask.hydrator.plugin.validator.CoreValidator;
+import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -64,7 +67,9 @@ public class LogParserTransformTest {
       Schema.Field.of("body", Schema.of(Schema.Type.STRING)));
 
 
-    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(inputSchemaString);
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(inputSchemaString,
+                                                                       ImmutableMap.<String, Object>of(
+                                                                         CoreValidator.ID, new CoreValidator()));
     S3_TRANSFORM.configurePipeline(mockConfigurer);
     Assert.assertEquals(LOG_SCHEMA, mockConfigurer.getOutputSchema());
 
@@ -74,14 +79,17 @@ public class LogParserTransformTest {
       Schema.Field.of("body", Schema.of(Schema.Type.BYTES)));
 
 
-    mockConfigurer = new MockPipelineConfigurer(inputSchemaBytes);
+    mockConfigurer = new MockPipelineConfigurer(inputSchemaBytes,
+                                                ImmutableMap.<String, Object>of(CoreValidator.ID, new CoreValidator()));
     CLF_TRANSFORM.configurePipeline(mockConfigurer);
     Assert.assertEquals(LOG_SCHEMA, mockConfigurer.getOutputSchema());
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void testConfigurePipelineSchemaValidationError() throws Exception {
-    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(Schema.of(Schema.Type.BYTES));
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(Schema.of(Schema.Type.BYTES),
+                                                                       ImmutableMap.<String, Object>of(
+                                                                         CoreValidator.ID, new CoreValidator()));
     S3_TRANSFORM.configurePipeline(mockConfigurer);
     Assert.assertEquals(LOG_SCHEMA, mockConfigurer.getOutputSchema());
   }
@@ -93,7 +101,9 @@ public class LogParserTransformTest {
       Schema.Field.of("CLF", Schema.of(Schema.Type.STRING)),
       // "body" is config.inputName and that should be of only type String or Bytes
       Schema.Field.of("body", Schema.of(Schema.Type.INT)));
-    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(inputSchemaString);
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(inputSchemaString,
+                                                                       ImmutableMap.<String, Object>of(
+                                                                         CoreValidator.ID, new CoreValidator()));
     S3_TRANSFORM.configurePipeline(mockConfigurer);
   }
 
@@ -104,7 +114,9 @@ public class LogParserTransformTest {
       Schema.Field.of("CLF", Schema.of(Schema.Type.STRING))
       // "body" is config.inputName and we skip that, causing that field to be null
       );
-    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(inputSchemaString);
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(inputSchemaString,
+                                                                       ImmutableMap.<String, Object>of(
+                                                                         CoreValidator.ID, new CoreValidator()));
     S3_TRANSFORM.configurePipeline(mockConfigurer);
   }
 

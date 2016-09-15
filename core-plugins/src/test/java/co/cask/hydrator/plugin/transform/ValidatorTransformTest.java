@@ -19,10 +19,12 @@ package co.cask.hydrator.plugin.transform;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Validator;
-import co.cask.hydrator.common.test.MockEmitter;
-import co.cask.hydrator.common.test.MockTransformContext;
+import co.cask.cdap.etl.mock.common.MockEmitter;
+import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
+import co.cask.cdap.etl.mock.transform.MockTransformContext;
 import co.cask.hydrator.plugin.validator.CoreValidator;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -130,7 +132,9 @@ public class ValidatorTransformTest {
       Schema.Field.of("x", Schema.of(Schema.Type.INT)),
       Schema.Field.of("y", Schema.of(Schema.Type.LONG)));
 
-    MockPipelineConfigurer pipelineConfigurer = new MockPipelineConfigurer(outputSchema);
+    MockPipelineConfigurer pipelineConfigurer = new MockPipelineConfigurer(outputSchema,
+                                                                           ImmutableMap.<String, Object>of(
+                                                                             CoreValidator.ID, new CoreValidator()));
     transform.configurePipeline(pipelineConfigurer);
     Assert.assertEquals(outputSchema, pipelineConfigurer.getOutputSchema());
   }

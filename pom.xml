@@ -748,7 +748,7 @@
         <executions>
           <!-- Create the config file for artifact which can be used to deploy the artifact.
                Sets the parents field to system:cdap-etl-batch and system:cdap-etl-realtime with whatever
-               version range is set in the etl.versionRange property.
+               version range is set in the app.parents property.
                also sets a widget and doc property for each file contained in the widgets and docs directories. -->
           <execution>
             <id>create-artifact-config</id>
