@@ -196,7 +196,7 @@ public class KafkaSourceTest {
     String zk = "localhost:" + Networks.getRandomPort();
     String brokerList = null;
     KafkaSource.KafkaPluginConfig config = new KafkaSource.KafkaPluginConfig(zk, brokerList, PARTITIONS,
-                                                                             "some", null, Formats.TEXT, null);
+                                                                             "some", null, null, Formats.TEXT, null);
     kafkaSource = new KafkaSource(config);
     kafkaSource.initialize(new MockRealtimeContext());
   }
@@ -214,7 +214,7 @@ public class KafkaSourceTest {
       brokerList = "localhost:" + kafkaPort;
     }
     KafkaSource.KafkaPluginConfig config = new KafkaSource.KafkaPluginConfig(zk, brokerList, partitions,
-                                                                             topic, null, format, null);
+                                                                             topic, null, null, format, null);
 
     kafkaSource = new KafkaSource(config);
 

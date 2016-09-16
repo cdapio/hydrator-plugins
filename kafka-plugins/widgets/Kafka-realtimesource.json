@@ -44,6 +44,11 @@
           "widget-attributes": {
             "default": "0"
           }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Fetch Size in Bytes",
+          "name": "fetchSizeBytes"
         }
       ]
     },

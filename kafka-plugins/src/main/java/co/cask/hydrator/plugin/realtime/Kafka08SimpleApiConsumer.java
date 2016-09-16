@@ -115,7 +115,11 @@ public class Kafka08SimpleApiConsumer extends KafkaSimpleApiConsumer<String, Byt
     String kafkaTopic = pluginConfig.getTopic();
     for (int i = 0; i < partitions; i++) {
       if ((i % instances) == instanceId) {
-        configurer.addTopicPartition(kafkaTopic, i);
+        if (pluginConfig.getFetchSizeBytes() != null && pluginConfig.getFetchSizeBytes() > 0) {
+          configurer.addTopicPartition(kafkaTopic, i, pluginConfig.getFetchSizeBytes());
+        } else {
+          configurer.addTopicPartition(kafkaTopic, i);
+        }
       }
     }
   }
