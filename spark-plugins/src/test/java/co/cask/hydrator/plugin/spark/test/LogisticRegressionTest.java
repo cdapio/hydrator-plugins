@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.spark.test;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.datapipeline.DataPipelineApp;
 import co.cask.cdap.datapipeline.SmartWorkflow;
@@ -61,10 +62,25 @@ public class LogisticRegressionTest extends HydratorTestBase {
   @ClassRule
   public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
 
-  protected static final ArtifactId DATAPIPELINE_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("data-pipeline", "3.2.0");
-  protected static final ArtifactSummary DATAPIPELINE_ARTIFACT = new ArtifactSummary("data-pipeline", "3.2.0");
+  protected static final ArtifactId DATAPIPELINE_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("data-pipeline", "3.5.0");
+  protected static final ArtifactSummary DATAPIPELINE_ARTIFACT = new ArtifactSummary("data-pipeline", "3.5.0");
 
   private static final String CLASSIFIED_TEXTS = "classifiedTexts";
+
+  private static Schema schema = Schema.recordOf("simpleMessage",
+                                               Schema.Field.of(LogisticRegressionSpamMessageModel.IMP_FIELD,
+                                                               Schema.of(Schema.Type.INT)),
+                                               Schema.Field.of(LogisticRegressionSpamMessageModel.READ_FIELD,
+                                                               Schema.of(Schema.Type.DOUBLE)));
+
+  private static Schema sourceSchema = Schema.recordOf("simpleMessage",
+                                                       Schema.Field.of(LogisticRegressionSpamMessageModel.IMP_FIELD,
+                                                                       Schema.of(Schema.Type.INT)),
+                                                       Schema.Field.of(LogisticRegressionSpamMessageModel.READ_FIELD,
+                                                                       Schema.of(Schema.Type.DOUBLE)),
+                                                       Schema.Field.of(
+                                                         LogisticRegressionSpamMessageModel.SPAM_PREDICTION_FIELD,
+                                                                       Schema.of(Schema.Type.DOUBLE)));
 
   @BeforeClass
   public static void setupTest() throws Exception {
@@ -90,11 +106,11 @@ public class LogisticRegressionTest extends HydratorTestBase {
      * source --> sparksink
      */
     String fieldsToClassify =
-      LogisticRegressionSpamMessageModel.TEXT_FIELD + "," + LogisticRegressionSpamMessageModel.READ_FIELD;
+      LogisticRegressionSpamMessageModel.IMP_FIELD + "," + LogisticRegressionSpamMessageModel.READ_FIELD;
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put("fileSetName", "modelFileSet")
       .put("path", "output")
-      .put("featureFields", fieldsToClassify)
+      .put("featureFieldsToInclude", fieldsToClassify)
       .put("labelField", LogisticRegressionSpamMessageModel.SPAM_PREDICTION_FIELD)
       .put("numFeatures", LogisticRegressionSpamMessageModel.SPAM_FEATURES)
       .put("numClasses", "2")
@@ -103,7 +119,7 @@ public class LogisticRegressionTest extends HydratorTestBase {
     ETLPlugin sink = new ETLPlugin(LogisticRegressionTrainer.PLUGIN_NAME, SparkSink.PLUGIN_TYPE,
                                    sourceProperties, null);
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(new ETLStage("source", MockSource.getPlugin("messages")))
+      .addStage(new ETLStage("source", MockSource.getPlugin("messages", sourceSchema)))
       .addStage(new ETLStage("customsink", sink))
       .addConnection("source", "customsink")
       .build();
@@ -114,20 +130,20 @@ public class LogisticRegressionTest extends HydratorTestBase {
 
     // set up five spam messages and five non-spam messages to be used for classification
     List<StructuredRecord> messagesToWrite = new ArrayList<>();
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("buy our clothes", 0.0, 1.0).toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("sell your used books to us", 0.0, 1.0)
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel(0, 0.0, 1.0).toStructuredRecord());
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel(0, 0.0, 1.0)
                           .toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("earn money for free", 0.0, 1.0).toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("this is definitely not spam", 0.0, 1.0)
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel(0, 0.0, 1.0).toStructuredRecord());
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel(0, 0.0, 1.0)
                           .toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("you won the lottery", 0.0, 1.0).toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("how was your day", 1.0, 0.0).toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("what are you up to", 1.0, 0.0).toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("this is a genuine message", 1.0, 0.0)
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel(0, 0.0, 1.0).toStructuredRecord());
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel(1, 1.0, 0.0).toStructuredRecord());
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel(1, 1.0, 0.0).toStructuredRecord());
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel(1, 1.0, 0.0)
                           .toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("this is an even more genuine message", 1.0, 0.0)
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel(1, 1.0, 0.0)
                           .toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("could you send me the report", 1.0, 0.0)
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel(1, 1.0, 0.0)
                           .toStructuredRecord());
 
     // write records to source
@@ -146,11 +162,11 @@ public class LogisticRegressionTest extends HydratorTestBase {
      * source --> sparkcompute --> sink
      */
     String fieldsToClassify =
-      LogisticRegressionSpamMessageModel.TEXT_FIELD + "," + LogisticRegressionSpamMessageModel.READ_FIELD;
+      LogisticRegressionSpamMessageModel.IMP_FIELD + "," + LogisticRegressionSpamMessageModel.READ_FIELD;
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put("fileSetName", "modelFileSet")
       .put("path", "output")
-      .put("fieldsToClassify", fieldsToClassify)
+      .put("featureFieldsToInclude", fieldsToClassify)
       .put("predictionField", LogisticRegressionSpamMessageModel.SPAM_PREDICTION_FIELD)
       .put("numFeatures", LogisticRegressionSpamMessageModel.SPAM_FEATURES)
       .build();
@@ -158,7 +174,7 @@ public class LogisticRegressionTest extends HydratorTestBase {
     ETLPlugin sink = new ETLPlugin(LogisticRegressionClassifier.PLUGIN_NAME, SparkCompute.PLUGIN_TYPE,
                                    sourceProperties, null);
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(new ETLStage("source", MockSource.getPlugin(textsToClassify)))
+      .addStage(new ETLStage("source", MockSource.getPlugin(textsToClassify, schema)))
       .addStage(new ETLStage("sparkcompute", sink))
       .addStage(new ETLStage("sink", MockSink.getPlugin(CLASSIFIED_TEXTS)))
       .addConnection("source", "sparkcompute")
@@ -171,10 +187,10 @@ public class LogisticRegressionTest extends HydratorTestBase {
 
     // write some some messages to be classified
     List<StructuredRecord> messagesToWrite = new ArrayList<>();
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("how are you doing today", 1.0).toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("earn money", 0.0).toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("what are you doing today", 1.0).toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel("genuine report", 1.0).toStructuredRecord());
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel(1, 1.0).toStructuredRecord());
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel(0, 0.0).toStructuredRecord());
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel(1, 1.0).toStructuredRecord());
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel(1, 1.0).toStructuredRecord());
 
     DataSetManager<Table> inputManager = getDataset(Id.Namespace.DEFAULT, textsToClassify);
     MockSource.writeInput(inputManager, messagesToWrite);
@@ -193,11 +209,11 @@ public class LogisticRegressionTest extends HydratorTestBase {
     }
 
     Set<LogisticRegressionSpamMessageModel> expected = new HashSet<>();
-    expected.add(new LogisticRegressionSpamMessageModel("how are you doing today", 1.0, 0.0));
+    expected.add(new LogisticRegressionSpamMessageModel(1, 1.0, 0.0));
     // only 'earn money' should be predicated as spam
-    expected.add(new LogisticRegressionSpamMessageModel("earn money", 0.0, 1.0));
-    expected.add(new LogisticRegressionSpamMessageModel("what are you doing today", 1.0, 0.0));
-    expected.add(new LogisticRegressionSpamMessageModel("genuine report", 1.0, 0.0));
+    expected.add(new LogisticRegressionSpamMessageModel(0, 0.0, 1.0));
+    expected.add(new LogisticRegressionSpamMessageModel(1, 1.0, 0.0));
+    expected.add(new LogisticRegressionSpamMessageModel(1, 1.0, 0.0));
 
     Assert.assertEquals(expected, results);
   }

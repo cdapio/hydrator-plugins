@@ -27,26 +27,26 @@ import javax.annotation.Nullable;
 public class LogisticRegressionSpamMessageModel {
   public static final String SPAM_FEATURES = "100";
   public static final String SPAM_PREDICTION_FIELD = "isSpam";
-  public static final String TEXT_FIELD = "text";
+  public static final String IMP_FIELD = "text";
   public static final String READ_FIELD = "boolField";
   static final Schema SCHEMA = Schema.recordOf("simpleMessage",
                                                Schema.Field.of(SPAM_PREDICTION_FIELD,
                                                                Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
-                                               Schema.Field.of(TEXT_FIELD, Schema.of(Schema.Type.STRING)),
+                                               Schema.Field.of(IMP_FIELD, Schema.of(Schema.Type.INT)),
                                                Schema.Field.of(READ_FIELD, Schema.of(Schema.Type.DOUBLE))
   );
 
-  private final String text;
+  private final Integer text;
   private final Double read;
 
   @Nullable
   private final Double spamPrediction;
 
-  public LogisticRegressionSpamMessageModel(String text, Double read) {
+  public LogisticRegressionSpamMessageModel(Integer text, Double read) {
     this(text, read, null);
   }
 
-  public LogisticRegressionSpamMessageModel(String text, Double read, @Nullable Double spamPrediction) {
+  public LogisticRegressionSpamMessageModel(Integer text, Double read, @Nullable Double spamPrediction) {
     this.text = text;
     this.read = read;
     this.spamPrediction = spamPrediction;
@@ -54,7 +54,7 @@ public class LogisticRegressionSpamMessageModel {
 
   public StructuredRecord toStructuredRecord() {
     StructuredRecord.Builder builder = StructuredRecord.builder(SCHEMA);
-    builder.set(TEXT_FIELD, text);
+    builder.set(IMP_FIELD, text);
     builder.set(READ_FIELD, read);
     if (spamPrediction != null) {
       builder.set(SPAM_PREDICTION_FIELD, spamPrediction);
@@ -63,7 +63,7 @@ public class LogisticRegressionSpamMessageModel {
   }
 
   public static LogisticRegressionSpamMessageModel fromStructuredRecord(StructuredRecord structuredRecord) {
-    return new LogisticRegressionSpamMessageModel((String) structuredRecord.get(TEXT_FIELD),
+    return new LogisticRegressionSpamMessageModel((Integer) structuredRecord.get(IMP_FIELD),
                                                   (Double) structuredRecord.get(READ_FIELD),
                                                   (Double) structuredRecord.get(SPAM_PREDICTION_FIELD));
   }

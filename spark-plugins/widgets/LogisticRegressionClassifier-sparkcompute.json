@@ -18,8 +18,13 @@
         },
         {
           "widget-type": "csv",
-          "label": "Fields to classify",
-          "name": "fieldsToClassify"
+          "label": "Feature Fields to include",
+          "name": "featureFieldsToInclude"
+        },
+        {
+          "widget-type": "csv",
+          "label": "Feature Fields to exclude",
+          "name": "featureFieldsToExclude"
         },
         {
           "widget-type": "textbox",

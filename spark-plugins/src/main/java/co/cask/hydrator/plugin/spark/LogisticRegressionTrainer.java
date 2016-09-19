@@ -29,7 +29,6 @@ import co.cask.cdap.etl.api.batch.SparkExecutionPluginContext;
 import co.cask.cdap.etl.api.batch.SparkPluginContext;
 import co.cask.cdap.etl.api.batch.SparkSink;
 import com.google.common.base.Preconditions;
-import org.apache.avro.reflect.Nullable;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
@@ -40,6 +39,8 @@ import org.apache.spark.mllib.regression.LabeledPoint;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * Spark Sink plugin that trains a model based upon various labels in the structured record.
@@ -51,11 +52,7 @@ import java.util.List;
 public class LogisticRegressionTrainer extends SparkSink<StructuredRecord> {
   public static final String PLUGIN_NAME = "LogisticRegressionTrainer";
 
-  private final Config config;
-
-  public LogisticRegressionTrainer(Config config) {
-    this.config = config;
-  }
+  private Config config;
 
   /**
    * Configuration for the LogisticRegressionTrainer.
@@ -63,16 +60,21 @@ public class LogisticRegressionTrainer extends SparkSink<StructuredRecord> {
   public static class Config extends PluginConfig {
 
     @Description("The name of the FileSet to save the model to.")
-    private final String fileSetName;
+    private String fileSetName;
 
     @Description("Path of the FileSet to save the model to.")
-    private final String path;
+    private String path;
 
-    @Description("A comma-separated sequence of fields to use for training.")
-    private final String featureFields;
+    @Nullable
+    @Description("A comma-separated sequence of fields that needs to be used for training.")
+    private String featureFieldsToInclude;
 
-    @Description("The field from which to get the prediction. It must be of type double.")
-    private final String labelField;
+    @Nullable
+    @Description("A comma-separated sequence of fields that needs to be excluded from being used in training.")
+    private String featureFieldsToExclude;
+
+    @Description("The field from which to get the label. It must be of type double.")
+    private String labelField;
 
     @Nullable
     @Description("The number of features to use in training the model. It must be of type integer and equal to the" +
@@ -85,11 +87,18 @@ public class LogisticRegressionTrainer extends SparkSink<StructuredRecord> {
       "The default value if none is provided will be 2.")
     private final Integer numClasses;
 
-    public Config(String fileSetName, String path, String featureFields, String labelField,
-                  Integer numFeatures, Integer numClasses) {
+    public Config() {
+      this.numFeatures = 100;
+      this.numClasses = 2;
+    }
+
+    public Config(String fileSetName, String path, @Nullable String featureFieldsToInclude, String labelField,
+                  @Nullable String featureFieldsToExclude, @Nullable Integer numFeatures,
+                  @Nullable Integer numClasses) {
       this.fileSetName = fileSetName;
       this.path = path;
-      this.featureFields = featureFields;
+      this.featureFieldsToInclude = featureFieldsToInclude;
+      this.featureFieldsToExclude = featureFieldsToExclude;
       this.labelField = labelField;
       this.numFeatures = numFeatures;
       this.numClasses = numClasses;
@@ -101,11 +110,10 @@ public class LogisticRegressionTrainer extends SparkSink<StructuredRecord> {
     pipelineConfigurer.createDataset(config.fileSetName, FileSet.class);
 
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
-    if (inputSchema != null) {
-      Schema.Type predictionFieldType = inputSchema.getField(config.labelField).getSchema().getType();
-      Preconditions.checkArgument(predictionFieldType == Schema.Type.DOUBLE,
-                                  "Prediction field must be of type DOUBLE, but was %s.", predictionFieldType);
-    }
+    Preconditions.checkArgument(inputSchema != null, "Input Schema must be a known constant.");
+    SparkUtils.validateConfigParameters(inputSchema, config.featureFieldsToInclude, config.featureFieldsToExclude,
+                                        config.labelField, null);
+    SparkUtils.validateLabelFieldForTrainer(inputSchema, config.labelField);
   }
 
   @Override
@@ -115,36 +123,40 @@ public class LogisticRegressionTrainer extends SparkSink<StructuredRecord> {
 
   @Override
   public void run(SparkExecutionPluginContext context, JavaRDD<StructuredRecord> input) throws Exception {
-    final HashingTF tf = new HashingTF((config.numFeatures == null) ? 100 : config.numFeatures);
+    final HashingTF tf = new HashingTF((config.numFeatures));
 
-    final String[] columns = config.featureFields.split(",");
-    JavaRDD<LabeledPoint> trainingData = input.map(new Function<StructuredRecord, LabeledPoint>() {
-      @Override
-      public LabeledPoint call(StructuredRecord record) throws Exception {
-        List<Object> result = new ArrayList<>();
-        for (String column : columns) {
-          if (record.getSchema().getField(column).getSchema().getType() != Schema.Type.DOUBLE) {
-            result.add(String.valueOf(record.get(column)));
-          } else {
-            result.add(record.get(column));
+    if (!input.isEmpty()) {
+      final Schema inputSchema = input.first().getSchema();
+
+      final Map<String, Integer> featuresList = SparkUtils.getFeatureList(inputSchema,
+                                                                          config.featureFieldsToInclude,
+                                                                          config.featureFieldsToExclude,
+                                                                          config.labelField);
+
+      JavaRDD<LabeledPoint> trainingData = input.map(new Function<StructuredRecord, LabeledPoint>() {
+        @Override
+        public LabeledPoint call(StructuredRecord record) throws Exception {
+          List<Object> result = new ArrayList<>();
+          for (String column : featuresList.keySet()) {
+            if (record.get(column) != null) {
+              result.add(record.get(column));
+            }
           }
+          return new LabeledPoint((Double) record.get(config.labelField), tf.transform(result));
         }
-        return new LabeledPoint((Double) record.get(config.labelField), tf.transform(result));
-      }
-    });
+      });
 
-    trainingData.cache();
+      trainingData.cache();
 
-    final Integer classNum = config.numClasses == null ? 2 : config.numClasses;
+      final LogisticRegressionModel model = new LogisticRegressionWithLBFGS()
+        .setNumClasses(config.numClasses)
+        .run(trainingData.rdd());
 
-    final LogisticRegressionModel model = new LogisticRegressionWithLBFGS()
-      .setNumClasses(classNum)
-      .run(trainingData.rdd());
-
-    // save the model to a file in the output FileSet
-    JavaSparkContext sparkContext = context.getSparkContext();
-    FileSet outputFS = context.getDataset(config.fileSetName);
-    model.save(JavaSparkContext.toSparkContext(sparkContext),
-               outputFS.getBaseLocation().append(config.path).toURI().getPath());
+      // save the model to a file in the output FileSet
+      JavaSparkContext sparkContext = context.getSparkContext();
+      FileSet outputFS = context.getDataset(config.fileSetName);
+      model.save(JavaSparkContext.toSparkContext(sparkContext),
+                 outputFS.getBaseLocation().append(config.path).toURI().getPath());
+    }
   }
 }
