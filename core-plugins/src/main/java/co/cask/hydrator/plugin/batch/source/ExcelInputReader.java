@@ -26,6 +26,9 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.CloseableIterator;
+import co.cask.cdap.api.dataset.lib.FileSet;
+import co.cask.cdap.api.dataset.lib.FileSetArguments;
+import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.api.dataset.table.Table;
@@ -35,8 +38,6 @@ import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.common.ReferencePluginConfig;
-import co.cask.hydrator.common.SourceInputFormatProvider;
-import co.cask.hydrator.common.batch.JobUtils;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
@@ -47,7 +48,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -61,7 +62,7 @@ import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
 
 /**
- *Reads excel file(s) rows and convert them to structure records.
+ * Reads excel file(s) rows and convert them to structure records.
  */
 @Plugin(type = BatchSource.PLUGIN_TYPE)
 @Name("Excel")
@@ -94,17 +95,17 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
   private Map<String, String> outputFieldsMapping = new HashMap<>();
   private BatchRuntimeContext batchRuntimeContext;
   private int prevRowNum;
-
-  public ExcelInputReader(ExcelInputReaderConfig excelReaderConfig) {
-    this.excelInputreaderConfig = excelReaderConfig;
-  }
-
+  private FileSet fileSet;
   private Schema errorRecordSchema =
     Schema.recordOf("schema",
                     Schema.Field.of(KEY, Schema.of(Schema.Type.STRING)),
                     Schema.Field.of(FILE, Schema.of(Schema.Type.STRING)),
                     Schema.Field.of(SHEET, Schema.of(Schema.Type.STRING)),
                     Schema.Field.of(RECORD, Schema.of(Schema.Type.STRING)));
+
+  public ExcelInputReader(ExcelInputReaderConfig excelReaderConfig) {
+    this.excelInputreaderConfig = excelReaderConfig;
+  }
 
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
@@ -227,6 +228,7 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
 
   /**
    * Returns list of all the processed file names which are kept in memory table.
+   *
    * @param batchSourceContext
    * @return processedFiles
    */
@@ -265,8 +267,14 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
       throw new IllegalArgumentException("'Field Name Schema Type Mapping' input cannot be empty when the empty " +
                                            "input value of 'Columns To Be Extracted' is provided.");
     }
-
     createDatasets(pipelineConfigurer, null);
+    pipelineConfigurer.createDataset(excelInputreaderConfig.referenceName, FileSet.class, FileSetProperties.builder()
+      .setBasePath(excelInputreaderConfig.filePath)
+      .setInputFormat(ExcelInputFormat.class)
+      .setOutputFormat(FileOutputFormat.class)
+      .setDataExternal(true)
+      .setDescription("Read excel files")
+      .build());
     init();
     getOutputSchema();
     pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
@@ -277,25 +285,40 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
     excelInputreaderConfig.validate();
     createDatasets(null, batchSourceContext);
 
-    Job job = JobUtils.createInstance();
-
+    fileSet = batchSourceContext.getDataset(excelInputreaderConfig.referenceName);
+    Map<String, String> map = new HashMap<String, String>();
     String processFiles = GSON.toJson(getAllProcessedFiles(batchSourceContext), ARRAYLIST_PREPROCESSED_FILES);
+    map.put(FileSetProperties.INPUT_PROPERTIES_PREFIX + ExcelInputFormat.INPUT_DIR, excelInputreaderConfig.filePath);
+    map.put(FileSetProperties.INPUT_PROPERTIES_PREFIX + ExcelInputFormat.FILE_PATTERN,
+            excelInputreaderConfig.filePattern);
+    map.put(FileSetProperties.INPUT_PROPERTIES_PREFIX + ExcelInputFormat.PROCESSED_FILES, processFiles);
+    map.put(FileSetProperties.INPUT_PROPERTIES_PREFIX + ExcelInputFormat.RE_PROCESS,
+            String.valueOf(excelInputreaderConfig.reprocess));
 
-    ExcelInputFormat.setConfigurations(job, excelInputreaderConfig.filePattern, excelInputreaderConfig.sheet,
-                                       excelInputreaderConfig.reprocess, excelInputreaderConfig.sheetValue,
-                                       excelInputreaderConfig.columnList, excelInputreaderConfig.skipFirstRow,
-                                       excelInputreaderConfig.terminateIfEmptyRow, excelInputreaderConfig.rowsLimit,
-                                       excelInputreaderConfig.ifErrorRecord, processFiles);
+    map.put(FileSetProperties.INPUT_PROPERTIES_PREFIX + ExcelInputFormat.SHEET, excelInputreaderConfig.sheet);
+    map.put(FileSetProperties.INPUT_PROPERTIES_PREFIX + ExcelInputFormat.SHEET_VALUE,
+            excelInputreaderConfig.sheetValue);
+    map.put(FileSetProperties.INPUT_PROPERTIES_PREFIX + ExcelInputFormat.COLUMN_LIST,
+            excelInputreaderConfig.columnList);
+    map.put(FileSetProperties.INPUT_PROPERTIES_PREFIX + ExcelInputFormat.SKIP_FIRST_ROW,
+            String.valueOf(excelInputreaderConfig.skipFirstRow));
+    map.put(FileSetProperties.INPUT_PROPERTIES_PREFIX + ExcelInputFormat.TERMINATE_IF_EMPTY_ROW,
+            excelInputreaderConfig.terminateIfEmptyRow);
+    map.put(FileSetProperties.INPUT_PROPERTIES_PREFIX + ExcelInputFormat.IF_ERROR_RECORD,
+            excelInputreaderConfig.ifErrorRecord);
 
-    // Sets the input path(s).
-    ExcelInputFormat.addInputPaths(job, excelInputreaderConfig.filePath);
+    if (!Strings.isNullOrEmpty(excelInputreaderConfig.rowsLimit)) {
+      map.put(FileSetProperties.INPUT_PROPERTIES_PREFIX + ExcelInputFormat.ROWS_LIMIT,
+              excelInputreaderConfig.rowsLimit);
+    }
 
-    // Sets the filter based on extended class implementation.
-    ExcelInputFormat.setInputPathFilter(job, ExcelReaderRegexFilter.class);
-    SourceInputFormatProvider inputFormatProvider = new SourceInputFormatProvider(ExcelInputFormat.class,
-                                                                                  job.getConfiguration());
-    batchSourceContext.setInput(Input.of(excelInputreaderConfig.referenceName, inputFormatProvider));
+    map.put(FileSetProperties.INPUT_PROPERTIES_PREFIX + "mapreduce.input.pathFilter.class",
+            ExcelReaderRegexFilter.class.getName());
 
+    FileSetArguments.addInputPath(map, excelInputreaderConfig.filePattern);
+    ExcelInputFormat.setConfig(excelInputreaderConfig.filePath);
+
+    batchSourceContext.setInput(Input.ofDataset(excelInputreaderConfig.referenceName, map));
   }
 
   private void createDatasets(@Nullable PipelineConfigurer pipelineConfigurer, @Nullable BatchSourceContext context) {
@@ -334,6 +357,7 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
 
   /**
    * Get the output schema from the Excel Input Reader specified by the user.
+   *
    * @return outputSchema
    */
   private void getOutputSchema() {

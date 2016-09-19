@@ -63,7 +63,6 @@ import java.util.concurrent.TimeUnit;
  * Unit tests for {@link ExcelInputReader} class.
  */
 // TODO:(HYDRA-357) re-enable after fix
-@Ignore
 public class ExcelInputReaderTest extends HydratorTestBase {
 
   private static final ArtifactVersion CURRENT_VERSION = new ArtifactVersion("3.4.0-SNAPSHOT");
@@ -92,7 +91,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
                       ExcelInputReader.class);
 
     sourceFolder = temporaryFolder.newFolder("ExcelInputReaderFolder");
-    sourceFolderUri = sourceFolder.toURI().toString();
+    sourceFolderUri = sourceFolder.getAbsolutePath();
   }
 
   @AfterClass
@@ -162,6 +161,62 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .get("A"));
 
     Assert.assertEquals("Expected records", 9, output.size());
+  }
+
+  @Test
+  public void testExcelInputReaderWithSingleFile() throws Exception {
+    Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
+      .put(Constants.Reference.REFERENCE_NAME, "TestCase-testExcel")
+      .put("filePath", sourceFolderUri)
+      .put("filePattern", "civil_test_data_two.xlsx")
+      .put("sheet", "Sheet Name")
+      .put("sheetValue", "Sheet1")
+      .put("memoryTableName", "trackMemoryTableWithSingleFile")
+      .put("tableExpiryPeriod", "30")
+      .put("reprocess", "false")
+      .put("columnList", "")
+      .put("columnMapping", "")
+      .put("skipFirstRow", "false")
+      .put("terminateIfEmptyRow", "false")
+      .put("rowsLimit", "")
+      .put("outputSchema", "A:string,B:string")
+      .put("ifErrorRecord", "Ignore error and continue")
+      .put("errorDatasetName", "")
+      .build();
+
+    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("Excel", BatchSource.PLUGIN_TYPE,
+                                                                   sourceProperties, null));
+
+    String outputDatasetName = "output-testExcelInputReaderWithSingleFile";
+    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
+
+    ApplicationManager appManager = deployApp(source, sink, "ExcelTests");
+    startMRFlow(appManager);
+
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> output = MockSink.readOutput(outputManager);
+
+    Map<String, String> nameIdMap = new HashMap<String, String>();
+    nameIdMap.put("john", "3.0");
+    nameIdMap.put("romy", "1.0");
+    nameIdMap.put("Paulo", "11.0");
+    nameIdMap.put("Ruskin", "10.0");
+    nameIdMap.put("Alan", "8.0");
+    nameIdMap.put("Bill", "13.0");
+    nameIdMap.put("Ada", "14.0");
+    nameIdMap.put("kelly", "9.0");
+    nameIdMap.put("name", "id");
+
+    Assert.assertEquals(nameIdMap.get(output.get(0).get("B")), output.get(0)
+      .get("A"));
+    Assert.assertEquals(nameIdMap.get(output.get(1).get("B")), output.get(1)
+      .get("A"));
+    Assert.assertEquals(nameIdMap.get(output.get(2).get("B")), output.get(2)
+      .get("A"));
+    Assert.assertEquals(nameIdMap.get(output.get(3).get("B")), output.get(3)
+      .get("A"));
+
+    Assert.assertEquals("Expected records", 6, output.size());
   }
 
   @Test
