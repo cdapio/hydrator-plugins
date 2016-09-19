@@ -27,9 +27,6 @@ import co.cask.cdap.etl.api.batch.SparkExecutionPluginContext;
 import co.cask.cdap.etl.api.batch.SparkPluginContext;
 import co.cask.cdap.etl.api.batch.SparkSink;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Splitter;
-import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
 import org.apache.spark.api.java.JavaRDD;
@@ -41,7 +38,6 @@ import org.apache.spark.mllib.tree.DecisionTree;
 import org.apache.spark.mllib.tree.model.DecisionTreeModel;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -52,7 +48,7 @@ import javax.annotation.Nullable;
  */
 @Plugin(type = SparkSink.PLUGIN_TYPE)
 @Name(DecisionTreeTrainer.PLUGIN_NAME)
-@Description("Trains a regression model based upon a particular label and featuresToInclude of a record.")
+@Description("Trains a regression model based upon a particular label and features of a record.")
 public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
   public static final String PLUGIN_NAME = "DecisionTreeTrainer";
   //Impurity measure of the homogeneity of the labels at the node. Expected value for regression is "variance".
@@ -77,8 +73,11 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
     //categoricalFeaturesInfo : Specifies which features are categorical and how many categorical values each of those
     //features can take. This is given as a map from feature index to the number of categories for that feature.
     //Empty categoricalFeaturesInfo indicates all features are continuous.
-    Map<Integer, Integer> categoricalFeaturesInfo = config.getCategoricalFeatureInfo(schema);
-    final List<String> fields = config.getFeatureList(schema);
+    Map<Integer, Integer> categoricalFeaturesInfo =
+      SparkUtils.getCategoricalFeatureInfo(schema, config.featuresToInclude, config.featuresToExclude,
+                                           config.labelField, config.cardinalityMapping);
+    final Map<String, Integer> fields = SparkUtils.getFeatureList(schema, config.featuresToInclude,
+                                                                  config.featuresToExclude, config.labelField);
 
     JavaRDD<LabeledPoint> trainingData = input.map(new Function<StructuredRecord, LabeledPoint>() {
       @Override
@@ -86,7 +85,7 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
         List<Double> featureList = new ArrayList<>();
         List<Integer> featureIndex = new ArrayList<>();
         int counter = 0;
-        for (String field : fields) {
+        for (String field : fields.keySet()) {
           if (record.get(field) != null) {
             featureList.add(((Number) record.get(field)).doubleValue());
             featureIndex.add(counter);
@@ -131,14 +130,16 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
     private String path;
 
     @Nullable
-    @Description("A comma-separated sequence of fields to use for training. If empty, all fields except the label " +
-      "will be used for training. Features to be used, must be from one of the following type: int, long, float or " +
-      "double. Both featuresToInclude and featuresToExclude fields cannot be specified.")
+    @Description("A comma-separated sequence of fields to be used for training. If both featuresToInclude and \n" +
+      "featuresToExclude are empty, all fields except the label will be used for training. Features to be used, must " +
+      "be from one of the following types: int, long, float or double. Both featuresToInclude and featuresToExclude " +
+      "fields cannot be specified.")
     private String featuresToInclude;
 
     @Nullable
-    @Description("A comma-separated sequence of fields to exclude when training. If empty, all fields except the " +
-      "label will be used for training. Both featuresToInclude and featuresToExclude fields cannot be specified.")
+    @Description("A comma-separated sequence of fields to be excluded when training. If both featuresToInclude and \n" +
+      "featuresToExclude are empty, all fields except the label will be used for training. Both featuresToInclude " +
+      "and featuresToExclude fields cannot be specified.")
     private String featuresToExclude;
 
     @Nullable
@@ -164,9 +165,9 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
       maxBins = 100;
     }
 
-    public DecisionTreeTrainerConfig(String fileSetName, String path, String featuresToInclude,
-                                     String featuresToExclude, String cardinalityMapping, String labelField,
-                                     Integer maxDepth, Integer maxBins) {
+    public DecisionTreeTrainerConfig(String fileSetName, String path, @Nullable String featuresToInclude,
+                                     @Nullable String featuresToExclude, @Nullable String cardinalityMapping,
+                                     String labelField, @Nullable Integer maxDepth, @Nullable Integer maxBins) {
       this.fileSetName = fileSetName;
       this.path = path;
       this.featuresToInclude = featuresToInclude;
@@ -178,85 +179,9 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
     }
 
     public void validate(Schema inputSchema) {
-      if (!Strings.isNullOrEmpty(featuresToExclude) && !Strings.isNullOrEmpty(featuresToInclude)) {
-        throw new IllegalArgumentException("Cannot specify values for both featuresToInclude and featuresToExclude. " +
-                                             "Please specify fields for one.");
-      }
-      List<String> fields = getFeatureList(inputSchema);
-      for (String field : fields) {
-        Schema.Field inputField = inputSchema.getField(field);
-        Schema schema = inputField.getSchema();
-        Schema.Type features = schema.isNullableSimple() ? schema.getNonNullable().getType() : schema.getType();
-        if (!(features.equals(Schema.Type.INT) || features.equals(Schema.Type.LONG) ||
-          features.equals(Schema.Type.FLOAT) || features.equals(Schema.Type.DOUBLE))) {
-          throw new IllegalArgumentException(String.format("Field to classify must be of type : int, double, " +
-                                                             "float, long but was of type %s for field %s.", features,
-                                                           field));
-        }
-      }
-      Schema.Field prediction = inputSchema.getField(labelField);
-      if (prediction == null) {
-        throw new IllegalArgumentException(String.format("Label field %s does not exists in the input schema.",
-                                                         labelField));
-      }
-      Schema predictionSchema = prediction.getSchema();
-      Schema.Type predictionFieldType = predictionSchema.isNullableSimple() ?
-        predictionSchema.getNonNullable().getType() : predictionSchema.getType();
-      if (predictionFieldType != Schema.Type.DOUBLE) {
-        throw new IllegalArgumentException(String.format("Label field must be of type Double, but was %s.",
-                                                         predictionFieldType));
-      }
-    }
-
-    private List<String> getFeatureList(Schema inputSchema) {
-      List<String> fields = new ArrayList<>();
-      List<Schema.Field> inputSchemaFields = inputSchema.getFields();
-      List<String> excludeFeatures = new ArrayList<>();
-      if (!Strings.isNullOrEmpty(featuresToInclude)) {
-        for (String field : Splitter.on(',').trimResults().split(featuresToInclude)) {
-          Schema.Field inputField = inputSchema.getField(field);
-          if (inputField == null) {
-            throw new IllegalArgumentException(String.format("Field %s does not exists in the input schema.", field));
-          }
-          if (!field.equals(labelField)) {
-            fields.add(field);
-          }
-        }
-      } else {
-        if (!Strings.isNullOrEmpty(featuresToExclude)) {
-          excludeFeatures.addAll(Lists.newArrayList(Splitter.on(',').trimResults().split(featuresToExclude)));
-        }
-        for (Schema.Field field : inputSchemaFields) {
-          String fieldName = field.getName();
-          if (!fieldName.equals(labelField) && !excludeFeatures.contains(fieldName)) {
-            fields.add(fieldName);
-          }
-        }
-      }
-      return fields;
-    }
-
-    private Map<Integer, Integer> getCategoricalFeatureInfo(Schema inputSchema) {
-      List<String> featureList = getFeatureList(inputSchema);
-      Map<Integer, Integer> outputFieldMappings = new HashMap<>();
-      if (!Strings.isNullOrEmpty(cardinalityMapping)) {
-        for (String field : Splitter.on(',').trimResults().split(cardinalityMapping)) {
-          String[] value = field.split(":");
-          if (value.length == 2) {
-            try {
-              outputFieldMappings.put(featureList.indexOf(value[0]), Integer.parseInt(value[1]));
-            } catch (NumberFormatException e) {
-              throw new IllegalArgumentException(
-                String.format("Invalid cardinality %s. Please specify valid integer for cardinality.", value[1]));
-            }
-          } else {
-            throw new IllegalArgumentException(
-              String.format("Invalid categorical feature mapping '%s'. Please make sure it is in the format " +
-                              "'feature':'cardinality'.", field));
-          }
-        }
-      }
-      return outputFieldMappings;
+      SparkUtils.validateConfigParameters(inputSchema, featuresToInclude, featuresToExclude, labelField,
+                                          cardinalityMapping);
+      SparkUtils.validateLabelFieldForTrainer(inputSchema, labelField);
     }
   }
 }

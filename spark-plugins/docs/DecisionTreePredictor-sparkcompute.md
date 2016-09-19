@@ -16,21 +16,21 @@ Properties
 
 **path:** Path of the FileSet to load the model from.
 
-**featuresToInclude:** A comma-separated sequence of fields for Decision Tree Regression. Features to be used, must be
-from one of the following type: int, long, float or double. Both *featuresToInclude* and *featuresToExclude* fields
-cannot be specified.
+**featuresToInclude:** A comma-separated sequence of fields to be used for prediction. If both featuresToInclude and
+featuresToExclude are empty, all fields will be used for prediction. Features to be used, must be from one of the
+following types: int, long, float or double. Both *featuresToInclude* and *featuresToExclude* fields cannot be specified.
 
-**featuresToExclude:** A comma-separated sequence of fields to be excluded when calculating prediction. If empty, all
-the fields will be considered for prediction. Both *featuresToInclude* and *featuresToExclude* fields cannot be 
-specified.
+**featuresToExclude:** A comma-separated sequence of fields to be excluded for prediction. If both featuresToInclude and
+featuresToExclude are empty, all fields will be used for prediction. Both *featuresToInclude* and *featuresToExclude*
+fields cannot be specified.
 
 **predictionField:** The field on which to set the prediction. It will be of type double.
 
 
 Example
 -------
-This example uses ``dofM, dofW, scheduleDepTime, scheduledArrTime, carrier, elapsedTime, origin, dest`` fields from the
-input record as featuresToInclude to predict ``delayed`` field.
+This example uses ``dofM, dofW, scheduleDepTime, scheduledArrTime, carrier, elapsedTime, originId, destId`` fields from
+the input record as features to predict ``delayed`` field.
 
     {
         "name": "DecisionTreeRegression",
@@ -38,7 +38,7 @@ input record as featuresToInclude to predict ``delayed`` field.
         "properties": {
             "fileSetName": "decision-tree-model",
             "path": "decisionTree",
-            "featuresToInclude": "dofM,dofW,scheduleDepTime,scheduledArrTime,carrier,elapsedTime,origin,dest",
+            "featuresToInclude": "dofM,dofW,scheduleDepTime,scheduledArrTime,carrier,elapsedTime,originId,destId",
             "predictionField": "delayed"
         }
     }
@@ -46,24 +46,23 @@ input record as featuresToInclude to predict ``delayed`` field.
 
 For example, suppose the regressor receives the input records, where each record represents a flight detail:
 
-     +=======================================================================================================+
-     | DayOf | DayOf | Carrier | TailNum | FlightNum | Origin | Destination | Distance | Departure | Arrival |
-     | Month | Week  |         |         |           |        |             |          |           |         |
-     +=======================================================================================================+
-     | 2     | 4     | DL      | N523US  | 1756      | ATL    | MLB         | 442      | 2058      | 2229    |
-     | 20    | 1     | AA      | N3GEAA  | 1162      | DEN    | DFW         | 641      | 905       | 1205    |
-     | 4     | 6     | AA      | N3CBAA  | 1314      | MIA    | IAH         | 964      | 1225      | 1420    |
-     +=======================================================================================================+
+    +====================================================================================================+
+    | DayOf | DayOf | Carrier | TailNum | FlightNum | OriginID | DestId | Distance | Departure | Arrival |
+    | Month | Week  |         |         |           |          |        |          |           |         |
+    +====================================================================================================+
+    | 2     | 4     | 3.0     | N523US  | 1756      | 102      | 185    | 442      | 2058      | 2229    |
+    | 20    | 1     | 1.0     | N3GEAA  | 1162      | 105      | 222    | 641      | 905       | 1205    |
+    | 4     | 6     | 1.0     | N3CBAA  | 1314      | 205      | 245    | 964      | 1225      | 1420    |
+    +====================================================================================================+
 
 
 Output records will contain all the fields along with the predicted field:
 
-     +=================================================================================================================+
-     | DayOf | DayOf | Carrier | TailNum | FlightNum | Origin | Destination | Distance | Departure | Arrival | Delayed |
-     | Month | Week  |         |         |           |        |             |          |           |         |         |
-     +=================================================================================================================+
-     | 2     | 4     | DL      | N523US  | 1756      | ATL    | MLB         | 442      | 2058      | 2229    | 1.0     |
-     | 20    | 1     | AA      | N3GEAA  | 1162      | DEN    | DFW         | 641      | 905       | 1205    | 0.0     |
-     | 4     | 6     | AA      | N3CBAA  | 1314      | MIA    | IAH         | 964      | 1225      | 1420    | 1.0     |
-     +=================================================================================================================+
-     
+    +==============================================================================================================+
+    | DayOf | DayOf | Carrier | TailNum | FlightNum | OriginId | DestId | Distance | Departure | Arrival | Delayed |
+    | Month | Week  |         |         |           |          |        |          |           |         |         |
+    +==============================================================================================================+
+    | 2     | 4     | 3.0     | N523US  | 1756      | 102      | 185    | 442      | 2058      | 2229    | 1.0     |
+    | 20    | 1     | 1.0     | N3GEAA  | 1162      | 105      | 222    | 641      | 905       | 1205    | 0.0     |
+    | 4     | 6     | 1.0     | N3CBAA  | 1314      | 205      | 245    | 964      | 1225      | 1420    | 1.0     |
+    +==============================================================================================================+

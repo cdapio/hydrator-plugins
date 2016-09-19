@@ -28,9 +28,6 @@ import co.cask.cdap.etl.api.StageConfigurer;
 import co.cask.cdap.etl.api.batch.SparkCompute;
 import co.cask.cdap.etl.api.batch.SparkExecutionPluginContext;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Splitter;
-import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
 import org.apache.spark.SparkContext;
@@ -44,6 +41,7 @@ import org.apache.twill.filesystem.Location;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -64,7 +62,7 @@ public class DecisionTreePredictor extends SparkCompute<StructuredRecord, Struct
     Schema inputSchema = stageConfigurer.getInputSchema();
     Preconditions.checkArgument(inputSchema != null, "Input Schema must be a known constant.");
     config.validate(inputSchema);
-    stageConfigurer.setOutputSchema(getOutputSchema(inputSchema));
+    stageConfigurer.setOutputSchema(SparkUtils.getOutputSchema(inputSchema, config.predictionField));
   }
 
   @Override
@@ -89,15 +87,17 @@ public class DecisionTreePredictor extends SparkCompute<StructuredRecord, Struct
       throw new IllegalArgumentException("Input JavaRDD is null.");
     }
     Schema schema = input.first().getSchema();
-    outputSchema = (outputSchema != null) ? outputSchema : getOutputSchema(schema);
-    final List<String> fields = config.getFeatureList(schema);
+    outputSchema = (outputSchema != null) ? outputSchema : SparkUtils.getOutputSchema(schema, config.predictionField);
+    final Map<String, Integer> fields = SparkUtils.getFeatureList(schema, config.featuresToInclude,
+                                                                  config.featuresToExclude,
+                                                                  config.predictionField);
     JavaRDD<StructuredRecord> output = input.map(new Function<StructuredRecord, StructuredRecord>() {
       @Override
       public StructuredRecord call(StructuredRecord record) throws Exception {
         List<Double> featureList = new ArrayList<>();
         List<Integer> featureIndex = new ArrayList<>();
         int counter = 0;
-        for (String field : fields) {
+        for (String field : fields.keySet()) {
           if (record.get(field) != null) {
             featureList.add(((Number) record.get(field)).doubleValue());
             featureIndex.add(counter);
@@ -108,37 +108,12 @@ public class DecisionTreePredictor extends SparkCompute<StructuredRecord, Struct
         Vector vector = Vectors.sparse(counter, Ints.toArray(featureIndex), Doubles.toArray(featureList));
         double prediction = loadedModel.predict(vector);
 
-        return cloneRecord(record)
+        return SparkUtils.cloneRecord(record, outputSchema, config.predictionField)
           .set(config.predictionField, prediction)
           .build();
       }
     });
     return output;
-  }
-
-  /**
-   * Creates a builder based off the given record.
-   */
-  private StructuredRecord.Builder cloneRecord(StructuredRecord record) {
-    List<Schema.Field> fields = new ArrayList<>(outputSchema.getFields());
-    fields.add(Schema.Field.of(config.predictionField, Schema.of(Schema.Type.DOUBLE)));
-    StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
-    for (Schema.Field field : outputSchema.getFields()) {
-      if (!config.predictionField.equals(field.getName())) {
-        builder.set(field.getName(), record.get(field.getName()));
-      }
-    }
-    return builder;
-  }
-
-  private Schema getOutputSchema(Schema inputSchema) {
-    return getOutputSchema(inputSchema, config.predictionField);
-  }
-
-  private Schema getOutputSchema(Schema inputSchema, String predictionField) {
-    List<Schema.Field> fields = new ArrayList<>(inputSchema.getFields());
-    fields.add(Schema.Field.of(predictionField, Schema.of(Schema.Type.DOUBLE)));
-    return Schema.recordOf(inputSchema.getRecordName() + ".predicted", fields);
   }
 
   /**
@@ -153,21 +128,23 @@ public class DecisionTreePredictor extends SparkCompute<StructuredRecord, Struct
     private final String path;
 
     @Nullable
-    @Description("A comma-separated sequence of fields to be used for Decision Tree Regression. Features to be used, " +
-      "must be from one of the following type: int, long, float or double. Both featuresToInclude and " +
-      "featuresToExclude fields cannot be specified.")
+    @Description("A comma-separated sequence of fields to be used for prediction. If both featuresToInclude and \n" +
+      "featuresToExclude are empty, all fields will be used for prediction. Features to be used, must be from one of " +
+      "the following types: int, long, float or double. Both featuresToInclude and featuresToExclude fields cannot " +
+      "be specified.")
     private final String featuresToInclude;
 
     @Nullable
-    @Description("A comma-separated sequence of fields to be excluded when calculating prediction. Both " +
-      "featuresToInclude and featuresToExclude fields cannot be specified.")
+    @Description("A comma-separated sequence of fields to be excluded for prediction. If both featuresToInclude " +
+      "and featuresToExclude are empty, all fields will be used for prediction. Both featuresToInclude and " +
+      "featuresToExclude fields cannot be specified.")
     private final String featuresToExclude;
 
     @Description("The field on which to set the prediction. It will be of type double.")
     private final String predictionField;
 
-    public DecisionTreePredictorConfig(String fileSetName, String path, String featuresToInclude,
-                                       String featuresToExclude, String predictionField) {
+    public DecisionTreePredictorConfig(String fileSetName, String path, @Nullable String featuresToInclude,
+                                       @Nullable String featuresToExclude, String predictionField) {
       this.fileSetName = fileSetName;
       this.path = path;
       this.featuresToInclude = featuresToInclude;
@@ -176,51 +153,9 @@ public class DecisionTreePredictor extends SparkCompute<StructuredRecord, Struct
     }
 
     public void validate(Schema inputSchema) {
-      if (!Strings.isNullOrEmpty(featuresToExclude) && !Strings.isNullOrEmpty(featuresToInclude)) {
-        throw new IllegalArgumentException("Cannot specify values for both featuresToInclude and featuresToExclude. " +
-                                             "Please specify fields for one.");
-      }
-      List<String> fields = getFeatureList(inputSchema);
-      for (String field : fields) {
-        Schema schema = inputSchema.getField(field).getSchema();
-        Schema.Type features = schema.isNullableSimple() ? schema.getNonNullable().getType() : schema.getType();
-        if (!(features.equals(Schema.Type.INT) || features.equals(Schema.Type.LONG) ||
-          features.equals(Schema.Type.FLOAT) || features.equals(Schema.Type.DOUBLE))) {
-          throw new IllegalArgumentException(String.format("Field to classify must be of type : int, double, " +
-                                                             "float, long but was of type %s for field %s.", features,
-                                                           field));
-        }
-      }
+      SparkUtils.validateConfigParameters(inputSchema, featuresToInclude, featuresToExclude, predictionField, null);
       Preconditions.checkArgument(inputSchema.getField(predictionField) == null, "Prediction field must not already " +
         "exist in the input schema.");
-    }
-
-    private List<String> getFeatureList(Schema inputSchema) {
-      List<String> fields = new ArrayList<>();
-      List<Schema.Field> inputSchemaFields = inputSchema.getFields();
-      List<String> excludeFeatures = new ArrayList<>();
-      if (!Strings.isNullOrEmpty(featuresToInclude)) {
-        for (String field : Splitter.on(',').trimResults().split(featuresToInclude)) {
-          Schema.Field inputField = inputSchema.getField(field);
-          if (inputField == null) {
-            throw new IllegalArgumentException(String.format("Field %s does not exists in the input schema.", field));
-          }
-          if (!field.equals(predictionField)) {
-            fields.add(field);
-          }
-        }
-      } else {
-        if (!Strings.isNullOrEmpty(featuresToExclude)) {
-          excludeFeatures.addAll(Lists.newArrayList(Splitter.on(',').trimResults().split(featuresToExclude)));
-        }
-        for (Schema.Field field : inputSchemaFields) {
-          String fieldName = field.getName();
-          if (!fieldName.equals(predictionField) && !excludeFeatures.contains(fieldName)) {
-            fields.add(fieldName);
-          }
-        }
-      }
-      return fields;
     }
   }
 }

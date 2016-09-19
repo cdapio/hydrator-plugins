@@ -3,7 +3,7 @@
 
 Description
 -----------
-Trains a regression model based upon a particular label and featuresToInclude of a record. Saves this model to a FileSet.
+Trains a regression model based upon a particular label and features of a record. Saves this model to a FileSet.
 
 Use Case
 --------
@@ -15,12 +15,16 @@ Properties
 
 **path:** Path of the FileSet to save the model to.
 
-**featuresToInclude:** A comma-separated sequence of fields to use for training. If empty, all fields will be
-considered for training. Features to be used, must be from one of the following type: int, long, float or double. Both
-*featuresToInclude* and *featuresToExclude* fields cannot be specified.
+**featuresToInclude:** A comma-separated sequence of fields to use for training. If both featuresToInclude and 
+featuresToExclude are empty, all fields except the label will be used for training. Features to be used, must be from 
+one of the following types: int, long, float or double. Both *featuresToInclude* and *featuresToExclude* fields cannot 
+be specified.
 
-**featuresToExclude:** A comma-separated sequence of fields to be excluded when training. If empty, all the fields will
-be considered for training.  Both *featuresToInclude* and *featuresToExclude* fields cannot be specified.
+**featuresToExclude:** A comma-separated sequence of fields to be excluded when training. If both featuresToInclude and 
+featuresToExclude are empty, all fields except the label will be used for training. Both *featuresToInclude* and 
+*featuresToExclude* fields cannot be specified.
+
+**cardinalityMapping:** Mapping of the feature to the cardinality of that feature; required for categorical features.
 
 **labelField:** The field from which to get the prediction. It must be of type double.
 
@@ -33,8 +37,8 @@ requires maxBins to be at least as large as the number of values in each categor
 
 Example
 -------
-This example uses the fields ``dofM, dofW, scheduleDepTime, scheduledArrTime, carrier, elapsedTime, origin, dest`` from
-the input record as featuresToInclude and ``delayed`` field as the label to train the model.
+This example uses the fields ``dofM, dofW, scheduleDepTime, scheduledArrTime, carrier, elapsedTime, originId, destId``
+from the input record as features and ``delayed`` field as the label to train the model.
 
     {
         "name": "DecisionTreeRegression",
@@ -42,7 +46,7 @@ the input record as featuresToInclude and ``delayed`` field as the label to trai
         "properties": {
             "fileSetName": "decision-tree-model",
         		"path": "decisionTree",
-        		"featuresToInclude": "dofM,dofW,scheduleDepTime,scheduledArrTime,carrier,elapsedTime,origin,dest",
+        		"featuresToInclude": "dofM,dofW,scheduleDepTime,scheduledArrTime,carrier,elapsedTime,originId,destId",
         		"labelField": "delayed",
         		"maxDepth": "9",
         		"maxBins": "100"

@@ -78,7 +78,7 @@ public class DecisionTreeConfigTest {
     try {
       config.validate(schema);
     } catch (IllegalArgumentException e) {
-      Assert.assertEquals("Field to classify must be of type : int, double, float, long but was of type STRING for " +
+      Assert.assertEquals("Features must be of type : int, double, float, long but was of type STRING for " +
                             "field tailNum.", e.getMessage());
     }
   }
