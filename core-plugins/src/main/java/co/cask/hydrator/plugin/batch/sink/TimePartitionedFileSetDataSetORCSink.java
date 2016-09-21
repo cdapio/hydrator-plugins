@@ -75,7 +75,6 @@ public class TimePartitionedFileSetDataSetORCSink extends TimePartitionedFileSet
 
     @Description(SCHEMA_DESC)
     private String schema;
-
     public TPFSOrcSinkConfig(String name, String schema, @Nullable String basePath, @Nullable String pathFormat,
                              @Nullable String timeZone) {
       super(name, basePath, pathFormat, timeZone);
