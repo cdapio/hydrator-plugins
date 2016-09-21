@@ -171,6 +171,6 @@ public class LogisticRegressionClassifier extends SparkCompute<StructuredRecord,
       });
       return output;
     }
-    return null;
+    return context.getSparkContext().emptyRDD();
   }
 }

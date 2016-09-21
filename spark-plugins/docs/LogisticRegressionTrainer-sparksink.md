@@ -27,10 +27,8 @@ used for the LogisticRegressionClassifier. The default value if none is provided
 
 **numClasses:** The number of classes to use in training the model. It must be of type integer. Default is 2.
 
-Condition
----------
-1. Both *featureFieldsToInclude* and *featureFieldsToExclude* fields cannot be specified simultaneously.
-2. If inputs for *featureFieldsToInclude* and *featureFieldsToExclude* has not been provided then all the fields except
+Both *featureFieldsToInclude* and *featureFieldsToExclude* fields cannot be specified simultaneously.
+If inputs for *featureFieldsToInclude* and *featureFieldsToExclude* has not been provided then all the fields except
 label field will be used as feature fields.
 
 

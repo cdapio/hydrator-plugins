@@ -24,10 +24,8 @@ Properties
 **numFeatures:** The number of features to use when classifying with the trained model. This should be the same as
 the number of features used to train the model in LogisticRegressionTrainer. Default is 100.
 
-Condition
----------
-1. Both *featureFieldsToInclude* and *featureFieldsToExclude* fields cannot be specified simultaneously.
-2. If inputs for *featureFieldsToInclude* and *featureFieldsToExclude* has not been provided then all the fields except
+Both *featureFieldsToInclude* and *featureFieldsToExclude* fields cannot be specified simultaneously.
+If inputs for *featureFieldsToInclude* and *featureFieldsToExclude* has not been provided then all the fields except
 predictionField field will be used as feature fields.
 
 
