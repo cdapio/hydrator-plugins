@@ -1,0 +1,103 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Random Forest Trainer Properties",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "FileSet Name",
+          "name": "fileSetName"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Path",
+          "name": "path"
+        },
+        {
+          "widget-type": "csv",
+          "label": "Features to Include for training",
+          "name": "featuresToInclude",
+          "widget-attributes": {
+            "delimiter": ",",
+            "value-placeholder": "Field Name"
+          }
+        },
+        {
+          "widget-type": "csv",
+          "label": "Features to Exclude for training",
+          "name": "featuresToExclude",
+          "widget-attributes": {
+            "delimiter": ",",
+            "value-placeholder": "Field Name"
+          }
+        },
+        {
+          "widget-type": "keyvalue",
+          "label": "Categorical Feature Cardinality Mapping",
+          "name": "cardinalityMapping",
+          "widget-attributes": {
+            "showDelimiter": "false"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Label Field",
+          "name": "labelField"
+        },
+        {
+          "widget-type": "number",
+          "label": "Maximum Depth of Tree",
+          "name": "maxDepth",
+          "widget-attributes": {
+            "default": "10",
+            "min": 2
+          }
+        },
+        {
+          "widget-type": "number",
+          "label": "Maximum number of Bins",
+          "name": "maxBins",
+          "widget-attributes": {
+            "default": "100",
+            "min": 2
+          }
+        },
+        {
+          "widget-type": "number",
+          "label": "Number of Trees in Forest",
+          "name": "numTrees",
+          "widget-attributes": {
+            "default": "10"
+          }
+        },
+        {
+          "widget-type": "select",
+          "label": "Feature Subset Strategy",
+          "name": "featureSubsetStrategy",
+          "widget-attributes": {
+            "values": [
+              "auto",
+              "all",
+              "sqrt",
+              "log2",
+              "onethird"
+            ],
+            "default": "auto"
+          }
+        },
+        {
+          "widget-type": "number",
+          "label": "Random Seed",
+          "name": "seed",
+          "widget-attributes": {
+            "default": "12345"
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}

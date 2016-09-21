@@ -706,6 +706,8 @@
                 <exclude>**/MANIFEST.MF</exclude>
                 <!-- exclude any hack classes -->
                 <exclude>**/org/apache/hadoop/**</exclude>
+                <!-- exclude resource files-->
+                <exclude>**/resources/**</exclude>
               </excludes>
             </configuration>
           </execution>
