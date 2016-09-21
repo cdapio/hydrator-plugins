@@ -26,6 +26,8 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.streaming.StreamingContext;
 import co.cask.cdap.etl.api.streaming.StreamingSource;
 import co.cask.hydrator.common.ReferencePluginConfig;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.kinesis.AmazonKinesisClient;
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -39,6 +41,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Spark streaming source to get data from AWS Kinesis streams
@@ -52,6 +56,7 @@ public class KinesisStreamingSource extends ReferenceStreamingSource<StructuredR
   private static final Schema SCHEMA = Schema.recordOf("kinesis",
                                                        Schema.Field.of(BODY, Schema.of(Schema.Type.STRING)));
   private final KinesisStreamConfig config;
+
   public KinesisStreamingSource(KinesisStreamConfig config) {
     super(config);
     this.config = config;
@@ -66,6 +71,8 @@ public class KinesisStreamingSource extends ReferenceStreamingSource<StructuredR
                                 "Access Key should be non-null, non-empty.");
     Preconditions.checkArgument(!Strings.isNullOrEmpty(config.awsAccessSecret),
                                 "Access Key secret should be non-null, non-empty.");
+    Preconditions.checkArgument(!Strings.isNullOrEmpty(config.region),
+                                "Region name should be non-null, non-empty.");
     Preconditions.checkArgument(!Strings.isNullOrEmpty(config.appName),
                                 "Application name should be non-null, non-empty.");
     Preconditions.checkArgument(!Strings.isNullOrEmpty(config.endpoint),
@@ -75,26 +82,20 @@ public class KinesisStreamingSource extends ReferenceStreamingSource<StructuredR
   @Override
   public JavaDStream<StructuredRecord> getStream(StreamingContext streamingContext) throws Exception {
     registerUsage(streamingContext);
-    //BasicAWSCredentials awsCred = new BasicAWSCredentials(config.awsAccessKeyId, config.awsAccessSecret);
-    //AmazonKinesisClient kinesisClient = new AmazonKinesisClient(awsCred);
-
+    BasicAWSCredentials awsCred = new BasicAWSCredentials(config.awsAccessKeyId, config.awsAccessSecret);
+    AmazonKinesisClient kinesisClient = new AmazonKinesisClient(awsCred);
     JavaStreamingContext javaStreamingContext = streamingContext.getSparkStreamingContext();
     Duration kinesisCheckpointInterval = new Duration(config.duration);
 
-/*    int numShards = kinesisClient.describeStream(config.streamName).getStreamDescription().getShards().size();
+    int numShards = kinesisClient.describeStream(config.streamName).getStreamDescription().getShards().size();
     List<JavaDStream<byte[]>> streamsList = new ArrayList<>(numShards);
     LOG.info("creating {} spark executors for {} shards", numShards, numShards);
     //Creating spark executors based on the number of shards in the stream
     for (int i = 0; i < numShards; i++) {
       streamsList.add(
-        KinesisUtils.createStream(javaStreamingContext, config.appName,
-                                  config.streamName, config.endpoint,
-                                  config.getRegionName(),
-                                  config.getInitialPosition(),
-                                  kinesisCheckpointInterval,
-                                  StorageLevel.MEMORY_AND_DISK_2(),
-                                  config.awsAccessKeyId,
-                                  config.awsAccessSecret)
+        KinesisUtils.createStream(javaStreamingContext, config.appName, config.streamName, config.endpoint,
+                                  config.region, config.getInitialPosition(), kinesisCheckpointInterval,
+                                  StorageLevel.MEMORY_AND_DISK_2(), config.awsAccessKeyId, config.awsAccessSecret)
       );
     }
 
@@ -105,16 +106,8 @@ public class KinesisStreamingSource extends ReferenceStreamingSource<StructuredR
     } else {
       // Otherwise, just use the 1 stream
       kinesisStream = streamsList.get(0);
-    }*/
+    }
 
-    JavaDStream<byte[]> kinesisStream = KinesisUtils.createStream(javaStreamingContext, config.appName,
-                              config.streamName, config.endpoint,
-                              config.getRegionName(),
-                              config.getInitialPosition(),
-                              kinesisCheckpointInterval,
-                              StorageLevel.MEMORY_AND_DISK_2(),
-                              config.awsAccessKeyId,
-                              config.awsAccessSecret);
     return kinesisStream.map(new Function<byte[], StructuredRecord>() {
                                public StructuredRecord call(byte[] data) {
                                  return recordTransform(data);
@@ -125,7 +118,7 @@ public class KinesisStreamingSource extends ReferenceStreamingSource<StructuredR
 
   private StructuredRecord recordTransform(byte[] data) {
     StructuredRecord.Builder recordBuilder = StructuredRecord.builder(SCHEMA);
-    recordBuilder.set("body", new String(data));
+    recordBuilder.set(BODY, new String(data));
     return recordBuilder.build();
   }
 
@@ -148,6 +141,10 @@ public class KinesisStreamingSource extends ReferenceStreamingSource<StructuredR
     @Macro
     private String endpoint;
 
+    @Name("region")
+    @Description("AWS region specific to the stream")
+    private String region;
+
     @Name("duration")
     @Description("The interval (e.g., Duration(2000) = 2 seconds) at which the Kinesis Client Library saves its " +
       "position in the stream.")
@@ -167,25 +164,22 @@ public class KinesisStreamingSource extends ReferenceStreamingSource<StructuredR
     @Macro
     private String awsAccessSecret;
 
-    public KinesisStreamConfig(String referenceName, String appName, String streamName, String endpoint,
+    public KinesisStreamConfig(String referenceName, String appName, String streamName, String endpoint, String region,
                                Integer duration, String initialPosition, String awsAccessKeyId,
                                String awsAccessSecret) {
       super(referenceName);
       this.appName = appName;
       this.streamName = streamName;
       this.endpoint = endpoint;
+      this.region = region;
       this.duration = duration;
       this.initialPosition = initialPosition;
       this.awsAccessKeyId = awsAccessKeyId;
       this.awsAccessSecret = awsAccessSecret;
     }
 
-    public String getRegionName() {
-      return "us-east-1";
-    }
-
     public InitialPositionInStream getInitialPosition() {
-      if (initialPosition.toUpperCase().equals("TRIM_HORIZON")) {
+      if (initialPosition.toUpperCase().equals(InitialPositionInStream.TRIM_HORIZON.name())) {
         return InitialPositionInStream.TRIM_HORIZON;
       } else {
         return InitialPositionInStream.LATEST;

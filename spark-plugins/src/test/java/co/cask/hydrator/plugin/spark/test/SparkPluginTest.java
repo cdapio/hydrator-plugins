@@ -107,7 +107,6 @@ public class SparkPluginTest extends HydratorTestBase {
   private static EmbeddedKafkaServer kafkaServer;
   private static int kafkaPort;
 
-
   @BeforeClass
   public static void setupTest() throws Exception {
     // add the artifact for data pipeline app
