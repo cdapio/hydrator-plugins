@@ -34,6 +34,7 @@ import co.cask.cdap.test.MapReduceManager;
 import co.cask.hydrator.plugin.batch.sink.SnapshotFileBatchSink;
 import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.dataset.SnapshotFileSet;
+import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.avro.file.DataFileStream;
@@ -47,9 +48,13 @@ import org.junit.Test;
 import parquet.avro.AvroParquetReader;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -151,6 +156,65 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
     testSource("SnapshotParquet", "testParquet", expected);
   }
 
+  @Test
+  public void testSnapshotTextSink() throws Exception {
+    String tableName = "SnapshotTextInputTable";
+    ETLStage source = new ETLStage(
+      "source",
+      new ETLPlugin("Table", BatchSource.PLUGIN_TYPE,
+                    ImmutableMap.<String, String>builder()
+                      .put(Properties.Table.NAME, tableName)
+                      .put(Properties.Table.PROPERTY_SCHEMA, SCHEMA.toString())
+                      .put(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "id")
+                      .build(),
+                    null));
+
+    ETLStage sink1 = new ETLStage(
+      "sink1",
+      new ETLPlugin("SnapshotText", BatchSink.PLUGIN_TYPE,
+                    ImmutableMap.<String, String>builder()
+                      .put(Properties.SnapshotFileSetSink.NAME, "testText")
+                      .build(),
+                    null));
+
+
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink1)
+      .addConnection(source.getName(), sink1.getName())
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "snapshotSinkTest");
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+
+    // run the pipeline once with some state in the table
+    DataSetManager<Table> inputManager = getDataset(tableName);
+    Table table = inputManager.get();
+    table.put(Bytes.toBytes("id123"), Bytes.toBytes("price"), Bytes.toBytes(777));
+    table.put(Bytes.toBytes("id124"), Bytes.toBytes("price"), Bytes.toBytes(779));
+    inputManager.flush();
+
+    DataSetManager<PartitionedFileSet> textFiles = getDataset("testText");
+    List<DataSetManager<PartitionedFileSet>> fileSetManagers = ImmutableList.of(textFiles);
+
+    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
+    mrManager.start();
+    mrManager.waitForFinish(5, TimeUnit.MINUTES);
+
+    Set<String> expected = new HashSet<>();
+    expected.add("id123\t777");
+    expected.add("id124\t779");
+
+    for (DataSetManager<PartitionedFileSet> fileSetManager : fileSetManagers) {
+      fileSetManager.flush();
+      Location partitionLocation = new SnapshotFileSet(fileSetManager.get()).getLocation();
+
+      Set<String> actual = readTextOutput(partitionLocation);
+      Assert.assertEquals(expected, actual);
+    }
+  }
+
   // deploys a pipeline that reads using a snapshot source and checks that it writes the expected records.
   private void testSource(String sourceETLPlugin, String sourceName, Map<String, Integer> expected) throws Exception {
     // run another pipeline that reads from avro dataset
@@ -193,6 +257,22 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
     Location partitionLocation = new SnapshotFileSet(output.get()).getLocation();
     Map<String, Integer> actual = readOutput(partitionLocation);
     Assert.assertEquals(expected, actual);
+  }
+
+  private Set<String> readTextOutput(Location outputLocation) throws IOException {
+    Set<String> records = new HashSet<>();
+    for (Location file : outputLocation.list()) {
+      String fileName = file.getName();
+      // text output format doesn't add extension by default, so looking for all part files.
+      if (fileName.startsWith("part")) {
+        Scanner scanner = new Scanner(new InputStreamReader(file.getInputStream(), Charsets.UTF_8));
+        while (scanner.hasNext()) {
+          records.add(scanner.nextLine());
+        }
+        scanner.close();
+      }
+    }
+    return records;
   }
 
   private Map<String, Integer> readOutput(Location outputLocation) throws IOException {
