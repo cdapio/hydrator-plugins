@@ -22,7 +22,6 @@ import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.FileSet;
-import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.StageConfigurer;
 import co.cask.cdap.etl.api.batch.SparkCompute;
@@ -50,7 +49,7 @@ import javax.annotation.Nullable;
 public class LogisticRegressionClassifier extends SparkCompute<StructuredRecord, StructuredRecord> {
 
   public static final String PLUGIN_NAME = "LogisticRegressionClassifier";
-  private final Config config;
+  private Config config;
   private Schema outputSchema;
 
   private LogisticRegressionModel loadedModel = null;
@@ -63,25 +62,7 @@ public class LogisticRegressionClassifier extends SparkCompute<StructuredRecord,
   /**
    * Configuration for the LogisticRegressionClassifier.
    */
-  public static class Config extends PluginConfig {
-
-    @Description("The name of the FileSet to load the model from.")
-    private String fileSetName;
-
-    @Description("Path of the FileSet to load the model from.")
-    private String path;
-
-    @Nullable
-    @Description("A comma-separated sequence of fields that needs to be used for classification.")
-    private String featureFieldsToInclude;
-
-    @Nullable
-    @Description("A comma-separated sequence of fields that needs to be excluded from being used in classification.")
-    private String featureFieldsToExclude;
-
-    @Description("The field on which to set the prediction. It will be of type double.")
-    private String predictionField;
-
+  public static class Config extends MLPredictorConfig {
     @Nullable
     @Description("The number of features to use in training the model. It must be of type integer and equal to the" +
                   " number of features used in LogisticRegressionTrainer. The default value if none is provided " +
@@ -95,20 +76,8 @@ public class LogisticRegressionClassifier extends SparkCompute<StructuredRecord,
     public Config(String fileSetName, String path, @Nullable String featureFieldsToInclude,
                   @Nullable String featureFieldsToExclude,
                   String predictionField, @Nullable Integer numFeatures) {
-      this.fileSetName = fileSetName;
-      this.path = path;
-      this.featureFieldsToInclude = featureFieldsToInclude;
-      this.featureFieldsToExclude = featureFieldsToExclude;
-      this.predictionField = predictionField;
+      super(fileSetName, path, featureFieldsToInclude, featureFieldsToExclude, predictionField);
       this.numFeatures = numFeatures;
-    }
-
-    private void validate(Schema inputSchema) {
-      Schema.Field predictionField = inputSchema.getField(this.predictionField);
-      Preconditions.checkArgument(predictionField == null, "Prediction field must not already exist in input schema.");
-
-      SparkUtils.validateConfigParameters(inputSchema, featureFieldsToInclude, featureFieldsToExclude,
-                                          this.predictionField, null);
     }
   }
 
@@ -118,7 +87,9 @@ public class LogisticRegressionClassifier extends SparkCompute<StructuredRecord,
     Schema inputSchema = stageConfigurer.getInputSchema();
 
     Preconditions.checkArgument(inputSchema != null, "Input Schema must be a known constant.");
-    config.validate(inputSchema);
+    config.validateConfigParameters(inputSchema, config.featureFieldsToInclude, config.featureFieldsToExclude,
+                                    config.predictionField, null);
+
     outputSchema = SparkUtils.getOutputSchema(inputSchema, config.predictionField);
     stageConfigurer.setOutputSchema(outputSchema);
   }

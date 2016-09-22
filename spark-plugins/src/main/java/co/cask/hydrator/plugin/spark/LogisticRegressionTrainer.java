@@ -23,7 +23,6 @@ import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.FileSet;
-import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.SparkExecutionPluginContext;
 import co.cask.cdap.etl.api.batch.SparkPluginContext;
@@ -57,24 +56,7 @@ public class LogisticRegressionTrainer extends SparkSink<StructuredRecord> {
   /**
    * Configuration for the LogisticRegressionTrainer.
    */
-  public static class Config extends PluginConfig {
-
-    @Description("The name of the FileSet to save the model to.")
-    private String fileSetName;
-
-    @Description("Path of the FileSet to save the model to.")
-    private String path;
-
-    @Nullable
-    @Description("A comma-separated sequence of fields that needs to be used for training.")
-    private String featureFieldsToInclude;
-
-    @Nullable
-    @Description("A comma-separated sequence of fields that needs to be excluded from being used in training.")
-    private String featureFieldsToExclude;
-
-    @Description("The field from which to get the label. It must be of type double.")
-    private String labelField;
+  public static class Config extends MLTrainerConfig {
 
     @Nullable
     @Description("The number of features to use in training the model. It must be of type integer and equal to the" +
@@ -95,11 +77,7 @@ public class LogisticRegressionTrainer extends SparkSink<StructuredRecord> {
     public Config(String fileSetName, String path, @Nullable String featureFieldsToInclude, String labelField,
                   @Nullable String featureFieldsToExclude, @Nullable Integer numFeatures,
                   @Nullable Integer numClasses) {
-      this.fileSetName = fileSetName;
-      this.path = path;
-      this.featureFieldsToInclude = featureFieldsToInclude;
-      this.featureFieldsToExclude = featureFieldsToExclude;
-      this.labelField = labelField;
+      super(fileSetName, path, featureFieldsToInclude, featureFieldsToExclude, labelField);
       this.numFeatures = numFeatures;
       this.numClasses = numClasses;
     }
@@ -111,9 +89,8 @@ public class LogisticRegressionTrainer extends SparkSink<StructuredRecord> {
 
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
     Preconditions.checkArgument(inputSchema != null, "Input Schema must be a known constant.");
-    SparkUtils.validateConfigParameters(inputSchema, config.featureFieldsToInclude, config.featureFieldsToExclude,
-                                        config.labelField, null);
-    SparkUtils.validateLabelFieldForTrainer(inputSchema, config.labelField);
+    config.validateConfigParameters(inputSchema, config.featureFieldsToInclude, config.featureFieldsToExclude,
+                                    config.labelField, null);
   }
 
   @Override
