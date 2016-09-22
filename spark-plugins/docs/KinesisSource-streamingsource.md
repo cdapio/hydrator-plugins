@@ -1,5 +1,4 @@
-# Amazon Kinesis Stream spark streaming source
-
+# Amazon kinesis spark streaming source
 
 Description
 -----------
@@ -10,7 +9,6 @@ Use Case
 This source is used when you want to read data from a kinesis stream in real-time. For example, you
 may want to read data from a kinesis stream write it to a cdap dataset.
 
-
 Properties
 ----------
 **appName:** The name of the kinesis application. The application name that is used to checkpoint the Kinesis sequence
@@ -20,11 +18,13 @@ numbers in DynamoDB table
 
 **duration:** The interval in milliseconds at which the Kinesis Client Library saves its position in the stream.
 
-**endpointUrl:** Valid Kinesis endpoints URL eg. kinesis.us-east-1.amazonaws.com.
+**endpointUrl:** Valid Kinesis endpoints URL eg. kinesis.us-east-1.amazonaws.com
 
-**accessID:** The access Id provided by AWS required to access the kinesis streams.
+**accessID:** The access Id provided by AWS required to access the kinesis streams. The Id can be stored in Cdap secure
+store and can be provided as macro configuration.
 
-**accessKey:** AWS access key secret having access to Kinesis streams.
+**accessKey:** AWS access key secret having access to Kinesis streams. The key can be stored in Cdap secure store and
+can be provided as macro configuration.
 
 **initialPosition:** Initial position in the stream. Can be either TRIM_HORIZON or LATEST, Default position will be
 Latest

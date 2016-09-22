@@ -192,14 +192,9 @@
         <configuration>
           <instructions>
             <_exportcontents>
-              co.cask.hydrator.plugin.spark.*;
-              org.apache.spark.streaming.kafka.*;
-              com.amazonaws.services.kinesis.*;
-              org.apache.spark.streaming.kinesis.*;
-              org.apache.spark.streaming.scheduler.*;
-              kafka.serializer.*;org.apache.spark.streaming.twitter.*;
-              twitter4j.*;com.amazonaws.*;
-              com.amazonaws.protocol.json.*;
+              co.cask.hydrator.plugin.spark.*;org.apache.spark.streaming.kafka.*;com.amazonaws.services.kinesis.*;
+              org.apache.spark.streaming.kinesis.*;org.apache.spark.streaming.scheduler.*;kafka.serializer.*;
+              org.apache.spark.streaming.twitter.*;twitter4j.*;com.amazonaws.*;com.amazonaws.protocol.json.*;
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
