@@ -19,6 +19,8 @@ package co.cask.hydrator.plugin.spark.test;
 import co.cask.cdap.api.artifact.ArtifactVersion;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.table.Row;
+import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.common.utils.Tasks;
 import co.cask.cdap.datapipeline.DataPipelineApp;
@@ -53,6 +55,8 @@ import co.cask.hydrator.plugin.spark.TwitterStreamingSource;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.io.CharStreams;
+import com.google.common.io.Files;
 import com.google.common.util.concurrent.Uninterruptibles;
 import kafka.serializer.DefaultDecoder;
 import org.apache.spark.streaming.kafka.KafkaUtils;
@@ -69,6 +73,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -103,6 +108,9 @@ public class SparkPluginTest extends HydratorTestBase {
   private static InMemoryZKServer zkServer;
   private static EmbeddedKafkaServer kafkaServer;
   private static int kafkaPort;
+
+  @ClassRule
+  public static TemporaryFolder tmpFolder = new TemporaryFolder();
 
 
   @BeforeClass
@@ -146,6 +154,112 @@ public class SparkPluginTest extends HydratorTestBase {
     kafkaClient.stopAndWait();
     kafkaServer.stopAndWait();
     zkServer.stopAndWait();
+  }
+
+  @Test
+  public void testFileSource() throws Exception {
+    Schema schema = Schema.recordOf(
+      "user",
+      Schema.Field.of("id", Schema.of(Schema.Type.LONG)),
+      Schema.Field.of("first", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("last", Schema.of(Schema.Type.STRING)));
+
+    File folder = tmpFolder.newFolder("fileSourceTest");
+
+    File input1 = new File(folder, "input1.txt");
+    File input2 = new File(folder, "input2.csv");
+    File ignore1 = new File(folder, "input1.txt.done");
+    File ignore2 = new File(folder, "input1");
+
+    CharStreams.write("1,samuel,jackson\n2,dwayne,johnson", Files.newWriterSupplier(input1, Charsets.UTF_8));
+    CharStreams.write("3,christopher,walken", Files.newWriterSupplier(input2, Charsets.UTF_8));
+    CharStreams.write("0,nicolas,cage", Files.newWriterSupplier(ignore1, Charsets.UTF_8));
+    CharStreams.write("0,orlando,bloom", Files.newWriterSupplier(ignore2, Charsets.UTF_8));
+
+    Map<String, String> properties = ImmutableMap.<String, String>builder()
+      .put("path", folder.getAbsolutePath())
+      .put("format", "csv")
+      .put("schema", schema.toString())
+      .put("referenceName", "fileSourceTestInput")
+      .put("ignoreThreshold", "300")
+      .put("extensions", "txt,csv")
+      .build();
+
+    DataStreamsConfig pipelineCfg = DataStreamsConfig.builder()
+      .addStage(new ETLStage("source", new ETLPlugin("File", StreamingSource.PLUGIN_TYPE, properties, null)))
+      .addStage(new ETLStage("sink", MockSink.getPlugin("fileOutput")))
+      .addConnection("source", "sink")
+      .setBatchInterval("1s")
+      .build();
+
+    AppRequest<DataStreamsConfig> appRequest = new AppRequest<>(DATASTREAMS_ARTIFACT, pipelineCfg);
+
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "FileSourceApp");
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+
+    SparkManager sparkManager = appManager.getSparkManager(DataStreamsSparkLauncher.NAME);
+    sparkManager.start();
+    sparkManager.waitForStatus(true, 10, 1);
+
+
+    final Map<Long, String> expected = ImmutableMap.of(
+      1L, "samuel jackson",
+      2L, "dwayne johnson",
+      3L, "christopher walken"
+    );
+
+    final DataSetManager<Table> outputManager = getDataset("fileOutput");
+    Tasks.waitFor(
+      true,
+      new Callable<Boolean>() {
+        @Override
+        public Boolean call() throws Exception {
+          outputManager.flush();
+          Map<Long, String> actual = new HashMap<>();
+          for (StructuredRecord outputRecord : MockSink.readOutput(outputManager)) {
+            actual.put((Long) outputRecord.get("id"), outputRecord.get("first") + " " + outputRecord.get("last"));
+          }
+          return expected.equals(actual);
+        }
+      },
+      4,
+      TimeUnit.MINUTES);
+
+    // now write a new file to make sure new files are picked up.
+    File input3 = new File(folder, "input3.txt");
+
+    CharStreams.write("4,terry,crews\n5,rocky,balboa", Files.newWriterSupplier(input3, Charsets.UTF_8));
+
+    final Map<Long, String> expected2 = ImmutableMap.of(
+      4L, "terry crews",
+      5L, "rocky balboa"
+    );
+
+    Table outputTable = outputManager.get();
+    Scanner scanner = outputTable.scan(null, null);
+    Row row;
+    while ((row = scanner.next()) != null) {
+      outputTable.delete(row.getRow());
+    }
+    outputManager.flush();
+
+    Tasks.waitFor(
+      true,
+      new Callable<Boolean>() {
+        @Override
+        public Boolean call() throws Exception {
+          outputManager.flush();
+          Map<Long, String> actual = new HashMap<>();
+          for (StructuredRecord outputRecord : MockSink.readOutput(outputManager)) {
+            actual.put((Long) outputRecord.get("id"), outputRecord.get("first") + " " + outputRecord.get("last"));
+          }
+          return expected2.equals(actual);
+        }
+      },
+      4,
+      TimeUnit.MINUTES);
+
+    sparkManager.stop();
   }
 
   @Test
@@ -208,6 +322,8 @@ public class SparkPluginTest extends HydratorTestBase {
       },
       4,
       TimeUnit.MINUTES);
+
+    sparkManager.stop();
   }
 
   @Test
