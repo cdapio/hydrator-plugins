@@ -108,6 +108,12 @@ public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
     return this.connection;
   }
 
+  // versions > HDP-2.3.4 started using createConnection instead of getConnection,
+  // this is added for compatibility, more information at (HYDRATOR-791)
+  public Connection createConnection() {
+    return getConnection();
+  }
+
   @Override
   protected RecordReader createDBRecordReader(DBInputSplit split, Configuration conf) throws IOException {
     final RecordReader dbRecordReader = super.createDBRecordReader(split, conf);

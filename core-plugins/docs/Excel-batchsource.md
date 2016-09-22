@@ -34,12 +34,12 @@ a new table or existing one. (Macro-enabled)
 
 **reprocess:** Specify whether the files mentioned in the memory table should be reprocessed or not.
 
-**sheet:** Specifies whether sheet has to be processed by sheet name or sheet no.
+**sheet:** Specifies whether sheet has to be processed by sheet name or sheet number.
 
 **sheetValue:** Specifies the value corresponding to 'sheet' input. Value can be either actual
-sheet name or sheet no.
-for example: 'Sheet1' or '1' in case user selects 'Sheet Name' or 'Sheet Number' as 'sheet'
-input respectively. (Macro-enabled)
+sheet name or sheet number.
+for example: 'Sheet1' or '0' in case user selects 'Sheet Name' or 'Sheet Number' as 'sheet'
+input respectively. Sheet number starts with 0. (Macro-enabled)
 
 **columnList:** Specify the excel column names which needs to be extracted from the excel sheet.
 Column name has to be same as excel column name; for example: A, B, etc.
@@ -66,6 +66,14 @@ of that column will be **string**.
 **ifErrorRecord:** Specifies the action to be take in case of an error. (Macro-enabled)
 
 **errorDatasetName:** Table name to keep the error record encountered while processing the excel file(s). (Macro-enabled)
+
+
+Condition
+---------
+
+1. To process an excel sheet, either of **columnList** or **outputSchema** is mandatory.
+2. If all the columns needs to be processed, then **columnList** or **outputSchema** can be used to specify the column
+   names.
 
 
 Example
