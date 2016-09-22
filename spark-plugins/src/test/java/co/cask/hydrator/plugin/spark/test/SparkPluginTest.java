@@ -47,15 +47,18 @@ import co.cask.cdap.test.SparkManager;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.spark.KafkaStreamingSource;
+import co.cask.hydrator.plugin.spark.KinesisStreamingSource;
 import co.cask.hydrator.plugin.spark.NaiveBayesClassifier;
 import co.cask.hydrator.plugin.spark.NaiveBayesTrainer;
 import co.cask.hydrator.plugin.spark.TwitterStreamingSource;
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Uninterruptibles;
 import kafka.serializer.DefaultDecoder;
 import org.apache.spark.streaming.kafka.KafkaUtils;
+import org.apache.spark.streaming.kinesis.KinesisUtils;
 import org.apache.twill.internal.kafka.EmbeddedKafkaServer;
 import org.apache.twill.internal.kafka.client.ZKKafkaClientService;
 import org.apache.twill.internal.utils.Networks;
@@ -104,7 +107,6 @@ public class SparkPluginTest extends HydratorTestBase {
   private static EmbeddedKafkaServer kafkaServer;
   private static int kafkaPort;
 
-
   @BeforeClass
   public static void setupTest() throws Exception {
     // add the artifact for data pipeline app
@@ -124,7 +126,8 @@ public class SparkPluginTest extends HydratorTestBase {
     addPluginArtifact(NamespaceId.DEFAULT.artifact("spark-plugins", "1.0.0"), parents,
                       NaiveBayesTrainer.class, NaiveBayesClassifier.class,
                       KafkaStreamingSource.class, KafkaUtils.class, DefaultDecoder.class,
-                      TwitterStreamingSource.class);
+                      TwitterStreamingSource.class, InitialPositionInStream.class,
+                      KinesisStreamingSource.class, KinesisUtils.class);
 
     zkServer = InMemoryZKServer.builder().setDataDir(TMP_FOLDER.newFolder()).build();
     zkServer.startAndWait();
