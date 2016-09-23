@@ -65,7 +65,7 @@ final class SparkUtils {
                                                            "was of type %s for field %s.", features, field));
       }
     }
-    getCategoricalFeatureInfo(inputSchema, featuresToInclude, featuresToExclude, predictionField, cardinalityMapping);
+    getCategoricalFeatureInfo(cardinalityMapping, fields);
   }
 
   /**
@@ -115,20 +115,11 @@ final class SparkUtils {
 
   /**
    * Get the feature to cardinality mapping provided by the user.
-   *
-   * @param inputSchema        schema of the received record.
-   * @param featuresToInclude  features to be used for training/prediction.
-   * @param featuresToExclude  features to be excluded when training/predicting.
-   * @param labelField         field containing the prediction values.
    * @param cardinalityMapping feature to cardinality mapping specified for categorical features.
    * @return categoricalFeatureInfo for categorical features.
    */
-  static Map<Integer, Integer> getCategoricalFeatureInfo(Schema inputSchema,
-                                                         @Nullable String featuresToInclude,
-                                                         @Nullable String featuresToExclude,
-                                                         String labelField,
-                                                         @Nullable String cardinalityMapping) {
-    Map<String, Integer> featureList = getFeatureList(inputSchema, featuresToInclude, featuresToExclude, labelField);
+  static Map<Integer, Integer> getCategoricalFeatureInfo(@Nullable String cardinalityMapping,
+                                                         Map<String, Integer> featureList) {
     Map<Integer, Integer> outputFieldMappings = new HashMap<>();
 
     if (Strings.isNullOrEmpty(cardinalityMapping)) {
@@ -180,7 +171,6 @@ final class SparkUtils {
   static StructuredRecord.Builder cloneRecord(StructuredRecord record, Schema outputSchema,
                                               String predictionField) {
     List<Schema.Field> fields = new ArrayList<>(outputSchema.getFields());
-    fields.add(Schema.Field.of(predictionField, Schema.of(Schema.Type.DOUBLE)));
     outputSchema = Schema.recordOf("records", fields);
     StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
     for (Schema.Field field : outputSchema.getFields()) {

@@ -1,0 +1,38 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "GD-Tree Classifier Properties",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "FileSet Name",
+          "name": "fileSetName"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Path",
+          "name": "path"
+        },
+        {
+          "widget-type": "csv",
+          "label": "Feature Fields to Include",
+          "name": "featuresToInclude"
+        },
+        {
+          "widget-type": "csv",
+          "label": "Feature Fields to Exclude",
+          "name": "featuresToExclude"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Prediction Field",
+          "name": "predictionField"
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}
