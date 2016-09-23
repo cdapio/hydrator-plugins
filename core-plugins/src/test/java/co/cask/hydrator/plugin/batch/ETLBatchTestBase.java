@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015, 2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -133,6 +133,12 @@ public class ETLBatchTestBase extends HydratorTestBase {
                       Joiner.class,
                       EmailAction.class,
                       SSHAction.class);
+  }
+
+  protected void cleanPartitions(TimePartitionedFileSet fileSet) throws IOException {
+    for (Location dayLoc : fileSet.getEmbeddedFileSet().getBaseLocation().list()) {
+      dayLoc.delete();
+    }
   }
 
   protected List<GenericRecord> readOutput(TimePartitionedFileSet fileSet, Schema schema) throws IOException {

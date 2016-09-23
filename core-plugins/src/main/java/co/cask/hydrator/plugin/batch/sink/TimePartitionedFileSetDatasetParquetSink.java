@@ -1,5 +1,5 @@
 /*
- * Copyright © 2016 Cask Data, Inc.
+ * Copyright © 2015, 2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -30,8 +30,6 @@ import co.cask.hydrator.plugin.common.FileSetUtil;
 import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
 import org.apache.avro.generic.GenericRecord;
 
-import java.util.HashMap;
-import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -40,8 +38,7 @@ import javax.annotation.Nullable;
 @Plugin(type = "batchsink")
 @Name("TPFSParquet")
 @Description("Sink for a TimePartitionedFileSet that writes data in Parquet format.")
-public class TimePartitionedFileSetDatasetParquetSink extends
-  TimePartitionedFileSetSink<Void, GenericRecord> {
+public class TimePartitionedFileSetDatasetParquetSink extends TimePartitionedFileSetSink<Void, GenericRecord> {
 
   private static final String SCHEMA_DESC = "The Parquet schema of the record being written to the Sink as a JSON " +
     "Object.";
@@ -56,6 +53,7 @@ public class TimePartitionedFileSetDatasetParquetSink extends
   @Override
   protected void addFileSetProperties(FileSetProperties.Builder properties) {
     FileSetUtil.configureParquetFileSet(config.schema, properties);
+    properties.addAll(FileSetUtil.getParquetCompressionConfiguration(config.compressionCodec, config.schema, true));
   }
 
   @Override
@@ -65,16 +63,8 @@ public class TimePartitionedFileSetDatasetParquetSink extends
   }
 
   @Override
-  public void transform(StructuredRecord input,
-                        Emitter<KeyValue<Void, GenericRecord>> emitter) throws Exception {
+  public void transform(StructuredRecord input, Emitter<KeyValue<Void, GenericRecord>> emitter) throws Exception {
     emitter.emit(new KeyValue<Void, GenericRecord>(null, recordTransformer.transform(input)));
-  }
-
-  @Override
-  protected Map<String, String> getAdditionalTPFSArguments() {
-    Map<String, String> args = new HashMap<>();
-    args.put(FileSetProperties.OUTPUT_PROPERTIES_PREFIX + "parquet.avro.schema", config.schema.toLowerCase());
-    return args;
   }
 
   /**
@@ -85,11 +75,15 @@ public class TimePartitionedFileSetDatasetParquetSink extends
     @Description(SCHEMA_DESC)
     private String schema;
 
+    @Nullable
+    @Description("Used to specify the compression codec to be used for the final dataset.")
+    private String compressionCodec;
+
     public TPFSParquetSinkConfig(String name, String schema, @Nullable String basePath, @Nullable String pathFormat,
-                                 @Nullable String timeZone) {
+                                 @Nullable String timeZone, @Nullable String compressionCodec) {
       super(name, basePath, pathFormat, timeZone);
       this.schema = schema;
+      this.compressionCodec = compressionCodec;
     }
   }
-
 }

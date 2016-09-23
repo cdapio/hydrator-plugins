@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015-2016 Cask Data, Inc.
+ * Copyright © 2015, 2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -32,8 +32,6 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.hadoop.io.NullWritable;
 
-import java.util.HashMap;
-import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -57,6 +55,7 @@ public class TimePartitionedFileSetDatasetAvroSink extends
   @Override
   protected void addFileSetProperties(FileSetProperties.Builder properties) {
     FileSetUtil.configureAvroFileSet(config.schema, properties);
+    properties.addAll(FileSetUtil.getAvroCompressionConfiguration(config.compressionCodec, config.schema, true));
   }
 
   @Override
@@ -71,13 +70,6 @@ public class TimePartitionedFileSetDatasetAvroSink extends
     emitter.emit(new KeyValue<>(new AvroKey<>(recordTransformer.transform(input)), NullWritable.get()));
   }
 
-  @Override
-  protected Map<String, String> getAdditionalTPFSArguments() {
-    Map<String, String> args = new HashMap<>();
-    args.put(FileSetProperties.OUTPUT_PROPERTIES_PREFIX + "avro.schema.output.key", config.schema);
-    return args;
-  }
-
   /**
    * Config for TimePartitionedFileSetAvroSink
    */
@@ -86,11 +78,15 @@ public class TimePartitionedFileSetDatasetAvroSink extends
     @Description(SCHEMA_DESC)
     private String schema;
 
+    @Nullable
+    @Description("Used to specify the compression codec to be used for the final dataset.")
+    private String compressionCodec;
+
     public TPFSAvroSinkConfig(String name, String schema, @Nullable String basePath, @Nullable String pathFormat,
-                              @Nullable String timeZone) {
+                              @Nullable String timeZone, @Nullable String compressionCodec) {
       super(name, basePath, pathFormat, timeZone);
       this.schema = schema;
+      this.compressionCodec = compressionCodec;
     }
   }
-
 }

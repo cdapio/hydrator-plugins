@@ -42,6 +42,16 @@ The format is expected to be a number followed by an 's', 'm', 'h', or 'd' speci
 'm' for minutes, 'h' for hours, and 'd' for days. For example, if the pipeline is scheduled to run at midnight of January 1, 2016,
 and this property is set to 7d, the sink will delete any partitions for time partitions older than midnight Dec 25, 2015.
 
+**compressionCodec:** Optional parameter to determine the compression codec to use on the resulting data. 
+Valid values are None, Snappy, ZLIB.
+
+**compressionChunkSize** Required if setting compressionCodec. Number of bytes in each compression chunk.
+
+**stripeSize** Required if setting compressionCodec. Number of bytes in each stripe
+
+**indexStride** Required if setting compressionCodec. Number of rows between index entries (must be >= 1,000)
+
+**createIndex** Required if setting compressionCodec. Whether to create inline indexes
 
 Example
 -------

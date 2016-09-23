@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015, 2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -25,6 +25,7 @@ import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
+import co.cask.hydrator.plugin.common.FileSetUtil;
 import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaParseException;
@@ -72,10 +73,12 @@ public class SnapshotFileBatchAvroSink extends SnapshotFileBatchSink<AvroKey<Gen
     } catch (SchemaParseException e) {
       throw new IllegalArgumentException("Could not parse schema: " + e.getMessage(), e);
     }
+    propertiesBuilder.addAll(FileSetUtil.getAvroCompressionConfiguration(config.compressionCodec, config.schema,
+                                                                         true));
+
     propertiesBuilder
       .setInputFormat(AvroKeyInputFormat.class)
       .setOutputFormat(AvroKeyOutputFormat.class)
-      .setOutputProperty("avro.schema.output.key", config.schema)
       .setEnableExploreOnCreate(true)
       .setSerDe("org.apache.hadoop.hive.serde2.avro.AvroSerDe")
       .setExploreInputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat")
@@ -91,9 +94,15 @@ public class SnapshotFileBatchAvroSink extends SnapshotFileBatchSink<AvroKey<Gen
     @Description("The Avro schema of the record being written to the Sink as a JSON Object.")
     private String schema;
 
-    public SnapshotAvroConfig(String name, @Nullable String basePath, String schema) {
+    @Nullable
+    @Description("Used to specify the compression codec to be used for the final dataset.")
+    private String compressionCodec;
+
+    public SnapshotAvroConfig(String name, @Nullable String basePath, String schema,
+                              @Nullable String compressionCodec) {
       super(name, basePath, null);
       this.schema = schema;
+      this.compressionCodec = compressionCodec;
     }
   }
 }

@@ -1,3 +1,4 @@
+
 {
   "metadata": {
     "spec-version": "1.0"
@@ -20,6 +21,16 @@
           "widget-type": "textbox",
           "label": "Time Suffix Format",
           "name": "suffix"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Time Suffix Format",
+          "name": "suffix"
+        },
+        {
+          "widget-type": "json-editor",
+          "label": "Job Properties",
+          "name": "jobProperties"
         }
       ]
     }

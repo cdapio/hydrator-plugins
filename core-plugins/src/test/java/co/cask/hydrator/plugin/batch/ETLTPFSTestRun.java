@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015-2016 Cask Data, Inc.
+ * Copyright © 2015, 2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -39,6 +39,7 @@ import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.common.Properties;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.avro.file.DataFileWriter;
@@ -62,22 +63,24 @@ import parquet.hadoop.ParquetWriter;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class ETLTPFSTestRun extends ETLBatchTestBase {
 
+  private static final Schema RECORD_SCHEMA = Schema.recordOf("record",
+                                                              Schema.Field.of("i", Schema.of(Schema.Type.INT)),
+                                                              Schema.Field.of("l", Schema.of(Schema.Type.LONG)));
+
   @Test
   public void testPartitionOffsetAndCleanup() throws Exception {
-    Schema recordSchema = Schema.recordOf("record",
-                                          Schema.Field.of("i", Schema.of(Schema.Type.INT)),
-                                          Schema.Field.of("l", Schema.of(Schema.Type.LONG))
-    );
+
 
     ETLPlugin sourceConfig = new ETLPlugin(
       "TPFSAvro",
       BatchSource.PLUGIN_TYPE,
       ImmutableMap.of(
-        Properties.TimePartitionedFileSetDataset.SCHEMA, recordSchema.toString(),
+        Properties.TimePartitionedFileSetDataset.SCHEMA, RECORD_SCHEMA.toString(),
         Properties.TimePartitionedFileSetDataset.TPFS_NAME, "cleanupInput",
         Properties.TimePartitionedFileSetDataset.DELAY, "0d",
         Properties.TimePartitionedFileSetDataset.DURATION, "1h"),
@@ -86,7 +89,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
       "TPFSAvro",
       BatchSink.PLUGIN_TYPE,
       ImmutableMap.of(
-        Properties.TimePartitionedFileSetDataset.SCHEMA, recordSchema.toString(),
+        Properties.TimePartitionedFileSetDataset.SCHEMA, RECORD_SCHEMA.toString(),
         Properties.TimePartitionedFileSetDataset.TPFS_NAME, "cleanupOutput",
         "partitionOffset", "1h",
         "cleanPartitionsOlderThan", "30d"),
@@ -106,7 +109,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     // write input to read
-    org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(recordSchema.toString());
+    org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(RECORD_SCHEMA.toString());
     GenericRecord record = new GenericRecordBuilder(avroSchema)
       .set("i", Integer.MAX_VALUE)
       .set("l", Long.MAX_VALUE)
@@ -153,7 +156,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     TimePartitionDetail outputPartition = outputManager.get().getPartitionByTime(outputTime);
     Assert.assertNotNull(outputPartition);
 
-    List<GenericRecord> outputRecords = readOutput(outputPartition.getLocation(), recordSchema);
+    List<GenericRecord> outputRecords = readOutput(outputPartition.getLocation(), RECORD_SCHEMA);
     Assert.assertEquals(1, outputRecords.size());
     Assert.assertEquals(Integer.MAX_VALUE, outputRecords.get(0).get("i"));
     Assert.assertEquals(Long.MAX_VALUE, outputRecords.get(0).get("l"));
@@ -270,15 +273,11 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
   @Test
   public void testAvroSourceConversionToAvroSink() throws Exception {
 
-    Schema eventSchema = Schema.recordOf(
-      "record",
-      Schema.Field.of("int", Schema.of(Schema.Type.INT)));
+    Schema eventSchema = Schema.recordOf("record", Schema.Field.of("int", Schema.of(Schema.Type.INT)));
 
     org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(eventSchema.toString());
 
-    GenericRecord record = new GenericRecordBuilder(avroSchema)
-      .set("int", Integer.MAX_VALUE)
-      .build();
+    GenericRecord record = new GenericRecordBuilder(avroSchema).set("int", Integer.MAX_VALUE).build();
 
     String filesetName = "tpfs";
     addDatasetInstance(TimePartitionedFileSet.class.getName(), filesetName, FileSetProperties.builder()
@@ -316,7 +315,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     txTpfs.postTxCommit();
 
     String newFilesetName = filesetName + "_op";
-    ETLBatchConfig etlBatchConfig = constructTPFSETLConfig(filesetName, newFilesetName, eventSchema);
+    ETLBatchConfig etlBatchConfig = constructTPFSETLConfig(filesetName, newFilesetName, eventSchema, "Snappy");
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlBatchConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app("sconversion1");
@@ -337,57 +336,12 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
 
   @Test
   public void testParquet() throws Exception {
-    Schema recordSchema = Schema.recordOf("record",
-                                          Schema.Field.of("i", Schema.of(Schema.Type.INT)),
-                                          Schema.Field.of("l", Schema.of(Schema.Type.LONG))
-    );
-
-    ETLPlugin sourceConfig = new ETLPlugin("TPFSParquet",
-                                           BatchSource.PLUGIN_TYPE,
-                                           ImmutableMap.of(
-                                             "schema", recordSchema.toString(),
-                                             "name", "inputParquet",
-                                             "delay", "0d",
-                                             "duration", "1h"),
-                                           null);
-    ETLPlugin sinkConfig = new ETLPlugin("TPFSParquet",
-                                         BatchSink.PLUGIN_TYPE,
-                                         ImmutableMap.of(
-                                           "schema", recordSchema.toString(),
-                                           "name", "outputParquet"),
-                                         null);
-
-    ETLStage source = new ETLStage("source", sourceConfig);
-    ETLStage sink = new ETLStage("sink", sinkConfig);
-
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(source)
-      .addStage(sink)
-      .addConnection(source.getName(), sink.getName())
-      .build();
-
+    ETLBatchConfig etlConfig = buildBatchConfig(null);
+    long timeInMillis = System.currentTimeMillis();
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app("parquetTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
-
-    // write input to read
-    org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(recordSchema.toString());
-    GenericRecord record = new GenericRecordBuilder(avroSchema)
-      .set("i", Integer.MAX_VALUE)
-      .set("l", Long.MAX_VALUE)
-      .build();
-    DataSetManager<TimePartitionedFileSet> inputManager = getDataset("inputParquet");
-
-    long timeInMillis = System.currentTimeMillis();
-    inputManager.get().addPartition(timeInMillis, "directory");
-    inputManager.flush();
-    Location location = inputManager.get().getPartitionByTime(timeInMillis).getLocation();
-    location = location.append("file.parquet");
-    ParquetWriter<GenericRecord> parquetWriter =
-      new AvroParquetWriter<>(new Path(location.toURI()), avroSchema);
-    parquetWriter.write(record);
-    parquetWriter.close();
-    inputManager.flush();
+    writeDataToPipeline(timeInMillis);
 
     // run the pipeline
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
@@ -398,30 +352,176 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     DataSetManager<TimePartitionedFileSet> outputManager = getDataset("outputParquet");
     TimePartitionedFileSet newFileSet = outputManager.get();
 
-    List<GenericRecord> newRecords = readOutput(newFileSet, recordSchema);
+    List<GenericRecord> newRecords = readOutput(newFileSet, RECORD_SCHEMA);
     Assert.assertEquals(1, newRecords.size());
     Assert.assertEquals(Integer.MAX_VALUE, newRecords.get(0).get("i"));
     Assert.assertEquals(Long.MAX_VALUE, newRecords.get(0).get("l"));
+    deleteDatasetInstance(NamespaceId.DEFAULT.dataset("outputParquet"));
+    deleteDatasetInstance(NamespaceId.DEFAULT.dataset("inputParquet"));
   }
 
-  private ETLBatchConfig constructTPFSETLConfig(String filesetName, String newFilesetName, Schema eventSchema) {
+  @Test
+  public void testParquetSnappy() throws Exception {
+   ETLBatchConfig etlConfig = buildBatchConfig("Snappy");
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app("parquetTest");
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+    long timeInMillis = System.currentTimeMillis();
+    writeDataToPipeline(timeInMillis);
+
+    // run the pipeline
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    // add a minute to the end time to make sure the newly added partition is included in the run.
+    workflowManager.start(ImmutableMap.of("logical.start.time", String.valueOf(timeInMillis + 60 * 1000)));
+    workflowManager.waitForFinish(4, TimeUnit.MINUTES);
+
+    DataSetManager<TimePartitionedFileSet> outputManager = getDataset("outputParquet");
+    TimePartitionedFileSet newFileSet = outputManager.get();
+    Assert.assertEquals(newFileSet.getEmbeddedFileSet().getOutputFormatConfiguration()
+                          .get("parquet.compression"), "SNAPPY");
+    List<GenericRecord> newRecords = readOutput(newFileSet, RECORD_SCHEMA);
+    Assert.assertEquals(1, newRecords.size());
+    Assert.assertEquals(Integer.MAX_VALUE, newRecords.get(0).get("i"));
+    Assert.assertEquals(Long.MAX_VALUE, newRecords.get(0).get("l"));
+
+    deleteDatasetInstance(NamespaceId.DEFAULT.dataset("outputParquet"));
+    deleteDatasetInstance(NamespaceId.DEFAULT.dataset("inputParquet"));
+  }
+
+  @Test
+  public void testAvroCompressionDeflate() throws Exception {
+    Schema eventSchema = Schema.recordOf("record", Schema.Field.of("int", Schema.of(Schema.Type.INT)));
+
+    org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(eventSchema.toString());
+
+    GenericRecord record = new GenericRecordBuilder(avroSchema).set("int", Integer.MAX_VALUE).build();
+
+    String filesetName = "tpfs_deflate_codec";
+    addDatasetInstance(TimePartitionedFileSet.class.getName(), filesetName, FileSetProperties.builder()
+      .setInputFormat(AvroKeyInputFormat.class)
+      .setOutputFormat(AvroKeyOutputFormat.class)
+      .setInputProperty("schema", avroSchema.toString())
+      .setOutputProperty("schema", avroSchema.toString())
+      .setEnableExploreOnCreate(true)
+      .setSerDe("org.apache.hadoop.hive.serde2.avro.AvroSerDe")
+      .setExploreInputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat")
+      .setExploreOutputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat")
+      .setTableProperty("avro.schema.literal", (avroSchema.toString()))
+      .build());
+    DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset(filesetName);
+    TimePartitionedFileSet tpfs = fileSetManager.get();
+
+    TransactionManager txService = getTxService();
+    Transaction tx1 = txService.startShort(100);
+    TransactionAware txTpfs = (TransactionAware) tpfs;
+    txTpfs.startTx(tx1);
+
+    long timeInMillis = System.currentTimeMillis();
+    fileSetManager.get().addPartition(timeInMillis, "directory", ImmutableMap.of("key1", "value1"));
+    Location location = fileSetManager.get().getPartitionByTime(timeInMillis).getLocation();
+    location = location.append("file.avro");
+    FSDataOutputStream outputStream = new FSDataOutputStream(location.getOutputStream(), null);
+    DataFileWriter dataFileWriter = new DataFileWriter<>(new GenericDatumWriter<GenericRecord>(avroSchema));
+    dataFileWriter.create(avroSchema, outputStream);
+    dataFileWriter.append(record);
+    dataFileWriter.flush();
+
+    txTpfs.commitTx();
+    txService.canCommit(tx1, txTpfs.getTxChanges());
+    txService.commit(tx1);
+    txTpfs.postTxCommit();
+
+    String newFilesetName = filesetName + "_op";
+    ETLBatchConfig etlBatchConfig = constructTPFSETLConfig(filesetName, newFilesetName, eventSchema, "Deflate");
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlBatchConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app("AvroDeflateCodecTest");
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    // add a minute to the end time to make sure the newly added partition is included in the run.
+    workflowManager.start(ImmutableMap.of("logical.start.time", String.valueOf(timeInMillis + 60 * 1000)));
+    workflowManager.waitForFinish(4, TimeUnit.MINUTES);
+
+    DataSetManager<TimePartitionedFileSet> newFileSetManager = getDataset(newFilesetName);
+    TimePartitionedFileSet newFileSet = newFileSetManager.get();
+    Assert.assertEquals(newFileSet.getEmbeddedFileSet().getOutputFormatConfiguration()
+                          .get("avro.output.codec"), "deflate");
+
+    List<GenericRecord> newRecords = readOutput(newFileSet, eventSchema);
+    Assert.assertEquals(1, newRecords.size());
+    Assert.assertEquals(Integer.MAX_VALUE, newRecords.get(0).get("int"));
+  }
+
+  @Test(expected = IllegalStateException.class)
+  public void testInvalidParquetCompression() throws Exception {
+    ETLBatchConfig etlConfig = buildBatchConfig("Deflate");
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app("parquetTest");
+    deployApplication(appId, appRequest);
+    Assert.fail();
+  }
+
+  private void writeDataToPipeline(long timeInMillis) throws Exception {
+    org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(RECORD_SCHEMA.toString());
+    GenericRecord record = new GenericRecordBuilder(avroSchema)
+      .set("i", Integer.MAX_VALUE)
+      .set("l", Long.MAX_VALUE)
+      .build();
+    DataSetManager<TimePartitionedFileSet> inputManager = getDataset("inputParquet");
+    inputManager.get().addPartition(timeInMillis, "directory");
+    inputManager.flush();
+    Location location = inputManager.get().getPartitionByTime(timeInMillis).getLocation();
+    location = location.append("file.parquet");
+    ParquetWriter<GenericRecord> parquetWriter = new AvroParquetWriter<>(new Path(location.toURI()), avroSchema);
+    parquetWriter.write(record);
+    parquetWriter.close();
+    inputManager.flush();
+  }
+
+  private ETLBatchConfig buildBatchConfig(String compressionCodec) {
+    ETLPlugin sourceConfig = new ETLPlugin("TPFSParquet", BatchSource.PLUGIN_TYPE,
+                                           ImmutableMap.of("schema", RECORD_SCHEMA.toString(),
+                                                           "name", "inputParquet",
+                                                           "delay", "0d",
+                                                           "duration", "1h"),
+                                           null);
+    Map<String, String> properties;
+    if (!Strings.isNullOrEmpty(compressionCodec)) {
+      properties = ImmutableMap.of("schema", RECORD_SCHEMA.toString(),
+                                   "name", "outputParquet",
+                                   "compressionCodec", compressionCodec);
+    } else {
+      properties = ImmutableMap.of("schema", RECORD_SCHEMA.toString(),
+                                   "name", "outputParquet");
+    }
+    ETLPlugin sinkConfig = new ETLPlugin("TPFSParquet", BatchSink.PLUGIN_TYPE, properties, null);
+    ETLStage source = new ETLStage("source", sourceConfig);
+    ETLStage sink = new ETLStage("sink", sinkConfig);
+    return ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
+  }
+
+  private ETLBatchConfig constructTPFSETLConfig(String filesetName, String newFilesetName, Schema eventSchema,
+                                                String compressionCodec) {
     ETLStage source = new ETLStage(
       "source",
-      new ETLPlugin("TPFSAvro",
-                    BatchSource.PLUGIN_TYPE,
-                    ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA,
-                                    eventSchema.toString(),
+      new ETLPlugin("TPFSAvro", BatchSource.PLUGIN_TYPE,
+                    ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA, eventSchema.toString(),
                                     Properties.TimePartitionedFileSetDataset.TPFS_NAME, filesetName,
                                     Properties.TimePartitionedFileSetDataset.DELAY, "0d",
                                     Properties.TimePartitionedFileSetDataset.DURATION, "2m"),
                     null));
-    ETLStage sink = new ETLStage(
-      "sink",
-      new ETLPlugin("TPFSAvro",
-                    BatchSink.PLUGIN_TYPE,
+    ETLStage sink = new ETLStage("sink",
+      new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
                     ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA, eventSchema.toString(),
-                                    Properties.TimePartitionedFileSetDataset.TPFS_NAME, newFilesetName),
-                    null));
+                                    Properties.TimePartitionedFileSetDataset.TPFS_NAME, newFilesetName,
+                                    "compressionCodec", compressionCodec), null));
 
     ETLStage transform = new ETLStage("transform", new ETLPlugin("Projection", Transform.PLUGIN_TYPE,
                                                                  ImmutableMap.<String, String>of(), null));
