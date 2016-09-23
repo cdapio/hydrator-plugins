@@ -415,7 +415,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
                                            BatchSource.PLUGIN_TYPE,
                                            ImmutableMap.of(
                                              "schema", recordSchema.toString(),
-                                             "name", "inputParquet",
+                                             "name", "inputParquetSnappy",
                                              "delay", "0d",
                                              "duration", "1h"),
                                            null);
@@ -423,7 +423,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
                                          BatchSink.PLUGIN_TYPE,
                                          ImmutableMap.of(
                                            "schema", recordSchema.toString(),
-                                           "name", "outputParquet",
+                                           "name", "outputParquetSnappy",
                                            "compressionCodec", "Snappy"),
                                          null);
 
@@ -446,7 +446,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
       .set("i", Integer.MAX_VALUE)
       .set("l", Long.MAX_VALUE)
       .build();
-    DataSetManager<TimePartitionedFileSet> inputManager = getDataset("inputParquet");
+    DataSetManager<TimePartitionedFileSet> inputManager = getDataset("inputParquetSnappy");
 
     long timeInMillis = System.currentTimeMillis();
     inputManager.get().addPartition(timeInMillis, "directory");
@@ -465,7 +465,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     workflowManager.start(ImmutableMap.of("logical.start.time", String.valueOf(timeInMillis + 60 * 1000)));
     workflowManager.waitForFinish(4, TimeUnit.MINUTES);
 
-    DataSetManager<TimePartitionedFileSet> outputManager = getDataset("outputParquet");
+    DataSetManager<TimePartitionedFileSet> outputManager = getDataset("outputParquetSnappy");
     TimePartitionedFileSet newFileSet = outputManager.get();
     Assert.assertTrue(checkFileType(newFileSet, ".snappy.parquet"));
 

@@ -33,11 +33,14 @@ import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
+import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -63,7 +66,6 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
-    // Verify if the timeSuffix format is valid.
     config.validate();
   }
 
@@ -89,6 +91,9 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
    * HDFS Sink Output Provider.
    */
   public static class SinkOutputFormatProvider implements OutputFormatProvider {
+    private static final Gson GSON = new Gson();
+    private static final Type MAP_TYPE = new TypeToken<Map<String, String>>() { }.getType();
+
     private final Map<String, String> conf;
     private final HDFSSinkConfig config;
 
@@ -98,9 +103,12 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
       String timeSuffix = !Strings.isNullOrEmpty(config.timeSufix) ?
         new SimpleDateFormat(config.timeSufix).format(context.getLogicalStartTime()) : "";
       conf.put(FileOutputFormat.OUTDIR, String.format("%s/%s", config.path, timeSuffix));
-      conf.put("mapreduce.output.fileoutputformat.compress", "true");
-      conf.put("mapreduce.output.fileoutputformat.compress.codec", "org.apache.hadoop.io.compress.SnappyCodec");
-      conf.put("mapreduce.output.fileoutputformat.compress.type", "BLOCK");
+      if (!Strings.isNullOrEmpty(config.jobProperties)) {
+        Map<String, String> arguments = GSON.fromJson(config.jobProperties, MAP_TYPE);
+        for (Map.Entry<String, String> argument : arguments.entrySet()) {
+          conf.put(argument.getKey(), argument.getValue());
+        }
+      }
     }
 
     @Override
@@ -136,16 +144,29 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
     @Macro
     private String timeSufix;
 
-    public HDFSSinkConfig(String referenceName, String path, String suffix, String outputFormat) {
+    @Name("jobProperties")
+    @Nullable
+    @Description("Advanced feature to specify any additional properties that should be used with the sink, " +
+      "specified as a JSON object of string to string. These properties are set on the job.")
+    @Macro
+    protected String jobProperties;
+
+    public HDFSSinkConfig(String referenceName, String path, String suffix,
+                          @Nullable String jobProperties) {
       super(referenceName);
       this.path = path;
       this.timeSufix = suffix;
+      this.jobProperties = jobProperties;
     }
 
     private void validate() {
       // if macro provided, timeSuffix will be null at configure time
       if (!Strings.isNullOrEmpty(timeSufix)) {
         new SimpleDateFormat(timeSufix);
+      }
+      if (!Strings.isNullOrEmpty(jobProperties)) {
+        // Try to parse the JSON and propagate the error
+        new Gson().fromJson(jobProperties, new TypeToken<Map<String, String>>() { }.getType());
       }
     }
   }
