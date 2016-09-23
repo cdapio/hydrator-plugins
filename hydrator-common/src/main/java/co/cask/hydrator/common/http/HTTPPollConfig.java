@@ -14,12 +14,11 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.realtime.config;
+package co.cask.hydrator.common.http;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.hydrator.common.Constants;
-import co.cask.hydrator.plugin.config.HTTPConfig;
 import com.google.common.base.Charsets;
 
 import java.nio.charset.Charset;
