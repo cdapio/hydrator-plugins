@@ -1,3 +1,4 @@
+
 {
   "metadata": {
     "spec-version": "1.0"
@@ -35,6 +36,46 @@
           "widget-type": "textbox",
           "label": "Clean Partitions Older Than",
           "name": "cleanPartitionsOlderThan"
+        },
+        {
+          "widget-type": "select",
+          "label": "Compression Codec",
+          "name": "compressionCodec",
+          "widget-attributes": {
+            "values": [
+              "None",
+              "Snappy",
+              "ZLIB"
+            ],
+            "default": "None"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Compression Chunk Size",
+          "name": "compressionChunkSize"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Bytes per stripe",
+          "name": "stripeSize"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Rows between index entries",
+          "name": "indexStride"
+        },
+        {
+          "widget-type": "select",
+          "label": "Create inline indexes",
+          "name": "createIndex",
+          "widget-attributes": {
+            "values": [
+              "True",
+              "False"
+            ],
+            "default": "True"
+          }
         }
       ]
     }

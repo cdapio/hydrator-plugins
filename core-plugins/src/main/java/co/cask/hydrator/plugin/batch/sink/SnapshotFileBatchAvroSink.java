@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -72,6 +72,20 @@ public class SnapshotFileBatchAvroSink extends SnapshotFileBatchSink<AvroKey<Gen
     } catch (SchemaParseException e) {
       throw new IllegalArgumentException("Could not parse schema: " + e.getMessage(), e);
     }
+    if (config.compressionCodec != null && !config.compressionCodec.equals("None")) {
+      propertiesBuilder.setOutputProperty("mapred.output.compress", "true");
+      switch (config.compressionCodec) {
+        case "Snappy":
+          propertiesBuilder.setOutputProperty("avro.output.codec", "snappy");
+          break;
+        case "Deflate":
+          propertiesBuilder.setOutputProperty("avro.output.codec", "deflate");
+          break;
+        default:
+          throw new IllegalArgumentException("Unsupported compression codec " + config.compressionCodec);
+      }
+    }
+
     propertiesBuilder
       .setInputFormat(AvroKeyInputFormat.class)
       .setOutputFormat(AvroKeyOutputFormat.class)
@@ -91,9 +105,15 @@ public class SnapshotFileBatchAvroSink extends SnapshotFileBatchSink<AvroKey<Gen
     @Description("The Avro schema of the record being written to the Sink as a JSON Object.")
     private String schema;
 
-    public SnapshotAvroConfig(String name, @Nullable String basePath, String schema) {
+    @Nullable
+    @Description("Used to specify the compression codec to be used for the final dataset.")
+    private String compressionCodec;
+
+    public SnapshotAvroConfig(String name, @Nullable String basePath, String schema,
+                              @Nullable String compressionCodec) {
       super(name, basePath, null);
       this.schema = schema;
+      this.compressionCodec = compressionCodec;
     }
   }
 }

@@ -35,13 +35,16 @@ example: the format ``'yyyy-MM-dd-HH-mm'`` will create a file path ending in
 
 **schema:** The Avro schema of the record being written to the sink as a JSON object.
 
+**compressionCodec:** Optional parameter to determine the compression codec to use on the resulting data. 
+Valid values are None, Snappy, and Deflate.
+
 
 Example
 -------
 This example will write to an S3 output located at ``s3n://logs``. It will write data in
-Avro format using the given schema. Every time the pipeline runs, a new output directory
-from the base path (``s3n://logs``) will be created which will have the directory name
-corresponding to the start time in ``yyyy-MM-dd-HH-mm`` format:
+Avro format compressed using Snappy format and using the given schema. Every time the pipeline 
+runs, a new output directory from the base path (``s3n://logs``) will be created which 
+will have the directory name corresponding to the start time in ``yyyy-MM-dd-HH-mm`` format:
 
     {
         "name": "S3Avro",
@@ -51,6 +54,7 @@ corresponding to the start time in ``yyyy-MM-dd-HH-mm`` format:
             "accessID": "ID",
             "basePath": "s3n://logs",
             "pathFormat": "yyyy-MM-dd-HH-mm",
+            "compressionCodec": "Snappy",
             "schema": "{
                 \"type\":\"record\",
                 \"name\":\"user\",

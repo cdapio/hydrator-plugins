@@ -77,6 +77,22 @@ public class SnapshotFileBatchParquetSink extends SnapshotFileBatchSink<Void, Ge
       throw new RuntimeException("Error: Schema is not valid ", e);
     }
 
+    if (config.compressionCodec != null && !config.compressionCodec.equals("None")) {
+      switch (config.compressionCodec) {
+        case "Snappy":
+          propertiesBuilder.setOutputProperty("parquet.compression", "SNAPPY");
+          break;
+        case "GZip":
+          propertiesBuilder.setOutputProperty("parquet.compression", "GZIP");
+          break;
+        case "LZO":
+          propertiesBuilder.setOutputProperty("parquet.compression", "LZO");
+          break;
+        default:
+          throw new IllegalArgumentException("Unsupported compression codec " + config.compressionCodec);
+      }
+    }
+
     propertiesBuilder
       .setInputFormat(AvroParquetInputFormat.class)
       .setOutputFormat(AvroParquetOutputFormat.class)
@@ -94,9 +110,15 @@ public class SnapshotFileBatchParquetSink extends SnapshotFileBatchSink<Void, Ge
     @Description("The Parquet schema of the record being written to the Sink as a JSON Object.")
     private String schema;
 
-    public SnapshotParquetConfig(String name, @Nullable String basePath, String schema) {
+    @Nullable
+    @Description("Used to specify the compression codec to be used for the final dataset.")
+    private String compressionCodec;
+
+    public SnapshotParquetConfig(String name, @Nullable String basePath, String schema,
+                                 @Nullable String compressionCodec) {
       super(name, basePath, null);
       this.schema = schema;
+      this.compressionCodec = compressionCodec;
     }
   }
 }

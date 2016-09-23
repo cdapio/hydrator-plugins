@@ -49,7 +49,7 @@ public class FTPBatchSource extends FileBatchSource {
 
   public FTPBatchSource(FTPBatchSourceConfig config) {
     super(new FileBatchConfig(config.referenceName, config.path, config.fileRegex, null, config.inputFormatClassName,
-                              limitSplits(config.fileSystemProperties), null));
+                              limitSplits(config.fileSystemProperties), Long.MAX_VALUE));
     this.config = config;
   }
 
