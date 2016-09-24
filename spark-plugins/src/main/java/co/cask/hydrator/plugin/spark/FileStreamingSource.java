@@ -142,7 +142,7 @@ public class FileStreamingSource extends ReferenceStreamingSource<StructuredReco
       }
 
       StructuredRecord.Builder builder = StructuredRecord.builder(schema);
-      StructuredRecord messageRecord = recordFormat.read(new StreamEvent(ByteBuffer.wrap(in._2().getBytes())));
+      StructuredRecord messageRecord = recordFormat.read(new StreamEvent(ByteBuffer.wrap(in._2().copyBytes())));
       for (Schema.Field messageField : messageRecord.getSchema().getFields()) {
         String fieldName = messageField.getName();
         builder.set(fieldName, messageRecord.get(fieldName));
@@ -165,7 +165,6 @@ public class FileStreamingSource extends ReferenceStreamingSource<StructuredReco
     private String format;
 
     @Description("The schema of the source files.")
-    @Nullable
     private String schema;
 
     @Macro
@@ -197,9 +196,7 @@ public class FileStreamingSource extends ReferenceStreamingSource<StructuredReco
         throw new IllegalArgumentException(
           String.format("Invalid format '%s'. Must be one of %s", format, Joiner.on(',').join(FORMATS)));
       }
-      if (schema != null) {
-        getSchema();
-      }
+      getSchema();
     }
 
     private Schema getSchema() {
