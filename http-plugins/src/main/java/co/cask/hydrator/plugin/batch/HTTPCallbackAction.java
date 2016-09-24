@@ -25,7 +25,7 @@ import co.cask.cdap.etl.api.batch.BatchActionContext;
 import co.cask.cdap.etl.api.batch.PostAction;
 import co.cask.hydrator.common.batch.action.Condition;
 import co.cask.hydrator.common.batch.action.ConditionConfig;
-import co.cask.hydrator.plugin.config.HTTPConfig;
+import co.cask.hydrator.common.http.HTTPConfig;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
@@ -143,10 +143,6 @@ public class HTTPCallbackAction extends PostAction {
       super();
       numRetries = 0;
       runCondition = Condition.COMPLETION.name();
-    }
-
-    public HttpRequestConf(String url) {
-      super(url);
     }
 
     @SuppressWarnings("ConstantConditions")
