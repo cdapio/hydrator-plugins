@@ -157,6 +157,12 @@ public class ETLBatchTestBase extends HydratorTestBase {
     return false;
   }
 
+  protected void cleanPartitions(TimePartitionedFileSet fileSet) throws IOException {
+    for (Location dayLoc : fileSet.getEmbeddedFileSet().getBaseLocation().list()) {
+      dayLoc.delete();
+    }
+  }
+
   protected List<GenericRecord> readOutput(TimePartitionedFileSet fileSet, Schema schema) throws IOException {
     List<GenericRecord> records = Lists.newArrayList();
     for (Location dayLoc : fileSet.getEmbeddedFileSet().getBaseLocation().list()) {

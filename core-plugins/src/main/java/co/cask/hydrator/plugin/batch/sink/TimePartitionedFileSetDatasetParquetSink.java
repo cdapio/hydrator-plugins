@@ -111,5 +111,4 @@ public class TimePartitionedFileSetDatasetParquetSink extends
       this.compressionCodec = compressionCodec;
     }
   }
-
 }

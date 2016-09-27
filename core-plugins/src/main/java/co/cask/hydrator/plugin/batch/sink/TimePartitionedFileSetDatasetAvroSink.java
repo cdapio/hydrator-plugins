@@ -110,5 +110,4 @@ public class TimePartitionedFileSetDatasetAvroSink extends
       this.compressionCodec = compressionCodec;
     }
   }
-
 }
