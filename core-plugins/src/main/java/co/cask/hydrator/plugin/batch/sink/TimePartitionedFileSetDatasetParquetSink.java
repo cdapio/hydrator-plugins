@@ -29,6 +29,7 @@ import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.hydrator.plugin.common.FileSetUtil;
 import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
 import org.apache.avro.generic.GenericRecord;
+import parquet.hadoop.metadata.CompressionCodecName;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -56,6 +57,21 @@ public class TimePartitionedFileSetDatasetParquetSink extends
   @Override
   protected void addFileSetProperties(FileSetProperties.Builder properties) {
     FileSetUtil.configureParquetFileSet(config.schema, properties);
+    if (config.compressionCodec != null && !config.compressionCodec.equals("None")) {
+      switch (config.compressionCodec) {
+        case "Snappy":
+          properties.setOutputProperty("parquet.compression", "SNAPPY");
+          break;
+        case "GZip":
+          properties.setOutputProperty("parquet.compression", "GZIP");
+          break;
+        case "LZO":
+          properties.setOutputProperty("parquet.compression", "LZO");
+          break;
+        default:
+          throw new IllegalArgumentException("Unsupported compression codec " + config.compressionCodec);
+      }
+    }
   }
 
   @Override
@@ -85,10 +101,15 @@ public class TimePartitionedFileSetDatasetParquetSink extends
     @Description(SCHEMA_DESC)
     private String schema;
 
+    @Nullable
+    @Description("Used to specify the compression codec to be used for the final dataset.")
+    private String compressionCodec;
+
     public TPFSParquetSinkConfig(String name, String schema, @Nullable String basePath, @Nullable String pathFormat,
-                                 @Nullable String timeZone) {
+                                 @Nullable String timeZone, @Nullable String compressionCodec) {
       super(name, basePath, pathFormat, timeZone);
       this.schema = schema;
+      this.compressionCodec = compressionCodec;
     }
   }
 

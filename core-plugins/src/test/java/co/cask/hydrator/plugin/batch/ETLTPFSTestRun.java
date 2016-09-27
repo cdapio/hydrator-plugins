@@ -404,6 +404,77 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     Assert.assertEquals(Long.MAX_VALUE, newRecords.get(0).get("l"));
   }
 
+  @Test
+  public void testParquetSnappy() throws Exception {
+    Schema recordSchema = Schema.recordOf("record",
+                                          Schema.Field.of("i", Schema.of(Schema.Type.INT)),
+                                          Schema.Field.of("l", Schema.of(Schema.Type.LONG))
+    );
+
+    ETLPlugin sourceConfig = new ETLPlugin("TPFSParquet",
+                                           BatchSource.PLUGIN_TYPE,
+                                           ImmutableMap.of(
+                                             "schema", recordSchema.toString(),
+                                             "name", "inputParquetSnappy",
+                                             "delay", "0d",
+                                             "duration", "1h"),
+                                           null);
+    ETLPlugin sinkConfig = new ETLPlugin("TPFSParquet",
+                                         BatchSink.PLUGIN_TYPE,
+                                         ImmutableMap.of(
+                                           "schema", recordSchema.toString(),
+                                           "name", "outputParquetSnappy",
+                                           "compressionCodec", "Snappy"),
+                                         null);
+
+    ETLStage source = new ETLStage("source", sourceConfig);
+    ETLStage sink = new ETLStage("sink", sinkConfig);
+
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "parquetTest");
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+
+    // write input to read
+    org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(recordSchema.toString());
+    GenericRecord record = new GenericRecordBuilder(avroSchema)
+      .set("i", Integer.MAX_VALUE)
+      .set("l", Long.MAX_VALUE)
+      .build();
+    DataSetManager<TimePartitionedFileSet> inputManager = getDataset("inputParquetSnappy");
+
+    long timeInMillis = System.currentTimeMillis();
+    inputManager.get().addPartition(timeInMillis, "directory");
+    inputManager.flush();
+    Location location = inputManager.get().getPartitionByTime(timeInMillis).getLocation();
+    location = location.append("file.parquet");
+    ParquetWriter<GenericRecord> parquetWriter =
+      new AvroParquetWriter<>(new Path(location.toURI()), avroSchema);
+    parquetWriter.write(record);
+    parquetWriter.close();
+    inputManager.flush();
+
+    // run the pipeline
+    WorkflowManager workflowManager = appManager.getWorkflowManager(ETLWorkflow.NAME);
+    // add a minute to the end time to make sure the newly added partition is included in the run.
+    workflowManager.start(ImmutableMap.of("logical.start.time", String.valueOf(timeInMillis + 60 * 1000)));
+    workflowManager.waitForFinish(4, TimeUnit.MINUTES);
+
+    DataSetManager<TimePartitionedFileSet> outputManager = getDataset("outputParquetSnappy");
+    TimePartitionedFileSet newFileSet = outputManager.get();
+    Assert.assertTrue(checkFileType(newFileSet, ".snappy.parquet"));
+
+    List<GenericRecord> newRecords = readOutput(newFileSet, recordSchema);
+    Assert.assertEquals(1, newRecords.size());
+    Assert.assertEquals(Integer.MAX_VALUE, newRecords.get(0).get("i"));
+    Assert.assertEquals(Long.MAX_VALUE, newRecords.get(0).get("l"));
+  }
+
   private ETLBatchConfig constructTPFSETLConfig(String filesetName, String newFilesetName, Schema eventSchema) {
     ETLStage source = new ETLStage(
       "source",

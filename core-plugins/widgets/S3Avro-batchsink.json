@@ -32,6 +32,19 @@
           "name": "pathFormat"
         },
         {
+          "widget-type": "select",
+          "label": "Compression Codec",
+          "name": "compressionCodec",
+          "widget-attributes": {
+            "values": [
+              "None",
+              "Snappy",
+              "Deflate"
+            ],
+            "default": "None"
+          }
+        },
+        {
           "widget-type": "json-editor",
           "label": "File System Properties",
           "name": "fileSystemProperties"

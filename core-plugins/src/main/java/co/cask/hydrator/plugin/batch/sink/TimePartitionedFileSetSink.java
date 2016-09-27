@@ -67,23 +67,22 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
   @Override
   public void prepareRun(BatchSinkContext context) throws DatasetManagementException {
     tpfsSinkConfig.validate();
-
     // if macros were provided and the dataset doesn't exist, create it now
     if (!context.datasetExists(tpfsSinkConfig.name)) {
       String tpfsName = tpfsSinkConfig.name;
       FileSetProperties.Builder properties = FileSetProperties.builder();
+
       if (!Strings.isNullOrEmpty(tpfsSinkConfig.basePath)) {
         properties.setBasePath(tpfsSinkConfig.basePath);
       }
       addFileSetProperties(properties);
       context.createDataset(tpfsName, TimePartitionedFileSet.class.getName(), properties.build());
     }
-
-    Map<String, String> sinkArgs = getAdditionalTPFSArguments();
     long outputPartitionTime = context.getLogicalStartTime();
     if (tpfsSinkConfig.partitionOffset != null) {
       outputPartitionTime -= TimeParser.parseDuration(tpfsSinkConfig.partitionOffset);
     }
+    Map<String, String> sinkArgs = getAdditionalTPFSArguments();
     LOG.info("Writing to output partition of time {}.", outputPartitionTime);
     TimePartitionedFileSetArguments.setOutputPartitionTime(sinkArgs, outputPartitionTime);
     if (!Strings.isNullOrEmpty(tpfsSinkConfig.filePathFormat)) {
