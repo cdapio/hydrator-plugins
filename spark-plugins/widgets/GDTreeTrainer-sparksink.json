@@ -1,0 +1,58 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "GD-Tree Trainer Properties",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "FileSet Name",
+          "name": "fileSetName"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Path",
+          "name": "path"
+        },
+        {
+          "widget-type": "csv",
+          "label": "Feature Fields to Include",
+          "name": "featuresToInclude"
+        },
+        {
+          "widget-type": "csv",
+          "label": "Feature Fields to Exclude",
+          "name": "featuresToExclude"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Label Field",
+          "name": "labelField"
+        },
+        {
+          "widget-type": "keyvalue",
+          "label": "Cardinality Mapping",
+          "name": "cardinalityMapping"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Maximum Depth of Tree",
+          "name": "maxDepth"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Number of Classes",
+          "name": "numClasses"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Maximum Number of Iteration",
+          "name": "maxIteration"
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}
