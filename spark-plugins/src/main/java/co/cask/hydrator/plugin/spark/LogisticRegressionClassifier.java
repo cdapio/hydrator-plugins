@@ -64,9 +64,9 @@ public class LogisticRegressionClassifier extends SparkCompute<StructuredRecord,
    */
   public static class Config extends MLPredictorConfig {
     @Nullable
-    @Description("The number of features to use in training the model. It must be of type integer and equal to the" +
-                  " number of features used in LogisticRegressionTrainer. The default value if none is provided " +
-                  " will be 100.")
+    @Description("The number of features to use in training the model. It must be of type integer and equal to the " +
+                  "number of features used in LogisticRegressionTrainer. The default value if none is provided " +
+                  "will be 100.")
     private Integer numFeatures;
 
     public Config() {
@@ -87,8 +87,8 @@ public class LogisticRegressionClassifier extends SparkCompute<StructuredRecord,
     Schema inputSchema = stageConfigurer.getInputSchema();
 
     Preconditions.checkArgument(inputSchema != null, "Input Schema must be a known constant.");
-    config.validateConfigParameters(inputSchema, config.featureFieldsToInclude, config.featureFieldsToExclude,
-                                    config.predictionField, null);
+    config.validate(inputSchema, config.featureFieldsToInclude, config.featureFieldsToExclude,
+                    config.predictionField, null);
 
     outputSchema = SparkUtils.getOutputSchema(inputSchema, config.predictionField);
     stageConfigurer.setOutputSchema(outputSchema);
@@ -99,8 +99,8 @@ public class LogisticRegressionClassifier extends SparkCompute<StructuredRecord,
     FileSet fileSet = context.getDataset(config.fileSetName);
     Location modelLocation = fileSet.getBaseLocation().append(config.path);
     if (!modelLocation.exists()) {
-      throw new IllegalArgumentException("Failed to find model to use for classification." +
-                                           " Location does not exist: " + modelLocation, null);
+      throw new IllegalArgumentException("Failed to find model to use for classification. " +
+                                           "Location does not exist: " + modelLocation, null);
     }
 
     // load the model from a file in the model fileset

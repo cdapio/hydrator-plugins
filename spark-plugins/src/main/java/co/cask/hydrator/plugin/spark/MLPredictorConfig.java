@@ -19,15 +19,7 @@ package co.cask.hydrator.plugin.spark;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.plugin.PluginConfig;
-import com.google.common.base.Splitter;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import joptsimple.internal.Strings;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
@@ -58,7 +50,7 @@ public class MLPredictorConfig extends PluginConfig {
   }
 
   public MLPredictorConfig(String fileSetName, String path, @Nullable String featureFieldsToInclude,
-                         @Nullable String featureFieldsToExclude, String predictionField) {
+                           @Nullable String featureFieldsToExclude, String predictionField) {
     this.fileSetName = fileSetName;
     this.path = path;
     this.featureFieldsToInclude = featureFieldsToInclude;
@@ -74,102 +66,11 @@ public class MLPredictorConfig extends PluginConfig {
    * @param featuresToExclude features to be excluded when training.
    * @param predictionField   field containing the label values.
    */
-  public static void validateConfigParameters(Schema inputSchema, @Nullable String featuresToInclude,
+  public static void validate(Schema inputSchema, @Nullable String featuresToInclude,
                                               @Nullable String featuresToExclude, String predictionField,
                                               @Nullable String cardinalityMapping) {
-    if (!Strings.isNullOrEmpty(featuresToExclude) && !Strings.isNullOrEmpty(featuresToInclude)) {
-      throw new IllegalArgumentException("Cannot specify values for both featuresToInclude and featuresToExclude. " +
-                                           "Please specify fields for one.");
-    }
 
-    Schema.Field prediction = inputSchema.getField(predictionField);
-    if (prediction != null) {
-      throw new IllegalArgumentException(String.format("Prediction field %s should not be present in the input schema.",
-                                                       predictionField));
-    }
-
-    getCategoricalFeatureInfo(inputSchema, featuresToInclude, featuresToExclude, predictionField, cardinalityMapping);
-  }
-
-  /**
-   * Get the feature list of the features that have to be used for training/prediction depending on the
-   * featuresToInclude or featuresToInclude list.
-   *
-   * @param inputSchema       schema of the received record.
-   * @param featuresToInclude features to be used for training/prediction.
-   * @param featuresToExclude features to be excluded when training/predicting.
-   * @param predictionField   field containing the label values.
-   * @return feature list to be used for training/prediction.
-   */
-  static Map<String, Integer> getFeatureList(Schema inputSchema, @Nullable String featuresToInclude,
-                                             @Nullable String featuresToExclude, String predictionField) {
-    if (!Strings.isNullOrEmpty(featuresToExclude) && !Strings.isNullOrEmpty(featuresToInclude)) {
-      throw new IllegalArgumentException("Cannot specify values for both featuresToInclude and featuresToExclude. " +
-                                           "Please specify fields for one.");
-    }
-    Map<String, Integer> fields = new HashMap<>();
-    if (!Strings.isNullOrEmpty(featuresToInclude)) {
-      Iterable<String> tokens = Splitter.on(',').trimResults().split(featuresToInclude);
-      String[] features = Iterables.toArray(tokens, String.class);
-      for (int i = 0; i < features.length; i++) {
-        String field = features[i];
-        Schema.Field inputField = inputSchema.getField(field);
-        if (!field.equals(predictionField) && inputField != null) {
-          fields.put(field, i);
-        }
-      }
-      return fields;
-    }
-
-    Set<String> excludeFeatures = new HashSet<>();
-    if (!Strings.isNullOrEmpty(featuresToExclude)) {
-      excludeFeatures.addAll(Lists.newArrayList(Splitter.on(',').trimResults().split(featuresToExclude)));
-    }
-    Object[] inputSchemaFields = inputSchema.getFields().toArray();
-    for (int i = 0; i < inputSchemaFields.length; i++) {
-      String field = ((Schema.Field) inputSchemaFields[i]).getName();
-      if (!field.equals(predictionField) && !excludeFeatures.contains(field)) {
-        fields.put(field, i);
-      }
-    }
-    return fields;
-  }
-
-  /**
-   * Get the feature to cardinality mapping provided by the user.
-   *
-   * @param inputSchema        schema of the received record.
-   * @param featuresToInclude  features to be used for training/prediction.
-   * @param featuresToExclude  features to be excluded when training/predicting.
-   * @param predictionField         field containing the prediction values.
-   * @param cardinalityMapping feature to cardinality mapping specified for categorical features.
-   */
-  static void getCategoricalFeatureInfo(Schema inputSchema,
-                                        @Nullable String featuresToInclude,
-                                        @Nullable String featuresToExclude,
-                                        String predictionField,
-                                        @Nullable String cardinalityMapping) {
-    getFeatureList(inputSchema, featuresToInclude, featuresToExclude, predictionField);
-
-    if (!Strings.isNullOrEmpty(cardinalityMapping)) {
-      try {
-        Map<String, String> map = Splitter.on(',').trimResults().withKeyValueSeparator(":").split(cardinalityMapping);
-        for (Map.Entry<String, String> field : map.entrySet()) {
-          if (!Strings.isNullOrEmpty(field.getValue())) {
-            try {
-              Integer.parseInt(field.getValue());
-            } catch (NumberFormatException e) {
-              throw new IllegalArgumentException(
-                String.format("Invalid cardinality %s. Please specify valid integer for cardinality.",
-                              field.getValue()));
-            }
-          }
-        }
-      } catch (IllegalArgumentException e) {
-        throw new IllegalArgumentException(
-          String.format("Invalid categorical feature mapping. %s. Please make sure it is in the format " +
-                          "'feature':'cardinality'.", e.getMessage()), e);
-      }
-    }
+    SparkUtils.validateConfigParameters(inputSchema, featuresToInclude, featuresToExclude, predictionField,
+                                        cardinalityMapping);
   }
 }

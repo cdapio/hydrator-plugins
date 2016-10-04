@@ -59,9 +59,9 @@ public class LogisticRegressionTrainer extends SparkSink<StructuredRecord> {
   public static class Config extends MLTrainerConfig {
 
     @Nullable
-    @Description("The number of features to use in training the model. It must be of type integer and equal to the" +
-      " number of features used in LogisticRegressionClassifier. The default value if none is provided will be" +
-      " 100.")
+    @Description("The number of features to use in training the model. It must be of type integer and equal to the " +
+      "number of features used in LogisticRegressionClassifier. The default value if none is provided will be " +
+      "100.")
     private final Integer numFeatures;
 
     @Nullable
@@ -89,8 +89,7 @@ public class LogisticRegressionTrainer extends SparkSink<StructuredRecord> {
 
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
     Preconditions.checkArgument(inputSchema != null, "Input Schema must be a known constant.");
-    config.validateConfigParameters(inputSchema, config.featureFieldsToInclude, config.featureFieldsToExclude,
-                                    config.labelField, null);
+    config.validate(inputSchema, config.featureFieldsToInclude, config.featureFieldsToExclude, config.labelField, null);
   }
 
   @Override
@@ -129,7 +128,7 @@ public class LogisticRegressionTrainer extends SparkSink<StructuredRecord> {
         .setNumClasses(config.numClasses)
         .run(trainingData.rdd());
 
-      // save the model to a file in the output FileSet
+      // save the model to a file   in the output FileSet
       JavaSparkContext sparkContext = context.getSparkContext();
       FileSet outputFS = context.getDataset(config.fileSetName);
       model.save(JavaSparkContext.toSparkContext(sparkContext),
