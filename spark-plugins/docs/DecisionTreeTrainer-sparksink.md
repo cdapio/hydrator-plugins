@@ -45,10 +45,10 @@ from the input record as features and ``delayed`` field as the label to train th
         "type": "sparksink",
         "properties": {
             "fileSetName": "decision-tree-model",
-        		"path": "decisionTree",
-        		"featuresToInclude": "dofM,dofW,scheduleDepTime,scheduledArrTime,carrier,elapsedTime,originId,destId",
-        		"labelField": "delayed",
-        		"maxDepth": "9",
-        		"maxBins": "100"
+            "path": "decisionTree",
+            "featuresToInclude": "dofM,dofW,scheduleDepTime,scheduledArrTime,carrier,elapsedTime,originId,destId",
+            "labelField": "delayed",
+            "maxDepth": "9",
+            "maxBins": "100"
         }
     }

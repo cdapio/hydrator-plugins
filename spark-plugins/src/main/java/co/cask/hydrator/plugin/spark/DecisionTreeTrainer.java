@@ -67,7 +67,7 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
   public void run(final SparkExecutionPluginContext context, final JavaRDD<StructuredRecord> input) throws Exception {
 
     if (input == null) {
-      throw new IllegalArgumentException("Input java rdd is null");
+      return;
     }
     Schema schema = input.first().getSchema();
     //categoricalFeaturesInfo : Specifies which features are categorical and how many categorical values each of those
@@ -110,7 +110,6 @@ public class DecisionTreeTrainer extends SparkSink<StructuredRecord> {
     FileSet outputFS = context.getDataset(config.fileSetName);
     model.save(JavaSparkContext.toSparkContext(sparkContext),
                outputFS.getBaseLocation().append(config.path).toURI().getPath());
-
   }
 
   @Override

@@ -72,7 +72,7 @@ public class DecisionTreePredictor extends SparkCompute<StructuredRecord, Struct
     Location modelLocation = fileSet.getBaseLocation().append(config.path);
     if (!modelLocation.exists()) {
       throw new IllegalArgumentException(String.format("Failed to find model to use for Regression. Location does " +
-                                                         "not exist: {}.", modelLocation));
+                                                         "not exist: %s.", modelLocation));
     }
     JavaSparkContext javaSparkContext = context.getSparkContext();
     SparkContext sparkContext = JavaSparkContext.toSparkContext(javaSparkContext);
@@ -84,7 +84,7 @@ public class DecisionTreePredictor extends SparkCompute<StructuredRecord, Struct
   public JavaRDD<StructuredRecord> transform(SparkExecutionPluginContext context,
                                              JavaRDD<StructuredRecord> input) throws Exception {
     if (input == null) {
-      throw new IllegalArgumentException("Input JavaRDD is null.");
+      return context.getSparkContext().emptyRDD();
     }
     Schema schema = input.first().getSchema();
     outputSchema = (outputSchema != null) ? outputSchema : SparkUtils.getOutputSchema(schema, config.predictionField);
