@@ -75,7 +75,6 @@ public class KafkaPipelineTest extends HydratorTestBase {
   private static KafkaClientService kafkaClient;
   private static InMemoryZKServer zkServer;
   private static EmbeddedKafkaServer kafkaServer;
-  private static int kafkaPort;
 
   @BeforeClass
   public static void setupTests() throws Exception {
@@ -89,7 +88,7 @@ public class KafkaPipelineTest extends HydratorTestBase {
     zkServer = InMemoryZKServer.builder().setDataDir(TMP_FOLDER.newFolder()).build();
     zkServer.startAndWait();
 
-    kafkaPort = Networks.getRandomPort();
+    int kafkaPort = Networks.getRandomPort();
     kafkaServer = new EmbeddedKafkaServer(generateKafkaConfig(zkServer.getConnectionStr(),
                                                               kafkaPort, TMP_FOLDER.newFolder()));
     kafkaServer.startAndWait();
@@ -105,6 +104,7 @@ public class KafkaPipelineTest extends HydratorTestBase {
   public static void cleanup() {
     kafkaClient.stopAndWait();
     kafkaServer.stopAndWait();
+    zkClient.stopAndWait();
     zkServer.stopAndWait();
   }
 

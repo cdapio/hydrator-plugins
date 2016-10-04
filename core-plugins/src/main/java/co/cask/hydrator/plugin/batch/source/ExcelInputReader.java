@@ -201,7 +201,7 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
 
       emitter.emit(builder.build());
 
-      if (ifEndRow.equalsIgnoreCase(END)) {
+      if (ifEndRow.equalsIgnoreCase(END) && !Strings.isNullOrEmpty(excelInputreaderConfig.memoryTableName)) {
         KeyValueTable processedFileMemoryTable = batchRuntimeContext.getDataset(excelInputreaderConfig.memoryTableName);
         processedFileMemoryTable.write(Bytes.toBytes(fileName), Bytes.toBytes(new Date().getTime()));
       }
@@ -236,7 +236,11 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
       KeyValueTable table = batchSourceContext.getDataset(excelInputreaderConfig.memoryTableName);
       processedFiles = new ArrayList<>();
       Calendar cal = Calendar.getInstance();
-      cal.add(Calendar.DATE, -Integer.valueOf(excelInputreaderConfig.tableExpiryPeriod));
+      int expiryDays = 30;
+      if (!Strings.isNullOrEmpty(excelInputreaderConfig.tableExpiryPeriod)) {
+        expiryDays = Integer.valueOf(excelInputreaderConfig.tableExpiryPeriod);
+      }
+      cal.add(Calendar.DATE, -expiryDays);
       Date expiryDate = cal.getTime();
       try (CloseableIterator<KeyValue<byte[], byte[]>> filesIterable = table.scan(null, null)) {
         while (filesIterable.hasNext()) {
@@ -279,7 +283,10 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
 
     Job job = JobUtils.createInstance();
 
-    String processFiles = GSON.toJson(getAllProcessedFiles(batchSourceContext), ARRAYLIST_PREPROCESSED_FILES);
+    String processFiles = "";
+    if (!Strings.isNullOrEmpty(excelInputreaderConfig.memoryTableName)) {
+      processFiles = GSON.toJson(getAllProcessedFiles(batchSourceContext), ARRAYLIST_PREPROCESSED_FILES);
+    }
 
     ExcelInputFormat.setConfigurations(job, excelInputreaderConfig.filePattern, excelInputreaderConfig.sheet,
                                        excelInputreaderConfig.reprocess, excelInputreaderConfig.sheetValue,
@@ -319,7 +326,8 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
                                              "dataset for 'On Error' input.");
       }
 
-      if (!excelInputreaderConfig.containsMacro("memoryTableName")) {
+      if (!excelInputreaderConfig.containsMacro("memoryTableName") &&
+        !Strings.isNullOrEmpty(excelInputreaderConfig.memoryTableName)) {
         if (pipelineConfigurer != null) {
           pipelineConfigurer.createDataset(excelInputreaderConfig.memoryTableName, KeyValueTable.class);
         } else if (context != null && !context.datasetExists(excelInputreaderConfig.memoryTableName)) {
@@ -394,15 +402,15 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
     @Macro
     private String filePattern;
 
+    @Nullable
     @Name("memoryTableName")
     @Description("KeyValue table name to keep the track of processed files. This can be a new table or existing one;" +
       " for example: 'inventory-memory-table'")
-    @Macro
     private String memoryTableName;
 
+    @Nullable
     @Description("Expiry period (days) for data in the table. Default is 30 days." +
       "Example - For tableExpiryPeriod = 30, data before 30 days get deleted from the table.")
-    @Macro
     private String tableExpiryPeriod;
 
     @Name("reprocess")
@@ -419,7 +427,8 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
 
     @Name("sheetValue")
     @Description("Specifies the value corresponding to 'sheet' input. Can be either sheet name or sheet no; " +
-      "for example: 'Sheet1' or '1' in case user selects 'Sheet Name' or 'Sheet Number' as 'sheet' input respectively.")
+      "for example: 'Sheet1' or '0' in case user selects 'Sheet Name' or 'Sheet Number' as 'sheet' input " +
+      "respectively. Sheet number starts with 0.")
     @Macro
     private String sheetValue;
 
@@ -478,6 +487,11 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
     public void validate() {
       if (!containsMacro("sheetValue") && sheet.equalsIgnoreCase(SHEET_NO) && !StringUtils.isNumeric(sheetValue)) {
         throw new IllegalArgumentException("Invalid sheet number. The value should be greater than or equals to zero.");
+      }
+
+      if (!(Strings.isNullOrEmpty(tableExpiryPeriod)) && (Strings.isNullOrEmpty(memoryTableName))) {
+        throw new IllegalArgumentException("Value for Table Expiry period is valid only when file tracking table " +
+                                             "is specified. Please specify file tracking table name.");
       }
     }
   }
