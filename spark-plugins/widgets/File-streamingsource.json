@@ -1,0 +1,77 @@
+{
+  "metadata": {
+    "spec-version": "1.3"
+  },
+  "configuration-groups": [
+    {
+      "label": "File Configuration",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Reference Name",
+          "name": "referenceName"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "File Path",
+          "name": "path"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Ignore Threshold",
+          "name": "ignoreThreshold"
+        },
+        {
+          "widget-type": "csv",
+          "label": "Extension Whitelist",
+          "name": "extensions",
+          "widget-attributes": {
+            "delimiter": ",",
+            "value-placeholder": "Extension"
+          }
+        }
+      ]
+    },
+    {
+      "label": "Format",
+      "properties": [
+        {
+          "widget-type": "select",
+          "label": "Format",
+          "name": "format",
+          "widget-attributes": {
+            "values": [
+              "clf",
+              "csv",
+              "grok",
+              "syslog",
+              "text",
+              "tsv"
+            ],
+            "default": "text"
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "default-schema": {
+          "name": "etlSchemaBody",
+          "type": "record",
+          "fields": [
+            {
+              "name": "body",
+              "type": "string"
+            }
+          ]
+        },
+        "schema-default-type": "string",
+        "property-watch": "format"
+      }
+    }
+  ]
+}

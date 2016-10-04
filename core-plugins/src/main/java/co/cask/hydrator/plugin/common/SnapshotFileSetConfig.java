@@ -48,6 +48,10 @@ public abstract class SnapshotFileSetConfig extends PluginConfig {
   @Macro
   protected String fileProperties;
 
+  public SnapshotFileSetConfig() {
+
+  }
+
   public SnapshotFileSetConfig(String name, @Nullable String basePath, @Nullable String fileProperties) {
     this.name = name;
     this.basePath = basePath;

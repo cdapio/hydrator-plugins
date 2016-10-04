@@ -24,7 +24,7 @@ import co.cask.cdap.test.TestBase;
 import co.cask.http.AbstractHttpHandler;
 import co.cask.http.HttpResponder;
 import co.cask.http.NettyHttpService;
-import co.cask.hydrator.plugin.realtime.config.HTTPPollConfig;
+import co.cask.hydrator.common.http.HTTPPollConfig;
 import com.google.common.collect.ImmutableList;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;

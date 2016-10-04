@@ -134,6 +134,10 @@ public abstract class SnapshotFileBatchSink<KEY_OUT, VAL_OUT> extends BatchSink<
     @Macro
     protected String cleanPartitionsOlderThan;
 
+    public SnapshotFileSetBatchSinkConfig() {
+
+    }
+
     public SnapshotFileSetBatchSinkConfig(String name, @Nullable String basePath,
                                           @Nullable String cleanPartitionsOlderThan) {
       super(name, basePath, null);
