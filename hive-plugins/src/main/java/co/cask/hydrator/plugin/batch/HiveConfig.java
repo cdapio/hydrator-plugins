@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.hydrator.common.ReferencePluginConfig;
 
@@ -27,16 +28,19 @@ import javax.annotation.Nullable;
  */
 public class HiveConfig extends ReferencePluginConfig {
 
+  @Macro
   @Name(Hive.METASTORE_URI)
   @Description("The URI of Hive metastore in the following format: thrift://<hostname>:<port>. " +
     "Example: thrift://somehost.net:9083")
   public String metaStoreURI;
 
+  @Macro
   @Name(Hive.DB_NAME)
   @Description("The name of the database. Defaults to 'default'.")
   @Nullable
   public String dbName;
 
+  @Macro
   @Name(Hive.TABLE_NAME)
   @Description("The name of the table. This table must exist.")
   public String tableName;

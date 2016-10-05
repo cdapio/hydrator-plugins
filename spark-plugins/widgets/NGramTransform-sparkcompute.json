@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "NGramTransform Properties",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Field Used To Transform Input Features Into N-Grams",
+          "name": "fieldToBeTransformed"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "N-Gram Size",
+          "name": "ngramSize"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Transformed Field",
+          "name": "outputField"
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}

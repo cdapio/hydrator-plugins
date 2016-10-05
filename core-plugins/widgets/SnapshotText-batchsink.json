@@ -1,0 +1,44 @@
+{
+  "metadata": {
+    "spec-version": "1.3"
+  },
+  "configuration-groups": [
+    {
+      "label": "Snapshot Fileset - Text",
+      "properties": [
+        {
+          "widget-type": "dataset-selector",
+          "label": "Dataset Name",
+          "name": "name"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Snapshot Base Path",
+          "name": "basePath"
+        },
+        {
+          "widget-type": "json-editor",
+          "label": "FileSet Properties",
+          "name": "fileProperties"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Clean Partitions Older Than",
+          "name": "cleanPartitionsOlderThan"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Delimiter used to combine fields",
+          "name": "Delimiter"
+        }
+      ]
+    }
+  ],
+  "outputs": [
+  ],
+  "jump-config": {
+    "datasets": [{
+      "ref-property-name": "name"
+    }]
+  }
+}

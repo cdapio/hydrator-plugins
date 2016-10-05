@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.config;
+package co.cask.hydrator.common.http;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.plugin.PluginConfig;
@@ -52,10 +52,6 @@ public class HTTPConfig extends PluginConfig {
   private Integer connectTimeout;
 
   public HTTPConfig() {
-    this(null);
-  }
-
-  public HTTPConfig(String url) {
     this(null, null);
   }
 
