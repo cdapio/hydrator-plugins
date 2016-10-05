@@ -13,12 +13,12 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
-
 package co.cask.hydrator.plugin.spark.test;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+
+import java.util.Objects;
 
 public class Flight {
   private final Schema schema =
@@ -135,88 +135,32 @@ public class Flight {
     if (!(o instanceof Flight)) {
       return false;
     }
-
     Flight flight = (Flight) o;
 
-    if (dofM != flight.dofM) {
-      return false;
-    }
-    if (dofW != flight.dofW) {
-      return false;
-    }
-    if (flightNum != flight.flightNum) {
-      return false;
-    }
-    if (originId != flight.originId) {
-      return false;
-    }
-    if (destId != flight.destId) {
-      return false;
-    }
-    if (Double.compare(flight.scheduleDepTime, scheduleDepTime) != 0) {
-      return false;
-    }
-    if (distance != flight.distance) {
-      return false;
-    }
-    if (!carrier.equals(flight.carrier)) {
-      return false;
-    }
-    if (!tailNum.equals(flight.tailNum)) {
-      return false;
-    }
-    if (!origin.equals(flight.origin)) {
-      return false;
-    }
-    if (!dest.equals(flight.dest)) {
-      return false;
-    }
-    if (!deptime.equals(flight.deptime)) {
-      return false;
-    }
-    if (!depDelayMins.equals(flight.depDelayMins)) {
-      return false;
-    }
-    if (!scheduledArrTime.equals(flight.scheduledArrTime)) {
-      return false;
-    }
-    if (!arrTime.equals(flight.arrTime)) {
-      return false;
-    }
-    if (!arrDelay.equals(flight.arrDelay)) {
-      return false;
-    }
-    if (!elapsedTime.equals(flight.elapsedTime)) {
-      return false;
-    }
-    return delayed != null ? delayed.equals(flight.delayed) : flight.delayed == null;
-
+    return dofM == flight.dofM &&
+      dofW == flight.dofW &&
+      Objects.equals(carrier, flight.carrier) &&
+      Objects.equals(tailNum, flight.tailNum) &&
+      flightNum == flight.flightNum &&
+      originId == flight.originId &&
+      Objects.equals(origin, flight.origin) &&
+      destId == flight.destId &&
+      Objects.equals(dest, flight.dest) &&
+      scheduleDepTime == flight.scheduleDepTime &&
+      Objects.equals(deptime, flight.deptime) &&
+      Objects.equals(depDelayMins, flight.depDelayMins) &&
+      Objects.equals(scheduledArrTime, flight.scheduledArrTime) &&
+      Objects.equals(arrTime, flight.arrTime) &&
+      Objects.equals(arrDelay, flight.arrDelay) &&
+      Objects.equals(elapsedTime, flight.elapsedTime) &&
+      distance == flight.distance &&
+      Objects.equals(delayed, flight.delayed);
   }
 
   @Override
   public int hashCode() {
-    int result;
-    long temp;
-    result = dofM;
-    result = 31 * result + dofW;
-    result = 31 * result + carrier.hashCode();
-    result = 31 * result + tailNum.hashCode();
-    result = 31 * result + flightNum;
-    result = 31 * result + originId;
-    result = 31 * result + origin.hashCode();
-    result = 31 * result + destId;
-    result = 31 * result + dest.hashCode();
-    temp = Double.doubleToLongBits(scheduleDepTime);
-    result = 31 * result + (int) (temp ^ (temp >>> 32));
-    result = 31 * result + deptime.hashCode();
-    result = 31 * result + depDelayMins.hashCode();
-    result = 31 * result + scheduledArrTime.hashCode();
-    result = 31 * result + arrTime.hashCode();
-    result = 31 * result + arrDelay.hashCode();
-    result = 31 * result + elapsedTime.hashCode();
-    result = 31 * result + distance;
-    result = 31 * result + (delayed != null ? delayed.hashCode() : 0);
-    return result;
+    return Objects.hash(dofM, dofW, carrier, tailNum, flightNum, originId, origin, destId, dest, scheduleDepTime,
+                        deptime, depDelayMins, scheduledArrTime, arrTime, arrDelay, elapsedTime, distance, delayed);
   }
 
   public StructuredRecord toStructuredRecord() {

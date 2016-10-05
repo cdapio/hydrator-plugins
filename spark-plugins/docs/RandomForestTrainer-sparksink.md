@@ -53,12 +53,12 @@ from the input record as features and ``delayed`` field as the label to train th
         "properties": {
             "fileSetName": "random-forest-model",
             "path": "RandomForest",
-        	  "featuresToInclude": "dofM,dofW,scheduleDepTime,scheduledArrTime,carrier,elapsedTime,originId,destId",
-        	  "labelField": "delayed",
-        	  "maxDept": "9",
-        	  "maxBins": "100",
-        	  "numTrees": "5",
-        	  "featureSubsetStrategy": "auto",
+            "featuresToInclude": "dofM,dofW,scheduleDepTime,scheduledArrTime,carrier,elapsedTime,originId,destId",
+            "labelField": "delayed",
+            "maxDept": "9",
+            "maxBins": "100",
+            "numTrees": "5",
+            "featureSubsetStrategy": "auto",
             "seed": 12345
         }
     }

@@ -66,7 +66,7 @@ public class RandomForestTrainer extends SparkSink<StructuredRecord> {
   @Override
   public void run(SparkExecutionPluginContext context, final JavaRDD<StructuredRecord> input) throws Exception {
     if (input == null) {
-      throw new IllegalArgumentException("Input java rdd is null");
+      return;
     }
     Schema schema = input.first().getSchema();
     //categoricalFeaturesInfo : Specifies which features are categorical and how many categorical values each of those

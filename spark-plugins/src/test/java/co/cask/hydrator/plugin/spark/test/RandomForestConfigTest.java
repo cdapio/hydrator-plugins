@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package co.cask.hydrator.plugin.spark.test;
 
 import co.cask.cdap.api.data.schema.Schema;
@@ -48,7 +47,7 @@ public class RandomForestConfigTest {
     RandomForestTrainer.RandomForestTrainerConfig config =
       new RandomForestTrainer.RandomForestTrainerConfig("decision-tree-regression-model", "decisionTreeRegression",
                                                         "dofM,dofW,scheduleDepTime,scheduledArrTime,carrier," +
-                                                              "elapsedTime,originId,destId", null, null, "dealyed", 100,
+                                                          "elapsedTime,originId,destId", null, null, "dealyed", 100,
                                                         9, null, null, null);
     try {
       config.validate(schema);
@@ -62,7 +61,7 @@ public class RandomForestConfigTest {
     RandomForestTrainer.RandomForestTrainerConfig config =
       new RandomForestTrainer.RandomForestTrainerConfig("decision-tree-regression-model", "decisionTreeRegression",
                                                         "dofM,dofW,scheduleDepTime,scheduledArrTime,carrier," +
-                                                              "elapsedTime,originId,destinationId", null, null,
+                                                          "elapsedTime,originId,destinationId", null, null,
                                                         "delayed", 100, 9, null, null, null);
     try {
       config.validate(schema);
@@ -89,7 +88,7 @@ public class RandomForestConfigTest {
     RandomForestTrainer.RandomForestTrainerConfig config =
       new RandomForestTrainer.RandomForestTrainerConfig("decision-tree-regression-model", "decisionTreeRegression",
                                                         "dofM,dofW,scheduleDepTime,scheduledArrTime,carrier," +
-                                                              "elapsedTime,originId,destId", null, null, "tailNum", 100,
+                                                          "elapsedTime,originId,destId", null, null, "tailNum", 100,
                                                         9, null, null, null);
     try {
       config.validate(schema);
