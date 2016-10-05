@@ -19,7 +19,7 @@ package co.cask.hydrator.plugin.batch.joiner;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.plugin.PluginConfig;
-import co.cask.hydrator.plugin.common.KeyValueListParser;
+import co.cask.hydrator.common.KeyValueListParser;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;

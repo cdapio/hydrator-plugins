@@ -20,11 +20,31 @@
           }
         },
         {
+          "widget-type": "textbox",
+          "label": "Kafka Topic",
+          "name": "topic"
+        },
+        {
           "widget-type": "csv",
-          "label": "Kafka Topics",
-          "name": "topics",
+          "label": "Topic Partitions",
+          "name": "partitions",
           "widget-attributes": {
             "delimiter": ","
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Default Initial Offset",
+          "name": "defaultInitialOffset"
+        },
+        {
+          "widget-type": "keyvalue",
+          "label": "Initial Partition Offsets",
+          "name": "initialPartitionOffsets",
+          "widget-attributes": {
+            "showDelimiter": "false",
+            "key-placeholder": "Partition",
+            "value-placeholder": "Offset"
           }
         },
         {
@@ -36,6 +56,16 @@
           "widget-type": "textbox",
           "label": "Key Field",
           "name": "keyField"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Partition Field",
+          "name": "partitionField"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Offset Field",
+          "name": "offsetField"
         }
       ]
     },

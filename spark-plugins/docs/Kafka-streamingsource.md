@@ -18,9 +18,22 @@ Properties
 ----------
 **referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
 
-**brokers:** Comma-separated list of Kafka brokers specified in host1:port1,host2:port2 form. (Macro-enabled)
+**brokers:** List of Kafka brokers specified in host1:port1,host2:port2 form. (Macro-enabled)
 
-**topics:** Comma-separated list of Kafka topics to read from. (Macro-enabled)
+**topic:** The Kafka topic to read from. (Macro-enabled)
+
+**partitions:** List of topic partitions to read from. If not specified, all partitions will be read. (Macro-enabled)
+
+**defaultInitialOffset:** The default initial offset for all topic partitions.
+An offset of -2 means the smallest offset. An offset of -1 means the latest offset. Defaults to -1.
+Offsets are inclusive. If an offset of 5 is used, the message at offset 5 will be read.
+If you wish to set different initial offsets for different partitions, use the initialPartitionOffsets property.
+
+**initialPartitionOffsets:** The initial offset for each topic partition. If this is not specified,
+all partitions will use the same initial offset, which is determined by the defaultInitialOffset property.
+Any partitions specified in the partitions property, but not in this property will use the defaultInitialOffset.
+An offset of -2 means the smallest offset. An offset of -1 means the latest offset.
+Offsets are inclusive. If an offset of 5 is used, the message at offset 5 will be read.
 
 **schema:** Output schema of the source. If you would like the output records to contain a field with the
 Kafka message key, the schema must include a field of type bytes or nullable bytes, and you must set the
@@ -35,11 +48,19 @@ If no format is given, Kafka message payloads will be treated as bytes.
 
 **timeField:** Optional name of the field containing the read time of the batch.
 If this is not set, no time field will be added to output records.
-If set, this field must be present in the schema property.
+If set, this field must be present in the schema property and must be a long.
 
 **keyField:** Optional name of the field containing the message key.
 If this is not set, no key field will be added to output records.
-If set, this field must be present in the schema property.
+If set, this field must be present in the schema property and must be bytes.
+
+**partitionField:** Optional name of the field containing the partition the message was read from.
+If this is not set, no partition field will be added to output records.
+If set, this field must be present in the schema property and must be an int.
+
+**offsetField:** Optional name of the field containing the partition offset the message was read from.
+If this is not set, no offset field will be added to output records.
+If set, this field must be present in the schema property and must be a long.
 
 
 Example
