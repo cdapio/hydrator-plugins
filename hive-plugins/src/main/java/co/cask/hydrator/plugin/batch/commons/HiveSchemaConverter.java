@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015-2016 Cask Data, Inc.
+ * Copyright © 2015 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -18,7 +18,6 @@ package co.cask.hydrator.plugin.batch.commons;
 
 import co.cask.cdap.api.data.schema.Schema;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
@@ -58,15 +57,14 @@ public class HiveSchemaConverter {
         Preconditions.checkNotNull(hCatFieldSchema, "Missing field %s in table schema", name);
         PrimitiveTypeInfo hiveType = hCatFieldSchema.getTypeInfo();
         PrimitiveTypeInfo type = getType(name, field.getSchema());
-        if (hiveType.equals(type)) {
+        if (hiveType != type) {
           LOG.warn("The given schema {} for the field {} does not match the schema {} from the table. " +
-                     "The schema {} for field {} will be used.", type, name, hiveType, hiveType, name);
+                     "The schema {} for field {} be used.", type, name, hiveType, hiveType, name);
         }
         fields.add(hCatFieldSchema);
       } catch (HCatException e) {
         LOG.error("Failed to create HCatFieldSchema field {} of type {} from schema", name,
-                  field.getSchema().getType(), e);
-        Throwables.propagate(e);
+                  field.getSchema().getType());
       }
     }
     return new HCatSchema(fields);
