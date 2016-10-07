@@ -20,7 +20,6 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.plugin.spark.DecisionTreePredictor;
 import co.cask.hydrator.plugin.spark.DecisionTreeTrainer;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class DecisionTreeConfigTest {
@@ -72,8 +71,6 @@ public class DecisionTreeConfigTest {
   }
 
   @Test
-  @Ignore
-  // Ignoring this test temporarily. Enable this test once HYDRATOR-995 is fixed.
   public void testIncludeAllFeatures() throws Exception {
     DecisionTreeTrainer.DecisionTreeTrainerConfig config =
       new DecisionTreeTrainer.DecisionTreeTrainerConfig("decision-tree-regression-model", "decisionTreeRegression",
