@@ -25,9 +25,7 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.FileSet;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.SparkExecutionPluginContext;
-import co.cask.cdap.etl.api.batch.SparkPluginContext;
 import co.cask.cdap.etl.api.batch.SparkSink;
-import com.google.common.base.Preconditions;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
@@ -48,7 +46,7 @@ import javax.annotation.Nullable;
 @Plugin(type = SparkSink.PLUGIN_TYPE)
 @Name(LogisticRegressionTrainer.PLUGIN_NAME)
 @Description("Uses Logistic Regression to train a model based upon whether messages are spam or not.")
-public class LogisticRegressionTrainer extends SparkSink<StructuredRecord> {
+public class LogisticRegressionTrainer extends SparkMLTrainer {
   public static final String PLUGIN_NAME = "LogisticRegressionTrainer";
 
   private Config config;
@@ -56,7 +54,7 @@ public class LogisticRegressionTrainer extends SparkSink<StructuredRecord> {
   /**
    * Configuration for the LogisticRegressionTrainer.
    */
-  public static class Config extends MLTrainerConfig {
+  public class Config extends MLTrainerConfig {
 
     @Nullable
     @Description("The number of features to use in training the model. It must be of type integer and equal to the " +
@@ -85,16 +83,8 @@ public class LogisticRegressionTrainer extends SparkSink<StructuredRecord> {
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    pipelineConfigurer.createDataset(config.fileSetName, FileSet.class);
-
-    Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
-    Preconditions.checkArgument(inputSchema != null, "Input Schema must be a known constant.");
-    config.validate(inputSchema, config.featureFieldsToInclude, config.featureFieldsToExclude, config.labelField, null);
-  }
-
-  @Override
-  public void prepareRun(SparkPluginContext context) throws Exception {
-    // no-op; no need to do anything
+    configure(pipelineConfigurer, config.fileSetName, config.featureFieldsToInclude, config.featureFieldsToExclude,
+              config.labelField, null);
   }
 
   @Override
@@ -103,11 +93,9 @@ public class LogisticRegressionTrainer extends SparkSink<StructuredRecord> {
 
     if (!input.isEmpty()) {
       final Schema inputSchema = input.first().getSchema();
-
-      final Map<String, Integer> featuresList = SparkUtils.getFeatureList(inputSchema,
-                                                                          config.featureFieldsToInclude,
-                                                                          config.featureFieldsToExclude,
-                                                                          config.labelField);
+      final Map<String, Integer> featuresList = getFeatures(inputSchema, config.featureFieldsToInclude,
+                                                            config.featureFieldsToExclude,
+                                                            config.labelField);
 
       JavaRDD<LabeledPoint> trainingData = input.map(new Function<StructuredRecord, LabeledPoint>() {
         @Override
