@@ -16,8 +16,6 @@
 
 package co.cask.hydrator.common.batch;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -29,24 +27,12 @@ import java.io.IOException;
  */
 public final class JobUtils {
 
-  public static final String MAPR_FS_IMPLEMENTATION_KEY = "fs.maprfs.impl";
-
   /**
    * Creates a new instance of {@link Job}. Note that the job created is not meant for actual MR
    * submission. It's just for setting up configurations.
    */
   public static Job createInstance() throws IOException {
     Job job = Job.getInstance();
-    Configuration conf = job.getConfiguration();
-    // Remember the values of the default filesystem and implementation of the filesystem
-    // for MapR clusters. The values are used by FileInputFormat class while configuring the job.
-    String fsDefaultURI = conf.get(FileSystem.FS_DEFAULT_NAME_KEY);
-    String maprfsImplValue = conf.get(MAPR_FS_IMPLEMENTATION_KEY);
-    conf.clear();
-    conf.set(FileSystem.FS_DEFAULT_NAME_KEY, fsDefaultURI);
-    if (maprfsImplValue != null) {
-      conf.set(MAPR_FS_IMPLEMENTATION_KEY, maprfsImplValue);
-    }
 
     // some input formats require the credentials to be present in the job. We don't know for
     // sure which ones (HCatalog is one of them), so we simply always add them. This has no other
