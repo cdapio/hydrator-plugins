@@ -19,14 +19,12 @@ package co.cask.hydrator.plugin.batch.action;
 import ch.ethz.ssh2.Connection;
 import ch.ethz.ssh2.Session;
 import ch.ethz.ssh2.StreamGobbler;
-
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.PipelineConfigurer;
-
 import co.cask.cdap.etl.api.action.Action;
 import co.cask.cdap.etl.api.action.ActionContext;
 import com.google.common.annotations.VisibleForTesting;
@@ -116,9 +114,11 @@ public class SSHAction extends Action {
    */
   public static class SSHActionConfig extends PluginConfig {
     @Description("Command to be executed on the remote host, including file path of script and any arguments")
+    @Macro
     private String command;
 
     @Description("Host name of the remote machine where the command is to be executed")
+    @Macro
     private String host;
 
     @Nullable
