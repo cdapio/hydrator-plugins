@@ -28,10 +28,12 @@
 
   <modules>
     <module>hydrator-common</module>
-    <module>core-plugins</module>
     <module>cassandra-plugins</module>
+    <module>copybookreader-plugins</module>
+    <module>core-plugins</module>
     <module>database-plugins</module>
     <module>elasticsearch-plugins</module>
+    <module>googlecloud-plugins</module>
     <module>hbase-plugins</module>
     <module>hdfs-plugins</module>
     <module>hive-plugins</module>
@@ -40,7 +42,6 @@
     <module>mongodb-plugins</module>
     <module>spark-plugins</module>
     <module>transform-plugins</module>
-    <module>copybookreader-plugins</module>
   </modules>
 
   <licenses>

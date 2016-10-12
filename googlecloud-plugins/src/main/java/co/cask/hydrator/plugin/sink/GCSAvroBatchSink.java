@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.sink;
+package co.cask.hydrator.plugin.sink;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
@@ -27,33 +27,33 @@ import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.common.StructuredToAvroTransformer;
-import co.cask.hydrator.plugin.common.Properties;
-import com.google.common.collect.Maps;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.reflect.TypeToken;
+import com.google.gson.Gson;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapred.JobContext;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
-import java.text.SimpleDateFormat;
+import java.lang.reflect.Type;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
- * {@link S3AvroBatchSink} that stores data in avro format to S3.
+ * {@link GCSAvroBatchSink} that stores data in avro format to Google Cloud Storage.
  */
 @Plugin(type = BatchSink.PLUGIN_TYPE)
-@Name("S3Avro")
-@Description("Batch sink to write to Amazon S3 in Avro format.")
-public class S3AvroBatchSink extends S3BatchSink<AvroKey<GenericRecord>, NullWritable> {
+@Name("GCSAvro")
+@Description("Batch sink to write to Google Cloud Storage in Avro format.")
+public class GCSAvroBatchSink extends GCSBatchSink<AvroKey<GenericRecord>, NullWritable> {
 
+  private static final Gson GSON = new Gson();
+  private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
   private StructuredToAvroTransformer recordTransformer;
-  private final S3AvroSinkConfig config;
+  private final GCSAvroSinkConfig config;
 
-  private static final String SCHEMA_DESC = "The Avro schema of the record being written to the sink as a JSON " +
-    "object.";
-
-  public S3AvroBatchSink(S3AvroSinkConfig config) {
+  public GCSAvroBatchSink(GCSAvroSinkConfig config) {
     super(config);
     this.config = config;
   }
@@ -65,8 +65,9 @@ public class S3AvroBatchSink extends S3BatchSink<AvroKey<GenericRecord>, NullWri
   }
 
   @Override
-  protected OutputFormatProvider createOutputFormatProvider(BatchSinkContext context) {
-    return new S3AvroOutputFormatProvider(config, context);
+  protected OutputFormatProvider createOutputFormatProvider(BatchSinkContext context,
+                                                            String fileSystemProperties) {
+    return new GCSAvroOutputFormatProvider(config, fileSystemProperties);
   }
 
   @Override
@@ -76,23 +77,20 @@ public class S3AvroBatchSink extends S3BatchSink<AvroKey<GenericRecord>, NullWri
   }
 
   /**
-   * Configuration for the S3AvroSink.
+   * Configuration for the GCSAvroSink.
    */
-  public static class S3AvroSinkConfig extends S3BatchSinkConfig {
+  public static class GCSAvroSinkConfig extends GCSSinkConfig {
 
-    @Name(Properties.S3BatchSink.SCHEMA)
-    @Description(SCHEMA_DESC)
+    @Name("schema")
+    @Description("The Avro schema of the record being written to the sink as a JSON object.")
     private String schema;
 
-    @SuppressWarnings("unused")
-    public S3AvroSinkConfig() {
-      super();
-    }
-
-    @SuppressWarnings("unused")
-    public S3AvroSinkConfig(String referenceName, String basePath, String schema, String accessID, String accessKey,
-                            String pathFormat, String filesystemProperties) {
-      super(referenceName, basePath, accessID, accessKey, pathFormat, filesystemProperties);
+    @VisibleForTesting
+    public GCSAvroSinkConfig(String referenceName, String bucketKey, String schema, String projectId,
+                             String serviceKeyFile,
+                             String filesystemProperties, String path) {
+      super(referenceName, bucketKey, projectId, serviceKeyFile,
+            filesystemProperties, path);
       this.schema = schema;
     }
   }
@@ -100,21 +98,19 @@ public class S3AvroBatchSink extends S3BatchSink<AvroKey<GenericRecord>, NullWri
   /**
    * Output format provider that sets avro output format to be use in MapReduce.
    */
-  public static class S3AvroOutputFormatProvider implements OutputFormatProvider {
+  public static class GCSAvroOutputFormatProvider implements OutputFormatProvider {
 
     private final Map<String, String> conf;
 
-    public S3AvroOutputFormatProvider(S3AvroSinkConfig config, BatchSinkContext context) {
-      @SuppressWarnings("ConstantConditions")
-      SimpleDateFormat format = new SimpleDateFormat(config.pathFormat);
-
-      conf = Maps.newHashMap();
+    public GCSAvroOutputFormatProvider(GCSAvroSinkConfig config, String fileSystemProperties) {
+      conf = new HashMap<>();
       conf.put(JobContext.OUTPUT_KEY_CLASS, AvroKey.class.getName());
       conf.put("avro.schema.output.key", config.schema);
-      conf.put(FileOutputFormat.OUTDIR,
-               String.format("%s/%s", config.basePath, format.format(context.getLogicalStartTime())));
+      if (fileSystemProperties != null) {
+        Map<String, String> propertyMap = GSON.fromJson(fileSystemProperties, MAP_STRING_STRING_TYPE);
+        conf.putAll(propertyMap);
+      }
     }
-
     @Override
     public String getOutputFormatClassName() {
       return AvroKeyOutputFormat.class.getName();
@@ -125,4 +121,6 @@ public class S3AvroBatchSink extends S3BatchSink<AvroKey<GenericRecord>, NullWri
       return conf;
     }
   }
+
 }
+

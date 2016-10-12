@@ -1,0 +1,65 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "GCS Avro Batch Sink",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Reference Name",
+          "name": "referenceName"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Project ID",
+          "name": "projectId"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "JSON Key File Path",
+          "name": "jsonKeyFilePath"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "GCS Bucket",
+          "name": "bucketKey"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Target Bucket Directory",
+          "name": "bucketDir"
+        },
+        {
+          "widget-type": "keyvalue",
+          "label": "File System Properties",
+          "name": "fileSystemProperties"
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "boolean",
+          "int",
+          "long",
+          "float",
+          "double",
+          "bytes",
+          "string",
+          "map<string, string>",
+          "array<string>",
+          "record",
+          "union",
+          "enum"
+        ],
+        "schema-default-type": "string"
+      }
+    }
+  ]
+}

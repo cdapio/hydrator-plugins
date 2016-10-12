@@ -15,10 +15,9 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.common;
+package co.cask.hydrator.common;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.hydrator.common.RecordConverter;
 import com.google.common.collect.Maps;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
