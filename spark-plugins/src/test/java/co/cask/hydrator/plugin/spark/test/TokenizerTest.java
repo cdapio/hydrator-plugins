@@ -90,8 +90,8 @@ public class TokenizerTest extends HydratorTestBase {
                                                      Schema.Field.of(COLUMN_TOKENIZED, Schema.of(Schema.Type.STRING))
   );
   private static final Schema SOURCE_SCHEMA_MULTIPLE = Schema.recordOf("sourceRecord",
-                                                      Schema.Field.of(NAME_COLUMN, Schema.of(Schema.Type.STRING)),
-                                                      Schema.Field.of(COLUMN_TOKENIZED, Schema.of(Schema.Type.STRING))
+                                                       Schema.Field.of(NAME_COLUMN, Schema.of(Schema.Type.STRING)),
+                                                       Schema.Field.of(COLUMN_TOKENIZED, Schema.of(Schema.Type.STRING))
   );
 
   @BeforeClass
@@ -122,7 +122,7 @@ public class TokenizerTest extends HydratorTestBase {
 
                                            ImmutableMap.of("outputColumn", OUTPUT_COLUMN,
                                                            "columnToBeTokenized", COLUMN_TOKENIZED,
-                                                           "pattern", pattern),
+                                                           "patternSeparator", pattern),
                                            null)))
       .addStage(new ETLStage("sink", MockSink.getPlugin(mockNameOfSinkPlugin)))
       .addConnection("source", "sparkcompute")
@@ -169,7 +169,9 @@ public class TokenizerTest extends HydratorTestBase {
     Assert.assertEquals(expected, results);
     Assert.assertEquals(4, output.size());
     StructuredRecord row = output.get(0);
-    Assert.assertEquals(1, row.getSchema().getFields().size());
+    Assert.assertEquals(3, row.getSchema().getFields().size());
+    Assert.assertNotNull(row.getSchema().getField(COLUMN_TOKENIZED));
+    Assert.assertNotNull(row.getSchema().getField(NAME_COLUMN));
     Assert.assertEquals("ARRAY", row.getSchema().getField(OUTPUT_COLUMN).getSchema().getType().toString());
   }
 
@@ -210,7 +212,8 @@ public class TokenizerTest extends HydratorTestBase {
     Assert.assertEquals(expected, results);
     Assert.assertEquals(4, output.size());
     StructuredRecord rowSingle = output.get(0);
-    Assert.assertEquals(1, rowSingle.getSchema().getFields().size());
+    Assert.assertEquals(2, rowSingle.getSchema().getFields().size());
+    Assert.assertNotNull(rowSingle.getSchema().getField(COLUMN_TOKENIZED));
     Assert.assertEquals("ARRAY", rowSingle.getSchema().getField(OUTPUT_COLUMN).getSchema().getType().toString());
   }
 
@@ -266,7 +269,7 @@ public class TokenizerTest extends HydratorTestBase {
     Assert.assertEquals(expected, results);
     Assert.assertEquals(1, output.size());
     StructuredRecord row = output.get(0);
-    Assert.assertEquals(1, row.getSchema().getFields().size());
+    Assert.assertEquals(3, row.getSchema().getFields().size());
     Assert.assertEquals("ARRAY", row.getSchema().getField(OUTPUT_COLUMN).getSchema().getType().toString());
   }
 

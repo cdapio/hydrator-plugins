@@ -15,7 +15,7 @@ Properties
 ----------
 **columnToBeTokenized:** Column on which tokenization is to be done.
 
-**pattern:** Pattern for tokenization.
+**patternSeparator:** Pattern separator.
 
 **outputColumn:** Output column name for tokenized data.
 
@@ -28,7 +28,7 @@ This example tokenizes "sentence" column into output column "words" using patter
         "type": "sparkcompute",
         "properties": {
             "columnToBeTokenized": "sentence",
-            "pattern": "/",
+            "patternSeparator": "/",
             "outputColumn": "words"
         }
     }
@@ -44,13 +44,12 @@ For example, suppose the tokenizer receives below input records:
     | Spark | Spark /is an engine for /bigdata processing   |
     +=======================================================+
 
-Output schema will contain only a single column "words" having tokenized data in string array form:
+Output schema will contain additional column "words" having tokenized data in string array form:
 
-    +===============================================+
-    | words                                         |
-    +===============================================+
-    | [hello world, is the, basic application]      |
-    | [hdfs, is a ,file system]                     |
-    | [spark ,is an engine for ,bigdata processing] |
-    +===============================================+
-
+    +=====================================================================================================+
+    | topic | sentence                                     | words                                        |
+    +=====================================================================================================+
+    | java  | Hello world / is the /basic application      | [hello world, is the, basic application]     |
+    | HDFS  | HDFS/ is a /file system                      | [hdfs, is a ,file system]                    |
+    | Spark | Spark /is an engine for /bigdata processing  | [spark ,is an engine for ,bigdata processing]|
+    +=====================================================================================================+
