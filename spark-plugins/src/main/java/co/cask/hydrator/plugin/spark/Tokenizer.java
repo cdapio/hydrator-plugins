@@ -112,7 +112,7 @@ public class Tokenizer extends SparkCompute<StructuredRecord, StructuredRecord> 
     for (Schema ts : new Schema[]{inputSchema}) {
       for (Schema.Field field : ts.getFields()) {
         field.getSchema().getType();
-        fields.add(DataTypes.createStructField(field.getName().toLowerCase(), getDataType(field.getSchema()), true));
+        fields.add(DataTypes.createStructField(field.getName(), getDataType(field.getSchema()), true));
       }
     }
     //Schema to be used to create dataframe
