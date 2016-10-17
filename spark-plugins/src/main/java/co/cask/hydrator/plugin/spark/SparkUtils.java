@@ -22,8 +22,19 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import joptsimple.internal.Strings;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.RowFactory;
+import org.apache.spark.sql.types.ArrayType;
+import org.apache.spark.sql.types.DataType;
+import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.Metadata;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -196,5 +207,102 @@ final class SparkUtils {
     List<Schema.Field> fields = new ArrayList<>(inputSchema.getFields());
     fields.add(Schema.Field.of(predictionField, Schema.of(Schema.Type.DOUBLE)));
     return Schema.recordOf(inputSchema.getRecordName() + ".predicted", fields);
+  }
+
+  private static DataType getStructDataTypes(Schema.Type type) {
+    switch (type) {
+      case STRING:
+        return DataTypes.StringType;
+      case INT:
+        return DataTypes.IntegerType;
+      case LONG:
+        return DataTypes.LongType;
+      case FLOAT:
+        return DataTypes.FloatType;
+      case DOUBLE:
+        return DataTypes.DoubleType;
+      case BOOLEAN:
+        return DataTypes.BooleanType;
+      case BYTES:
+        return DataTypes.ByteType;
+      case NULL:
+        return DataTypes.NullType;
+      default:
+        return DataTypes.StringType;
+    }
+  }
+
+  private static StructField getStructField(Schema.Field field, Boolean transformField) {
+    Schema schema = field.getSchema();
+    Boolean isNullable = schema.isNullable();
+    Schema.Type type = isNullable ? schema.getNonNullable().getType() : schema.getType();
+    if (transformField) {
+      if (type.equals(Schema.Type.ARRAY)) {
+        type = schema.getComponentSchema().getType();
+        return new StructField(field.getName() + "-transformed",
+                               DataTypes.createArrayType(getStructDataTypes(type), isNullable), isNullable,
+                               Metadata.empty());
+      } else {
+        return new StructField(field.getName() + "-transformed", new ArrayType(getStructDataTypes(type), true),
+                               isNullable, Metadata.empty());
+      }
+    } else {
+      if (type.equals(Schema.Type.ARRAY)) {
+        type = schema.getComponentSchema().getType();
+        return new StructField(field.getName(), DataTypes.createArrayType(getStructDataTypes(type), isNullable),
+                               isNullable, Metadata.empty());
+      } else if (type.equals(Schema.Type.MAP)) {
+        return new StructField(field.getName(), DataTypes.createMapType(
+          getStructDataTypes(field.getSchema().getMapSchema().getKey().getType()),
+          getStructDataTypes(field.getSchema().getMapSchema().getValue().getType()), isNullable),
+                               isNullable, Metadata.empty());
+      } else {
+        return new StructField(field.getName(), getStructDataTypes(type), isNullable, Metadata.empty());
+      }
+    }
+  }
+
+  static List<StructField> getStructFieldList(List<Schema.Field> fields, Set<String> inputCol) {
+    List<StructField> structField = new ArrayList<>();
+    for (Schema.Field field : fields) {
+      if (inputCol.contains(field.getName())) {
+        Schema schema = field.getSchema();
+        Schema.Type type = schema.getType();
+        if (Schema.Type.STRING.equals(type) || Schema.Type.BOOLEAN.equals(type) || (Schema.Type.ARRAY.equals(type) &&
+          (Schema.Type.STRING.equals(schema.getComponentSchema().getType()) ||
+            Schema.Type.BOOLEAN.equals(schema.getComponentSchema().getType())))) {
+          structField.add(SparkUtils.getStructField(field, true));
+        } else {
+          throw new IllegalArgumentException(
+            String.format("Unsupported data types for feature generation. Only string, boolean or array of type " +
+                            "string are supported. But was %s for field %s", schema.getType(), field));
+        }
+      }
+      structField.add(SparkUtils.getStructField(field, false));
+    }
+    return structField;
+  }
+
+  static JavaRDD<Row> convertJavaRddStructuredRecordToJavaRddRows(JavaRDD<StructuredRecord> input,
+                                                                  final StructType schema) {
+    return input.map(new Function<StructuredRecord, Row>() {
+      @Override
+      public Row call(StructuredRecord record) throws Exception {
+        List<Object> fields = new ArrayList<>();
+        for (String field : schema.fieldNames()) {
+          if (field.contains("-transformed")) {
+            field = field.split("-transformed")[0];
+            if (Schema.Type.ARRAY.equals(record.getSchema().getField(field).getSchema().getType())) {
+              fields.add(record.get(field));
+            } else {
+              fields.add(Arrays.asList(((String) record.get(field)).split(" ")));
+            }
+          } else {
+            fields.add(record.get(field));
+          }
+        }
+        return RowFactory.create(fields.toArray());
+      }
+    });
   }
 }
