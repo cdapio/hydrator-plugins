@@ -29,12 +29,12 @@ import com.google.common.base.Preconditions;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
 import org.apache.spark.SparkContext;
-import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.function.Function;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.linalg.Vectors;
 import org.apache.twill.filesystem.Location;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +52,7 @@ public abstract class SparkMLPredictor extends SparkCompute<StructuredRecord, St
   /**
    * Config class for Predictors/Classifiers. Contains common config properties to be used in predictors/classifiers.
    */
-  protected class MLPredictorConfig extends PluginConfig {
+  protected static class MLPredictorConfig extends PluginConfig {
 
     @Description("The name of the FileSet to load the model from.")
     protected String fileSetName;
@@ -73,7 +73,7 @@ public abstract class SparkMLPredictor extends SparkCompute<StructuredRecord, St
     protected String predictionField;
 
     protected MLPredictorConfig(String fileSetName, String path, @Nullable String featureFieldsToInclude,
-                           @Nullable String featureFieldsToExclude, String predictionField) {
+                                @Nullable String featureFieldsToExclude, String predictionField) {
       this.fileSetName = fileSetName;
       this.path = path;
       this.featureFieldsToInclude = featureFieldsToInclude;
@@ -81,7 +81,7 @@ public abstract class SparkMLPredictor extends SparkCompute<StructuredRecord, St
       this.predictionField = predictionField;
     }
 
-    protected void validate(Schema inputSchema) {
+    public void validate(Schema inputSchema) {
       SparkUtils.validateConfigParameters(inputSchema, featureFieldsToInclude, featureFieldsToExclude, predictionField,
                                           null);
     }
@@ -100,7 +100,8 @@ public abstract class SparkMLPredictor extends SparkCompute<StructuredRecord, St
     stageConfigurer.setOutputSchema(SparkUtils.getOutputSchema(inputSchema, config.predictionField));
   }
 
-  public String getModelPath(SparkExecutionPluginContext context) throws IOException {
+  @Override
+  public void initialize(SparkExecutionPluginContext context) throws Exception {
     FileSet fileSet = context.getDataset(config.fileSetName);
     Location modelLocation = fileSet.getBaseLocation().append(config.path);
 
@@ -108,20 +109,29 @@ public abstract class SparkMLPredictor extends SparkCompute<StructuredRecord, St
       throw new IllegalArgumentException("Failed to find model to use for classification. " +
                                            "Location does not exist: " + modelLocation, null);
     }
-    return modelLocation.toURI().getPath();
+    initialize(context.getSparkContext().sc(), modelLocation.toURI().getPath());
   }
 
-  public SparkContext getSparkContext(SparkExecutionPluginContext context) {
-    JavaSparkContext javaSparkContext = context.getSparkContext();
-    return JavaSparkContext.toSparkContext(javaSparkContext);
-  }
+  public abstract void initialize(SparkContext context, String modelPath);
 
-  public Schema getOutputSchema(Schema inputSchema) {
-    return outputSchema = (outputSchema != null) ? outputSchema :
+  public abstract double predict(Vector vector);
+
+  @Override
+  public JavaRDD<StructuredRecord> transform(SparkExecutionPluginContext context,
+                                             JavaRDD<StructuredRecord> input) throws Exception {
+    if (input.isEmpty()) {
+      return context.getSparkContext().emptyRDD();
+    }
+    Schema inputSchema = input.first().getSchema();
+    outputSchema = (outputSchema != null) ? outputSchema :
       SparkUtils.getOutputSchema(inputSchema, config.predictionField);
-  }
-
-  public Vector getVector(StructuredRecord record, final Map<String, Integer> featuresList) {
+    final Map<String, Integer> featuresList = SparkUtils.getFeatureList(inputSchema,
+                                                                        config.featureFieldsToInclude,
+                                                                        config.featureFieldsToExclude,
+                                                                        config.predictionField);
+    JavaRDD<StructuredRecord> output = input.map(new Function<StructuredRecord, StructuredRecord>() {
+      @Override
+      public StructuredRecord call(StructuredRecord record) throws Exception {
         List<Double> featureList = new ArrayList<>();
         List<Integer> featureIndex = new ArrayList<>();
         int counter = 0;
@@ -132,6 +142,12 @@ public abstract class SparkMLPredictor extends SparkCompute<StructuredRecord, St
           }
           counter++;
         }
-        return Vectors.sparse(counter, Ints.toArray(featureIndex), Doubles.toArray(featureList));
+        Vector vector = Vectors.sparse(counter, Ints.toArray(featureIndex), Doubles.toArray(featureList));
+        double prediction = predict(vector);
+        return SparkUtils.cloneRecord(record, outputSchema, config.predictionField).
+          set(config.predictionField, prediction).build();
+      }
+    });
+    return output;
   }
 }

@@ -30,14 +30,10 @@ import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.mllib.linalg.Vectors;
 import org.apache.spark.mllib.regression.LabeledPoint;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -50,12 +46,11 @@ import javax.annotation.Nullable;
 public abstract class SparkMLTrainer extends SparkSink<StructuredRecord> {
 
   private MLTrainerConfig config;
-  private static final Logger LOG = LoggerFactory.getLogger(SparkMLTrainer.class);
 
   /**
    * Config class for Trainers. Contains common config properties to be used in trainers.
    */
-  protected class MLTrainerConfig extends PluginConfig {
+  protected static class MLTrainerConfig extends PluginConfig {
 
     @Description("The name of the FileSet to save the model to.")
     protected String fileSetName;
@@ -75,10 +70,11 @@ public abstract class SparkMLTrainer extends SparkSink<StructuredRecord> {
     protected String labelField;
 
     protected MLTrainerConfig() {
+      System.out.print("hello");
     }
 
     protected MLTrainerConfig(String fileSetName, String path, @Nullable String featureFieldsToInclude,
-                           @Nullable String featureFieldsToExclude, String labelField) {
+                              @Nullable String featureFieldsToExclude, String labelField) {
       this.fileSetName = fileSetName;
       this.path = path;
       this.featureFieldsToInclude = featureFieldsToInclude;
@@ -86,7 +82,7 @@ public abstract class SparkMLTrainer extends SparkSink<StructuredRecord> {
       this.labelField = labelField;
     }
 
-    protected void validate(Schema inputSchema) {
+    public void validate(Schema inputSchema) {
       SparkUtils.validateConfigParameters(inputSchema, featureFieldsToInclude, featureFieldsToExclude, labelField,
                                           null);
       SparkUtils.validateLabelFieldForTrainer(inputSchema, labelField);
@@ -108,45 +104,42 @@ public abstract class SparkMLTrainer extends SparkSink<StructuredRecord> {
   @Override
   public void prepareRun(SparkPluginContext context) throws Exception { }
 
-  protected Map<String, Integer> getFeatures(Schema inputSchema, @Nullable String featuresToInclude,
-                                             @Nullable String featuresToExclude, String labelField) {
-    return SparkUtils.getFeatureList(inputSchema, featuresToInclude, featuresToExclude, labelField);
-  }
-
-  public static JavaRDD<LabeledPoint> getTrainingData(final Map<String, Integer> fields,
-                                                      JavaRDD<StructuredRecord> input, final String labelField) {
-    JavaRDD<LabeledPoint> trainingData = input.map(new Function<StructuredRecord, LabeledPoint>() {
-      @Override
-      public LabeledPoint call(StructuredRecord record) throws Exception {
-        List<Double> featureList = new ArrayList<>();
-        List<Integer> featureIndex = new ArrayList<>();
-        int counter = 0;
-        for (String field : fields.keySet()) {
-          if (record.get(field) != null) {
-            featureList.add(((Number) record.get(field)).doubleValue());
-            featureIndex.add(counter);
+  @Override
+  public void run(SparkExecutionPluginContext context, JavaRDD<StructuredRecord> input) throws Exception {
+    if (!input.isEmpty()) {
+      final Schema inputSchema = input.first().getSchema();
+      final Map<String, Integer> featuresList = SparkUtils.getFeatureList(inputSchema, config.featureFieldsToInclude,
+                                                                          config.featureFieldsToExclude,
+                                                                          config.labelField);
+      JavaRDD<LabeledPoint> trainingData = input.map(new Function<StructuredRecord, LabeledPoint>() {
+        @Override
+        public LabeledPoint call(StructuredRecord record) throws Exception {
+          List<Double> featureList = new ArrayList<>();
+          List<Integer> featureIndex = new ArrayList<>();
+          int counter = 0;
+          for (String field : featuresList.keySet()) {
+            if (record.get(field) != null) {
+              featureList.add(((Number) record.get(field)).doubleValue());
+              featureIndex.add(counter);
+            }
+            counter++;
           }
-          counter++;
+          Double prediction = record.get(config.labelField);
+          if (prediction == null) {
+            throw new IllegalArgumentException(String.format("Value of Label field %s value must not be null.",
+                                                             config.labelField));
+          }
+          return new LabeledPoint(prediction, Vectors.sparse(counter, Ints.toArray(featureIndex),
+                                                             Doubles.toArray(featureList)));
         }
-        Double prediction = record.get(labelField);
-        if (prediction == null) {
-          throw new IllegalArgumentException(String.format("Value of Label field %s value must not be null.",
-                                                           labelField));
-        }
-        return new LabeledPoint(prediction, Vectors.sparse(counter, Ints.toArray(featureIndex),
-                                                           Doubles.toArray(featureList)));
-      }
-    });
-    return trainingData;
+      });
+      trainingData.cache();
+      FileSet outputFS = context.getDataset(config.fileSetName);
+      trainModel(context.getSparkContext().sc(), null, trainingData,
+                 outputFS.getBaseLocation().append(config.path).toURI().getPath());
+    }
   }
 
-  public SparkContext getSparkContext(SparkExecutionPluginContext context) {
-    JavaSparkContext javaSparkContext = context.getSparkContext();
-    return JavaSparkContext.toSparkContext(javaSparkContext);
-  }
-
-  public String getModelPath(SparkExecutionPluginContext context) throws IOException {
-    FileSet outputFS = context.getDataset(config.fileSetName);
-    return outputFS.getBaseLocation().append(config.path).toURI().getPath();
-  }
+  public abstract void trainModel(SparkContext context, Schema inputSchema, JavaRDD<LabeledPoint> trainingData,
+                                  String outputPath);
 }
