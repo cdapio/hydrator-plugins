@@ -41,6 +41,7 @@
     <module>spark-plugins</module>
     <module>transform-plugins</module>
     <module>copybookreader-plugins</module>
+    <module>zipfile-plugins</module>
   </modules>
 
   <licenses>
