@@ -98,8 +98,8 @@ public class DecisionTreeConfigTest {
 
   @Test
   public void testPredictionFieldPredictor() throws Exception {
-    DecisionTreePredictor.DecisionTreePredictorConfig config =
-      new DecisionTreePredictor.DecisionTreePredictorConfig("decision-tree-regression-model", "decisionTreeRegression",
+    DecisionTreePredictor.DecisionTreeConfig config =
+      new DecisionTreePredictor.DecisionTreeConfig("decision-tree-regression-model", "decisionTreeRegression",
                                                             "dofM,dofW,scheduleDepTime,scheduledArrTime,carrier," +
                                                               "elapsedTime,originId,destId", null, "delayed");
     try {

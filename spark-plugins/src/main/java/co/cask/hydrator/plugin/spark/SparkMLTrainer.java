@@ -135,7 +135,7 @@ public abstract class SparkMLTrainer extends SparkSink<StructuredRecord> {
       });
       trainingData.cache();
       FileSet outputFS = context.getDataset(config.fileSetName);
-      trainModel(context.getSparkContext().sc(), null, trainingData,
+      trainModel(context.getSparkContext().sc(), inputSchema, trainingData,
                  outputFS.getBaseLocation().append(config.path).toURI().getPath());
     }
   }
