@@ -111,7 +111,19 @@ public abstract class SparkMLTrainer extends SparkSink<StructuredRecord> {
       final Map<String, Integer> featuresList = SparkUtils.getFeatureList(inputSchema, config.featureFieldsToInclude,
                                                                           config.featureFieldsToExclude,
                                                                           config.labelField);
-      JavaRDD<LabeledPoint> trainingData = input.map(new Function<StructuredRecord, LabeledPoint>() {
+
+      // Filter out the records for which label is invalid
+      JavaRDD<StructuredRecord> filteredData = input.filter(new Function<StructuredRecord, Boolean>() {
+        @Override
+        public Boolean call(StructuredRecord record) throws Exception {
+          if(record.get(config.labelField) == null) {
+            return false;
+          }
+          return true;
+        }
+      });
+
+      JavaRDD<LabeledPoint> trainingData = filteredData.map(new Function<StructuredRecord, LabeledPoint>() {
         @Override
         public LabeledPoint call(StructuredRecord record) throws Exception {
           List<Double> featureList = new ArrayList<>();
@@ -124,13 +136,9 @@ public abstract class SparkMLTrainer extends SparkSink<StructuredRecord> {
             }
             counter++;
           }
-          Double prediction = record.get(config.labelField);
-          if (prediction == null) {
-            throw new IllegalArgumentException(String.format("Value of Label field %s value must not be null.",
-                                                             config.labelField));
-          }
-          return new LabeledPoint(prediction, Vectors.sparse(counter, Ints.toArray(featureIndex),
-                                                             Doubles.toArray(featureList)));
+
+          return new LabeledPoint((Double) record.get(config.labelField),
+                                  Vectors.sparse(counter, Ints.toArray(featureIndex), Doubles.toArray(featureList)));
         }
       });
       trainingData.cache();
