@@ -16,36 +16,76 @@
 
 package co.cask.hydrator.plugin.sink;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableSet;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.JobContext;
+import org.apache.hadoop.mapreduce.OutputCommitter;
+import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 
 /**
  * OutputFormat for writing tar.gz file to configured hdfs path per mapper. It uses taskAttemptId to differentiate
  * between output of each mapper
  */
-public class BatchTarSinkOutputFormat extends FileOutputFormat<Text, Text> {
+public class BatchTarSinkOutputFormat extends OutputFormat<Text, Text> {
   private static final Logger LOG = LoggerFactory.getLogger(BatchTarSinkOutputFormat.class);
 
   @Override
-  public RecordWriter<Text, Text> getRecordWriter(TaskAttemptContext job) throws IOException, InterruptedException {
+  public synchronized OutputCommitter getOutputCommitter(TaskAttemptContext context) throws IOException {
+    return new OutputCommitter() {
+      @Override
+      public void setupJob(final JobContext jobContext) throws IOException {
+        // DO NOTHING, see needsTaskCommit() comment
+      }
+
+      @Override
+      public boolean needsTaskCommit(final TaskAttemptContext taskContext) throws IOException {
+        // Don't do commit of individual task work. Work is committed on job level. Ops are flushed on
+        // RecordWriter.close.
+        return false;
+      }
+
+      @Override
+      public void setupTask(final TaskAttemptContext taskContext) throws IOException {
+        // DO NOTHING, see needsTaskCommit() comment
+      }
+
+      @Override
+      public void commitTask(final TaskAttemptContext taskContext) throws IOException {
+        // DO NOTHING, see needsTaskCommit() comment
+      }
+
+      @Override
+      public void abortTask(final TaskAttemptContext taskContext) throws IOException {
+        // DO NOTHING, see needsTaskCommit() comment
+      }
+    };
+  }
+
+  @Override
+  public RecordWriter<Text, Text> getRecordWriter(final TaskAttemptContext job)
+    throws IOException, InterruptedException {
 
     return new RecordWriter<Text, Text>() {
 
       @Override
       public void write(Text key, Text value) throws IOException, InterruptedException {
+        Configuration configuration = job.getConfiguration();
         // create temp files on container
         String fileName = key.toString();
         String data = value.toString();
@@ -96,9 +136,32 @@ public class BatchTarSinkOutputFormat extends FileOutputFormat<Text, Text> {
         LOG.info("Copying tar file to hdfs");
         // copy tar.gz file to hdfs
         FileSystem distributedFileSystem = FileSystem.get(conf);
-        FileUtil.copy(output, distributedFileSystem, new
-          Path(conf.get(BatchTarSink.TAR_TARGET_PATH) + "/" + context.getTaskAttemptID()), false, conf);
+        Path targetPath = new Path(conf.get(BatchTarSink.TAR_TARGET_PATH) + "/" + context.getTaskAttemptID());
+        LOG.info("targetPath {}", targetPath.toUri().toString());
+        LOG.info("output {}", output.getAbsolutePath());
+        boolean hasWritten = FileUtil.copy(output, distributedFileSystem, targetPath, false, conf);
+
+        if (hasWritten) {
+          LOG.info("Tar file copied to hdfs successfully from mapper {}", context.getTaskAttemptID());
+        } else {
+          LOG.error("Not able to write tar file to hdfs from mapper {}", context.getTaskAttemptID());
+        }
+      }
+
+      private Set<String> getFileExtensions(Configuration conf) {
+        Set<String> set = new HashSet<>();
+        for (String field : Splitter.on(',').trimResults().split(conf.get(BatchTarSink.SUPPORTED_EXTN))) {
+          set.add(field);
+        }
+        return ImmutableSet.copyOf(set);
       }
     };
+
+
+  }
+
+  @Override
+  public void checkOutputSpecs(JobContext context) throws IOException, InterruptedException {
+    // noop
   }
 }

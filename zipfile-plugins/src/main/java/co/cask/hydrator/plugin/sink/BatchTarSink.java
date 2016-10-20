@@ -29,14 +29,17 @@ import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.ReferencePluginConfig;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableSet;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.python.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * TarSink plugin which tars all the files emitted by mapper and stores tars into hdfs
@@ -47,6 +50,7 @@ import java.util.Map;
 public class BatchTarSink extends ReferenceBatchSink<StructuredRecord, Text, Text> {
   private static final Logger LOG = LoggerFactory.getLogger(BatchTarSink.class);
   static final String TAR_TARGET_PATH = "tar.target.path";
+  static final String SUPPORTED_EXTN = "supported.extn";
   private TarSinkConfig config;
 
   @VisibleForTesting
@@ -65,8 +69,9 @@ public class BatchTarSink extends ReferenceBatchSink<StructuredRecord, Text, Tex
     public SinkOutputFormatProvider(TarSinkConfig config, BatchSinkContext context) {
       this.conf = new HashMap<>();
       this.config = config;
-      conf.put(FileOutputFormat.OUTDIR, config.targetPath + "/status");
+      LOG.info("TargetPath from config: {}", config.targetPath);
       conf.put(TAR_TARGET_PATH, config.targetPath);
+      conf.put(SUPPORTED_EXTN, config.listOfFileExtensions);
     }
 
     @Override
@@ -97,12 +102,16 @@ public class BatchTarSink extends ReferenceBatchSink<StructuredRecord, Text, Tex
 
   @Override
   public void transform(StructuredRecord input, Emitter<KeyValue<Text, Text>> emitter) throws Exception {
-    // TODO change this to use field names passed from config
-    String fileName = input.get("fileName");
-    String data = input.get("body");
+    String fileName = input.get(config.fileNameField);
+    String data = input.get(config.bodyField);
+    Set<String> fileExtensions = config.getFileExtensions();
     // Write to container's local directory
     LOG.info("Emitting file {}", fileName);
-    emitter.emit(new KeyValue<>(new Text(fileName), new Text(data)));
+    String extension = fileName.substring(fileName.lastIndexOf(".") + 1);
+    LOG.info("Extension is {}", extension);
+    if (fileExtensions.contains(extension)) {
+      emitter.emit(new KeyValue<>(new Text(fileName), new Text(data)));
+    }
   }
 
   /**
@@ -114,9 +123,34 @@ public class BatchTarSink extends ReferenceBatchSink<StructuredRecord, Text, Tex
     @Macro
     private String targetPath;
 
-    public TarSinkConfig(String referenceName, String targetPath) {
+    @Name("fileNameField")
+    @Description("field name for file")
+    private String fileNameField;
+
+    @Name("bodyField")
+    @Description("List of file extensions separated by comma which needs to be used in tar")
+    @Macro
+    private String bodyField;
+
+    @Name("listOfFileExtensions")
+    @Description("field name for data")
+    private String listOfFileExtensions;
+
+    public TarSinkConfig(String referenceName, String targetPath, String fileNameField, String bodyField,
+                         String listOfFileExtensions) {
       super(referenceName);
       this.targetPath = targetPath;
+      this.fileNameField = fileNameField;
+      this.bodyField = bodyField;
+      this.listOfFileExtensions = listOfFileExtensions;
+    }
+
+    private Set<String> getFileExtensions() {
+      Set<String> set = new HashSet<>();
+      for (String field : Splitter.on(',').trimResults().split(listOfFileExtensions)) {
+        set.add(field);
+      }
+      return ImmutableSet.copyOf(set);
     }
   }
 }

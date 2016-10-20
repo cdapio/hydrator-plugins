@@ -15,6 +15,21 @@
           "widget-type": "textbox",
           "label": "Target Path",
           "name": "targetPath"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "File name field",
+          "name": "fileNameField"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Body field",
+          "name": "bodyField"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "List of file extensions",
+          "name": "listOfFileExtensions"
         }
       ]
     }
