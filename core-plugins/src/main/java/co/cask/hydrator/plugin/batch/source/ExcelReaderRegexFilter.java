@@ -1,5 +1,3 @@
-package co.cask.hydrator.plugin.batch.source;
-
 /*
  * Copyright © 2016 Cask Data, Inc.
  *
@@ -16,6 +14,8 @@ package co.cask.hydrator.plugin.batch.source;
  * the License.
  */
 
+package co.cask.hydrator.plugin.batch.source;
+
 import com.google.common.base.Strings;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
@@ -25,6 +25,8 @@ import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -39,21 +41,21 @@ import javax.annotation.Nullable;
  */
 public class ExcelReaderRegexFilter extends Configured implements PathFilter {
 
-  public static final String FILE_PATTERN = "filePattern";
-  public static final String RE_PROCESS = "reprocess";
-  public static final String PROCESSED_FILES = "processedFiles";
+  private static final Logger LOG = LoggerFactory.getLogger(ExcelReaderRegexFilter.class);
+  private static final String FILE_PATTERN = "filePattern";
+  private static final String RE_PROCESS = "reprocess";
+  private static final String PROCESSED_FILES = "processedFiles";
   private static final Gson GSON = new Gson();
-  private static final Type ARRAYLIST_PREPROCESSED_FILES = new TypeToken<ArrayList<String>>() {
-  }.getType();
+  private static final Type ARRAYLIST_PREPROCESSED_FILES = new TypeToken<ArrayList<String>>() { }.getType();
+
   private Pattern pattern;
-  private FileSystem fs;
   private Configuration conf;
   private List<String> preProcessedFileList;
 
   @Override
   public boolean accept(Path path) {
     try {
-      fs = FileSystem.get(path.toUri(), conf);
+      FileSystem fs = FileSystem.get(path.toUri(), conf);
       if (fs.isDirectory(path)) {
         return true;
       }
@@ -67,6 +69,7 @@ public class ExcelReaderRegexFilter extends Configured implements PathFilter {
 
       return patternMatch;
     } catch (IOException e) {
+      LOG.warn("Got error while testing path {}, so skipping it.", path, e);
       return false;
     }
   }
