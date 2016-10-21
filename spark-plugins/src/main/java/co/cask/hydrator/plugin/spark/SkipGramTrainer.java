@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package co.cask.hydrator.plugin.spark;
 
 import co.cask.cdap.api.annotation.Description;
@@ -29,18 +28,10 @@ import co.cask.cdap.etl.api.batch.SparkPluginContext;
 import co.cask.cdap.etl.api.batch.SparkSink;
 import com.google.common.base.Preconditions;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.ml.feature.Word2Vec;
-import org.apache.spark.ml.feature.Word2VecModel;
-import org.apache.spark.sql.DataFrame;
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SQLContext;
-import org.apache.spark.sql.types.StructField;
-import org.apache.spark.sql.types.StructType;
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.mllib.feature.Word2Vec;
+import org.apache.spark.mllib.feature.Word2VecModel;
 
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
@@ -53,7 +44,6 @@ import javax.annotation.Nullable;
 public class SkipGramTrainer extends SparkSink<StructuredRecord> {
   public static final String PLUGIN_NAME = "SkipGramTrainer";
   private SkipGramTrainerConfig config;
-  private StructType schema;
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
@@ -66,30 +56,27 @@ public class SkipGramTrainer extends SparkSink<StructuredRecord> {
   @Override
   public void run(SparkExecutionPluginContext context, JavaRDD<StructuredRecord> input)
     throws Exception {
-    if (input == null) {
+    if (input.isEmpty()) {
       return;
     }
-
-    JavaSparkContext javaSparkContext = context.getSparkContext();
-    SQLContext sqlContext = new SQLContext(javaSparkContext);
-    Set<String> inputCols = new LinkedHashSet<>();
-    inputCols.add(config.inputCol);
-    List<StructField> structField = SparkUtils.getStructFieldList(input.first().getSchema().getFields(), inputCols);
-    schema = new StructType(structField.toArray(new StructField[structField.size()]));
-    JavaRDD<Row> rowRDD = SparkUtils.convertJavaRddStructuredRecordToJavaRddRows(input, schema);
-    DataFrame documentDF = sqlContext.createDataFrame(rowRDD, schema);
+    final String fieldName = config.inputCol;
+    JavaRDD<Iterable<String>> textRDD = input.map(new Function<StructuredRecord, Iterable<String>>() {
+      @Override
+      public Iterable<String> call(StructuredRecord input) throws Exception {
+        return SparkUtils.getInputFieldValue(input, fieldName, config.pattern);
+      }
+    });
 
     Word2Vec word2Vec = new Word2Vec()
-      .setInputCol(config.inputCol + "-transformed")
       .setVectorSize(config.vectorSize)
       .setMinCount(config.minCount)
       .setNumPartitions(config.numPartitions)
-      .setMaxIter(config.numIterations)
+      .setNumIterations(config.numIterations)
       .setWindowSize(config.windowSize);
 
-    Word2VecModel model = word2Vec.fit(documentDF);
+    Word2VecModel model = word2Vec.fit(textRDD);
     FileSet outputFS = context.getDataset(config.fileSetName);
-    model.save(outputFS.getBaseLocation().append(config.path).toURI().getPath());
+    model.save(context.getSparkContext().sc(), outputFS.getBaseLocation().append(config.path).toURI().getPath());
   }
 
   @Override
@@ -111,7 +98,11 @@ public class SkipGramTrainer extends SparkSink<StructuredRecord> {
     private String inputCol;
 
     @Nullable
-    @Description("The dimension of codes after transforming from words. Default 3.")
+    @Description("Pattern to split the input string fields on. Default is '\\s+'.")
+    private String pattern;
+
+    @Nullable
+    @Description("The dimension of codes after transforming from words. Default 100.")
     private Integer vectorSize;
 
     @Nullable
@@ -132,19 +123,21 @@ public class SkipGramTrainer extends SparkSink<StructuredRecord> {
     private Integer windowSize;
 
     public SkipGramTrainerConfig() {
-      vectorSize = 3;
+      pattern = "\\s+";
+      vectorSize = 100;
       minCount = 0;
       numPartitions = 1;
       numIterations = 1;
       windowSize = 5;
     }
 
-    public SkipGramTrainerConfig(String fileSetName, String path, String inputCol, @Nullable int vectorSize,
-                                 @Nullable int minCount, @Nullable int numPartitions, @Nullable int numIterations,
-                                 @Nullable int windowSize) {
+    public SkipGramTrainerConfig(String fileSetName, String path, String inputCol, @Nullable String pattern,
+                                 @Nullable int vectorSize, @Nullable int minCount, @Nullable int numPartitions,
+                                 @Nullable int numIterations, @Nullable int windowSize) {
       this.fileSetName = fileSetName;
       this.path = path;
       this.inputCol = inputCol;
+      this.pattern = pattern;
       this.vectorSize = vectorSize;
       this.minCount = minCount;
       this.numPartitions = numPartitions;
@@ -152,7 +145,7 @@ public class SkipGramTrainer extends SparkSink<StructuredRecord> {
       this.windowSize = windowSize;
     }
 
-    private void validate(Schema inputSchema) {
+    public void validate(Schema inputSchema) {
       Schema.Field field = inputSchema.getField(inputCol);
       if (field == null) {
         throw new IllegalArgumentException(String.format("Input column %s does not exist in the input schema",
@@ -160,13 +153,12 @@ public class SkipGramTrainer extends SparkSink<StructuredRecord> {
       }
       Schema schema = field.getSchema();
       Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
-      if (!(type.equals(Schema.Type.STRING) || type.equals(Schema.Type.BOOLEAN) || (type.equals(Schema.Type.ARRAY) &&
-        (schema.getComponentSchema().getType().equals(Schema.Type.STRING) ||
-          schema.getComponentSchema().getType().equals(Schema.Type.BOOLEAN))))) {
-        throw new IllegalArgumentException(String.format("Input column can be of type string, boolean or array of " +
-                                                           "string or boolean. But was %s for %s.", type, inputCol));
+      if (!(type.equals(Schema.Type.STRING) || (type.equals(Schema.Type.ARRAY) &&
+        schema.getComponentSchema().getType().equals(Schema.Type.STRING)))) {
+        throw new IllegalArgumentException(String.format("Input column can be of type string or nullable string or " +
+                                                           "array of string or nullable string. But was %s for %s.",
+                                                         type, inputCol));
       }
-
     }
   }
 }

@@ -23,6 +23,11 @@
           "widget-attributes": {
             "showDelimiter": "false"
           }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Pattern to split the input string fields on",
+          "name": "pattern"
         }
       ]
     }

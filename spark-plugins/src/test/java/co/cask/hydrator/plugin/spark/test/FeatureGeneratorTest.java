@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package co.cask.hydrator.plugin.spark.test;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -43,15 +42,18 @@ import co.cask.hydrator.plugin.spark.HashingTFFeatureGenerator;
 import co.cask.hydrator.plugin.spark.SkipGramFeatureGenerator;
 import co.cask.hydrator.plugin.spark.SkipGramTrainer;
 import co.cask.hydrator.plugin.spark.TwitterStreamingSource;
+import co.cask.hydrator.plugin.spark.VectorUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.spark.mllib.linalg.SparseVector;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -97,12 +99,13 @@ public class FeatureGeneratorTest extends HydratorTestBase {
       .put("fileSetName", "training-model")
       .put("path", "Model")
       .put("inputCol", "body")
+      .put("vectorSize", "3")
       .build();
 
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
       .addStage(new ETLStage("source", MockSource.getPlugin(source, INPUT)))
       .addStage(new ETLStage("sink", new ETLPlugin(SkipGramTrainer.PLUGIN_NAME, SparkSink.PLUGIN_TYPE,
-                                                         properties, null)))
+                                                   properties, null)))
       .addConnection("source", "sink")
       .build();
 
@@ -117,10 +120,13 @@ public class FeatureGeneratorTest extends HydratorTestBase {
         .set("body", "Hi I heard about Spark").build(),
       StructuredRecord.builder(INPUT)
         .set("offset", 2)
-        .set("body", "I wish Java could use case classes").build(),
+        .set("body", "I wish Java could use case in classes").build(),
       StructuredRecord.builder(INPUT)
         .set("offset", 3)
-        .set("body", "Logistic regression models are neat").build()
+        .set("body", "Logistic regression models are neat to predict data").build(),
+      StructuredRecord.builder(INPUT)
+        .set("offset", 3)
+        .set("body", "Use tokenizer to convert strings into tokens").build()
     );
 
     // write records to source
@@ -158,10 +164,10 @@ public class FeatureGeneratorTest extends HydratorTestBase {
     List<StructuredRecord> input = ImmutableList.of(
       StructuredRecord.builder(INPUT)
         .set("offset", 1)
-        .set("body", "Spark ML plugins").build(),
+        .set("body", "Spark").build(),
       StructuredRecord.builder(INPUT)
         .set("offset", 2)
-        .set("body", "Classes in Java").build(),
+        .set("body", "classes in Java").build(),
       StructuredRecord.builder(INPUT)
         .set("offset", 3)
         .set("body", "Logistic regression to predict data").build()
@@ -178,15 +184,20 @@ public class FeatureGeneratorTest extends HydratorTestBase {
     DataSetManager<Table> labeledTexts = getDataset(sink);
     List<StructuredRecord> structuredRecords = MockSink.readOutput(labeledTexts);
     Assert.assertEquals(3, structuredRecords.size());
-    List<Double> result = (ArrayList) (structuredRecords.get(0).get("result"));
-    Assert.assertArrayEquals(new double[]{0.040902843077977494, -0.010430609186490376, -0.04750693837801615},
-                             ArrayUtils.toPrimitive(result.toArray(new Double[result.size()])), 0.1);
-    result = (ArrayList) (structuredRecords.get(1).get("result"));
-    Assert.assertArrayEquals(new double[]{-0.04352385476231575, 3.2448768615722656E-4, 0.02223073500208557},
-                             ArrayUtils.toPrimitive(result.toArray(new Double[result.size()])), 0.1);
-    result = (ArrayList) (structuredRecords.get(2).get("result"));
-    Assert.assertArrayEquals(new double[]{0.011901815732320149, 0.019348077476024628, -0.0074237411220868426},
-                             ArrayUtils.toPrimitive(result.toArray(new Double[result.size()])), 0.1);
+    List<Double> result;
+    for (StructuredRecord record : structuredRecords) {
+      result = (ArrayList) (record.get("result"));
+      if ((Integer) record.get("offset") == 1) {
+        Assert.assertArrayEquals(new double[]{-0.05517900735139847, -0.13193030655384064, 0.14834064245224},
+                                 ArrayUtils.toPrimitive(result.toArray(new Double[result.size()])), 0.3);
+      } else if ((Integer) record.get("offset") == 2) {
+        Assert.assertArrayEquals(new double[]{0.022059813141822815, -0.04872007171312968, -0.06246543178955714},
+                                 ArrayUtils.toPrimitive(result.toArray(new Double[result.size()])), 0.3);
+      } else {
+        Assert.assertArrayEquals(new double[]{0.029224658012390138, -0.04119015634059906, 0.06800720132887364},
+                                 ArrayUtils.toPrimitive(result.toArray(new Double[result.size()])), 0.3);
+      }
+    }
   }
 
   @Test
@@ -201,7 +212,8 @@ public class FeatureGeneratorTest extends HydratorTestBase {
       .addStage(new ETLStage("sparkcompute",
                              new ETLPlugin(HashingTFFeatureGenerator.PLUGIN_NAME, SparkCompute.PLUGIN_TYPE,
                                            ImmutableMap.of("numFeatures", "10",
-                                                           "outputColumnMapping", "body:result"), null)))
+                                                           "outputColumnMapping", "body:result",
+                                                           "pattern", " "), null)))
       .addStage(new ETLStage("sink", MockSink.getPlugin(sink)))
       .addConnection("source", "sparkcompute")
       .addConnection("sparkcompute", "sink")
@@ -234,27 +246,84 @@ public class FeatureGeneratorTest extends HydratorTestBase {
     DataSetManager<Table> labeledTexts = getDataset(sink);
     List<StructuredRecord> structuredRecords = MockSink.readOutput(labeledTexts);
     Assert.assertEquals(3, structuredRecords.size());
-    List<Double> indices;
-    List<Double> values;
     for (StructuredRecord record : structuredRecords) {
-      indices = (ArrayList) (record.get("result_indices"));
-      values = (ArrayList) (record.get("result_value"));
+      SparseVector actual = VectorUtils.fromRecord((StructuredRecord) (record.get("result")));
+      SparseVector expected;
       if ((Integer) record.get("offset") == 1) {
-
-        Assert.assertArrayEquals(new int[]{3, 6, 7, 9},
-                                 ArrayUtils.toPrimitive(indices.toArray(new Integer[indices.size()])));
-        Assert.assertArrayEquals(new double[]{2.0, 1.0, 1.0, 1.0},
-                                 ArrayUtils.toPrimitive(values.toArray(new Double[values.size()])), 0.1);
+        expected = new SparseVector(10, new int[]{3, 6, 7, 9}, new double[]{2.0, 1.0, 1.0, 1.0});
+        Assert.assertEquals(expected, actual);
       } else if ((Integer) record.get("offset") == 2) {
-        Assert.assertArrayEquals(new int[]{2, 3, 4, 5, 6},
-                                 ArrayUtils.toPrimitive(indices.toArray(new Integer[indices.size()])));
-        Assert.assertArrayEquals(new double[]{1.0, 3.0, 1.0, 1.0, 1.0},
-                                 ArrayUtils.toPrimitive(values.toArray(new Double[values.size()])), 0.1);
+        expected = new SparseVector(10, new int[]{2, 3, 4, 5, 6}, new double[]{1.0, 3.0, 1.0, 1.0, 1.0});
+        Assert.assertEquals(expected, actual);
       } else {
-        Assert.assertArrayEquals(new int[]{0, 2, 4, 5, 8},
-                                 ArrayUtils.toPrimitive(indices.toArray(new Integer[indices.size()])));
-        Assert.assertArrayEquals(new double[]{1.0, 1.0, 1.0, 1.0, 1.0},
-                                 ArrayUtils.toPrimitive(values.toArray(new Double[values.size()])), 0.1);
+        expected = new SparseVector(10, new int[]{0, 2, 4, 5, 8}, new double[]{1.0, 1.0, 1.0, 1.0, 1.0});
+        Assert.assertEquals(expected, actual);
+      }
+    }
+  }
+
+  @Test
+  public void testHashingTFFeatureGeneratorWithArrayString() throws Exception {
+    Schema schema = Schema.recordOf("input", Schema.Field.of("offset", Schema.of(Schema.Type.INT)),
+                                    Schema.Field.of("body", Schema.arrayOf(Schema.nullableOf(Schema.of(
+                                      Schema.Type.STRING)))));
+
+    String source = "hashing-tf-generator-arrayString-source";
+    String sink = "hashing-tf-generator-arrayString-sink";
+    /*
+     * source --> sparkcompute --> sink
+     */
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(new ETLStage("source", MockSource.getPlugin(source, schema)))
+      .addStage(new ETLStage("sparkcompute",
+                             new ETLPlugin(HashingTFFeatureGenerator.PLUGIN_NAME, SparkCompute.PLUGIN_TYPE,
+                                           ImmutableMap.of("numFeatures", "10",
+                                                           "outputColumnMapping", "body:result",
+                                                           "pattern", " "), null)))
+      .addStage(new ETLStage("sink", MockSink.getPlugin(sink)))
+      .addConnection("source", "sparkcompute")
+      .addConnection("sparkcompute", "sink")
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app("SinglePhaseApp");
+    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
+
+    List<StructuredRecord> input = ImmutableList.of(
+      StructuredRecord.builder(schema)
+        .set("offset", 1)
+        .set("body", Arrays.asList("Hi", "I", "heard", "about", "Spark")).build(),
+      StructuredRecord.builder(schema)
+        .set("offset", 2)
+        .set("body", Arrays.asList("I", "wish", "Java", "could", "use", "case", "classes")).build(),
+      StructuredRecord.builder(schema)
+        .set("offset", 3)
+        .set("body", new ArrayList<String>()).build()
+    );
+
+    DataSetManager<Table> inputManager = getDataset(Id.Namespace.DEFAULT, source);
+    MockSource.writeInput(inputManager, input);
+
+    // manually trigger the pipeline
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+
+    DataSetManager<Table> labeledTexts = getDataset(sink);
+    List<StructuredRecord> structuredRecords = MockSink.readOutput(labeledTexts);
+    Assert.assertEquals(3, structuredRecords.size());
+    for (StructuredRecord record : structuredRecords) {
+      SparseVector actual = VectorUtils.fromRecord((StructuredRecord) (record.get("result")));
+      SparseVector expected;
+      if ((Integer) record.get("offset") == 1) {
+        expected = new SparseVector(10, new int[]{3, 6, 7, 9}, new double[]{2.0, 1.0, 1.0, 1.0});
+        Assert.assertEquals(expected, actual);
+      } else if ((Integer) record.get("offset") == 2) {
+        expected = new SparseVector(10, new int[]{2, 3, 4, 5, 6}, new double[]{1.0, 3.0, 1.0, 1.0, 1.0});
+        Assert.assertEquals(expected, actual);
+      } else {
+        expected = new SparseVector(10, new int[0], new double[0]);
+        Assert.assertEquals(expected, actual);
       }
     }
   }

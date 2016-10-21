@@ -22,25 +22,15 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import joptsimple.internal.Strings;
-import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.RowFactory;
-import org.apache.spark.sql.types.ArrayType;
-import org.apache.spark.sql.types.DataType;
-import org.apache.spark.sql.types.DataTypes;
-import org.apache.spark.sql.types.Metadata;
-import org.apache.spark.sql.types.StructField;
-import org.apache.spark.sql.types.StructType;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -209,100 +199,86 @@ final class SparkUtils {
     return Schema.recordOf(inputSchema.getRecordName() + ".predicted", fields);
   }
 
-  private static DataType getStructDataTypes(Schema.Type type) {
-    switch (type) {
-      case STRING:
-        return DataTypes.StringType;
-      case INT:
-        return DataTypes.IntegerType;
-      case LONG:
-        return DataTypes.LongType;
-      case FLOAT:
-        return DataTypes.FloatType;
-      case DOUBLE:
-        return DataTypes.DoubleType;
-      case BOOLEAN:
-        return DataTypes.BooleanType;
-      case BYTES:
-        return DataTypes.ByteType;
-      case NULL:
-        return DataTypes.NullType;
-      default:
-        return DataTypes.StringType;
+  /**
+   * Validate config parameters for feature generator classes.
+   *
+   * @param inputSchema         input Schema
+   * @param outputColumnMapping List of the input fields to map to the transformed output fields.
+   */
+  static void validateFeatureGeneratorConfig(Schema inputSchema, String outputColumnMapping) {
+    Map<String, String> map;
+    try {
+      map = Splitter.on(',').trimResults().withKeyValueSeparator(":").split(outputColumnMapping);
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException(
+        String.format("Invalid output feature mapping. %s. Please make sure it is in the format " +
+                        "'input-column':'transformed-output-column'.", e.getMessage()), e);
     }
-  }
-
-  private static StructField getStructField(Schema.Field field, Boolean transformField) {
-    Schema schema = field.getSchema();
-    Boolean isNullable = schema.isNullable();
-    Schema.Type type = isNullable ? schema.getNonNullable().getType() : schema.getType();
-    if (transformField) {
+    for (Map.Entry<String, String> entry : map.entrySet()) {
+      String key = entry.getKey();
+      String value = entry.getValue();
+      if (inputSchema.getField(key) == null) {
+        throw new IllegalArgumentException(String.format("Input field %s does not exist in the input schema %s.",
+                                                         key, inputSchema.toString()));
+      }
+      Schema schema = inputSchema.getField(key).getSchema();
+      Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
+      Schema.Type componentSchemaType = null;
       if (type.equals(Schema.Type.ARRAY)) {
-        type = schema.getComponentSchema().getType();
-        return new StructField(field.getName() + "-transformed",
-                               DataTypes.createArrayType(getStructDataTypes(type), isNullable), isNullable,
-                               Metadata.empty());
-      } else {
-        return new StructField(field.getName() + "-transformed", new ArrayType(getStructDataTypes(type), true),
-                               isNullable, Metadata.empty());
+        Schema componentSchema = schema.getComponentSchema();
+        componentSchemaType = componentSchema.isNullable() ? componentSchema.getNonNullable().getType() :
+          componentSchema.getType();
       }
-    } else {
-      if (type.equals(Schema.Type.ARRAY)) {
-        type = schema.getComponentSchema().getType();
-        return new StructField(field.getName(), DataTypes.createArrayType(getStructDataTypes(type), isNullable),
-                               isNullable, Metadata.empty());
-      } else if (type.equals(Schema.Type.MAP)) {
-        return new StructField(field.getName(), DataTypes.createMapType(
-          getStructDataTypes(field.getSchema().getMapSchema().getKey().getType()),
-          getStructDataTypes(field.getSchema().getMapSchema().getValue().getType()), isNullable),
-                               isNullable, Metadata.empty());
-      } else {
-        return new StructField(field.getName(), getStructDataTypes(type), isNullable, Metadata.empty());
+      if (!(type.equals(Schema.Type.STRING) || (type.equals(Schema.Type.ARRAY) &&
+        componentSchemaType.equals(Schema.Type.STRING)))) {
+        throw new IllegalArgumentException(String.format("Field to be transformed should be of type String or " +
+                                                           "Nullable String or Array of type String or Nullable " +
+                                                           "String . But was %s for field %s.", type, key));
+      }
+      if (value == null) {
+        throw new IllegalArgumentException(String.format("Output column name not specified for column : %s. " +
+                                                           "Please make sure it is in the format 'input-column':" +
+                                                           "'transformed-output-column'.", entry.getKey()));
+      } else if (inputSchema.getField(value) != null) {
+        throw new IllegalArgumentException(
+          String.format("Output column name %s for column %s is already present in the input schema. Please " +
+                          "provide a different output field name.", value, key));
       }
     }
   }
 
-  static List<StructField> getStructFieldList(List<Schema.Field> fields, Set<String> inputCol) {
-    List<StructField> structField = new ArrayList<>();
-    for (Schema.Field field : fields) {
-      if (inputCol.contains(field.getName())) {
-        Schema schema = field.getSchema();
-        Schema.Type type = schema.getType();
-        if (Schema.Type.STRING.equals(type) || Schema.Type.BOOLEAN.equals(type) || (Schema.Type.ARRAY.equals(type) &&
-          (Schema.Type.STRING.equals(schema.getComponentSchema().getType()) ||
-            Schema.Type.BOOLEAN.equals(schema.getComponentSchema().getType())))) {
-          structField.add(SparkUtils.getStructField(field, true));
-        } else {
-          throw new IllegalArgumentException(
-            String.format("Unsupported data types for feature generation. Only string, boolean or array of type " +
-                            "string are supported. But was %s for field %s", schema.getType(), field));
-        }
-      }
-      structField.add(SparkUtils.getStructField(field, false));
+  /**
+   * Get the valid of input field which is to be used for text based feature generation.
+   *
+   * @param input      input Structured Record
+   * @param inputField field to use for feature generation
+   * @param pattern pattern to use for splitting the string
+   * @return
+   */
+  static List<String> getInputFieldValue(StructuredRecord input, String inputField, String pattern) {
+    List<String> text = new ArrayList<>();
+    Schema schema = input.getSchema().getField(inputField).getSchema();
+    if (!schema.isNullable() && input.get(inputField) == null) {
+      throw new IllegalArgumentException(String.format("Null value found for non-nullable field %s", inputField));
     }
-    return structField;
-  }
-
-  static JavaRDD<Row> convertJavaRddStructuredRecordToJavaRddRows(JavaRDD<StructuredRecord> input,
-                                                                  final StructType schema) {
-    return input.map(new Function<StructuredRecord, Row>() {
-      @Override
-      public Row call(StructuredRecord record) throws Exception {
-        List<Object> fields = new ArrayList<>();
-        for (String field : schema.fieldNames()) {
-          if (field.contains("-transformed")) {
-            field = field.split("-transformed")[0];
-            if (Schema.Type.ARRAY.equals(record.getSchema().getField(field).getSchema().getType())) {
-              fields.add(record.get(field));
-            } else {
-              fields.add(Arrays.asList(((String) record.get(field)).split(" ")));
-            }
-          } else {
-            fields.add(record.get(field));
-          }
-        }
-        return RowFactory.create(fields.toArray());
+    Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
+    if (type.equals(Schema.Type.ARRAY)) {
+      schema = schema.getComponentSchema();
+      if (!schema.isNullable() && ((ArrayList) input.get(inputField)).isEmpty()) {
+        throw new IllegalArgumentException(String.format("Null value found for non-nullable field %s", inputField));
       }
-    });
+      type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
+      if (type.equals(Schema.Type.STRING)) {
+        text = (ArrayList) input.get(inputField);
+      } else {
+        throw new IllegalArgumentException(
+          String.format("Field to be used for text based feaure generation should be of type string, nullable " +
+                          "string or array of strings or nullable string. But was ARRAY of %s for field %s.",
+                        schema.getComponentSchema(), inputField));
+      }
+    } else if (type.equals(Schema.Type.STRING)) {
+      text = Lists.newArrayList(Splitter.on(Pattern.compile(pattern)).split((String) input.get(inputField)));
+    }
+    return text;
   }
 }

@@ -17,7 +17,9 @@ Properties
 
 **inputCol:** Field to be used for training.
 
-**vectorSize:** The dimension of codes after transforming from words. Default 3.
+**pattern:** Pattern to split the input string fields on. Default is '\s+'.
+
+**vectorSize:** The dimension of codes after transforming from words. Default 100.
 
 **minCount:** The minimum number of times a token must appear to be included in the word2vec model's vocabulary.
 Default is 0.
@@ -42,6 +44,7 @@ words and number of iterations as 1.
             "fileSetName": "feature-generator",
             "path": "feature",
             "inputCol": "text",
+            "pattern": " ",
             "vectorSize": "3",
             "minCount": "2",
             "numPartitions": "1",

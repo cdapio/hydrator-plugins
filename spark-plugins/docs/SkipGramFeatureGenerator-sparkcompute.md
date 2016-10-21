@@ -7,7 +7,7 @@ SparkCompute to generate text based feature from string using stored skip-gram m
 
 Use Case
 --------
-This transform can be used when user has a saved Word2Vec model and wants to genearte text based feature.
+This transform can be used when user has a saved Word2Vec model and wants to generate text based feature.
 
 Properties
 ----------
@@ -18,6 +18,8 @@ Properties
 **outputColumnMapping:** A comma-separated list of the input fields to map to the transformed output fields. The key
 specifies the name of the field to generate feature vector from, with its corresponding value specifying the output
 column in which the vector would be emitted.
+
+**pattern:** Pattern to split the input string fields on. Default is '\s+'.
 
 
 Example
@@ -31,7 +33,8 @@ array of double in column ``result``.
         "properties": {
             "fileSetName": "feature-generator",
             "path": "feature",
-            "outputColumnMapping": "text:result"
+            "outputColumnMapping": "text:result",
+            "pattern": " "
         }
     }
 
@@ -49,7 +52,7 @@ For example, suppose the feature generator receives the input records:
 Output records will contain all the fields along with the output fields mentioned in ``outputColumnMapping``:
 
     +===================================================================================================================+
-    | offset |  text                               |  reult                                                             |
+    | offset |  text                               |  result                                                            |
     +===================================================================================================================+
     | 1      | Spark ML plugins                    |[0.040902843077977494, -0.010430609186490376, -0.04750693837801615] |
     | 2      | Classes in Java                     |[-0.04352385476231575, 3.2448768615722656E-4, 0.02223073500208557]  |

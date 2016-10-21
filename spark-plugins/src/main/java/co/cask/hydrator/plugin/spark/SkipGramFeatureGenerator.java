@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package co.cask.hydrator.plugin.spark;
 
 import co.cask.cdap.api.annotation.Description;
@@ -27,27 +26,20 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.StageConfigurer;
 import co.cask.cdap.etl.api.batch.SparkCompute;
 import co.cask.cdap.etl.api.batch.SparkExecutionPluginContext;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
-import org.apache.spark.ml.feature.Word2VecModel;
-import org.apache.spark.mllib.linalg.Vector;
-import org.apache.spark.sql.Column;
-import org.apache.spark.sql.DataFrame;
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SQLContext;
-import org.apache.spark.sql.types.StructField;
-import org.apache.spark.sql.types.StructType;
+import org.apache.spark.mllib.feature.Word2VecModel;
 import org.apache.twill.filesystem.Location;
-import scala.collection.JavaConversions;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * Class to generate text based features using SkipGram model (Spark's Word2Vec).
@@ -60,13 +52,19 @@ public class SkipGramFeatureGenerator extends SparkCompute<StructuredRecord, Str
   private FeatureGeneratorConfig config;
   private Schema outputSchema;
   private Word2VecModel loadedModel;
-  private StructType schema;
+
+  @VisibleForTesting
+  public SkipGramFeatureGenerator(FeatureGeneratorConfig config) {
+    this.config = config;
+  }
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
     Schema inputSchema = stageConfigurer.getInputSchema();
     Preconditions.checkArgument(inputSchema != null, "Input Schema must be a known constant.");
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(config.getOutputSchema(inputSchema));
+    SparkUtils.validateFeatureGeneratorConfig(inputSchema, config.outputColumnMapping);
   }
 
   @Override
@@ -75,75 +73,52 @@ public class SkipGramFeatureGenerator extends SparkCompute<StructuredRecord, Str
     FileSet fileSet = context.getDataset(config.fileSetName);
     Location modelLocation = fileSet.getBaseLocation().append(config.path);
     if (!modelLocation.exists()) {
-      throw new IllegalArgumentException(String.format("Failed to find model to use for Regression. Location does " +
-                                                         "not exist: %s.", modelLocation));
+      throw new IllegalArgumentException(String.format("Failed to find model. Location does not exist: %s.",
+                                                       modelLocation));
     }
     // load the model from a file in the model fileset
-    loadedModel = Word2VecModel.load(modelLocation.toURI().getPath());
+    loadedModel = Word2VecModel.load(context.getSparkContext().sc(), modelLocation.toURI().getPath());
   }
 
   @Override
   public JavaRDD<StructuredRecord> transform(SparkExecutionPluginContext context,
                                              JavaRDD<StructuredRecord> input) throws Exception {
-    if (input == null) {
+    if (input.isEmpty()) {
       return context.getSparkContext().emptyRDD();
     }
-    JavaSparkContext javaSparkContext = context.getSparkContext();
-    SQLContext sqlContext = new SQLContext(javaSparkContext);
-    Schema inputSchema = input.first().getSchema();
-    List<StructField> structField = SparkUtils.getStructFieldList(inputSchema.getFields(),
-                                                                  config.getFeatureListMapping().keySet());
-    schema = new StructType(structField.toArray(new StructField[structField.size()]));
-    JavaRDD<Row> rowRDD = SparkUtils.convertJavaRddStructuredRecordToJavaRddRows(input, schema);
-    DataFrame documentDF = sqlContext.createDataFrame(rowRDD, schema);
-    DataFrame result = null;
+    outputSchema = outputSchema != null ? outputSchema : config.getOutputSchema(input.first().getSchema());
+    final Map<String, String> mapping = config.getFeatureListMapping();
 
-    for (Map.Entry<String, String> entry : config.getFeatureListMapping().entrySet()) {
-      result = loadedModel.setInputCol(entry.getKey() + "-transformed").setOutputCol(entry.getValue())
-        .transform(documentDF);
-      documentDF = result;
-    }
-
-    outputSchema = outputSchema != null ? outputSchema : config.getOutputSchema(inputSchema);
-
-    List<Column> requiredFields = new ArrayList<>();
-    for (Schema.Field field : outputSchema.getFields()) {
-      requiredFields.add(new Column(field.getName()));
-    }
-
-    JavaRDD<Row> transformedRDD =
-      javaSparkContext.parallelize(result.select(JavaConversions.asScalaBuffer(requiredFields).toSeq())
-                                     .collectAsList());
-    JavaRDD<StructuredRecord> output = transformedRDD.map(new Function<Row, StructuredRecord>() {
+    final int vectorSize = loadedModel.wordVectors().length / loadedModel.wordIndex().size();
+    return input.map(new Function<StructuredRecord, StructuredRecord>() {
       @Override
-      public StructuredRecord call(Row row) throws Exception {
+      public StructuredRecord call(StructuredRecord input) throws Exception {
         StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
-        Schema.Field[] strings = outputSchema.getFields().toArray(new Schema.Field[outputSchema.getFields().size()]);
-        for (int i = 0; i < strings.length; i++) {
-          String fieldName = strings[i].getName();
-          Schema schema = strings[i].getSchema();
-          if (config.getFeatureListMapping().values().contains(strings[i].getName())) {
-            double[] doubles = ((Vector) row.get(i)).toArray();
-            builder.set(fieldName, new ArrayList<>(Arrays.asList(ArrayUtils.toObject(doubles))));
-          } else {
-            if (row.get(i) == null && !schema.isNullable()) {
-              throw new IllegalArgumentException(String.format("Null value found for nun-nullable field %s.",
-                                                               fieldName));
+        for (Schema.Field field : input.getSchema().getFields()) {
+          String fieldName = field.getName();
+          builder.set(fieldName, input.get(fieldName));
+        }
+        for (Map.Entry<String, String> mapEntry : mapping.entrySet()) {
+          String inputField = mapEntry.getKey();
+          String outputField = mapEntry.getValue();
+          List<String> text = SparkUtils.getInputFieldValue(input, inputField, config.pattern);
+          int numWords = 0;
+          double[] vectorValues = new double[vectorSize];
+          for (String word : text) {
+            double[] wordVector = loadedModel.transform(word).toArray();
+            for (int i = 0; i < vectorSize; i++) {
+              vectorValues[i] += wordVector[i];
             }
-            Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
-            if (type.equals(Schema.Type.ARRAY)) {
-              builder.set(fieldName, row.getList(i));
-            } else if (type.equals(Schema.Type.MAP)) {
-              builder.set(fieldName, row.getJavaMap(i));
-            } else {
-              builder.set(fieldName, row.get(i));
-            }
+            numWords++;
           }
+          for (int i = 0; i < vectorSize; i++) {
+            vectorValues[i] /= (double) numWords;
+          }
+          builder.set(outputField, new ArrayList<>(Arrays.asList(ArrayUtils.toObject(vectorValues))));
         }
         return builder.build();
       }
     });
-    return output;
   }
 
   /**
@@ -151,20 +126,29 @@ public class SkipGramFeatureGenerator extends SparkCompute<StructuredRecord, Str
    */
   public static class FeatureGeneratorConfig extends PluginConfig {
     @Description("The name of the FileSet to load the model from.")
-    private final String fileSetName;
+    private String fileSetName;
 
     @Description("Path of the FileSet to load the model from.")
-    private final String path;
+    private String path;
 
     @Description("List of the input fields to map to the transformed output fields. The key specifies the name of " +
       "the field to generate feature vector from, with its corresponding value the output column in which the vector " +
       "would be emitted.")
-    private final String outputColumnMapping;
+    private String outputColumnMapping;
 
-    private FeatureGeneratorConfig(String fileSetName, String path, String outputColumnMapping) {
+    @Nullable
+    @Description("Pattern to split the input string fields on. Default is '\\s+'.")
+    private String pattern;
+
+    public FeatureGeneratorConfig() {
+      pattern = "\\s+";
+    }
+
+    public FeatureGeneratorConfig(String fileSetName, String path, String outputColumnMapping, String pattern) {
       this.fileSetName = fileSetName;
       this.path = path;
       this.outputColumnMapping = outputColumnMapping;
+      this.pattern = pattern;
     }
 
     private Map<String, String> getFeatureListMapping() {
@@ -173,8 +157,8 @@ public class SkipGramFeatureGenerator extends SparkCompute<StructuredRecord, Str
         return map;
       } catch (IllegalArgumentException e) {
         throw new IllegalArgumentException(
-          String.format("Invalid categorical feature mapping. %s. Please make sure it is in the format " +
-                          "'feature':'cardinality'.", e.getMessage()), e);
+          String.format("Invalid output feature mapping. %s. Please make sure it is in the format " +
+                          "'input-column':'transformed-output-column'.", e.getMessage()), e);
       }
     }
 

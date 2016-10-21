@@ -7,11 +7,16 @@
       "label": "Hashing TF Feature Generator Properties",
       "properties": [
         {
+          "widget-type": "textbox",
+          "label": "Pattern to split the input string fields on",
+          "name": "pattern"
+        },
+        {
           "widget-type": "number",
           "label": "Number of features",
           "name": "numFeatures",
           "widget-attributes": {
-            "default": "100",
+            "default": 1048576,
             "min": 1
           }
         },
