@@ -116,7 +116,7 @@ public abstract class SparkMLTrainer extends SparkSink<StructuredRecord> {
       JavaRDD<StructuredRecord> filteredData = input.filter(new Function<StructuredRecord, Boolean>() {
         @Override
         public Boolean call(StructuredRecord record) throws Exception {
-          if(record.get(config.labelField) == null) {
+          if (record.get(config.labelField) == null) {
             return false;
           }
           return true;

@@ -24,7 +24,6 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.tree.model.DecisionTreeModel;
 
-import javax.annotation.Nullable;
 
 /**
  * SparkCompute that uses a trained model to tag input records using Decision Tree regression.
@@ -36,7 +35,7 @@ public class DecisionTreePredictor extends SparkMLPredictor {
   public static final String PLUGIN_NAME = "DecisionTreePredictor";
   private DecisionTreeModel loadedModel;
 
-  public DecisionTreePredictor(DecisionTreeConfig config) {
+  public DecisionTreePredictor(MLPredictorConfig config) {
     super(config);
   }
 
@@ -48,16 +47,5 @@ public class DecisionTreePredictor extends SparkMLPredictor {
   @Override
   public double predict(Vector vector) {
     return loadedModel.predict(vector);
-  }
-
-  /**
-   * Configuration for the DecisionTreePredictor.
-   */
-  public static class DecisionTreeConfig extends MLPredictorConfig {
-
-    public DecisionTreeConfig(String fileSetName, String path, @Nullable String featureFieldsToInclude,
-                              @Nullable String featureFieldsToExclude, String predictionField) {
-      super(fileSetName, path, featureFieldsToInclude, featureFieldsToExclude, predictionField);
-    }
   }
 }
