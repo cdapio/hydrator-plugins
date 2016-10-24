@@ -36,9 +36,9 @@ import org.apache.spark.mllib.feature.Word2VecModel;
 import org.apache.twill.filesystem.Location;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -52,6 +52,7 @@ public class SkipGramFeatureGenerator extends SparkCompute<StructuredRecord, Str
   private FeatureGeneratorConfig config;
   private Schema outputSchema;
   private Word2VecModel loadedModel;
+  private Splitter splitter;
 
   @VisibleForTesting
   public SkipGramFeatureGenerator(FeatureGeneratorConfig config) {
@@ -64,7 +65,8 @@ public class SkipGramFeatureGenerator extends SparkCompute<StructuredRecord, Str
     Schema inputSchema = stageConfigurer.getInputSchema();
     Preconditions.checkArgument(inputSchema != null, "Input Schema must be a known constant.");
     pipelineConfigurer.getStageConfigurer().setOutputSchema(config.getOutputSchema(inputSchema));
-    SparkUtils.validateFeatureGeneratorConfig(inputSchema, config.outputColumnMapping);
+    SparkUtils.validateFeatureGeneratorConfig(inputSchema, SparkUtils.getFeatureListMapping(config.outputColumnMapping),
+                                              config.pattern);
   }
 
   @Override
@@ -87,12 +89,13 @@ public class SkipGramFeatureGenerator extends SparkCompute<StructuredRecord, Str
       return context.getSparkContext().emptyRDD();
     }
     outputSchema = outputSchema != null ? outputSchema : config.getOutputSchema(input.first().getSchema());
-    final Map<String, String> mapping = config.getFeatureListMapping();
+    final Map<String, String> mapping = SparkUtils.getFeatureListMapping(config.outputColumnMapping);
 
     final int vectorSize = loadedModel.wordVectors().length / loadedModel.wordIndex().size();
     return input.map(new Function<StructuredRecord, StructuredRecord>() {
       @Override
       public StructuredRecord call(StructuredRecord input) throws Exception {
+        splitter = splitter == null ? Splitter.on(Pattern.compile(config.pattern)) : splitter;
         StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
         for (Schema.Field field : input.getSchema().getFields()) {
           String fieldName = field.getName();
@@ -101,7 +104,7 @@ public class SkipGramFeatureGenerator extends SparkCompute<StructuredRecord, Str
         for (Map.Entry<String, String> mapEntry : mapping.entrySet()) {
           String inputField = mapEntry.getKey();
           String outputField = mapEntry.getValue();
-          List<String> text = SparkUtils.getInputFieldValue(input, inputField, config.pattern);
+          List<String> text = SparkUtils.getInputFieldValue(input, inputField, splitter);
           int numWords = 0;
           double[] vectorValues = new double[vectorSize];
           for (String word : text) {
@@ -114,7 +117,7 @@ public class SkipGramFeatureGenerator extends SparkCompute<StructuredRecord, Str
           for (int i = 0; i < vectorSize; i++) {
             vectorValues[i] /= (double) numWords;
           }
-          builder.set(outputField, new ArrayList<>(Arrays.asList(ArrayUtils.toObject(vectorValues))));
+          builder.set(outputField, ArrayUtils.toObject(vectorValues));
         }
         return builder.build();
       }
@@ -151,20 +154,9 @@ public class SkipGramFeatureGenerator extends SparkCompute<StructuredRecord, Str
       this.pattern = pattern;
     }
 
-    private Map<String, String> getFeatureListMapping() {
-      try {
-        Map<String, String> map = Splitter.on(',').trimResults().withKeyValueSeparator(":").split(outputColumnMapping);
-        return map;
-      } catch (IllegalArgumentException e) {
-        throw new IllegalArgumentException(
-          String.format("Invalid output feature mapping. %s. Please make sure it is in the format " +
-                          "'input-column':'transformed-output-column'.", e.getMessage()), e);
-      }
-    }
-
     private Schema getOutputSchema(Schema inputSchema) {
       List<Schema.Field> fields = new ArrayList<>(inputSchema.getFields());
-      for (Map.Entry<String, String> entry : getFeatureListMapping().entrySet()) {
+      for (Map.Entry<String, String> entry : SparkUtils.getFeatureListMapping(outputColumnMapping).entrySet()) {
         fields.add(Schema.Field.of(entry.getValue(), Schema.arrayOf(Schema.of(Schema.Type.DOUBLE))));
       }
       return Schema.recordOf("record", fields);

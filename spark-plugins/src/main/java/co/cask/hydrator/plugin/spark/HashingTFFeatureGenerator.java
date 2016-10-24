@@ -38,6 +38,7 @@ import org.apache.spark.mllib.linalg.Vectors;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -51,6 +52,7 @@ public class HashingTFFeatureGenerator extends SparkCompute<StructuredRecord, St
   private HashingTFConfig config;
   private Schema outputSchema;
   private HashingTF hashingTF;
+  private Splitter splitter;
 
   @VisibleForTesting
   public HashingTFFeatureGenerator(HashingTFConfig config) {
@@ -63,7 +65,7 @@ public class HashingTFFeatureGenerator extends SparkCompute<StructuredRecord, St
     Schema inputSchema = stageConfigurer.getInputSchema();
     Preconditions.checkArgument(inputSchema != null, "Input Schema must be a known constant.");
     pipelineConfigurer.getStageConfigurer().setOutputSchema(config.getOutputSchema(inputSchema));
-    SparkUtils.validateFeatureGeneratorConfig(inputSchema, config.outputColumnMapping);
+    config.validate(inputSchema);
   }
 
   @Override
@@ -79,11 +81,12 @@ public class HashingTFFeatureGenerator extends SparkCompute<StructuredRecord, St
       return context.getSparkContext().emptyRDD();
     }
     outputSchema = outputSchema != null ? outputSchema : config.getOutputSchema(input.first().getSchema());
-    final Map<String, String> mapping = config.getFeatureListMapping();
+    final Map<String, String> mapping = SparkUtils.getFeatureListMapping(config.outputColumnMapping);
 
     return input.map(new Function<StructuredRecord, StructuredRecord>() {
       @Override
       public StructuredRecord call(StructuredRecord input) throws Exception {
+        splitter = splitter == null ? Splitter.on(Pattern.compile(config.pattern)) : splitter;
         StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
         for (Schema.Field field : input.getSchema().getFields()) {
           String fieldName = field.getName();
@@ -92,7 +95,7 @@ public class HashingTFFeatureGenerator extends SparkCompute<StructuredRecord, St
         for (Map.Entry<String, String> mapEntry : mapping.entrySet()) {
           String inputField = mapEntry.getKey();
           String outputField = mapEntry.getValue();
-          List<String> text = SparkUtils.getInputFieldValue(input, inputField, config.pattern);
+          List<String> text = SparkUtils.getInputFieldValue(input, inputField, splitter);
           Vector vector = text == null ? Vectors.sparse(0, new int[0], new double[0]) :
             hashingTF.transform(text);
           builder.set(outputField, VectorUtils.asRecord((SparseVector) vector));
@@ -132,26 +135,21 @@ public class HashingTFFeatureGenerator extends SparkCompute<StructuredRecord, St
       this.outputColumnMapping = outputColumnMapping;
     }
 
-    private Map<String, String> getFeatureListMapping() {
-      try {
-        Map<String, String> map = Splitter.on(',').trimResults().withKeyValueSeparator(":").split(outputColumnMapping);
-        return map;
-      } catch (IllegalArgumentException e) {
-        throw new IllegalArgumentException(
-          String.format("Invalid output feature mapping. %s. Please make sure it is in the format " +
-                          "'input-column':'transformed-output-column'.", e.getMessage()), e);
-      }
-    }
-
     private Schema getOutputSchema(Schema inputSchema) {
       List<Schema.Field> fields = new ArrayList<>(inputSchema.getFields());
-      for (Map.Entry<String, String> entry : getFeatureListMapping().entrySet()) {
-        fields.add(Schema.Field.of(entry.getValue(), Schema.recordOf(
-          "sparseVector", Schema.Field.of("size", Schema.of(Schema.Type.INT)),
-          Schema.Field.of("indices", Schema.arrayOf(Schema.of(Schema.Type.INT))),
-          Schema.Field.of("vectorValues", Schema.arrayOf(Schema.of(Schema.Type.DOUBLE))))));
+      for (Map.Entry<String, String> entry : SparkUtils.getFeatureListMapping(outputColumnMapping).entrySet()) {
+        fields.add(Schema.Field.of(entry.getValue(), VectorUtils.SPARSE_SCHEMA));
       }
       return Schema.recordOf("record", fields);
+    }
+
+    private void validate(Schema inputSchema) {
+      SparkUtils.validateFeatureGeneratorConfig(inputSchema, SparkUtils.getFeatureListMapping(outputColumnMapping),
+                                                pattern);
+      if (numFeatures < 1) {
+        throw new IllegalArgumentException("Number of features cannot be negative. Please provide a validate " +
+                                             "positive value for number of features.");
+      }
     }
   }
 }

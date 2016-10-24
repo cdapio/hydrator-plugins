@@ -27,11 +27,14 @@ import co.cask.cdap.etl.api.batch.SparkExecutionPluginContext;
 import co.cask.cdap.etl.api.batch.SparkPluginContext;
 import co.cask.cdap.etl.api.batch.SparkSink;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.mllib.feature.Word2Vec;
 import org.apache.spark.mllib.feature.Word2VecModel;
 
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import javax.annotation.Nullable;
 
 /**
@@ -44,6 +47,7 @@ import javax.annotation.Nullable;
 public class SkipGramTrainer extends SparkSink<StructuredRecord> {
   public static final String PLUGIN_NAME = "SkipGramTrainer";
   private SkipGramTrainerConfig config;
+  private Splitter splitter;
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
@@ -54,8 +58,7 @@ public class SkipGramTrainer extends SparkSink<StructuredRecord> {
   }
 
   @Override
-  public void run(SparkExecutionPluginContext context, JavaRDD<StructuredRecord> input)
-    throws Exception {
+  public void run(SparkExecutionPluginContext context, JavaRDD<StructuredRecord> input) throws Exception {
     if (input.isEmpty()) {
       return;
     }
@@ -63,7 +66,8 @@ public class SkipGramTrainer extends SparkSink<StructuredRecord> {
     JavaRDD<Iterable<String>> textRDD = input.map(new Function<StructuredRecord, Iterable<String>>() {
       @Override
       public Iterable<String> call(StructuredRecord input) throws Exception {
-        return SparkUtils.getInputFieldValue(input, fieldName, config.pattern);
+        splitter = (splitter == null) ? Splitter.on(Pattern.compile(config.pattern)) : splitter;
+        return SparkUtils.getInputFieldValue(input, fieldName, splitter);
       }
     });
 
@@ -146,18 +150,25 @@ public class SkipGramTrainer extends SparkSink<StructuredRecord> {
     }
 
     public void validate(Schema inputSchema) {
-      Schema.Field field = inputSchema.getField(inputCol);
-      if (field == null) {
-        throw new IllegalArgumentException(String.format("Input column %s does not exist in the input schema",
-                                                         inputCol));
+      SparkUtils.validateTextField(inputSchema, inputCol);
+      try {
+        Pattern.compile(pattern);
+      } catch (PatternSyntaxException e) {
+        throw new IllegalArgumentException(String.format("Invalid expression - %s. Please provide a valid pattern " +
+                                                           "for splitting the string. %s.", pattern, e.getMessage()),
+                                           e);
       }
-      Schema schema = field.getSchema();
-      Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
-      if (!(type.equals(Schema.Type.STRING) || (type.equals(Schema.Type.ARRAY) &&
-        schema.getComponentSchema().getType().equals(Schema.Type.STRING)))) {
-        throw new IllegalArgumentException(String.format("Input column can be of type string or nullable string or " +
-                                                           "array of string or nullable string. But was %s for %s.",
-                                                         type, inputCol));
+      validateConfigParameters("vector size", vectorSize);
+      validateConfigParameters("minimum count", minCount);
+      validateConfigParameters("number of partitions", numPartitions);
+      validateConfigParameters("number of iterations", numIterations);
+      validateConfigParameters("window size", windowSize);
+    }
+
+    private void validateConfigParameters(String param, int value) {
+      if (value < 0) {
+        throw new IllegalArgumentException(String.format("Value for %s cannot be negative. Please provide a valid " +
+                                                           "positive value for %s", param, param));
       }
     }
   }

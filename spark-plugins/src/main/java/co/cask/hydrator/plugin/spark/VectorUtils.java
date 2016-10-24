@@ -20,15 +20,13 @@ import co.cask.cdap.api.data.schema.Schema;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.spark.mllib.linalg.SparseVector;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
  * Vector utility class to handle sparse vectors.
  */
 public class VectorUtils {
-  private static final Schema SPARSE_SCHEMA =
+  public static final Schema SPARSE_SCHEMA =
     Schema.recordOf("sparseVector", Schema.Field.of("size", Schema.of(Schema.Type.INT)),
                     Schema.Field.of("indices", Schema.arrayOf(Schema.of(Schema.Type.INT))),
                     Schema.Field.of("vectorValues", Schema.arrayOf(Schema.of(Schema.Type.DOUBLE))));
@@ -36,8 +34,8 @@ public class VectorUtils {
   public static StructuredRecord asRecord(SparseVector vector) {
     return StructuredRecord.builder(SPARSE_SCHEMA)
       .set("size", vector.size())
-      .set("indices", new ArrayList<>(Arrays.asList(ArrayUtils.toObject(vector.indices()))))
-      .set("vectorValues", new ArrayList<>(Arrays.asList(ArrayUtils.toObject(vector.values()))))
+      .set("indices", ArrayUtils.toObject(vector.indices()))
+      .set("vectorValues", ArrayUtils.toObject(vector.values()))
       .build();
   }
 
