@@ -29,6 +29,10 @@ can be provided as macro configuration.
 **initialPosition:** Initial position in the stream. Can be either TRIM_HORIZON or LATEST, Default position will be
 Latest
 
+**format:** Optional format of the Kinesis shard payload. Any format supported by CDAP is supported.
+For example, a value of 'csv' will attempt to parse Kinesis payloads as comma-separated values.
+If no format is given, Kinesis payloads will be treated as bytes.
+
 Example
 -------
 This example will read from kinesis stream named 'MyKinesisStream'. It will spin up 1 Kinesis Receiver per shard for the
@@ -44,6 +48,28 @@ given stream. It starts pulling from the last checkpointed sequence number of th
             "accessKey": "my_aws_access_secret",
             "endpointUrl": "1",
             "duration": "2000",
-            "initialPosition": "Latest"
+            "initialPosition": "Latest",
+            "format": "csv",
+            "schema": "{
+                    \"type\":\"record\",
+                    \"name\":\"purchase\",
+                    \"fields\":[
+                        {\"name\":\"user\",\"type\":\"string\"},
+                        {\"name\":\"item\",\"type\":\"string\"},
+                        {\"name\":\"count\",\"type\":\"int\"},
+                        {\"name\":\"price\",\"type\":\"double\"}
+                    ]
+            }
         }
     }
+
+For each Kafka message read, it will output a record with the schema:
+
+    +================================+
+    | field name  | type             |
+    +================================+
+    | user        | string           |
+    | item        | string           |
+    | count       | int              |
+    | price       | double           |
+    +================================+

@@ -8,6 +8,11 @@
       "properties": [
         {
           "widget-type": "textbox",
+          "label": "Reference Name",
+          "name": "referenceName"
+        },
+        {
+          "widget-type": "textbox",
           "label": "Application Name",
           "name": "appName"
         },
@@ -23,13 +28,25 @@
         },
         {
           "widget-type": "textbox",
+          "label": "region",
+          "name": "region"
+        },
+        {
+          "widget-type": "textbox",
           "label": "Checkpoint interval duration",
           "name": "duration"
         },
         {
-          "widget-type": "textbox",
+          "widget-type": "select",
           "label": "Initial position in stream",
-          "name": "initialPosition"
+          "name": "initialPosition",
+          "widget-attributes": {
+            "values": [
+              "LATEST",
+              "TRIM_HORIZON"
+            ],
+            "default": "LATEST"
+          }
         },
         {
           "widget-type": "textbox",
@@ -42,7 +59,50 @@
           "name": "awsAccessSecret"
         }
       ]
+    },
+    {
+      "label": "Format",
+      "properties": [
+        {
+          "widget-type": "select",
+          "label": "Format",
+          "name": "format",
+          "widget-attributes": {
+            "values": [
+              "",
+              "avro",
+              "binary",
+              "clf",
+              "csv",
+              "grok",
+              "syslog",
+              "text",
+              "tsv"
+            ],
+            "default": ""
+          }
+        }
+      ]
     }
   ],
-  "outputs": []
+  "outputs": [
+    {
+      "name": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "default-schema": {
+          "name": "etlSchemaBody",
+          "type": "record",
+          "fields": [
+            {
+              "name": "body",
+              "type": ["bytes", "null"]
+            }
+          ]
+        },
+        "schema-default-type": "string",
+        "property-watch": "format"
+      }
+    }
+  ]
 }
