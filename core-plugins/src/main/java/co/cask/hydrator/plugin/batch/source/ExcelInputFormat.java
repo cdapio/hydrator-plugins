@@ -1,4 +1,3 @@
-package co.cask.hydrator.plugin.batch.source;
 /*
  * Copyright © 2016 Cask Data, Inc.
  *
@@ -15,6 +14,9 @@ package co.cask.hydrator.plugin.batch.source;
  * the License.
  */
 
+package co.cask.hydrator.plugin.batch.source;
+
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -96,18 +98,15 @@ public class ExcelInputFormat extends TextInputFormat {
     public static final String MID = "MID";
 
     // Non-printable ASCII character(EOT) to seperate column-values
-    public static final String CELL_SEPERATION = String.valueOf((char) 4);
+    public static final String CELL_SEPERATOR = String.valueOf((char) 4);
 
-    public static final String COLUMN_SEPERATION = "\r";
+    public static final String COLUMN_SEPERATOR = "\r";
 
     // Map key that represents the row index.
     private LongWritable key;
 
     // Map value that represents an excel row
     private Text value;
-
-    // Represents a indvidual cell
-    private Cell cell;
 
     // Specifies all the rows of an Excel spreadsheet - An iterator over all the rows.
     private Iterator<Row> rows;
@@ -142,7 +141,7 @@ public class ExcelInputFormat extends TextInputFormat {
       String sheet = job.get(SHEET);
       String sheetValue = job.get(SHEET_VALUE);
 
-      Sheet workSheet = null; // sheet can be used as common for XSSF and HSSF workbook
+      Sheet workSheet; // sheet can be used as common for XSSF and HSSF workbook
       try {
         Workbook workbook = WorkbookFactory.create(fileIn);
         if (sheet.equalsIgnoreCase(SHEET_NAME)) {
@@ -161,9 +160,8 @@ public class ExcelInputFormat extends TextInputFormat {
 
       boolean skipFirstRow = job.getBoolean(SKIP_FIRST_ROW, false);
       if (skipFirstRow) {
-        if (rows.hasNext()) {
-          rowIdx = 1;
-        }
+        Preconditions.checkArgument(rows.hasNext(), "No rows found on sheet %s", sheetValue);
+        rowIdx = 1;
         rows.next();
       }
     }
@@ -182,14 +180,14 @@ public class ExcelInputFormat extends TextInputFormat {
       // For each row, iterate through each columns
       Iterator<Cell> cellIterator = row.cellIterator();
 
-      sb.append(row.getRowNum()).append(CELL_SEPERATION);
-      sb.append(file).append(CELL_SEPERATION);
-      sb.append(row.getSheet().getSheetName()).append(CELL_SEPERATION);
+      sb.append(row.getRowNum()).append(CELL_SEPERATOR);
+      sb.append(file).append(CELL_SEPERATOR);
+      sb.append(row.getSheet().getSheetName()).append(CELL_SEPERATOR);
 
       if (rowCount - 1 == 0 || !rows.hasNext()) {
-        sb.append(END).append(CELL_SEPERATION);
+        sb.append(END).append(CELL_SEPERATOR);
       } else {
-        sb.append(MID).append(CELL_SEPERATION);
+        sb.append(MID).append(CELL_SEPERATOR);
       }
       rowCount--;
 
@@ -200,17 +198,17 @@ public class ExcelInputFormat extends TextInputFormat {
         switch (cell.getCellType()) {
           case Cell.CELL_TYPE_STRING:
             sb.append(colName)
-              .append(COLUMN_SEPERATION).append(cell.getStringCellValue()).append(CELL_SEPERATION);
+              .append(COLUMN_SEPERATOR).append(cell.getStringCellValue()).append(CELL_SEPERATOR);
             break;
 
           case Cell.CELL_TYPE_BOOLEAN:
             sb.append(colName)
-              .append(COLUMN_SEPERATION).append(cell.getBooleanCellValue()).append(CELL_SEPERATION);
+              .append(COLUMN_SEPERATOR).append(cell.getBooleanCellValue()).append(CELL_SEPERATOR);
             break;
 
           case Cell.CELL_TYPE_NUMERIC:
             sb.append(colName)
-              .append(COLUMN_SEPERATION).append(cell.getNumericCellValue()).append(CELL_SEPERATION);
+              .append(COLUMN_SEPERATOR).append(cell.getNumericCellValue()).append(CELL_SEPERATOR);
             break;
         }
       }
