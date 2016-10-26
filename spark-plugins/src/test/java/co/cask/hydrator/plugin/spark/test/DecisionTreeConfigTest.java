@@ -17,7 +17,6 @@
 package co.cask.hydrator.plugin.spark.test;
 
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.hydrator.plugin.spark.DecisionTreePredictor;
 import co.cask.hydrator.plugin.spark.DecisionTreeTrainer;
 import org.junit.Assert;
 import org.junit.Test;
@@ -93,19 +92,6 @@ public class DecisionTreeConfigTest {
       config.validate(schema);
     } catch (IllegalArgumentException e) {
       Assert.assertEquals("Label field must be of type Double, but was STRING.", e.getMessage());
-    }
-  }
-
-  @Test
-  public void testPredictionFieldPredictor() throws Exception {
-    DecisionTreePredictor.DecisionTreePredictorConfig config =
-      new DecisionTreePredictor.DecisionTreePredictorConfig("decision-tree-regression-model", "decisionTreeRegression",
-                                                            "dofM,dofW,scheduleDepTime,scheduledArrTime,carrier," +
-                                                              "elapsedTime,originId,destId", null, "delayed");
-    try {
-      config.validate(schema);
-    } catch (IllegalArgumentException e) {
-      Assert.assertEquals("Prediction field must not already exist in the input schema.", e.getMessage());
     }
   }
 }
