@@ -241,12 +241,11 @@ final class SparkUtils {
     }
     Schema schema = inputSchema.getField(key).getSchema();
     Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
-    if (type.equals(Schema.Type.ARRAY)) {
+    if (type == Schema.Type.ARRAY) {
       Schema componentSchema = schema.getComponentSchema();
-      type = componentSchema.isNullable() ? componentSchema.getNonNullable().getType() :
-        componentSchema.getType();
+      type = componentSchema.isNullable() ? componentSchema.getNonNullable().getType() : componentSchema.getType();
     }
-    if (!(type.equals(Schema.Type.STRING) || type.equals(Schema.Type.ARRAY))) {
+    if (type != Schema.Type.STRING) {
       throw new IllegalArgumentException(String.format("Field to be transformed should be of type String or " +
                                                          "Nullable String or Array of type String or Nullable " +
                                                          "String . But was %s for field %s.", type, key));
@@ -266,21 +265,31 @@ final class SparkUtils {
     List<String> text = new ArrayList<>();
     Schema schema = input.getSchema().getField(inputField).getSchema();
     Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
-    if (type.equals(Schema.Type.ARRAY)) {
+    if (type == Schema.Type.ARRAY) {
       schema = schema.getComponentSchema();
       type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
-      if (type.equals(Schema.Type.STRING)) {
-        text = input.get(inputField);
-      } else {
+      if (type != Schema.Type.STRING) {
         throw new IllegalArgumentException(
           String.format("Field to be used for text based feature generation should be of type string, nullable " +
-                          "string or array of strings or nullable string. But was ARRAY of %s for field %s.",
-                        schema.getComponentSchema(), inputField));
+                          "string or array of strings or nullable string. But was ARRAY of %s for field %s.", type,
+                        inputField));
       }
-    } else if (type.equals(Schema.Type.STRING)) {
-      if (inputField != null) {
-        text = Lists.newArrayList(splitter.split((String) input.get(inputField)));
+      Object value = input.get(inputField);
+      if (value instanceof List) {
+        text = input.get(inputField);
+      } else {
+        text = Lists.newArrayList((String[]) value);
       }
+    } else if (type == Schema.Type.STRING) {
+      String value = input.get(inputField);
+      if (value != null) {
+        text = Lists.newArrayList(splitter.split(value));
+      }
+    } else {
+      throw new IllegalArgumentException(
+        String.format("Field to be used for text based feature generation should be of type string, nullable " +
+                        "string or array of strings or nullable string. But was of type %s for field %s.", type,
+                      inputField));
     }
     return text;
   }

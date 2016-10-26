@@ -53,6 +53,7 @@ public class SkipGramFeatureGenerator extends SparkCompute<StructuredRecord, Str
   private Schema outputSchema;
   private Word2VecModel loadedModel;
   private Splitter splitter;
+  private Pattern pattern;
 
   @VisibleForTesting
   public SkipGramFeatureGenerator(FeatureGeneratorConfig config) {
@@ -64,9 +65,9 @@ public class SkipGramFeatureGenerator extends SparkCompute<StructuredRecord, Str
     StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
     Schema inputSchema = stageConfigurer.getInputSchema();
     Preconditions.checkArgument(inputSchema != null, "Input Schema must be a known constant.");
-    pipelineConfigurer.getStageConfigurer().setOutputSchema(config.getOutputSchema(inputSchema));
     SparkUtils.validateFeatureGeneratorConfig(inputSchema, SparkUtils.getFeatureListMapping(config.outputColumnMapping),
                                               config.pattern);
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(config.getOutputSchema(inputSchema));
   }
 
   @Override
@@ -80,6 +81,7 @@ public class SkipGramFeatureGenerator extends SparkCompute<StructuredRecord, Str
     }
     // load the model from a file in the model fileset
     loadedModel = Word2VecModel.load(context.getSparkContext().sc(), modelLocation.toURI().getPath());
+    pattern = Pattern.compile(config.pattern);
   }
 
   @Override
@@ -95,7 +97,7 @@ public class SkipGramFeatureGenerator extends SparkCompute<StructuredRecord, Str
     return input.map(new Function<StructuredRecord, StructuredRecord>() {
       @Override
       public StructuredRecord call(StructuredRecord input) throws Exception {
-        splitter = splitter == null ? Splitter.on(Pattern.compile(config.pattern)) : splitter;
+        splitter = splitter == null ? Splitter.on(pattern) : splitter;
         StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
         for (Schema.Field field : input.getSchema().getFields()) {
           String fieldName = field.getName();

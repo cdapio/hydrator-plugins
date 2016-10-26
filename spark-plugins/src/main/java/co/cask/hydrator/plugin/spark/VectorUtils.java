@@ -41,10 +41,22 @@ public class VectorUtils {
 
   public static SparseVector fromRecord(StructuredRecord record) {
     int size = record.get("size");
-    List<Integer> indexList = record.get("indices");
-    int[] indices = ArrayUtils.toPrimitive(indexList.toArray(new Integer[indexList.size()]));
-    List<Double> valueList = record.get("vectorValues");
-    double[] values = ArrayUtils.toPrimitive(valueList.toArray(new Double[valueList.size()]));
+    Object index = record.get("indices");
+    int[] indices;
+    if (index instanceof List) {
+      List<Integer> indexList = (List<Integer>) index;
+      indices = ArrayUtils.toPrimitive(indexList.toArray(new Integer[indexList.size()]));
+    } else {
+      indices = ArrayUtils.toPrimitive((Integer[]) index);
+    }
+    Object value = record.get("vectorValues");
+    double[] values;
+    if (value instanceof List) {
+      List<Double> doubleList = (List<Double>) value;
+      values = ArrayUtils.toPrimitive(doubleList.toArray(new Double[doubleList.size()]));
+    } else {
+      values = ArrayUtils.toPrimitive((Double[]) value);
+    }
     return new SparseVector(size, indices, values);
   }
 }

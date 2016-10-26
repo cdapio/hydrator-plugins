@@ -25,6 +25,7 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.StageConfigurer;
 import co.cask.cdap.etl.api.batch.SparkCompute;
 import co.cask.cdap.etl.api.batch.SparkExecutionPluginContext;
+import co.cask.cdap.format.StructuredRecordStringConverter;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
@@ -53,6 +54,7 @@ public class HashingTFFeatureGenerator extends SparkCompute<StructuredRecord, St
   private Schema outputSchema;
   private HashingTF hashingTF;
   private Splitter splitter;
+  private Pattern pattern;
 
   @VisibleForTesting
   public HashingTFFeatureGenerator(HashingTFConfig config) {
@@ -64,14 +66,15 @@ public class HashingTFFeatureGenerator extends SparkCompute<StructuredRecord, St
     StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
     Schema inputSchema = stageConfigurer.getInputSchema();
     Preconditions.checkArgument(inputSchema != null, "Input Schema must be a known constant.");
-    pipelineConfigurer.getStageConfigurer().setOutputSchema(config.getOutputSchema(inputSchema));
     config.validate(inputSchema);
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(config.getOutputSchema(inputSchema));
   }
 
   @Override
   public void initialize(SparkExecutionPluginContext context) throws Exception {
     super.initialize(context);
     hashingTF = new HashingTF(config.numFeatures);
+    pattern = Pattern.compile(config.pattern);
   }
 
   @Override
@@ -86,7 +89,7 @@ public class HashingTFFeatureGenerator extends SparkCompute<StructuredRecord, St
     return input.map(new Function<StructuredRecord, StructuredRecord>() {
       @Override
       public StructuredRecord call(StructuredRecord input) throws Exception {
-        splitter = splitter == null ? Splitter.on(Pattern.compile(config.pattern)) : splitter;
+        splitter = splitter == null ? Splitter.on(pattern) : splitter;
         StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
         for (Schema.Field field : input.getSchema().getFields()) {
           String fieldName = field.getName();
