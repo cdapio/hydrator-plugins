@@ -1,0 +1,79 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Oracle Export Properties",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Oracle Server Hostname",
+          "name": "oracleServerHostname"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Oracle Server Port",
+          "name": "oracleServerPort"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Oracle Server Username",
+          "name": "oracleServerUsername"
+        },
+        {
+          "widget-type": "password",
+          "label": "Oracle Server Password",
+          "name": "oracleServerPassword"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Username to connect to oracle DB",
+          "name": "dbUsername"
+        },
+        {
+          "widget-type": "password",
+          "label": "Password to connect to oracle DB",
+          "name": "dbPassword"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Path of the ORACLE_HOME",
+          "name": "oracleHome"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "SID",
+          "name": "oracleSID"
+        },
+        {
+          "widget-type": "textarea",
+          "label": "Query to be executed for export",
+          "name": "queryToExecute",
+          "widget-attributes": {
+            "rows": "4"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Path where output file to be exported",
+          "name": "pathToWriteFinalOutput"
+        },
+        {
+          "widget-type": "select",
+          "label": "Format",
+          "name": "format",
+          "widget-attributes": {
+            "values": [
+              "csv",
+              "psv",
+              "tsv"
+            ],
+            "default": "csv"
+          }
+        }
+       ]
+    }
+  ],
+  "outputs": []
+}
