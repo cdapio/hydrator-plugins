@@ -133,11 +133,9 @@ public class Tokenizer extends SparkCompute<StructuredRecord, StructuredRecord> 
       .setOutputCol(config.outputColumn)
       .setPattern(config.patternSeparator);
     DataFrame tokenizedDataFrame = tokenizer.transform(sentenceDataFrame);
-    JavaRDD<Row> tokenizedRDD =
-      javaSparkContext.parallelize(tokenizedDataFrame.collectAsList());
     outputSchema = outputSchema != null ? outputSchema : getOutputSchema(inputSchema);
     //Transform JavaRDD<Row> to JavaRDD<StructuredRecord>
-    final JavaRDD<StructuredRecord> output = tokenizedRDD.map(new Function<Row, StructuredRecord>() {
+    final JavaRDD<StructuredRecord> output = tokenizedDataFrame.toJavaRDD().map(new Function<Row, StructuredRecord>() {
       @Override
       public StructuredRecord call(Row row) throws Exception {
         StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
