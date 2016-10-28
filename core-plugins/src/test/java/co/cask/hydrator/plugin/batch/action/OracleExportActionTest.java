@@ -149,7 +149,7 @@ public class OracleExportActionTest extends ETLBatchTestBase {
     try {
       oracleExportAction.run(mockActionContext);
     } catch (IllegalArgumentException e) {
-      Assert.assertEquals("Invalid format 'format'. Must be one of csv,tsv,psv", e.getMessage());
+      Assert.assertEquals("Invalid format 'format'. Must be one of [csv, tsv, psv]", e.getMessage());
     }
   }
 

@@ -3,40 +3,42 @@
 
 Description
 -----------
-A plugin that can efficiently export data from Oracle to be used in Hydrator pipelines.
-Oracle includes command line tools to export data that can be utilized to perform this task.
+A Hydrator Action plugin to efficiently export data from Oracle to HDFS or local file system.
+The plugin uses Oracle's command line tools to export data.
+The data exported from this tool can then be used in Hydrator pipelines.
 
 
 Use Case
 --------
-A Hydrator user would like to export oracle data onto hdfs or local file system using an action plugin
-that does not require a JDBC connection to perform the export from Oracle.
+A Hydrator user would like to export oracle data onto HDFS or local file system using an action plugin
+that exports Oracle data using the Oracle bulk export tool as opposed to using JDBC.
 
 
 Properties
 ----------
 
-**oracleServerHostname:** Hostname of the remote DB machine.
+**oracleServerHostname:** Hostname of the remote Oracle Host.
 
-**oracleServerPort:** Port of the remote DB machine.Defaults to 22.
+**oracleServerPort:** Port of the remote Oracle Host. Defaults to 22.
 
-**oracleServerUsername:** Username for remote DB host.
+**oracleServerUsername:** Username to use to connect to the remote Oracle Host via SSH.
 
-**oracleServerPassword:** Password for remote DB host.
+**oracleServerPassword:** Password to use to connect to the remote Oracle Host via SSH.
 
-**dbUsername:** Username to connect to oracle DB.
+**dbUsername:** Username to connect to Oracle.
 
-**dbPassword:** Password to connect to oracle DB.
+**dbPassword:** Password to connect to Oracle.
 
-**oracleHome:** Path of the ORACLE_HOME.
+**oracleHome:** Absolute path of the ORACLE_HOME environment variable on the Oracle server host.This will be used to run
+                the Oracle Spool utility.
 
-**oracleSID:** Oracle SID.
+**oracleSID:** Oracle System ID(SID). This is used to uniquely identify a particular database on the system.
 
-**queryToExecute:** Query to be executed to export.Query should have ';' at the end.
+**queryToExecute:** Query to be executed to export.
 
-**pathToWriteFinalOutput:** Path where output file to be exported.
+**pathToWriteFinalOutput:** Path where output file will be exported.
 
-**format:** Format of the output file.
+**format:** Format of the output file.Acceptable values are csv, tsv, psv.
 
 
 Example
@@ -51,7 +53,7 @@ This example exports data from oracle server example.com using oracle user:
             "label": "OracleExportAction",
             "artifact": {
               "name": "core-plugins",
-              "version": "1.4.0-SNAPSHOT",
+              "version": "1.5.0-SNAPSHOT",
               "scope": "SYSTEM"
           },
           "properties": {

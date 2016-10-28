@@ -28,9 +28,8 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.action.Action;
 import co.cask.cdap.etl.api.action.ActionContext;
 import com.google.common.base.Charsets;
-import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharStreams;
+import org.apache.commons.lang3.EnumUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -42,7 +41,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.util.Set;
+import java.util.EnumSet;
 import javax.annotation.Nullable;
 
 /**
@@ -50,12 +49,15 @@ import javax.annotation.Nullable;
  */
 @Plugin(type = Action.PLUGIN_TYPE)
 @Name("OracleExport")
-@Description("Action to export data from Oracle")
+@Description("A Hydrator Action plugin to efficiently export data from Oracle to HDFS or local file system.\n" +
+  "The plugin uses Oracle's command line tools to export data.\n" +
+  "The data exported from this tool can then be used in Hydrator pipelines.")
 public class OracleExportAction extends Action {
+  private enum FORMATS {
+    csv, tsv, psv
+  };
   private final OracleExportActionConfig config;
-  private StringBuilder scriptContent = null;
   private String execute = null;
-  private static final Set<String> FORMATS = ImmutableSet.of("csv", "tsv", "psv");
 
   public OracleExportAction(OracleExportActionConfig config) {
     this.config = config;
@@ -76,28 +78,29 @@ public class OracleExportAction extends Action {
       }
       Session session = connection.openSession();
       session.execCommand(execute);
-      InputStream stdout = new StreamGobbler(session.getStdout());
-      BufferedReader outBuffer = new BufferedReader(new InputStreamReader(stdout, Charsets.UTF_8));
-      Integer exitCode = session.getExitStatus();
-      if (exitCode != null && exitCode != 0) {
-        throw new IOException(String.format("Error:command %s running on hostname %s finished with exit code: %d ",
-                                            execute, config.oracleServerHostname, exitCode));
+      try (InputStream stdout = new StreamGobbler(session.getStdout());
+           BufferedReader outBuffer = new BufferedReader(new InputStreamReader(stdout, Charsets.UTF_8))) {
+        Integer exitCode = session.getExitStatus();
+        if (exitCode != null && exitCode != 0) {
+          throw new IOException(String.format("Error running command %s on hostname %s; exit code: %d",
+                                              execute, config.oracleServerHostname, exitCode));
+        }
+        String out = CharStreams.toString(outBuffer);
+        //SQLPLUS command errors are not fetched from session.getStderr().
+        //Errors and output received after executing the command in SQLPlus prompt are the one that
+        //are printed on the SQL prompt
+        if (out.contains("ERROR at line")) {
+          throw new IOException(String.format("Error executing sqlplus query %s on hostname %s; error message: %s",
+                                              config.queryToExecute, config.oracleServerHostname, out));
+        }
+        Path file = new Path(config.pathToWriteFinalOutput);
+        FileSystem fs = FileSystem.get(file.toUri(), new Configuration());
+        try (
+          FSDataOutputStream outStream = fs.create(file);
+          BufferedWriter br = new BufferedWriter(new OutputStreamWriter(outStream, "UTF-8"))) {
+          br.write(out.replaceAll("(?m)^[\\s&&[^\\n]]+|[\\s+&&[^\\n]]+$", "")); //Remove multiline trailing spaces
+        }
       }
-      String out = CharStreams.toString(outBuffer);
-      //SQLPLUS command errors are not fetched from session.getStderr().
-      //Errors and output received after executing the command in SQLPlus prompt are the one that
-      //are printed on the SQL prompt
-      if (out.contains("ERROR at line")) {
-        throw new IOException(String.format("Error:executing sqlplus query %s on hostname %s with error message: %s",
-                                            config.queryToExecute, config.oracleServerHostname, out));
-      }
-      Path file = new Path(config.pathToWriteFinalOutput);
-      FileSystem fs = FileSystem.get(file.toUri(), new Configuration());
-      FSDataOutputStream outStream = fs.create(file);
-      BufferedWriter br = new BufferedWriter(new OutputStreamWriter(outStream, "UTF-8"));
-      br.write(out.replaceAll("(?m)^[\\s&&[^\\n]]+|[\\s+&&[^\\n]]+$", "")); //Remove multiline trailing spaces
-      br.close();
-      fs.close();
     } finally {
       connection.close();
     }
@@ -105,12 +108,18 @@ public class OracleExportAction extends Action {
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    if (!config.containsMacro("port")) {
-      config.validate();
+    config.validate();
+  }
+
+  private String validateQuery(String query) {
+    if (!query.trim().endsWith(";")) {
+      query += ';';
     }
+    return query;
   }
 
   private void init() {
+    StringBuilder scriptContent = null;
     String dbConnectionString = config.dbUsername + "/" + config.dbPassword + "@" + config.oracleSID;
     String colSeparator = getColSeparator(config.format);
     scriptContent = new StringBuilder();
@@ -121,7 +130,7 @@ public class OracleExportAction extends Action {
     scriptContent.append("set pagesize 0" + "\n");
     scriptContent.append("set heading off" + "\n");
     scriptContent.append("spool on" + "\n");
-    scriptContent.append(config.queryToExecute + "\n");
+    scriptContent.append(validateQuery(config.queryToExecute) + "\n");
     scriptContent.append("spool off" + "\n");
     scriptContent.append("exit");
     //Set of commands to be executed in a session
@@ -134,7 +143,7 @@ public class OracleExportAction extends Action {
   }
 
   private String getColSeparator(String format) {
-    switch (format) {
+    switch (format.toLowerCase()) {
       case "csv":
         return ",";
       case "tsv":
@@ -143,7 +152,7 @@ public class OracleExportAction extends Action {
         return "|";
       default:
         throw new IllegalArgumentException(
-          String.format("Invalid format '%s'. Must be one of %s", format, Joiner.on(',').join(FORMATS)));
+          String.format("Invalid format '%s'. Must be one of %s", format, EnumSet.allOf(FORMATS.class)));
     }
   }
 
@@ -223,12 +232,9 @@ public class OracleExportAction extends Action {
       if (!containsMacro("oracleServerPort") && oracleServerPort < 0) {
         throw new IllegalArgumentException("Port cannot be negative");
       }
-      if (!containsMacro(queryToExecute) && !queryToExecute.endsWith(";")) {
-        throw new IllegalArgumentException("Query should have ; at the end");
-      }
-      if (!containsMacro(format) && !FORMATS.contains(format)) {
+      if (!containsMacro(format) && !EnumUtils.isValidEnum(FORMATS.class, format)) {
         throw new IllegalArgumentException(
-          String.format("Invalid format '%s'. Must be one of %s", format, Joiner.on(',').join(FORMATS)));
+          String.format("Invalid format '%s'. Must be one of %s", format, EnumSet.allOf(FORMATS.class)));
       }
     }
   }
