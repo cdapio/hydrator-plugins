@@ -190,52 +190,52 @@ public class KinesisStreamingSource extends ReferenceStreamingSource<StructuredR
     @Name("appName")
     @Description(" The application name that will be used to checkpoint the Kinesis sequence numbers in DynamoDB table")
     @Macro
-    private String appName;
+    private final String appName;
 
     @Name("streamName")
     @Description("The name of the Kinesis stream to the get the data from. The stream should be active")
     @Macro
-    private String streamName;
+    private final String streamName;
 
     @Name("endpointUrl")
     @Description("Valid Kinesis endpoints URL eg. kinesis.us-east-1.amazonaws.com")
     @Macro
-    private String endpoint;
+    private final String endpoint;
 
     @Name("region")
     @Description("AWS region specific to the stream")
     @Macro
-    private String region;
+    private final String region;
 
     @Name("duration")
     @Description("The interval (e.g., Duration(2000) = 2 seconds) at which the Kinesis Client Library saves its " +
       "position in the stream.")
     @Macro
-    private Integer duration;
+    private final Integer duration;
 
     @Name("initialPosition")
     @Description("Can be either TRIM_HORIZON or LATEST, Default position will be Latest")
-    private String initialPosition;
+    private final String initialPosition;
 
     @Name("awsAccessKeyId")
     @Description("AWS access Id having access to Kinesis streams")
     @Macro
-    private String awsAccessKeyId;
+    private final String awsAccessKeyId;
 
     @Name("awsAccessSecret")
     @Description("AWS access key secret having access to Kinesis streams")
     @Macro
-    private String awsAccessSecret;
+    private final String awsAccessSecret;
 
     @Description("Optional format of the Kinesis stream shard. Any format supported by CDAP is supported. For " +
       "example, a value of 'csv' will attempt to parse Kinesis payloads as comma-separated values. If no format is " +
       "given, Kinesis shard payloads will be treated as bytes.")
     @Nullable
-    private String format;
+    private final String format;
 
     @Description("Output schema of the source, The fields are used in conjunction with the format to parse Kinesis " +
       "payloads")
-    private String schema;
+    private final String schema;
 
     public KinesisStreamConfig(String referenceName, String appName, String streamName, String endpoint, String region,
                                Integer duration, String initialPosition, String awsAccessKeyId, String awsAccessSecret,

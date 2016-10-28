@@ -6,8 +6,8 @@ Spark streaming source that reads from AWS kinesis streams.
 
 Use Case
 --------
-This source is used when you want to read data from a kinesis stream in real-time. For example, you
-may want to read data from a kinesis stream write it to a cdap dataset.
+This source is used when you want to read data from a kinesis stream in real-time. For example, you may want to read
+data from a kinesis stream write it to a cdap dataset.
 
 Properties
 ----------
@@ -29,9 +29,9 @@ can be provided as macro configuration.
 **initialPosition:** Initial position in the stream. Can be either TRIM_HORIZON or LATEST, Default position will be
 Latest
 
-**format:** Optional format of the Kinesis shard payload. Any format supported by CDAP is supported.
-For example, a value of 'csv' will attempt to parse Kinesis payloads as comma-separated values.
-If no format is given, Kinesis payloads will be treated as bytes.
+**format:** Optional format of the Kinesis shard payload. Any format supported by CDAP is supported. For example, a
+value of 'csv' will attempt to parse Kinesis payloads as comma-separated values. If no format is given, Kinesis payloads
+will be treated as bytes.
 
 Example
 -------
