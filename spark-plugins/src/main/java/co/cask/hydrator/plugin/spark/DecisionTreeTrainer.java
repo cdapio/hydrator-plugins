@@ -72,7 +72,7 @@ public class DecisionTreeTrainer extends SparkMLTrainer {
     private Integer maxDepth;
 
     @Nullable
-    @Description("Maximum number of bins used for splitting when discretizing continuous featuresToInclude. " +
+    @Description("Maximum number of bins used for splitting when discretizing continuous features. " +
       "DecisionTree requires maxBins to be at least as large as the number of values in each categorical feature. " +
       "Default is 100.")
     private Integer maxBins;
