@@ -77,7 +77,7 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
     XMLInputFactory factory = XMLInputFactory.newInstance();
     FSDataInputStream fdDataInputStream = fs.open(file);
     inputStream = new TrackingInputStream(fdDataInputStream);
-    availableBytes = inputStream.available();
+    availableBytes = split.getLength();
     try {
       reader = factory.createXMLStreamReader(inputStream);
     } catch (XMLStreamException exception) {
