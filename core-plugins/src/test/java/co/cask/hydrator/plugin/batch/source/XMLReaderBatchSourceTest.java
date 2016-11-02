@@ -104,10 +104,10 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
    */
   @Before
   public void copyFiles() throws IOException {
-      URL largeXMLUrl = this.getClass().getResource("/" + CATALOG_LARGE_XML_FILE_NAME);
-      URL smallXMLUrl = this.getClass().getResource("/" + CATALOG_SMALL_XML_FILE_NAME);
-      FileUtils.copyFile(new File(largeXMLUrl.getFile()), new File(sourceFolder, CATALOG_LARGE_XML_FILE_NAME));
-      FileUtils.copyFile(new File(smallXMLUrl.getFile()), new File(sourceFolder, CATALOG_SMALL_XML_FILE_NAME));
+    URL largeXMLUrl = this.getClass().getResource("/" + CATALOG_LARGE_XML_FILE_NAME);
+    URL smallXMLUrl = this.getClass().getResource("/" + CATALOG_SMALL_XML_FILE_NAME);
+    FileUtils.copyFile(new File(largeXMLUrl.getFile()), new File(sourceFolder, CATALOG_LARGE_XML_FILE_NAME));
+    FileUtils.copyFile(new File(smallXMLUrl.getFile()), new File(sourceFolder, CATALOG_SMALL_XML_FILE_NAME));
   }
 
   /**
@@ -213,7 +213,7 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "XMLReaderNoXMLPreProcessingRequiredTest")
       .put("path", sourceFolderUri)
-      .put("nodePath", "/catalog/book/price")
+      .put("nodePath", "/catalog/book/author")
       .put("targetFolder", targetFolderUri)
       .put("reprocessingRequired", "No")
       .put("tableName", processedFileTable)
