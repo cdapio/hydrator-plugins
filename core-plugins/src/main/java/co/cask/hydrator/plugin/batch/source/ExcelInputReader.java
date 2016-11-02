@@ -455,7 +455,8 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
 
     @Nullable
     @Name("rowsLimit")
-    @Description("Specify maximum number of rows to be processed for each sheet; for example: '100'.")
+    @Description("Specify maximum number of rows to be processed for each sheet; All of the rows will be processed " +
+      "if no limit is specified. for example: '100'.")
     @Macro
     private String rowsLimit;
 
@@ -492,6 +493,11 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
       if (!(Strings.isNullOrEmpty(tableExpiryPeriod)) && (Strings.isNullOrEmpty(memoryTableName))) {
         throw new IllegalArgumentException("Value for Table Expiry period is valid only when file tracking table " +
                                              "is specified. Please specify file tracking table name.");
+      }
+
+      if (!Strings.isNullOrEmpty(rowsLimit) && !StringUtils.isNumeric(rowsLimit)) {
+        throw new IllegalArgumentException(String.format("Invalid row limit: %s. " +
+                                                           "Numeric value expected.", rowsLimit));
       }
     }
   }
