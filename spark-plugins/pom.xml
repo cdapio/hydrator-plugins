@@ -73,12 +73,6 @@
       <artifactId>spark-streaming-kinesis-asl_2.10</artifactId>
       <version>1.6.2</version>
     </dependency>
-    <!-- https://mvnrepository.com/artifact/org.apache.spark/spark-streaming_2.10 -->
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-streaming_2.10</artifactId>
-      <version>1.6.2</version>
-    </dependency>
     <!-- https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient -->
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
