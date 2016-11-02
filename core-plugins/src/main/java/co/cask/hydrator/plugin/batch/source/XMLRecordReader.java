@@ -16,6 +16,7 @@
 
 package co.cask.hydrator.plugin.batch.source;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -172,7 +173,7 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
             break;
           case XMLStreamConstants.CHARACTERS:
             if (nodeFound) {
-              xmlRecord.append(reader.getText());
+              xmlRecord.append(StringEscapeUtils.escapeXml(reader.getText()));
             }
             break;
           case XMLStreamConstants.END_ELEMENT:
