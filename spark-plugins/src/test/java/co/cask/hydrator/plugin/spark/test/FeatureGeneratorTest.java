@@ -54,7 +54,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Unit test for {@Link SkipGramTrainer} , {@link SkipGramFeatureGenerator}, {@link HashingTFFeatureGenerator}.
+ * Unit test for {@link HashingTFFeatureGenerator}.
  */
 public class FeatureGeneratorTest extends HydratorTestBase {
 

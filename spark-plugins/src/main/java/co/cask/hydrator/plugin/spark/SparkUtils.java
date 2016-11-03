@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package co.cask.hydrator.plugin.spark;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -254,7 +253,11 @@ final class SparkUtils {
 
   /**
    * Gets the input field for feature generation. If the field is an array, returns the field. Otherwise, splits the
-   * field based on the given pattern. Assumes the input field is an array of strings or a string.
+   * field based on the given pattern.
+   * Returns an empty list if value is null.
+   * The method assumes the input field is an array of strings or a string.
+   * Validation for the field type should be performed at configure time. The method will throw an exception if the
+   * input field is not of required type.
    *
    * @param input input Structured Record
    * @param inputField field to use for feature generation
@@ -265,49 +268,24 @@ final class SparkUtils {
     List<String> text = new ArrayList<>();
     Schema schema = input.getSchema().getField(inputField).getSchema();
     Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
-    if (type == Schema.Type.ARRAY) {
-      schema = schema.getComponentSchema();
-      type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
-      if (type != Schema.Type.STRING) {
-        throw new IllegalArgumentException(
-          String.format("Field to be used for text based feature generation should be of type string, nullable " +
-                          "string or array of strings or nullable string. But was ARRAY of %s for field %s.", type,
-                        inputField));
-      }
-      Object value = input.get(inputField);
-      if (value instanceof List) {
-        text = input.get(inputField);
+    try {
+      if (type == Schema.Type.ARRAY) {
+        Object value = input.get(inputField);
+        if (value instanceof List) {
+          text = input.get(inputField);
+        } else {
+          text = Lists.newArrayList((String[]) value);
+        }
       } else {
-        text = Lists.newArrayList((String[]) value);
+        String value = input.get(inputField);
+        if (value != null) {
+          text = Lists.newArrayList(splitter.split(value));
+        }
       }
-    } else if (type == Schema.Type.STRING) {
-      String value = input.get(inputField);
-      if (value != null) {
-        text = Lists.newArrayList(splitter.split(value));
-      }
-    } else {
-      throw new IllegalArgumentException(
-        String.format("Field to be used for text based feature generation should be of type string, nullable " +
-                        "string or array of strings or nullable string. But was of type %s for field %s.", type,
-                      inputField));
+    } catch (ClassCastException e) {
+      throw new IllegalArgumentException(String.format("Input field should be of type array of string or a string. " +
+                                                         "But was %s for input field %s.", schema, inputField), e);
     }
     return text;
-  }
-
-  /**
-   * Get the input feature to output column mapping. Throws exception if it is not a valid mapping.
-   *
-   * @param outputColumnMapping input field to output field mapping as provided by user
-   * @return map of input field to transformed output field names
-   */
-  static Map<String, String> getFeatureListMapping(String outputColumnMapping) {
-    try {
-      Map<String, String> map = Splitter.on(',').trimResults().withKeyValueSeparator(":").split(outputColumnMapping);
-      return map;
-    } catch (IllegalArgumentException e) {
-      throw new IllegalArgumentException(
-        String.format("Invalid output feature mapping. Please make sure it is in the format " +
-                        "'input-column':'transformed-output-column'. %s.", e.getMessage()), e);
-    }
   }
 }

@@ -26,11 +26,11 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 /**
- * Unit test for {@Link SparkUtils}
+ * Unit test for {@link SparkUtils}
  */
-public class SparkUtilsFeatureGeneratorTest {
+public class SparkUtilsTest {
   @Test
-  public void testInputFieldStringForFeatureGeneration() throws Exception {
+  public void testGetStringInputField() throws Exception {
     Schema input = Schema.recordOf("input", Schema.Field.of("offset", Schema.of(Schema.Type.INT)),
                                    Schema.Field.of("body", Schema.of(Schema.Type.STRING)));
     StructuredRecord record = StructuredRecord.builder(input).set("offset", 1).set("body", "Hi heard about Spark")
@@ -51,7 +51,7 @@ public class SparkUtilsFeatureGeneratorTest {
   }
 
   @Test
-  public void testInputFieldArrayForFeatureGeneration() throws Exception {
+  public void testGetArrayInputField() throws Exception {
     Schema input = Schema.recordOf("input", Schema.Field.of("offset", Schema.of(Schema.Type.INT)),
                                    Schema.Field.of("body", Schema.arrayOf(Schema.of(Schema.Type.STRING))));
     StructuredRecord record = StructuredRecord.builder(input).set("offset", 1)
@@ -73,7 +73,7 @@ public class SparkUtilsFeatureGeneratorTest {
   }
 
   @Test
-  public void testPatternFeatureGeneration() throws Exception {
+  public void testSplitterGetInputFieldValue() throws Exception {
     Schema input = Schema.recordOf("input", Schema.Field.of("offset", Schema.of(Schema.Type.INT)),
                                    Schema.Field.of("body", Schema.of(Schema.Type.STRING)));
     StructuredRecord record = StructuredRecord.builder(input).set("offset", 1).set("body", "Hi heard about Spark")
@@ -89,7 +89,7 @@ public class SparkUtilsFeatureGeneratorTest {
   }
 
   @Test
-  public void testContinuousSpacePatternFeatureGeneration() throws Exception {
+  public void testWhitespaceSplitterGetInputFieldValue() throws Exception {
     Schema input = Schema.recordOf("input", Schema.Field.of("offset", Schema.of(Schema.Type.INT)),
                                    Schema.Field.of("body", Schema.of(Schema.Type.STRING)));
     StructuredRecord record = StructuredRecord.builder(input).set("offset", 1).set("body", "Hi heard about   Spark")
@@ -120,9 +120,8 @@ public class SparkUtilsFeatureGeneratorTest {
       SparkUtils.getInputFieldValue(record, "body", splitter);
       Assert.fail();
     } catch (IllegalArgumentException e) {
-      Assert.assertEquals("Field to be used for text based feature generation should be of type string, nullable " +
-                            "string or array of strings or nullable string. But was ARRAY of INT for field body.",
-                          e.getMessage());
+      Assert.assertEquals("Input field should be of type array of string or a string. But was {\"type\":\"array\"," +
+                            "\"items\":\"int\"} for input field body.", e.getMessage());
     }
   }
 
@@ -137,9 +136,8 @@ public class SparkUtilsFeatureGeneratorTest {
       SparkUtils.getInputFieldValue(record, "offset", splitter);
       Assert.fail();
     } catch (IllegalArgumentException e) {
-      Assert.assertEquals("Field to be used for text based feature generation should be of type string, nullable " +
-                            "string or array of strings or nullable string. But was of type INT for field offset.",
-                          e.getMessage());
+      Assert.assertEquals("Input field should be of type array of string or a string. But was \"int\" for input " +
+                            "field offset.", e.getMessage());
     }
   }
 }

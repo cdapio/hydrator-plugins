@@ -34,8 +34,8 @@ public class VectorUtils {
   public static StructuredRecord asRecord(SparseVector vector) {
     return StructuredRecord.builder(SPARSE_SCHEMA)
       .set("size", vector.size())
-      .set("indices", ArrayUtils.toObject(vector.indices()))
-      .set("vectorValues", ArrayUtils.toObject(vector.values()))
+      .set("indices", vector.indices())
+      .set("vectorValues", vector.values())
       .build();
   }
 
@@ -47,7 +47,7 @@ public class VectorUtils {
       List<Integer> indexList = (List<Integer>) index;
       indices = ArrayUtils.toPrimitive(indexList.toArray(new Integer[indexList.size()]));
     } else {
-      indices = ArrayUtils.toPrimitive((Integer[]) index);
+      indices = (int[]) index;
     }
     Object value = record.get("vectorValues");
     double[] values;
@@ -55,7 +55,7 @@ public class VectorUtils {
       List<Double> doubleList = (List<Double>) value;
       values = ArrayUtils.toPrimitive(doubleList.toArray(new Double[doubleList.size()]));
     } else {
-      values = ArrayUtils.toPrimitive((Double[]) value);
+      values = (double[]) value;
     }
     return new SparseVector(size, indices, values);
   }

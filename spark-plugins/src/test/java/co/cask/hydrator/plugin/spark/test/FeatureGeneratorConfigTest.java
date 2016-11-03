@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package co.cask.hydrator.plugin.spark.test;
 
 import co.cask.cdap.api.data.schema.Schema;
@@ -23,6 +22,9 @@ import co.cask.hydrator.plugin.spark.SkipGramFeatureGenerator;
 import org.junit.Assert;
 import org.junit.Test;
 
+/**
+ * Unit tests for Feature Generator configs.
+ */
 public class FeatureGeneratorConfigTest {
   private static final Schema INPUT = Schema.recordOf("input", Schema.Field.of("offset", Schema.of(Schema.Type.INT)),
                                                       Schema.Field.of("body", Schema.of(Schema.Type.INT)));

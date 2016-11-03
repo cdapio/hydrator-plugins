@@ -25,7 +25,6 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.StageConfigurer;
 import co.cask.cdap.etl.api.batch.SparkCompute;
 import co.cask.cdap.etl.api.batch.SparkExecutionPluginContext;
-import co.cask.cdap.format.StructuredRecordStringConverter;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
@@ -84,7 +83,7 @@ public class HashingTFFeatureGenerator extends SparkCompute<StructuredRecord, St
       return context.getSparkContext().emptyRDD();
     }
     outputSchema = outputSchema != null ? outputSchema : config.getOutputSchema(input.first().getSchema());
-    final Map<String, String> mapping = SparkUtils.getFeatureListMapping(config.outputColumnMapping);
+    final Map<String, String> mapping = config.getFeatureListMapping(config.outputColumnMapping);
 
     return input.map(new Function<StructuredRecord, StructuredRecord>() {
       @Override
@@ -140,18 +139,37 @@ public class HashingTFFeatureGenerator extends SparkCompute<StructuredRecord, St
 
     private Schema getOutputSchema(Schema inputSchema) {
       List<Schema.Field> fields = new ArrayList<>(inputSchema.getFields());
-      for (Map.Entry<String, String> entry : SparkUtils.getFeatureListMapping(outputColumnMapping).entrySet()) {
+      for (Map.Entry<String, String> entry : getFeatureListMapping(outputColumnMapping).entrySet()) {
         fields.add(Schema.Field.of(entry.getValue(), VectorUtils.SPARSE_SCHEMA));
       }
       return Schema.recordOf("record", fields);
     }
 
     private void validate(Schema inputSchema) {
-      SparkUtils.validateFeatureGeneratorConfig(inputSchema, SparkUtils.getFeatureListMapping(outputColumnMapping),
+      SparkUtils.validateFeatureGeneratorConfig(inputSchema, getFeatureListMapping(outputColumnMapping),
                                                 pattern);
       if (numFeatures < 1) {
         throw new IllegalArgumentException("Number of features cannot be negative. Please provide a validate " +
                                              "positive value for number of features.");
+      }
+    }
+
+    /**
+     * Get input column to output column mapping. Throws exception if it is not a valid mapping.
+     *
+     * @param outputColumnMapping input field to output field mapping as provided by user
+     * @return map of input field to transformed output field names
+     */
+    private Map<String, String> getFeatureListMapping(String outputColumnMapping) {
+      try {
+        Map<String, String> map = Splitter.on(',').trimResults().withKeyValueSeparator(":").split(outputColumnMapping);
+        return map;
+      } catch (IllegalArgumentException e) {
+        throw new IllegalArgumentException(
+          String.format("Invalid output column mapping %s. Please provide a valid output column mapping which can be" +
+                          "used to store the generated sparse vector. 'outputColumnMapping' should be in the format " +
+                          "'input-column':'transformed-output-column'. %s.", outputColumnMapping,
+                        e.getMessage()), e);
       }
     }
   }

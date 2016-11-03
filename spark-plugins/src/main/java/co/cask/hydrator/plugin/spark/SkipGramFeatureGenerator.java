@@ -29,7 +29,6 @@ import co.cask.cdap.etl.api.batch.SparkExecutionPluginContext;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
-import org.apache.commons.lang.ArrayUtils;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.mllib.feature.Word2VecModel;
@@ -65,7 +64,7 @@ public class SkipGramFeatureGenerator extends SparkCompute<StructuredRecord, Str
     StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
     Schema inputSchema = stageConfigurer.getInputSchema();
     Preconditions.checkArgument(inputSchema != null, "Input Schema must be a known constant.");
-    SparkUtils.validateFeatureGeneratorConfig(inputSchema, SparkUtils.getFeatureListMapping(config.outputColumnMapping),
+    SparkUtils.validateFeatureGeneratorConfig(inputSchema, config.getFeatureListMapping(config.outputColumnMapping),
                                               config.pattern);
     pipelineConfigurer.getStageConfigurer().setOutputSchema(config.getOutputSchema(inputSchema));
   }
@@ -91,7 +90,7 @@ public class SkipGramFeatureGenerator extends SparkCompute<StructuredRecord, Str
       return context.getSparkContext().emptyRDD();
     }
     outputSchema = outputSchema != null ? outputSchema : config.getOutputSchema(input.first().getSchema());
-    final Map<String, String> mapping = SparkUtils.getFeatureListMapping(config.outputColumnMapping);
+    final Map<String, String> mapping = config.getFeatureListMapping(config.outputColumnMapping);
 
     final int vectorSize = loadedModel.wordVectors().length / loadedModel.wordIndex().size();
     return input.map(new Function<StructuredRecord, StructuredRecord>() {
@@ -119,7 +118,7 @@ public class SkipGramFeatureGenerator extends SparkCompute<StructuredRecord, Str
           for (int i = 0; i < vectorSize; i++) {
             vectorValues[i] /= (double) numWords;
           }
-          builder.set(outputField, ArrayUtils.toObject(vectorValues));
+          builder.set(outputField, vectorValues);
         }
         return builder.build();
       }
@@ -158,10 +157,29 @@ public class SkipGramFeatureGenerator extends SparkCompute<StructuredRecord, Str
 
     private Schema getOutputSchema(Schema inputSchema) {
       List<Schema.Field> fields = new ArrayList<>(inputSchema.getFields());
-      for (Map.Entry<String, String> entry : SparkUtils.getFeatureListMapping(outputColumnMapping).entrySet()) {
+      for (Map.Entry<String, String> entry : getFeatureListMapping(outputColumnMapping).entrySet()) {
         fields.add(Schema.Field.of(entry.getValue(), Schema.arrayOf(Schema.of(Schema.Type.DOUBLE))));
       }
       return Schema.recordOf("record", fields);
+    }
+
+    /**
+     * Get the input feature to output column mapping. Throws exception if it is not a valid mapping.
+     *
+     * @param outputColumnMapping input field to output field mapping as provided by user
+     * @return map of input field to transformed output field names
+     */
+    private Map<String, String> getFeatureListMapping(String outputColumnMapping) {
+      try {
+        Map<String, String> map = Splitter.on(',').trimResults().withKeyValueSeparator(":").split(outputColumnMapping);
+        return map;
+      } catch (IllegalArgumentException e) {
+        throw new IllegalArgumentException(
+          String.format("Invalid output feature mapping %s. Please provide a valid output column mapping which can be" +
+                          "used to store the generated vector as array of double. 'outputColumnMapping' should be in " +
+                          "the format 'input-column':'transformed-output-column'. %s.",
+                        outputColumnMapping, e.getMessage()), e);
+      }
     }
   }
 }
