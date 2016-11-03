@@ -162,12 +162,12 @@ public class KafkaConfig extends ReferencePluginConfig implements Serializable {
 
   @Nullable
   public String getPartitionField() {
-    return partitionField;
+    return Strings.isNullOrEmpty(partitionField) ? null : partitionField;
   }
 
   @Nullable
   public String getOffsetField() {
-    return offsetField;
+    return Strings.isNullOrEmpty(offsetField) ? null : offsetField;
   }
 
   @Nullable
@@ -191,7 +191,7 @@ public class KafkaConfig extends ReferencePluginConfig implements Serializable {
     boolean timeFieldExists = false;
     boolean keyFieldExists = false;
     boolean partitionFieldExists = false;
-    boolean offsetFieldExists;
+    boolean offsetFieldExists = false;
 
     for (Schema.Field field : schema.getFields()) {
       String fieldName = field.getName();
@@ -214,6 +214,10 @@ public class KafkaConfig extends ReferencePluginConfig implements Serializable {
         }
         partitionFieldExists = true;
       } else if (fieldName.equals(offsetField)) {
+        if (fieldType != Schema.Type.LONG) {
+          throw new IllegalArgumentException("The offset field must be of type long.");
+        }
+        offsetFieldExists = true;
       } else {
         messageFields.add(field);
       }
@@ -224,10 +228,20 @@ public class KafkaConfig extends ReferencePluginConfig implements Serializable {
     }
 
     if (getTimeField() != null && !timeFieldExists) {
-      throw new IllegalArgumentException(String.format("timeField '%s' does not exist in the schema.", timeField));
+      throw new IllegalArgumentException(String.format(
+        "timeField '%s' does not exist in the schema. Please add it to the schema.", timeField));
     }
     if (getKeyField() != null && !keyFieldExists) {
-      throw new IllegalArgumentException(String.format("keyField '%s' does not exist in the schema.", keyField));
+      throw new IllegalArgumentException(String.format(
+        "keyField '%s' does not exist in the schema. Please add it to the schema.", keyField));
+    }
+    if (getPartitionField() != null && !partitionFieldExists) {
+      throw new IllegalArgumentException(String.format(
+        "partitionField '%s' does not exist in the schema. Please add it to the schema.", partitionField));
+    }
+    if (getOffsetField() != null && !offsetFieldExists) {
+      throw new IllegalArgumentException(String.format(
+        "offsetField '%s' does not exist in the schema. Please add it to the schema.", offsetFieldExists));
     }
     return Schema.recordOf("kafka.message", messageFields);
   }

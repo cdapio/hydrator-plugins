@@ -27,13 +27,13 @@ Properties
 **defaultInitialOffset:** The default initial offset for all topic partitions.
 An offset of -2 means the smallest offset. An offset of -1 means the latest offset. Defaults to -1.
 Offsets are inclusive. If an offset of 5 is used, the message at offset 5 will be read.
-If you wish to set different initial offsets for different partitions, use the initialPartitionOffsets property.
+If you wish to set different initial offsets for different partitions, use the initialPartitionOffsets property. (Macro-enabled)
 
 **initialPartitionOffsets:** The initial offset for each topic partition. If this is not specified,
 all partitions will use the same initial offset, which is determined by the defaultInitialOffset property.
 Any partitions specified in the partitions property, but not in this property will use the defaultInitialOffset.
 An offset of -2 means the smallest offset. An offset of -1 means the latest offset.
-Offsets are inclusive. If an offset of 5 is used, the message at offset 5 will be read.
+Offsets are inclusive. If an offset of 5 is used, the message at offset 5 will be read. (Macro-enabled)
 
 **schema:** Output schema of the source. If you would like the output records to contain a field with the
 Kafka message key, the schema must include a field of type bytes or nullable bytes, and you must set the
