@@ -559,4 +559,35 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     mrManager.waitForFinish(5, TimeUnit.MINUTES);
     return mrManager;
   }
+
+  @Test(expected = IllegalStateException.class)
+  public void testInvalidRowLimit() throws Exception {
+    Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
+      .put(Constants.Reference.REFERENCE_NAME, "TestInValidRowLimit")
+      .put("filePath", sourceFolderUri)
+      .put("filePattern", ".*")
+      .put("sheet", "Sheet Name")
+      .put("sheetValue", "Sheet1")
+      .put("memoryTableName", "trackMemoryTableWithInValidRowLimit")
+      .put("tableExpiryPeriod", "30")
+      .put("reprocess", "false")
+      .put("columnList", "A")
+      .put("columnMapping", "")
+      .put("skipFirstRow", "false")
+      .put("terminateIfEmptyRow", "false")
+      .put("rowsLimit", "no")
+      .put("outputSchema", "")
+      .put("ifErrorRecord", "Write to error dataset")
+      .put("errorDatasetName", "")
+      .build();
+
+    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("Excel", BatchSource.PLUGIN_TYPE,
+                                                                   sourceProperties, null));
+
+    String outputDatasetName = "output-testWithInValidRowLimit";
+    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
+
+    deployApp(source, sink, "testWithInValidRowLimit");
+    Assert.fail();
+  }
 }

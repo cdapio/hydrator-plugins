@@ -19,8 +19,8 @@ language: java
 jdk:
   - oraclejdk7
 
-# memory values same as surefire plugin config
-before_install: echo "MAVEN_OPTS='-Xmx5000m -XX:MaxPermSize=1024m'" > ~/.mavenrc
+# Do not exceed Travis memory capacity
+before_install: echo "MAVEN_OPTS='-Xmx3g -XX:MaxPermSize=256m'" > ~/.mavenrc
 
 script: mvn -U clean test
 

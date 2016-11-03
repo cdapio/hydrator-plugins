@@ -16,32 +16,32 @@
 -->
 <catalog>
 <book id="bk101">
-      <author>Gambardella, Matthew</author>
-      <title>XML Developer's Guide</title>
-      <genre>Computer</genre>
-      <price><base>44.95</base><tax><surcharge>10.00</surcharge><excise>10.00</excise></tax></price>
-      <publish_date>2000-10-01</publish_date>
-      <description><name>An in-depth look at creating applications 
+    <author>Gambardella, Matthew</author>
+    <title>XML Developer's Guide</title>
+    <genre>Computer</genre>
+    <price><base>44.95</base><tax><surcharge>10.00</surcharge><excise>10.00</excise></tax></price>
+    <publish_date>2000-10-01</publish_date>
+    <description><name>An in-depth look at creating applications
       with XML.</name></description>
-   </book>
-   <book id="bk102">
-      <author>Ralls, Kim</author>
-      <title>Midnight Rain</title>
-      <genre>Fantasy</genre>
-      <price><base>5.95</base><tax><surcharge>11.00</surcharge><excise>11.00</excise></tax></price>
-      <publish_date>2000-12-16</publish_date>
-      <description><name><name>A former architect battles corporate zombies, 
-      an evil sorceress, and her own childhood to become queen 
+  </book>
+  <book id="bk102">
+    <author>Ralls, &lt;Kim</author>
+    <title>Midnight Rain</title>
+    <genre>Fantasy</genre>
+    <price><base>5.95</base><tax><surcharge>11.00</surcharge><excise>11.00</excise></tax></price>
+    <publish_date>2000-12-16</publish_date>
+    <description><name><name>A former architect battles corporate zombies,
+      an evil sorceress, and her own childhood to become queen
       of the world.</name></name></description>
-   </book>
-   <book id="bk103">
-      <author>Corets, Eva</author>
-      <title>Maeve Ascendant</title>
-      <genre>Fantasy</genre>
-      <price><base>5.95</base><tax><surcharge>12.00</surcharge><excise>12.00</excise></tax></price>
-      <publish_date>2000-11-17</publish_date>
-      <description><name><name>After the collapse of a nanotechnology 
-      society in England, the young survivors lay the 
+  </book>
+  <book id="bk103">
+    <author>Corets, Eva</author>
+    <title>Maeve Ascendant</title>
+    <genre>Fantasy</genre>
+    <price><base>5.95</base><tax><surcharge>12.00</surcharge><excise>12.00</excise></tax></price>
+    <publish_date>2000-11-17</publish_date>
+    <description><name><name>After the collapse of a nanotechnology
+      society in England, the young survivors lay the
       foundation for a new society.</name></name></description>
-   </book>
+  </book>
 </catalog>
