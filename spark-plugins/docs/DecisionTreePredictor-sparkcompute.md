@@ -16,13 +16,14 @@ Properties
 
 **path:** Path of the FileSet to load the model from.
 
-**featuresToInclude:** A comma-separated sequence of fields to be used for prediction. If both featuresToInclude and
-featuresToExclude are empty, all fields will be used for prediction. Features to be used, must be from one of the
-following types: int, long, float or double. Both *featuresToInclude* and *featuresToExclude* fields cannot be specified.
+**featureFieldsToInclude:** A comma-separated sequence of fields to be used for prediction. If both
+featureFieldsToInclude and featureFieldsToExclude are empty, all fields will be used for prediction. Features to be
+used, must be from one of the following types: int, long, float or double. Both *featureFieldsToInclude* and
+*featureFieldsToExclude* fields cannot be specified.
 
-**featuresToExclude:** A comma-separated sequence of fields to be excluded for prediction. If both featuresToInclude and
-featuresToExclude are empty, all fields will be used for prediction. Both *featuresToInclude* and *featuresToExclude*
-fields cannot be specified.
+**featureFieldsToExclude:** A comma-separated sequence of fields to be excluded for prediction. If both
+featureFieldsToInclude and featureFieldsToExclude are empty, all fields will be used for prediction. Both
+*featureFieldsToInclude* and *featureFieldsToExclude* fields cannot be specified.
 
 **predictionField:** The field on which to set the prediction. It will be of type double.
 

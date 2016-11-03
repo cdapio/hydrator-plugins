@@ -97,7 +97,7 @@
           }
         },
         {
-          "widget-type": "number",
+          "widget-type": "textbox",
           "label": "Max Rows Limit",
           "name": "rowsLimit"
         },
