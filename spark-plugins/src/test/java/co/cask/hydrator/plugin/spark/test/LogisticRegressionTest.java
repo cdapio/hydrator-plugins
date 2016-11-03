@@ -131,7 +131,7 @@ public class LogisticRegressionTest extends HydratorTestBase {
     // set up five spam messages and five non-spam messages to be used for classification
     List<StructuredRecord> messagesToWrite = new ArrayList<>();
     messagesToWrite.add(new LogisticRegressionSpamMessageModel(0, 0.0, 1.0).toStructuredRecord());
-    messagesToWrite.add(new LogisticRegressionSpamMessageModel(0, 0.0, 1.0)
+    messagesToWrite.add(new LogisticRegressionSpamMessageModel(0, 0.0, null)
                           .toStructuredRecord());
     messagesToWrite.add(new LogisticRegressionSpamMessageModel(0, 0.0, 1.0).toStructuredRecord());
     messagesToWrite.add(new LogisticRegressionSpamMessageModel(0, 0.0, 1.0)

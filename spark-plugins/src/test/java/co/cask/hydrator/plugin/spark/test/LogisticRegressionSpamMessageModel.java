@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.spark.test;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 
+import java.util.Objects;
 import javax.annotation.Nullable;
 
 /**
@@ -70,9 +71,7 @@ public class LogisticRegressionSpamMessageModel {
 
   @Override
   public int hashCode() {
-    int result = text.hashCode();
-    result = 31 * result + read.hashCode();
-    result = 31 * result + spamPrediction.hashCode();
+    int result = Objects.hash(text, read, spamPrediction);
     return result;
   }
 
@@ -87,12 +86,8 @@ public class LogisticRegressionSpamMessageModel {
 
     LogisticRegressionSpamMessageModel that = (LogisticRegressionSpamMessageModel) o;
 
-    if (!text.equals(that.text)) {
-      return false;
-    }
-    if (!read.equals(that.read)) {
-      return false;
-    }
-    return spamPrediction.equals(that.spamPrediction);
+    return Objects.equals(text, that.text) &&
+      Objects.equals(read, that.read) &&
+      Objects.equals(spamPrediction, that.spamPrediction);
   }
 }

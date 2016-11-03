@@ -20,23 +20,14 @@ package co.cask.hydrator.plugin.spark;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.lib.FileSet;
-import co.cask.cdap.etl.api.PipelineConfigurer;
-import co.cask.cdap.etl.api.batch.SparkExecutionPluginContext;
 import co.cask.cdap.etl.api.batch.SparkSink;
+import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
 import org.apache.spark.mllib.classification.LogisticRegressionModel;
 import org.apache.spark.mllib.classification.LogisticRegressionWithLBFGS;
-import org.apache.spark.mllib.feature.HashingTF;
 import org.apache.spark.mllib.regression.LabeledPoint;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -54,13 +45,7 @@ public class LogisticRegressionTrainer extends SparkMLTrainer {
   /**
    * Configuration for the LogisticRegressionTrainer.
    */
-  public class Config extends MLTrainerConfig {
-
-    @Nullable
-    @Description("The number of features to use in training the model. It must be of type integer and equal to the " +
-      "number of features used in LogisticRegressionClassifier. The default value if none is provided will be " +
-      "100.")
-    private final Integer numFeatures;
+  public static class Config extends MLTrainerConfig {
 
     @Nullable
     @Description("The number of classes to use in training the model. It must be of type integer. " +
@@ -68,59 +53,30 @@ public class LogisticRegressionTrainer extends SparkMLTrainer {
     private final Integer numClasses;
 
     public Config() {
-      this.numFeatures = 100;
+      super();
       this.numClasses = 2;
     }
 
     public Config(String fileSetName, String path, @Nullable String featureFieldsToInclude, String labelField,
-                  @Nullable String featureFieldsToExclude, @Nullable Integer numFeatures,
-                  @Nullable Integer numClasses) {
+                  @Nullable String featureFieldsToExclude, @Nullable Integer numClasses) {
       super(fileSetName, path, featureFieldsToInclude, featureFieldsToExclude, labelField);
-      this.numFeatures = numFeatures;
       this.numClasses = numClasses;
     }
   }
 
-  @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    configure(pipelineConfigurer, config.fileSetName, config.featureFieldsToInclude, config.featureFieldsToExclude,
-              config.labelField, null);
+  public LogisticRegressionTrainer(Config config) {
+    super(config);
+    this.config = config;
   }
 
-  @Override
-  public void run(SparkExecutionPluginContext context, JavaRDD<StructuredRecord> input) throws Exception {
-    final HashingTF tf = new HashingTF((config.numFeatures));
+  public void trainModel(SparkContext context, Schema inputschema, JavaRDD<LabeledPoint> trainingData,
+                         String modelPath) {
+    final LogisticRegressionModel model = new LogisticRegressionWithLBFGS()
+      .setNumClasses(config.numClasses)
+      .setIntercept(true)
+      .run(trainingData.rdd());
 
-    if (!input.isEmpty()) {
-      final Schema inputSchema = input.first().getSchema();
-      final Map<String, Integer> featuresList = getFeatures(inputSchema, config.featureFieldsToInclude,
-                                                            config.featureFieldsToExclude,
-                                                            config.labelField);
-
-      JavaRDD<LabeledPoint> trainingData = input.map(new Function<StructuredRecord, LabeledPoint>() {
-        @Override
-        public LabeledPoint call(StructuredRecord record) throws Exception {
-          List<Object> result = new ArrayList<>();
-          for (String column : featuresList.keySet()) {
-            if (record.get(column) != null) {
-              result.add(record.get(column));
-            }
-          }
-          return new LabeledPoint((Double) record.get(config.labelField), tf.transform(result));
-        }
-      });
-
-      trainingData.cache();
-
-      final LogisticRegressionModel model = new LogisticRegressionWithLBFGS()
-        .setNumClasses(config.numClasses)
-        .run(trainingData.rdd());
-
-      // save the model to a file   in the output FileSet
-      JavaSparkContext sparkContext = context.getSparkContext();
-      FileSet outputFS = context.getDataset(config.fileSetName);
-      model.save(JavaSparkContext.toSparkContext(sparkContext),
-                 outputFS.getBaseLocation().append(config.path).toURI().getPath());
-    }
+    // save the model to a file in the output FileSet
+    model.save(context, modelPath);
   }
 }
