@@ -52,6 +52,7 @@ public class SnapshotFileSet {
   private static final Type MAP_TYPE = new TypeToken<Map<String, String>>() { }.getType();
   private static final Gson GSON = new Gson();
   private static final String STATE_FILE_NAME = "state";
+  public static final String SNAPSHOT_FIELD = "snapshot";
   private final PartitionedFileSet files;
 
   public SnapshotFileSet(PartitionedFileSet files) {
@@ -60,7 +61,7 @@ public class SnapshotFileSet {
 
   public static PartitionedFileSetProperties.Builder getBaseProperties(SnapshotFileSetConfig config) {
     PartitionedFileSetProperties.Builder propertiesBuilder = PartitionedFileSetProperties.builder()
-      .setPartitioning(Partitioning.builder().addLongField("snapshot").build());
+      .setPartitioning(Partitioning.builder().addLongField(SNAPSHOT_FIELD).build());
 
     if (!Strings.isNullOrEmpty(config.getBasePath())) {
       propertiesBuilder.setBasePath(config.getBasePath());
@@ -114,7 +115,7 @@ public class SnapshotFileSet {
     Map<String, String> args = new HashMap<>();
     args.putAll(otherProperties);
 
-    PartitionKey outputKey = PartitionKey.builder().addLongField("snapshot", snapshotTime).build();
+    PartitionKey outputKey = PartitionKey.builder().addLongField(SNAPSHOT_FIELD, snapshotTime).build();
     PartitionedFileSetArguments.setOutputPartitionKey(args, outputKey);
     return args;
   }
@@ -139,7 +140,7 @@ public class SnapshotFileSet {
 
   public void deleteMatchingPartitionsByTime(long upperLimit) throws IOException {
     if (upperLimit > 0 && upperLimit < Long.MAX_VALUE) {
-      PartitionFilter filter = PartitionFilter.builder().addRangeCondition("millisecond", null, upperLimit).build();
+      PartitionFilter filter = PartitionFilter.builder().addRangeCondition(SNAPSHOT_FIELD, null, upperLimit).build();
       Set<PartitionDetail> partitions = files.getPartitions(filter);
       for (PartitionDetail partition : partitions) {
         files.dropPartition(partition.getPartitionKey());
@@ -153,7 +154,7 @@ public class SnapshotFileSet {
       return null;
     }
 
-    PartitionKey partitionKey = PartitionKey.builder().addLongField("snapshot", latestTime).build();
+    PartitionKey partitionKey = PartitionKey.builder().addLongField(SNAPSHOT_FIELD, latestTime).build();
     PartitionDetail partitionDetail = files.getPartition(partitionKey);
 
     if (partitionDetail == null) {

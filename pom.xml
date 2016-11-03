@@ -41,6 +41,7 @@
     <module>spark-plugins</module>
     <module>transform-plugins</module>
     <module>copybookreader-plugins</module>
+    <module>solrsearch-plugins</module>
   </modules>
 
   <licenses>
@@ -116,7 +117,7 @@
     <mockftp.version>2.6</mockftp.version>
     <snappy.version>1.1.2</snappy.version>
     <slf4j.version>1.7.5</slf4j.version>
-    <twill.version>0.8.0-SNAPSHOT</twill.version>
+    <twill.version>0.8.0</twill.version>
     <twitter4j.version>4.0.3</twitter4j.version>
     <zookeeper.version>3.4.5</zookeeper.version>
     <jython.version>2.5.2</jython.version>
@@ -632,7 +633,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>2.14.1</version>
         <configuration>
-          <argLine>-Xmx5000m -Djava.awt.headless=true -XX:MaxPermSize=1024m -XX:+UseConcMarkSweepGC -XX:OnOutOfMemoryError="kill -9 %p" -Djava.net.preferIPv4Stack=true</argLine>
+          <argLine>-Xmx3g -Djava.awt.headless=true -XX:MaxPermSize=256m -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true</argLine>
           <redirectTestOutputToFile>${surefire.redirectTestOutputToFile}</redirectTestOutputToFile>
           <reuseForks>false</reuseForks>
           <reportFormat>plain</reportFormat>
