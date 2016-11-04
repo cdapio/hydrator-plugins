@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.List;
 import java.util.Map;
 
@@ -68,10 +69,10 @@ public abstract class RecordConverter<INPUT, OUTPUT> {
         output.add(convertField(value, elementSchema));
       }
     } else {
-      Object[] valuesArr = (Object[]) values;
-      output = Lists.newArrayListWithCapacity(valuesArr.length);
-      for (Object value : valuesArr) {
-        output.add(convertField(value, elementSchema));
+      int length = Array.getLength(values);
+      output = Lists.newArrayListWithCapacity(length);
+      for (int i = 0; i < length; i++) {
+        output.add(convertField(Array.get(values, i), elementSchema));
       }
     }
     return output;
