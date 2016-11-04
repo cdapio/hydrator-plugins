@@ -70,7 +70,6 @@ public abstract class SparkMLTrainer extends SparkSink<StructuredRecord> {
     protected String labelField;
 
     protected MLTrainerConfig() {
-      System.out.print("hello");
     }
 
     protected MLTrainerConfig(String fileSetName, String path, @Nullable String featureFieldsToInclude,
