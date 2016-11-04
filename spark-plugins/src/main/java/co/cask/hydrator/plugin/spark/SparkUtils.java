@@ -283,8 +283,9 @@ final class SparkUtils {
         }
       }
     } catch (ClassCastException e) {
-      throw new IllegalArgumentException(String.format("Input field should be of type array of string or a string. " +
-                                                         "But was %s for input field %s.", schema, inputField), e);
+      throw new IllegalArgumentException(String.format("Schema type mismatch for field %s. Please make sure the " +
+                                                         "value to be used for feature generation is an array of " +
+                                                         "string or a string.", inputField), e);
     }
     return text;
   }

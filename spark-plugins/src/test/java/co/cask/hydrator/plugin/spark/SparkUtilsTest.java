@@ -110,24 +110,8 @@ public class SparkUtilsTest {
   }
 
   @Test
-  public void testInvalidArrayInputField() throws Exception {
-    Schema input = Schema.recordOf("input", Schema.Field.of("offset", Schema.of(Schema.Type.INT)),
-                                   Schema.Field.of("body", Schema.arrayOf(Schema.of(Schema.Type.INT))));
-    StructuredRecord record = StructuredRecord.builder(input).set("offset", 1)
-      .set("body", new int[]{1, 2, 3}).build();
-    Splitter splitter = Splitter.on(Pattern.compile(" "));
-    try {
-      SparkUtils.getInputFieldValue(record, "body", splitter);
-      Assert.fail();
-    } catch (IllegalArgumentException e) {
-      Assert.assertEquals("Input field should be of type array of string or a string. But was {\"type\":\"array\"," +
-                            "\"items\":\"int\"} for input field body.", e.getMessage());
-    }
-  }
-
-  @Test
   public void testInvalidInputField() throws Exception {
-    Schema input = Schema.recordOf("input", Schema.Field.of("offset", Schema.of(Schema.Type.INT)),
+    Schema input = Schema.recordOf("input", Schema.Field.of("offset", Schema.of(Schema.Type.STRING)),
                                    Schema.Field.of("body", Schema.arrayOf(Schema.of(Schema.Type.INT))));
     StructuredRecord record = StructuredRecord.builder(input).set("offset", 1)
       .set("body", new int[]{1, 2, 3}).build();
@@ -136,8 +120,8 @@ public class SparkUtilsTest {
       SparkUtils.getInputFieldValue(record, "offset", splitter);
       Assert.fail();
     } catch (IllegalArgumentException e) {
-      Assert.assertEquals("Input field should be of type array of string or a string. But was \"int\" for input " +
-                            "field offset.", e.getMessage());
+      Assert.assertEquals("Schema type mismatch for field offset. Please make sure the value to be used for feature " +
+                            "generation is an array of string or a string.", e.getMessage());
     }
   }
 }
