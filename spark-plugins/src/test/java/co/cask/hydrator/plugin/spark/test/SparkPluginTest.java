@@ -63,6 +63,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.Uninterruptibles;
+import kafka.common.TopicAndPartition;
 import kafka.serializer.DefaultDecoder;
 import org.apache.spark.streaming.kafka.KafkaUtils;
 import org.apache.twill.internal.kafka.EmbeddedKafkaServer;
@@ -144,7 +145,7 @@ public class SparkPluginTest extends HydratorTestBase {
     );
     addPluginArtifact(NamespaceId.DEFAULT.artifact("spark-plugins", "1.0.0"), parents,
                       NaiveBayesTrainer.class, NaiveBayesClassifier.class,
-                      KafkaStreamingSource.class, KafkaUtils.class, DefaultDecoder.class,
+                      KafkaStreamingSource.class, KafkaUtils.class, DefaultDecoder.class, TopicAndPartition.class,
                       TwitterStreamingSource.class,
                       HTTPPollerSource.class, HTTPPollConfig.class);
 
@@ -281,7 +282,6 @@ public class SparkPluginTest extends HydratorTestBase {
     sparkManager.start();
     sparkManager.waitForStatus(true, 10, 1);
 
-
     final Map<Long, String> expected = ImmutableMap.of(
       1L, "samuel jackson",
       2L, "dwayne johnson",
@@ -353,7 +353,8 @@ public class SparkPluginTest extends HydratorTestBase {
     Map<String, String> properties = new HashMap<>();
     properties.put("referenceName", "kafkaPurchases");
     properties.put("brokers", "localhost:" + kafkaPort);
-    properties.put("topics", "users");
+    properties.put("topic", "users");
+    properties.put("defaultInitialOffset", "-2");
     properties.put("format", "csv");
     properties.put("schema", schema.toString());
 
@@ -369,6 +370,13 @@ public class SparkPluginTest extends HydratorTestBase {
     AppRequest<DataStreamsConfig> appRequest = new AppRequest<>(DATASTREAMS_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "KafkaSourceApp");
     ApplicationManager appManager = deployApplication(appId, appRequest);
+
+    // write some messages to kafka
+    Map<String, String> messages = new HashMap<>();
+    messages.put("a", "1,samuel,jackson");
+    messages.put("b", "2,dwayne,johnson");
+    messages.put("c", "3,christopher,walken");
+    sendKafkaMessage("users", messages);
 
     SparkManager sparkManager = appManager.getSparkManager(DataStreamsSparkLauncher.NAME);
     sparkManager.start();
@@ -386,18 +394,53 @@ public class SparkPluginTest extends HydratorTestBase {
       new Callable<Boolean>() {
         @Override
         public Boolean call() throws Exception {
-          // write to kafka here since the source doesn't read old messages right now
-          Map<String, String> messages = new HashMap<>();
-          messages.put("a", "1,samuel,jackson");
-          messages.put("b", "2,dwayne,johnson");
-          messages.put("c", "3,christopher,walken");
-          sendKafkaMessage("users", messages);
           outputManager.flush();
           Map<Long, String> actual = new HashMap<>();
           for (StructuredRecord outputRecord : MockSink.readOutput(outputManager)) {
             actual.put((Long) outputRecord.get("id"), outputRecord.get("first") + " " + outputRecord.get("last"));
           }
           return expected.equals(actual);
+        }
+      },
+      4,
+      TimeUnit.MINUTES);
+
+    sparkManager.stop();
+    sparkManager.waitForStatus(false, 10, 1);
+
+    // clear the output table
+    Table outputTable = outputManager.get();
+    Scanner scanner = outputTable.scan(null, null);
+    Row row;
+    while ((row = scanner.next()) != null) {
+      outputTable.delete(row.getRow());
+    }
+    outputManager.flush();
+
+    // now write some more messages to kafka and start the program again to make sure it picks up where it left off
+    messages = new HashMap<>();
+    messages.put("d", "4,terry,crews");
+    messages.put("e", "5,sylvester,stallone");
+    sendKafkaMessage("users", messages);
+
+    sparkManager.start();
+    sparkManager.waitForStatus(true, 10, 1);
+
+    final Map<Long, String> expected2 = ImmutableMap.of(
+      4L, "terry crews",
+      5L, "sylvester stallone"
+    );
+    Tasks.waitFor(
+      true,
+      new Callable<Boolean>() {
+        @Override
+        public Boolean call() throws Exception {
+          outputManager.flush();
+          Map<Long, String> actual = new HashMap<>();
+          for (StructuredRecord outputRecord : MockSink.readOutput(outputManager)) {
+            actual.put((Long) outputRecord.get("id"), outputRecord.get("first") + " " + outputRecord.get("last"));
+          }
+          return expected2.equals(actual);
         }
       },
       4,
