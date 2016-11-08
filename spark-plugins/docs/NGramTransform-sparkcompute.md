@@ -13,19 +13,22 @@ Properties
 ----------
 **fieldToBeTransformed:** Field to be used to transform input features into n-grams.
 
+**patternSeparator:** Pattern to split the input string fields on. Default is '\s+'.
+
 **ngramSize:** NGram size. (Macro-enabled)
 
 **outputField:** Transformed field for sequence of n-gram.
 
 Example
 -------
-This example transforms features from "tokens" field into n-grams(output field name is ngrams) using ngram size as "2".
+This example transforms features from text field into n-grams(output field name is ngrams) using ngram size as "2".
 
     {
         "name": "NGramTransform",
         "type": "sparkcompute",
         "properties": {
-            "fieldToBeTransformed": "tokens",
+            "fieldToBeTransformed": "text",
+            "patternSeparator": " ",
             "ngramSize": "2",
             "outputField": "ngrams"
         }
@@ -34,20 +37,20 @@ This example transforms features from "tokens" field into n-grams(output field n
 
 For example, suppose the NGramTransform receives below input records:
 
-    +===================================+
-    | topic | tokens                    |
-    +===================================+
-    | java  | [hi,i,heard,about,spark]  |
-    | hdfs  | [hdfs,is,a,file,system]   |
-    | spark | [spark,is,an,engine]      |
-    +===================================+
+    +=================================+
+    | topic | text                    |
+    +=================================+
+    | java  | hi i heard about spark  |
+    | hdfs  | hdfs is a file system   |
+    | spark | spark is an engine      |
+    +=================================+
 
-Output schema will contain only a single field "ngrams" having transformed ngrams in string array form:
+Output schema will contain all the fields along with transformed ngrams in string array form:
 
-    +==========================================+
-    | ngrams                                   |
-    +==========================================+
-    | [hi i,i heard,heard about,about spark]   |
-    | [hdfs is,is a,a file,file system]        |
-    | [spark is,is an,an engine]               |
-    +==========================================+
+    +============================================================================+
+    | topic | text                    |  ngrams                                  |
+    +============================================================================+
+    | java  | hi i heard about spark  | [hi i,i heard,heard about,about spark]   |
+    | hdfs  | hdfs is a file system   | [hdfs is,is a,a file,file system]        |
+    | spark | spark is an engine      | [spark is,is an,an engine]               |
+    +============================================================================+

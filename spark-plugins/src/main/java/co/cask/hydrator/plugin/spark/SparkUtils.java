@@ -197,4 +197,67 @@ final class SparkUtils {
     fields.add(Schema.Field.of(predictionField, Schema.of(Schema.Type.DOUBLE)));
     return Schema.recordOf(inputSchema.getRecordName() + ".predicted", fields);
   }
+
+  /**
+   * Validate the input field to be used for text based feature generation.
+   *
+   * @param inputSchema input schema coming in from the previous stage
+   * @param key text field on which to perform text based feature generation
+   */
+  static void validateTextField(Schema inputSchema, String key) {
+    if (inputSchema.getField(key) == null) {
+      throw new IllegalArgumentException(String.format("Input field %s does not exist in the input schema %s.",
+                                                       key, inputSchema.toString()));
+    }
+    Schema schema = inputSchema.getField(key).getSchema();
+    Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
+    if (type == Schema.Type.ARRAY) {
+      Schema componentSchema = schema.getComponentSchema();
+      type = componentSchema.isNullable() ? componentSchema.getNonNullable().getType() : componentSchema.getType();
+    }
+    if (type != Schema.Type.STRING) {
+      throw new IllegalArgumentException(String.format("Field to be transformed should be of type String or " +
+                                                         "Nullable String or Array of type String or Nullable " +
+                                                         "String . But was %s for field %s.", type, key));
+    }
+  }
+
+  /**
+   * Gets the input field for feature generation. If the field is an array, returns the field. Otherwise, splits the
+   * field based on the given pattern.
+   * Returns an empty list if value is null.
+   * The method assumes the input field is an array of strings or a string.
+   * Validation for the field type should be performed at configure time. The method will throw an exception if the
+   * input field is not of required type.
+   *
+   * @param input input Structured Record
+   * @param inputField field to use for feature generation
+   * @param splitter Splitter object to be used for splitting the input string
+   * @return text to be used for feature generation
+   */
+  static List<String> getInputFieldValue(StructuredRecord input, String inputField, Splitter splitter) {
+    List<String> text = new ArrayList<>();
+    Schema schema = input.getSchema().getField(inputField).getSchema();
+    Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
+    try {
+      if (type == Schema.Type.ARRAY) {
+        Object value = input.get(inputField);
+        if (value instanceof List) {
+          text = input.get(inputField);
+        } else {
+          text = Lists.newArrayList((String[]) value);
+        }
+      } else {
+        String value = input.get(inputField);
+        if (value != null) {
+          text = Lists.newArrayList(splitter.split(value));
+        }
+      }
+    } catch (ClassCastException e) {
+      throw new IllegalArgumentException(String.format("Schema type mismatch for field %s. Please make sure the " +
+                                                         "value to be used for feature generation is an array of " +
+                                                         "string or a string.", inputField), e);
+    }
+    return text;
+  }
 }

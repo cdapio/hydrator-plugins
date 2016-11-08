@@ -26,19 +26,19 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.SparkCompute;
 import co.cask.cdap.etl.api.batch.SparkExecutionPluginContext;
-import com.google.common.base.Preconditions;
+import co.cask.cdap.format.StructuredRecordStringConverter;
+import com.google.common.base.Splitter;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.ml.feature.NGram;
 import org.apache.spark.sql.DataFrame;
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SQLContext;
-import org.apache.spark.sql.types.DataTypes;
-import org.apache.spark.sql.types.Metadata;
-import org.apache.spark.sql.types.StructField;
-import org.apache.spark.sql.types.StructType;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Pattern;
+import javax.annotation.Nullable;
 
 /**
  * NGramTransform - SparkCompute to transform input features into n-grams.
@@ -48,11 +48,67 @@ import org.apache.spark.sql.types.StructType;
 @Description("Used to transform input features into n-grams.")
 public class NGramTransform extends SparkCompute<StructuredRecord, StructuredRecord> {
   public static final String PLUGIN_NAME = "NGramTransform";
-  private Config config;
   public Schema outputSchema;
+  private Config config;
+  private Splitter splitter;
+  private Pattern pattern;
+  private NGram ngramTransformer;
+  private static final String TOKENIZED_FIELD = "intermediateTokens";
 
   public NGramTransform(Config config) {
     this.config = config;
+  }
+
+  @Override
+  public void initialize(SparkExecutionPluginContext context) throws Exception {
+    super.initialize(context);
+    pattern = Pattern.compile(config.patternSeparator);
+    ngramTransformer = new NGram().setN(config.ngramSize).setInputCol(TOKENIZED_FIELD)
+      .setOutputCol(config.outputField);
+  }
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
+    super.configurePipeline(pipelineConfigurer);
+    Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
+    config.validate(inputSchema);
+  }
+
+  @Override
+  public JavaRDD<StructuredRecord> transform(SparkExecutionPluginContext context,
+                                             JavaRDD<StructuredRecord> input) throws Exception {
+    JavaSparkContext javaSparkContext = context.getSparkContext();
+    SQLContext sqlContext = new SQLContext(javaSparkContext);
+    if (input.isEmpty()) {
+      return context.getSparkContext().emptyRDD();
+    }
+    outputSchema = outputSchema != null ? outputSchema : config.getOutputSchema(input.first().getSchema(),
+                                                                                config.outputField);
+    final Schema intermediateSchema = config.getOutputSchema(input.first().getSchema(), TOKENIZED_FIELD);
+
+    JavaRDD<String> javardd = input.map(new Function<StructuredRecord, String>() {
+      @Override
+      public String call(StructuredRecord structuredRecord) throws Exception {
+        splitter = splitter == null ? Splitter.on(pattern) : splitter;
+        StructuredRecord.Builder builder = StructuredRecord.builder(intermediateSchema);
+        for (Schema.Field field : structuredRecord.getSchema().getFields()) {
+          String fieldName = field.getName();
+          builder.set(fieldName, structuredRecord.get(fieldName));
+        }
+        List<String> text = SparkUtils.getInputFieldValue(structuredRecord, config.fieldToBeTransformed, splitter);
+        builder.set(TOKENIZED_FIELD, text);
+        return StructuredRecordStringConverter.toJsonString(builder.build());
+      }
+    });
+    DataFrame wordDataFrame = sqlContext.read().json(javardd);
+    DataFrame ngramDataFrame = ngramTransformer.transform(wordDataFrame);
+   JavaRDD<StructuredRecord> output = ngramDataFrame.toJSON().toJavaRDD().map(new Function<String, StructuredRecord>() {
+        @Override
+        public StructuredRecord call(String record) throws Exception {
+          return StructuredRecordStringConverter.fromJsonString(record, outputSchema);
+        }
+      });
+    return output;
   }
 
   /**
@@ -61,73 +117,46 @@ public class NGramTransform extends SparkCompute<StructuredRecord, StructuredRec
   public static class Config extends PluginConfig {
 
     @Description("Field to be used to transform input features into n-grams.")
-    private final String fieldToBeTransformed;
+    private String fieldToBeTransformed;
+
+    @Nullable
+    @Description("Pattern to split the input string fields on. Default is '\\s+'.")
+    private String patternSeparator;
 
     @Description("N-Gram size.")
     @Macro
-    private final Integer ngramSize;
+    @Nullable
+    private Integer ngramSize;
 
     @Description("Transformed field for sequence of n-gram.")
-    private final String outputField;
+    private String outputField;
 
-    public Config(String fieldToBeTransformed, Integer ngramSize, String outputField) {
+    public Config() {
+      patternSeparator = "\\s+";
+      ngramSize = 1;
+    }
+
+    public Config(String fieldToBeTransformed, String patternSeparator, Integer ngramSize, String outputField) {
       this.fieldToBeTransformed = fieldToBeTransformed;
+      this.patternSeparator = patternSeparator;
       this.ngramSize = ngramSize;
       this.outputField = outputField;
     }
-  }
 
-  @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
-    super.configurePipeline(pipelineConfigurer);
-    Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
-    if (inputSchema != null && inputSchema.getField(config.fieldToBeTransformed) != null) {
-      Schema.Type fieldToBeTransformedType = inputSchema.getField(config.fieldToBeTransformed)
-        .getSchema().getType();
-      Preconditions.checkArgument(fieldToBeTransformedType == Schema.Type.ARRAY,
-                                  "Features to be transformed %s should be of type ARRAY, but was of type %s.",
-                                  config.fieldToBeTransformed, fieldToBeTransformedType);
+    private void validate(Schema inputSchema) {
+      if (inputSchema != null) {
+        SparkUtils.validateTextField(inputSchema, fieldToBeTransformed);
+      }
+      if (ngramSize < 1) {
+        throw new IllegalArgumentException(String.format("Minimum n-gram length required : 1. But found : %s.",
+                                                         ngramSize));
+      }
     }
-  }
 
-  @Override
-  public JavaRDD<StructuredRecord> transform(SparkExecutionPluginContext context,
-                                             JavaRDD<StructuredRecord> input) throws Exception {
-    JavaSparkContext javaSparkContext = context.getSparkContext();
-    SQLContext sqlContext = new SQLContext(javaSparkContext);
-    //Create outputschema
-    outputSchema = Schema.recordOf("outputSchema", Schema.Field.of(config.outputField,
-                                                                   Schema.arrayOf(Schema.of(Schema.Type.STRING))));
-    //Schema to be used to create dataframe
-    StructType schema = new StructType(new StructField[]{
-      new StructField(config.fieldToBeTransformed, DataTypes.createArrayType(DataTypes.StringType),
-                      false, Metadata.empty())});
-    //Transform input i.e JavaRDD<StructuredRecord> to JavaRDD<Row>
-    JavaRDD<Row> rowRDD = input.map(new Function<StructuredRecord, Row>() {
-      @Override
-      public Row call(StructuredRecord rec) throws Exception {
-        return RowFactory.create(rec.get(config.fieldToBeTransformed));
-      }
-    });
-    DataFrame wordDataFrame = sqlContext.createDataFrame(rowRDD, schema);
-    NGram ngramTransformer = new NGram().setN(config.ngramSize)
-      .setInputCol(config.fieldToBeTransformed).setOutputCol(config.outputField);
-    DataFrame ngramDataFrame = ngramTransformer.transform(wordDataFrame);
-    JavaRDD<Row> nGramRDD = javaSparkContext.parallelize(ngramDataFrame.select(config.outputField)
-                                                           .collectAsList());
-    //Transform JavaRDD<Row> to JavaRDD<StructuredRecord>
-    JavaRDD<StructuredRecord> output = nGramRDD.map(new Function<Row, StructuredRecord>() {
-      @Override
-      public StructuredRecord call(Row row) throws Exception {
-        StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
-        for (Schema.Field field : outputSchema.getFields()) {
-          if (row.getList(0).size() > 0) {
-            builder.set(field.getName(), row.getList(0));
-          }
-        }
-        return builder.build();
-      }
-    });
-    return output;
+    private Schema getOutputSchema(Schema inputSchema, String fieldName) {
+      List<Schema.Field> fields = new ArrayList<>(inputSchema.getFields());
+      fields.add(Schema.Field.of(fieldName, Schema.arrayOf(Schema.of(Schema.Type.STRING))));
+      return Schema.recordOf("record", fields);
+    }
   }
 }

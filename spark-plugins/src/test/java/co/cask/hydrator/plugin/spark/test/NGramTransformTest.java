@@ -25,7 +25,6 @@ import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.batch.SparkCompute;
 import co.cask.cdap.etl.mock.batch.MockSink;
 import co.cask.cdap.etl.mock.batch.MockSource;
-import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
 import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
@@ -77,21 +76,13 @@ public class NGramTransformTest extends HydratorTestBase {
   private static final String[] DATA_TO_BE_TRANSFORMED3 = {"hi", "i"};
   private static final String SINGLE_FIELD_DATASET = "SingleField";
 
-  private static final Schema SOURCE_SCHEMA_SINGLE = Schema.recordOf("sourceRecord",
-                                                                     Schema.Field.of(FIELD_TO_BE_TRANSFORMED,
-                                                                     Schema.arrayOf(Schema.of(Schema.Type.STRING)))
-  );
+  private static final Schema SOURCE_SCHEMA_SINGLE =
+    Schema.recordOf("sourceRecord", Schema.Field.of(FIELD_TO_BE_TRANSFORMED,
+                                                    Schema.arrayOf(Schema.of(Schema.Type.STRING))));
 
-  private static final Schema SOURCE_SCHEMA_SINGLE_NEGATIVE_TEST = Schema.recordOf("sourceRecord",
-                                                                               Schema.Field.of(FIELD_TO_BE_TRANSFORMED,
-                                                                               Schema.of(Schema.Type.STRING))
-  );
-  private static final Schema SOURCE_SCHEMA_MULTIPLE = Schema.recordOf("sourceRecord",
-                                                                       Schema.Field.of(ADDITIONAL_FIELD,
-                                                                       Schema.of(Schema.Type.STRING)),
-                                                                       Schema.Field.of(FIELD_TO_BE_TRANSFORMED,
-                                                                       Schema.arrayOf(Schema.of(Schema.Type.STRING)))
-  );
+  private static final Schema SOURCE_SCHEMA_MULTIPLE =
+    Schema.recordOf("sourceRecord", Schema.Field.of(ADDITIONAL_FIELD, Schema.of(Schema.Type.STRING)),
+                    Schema.Field.of(FIELD_TO_BE_TRANSFORMED, Schema.arrayOf(Schema.of(Schema.Type.STRING))));
 
   @BeforeClass
   public static void setupTest() throws Exception {
@@ -109,8 +100,8 @@ public class NGramTransformTest extends HydratorTestBase {
 
   /**
    * @param mockNameOfSourcePlugin used while adding ETLStage for mock source
-   * @param mockNameOfSinkPlugin   used while adding ETLStage for mock sink
-   * @param ngramSize              size of NGram
+   * @param mockNameOfSinkPlugin used while adding ETLStage for mock sink
+   * @param ngramSize size of NGram
    * @return ETLBatchConfig
    */
   private ETLBatchConfig buildETLBatchConfig(String mockNameOfSourcePlugin,
@@ -143,13 +134,10 @@ public class NGramTransformTest extends HydratorTestBase {
     ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
     DataSetManager<Table> inputManager = getDataset(mockSource);
     List<StructuredRecord> input = ImmutableList.of(
-      StructuredRecord.builder(SOURCE_SCHEMA_MULTIPLE).set(FIELD_TO_BE_TRANSFORMED,
-                                                           DATA_TO_BE_TRANSFORMED1)
-                                                      .set(ADDITIONAL_FIELD, "CDAP1").build(),
-      StructuredRecord.builder(SOURCE_SCHEMA_MULTIPLE).set(FIELD_TO_BE_TRANSFORMED,
-                                                           DATA_TO_BE_TRANSFORMED2)
-                                                      .set(ADDITIONAL_FIELD, "CDAP2").build()
-    );
+      StructuredRecord.builder(SOURCE_SCHEMA_MULTIPLE).set(FIELD_TO_BE_TRANSFORMED, DATA_TO_BE_TRANSFORMED1)
+        .set(ADDITIONAL_FIELD, "CDAP1").build(),
+      StructuredRecord.builder(SOURCE_SCHEMA_MULTIPLE).set(FIELD_TO_BE_TRANSFORMED, DATA_TO_BE_TRANSFORMED2)
+        .set(ADDITIONAL_FIELD, "CDAP2").build());
     MockSource.writeInput(inputManager, input);
     // manually trigger the pipeline
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
@@ -164,7 +152,6 @@ public class NGramTransformTest extends HydratorTestBase {
     Assert.assertEquals(2, output.size());
     Assert.assertEquals(getExpectedData(), results);
     StructuredRecord row = output.get(0);
-    Assert.assertEquals(1, row.getSchema().getFields().size());
     Assert.assertEquals("ARRAY", row.getSchema().getField(OUTPUT_FIELD).getSchema().getType().toString());
   }
 
@@ -180,11 +167,9 @@ public class NGramTransformTest extends HydratorTestBase {
     ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
     DataSetManager<Table> inputManager = getDataset(mockSource);
     List<StructuredRecord> input = ImmutableList.of(
-      StructuredRecord.builder(SOURCE_SCHEMA_SINGLE).set(FIELD_TO_BE_TRANSFORMED,
-                                                         DATA_TO_BE_TRANSFORMED1).build(),
-      StructuredRecord.builder(SOURCE_SCHEMA_SINGLE).set(FIELD_TO_BE_TRANSFORMED,
-                                                         DATA_TO_BE_TRANSFORMED2).build()
-    );
+      StructuredRecord.builder(SOURCE_SCHEMA_SINGLE).set(FIELD_TO_BE_TRANSFORMED, DATA_TO_BE_TRANSFORMED1).build(),
+      StructuredRecord.builder(SOURCE_SCHEMA_SINGLE).set(FIELD_TO_BE_TRANSFORMED, DATA_TO_BE_TRANSFORMED2).build(),
+      StructuredRecord.builder(SOURCE_SCHEMA_SINGLE).set(FIELD_TO_BE_TRANSFORMED, DATA_TO_BE_TRANSFORMED3).build());
     MockSource.writeInput(inputManager, input);
     // manually trigger the pipeline
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
@@ -202,32 +187,36 @@ public class NGramTransformTest extends HydratorTestBase {
   }
 
   @Test
-  public void testFewerSequenceThanNStrings() throws Exception {
-    String mockSource = "Less";
+  public void testStringFieldSource() throws Exception {
+    String mockSource = "StringField";
+    String mockSink = "sink";
+    Schema inputSchema = Schema.recordOf("sourceRecord",
+                                         Schema.Field.of(FIELD_TO_BE_TRANSFORMED, Schema.of(Schema.Type.STRING)));
     /*
      * source --> sparkcompute --> sink
     */
-    ETLBatchConfig etlConfig = buildETLBatchConfig(mockSource, SINGLE_FIELD_DATASET, "3");
+    ETLBatchConfig etlConfig = buildETLBatchConfig(mockSource, mockSink, "2");
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app(APP_NAME);
+    ApplicationId appId = NamespaceId.DEFAULT.app("test");
     ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
     DataSetManager<Table> inputManager = getDataset(mockSource);
-    List<StructuredRecord> input = ImmutableList.of(StructuredRecord.builder(SOURCE_SCHEMA_SINGLE)
-                                                .set(FIELD_TO_BE_TRANSFORMED, DATA_TO_BE_TRANSFORMED3).build());
+    List<StructuredRecord> input = ImmutableList.of(
+      StructuredRecord.builder(inputSchema).set(FIELD_TO_BE_TRANSFORMED, "hi i am cdap").build(),
+      StructuredRecord.builder(inputSchema).set(FIELD_TO_BE_TRANSFORMED, "how are you cdap").build());
     MockSource.writeInput(inputManager, input);
+    // manually trigger the pipeline
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
     workflowManager.waitForFinish(5, TimeUnit.MINUTES);
-    DataSetManager<Table> tokenizedTextSingle = getDataset(SINGLE_FIELD_DATASET);
+    DataSetManager<Table> tokenizedTextSingle = getDataset(mockSink);
     List<StructuredRecord> output = MockSink.readOutput(tokenizedTextSingle);
-    Assert.assertEquals(0, output.size());
-  }
-
-  @Test(expected = IllegalArgumentException.class)
-  public void testInCorrectTypeForFieldToBeTransformed() throws Exception {
-    NGramTransform.Config config = new NGramTransform.Config(FIELD_TO_BE_TRANSFORMED, 2, OUTPUT_FIELD);
-    MockPipelineConfigurer configurer = new MockPipelineConfigurer(SOURCE_SCHEMA_SINGLE_NEGATIVE_TEST);
-    new NGramTransform(config).configurePipeline(configurer);
+    Set<List> results = new HashSet<>();
+    for (StructuredRecord structuredRecord : output) {
+      results.add((ArrayList) structuredRecord.get(OUTPUT_FIELD));
+    }
+    Assert.assertEquals(getExpectedData(), results);
+    Assert.assertEquals("ARRAY", output.get(0).getSchema().getField(OUTPUT_FIELD).
+      getSchema().getType().toString());
   }
 
   @Test(expected = NullPointerException.class)
@@ -244,6 +233,7 @@ public class NGramTransformTest extends HydratorTestBase {
 
   private Set<List<String>> getExpectedDataFor3N() {
     Set<List<String>> expected = new HashSet<>();
+    expected.add(new ArrayList<String>());
     expected.add(Arrays.asList("hi i am", "i am cdap"));
     expected.add(Arrays.asList("how are you", "are you cdap"));
     return expected;
