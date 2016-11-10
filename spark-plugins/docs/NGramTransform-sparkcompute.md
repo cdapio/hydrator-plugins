@@ -7,13 +7,13 @@ Transforms the input features into n-grams, where n-gram is a sequence of n toke
 Use Case
 --------
 A bio data scientist wants to  study the sequence of the nucleotides using the input stream of DNA sequencing to identify the bonds.
-The input Stream contains the DNA sequence eg AGCTTCGA. The output contains the bigram sequence AG, GC, CT, TT, TC, CG, GA.
+The input stream contains the DNA sequence eg AGCTTCGA. The output contains the bigram sequence AG, GC, CT, TT, TC, CG, GA.
 
 Properties
 ----------
-**fieldToBeTransformed:** Field to be used to transform input features into n-grams.
+**fieldToBeTransformed:** Field to be used to transform input features into n-grams. Should be of type ``String`` or ``Nullable String``.
 
-**patternSeparator:** Pattern to split the input string fields on. Default is '\s+'.
+**tokenizationUnit:** Field to identify the entity to be tokenized. Can be of type ``word`` or ``character``.
 
 **ngramSize:** NGram size. (Macro-enabled)
 
@@ -28,7 +28,7 @@ This example transforms features from text field into n-grams(output field name 
         "type": "sparkcompute",
         "properties": {
             "fieldToBeTransformed": "text",
-            "patternSeparator": " ",
+            "tokenizationUnit": "word",
             "ngramSize": "2",
             "outputField": "ngrams"
         }
@@ -54,3 +54,4 @@ Output schema will contain all the fields along with transformed ngrams in strin
     | hdfs  | hdfs is a file system   | [hdfs is,is a,a file,file system]        |
     | spark | spark is an engine      | [spark is,is an,an engine]               |
     +============================================================================+
+    

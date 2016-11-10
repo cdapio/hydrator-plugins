@@ -71,18 +71,17 @@ public class NGramTransformTest extends HydratorTestBase {
   private static final String OUTPUT_FIELD = "ngrams";
   private static final String FIELD_TO_BE_TRANSFORMED = "tokens";
   private static final String ADDITIONAL_FIELD = "name";
-  private static final String[] DATA_TO_BE_TRANSFORMED1 = {"hi", "i", "am", "cdap"};
-  private static final String[] DATA_TO_BE_TRANSFORMED2 = {"how", "are", "you", "cdap"};
-  private static final String[] DATA_TO_BE_TRANSFORMED3 = {"hi", "i"};
+  private static final String DATA_TO_BE_TRANSFORMED1 = "hi i am cdap";
+  private static final String DATA_TO_BE_TRANSFORMED2 = "how are you cdap";
+  private static final String DATA_TO_BE_TRANSFORMED3 = "hi i";
   private static final String SINGLE_FIELD_DATASET = "SingleField";
 
   private static final Schema SOURCE_SCHEMA_SINGLE =
-    Schema.recordOf("sourceRecord", Schema.Field.of(FIELD_TO_BE_TRANSFORMED,
-                                                    Schema.arrayOf(Schema.of(Schema.Type.STRING))));
+    Schema.recordOf("sourceRecord", Schema.Field.of(FIELD_TO_BE_TRANSFORMED, Schema.of(Schema.Type.STRING)));
 
   private static final Schema SOURCE_SCHEMA_MULTIPLE =
     Schema.recordOf("sourceRecord", Schema.Field.of(ADDITIONAL_FIELD, Schema.of(Schema.Type.STRING)),
-                    Schema.Field.of(FIELD_TO_BE_TRANSFORMED, Schema.arrayOf(Schema.of(Schema.Type.STRING))));
+                    Schema.Field.of(FIELD_TO_BE_TRANSFORMED, Schema.of(Schema.Type.STRING)));
 
   @BeforeClass
   public static void setupTest() throws Exception {
@@ -92,8 +91,7 @@ public class NGramTransformTest extends HydratorTestBase {
     Set<ArtifactRange> parents = ImmutableSet.of(
       new ArtifactRange(NamespaceId.DEFAULT.toId(), DATAPIPELINE_ARTIFACT_ID.getArtifact(),
                         new ArtifactVersion(DATAPIPELINE_ARTIFACT_ID.getVersion()), true,
-                        new ArtifactVersion(DATAPIPELINE_ARTIFACT_ID.getVersion()), true)
-    );
+                        new ArtifactVersion(DATAPIPELINE_ARTIFACT_ID.getVersion()), true));
     addPluginArtifact(NamespaceId.DEFAULT.artifact("spark-plugins", "1.0.0"), parents,
                       NGramTransform.class, TwitterStreamingSource.class);
   }
@@ -104,17 +102,17 @@ public class NGramTransformTest extends HydratorTestBase {
    * @param ngramSize size of NGram
    * @return ETLBatchConfig
    */
-  private ETLBatchConfig buildETLBatchConfig(String mockNameOfSourcePlugin,
-                                             String mockNameOfSinkPlugin, String ngramSize) {
+  private ETLBatchConfig buildETLBatchConfig(String mockNameOfSourcePlugin, String mockNameOfSinkPlugin,
+                                             String tokenizationUnit, String ngramSize) {
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
       .addStage(new ETLStage("source", MockSource.getPlugin(mockNameOfSourcePlugin)))
       .addStage(new ETLStage("sparkcompute",
                              new ETLPlugin(NGramTransform.PLUGIN_NAME, SparkCompute.PLUGIN_TYPE,
                                            ImmutableMap.of("outputField", OUTPUT_FIELD,
+                                                           "tokenizationUnit", tokenizationUnit,
                                                            "fieldToBeTransformed", FIELD_TO_BE_TRANSFORMED,
-                                                           "ngramSize", ngramSize),
-                                           null))).addStage(new ETLStage("sink",
-                                                                         MockSink.getPlugin(mockNameOfSinkPlugin)))
+                                                           "ngramSize", ngramSize), null)))
+      .addStage(new ETLStage("sink", MockSink.getPlugin(mockNameOfSinkPlugin)))
       .addConnection("source", "sparkcompute")
       .addConnection("sparkcompute", "sink")
       .build();
@@ -128,7 +126,7 @@ public class NGramTransformTest extends HydratorTestBase {
     /*
      * source --> sparkcompute --> sink
     */
-    ETLBatchConfig etlConfig = buildETLBatchConfig(mockSource, multiFieldData, "2");
+    ETLBatchConfig etlConfig = buildETLBatchConfig(mockSource, multiFieldData, "word", "2");
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app(APP_NAME);
     ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
@@ -145,7 +143,7 @@ public class NGramTransformTest extends HydratorTestBase {
     workflowManager.waitForFinish(5, TimeUnit.MINUTES);
     DataSetManager<Table> nGrams = getDataset(multiFieldData);
     List<StructuredRecord> output = MockSink.readOutput(nGrams);
-    Set<List> results = new HashSet<>();
+    Set<List<String>> results = new HashSet<>();
     for (StructuredRecord structuredRecord : output) {
       results.add((ArrayList) structuredRecord.get(OUTPUT_FIELD));
     }
@@ -161,7 +159,7 @@ public class NGramTransformTest extends HydratorTestBase {
     /*
      * source --> sparkcompute --> sink
     */
-    ETLBatchConfig etlConfig = buildETLBatchConfig(mockSource, SINGLE_FIELD_DATASET, "3");
+    ETLBatchConfig etlConfig = buildETLBatchConfig(mockSource, SINGLE_FIELD_DATASET, "word", "3");
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app(APP_NAME);
     ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
@@ -187,21 +185,21 @@ public class NGramTransformTest extends HydratorTestBase {
   }
 
   @Test
-  public void testStringFieldSource() throws Exception {
-    String mockSource = "StringField";
-    String mockSink = "sink";
+  public void testTokenizationUnitCharacter() throws Exception {
+    String mockSource = "character-field";
+    String mockSink = "character-sink";
     Schema inputSchema = Schema.recordOf("sourceRecord",
                                          Schema.Field.of(FIELD_TO_BE_TRANSFORMED, Schema.of(Schema.Type.STRING)));
     /*
      * source --> sparkcompute --> sink
     */
-    ETLBatchConfig etlConfig = buildETLBatchConfig(mockSource, mockSink, "2");
+    ETLBatchConfig etlConfig = buildETLBatchConfig(mockSource, mockSink, "character", "5");
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app("test");
     ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
     DataSetManager<Table> inputManager = getDataset(mockSource);
     List<StructuredRecord> input = ImmutableList.of(
-      StructuredRecord.builder(inputSchema).set(FIELD_TO_BE_TRANSFORMED, "hi i am cdap").build(),
+      StructuredRecord.builder(inputSchema).set(FIELD_TO_BE_TRANSFORMED, "hi i  am cdap").build(),
       StructuredRecord.builder(inputSchema).set(FIELD_TO_BE_TRANSFORMED, "how are you cdap").build());
     MockSource.writeInput(inputManager, input);
     // manually trigger the pipeline
@@ -210,18 +208,25 @@ public class NGramTransformTest extends HydratorTestBase {
     workflowManager.waitForFinish(5, TimeUnit.MINUTES);
     DataSetManager<Table> tokenizedTextSingle = getDataset(mockSink);
     List<StructuredRecord> output = MockSink.readOutput(tokenizedTextSingle);
-    Set<List> results = new HashSet<>();
+    Set<List<String>> results = new HashSet<>();
     for (StructuredRecord structuredRecord : output) {
       results.add((ArrayList) structuredRecord.get(OUTPUT_FIELD));
     }
-    Assert.assertEquals(getExpectedData(), results);
-    Assert.assertEquals("ARRAY", output.get(0).getSchema().getField(OUTPUT_FIELD).
-      getSchema().getType().toString());
+    Assert.assertEquals(getExpectedDataForCharacters(), results);
+    Assert.assertEquals("ARRAY", output.get(0).getSchema().getField(OUTPUT_FIELD).getSchema().getType().toString());
   }
 
   @Test(expected = NullPointerException.class)
   public void testNullNGramSize() throws Exception {
-    buildETLBatchConfig("NegativeTestFornGramSize", SINGLE_FIELD_DATASET, null);
+    buildETLBatchConfig("NegativeTestFornGramSize", SINGLE_FIELD_DATASET, "word", null);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testInputFieldArray() throws Exception {
+    Schema schema = Schema.recordOf("sourceRecord", Schema.Field.of(FIELD_TO_BE_TRANSFORMED,
+                                                                    Schema.arrayOf(Schema.of(Schema.Type.STRING))));
+    NGramTransform.Config config = new NGramTransform.Config(FIELD_TO_BE_TRANSFORMED, "word", 2, "output");
+    config.validate(schema);
   }
 
   private Set<List<String>> getExpectedData() {
@@ -236,6 +241,15 @@ public class NGramTransformTest extends HydratorTestBase {
     expected.add(new ArrayList<String>());
     expected.add(Arrays.asList("hi i am", "i am cdap"));
     expected.add(Arrays.asList("how are you", "are you cdap"));
+    return expected;
+  }
+
+  private Set<List<String>> getExpectedDataForCharacters() {
+    Set<List<String>> expected = new HashSet<>();
+    expected.add(Arrays.asList("h i   i  ", "i   i    ", "  i     a", "i     a m", "    a m  ", "  a m   c",
+                               "a m   c d", "m   c d a", "  c d a p"));
+    expected.add(Arrays.asList("h o w   a", "o w   a r", "w   a r e", "  a r e  ", "a r e   y", "r e   y o",
+                               "e   y o u", "  y o u  ", "y o u   c", "o u   c d", "u   c d a", "  c d a p"));
     return expected;
   }
 }

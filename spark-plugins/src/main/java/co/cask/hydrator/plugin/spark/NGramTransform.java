@@ -27,7 +27,9 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.SparkCompute;
 import co.cask.cdap.etl.api.batch.SparkExecutionPluginContext;
 import co.cask.cdap.format.StructuredRecordStringConverter;
-import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
+import org.apache.commons.lang.StringUtils;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
@@ -37,7 +39,6 @@ import org.apache.spark.sql.SQLContext;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -48,12 +49,10 @@ import javax.annotation.Nullable;
 @Description("Used to transform input features into n-grams.")
 public class NGramTransform extends SparkCompute<StructuredRecord, StructuredRecord> {
   public static final String PLUGIN_NAME = "NGramTransform";
-  public Schema outputSchema;
-  private Config config;
-  private Splitter splitter;
-  private Pattern pattern;
-  private NGram ngramTransformer;
   private static final String TOKENIZED_FIELD = "intermediateTokens";
+  private Schema outputSchema;
+  private Config config;
+  private NGram ngramTransformer;
 
   public NGramTransform(Config config) {
     this.config = config;
@@ -62,7 +61,6 @@ public class NGramTransform extends SparkCompute<StructuredRecord, StructuredRec
   @Override
   public void initialize(SparkExecutionPluginContext context) throws Exception {
     super.initialize(context);
-    pattern = Pattern.compile(config.patternSeparator);
     ngramTransformer = new NGram().setN(config.ngramSize).setInputCol(TOKENIZED_FIELD)
       .setOutputCol(config.outputField);
   }
@@ -89,20 +87,20 @@ public class NGramTransform extends SparkCompute<StructuredRecord, StructuredRec
     JavaRDD<String> javardd = input.map(new Function<StructuredRecord, String>() {
       @Override
       public String call(StructuredRecord structuredRecord) throws Exception {
-        splitter = splitter == null ? Splitter.on(pattern) : splitter;
         StructuredRecord.Builder builder = StructuredRecord.builder(intermediateSchema);
         for (Schema.Field field : structuredRecord.getSchema().getFields()) {
           String fieldName = field.getName();
           builder.set(fieldName, structuredRecord.get(fieldName));
         }
-        List<String> text = SparkUtils.getInputFieldValue(structuredRecord, config.fieldToBeTransformed, splitter);
+        List<String> text = config.getInputFieldValue(structuredRecord);
         builder.set(TOKENIZED_FIELD, text);
         return StructuredRecordStringConverter.toJsonString(builder.build());
       }
     });
     DataFrame wordDataFrame = sqlContext.read().json(javardd);
     DataFrame ngramDataFrame = ngramTransformer.transform(wordDataFrame);
-   JavaRDD<StructuredRecord> output = ngramDataFrame.toJSON().toJavaRDD().map(new Function<String, StructuredRecord>() {
+    JavaRDD<StructuredRecord> output = ngramDataFrame.toJSON().toJavaRDD()
+      .map(new Function<String, StructuredRecord>() {
         @Override
         public StructuredRecord call(String record) throws Exception {
           return StructuredRecordStringConverter.fromJsonString(record, outputSchema);
@@ -119,9 +117,8 @@ public class NGramTransform extends SparkCompute<StructuredRecord, StructuredRec
     @Description("Field to be used to transform input features into n-grams.")
     private String fieldToBeTransformed;
 
-    @Nullable
-    @Description("Pattern to split the input string fields on. Default is '\\s+'.")
-    private String patternSeparator;
+    @Description("Field to identify the entity to be tokenized. Can be of type words or characters.")
+    private String tokenizationUnit;
 
     @Description("N-Gram size.")
     @Macro
@@ -132,20 +129,25 @@ public class NGramTransform extends SparkCompute<StructuredRecord, StructuredRec
     private String outputField;
 
     public Config() {
-      patternSeparator = "\\s+";
       ngramSize = 1;
     }
 
-    public Config(String fieldToBeTransformed, String patternSeparator, Integer ngramSize, String outputField) {
+    public Config(String fieldToBeTransformed, String tokenizationUnit, Integer ngramSize, String outputField) {
       this.fieldToBeTransformed = fieldToBeTransformed;
-      this.patternSeparator = patternSeparator;
+      this.tokenizationUnit = tokenizationUnit;
       this.ngramSize = ngramSize;
       this.outputField = outputField;
     }
 
-    private void validate(Schema inputSchema) {
+    public void validate(Schema inputSchema) {
       if (inputSchema != null) {
-        SparkUtils.validateTextField(inputSchema, fieldToBeTransformed);
+        Schema schema = inputSchema.getField(fieldToBeTransformed).getSchema();
+        Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
+        if (type != Schema.Type.STRING) {
+          throw new IllegalArgumentException(
+            String.format("Field to be transformed should be of type string or nullable string. But was %s for field " +
+                            "%s.", type, fieldToBeTransformed));
+        }
       }
       if (ngramSize < 1) {
         throw new IllegalArgumentException(String.format("Minimum n-gram length required : 1. But found : %s.",
@@ -157,6 +159,22 @@ public class NGramTransform extends SparkCompute<StructuredRecord, StructuredRec
       List<Schema.Field> fields = new ArrayList<>(inputSchema.getFields());
       fields.add(Schema.Field.of(fieldName, Schema.arrayOf(Schema.of(Schema.Type.STRING))));
       return Schema.recordOf("record", fields);
+    }
+
+    private List<String> getInputFieldValue(StructuredRecord record) {
+      String field = record.get(fieldToBeTransformed);
+      if (!Strings.isNullOrEmpty(field)) {
+        if (tokenizationUnit.equalsIgnoreCase("word")) {
+          return Lists.newArrayList(field.split("\\s+"));
+        } else if (tokenizationUnit.equalsIgnoreCase("character")) {
+          return Lists.newArrayList(field.split("(?<!^)"));
+        } else {
+          throw new IllegalArgumentException(String.format("Tokenization unit can accept only 2 values : words and " +
+                                                             "characters. But was found to be : %s", tokenizationUnit));
+        }
+      } else {
+        return new ArrayList<>();
+      }
     }
   }
 }
