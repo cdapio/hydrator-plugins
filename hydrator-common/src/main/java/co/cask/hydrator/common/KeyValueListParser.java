@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.common;
+package co.cask.hydrator.common;
 
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import com.google.common.base.Splitter;
@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
 public class KeyValueListParser {
   private final Pattern pairDelimiter;
   private final Pattern keyValDelimiter;
+  public static final KeyValueListParser DEFAULT = new KeyValueListParser(",", ":");
 
   /**
    * Create a parser that uses the given regexes to parse a list of key value pairs.
@@ -67,7 +68,7 @@ public class KeyValueListParser {
     private final Iterator<String> pairIter;
 
     private KeyValueIterator(String kvList) {
-      pairIter = Splitter.on(pairDelimiter).split(kvList).iterator();
+      pairIter = Splitter.on(pairDelimiter).trimResults().split(kvList).iterator();
     }
 
     @Override
@@ -78,7 +79,7 @@ public class KeyValueListParser {
     @Override
     public KeyValue<String, String> next() {
       String pair = pairIter.next();
-      Iterator<String> keyValIter = Splitter.on(keyValDelimiter).split(pair).iterator();
+      Iterator<String> keyValIter = Splitter.on(keyValDelimiter).trimResults().split(pair).iterator();
       String key = keyValIter.next();
       if (!keyValIter.hasNext()) {
         throw new IllegalArgumentException("Invalid syntax for key-value pair in list: " + pair);
