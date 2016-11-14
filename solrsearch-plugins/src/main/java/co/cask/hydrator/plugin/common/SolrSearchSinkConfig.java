@@ -18,6 +18,7 @@ package co.cask.hydrator.plugin.common;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
+import co.cask.hydrator.common.KeyValueListParser;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import com.google.common.base.Strings;
 import org.apache.solr.client.solrj.SolrClient;
