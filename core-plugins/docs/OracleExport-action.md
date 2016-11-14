@@ -19,26 +19,30 @@ Properties
 
 **oracleServerHostname:** Hostname of the remote Oracle Host.
 
-**oracleServerPort:** Port of the remote Oracle Host. Defaults to 22.
+**oracleServerPort:** Port to use to SSH to the remote Oracle Host. Defaults to 22.
 
 **oracleServerUsername:** Username to use to connect to the remote Oracle Host via SSH.
 
 **oracleServerPassword:** Password to use to connect to the remote Oracle Host via SSH.
 
-**dbUsername:** Username to connect to Oracle.
+**dbUsername:** Username to connect to the Oracle database.
 
-**dbPassword:** Password to connect to Oracle.
+**dbPassword:** Password to connect the Oracle database.
 
-**oracleHome:** Absolute path of the ORACLE_HOME environment variable on the Oracle server host.This will be used to run
-                the Oracle Spool utility.
+**oracleHome:** Absolute path of the ``ORACLE_HOME`` environment variable on the Oracle server host.
+This will be used to run the Oracle Spool utility.
 
 **oracleSID:** Oracle System ID(SID). This is used to uniquely identify a particular database on the system.
 
 **queryToExecute:** Query to be executed to export.
+For example: select * from test where name='cask';
 
-**pathToWriteFinalOutput:** Path where output file will be exported.
+**tmpSQLScriptDirectory:** Path to the directory where temporary SQL script needs to be created. It will be removed
+once the SQL command is executed.
 
-**format:** Format of the output file.Acceptable values are csv, tsv, psv.
+**outputPath:** Path where output file will be exported.
+
+**format:** Format of the output file. Acceptable values are csv, tsv, psv.
 
 
 Example
@@ -65,8 +69,9 @@ This example exports data from oracle server example.com using oracle user:
               "dbPassword": "cask",
               "oracleHome": "/u01/app/oracle/product/11.2.0/xe",
               "oracleSID": "cask",
-              "queryToExecute": "select * from test where name='cask';"
-              "pathToWriteFinalOutput" : "/tmp/data.csv"
+              "queryToExecute": "select * from test where name='cask';",
+              "tmpSQLScriptDirectory": "/tmp",
+              "outputPath" : "/tmp/data.csv",
               "format" : "csv"
           }
     }

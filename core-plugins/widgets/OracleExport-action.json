@@ -28,12 +28,12 @@
         },
         {
           "widget-type": "textbox",
-          "label": "Username to connect to oracle DB",
+          "label": "Username to connect to Oracle DB",
           "name": "dbUsername"
         },
         {
           "widget-type": "password",
-          "label": "Password to connect to oracle DB",
+          "label": "Password to connect to Oracle DB",
           "name": "dbPassword"
         },
         {
@@ -56,8 +56,13 @@
         },
         {
           "widget-type": "textbox",
+          "label": "Path where temporary SQL script file to be created",
+          "name": "tmpSQLScriptDirectory"
+        },
+        {
+          "widget-type": "textbox",
           "label": "Path where output file to be exported",
-          "name": "pathToWriteFinalOutput"
+          "name": "outputPath"
         },
         {
           "widget-type": "select",

@@ -49,41 +49,46 @@ import javax.annotation.Nullable;
  */
 @Plugin(type = Action.PLUGIN_TYPE)
 @Name("OracleExport")
-@Description("A Hydrator Action plugin to efficiently export data from Oracle to HDFS or local file system.\n" +
-  "The plugin uses Oracle's command line tools to export data.\n" +
+@Description("A Hydrator Action plugin to efficiently export data from Oracle to HDFS or local file system." +
+  "The plugin uses Oracle's command line tools to export data." +
   "The data exported from this tool can then be used in Hydrator pipelines.")
 public class OracleExportAction extends Action {
-  private enum FORMATS {
+  enum SeparatorFormat {
     csv, tsv, psv
   };
   private final OracleExportActionConfig config;
-  private String execute = null;
 
   public OracleExportAction(OracleExportActionConfig config) {
     this.config = config;
   }
 
   @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    config.validate();
+  }
+
+  @Override
   public void run(ActionContext context) throws Exception {
-    init();
+    String oracleExportCommand = buildOracleExportCommand();
     Connection connection = new Connection(config.oracleServerHostname, config.oracleServerPort);
     try {
       connection.connect();
       boolean isAuthenticated = connection.authenticateWithPassword(config.oracleServerUsername,
                                                                     config.oracleServerPassword);
-      if (isAuthenticated == false) {
-        throw new IOException(String.format("SSH authentication error when connecting to %s@%s on port %d",
+      if (!isAuthenticated) {
+
+        throw new IllegalStateException(String.format("SSH authentication error when connecting to %s@%s on port %d",
                                             config.oracleServerUsername, config.oracleServerHostname,
                                             config.oracleServerPort));
       }
       Session session = connection.openSession();
-      session.execCommand(execute);
+      session.execCommand(oracleExportCommand);
       try (InputStream stdout = new StreamGobbler(session.getStdout());
            BufferedReader outBuffer = new BufferedReader(new InputStreamReader(stdout, Charsets.UTF_8))) {
         Integer exitCode = session.getExitStatus();
         if (exitCode != null && exitCode != 0) {
           throw new IOException(String.format("Error running command %s on hostname %s; exit code: %d",
-                                              execute, config.oracleServerHostname, exitCode));
+                                              oracleExportCommand, config.oracleServerHostname, exitCode));
         }
         String out = CharStreams.toString(outBuffer);
         //SQLPLUS command errors are not fetched from session.getStderr().
@@ -93,22 +98,16 @@ public class OracleExportAction extends Action {
           throw new IOException(String.format("Error executing sqlplus query %s on hostname %s; error message: %s",
                                               config.queryToExecute, config.oracleServerHostname, out));
         }
-        Path file = new Path(config.pathToWriteFinalOutput);
+        Path file = new Path(config.outputPath);
         FileSystem fs = FileSystem.get(file.toUri(), new Configuration());
-        try (
-          FSDataOutputStream outStream = fs.create(file);
+        try (FSDataOutputStream outStream = fs.create(file);
           BufferedWriter br = new BufferedWriter(new OutputStreamWriter(outStream, "UTF-8"))) {
-          br.write(out.replaceAll("(?m)^[\\s&&[^\\n]]+|[\\s+&&[^\\n]]+$", "")); //Remove multiline trailing spaces
+          br.write(out.replaceAll("(?m)^[\\s&&[^\\n]]+|[\\s+&&[^\\n]]+$", "")); //Removes multiline trailing spaces
         }
       }
     } finally {
       connection.close();
     }
-  }
-
-  @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    config.validate();
   }
 
   private String validateQuery(String query) {
@@ -118,11 +117,10 @@ public class OracleExportAction extends Action {
     return query;
   }
 
-  private void init() {
-    StringBuilder scriptContent = null;
+  private String buildOracleExportCommand() {
     String dbConnectionString = config.dbUsername + "/" + config.dbPassword + "@" + config.oracleSID;
     String colSeparator = getColSeparator(config.format);
-    scriptContent = new StringBuilder();
+    StringBuilder scriptContent = new StringBuilder();
     scriptContent.append("set colsep " + "\"" + colSeparator + "\"" + "\n");
     scriptContent.append("set linesize 10000" + "\n");
     scriptContent.append("set newpage none" + "\n");
@@ -133,27 +131,30 @@ public class OracleExportAction extends Action {
     scriptContent.append(validateQuery(config.queryToExecute) + "\n");
     scriptContent.append("spool off" + "\n");
     scriptContent.append("exit");
+    String tmpSqlScriptFile = config.tmpSQLScriptDirectory + "/tmpHydrator.sql";
     //Set of commands to be executed in a session
     String setPath = "export ORACLE_HOME=" + config.oracleHome + "; export ORACLE_SID=" + config.oracleSID + ";";
-    String createTempScriptToBeUsedForSpool = "echo '" + scriptContent.toString() + "' > /tmp/tmpHydrator.sql;";
-    String executeSpoolInSqlplus = config.oracleHome + "/bin" + "/sqlplus -s " + dbConnectionString +
-      " @/tmp/tmpHydrator.sql |  sed 's/\\s*" + colSeparator + "\\s*/" + colSeparator + "/g';";
-    String removeTempScriptUsedForSpool = "rm /tmp/tmpHydrator.sql";
-    execute = setPath + createTempScriptToBeUsedForSpool + executeSpoolInSqlplus + removeTempScriptUsedForSpool;
+    String tmpScriptCreationCommand = "echo '" + scriptContent.toString() + "' > " + tmpSqlScriptFile + ";";
+    String sqlPlusSpoolExecutionCommand = config.oracleHome + "/bin" + "/sqlplus -s " + dbConnectionString +
+      " @" + tmpSqlScriptFile + " |  sed 's/\\s*" + colSeparator + "\\s*/" + colSeparator + "/g';";
+    String tmpSpoolScriptRemovalCommand = "rm " + tmpSqlScriptFile + "";
+    return setPath + tmpScriptCreationCommand + sqlPlusSpoolExecutionCommand + tmpSpoolScriptRemovalCommand;
   }
 
   private String getColSeparator(String format) {
-    switch (format.toLowerCase()) {
-      case "csv":
-        return ",";
-      case "tsv":
-        return "  ";
-      case "psv":
-        return "|";
-      default:
-        throw new IllegalArgumentException(
-          String.format("Invalid format '%s'. Must be one of %s", format, EnumSet.allOf(FORMATS.class)));
+    String columnSeparator = "";
+    switch (SeparatorFormat.valueOf(format)) {
+      case csv:
+        columnSeparator = ",";
+        break;
+      case tsv:
+        columnSeparator = "  ";
+        break;
+      case psv:
+        columnSeparator = "|";
+        break;
     }
+    return columnSeparator;
   }
 
   /**
@@ -166,43 +167,50 @@ public class OracleExportAction extends Action {
     private String oracleServerHostname;
 
     @Nullable
-    @Description("Port of the remote DB machine. Defaults to 22")
+    @Description("Port to use to SSH to the remote Oracle Host. Defaults to 22.")
     @Macro
     private Integer oracleServerPort;
 
-    @Description("Username for remote DB host")
+    @Description("Username to use to connect to the remote Oracle Host via SSH.")
     @Macro
     private String oracleServerUsername;
 
-    @Description("Password for remote DB host")
+    @Description("Password to use to connect to the remote Oracle Host via SSH.")
     @Macro
     private String oracleServerPassword;
 
-    @Description("Username to connect to oracle DB")
+    @Description("Username to connect to the Oracle database.")
     @Macro
     private String dbUsername;
 
-    @Description("Password to connect to oracle DB")
+    @Description("Password to connect the Oracle database.B")
     @Macro
     private String dbPassword;
 
-    @Description("Path of the ORACLE_HOME")
+    @Description("Absolute path of the ``ORACLE_HOME`` environment variable on the Oracle server host." +
+      "This will be used to run the Oracle Spool utility.")
     @Macro
     private String oracleHome;
 
-    @Description("Oracle SID")
+    @Description("Oracle System ID(SID). This is used to uniquely identify a particular database on the system.")
     @Macro
     private String oracleSID;
 
-    @Description("Query to be executed for export")
+    @Description("Query to be executed for export." +
+      "For example: select * from test where name='cask';")
     @Macro
     private String queryToExecute;
 
-    @Description("Path where output file to be exported")
+    @Description("Path to the directory where temporary SQL script needs to be created. It will be removed " +
+      "once the SQL command is executed.")
     @Macro
-    private String pathToWriteFinalOutput;
+    private String tmpSQLScriptDirectory;
 
-    @Description("Format of the output file")
+    @Description("Path where output file will be exported.")
+    @Macro
+    private String outputPath;
+
+    @Description("Format of the output file. Acceptable values are csv, tsv, psv.")
     @Macro
     private String format;
 
@@ -214,7 +222,8 @@ public class OracleExportAction extends Action {
                                     String oracleServerUsername, String oracleServerPassword,
                                     String dbUsername, String dbPassword,
                                     String oracleHome, String oracleSID,
-                                    String pathToWriteFinalOutput, String queryToExecute, String format) {
+                                    String outputPath, String queryToExecute, String tmpSQLScriptDirectory,
+                                    String format) {
       this.oracleServerHostname = oracleServerHostname;
       this.oracleServerPort = oracleServerPort;
       this.oracleServerUsername = oracleServerUsername;
@@ -223,8 +232,9 @@ public class OracleExportAction extends Action {
       this.dbPassword = dbPassword;
       this.oracleHome = oracleHome;
       this.oracleSID = oracleSID;
-      this.pathToWriteFinalOutput = pathToWriteFinalOutput;
+      this.outputPath = outputPath;
       this.queryToExecute = queryToExecute;
+      this.tmpSQLScriptDirectory = tmpSQLScriptDirectory;
       this.format = format;
     }
 
@@ -232,9 +242,9 @@ public class OracleExportAction extends Action {
       if (!containsMacro("oracleServerPort") && oracleServerPort < 0) {
         throw new IllegalArgumentException("Port cannot be negative");
       }
-      if (!containsMacro(format) && !EnumUtils.isValidEnum(FORMATS.class, format)) {
+      if (!EnumUtils.isValidEnum(SeparatorFormat.class, format)) {
         throw new IllegalArgumentException(
-          String.format("Invalid format '%s'. Must be one of %s", format, EnumSet.allOf(FORMATS.class)));
+          String.format("Invalid format '%s'. Must be one of %s", format, EnumSet.allOf(SeparatorFormat.class)));
       }
     }
   }
