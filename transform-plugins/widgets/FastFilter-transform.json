@@ -21,6 +21,7 @@
           "widget-attributes": {
             "values": [
               "=",
+              "!=",
               ">",
               ">=",
               "<",
@@ -29,6 +30,8 @@
               "does not contain",
               "starts with",
               "ends with",
+              "doesn't start with",
+              "doesn't end with",
               "matches regex",
               "does not match regex"
             ],
@@ -58,5 +61,11 @@
       ]
     }
   ],
-  "outputs": []
+  "outputs": [
+    {
+      "name": "schema",
+      "label": "schema",
+      "widget-type": "schema"
+    }
+  ]
 }

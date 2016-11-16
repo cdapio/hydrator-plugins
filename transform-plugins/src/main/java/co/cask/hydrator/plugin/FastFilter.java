@@ -89,6 +89,8 @@ public final class FastFilter extends Transform<StructuredRecord, StructuredReco
     switch (operator) {
       case "=":
         return sourceContent.equals(criteria);
+      case "!=":
+        return !sourceContent.equals(criteria);
       case ">":
         return (sourceContent.compareTo(criteria) > 0);
       case ">=":
@@ -105,6 +107,10 @@ public final class FastFilter extends Transform<StructuredRecord, StructuredReco
         return sourceContent.startsWith(criteria);
       case "ends with":
         return sourceContent.endsWith(criteria);
+      case "doesn't start with":
+        return !sourceContent.startsWith(criteria);
+      case "doesn't end with":
+        return !sourceContent.endsWith(criteria);
       case "matches regex":
         return regexPattern.matcher(sourceContent).find();
       case "does not match regex":
