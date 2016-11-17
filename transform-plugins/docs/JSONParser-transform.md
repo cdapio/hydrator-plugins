@@ -10,8 +10,8 @@ to express JSON paths for extracting fields from complex nested input JSON.
 
 Simple JSON (which is defined as a mapping from key to value) parsing is achieved
 by specifying just the output schema fields. The field name in the output schema
-should be the same as the key in the input JSON. The type of the field should also be the
-same as the input value. No implicit conversions are performed on the JSON values.
+should be the same as the key in the input JSON. The type of the output field should also be the
+same type as the input value. No implicit conversions are performed on the JSON values.
 
 Here is an example of an event that is to be mapped to the output schema:
 
@@ -110,7 +110,7 @@ defining the levels of parsing. For example: ```$.employee.name``` or ```$[emplo
 
 #### Supported Operators
 
-These operator are supported:
+These operators are supported:
 
     +========================================================================+
     | Operator          | Description                                        |
