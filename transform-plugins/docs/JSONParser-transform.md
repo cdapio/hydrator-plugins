@@ -2,18 +2,18 @@
 
 ## Description
 
-Parses input JSON event into a record. The input JSON event could be either a map of
-string field to values or it could be a complex nested JSON structure. Plugin allows one
+Parses an input JSON event into a record. The input JSON event could be either a map of
+string fields to values or it could be a complex nested JSON structure. The plugin allows you
 to express JSON paths for extracting fields from complex nested input JSON.
 
 ## Parsing Simple JSON
 
-Simple JSON (which is simply defined as a mapping from key to value) parsing is achieved
-by specifying the just the output schema fields. The field name in the output schema
-should be the same as the key in the input JSON. The type of the field should also be the
-same as the input value. No implicit conversions are perform on the JSON values.
+Simple JSON (which is defined as a mapping from key to value) parsing is achieved
+by specifying just the output schema fields. The field name in the output schema
+should be the same as the key in the input JSON. The type of the output field should also be the
+same type as the input value. No implicit conversions are performed on the JSON values.
 
-Following is an example of event that is mapped to the output schema:
+Here is an example of an event that is to be mapped to the output schema:
 
     {
        "id" : 1000,
@@ -29,7 +29,7 @@ Following is an example of event that is mapped to the output schema:
     }
 
 
-So, when output schema is specified it should be specified as follows
+The output schema should be specified as:
 
     +==========================+
     | Field    | Type   | Null |
@@ -45,16 +45,16 @@ So, when output schema is specified it should be specified as follows
     | zip      | long   |      |
     +==========================+
 
-**Note:** The field "planet" has been excluded from the output schema meaning that the
+**Note:** The field "planet" has not been included in the output schema, meaning that the
 field would be ignored and not processed when the JSON event is mapped. 
 
-## Nested JSON
+## Parsing Nested JSON
 
-Parser also allows extracting fields from a complex nested JSON. In order to extract
-fields it uses JSON paths similar to XPath expression for XML. To extract fields using
-expression in JSON, this plugin uses 'JsonPath' library. Plugin allows one to define a
-mapping from output field name to JSON path expression that should be applied on input to
-extract value from the JSON event. For example, let's say you have this JSON:
+Parser also allows the extracting of fields from a complex nested JSON. In order to extract
+fields, it uses JSON paths similar to the XPath expressions for XML. To extract fields using an
+expression in JSON, this plugin uses the 'JsonPath' library. The plugin allows you to define a
+mapping from the output fieldname to the JSON path expression that is to be applied on input to
+extract the value from the JSON event. For example, if you have this nested JSON:
 
     {
       "employee" : {
@@ -76,7 +76,7 @@ extract value from the JSON event. For example, let's say you have this JSON:
     }
 
 
-then one can specify the mapping for extracting these fields from the input JSON event:
+You could specify the mapping for extracting these fields from the input JSON event as:
  
   1. first
   2. last
@@ -104,12 +104,13 @@ The mappings in the plugin will be:
 
 ### Expression
 
-The "root member object" for parsing any JSON is referred to as ```$``` regardless of
-whether it's an array or an object. It also uses dot notation or bracket notation for
-defining the levels of parsing. For example: ```$.employee.name``` or
-```$[employee][name]```
+The "root member object" for parsing any JSON is referred to as ```$```, regardless of
+whether it's an array or an object. It also uses either dot notation or bracket notation for
+defining the levels of parsing. For example: ```$.employee.name``` or ```$[employee][name]```.
 
 #### Supported Operators
+
+These operators are supported:
 
     +========================================================================+
     | Operator          | Description                                        |
