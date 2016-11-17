@@ -9,7 +9,7 @@ Tokenizer splits data on the basis of specified pattern and emits the output as 
 
 Use Case
 --------
-User wants to extract the hashtags from the twitter feeds.User would tokenize the words based on space and then can 
+User wants to extract the hashtags from the twitter feeds. User would tokenize the words based on space and then can
 identify the words that start with hashtags.
 
 Properties
@@ -50,7 +50,7 @@ Output schema will contain additional column "words" having tokenized data in st
     +=====================================================================================================+
     | topic | sentence                                     | words                                        |
     +=====================================================================================================+
-    | java  | Hello world / is the /basic application      | [hello world, is the, basic application]     |
-    | HDFS  | HDFS/ is a /file system                      | [hdfs, is a ,file system]                    |
-    | Spark | Spark /is an engine for /bigdata processing  | [spark ,is an engine for ,bigdata processing]|
+    | java  | Hello world / is the /basic application      | [Hello world , is the ,basic application]    |
+    | HDFS  | HDFS/ is a /file system                      | [Hdfs, is a ,file system]                    |
+    | Spark | Spark /is an engine for /bigdata processing  | [Spark ,is an engine for ,bigdata processing]|
     +=====================================================================================================+
