@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package co.cask.hydrator.plugin.spark;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -30,6 +29,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import javax.annotation.Nullable;
 
 /**
@@ -43,10 +44,10 @@ final class SparkUtils {
   /**
    * Validate the config parameters for the spark sink and spark compute classes.
    *
-   * @param inputSchema       schema of the received record.
+   * @param inputSchema schema of the received record.
    * @param featuresToInclude features to be used for training/prediction.
    * @param featuresToExclude features to be excluded when training/predicting.
-   * @param predictionField   field containing the prediction values.
+   * @param predictionField field containing the prediction values.
    */
   static void validateConfigParameters(Schema inputSchema, @Nullable String featuresToInclude,
                                        @Nullable String featuresToExclude, String predictionField,
@@ -73,10 +74,10 @@ final class SparkUtils {
    * Get the feature list of the features that have to be used for training/prediction depending on the
    * featuresToInclude or featuresToInclude list.
    *
-   * @param inputSchema       schema of the received record.
+   * @param inputSchema schema of the received record.
    * @param featuresToInclude features to be used for training/prediction.
    * @param featuresToExclude features to be excluded when training/predicting.
-   * @param predictionField   field containing the prediction values.
+   * @param predictionField field containing the prediction values.
    * @return feature list to be used for training/prediction.
    */
   static Map<String, Integer> getFeatureList(Schema inputSchema, @Nullable String featuresToInclude,
@@ -99,7 +100,6 @@ final class SparkUtils {
       }
       return fields;
     }
-
     Set<String> excludeFeatures = new HashSet<>();
     if (!Strings.isNullOrEmpty(featuresToExclude)) {
       excludeFeatures.addAll(Lists.newArrayList(Splitter.on(',').trimResults().split(featuresToExclude)));
@@ -117,10 +117,10 @@ final class SparkUtils {
   /**
    * Get the feature to cardinality mapping provided by the user.
    *
-   * @param inputSchema        schema of the received record.
-   * @param featuresToInclude  features to be used for training/prediction.
-   * @param featuresToExclude  features to be excluded when training/predicting.
-   * @param labelField         field containing the prediction values.
+   * @param inputSchema schema of the received record.
+   * @param featuresToInclude features to be used for training/prediction.
+   * @param featuresToExclude features to be excluded when training/predicting.
+   * @param labelField field containing the prediction values.
    * @param cardinalityMapping feature to cardinality mapping specified for categorical features.
    * @return categoricalFeatureInfo for categorical features.
    */
@@ -158,7 +158,7 @@ final class SparkUtils {
    * Validate label field for trainer.
    *
    * @param inputSchema schema of the received record.
-   * @param labelField  field from which to get the prediction.
+   * @param labelField field from which to get the prediction.
    */
   static void validateLabelFieldForTrainer(Schema inputSchema, String labelField) {
     Schema.Field prediction = inputSchema.getField(labelField);
@@ -196,5 +196,97 @@ final class SparkUtils {
     List<Schema.Field> fields = new ArrayList<>(inputSchema.getFields());
     fields.add(Schema.Field.of(predictionField, Schema.of(Schema.Type.DOUBLE)));
     return Schema.recordOf(inputSchema.getRecordName() + ".predicted", fields);
+  }
+
+  /**
+   * Validate config parameters for feature generator classes.
+   *
+   * @param inputSchema input Schema
+   * @param map Map of the input fields to map to the transformed output fields.
+   */
+  static void validateFeatureGeneratorConfig(Schema inputSchema, Map<String, String> map, String pattern) {
+    try {
+      Pattern.compile(pattern);
+    } catch (PatternSyntaxException e) {
+      throw new IllegalArgumentException(String.format("Invalid expression - %s. Please provide a valid pattern for " +
+                                                         "splitting the string. %s.", pattern, e.getMessage()), e);
+    }
+    for (Map.Entry<String, String> entry : map.entrySet()) {
+      String key = entry.getKey();
+      String value = entry.getValue();
+      validateTextField(inputSchema, key);
+      if (value == null) {
+        throw new IllegalArgumentException(String.format("Output column name not specified for column : %s. " +
+                                                           "Please make sure it is in the format 'input-column':" +
+                                                           "'transformed-output-column'.", entry.getKey()));
+      } else if (inputSchema.getField(value) != null) {
+        throw new IllegalArgumentException(
+          String.format("Output column name %s for column %s is already present in the input schema. Please " +
+                          "provide a different output field name.", value, key));
+      }
+    }
+  }
+
+  /**
+   * Validate the input field to be used for text based feature generation.
+   *
+   * @param inputSchema input schema coming in from the previous stage
+   * @param key text field on which to perform text based feature generation
+   */
+  static void validateTextField(Schema inputSchema, String key) {
+    if (inputSchema.getField(key) == null) {
+      throw new IllegalArgumentException(String.format("Input field %s does not exist in the input schema %s.",
+                                                       key, inputSchema.toString()));
+    }
+    Schema schema = inputSchema.getField(key).getSchema();
+    Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
+    if (type == Schema.Type.ARRAY) {
+      Schema componentSchema = schema.getComponentSchema();
+      type = componentSchema.isNullable() ? componentSchema.getNonNullable().getType() : componentSchema.getType();
+    }
+    if (type != Schema.Type.STRING) {
+      throw new IllegalArgumentException(String.format("Field to be transformed should be of type String or " +
+                                                         "Nullable String or Array of type String or Nullable " +
+                                                         "String . But was %s for field %s.", type, key));
+    }
+  }
+
+  /**
+   * Gets the input field for feature generation. If the field is an array, returns the field. Otherwise, splits the
+   * field based on the given pattern.
+   * Returns an empty list if value is null.
+   * The method assumes the input field is an array of strings or a string.
+   * Validation for the field type should be performed at configure time. The method will throw an exception if the
+   * input field is not of required type.
+   *
+   * @param input input Structured Record
+   * @param inputField field to use for feature generation
+   * @param splitter Splitter object to be used for splitting the input string
+   * @return text to be used for feature generation
+   */
+  static List<String> getInputFieldValue(StructuredRecord input, String inputField, Splitter splitter) {
+    List<String> text = new ArrayList<>();
+    Schema schema = input.getSchema().getField(inputField).getSchema();
+    Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
+    try {
+      if (type == Schema.Type.ARRAY) {
+        Object value = input.get(inputField);
+        if (value instanceof List) {
+          text = input.get(inputField);
+        } else {
+          text = Lists.newArrayList((String[]) value);
+        }
+      } else {
+        String value = input.get(inputField);
+        if (value != null) {
+          text = Lists.newArrayList(splitter.split(value));
+        }
+      }
+    } catch (ClassCastException e) {
+      throw new IllegalArgumentException(String.format("Schema type mismatch for field %s. Please make sure the " +
+                                                         "value to be used for feature generation is an array of " +
+                                                         "string or a string.", inputField), e);
+    }
+    return text;
   }
 }

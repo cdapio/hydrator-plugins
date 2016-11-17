@@ -90,7 +90,7 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
   //
   // E.g. expensive:$.expensive maps the input Json path from root, field expensive to expensive.
   private void extractMappings() {
-    if (config.mapping != null && config.mapping.isEmpty()) {
+    if (config.mapping == null || config.mapping.isEmpty()) {
       isSimple = true;
     } else {
       isSimple = false;
@@ -179,7 +179,7 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
     @Description("Output schema")
     private String schema;
 
-    public Config(String field, String mapping, String schema) {
+    public Config(String field, @Nullable String mapping, String schema) {
       this.field = field;
       this.mapping = mapping;
       this.schema = schema;

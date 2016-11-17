@@ -1,0 +1,36 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Skip-Gram Feature Generator Properties",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "FileSet Name",
+          "name": "fileSetName"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Path",
+          "name": "path"
+        },
+        {
+          "widget-type": "keyvalue",
+          "label": "Fields to Transform",
+          "name": "outputColumnMapping",
+          "widget-attributes": {
+            "showDelimiter": "false"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Pattern to split the input string fields on",
+          "name": "pattern"
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}
