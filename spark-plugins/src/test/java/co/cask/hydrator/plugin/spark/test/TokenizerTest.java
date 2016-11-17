@@ -72,6 +72,7 @@ public class TokenizerTest extends HydratorTestBase {
   private static final String SINGLE_COLUMN_DATASET = "SingleColumn";
   private static final String COMMA_DATASET = "commaDataset";
   private static final String SPACE_DATASET = "spaceDataset";
+  private static final String MULTIPLE_SPACE_DATASET = "multiSpaceDataset";
   private static final String TAB_DATASET = "tabDataset";
   private static final String OUTPUT_COLUMN = "words";
   private static final String COLUMN_TOKENIZED = "sentence";
@@ -83,6 +84,7 @@ public class TokenizerTest extends HydratorTestBase {
   private static final String SENTENCE3 = "hydrator studio is visual /development environment";
   private static final String SENTENCE4 = "hydrator plugins /are customizable modules";
   private static final String SENTENCE_WITH_SPACE = "cask data application platform";
+  private static final String SENTENCE_WITH_MULTIPLE_SPACE = "cask data  application  platform";
   private static final String SENTENCE_WITH_COMMA = "cask,data,application,platform";
   private static final String SENTENCE_WITH_TAB = "cask    data    application platform";
 
@@ -90,8 +92,8 @@ public class TokenizerTest extends HydratorTestBase {
                                                      Schema.Field.of(COLUMN_TOKENIZED, Schema.of(Schema.Type.STRING))
   );
   private static final Schema SOURCE_SCHEMA_MULTIPLE = Schema.recordOf("sourceRecord",
-                                                      Schema.Field.of(NAME_COLUMN, Schema.of(Schema.Type.STRING)),
-                                                      Schema.Field.of(COLUMN_TOKENIZED, Schema.of(Schema.Type.STRING))
+                                                       Schema.Field.of(NAME_COLUMN, Schema.of(Schema.Type.STRING)),
+                                                       Schema.Field.of(COLUMN_TOKENIZED, Schema.of(Schema.Type.STRING))
   );
 
   @BeforeClass
@@ -122,7 +124,7 @@ public class TokenizerTest extends HydratorTestBase {
 
                                            ImmutableMap.of("outputColumn", OUTPUT_COLUMN,
                                                            "columnToBeTokenized", COLUMN_TOKENIZED,
-                                                           "pattern", pattern),
+                                                           "patternSeparator", pattern),
                                            null)))
       .addStage(new ETLStage("sink", MockSink.getPlugin(mockNameOfSinkPlugin)))
       .addConnection("source", "sparkcompute")
@@ -169,7 +171,9 @@ public class TokenizerTest extends HydratorTestBase {
     Assert.assertEquals(expected, results);
     Assert.assertEquals(4, output.size());
     StructuredRecord row = output.get(0);
-    Assert.assertEquals(1, row.getSchema().getFields().size());
+    Assert.assertEquals(3, row.getSchema().getFields().size());
+    Assert.assertNotNull(row.getSchema().getField(COLUMN_TOKENIZED));
+    Assert.assertNotNull(row.getSchema().getField(NAME_COLUMN));
     Assert.assertEquals("ARRAY", row.getSchema().getField(OUTPUT_COLUMN).getSchema().getType().toString());
   }
 
@@ -210,7 +214,8 @@ public class TokenizerTest extends HydratorTestBase {
     Assert.assertEquals(expected, results);
     Assert.assertEquals(4, output.size());
     StructuredRecord rowSingle = output.get(0);
-    Assert.assertEquals(1, rowSingle.getSchema().getFields().size());
+    Assert.assertEquals(2, rowSingle.getSchema().getFields().size());
+    Assert.assertNotNull(rowSingle.getSchema().getField(COLUMN_TOKENIZED));
     Assert.assertEquals("ARRAY", rowSingle.getSchema().getField(OUTPUT_COLUMN).getSchema().getType().toString());
   }
 
@@ -235,6 +240,7 @@ public class TokenizerTest extends HydratorTestBase {
     testDelimiter("textForComma", COMMA_DATASET, SENTENCE_WITH_COMMA, ",");
     testDelimiter("textForSpace", SPACE_DATASET, SENTENCE_WITH_SPACE, " ");
     testDelimiter("textForTab", TAB_DATASET, SENTENCE_WITH_TAB, " ");
+    testDelimiter("textForMultipleSpaces", MULTIPLE_SPACE_DATASET, SENTENCE_WITH_MULTIPLE_SPACE, "\\s+");
   }
 
   private void testDelimiter(String mockSource, String mockSink, String sentence, String delimiter) throws Exception {
@@ -266,7 +272,7 @@ public class TokenizerTest extends HydratorTestBase {
     Assert.assertEquals(expected, results);
     Assert.assertEquals(1, output.size());
     StructuredRecord row = output.get(0);
-    Assert.assertEquals(1, row.getSchema().getFields().size());
+    Assert.assertEquals(3, row.getSchema().getFields().size());
     Assert.assertEquals("ARRAY", row.getSchema().getField(OUTPUT_COLUMN).getSchema().getType().toString());
   }
 
