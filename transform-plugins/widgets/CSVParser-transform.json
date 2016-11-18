@@ -25,10 +25,16 @@
               "MYSQL",
               "PDL",
               "RFC4180",
-              "TDF"
+              "TDF",
+              "Custom"
             ],
             "default": "DEFAULT"
           }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Custom Delimiter",
+          "name": "delimiter"
         }
       ]
     }
