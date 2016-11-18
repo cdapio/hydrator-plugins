@@ -19,11 +19,9 @@ package co.cask.hydrator.plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Transform;
-import co.cask.hydrator.common.test.MockEmitter;
+import co.cask.cdap.etl.mock.common.MockEmitter;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.text.SimpleDateFormat;
 
 /**
  * Tests {@link FieldAppender}.
@@ -31,36 +29,6 @@ import java.text.SimpleDateFormat;
 public class FieldAppenderTest {
   private static final Schema INPUT = Schema.recordOf("input",
                                                       Schema.Field.of("a", Schema.of(Schema.Type.STRING)));
-
-  @Test
-  public void testIdGenerator() throws Exception {
-    Schema output = Schema.recordOf("output",
-                                    Schema.Field.of("a", Schema.of(Schema.Type.STRING)),
-                                    Schema.Field.of("b", Schema.of(Schema.Type.STRING)));
-    FieldAppender.Config config = new FieldAppender.Config("b\t${batch-id}-~uuid~", output.toString());
-    Transform<StructuredRecord, StructuredRecord> transform = new FieldAppender(config);
-    transform.initialize(null);
-
-    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
-    transform.transform(StructuredRecord.builder(INPUT).set("a", "cdap").build(), emitter);
-    Assert.assertNotNull(emitter.getEmitted().get(0).get("b"));
-  }
-
-  @Test
-  public void testDateSubstitution() throws Exception {
-    Schema output = Schema.recordOf("output",
-                                    Schema.Field.of("a", Schema.of(Schema.Type.STRING)),
-                                    Schema.Field.of("b", Schema.of(Schema.Type.STRING)));
-    FieldAppender.Config config = new FieldAppender.Config("b\t~datetime:yyyy-MM-dd~", output.toString());
-    Transform<StructuredRecord, StructuredRecord> transform = new FieldAppender(config);
-    transform.initialize(null);
-
-    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
-    transform.transform(StructuredRecord.builder(INPUT).set("a", "cdap").build(), emitter);
-    Assert.assertNotNull(emitter.getEmitted().get(0).get("b"));
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-    Assert.assertEquals(sdf.format(System.currentTimeMillis()), emitter.getEmitted().get(0).get("b"));
-  }
 
   @Test
   public void testFieldSubstitution() throws Exception {
