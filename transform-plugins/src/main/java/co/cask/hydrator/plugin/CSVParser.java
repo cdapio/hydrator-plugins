@@ -30,8 +30,6 @@ import co.cask.cdap.etl.api.TransformContext;
 import com.google.common.base.Throwables;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
@@ -42,28 +40,29 @@ import javax.annotation.Nullable;
  *
  * <p>
  * CSVParser supports transforming the input into {@link StructuredRecord}
- * Following are different CSV record types that are supported by this transform.
+ * Following are different CSV record types that are supported by this transform. User can also define custom delimiter
+ * by selecting tht option "Custom".
  * <ul>
  *   <li>DEFAULT</li>
  *   <li>EXCEL</li>
  *   <li>RFC4180</li>
  *   <li>MYSQL</li>
  *   <li>TDF and</li>
- *   <li>PDL</li>   
+ *   <li>PDL</li>
+ *   <li>Custom</li>
  * </ul>
- * </p>  
+ * </p>
  */
 @Plugin(type = "transform")
 @Name("CSVParser")
 @Description("Parses a field as CSV Record into a Structured Record.")
 public final class CSVParser extends Transform<StructuredRecord, StructuredRecord> {
-  private static final Logger LOG = LoggerFactory.getLogger(CSVParser.class);
   private final Config config;
 
-  // Output Schema associated with transform output. 
+  // Output Schema associated with transform output.
   private Schema outSchema;
 
-  // List of fields specified in the schema. 
+  // List of fields specified in the schema.
   private List<Field> fields;
 
   // Format of CSV.
@@ -72,7 +71,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
   // Format of PDL.
   public static final CSVFormat PDL;
 
-  // Initialize Pipe Delimiter CSV Parser. 
+  // Initialize Pipe Delimiter CSV Parser.
   static {
     PDL = CSVFormat.DEFAULT.withDelimiter('|').withEscape('\\').withIgnoreEmptyLines(false)
       .withAllowMissingColumnNames().withQuote((Character) null).withRecordSeparator('\n')
@@ -169,9 +168,15 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
         csvFormat = PDL;
         break;
 
+      case "custom":
+        csvFormat = CSVFormat.DEFAULT.withDelimiter(config.delimiter).withEscape('\\').withIgnoreEmptyLines(false)
+          .withAllowMissingColumnNames().withQuote((Character) null).withRecordSeparator('\n')
+          .withIgnoreSurroundingSpaces();
+        break;
+
       default:
         throw new IllegalArgumentException("Format {} specified is not one of the allowed format. Allowed formats are" +
-                                             "DEFAULT, EXCEL, MYSQL, RFC4180, PDL and TDF");
+                                             "DEFAULT, EXCEL, MYSQL, RFC4180, PDL and TDF or Custom");
     }
 
     try {
@@ -248,9 +253,14 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
   public static class Config extends PluginConfig {
 
     @Name("format")
-    @Description("Specify one of the predefined formats. DEFAULT, EXCEL, MYSQL, RFC4180, PDL & TDF " +
+    @Description("Specify one of the predefined formats. DEFAULT, EXCEL, MYSQL, RFC4180, PDL, TDF and Custom " +
       "are supported formats.")
     private final String format;
+
+    @Nullable
+    @Description("Custom delimiter to be used for parsing the fields. The custom delimiter can only be specified by " +
+      "selecting the option 'Custom' from the format drop-down.")
+    private final Character delimiter;
 
     @Name("field")
     @Description("Specify the field that should be used for parsing into CSV. Input records with a null input field " +
@@ -261,8 +271,9 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
     @Description("Specifies the schema that has to be output.")
     private final String schema;
 
-    public Config(String format, String field, String schema) {
+    public Config(String format, Character delimiter, String field, String schema) {
       this.format = format;
+      this.delimiter = delimiter;
       this.field = field;
       this.schema = schema;
     }
@@ -271,15 +282,22 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
       // Check if the format specified is valid.
       if (format == null || format.isEmpty()) {
         throw new IllegalArgumentException("Format is not specified. Allowed values are DEFAULT, EXCEL, MYSQL," +
-                                             " RFC4180, PDL & TDF");
+                                             " RFC4180, PDL, TDF or Custom");
       }
 
       // Check if format is one of the allowed types.
       if (!format.equalsIgnoreCase("DEFAULT") && !format.equalsIgnoreCase("EXCEL") &&
         !format.equalsIgnoreCase("MYSQL") && !format.equalsIgnoreCase("RFC4180") &&
-        !format.equalsIgnoreCase("TDF") && !format.equalsIgnoreCase("PDL")) {
+        !format.equalsIgnoreCase("TDF") && !format.equalsIgnoreCase("PDL") && !format.equalsIgnoreCase("Custom")) {
         throw new IllegalArgumentException("Format specified is not one of the allowed values. Allowed values are " +
-                                             "DEFAULT, EXCEL, MYSQL, RFC4180, PDL & TDF");
+                                             "DEFAULT, EXCEL, MYSQL, RFC4180, PDL, TDF or Custom");
+      }
+
+      if (format.equalsIgnoreCase("Custom") && (delimiter == null || delimiter == 0)) {
+        throw new IllegalArgumentException("Please specify the delimiter for format option 'Custom'.");
+      }
+      if (!format.equalsIgnoreCase("Custom") && delimiter != null && delimiter != 0) {
+        throw new IllegalArgumentException("Custom delimiter can only be used for format option 'Custom'.");
       }
     }
   }

@@ -84,7 +84,7 @@ public class CSVParserTest {
                                     Schema.Field.of("double", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
                                     Schema.Field.of("bool", Schema.nullableOf(Schema.of(Schema.Type.BOOLEAN))),
                                     Schema.Field.of("string", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
-    CSVParser.Config config = new CSVParser.Config("DEFAULT", "body", schema.toString());
+    CSVParser.Config config = new CSVParser.Config("DEFAULT", null, "body", schema.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
     transform.initialize(null);
 
@@ -118,7 +118,7 @@ public class CSVParserTest {
 
   @Test
   public void testDefaultCSVParser() throws Exception {
-    CSVParser.Config config = new CSVParser.Config("DEFAULT", "body", OUTPUT1.toString());
+    CSVParser.Config config = new CSVParser.Config("DEFAULT", null, "body", OUTPUT1.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
     transform.initialize(null);
 
@@ -182,7 +182,7 @@ public class CSVParserTest {
 
     // Test with records supporting different types.
     emitter.clear();
-    CSVParser.Config config1 = new CSVParser.Config("DEFAULT", "body", OUTPUT2.toString());
+    CSVParser.Config config1 = new CSVParser.Config("DEFAULT", null, "body", OUTPUT2.toString());
     Transform<StructuredRecord, StructuredRecord> transform1 = new CSVParser(config1);
     transform1.initialize(null);
 
@@ -194,10 +194,10 @@ public class CSVParserTest {
     Assert.assertEquals(4.32, emitter.getEmitted().get(0).get("d"));
     Assert.assertEquals(true, emitter.getEmitted().get(0).get("e"));
   }
-  
+
   @Test
   public void testPDL() throws Exception {
-    CSVParser.Config config = new CSVParser.Config("PDL", "body", OUTPUT1.toString());
+    CSVParser.Config config = new CSVParser.Config("PDL", null, "body", OUTPUT1.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
     transform.initialize(null);
 
@@ -214,10 +214,29 @@ public class CSVParserTest {
     Assert.assertEquals("", emitter.getEmitted().get(0).get("e"));
   }
 
+  @Test
+  public void testCustomDelimiter() throws Exception {
+    CSVParser.Config config = new CSVParser.Config("Custom", ';', "body", OUTPUT1.toString());
+    Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
+    transform.initialize(null);
+
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+
+    // Test missing field.
+    emitter.clear();
+    transform.transform(StructuredRecord.builder(INPUT1)
+                          .set("body", "1;    2;3 ;4;        ").build(), emitter);
+    Assert.assertEquals("1", emitter.getEmitted().get(0).get("a"));
+    Assert.assertEquals("2", emitter.getEmitted().get(0).get("b"));
+    Assert.assertEquals("3", emitter.getEmitted().get(0).get("c"));
+    Assert.assertEquals("4", emitter.getEmitted().get(0).get("d"));
+    Assert.assertEquals("", emitter.getEmitted().get(0).get("e"));
+  }
+
   @Test(expected = RuntimeException.class)
   public void testDoubleException() throws Exception {
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
-    CSVParser.Config config = new CSVParser.Config("DEFAULT", "body", OUTPUT2.toString());
+    CSVParser.Config config = new CSVParser.Config("DEFAULT", null, "body", OUTPUT2.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
     transform.initialize(null);
     transform.transform(StructuredRecord.builder(INPUT1)
@@ -227,7 +246,7 @@ public class CSVParserTest {
   @Test(expected = RuntimeException.class)
   public void testIntException() throws Exception {
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
-    CSVParser.Config config = new CSVParser.Config("DEFAULT", "body", OUTPUT2.toString());
+    CSVParser.Config config = new CSVParser.Config("DEFAULT", null, "body", OUTPUT2.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
     transform.initialize(null);
     transform.transform(StructuredRecord.builder(INPUT1)
@@ -237,7 +256,7 @@ public class CSVParserTest {
   @Test(expected = RuntimeException.class)
   public void testLongException() throws Exception {
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
-    CSVParser.Config config = new CSVParser.Config("DEFAULT", "body", OUTPUT2.toString());
+    CSVParser.Config config = new CSVParser.Config("DEFAULT", null, "body", OUTPUT2.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
     transform.initialize(null);
     transform.transform(StructuredRecord.builder(INPUT1)
@@ -246,7 +265,7 @@ public class CSVParserTest {
 
   @Test
   public void testSchemaValidation() throws Exception {
-    CSVParser.Config config = new CSVParser.Config("DEFAULT", "body", OUTPUT1.toString());
+    CSVParser.Config config = new CSVParser.Config("DEFAULT", null, "body", OUTPUT1.toString());
     CSVParser csvParser = new CSVParser(config);
     csvParser.validateInputSchema(INPUT1);
     Assert.assertEquals(OUTPUT1, csvParser.parseAndValidateOutputSchema(INPUT1));
@@ -254,7 +273,7 @@ public class CSVParserTest {
 
   @Test
   public void testNullableFieldSchemaValidation() throws Exception {
-    CSVParser.Config config = new CSVParser.Config("DEFAULT", "body", OUTPUT1.toString());
+    CSVParser.Config config = new CSVParser.Config("DEFAULT", null, "body", OUTPUT1.toString());
     CSVParser csvParser = new CSVParser(config);
     csvParser.validateInputSchema(NULLABLE_INPUT);
     Assert.assertEquals(OUTPUT1, csvParser.parseAndValidateOutputSchema(NULLABLE_INPUT));
@@ -263,7 +282,7 @@ public class CSVParserTest {
   @Test
   public void testPassThrough() throws Exception {
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
-    CSVParser.Config config = new CSVParser.Config("DEFAULT", "body", OUTPUT3.toString());
+    CSVParser.Config config = new CSVParser.Config("DEFAULT", null, "body", OUTPUT3.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT2);
     transform.configurePipeline(mockPipelineConfigurer);
@@ -280,10 +299,20 @@ public class CSVParserTest {
 
   @Test (expected = IllegalArgumentException.class)
   public void testPassThroughTypeMisMatch() throws Exception {
-    CSVParser.Config config = new CSVParser.Config("DEFAULT", "body", OUTPUT4.toString());
+    CSVParser.Config config = new CSVParser.Config("DEFAULT", null, "body", OUTPUT4.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT2);
     transform.configurePipeline(mockPipelineConfigurer);
   }
 
+  @Test
+  public void testEmptyCustomDelimiter() throws Exception {
+    CSVParser config = new CSVParser(new CSVParser.Config("Custom", null, "body", OUTPUT4.toString()));
+    try {
+      config.configurePipeline(new MockPipelineConfigurer(INPUT2));
+      Assert.fail();
+    } catch (IllegalArgumentException e) {
+      Assert.assertEquals("Please specify the delimiter for format option 'Custom'.", e.getMessage());
+    }
+  }
 }
