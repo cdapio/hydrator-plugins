@@ -47,8 +47,6 @@ public class Tokenizer extends SparkCompute<StructuredRecord, StructuredRecord> 
   public static final String PLUGIN_NAME = "Tokenizer";
   private Config config;
   private Schema outputSchema;
-  // Work around because of HYDRATOR-1116. Remove this change once its fixed
-  private Object tokenizer;
 
   public Tokenizer(Config config) {
     this.config = config;
@@ -69,8 +67,6 @@ public class Tokenizer extends SparkCompute<StructuredRecord, StructuredRecord> 
   @Override
   public void initialize(SparkExecutionPluginContext context) throws Exception {
     super.initialize(context);
-    tokenizer = new RegexTokenizer().setInputCol(config.columnToBeTokenized).setOutputCol(config.outputColumn)
-      .setPattern(config.patternSeparator);
   }
 
   @Override
@@ -90,7 +86,9 @@ public class Tokenizer extends SparkCompute<StructuredRecord, StructuredRecord> 
       }
     });
     DataFrame sentenceDataFrame = sqlContext.read().json(javardd);
-    RegexTokenizer regexTokenizer = (RegexTokenizer) tokenizer;
+    RegexTokenizer regexTokenizer = new RegexTokenizer().setInputCol(config.columnToBeTokenized)
+      .setOutputCol(config.outputColumn)
+      .setPattern(config.patternSeparator);
     DataFrame tokenizedDataFrame = regexTokenizer.transform(sentenceDataFrame);
     JavaRDD<StructuredRecord> output = tokenizedDataFrame.toJSON().toJavaRDD()
       .map(new Function<String, StructuredRecord>() {
