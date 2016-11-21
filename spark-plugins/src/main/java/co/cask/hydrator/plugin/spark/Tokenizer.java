@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package co.cask.hydrator.plugin.spark;
 
 import co.cask.cdap.api.annotation.Description;
@@ -25,19 +24,17 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.SparkCompute;
 import co.cask.cdap.etl.api.batch.SparkExecutionPluginContext;
+import co.cask.cdap.format.StructuredRecordStringConverter;
 import com.google.common.base.Preconditions;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.ml.feature.RegexTokenizer;
 import org.apache.spark.sql.DataFrame;
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SQLContext;
-import org.apache.spark.sql.types.DataTypes;
-import org.apache.spark.sql.types.Metadata;
-import org.apache.spark.sql.types.StructField;
-import org.apache.spark.sql.types.StructType;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Tokenizer-SparkCompute that breaks text(such as sentence) into individual terms(usually words)
@@ -49,10 +46,58 @@ public class Tokenizer extends SparkCompute<StructuredRecord, StructuredRecord> 
 
   public static final String PLUGIN_NAME = "Tokenizer";
   private Config config;
-  public Schema outputSchema;
+  private Schema outputSchema;
 
   public Tokenizer(Config config) {
     this.config = config;
+  }
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
+    super.configurePipeline(pipelineConfigurer);
+    Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
+    if (inputSchema != null && inputSchema.getField(config.columnToBeTokenized) != null) {
+      Schema schema = inputSchema.getField(config.columnToBeTokenized).getSchema();
+      Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
+      Preconditions.checkArgument(type == Schema.Type.STRING, "Column to be tokenized %s must be of type String, " +
+        "but was of type %s.", config.columnToBeTokenized, type);
+    }
+  }
+
+  @Override
+  public void initialize(SparkExecutionPluginContext context) throws Exception {
+    super.initialize(context);
+  }
+
+  @Override
+  public JavaRDD<StructuredRecord> transform(SparkExecutionPluginContext context,
+                                             JavaRDD<StructuredRecord> input) throws Exception {
+    JavaSparkContext javaSparkContext = context.getSparkContext();
+    SQLContext sqlContext = new SQLContext(javaSparkContext);
+    if (input == null) {
+      return context.getSparkContext().emptyRDD();
+    }
+    outputSchema = outputSchema != null ? outputSchema : config.getOutputSchema(input.first().getSchema(),
+                                                                                config.outputColumn);
+    JavaRDD<String> javardd = input.map(new Function<StructuredRecord, String>() {
+      @Override
+      public String call(StructuredRecord structuredRecord) throws Exception {
+        return StructuredRecordStringConverter.toJsonString(structuredRecord);
+      }
+    });
+    DataFrame sentenceDataFrame = sqlContext.read().json(javardd);
+    RegexTokenizer regexTokenizer = new RegexTokenizer().setInputCol(config.columnToBeTokenized)
+      .setOutputCol(config.outputColumn)
+      .setPattern(config.patternSeparator);
+    DataFrame tokenizedDataFrame = regexTokenizer.transform(sentenceDataFrame);
+    JavaRDD<StructuredRecord> output = tokenizedDataFrame.toJSON().toJavaRDD()
+      .map(new Function<String, StructuredRecord>() {
+        @Override
+        public StructuredRecord call(String record) throws Exception {
+          return StructuredRecordStringConverter.fromJsonString(record, outputSchema);
+        }
+      });
+    return output;
   }
 
   /**
@@ -62,67 +107,22 @@ public class Tokenizer extends SparkCompute<StructuredRecord, StructuredRecord> 
     @Description("Column on which tokenization is to be done")
     private final String columnToBeTokenized;
 
-    @Description("Pattern for tokenization")
-    private final String pattern;
+    @Description("Pattern Separator")
+    private final String patternSeparator;
 
     @Description("Output column name for tokenized data")
     private final String outputColumn;
 
-    public Config(String outputColumn, String columnToBeTokenized, String pattern) {
+    public Config(String outputColumn, String columnToBeTokenized, String patternSeparator) {
       this.columnToBeTokenized = columnToBeTokenized;
-      this.pattern = pattern;
+      this.patternSeparator = patternSeparator;
       this.outputColumn = outputColumn;
     }
-  }
 
-  @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
-    super.configurePipeline(pipelineConfigurer);
-    Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
-    if (inputSchema != null && inputSchema.getField(config.columnToBeTokenized) != null) {
-      Schema.Type columnToBeTokenizedType = inputSchema.getField(config.columnToBeTokenized)
-        .getSchema().getType();
-      Preconditions.checkArgument(columnToBeTokenizedType == Schema.Type.STRING,
-                                  "Column to be tokenized %s must be of type String, but was of type %s.",
-                                  config.columnToBeTokenized, columnToBeTokenizedType);
+    private Schema getOutputSchema(Schema inputSchema, String fieldName) {
+      List<Schema.Field> fields = new ArrayList<>(inputSchema.getFields());
+      fields.add(Schema.Field.of(fieldName, Schema.arrayOf(Schema.of(Schema.Type.STRING))));
+      return Schema.recordOf("record", fields);
     }
-  }
-
-  @Override
-  public JavaRDD<StructuredRecord> transform(SparkExecutionPluginContext context,
-                                             JavaRDD<StructuredRecord> input) throws Exception {
-    JavaSparkContext javaSparkContext = context.getSparkContext();
-    SQLContext sqlContext = new SQLContext(javaSparkContext);
-    //Create outputschema
-    outputSchema = Schema.recordOf("outputSchema", Schema.Field.of(config.outputColumn,
-                                                                   Schema.arrayOf(Schema.of(Schema.Type.STRING))));
-    //Schema to be used to create dataframe
-    StructType schema = new StructType(new StructField[]{
-      new StructField(config.columnToBeTokenized, DataTypes.StringType, false, Metadata.empty())});
-    //Transform input i.e JavaRDD<StructuredRecord> to JavaRDD<Row>
-    JavaRDD<Row> rowRDD = input.map(new Function<StructuredRecord, Row>() {
-      @Override
-      public Row call(StructuredRecord rec) throws Exception {
-        return RowFactory.create(rec.get(config.columnToBeTokenized));
-      }
-    });
-    DataFrame sentenceDataFrame = sqlContext.createDataFrame(rowRDD, schema);
-    RegexTokenizer tokenizer = new RegexTokenizer().setInputCol(config.columnToBeTokenized)
-      .setOutputCol(config.outputColumn).setPattern(config.pattern);
-    DataFrame tokenizedDataFrame = tokenizer.transform(sentenceDataFrame);
-    JavaRDD<Row> tokenizedRDD = javaSparkContext.parallelize(tokenizedDataFrame.
-      select(config.outputColumn).collectAsList());
-    //Transform JavaRDD<Row> to JavaRDD<StructuredRecord>
-    JavaRDD<StructuredRecord> output = tokenizedRDD.map(new Function<Row, StructuredRecord>() {
-      @Override
-      public StructuredRecord call(Row row) throws Exception {
-        StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
-        for (Schema.Field field : outputSchema.getFields()) {
-          builder.set(field.getName(), row.getList(0));
-        }
-        return builder.build();
-      }
-    });
-    return output;
   }
 }

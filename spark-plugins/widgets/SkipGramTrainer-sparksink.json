@@ -1,0 +1,78 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Skip-Gram Trainer Properties",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "FileSet Name",
+          "name": "fileSetName"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Path",
+          "name": "path"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Input Column for training",
+          "name": "inputCol"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Pattern to split the input string fields on",
+          "name": "pattern"
+        },
+        {
+          "widget-type": "number",
+          "label": "The dimension of codes after transforming from words",
+          "name": "vectorSize",
+          "widget-attributes": {
+            "default": 100,
+            "min": 1
+          }
+        },
+        {
+          "widget-type": "number",
+          "label": "Minimum number of times a token must appear to be included in the word2vec model's vocabulary",
+          "name": "minCount",
+          "widget-attributes": {
+            "default": 0,
+            "min": 0
+          }
+        },
+        {
+          "widget-type": "number",
+          "label": "Number of partitions",
+          "name": "numPartitions",
+          "widget-attributes": {
+            "default": 1,
+            "min": 0
+          }
+        },
+        {
+          "widget-type": "number",
+          "label": "Maximum number of iterations",
+          "name": "numIterations",
+          "widget-attributes": {
+            "default": 1,
+            "min": 1
+          }
+        },
+        {
+          "widget-type": "number",
+          "label": "The window size (context words from [-window, window])",
+          "name": "windowSize",
+          "widget-attributes": {
+            "default": 5,
+            "min": 1
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}

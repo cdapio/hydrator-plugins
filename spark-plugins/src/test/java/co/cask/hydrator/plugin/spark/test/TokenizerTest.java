@@ -72,6 +72,7 @@ public class TokenizerTest extends HydratorTestBase {
   private static final String SINGLE_COLUMN_DATASET = "SingleColumn";
   private static final String COMMA_DATASET = "commaDataset";
   private static final String SPACE_DATASET = "spaceDataset";
+  private static final String MULTIPLE_SPACE_DATASET = "multiSpaceDataset";
   private static final String TAB_DATASET = "tabDataset";
   private static final String OUTPUT_COLUMN = "words";
   private static final String COLUMN_TOKENIZED = "sentence";
@@ -83,16 +84,16 @@ public class TokenizerTest extends HydratorTestBase {
   private static final String SENTENCE3 = "hydrator studio is visual /development environment";
   private static final String SENTENCE4 = "hydrator plugins /are customizable modules";
   private static final String SENTENCE_WITH_SPACE = "cask data application platform";
+  private static final String SENTENCE_WITH_MULTIPLE_SPACE = "cask data  application  platform";
   private static final String SENTENCE_WITH_COMMA = "cask,data,application,platform";
   private static final String SENTENCE_WITH_TAB = "cask    data    application platform";
 
   private static final Schema SOURCE_SCHEMA_SINGLE = Schema.recordOf("sourceRecord",
-                                                     Schema.Field.of(COLUMN_TOKENIZED, Schema.of(Schema.Type.STRING))
-  );
-  private static final Schema SOURCE_SCHEMA_MULTIPLE = Schema.recordOf("sourceRecord",
-                                                      Schema.Field.of(NAME_COLUMN, Schema.of(Schema.Type.STRING)),
-                                                      Schema.Field.of(COLUMN_TOKENIZED, Schema.of(Schema.Type.STRING))
-  );
+                                                                     Schema.Field.of(COLUMN_TOKENIZED,
+                                                                                     Schema.of(Schema.Type.STRING)));
+  private static final Schema SOURCE_SCHEMA_MULTIPLE =
+    Schema.recordOf("sourceRecord", Schema.Field.of(NAME_COLUMN, Schema.of(Schema.Type.STRING)),
+                    Schema.Field.of(COLUMN_TOKENIZED, Schema.of(Schema.Type.STRING)));
 
   @BeforeClass
   public static void setupTest() throws Exception {
@@ -101,29 +102,25 @@ public class TokenizerTest extends HydratorTestBase {
     Set<ArtifactRange> parents = ImmutableSet.of(
       new ArtifactRange(NamespaceId.DEFAULT.toId(), DATAPIPELINE_ARTIFACT_ID.getArtifact(),
                         new ArtifactVersion(DATAPIPELINE_ARTIFACT_ID.getVersion()), true,
-                        new ArtifactVersion(DATAPIPELINE_ARTIFACT_ID.getVersion()), true)
-    );
+                        new ArtifactVersion(DATAPIPELINE_ARTIFACT_ID.getVersion()), true));
     addPluginArtifact(NamespaceId.DEFAULT.artifact("spark-plugins", "1.0.0"), parents,
                       Tokenizer.class, TwitterStreamingSource.class);
   }
 
   /**
    * @param mockNameOfSourcePlugin used while adding ETLStage for mock source
-   * @param mockNameOfSinkPlugin   used while adding ETLStage for mock sink
-   * @param pattern                config parameter for Tokenizer plugin
+   * @param mockNameOfSinkPlugin used while adding ETLStage for mock sink
+   * @param pattern config parameter for Tokenizer plugin
    * @return ETLBatchConfig
    */
   private ETLBatchConfig buildETLBatchConfig(String mockNameOfSourcePlugin,
                                              String mockNameOfSinkPlugin, String pattern) {
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
       .addStage(new ETLStage("source", MockSource.getPlugin(mockNameOfSourcePlugin)))
-      .addStage(new ETLStage("sparkcompute",
-                             new ETLPlugin(Tokenizer.PLUGIN_NAME, SparkCompute.PLUGIN_TYPE,
-
+      .addStage(new ETLStage("sparkcompute", new ETLPlugin(Tokenizer.PLUGIN_NAME, SparkCompute.PLUGIN_TYPE,
                                            ImmutableMap.of("outputColumn", OUTPUT_COLUMN,
                                                            "columnToBeTokenized", COLUMN_TOKENIZED,
-                                                           "pattern", pattern),
-                                           null)))
+                                                           "patternSeparator", pattern), null)))
       .addStage(new ETLStage("sink", MockSink.getPlugin(mockNameOfSinkPlugin)))
       .addConnection("source", "sparkcompute")
       .addConnection("sparkcompute", "sink")
@@ -144,15 +141,14 @@ public class TokenizerTest extends HydratorTestBase {
     ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
     DataSetManager<Table> inputManager = getDataset(mockSource);
     List<StructuredRecord> input = ImmutableList.of(
-      StructuredRecord.builder(SOURCE_SCHEMA_MULTIPLE).set(COLUMN_TOKENIZED,
-                                                           SENTENCE1).set(NAME_COLUMN, "CDAP").build(),
-      StructuredRecord.builder(SOURCE_SCHEMA_MULTIPLE).set(COLUMN_TOKENIZED,
-                                                           SENTENCE2).set(NAME_COLUMN, "Hydrator").build(),
-      StructuredRecord.builder(SOURCE_SCHEMA_MULTIPLE).set(COLUMN_TOKENIZED,
-                                                           SENTENCE3).set(NAME_COLUMN, "Studio").build(),
-      StructuredRecord.builder(SOURCE_SCHEMA_MULTIPLE).set(COLUMN_TOKENIZED,
-                                                           SENTENCE4).set(NAME_COLUMN, "Plugins").build()
-    );
+      StructuredRecord.builder(SOURCE_SCHEMA_MULTIPLE).set(COLUMN_TOKENIZED, SENTENCE1).set(NAME_COLUMN, "CDAP")
+        .build(),
+      StructuredRecord.builder(SOURCE_SCHEMA_MULTIPLE).set(COLUMN_TOKENIZED, SENTENCE2).set(NAME_COLUMN, "Hydrator")
+        .build(),
+      StructuredRecord.builder(SOURCE_SCHEMA_MULTIPLE).set(COLUMN_TOKENIZED, SENTENCE3).set(NAME_COLUMN, "Studio")
+        .build(),
+      StructuredRecord.builder(SOURCE_SCHEMA_MULTIPLE).set(COLUMN_TOKENIZED, SENTENCE4).set(NAME_COLUMN, "Plugins")
+        .build());
     MockSource.writeInput(inputManager, input);
     // manually trigger the pipeline
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
@@ -169,7 +165,14 @@ public class TokenizerTest extends HydratorTestBase {
     Assert.assertEquals(expected, results);
     Assert.assertEquals(4, output.size());
     StructuredRecord row = output.get(0);
-    Assert.assertEquals(1, row.getSchema().getFields().size());
+    Schema expectedSchema = Schema.recordOf("record", Schema.Field.of(NAME_COLUMN, Schema.of(Schema.Type.STRING)),
+                                            Schema.Field.of(COLUMN_TOKENIZED, Schema.of(Schema.Type.STRING)),
+                                            Schema.Field.of(OUTPUT_COLUMN,
+                                                            Schema.arrayOf(Schema.of(Schema.Type.STRING))));
+    Assert.assertEquals("Schema", expectedSchema, row.getSchema());
+    Assert.assertEquals(3, row.getSchema().getFields().size());
+    Assert.assertNotNull(row.getSchema().getField(COLUMN_TOKENIZED));
+    Assert.assertNotNull(row.getSchema().getField(NAME_COLUMN));
     Assert.assertEquals("ARRAY", row.getSchema().getField(OUTPUT_COLUMN).getSchema().getType().toString());
   }
 
@@ -185,15 +188,10 @@ public class TokenizerTest extends HydratorTestBase {
     ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
     DataSetManager<Table> inputManager = getDataset(mockSource);
     List<StructuredRecord> input = ImmutableList.of(
-      StructuredRecord.builder(SOURCE_SCHEMA_SINGLE).set(COLUMN_TOKENIZED,
-                                                         SENTENCE1).build(),
-      StructuredRecord.builder(SOURCE_SCHEMA_SINGLE).set(COLUMN_TOKENIZED,
-                                                         SENTENCE2).build(),
-      StructuredRecord.builder(SOURCE_SCHEMA_SINGLE).set(COLUMN_TOKENIZED,
-                                                         SENTENCE3).build(),
-      StructuredRecord.builder(SOURCE_SCHEMA_SINGLE).set(COLUMN_TOKENIZED,
-                                                         SENTENCE4).build()
-    );
+      StructuredRecord.builder(SOURCE_SCHEMA_SINGLE).set(COLUMN_TOKENIZED, SENTENCE1).build(),
+      StructuredRecord.builder(SOURCE_SCHEMA_SINGLE).set(COLUMN_TOKENIZED, SENTENCE2).build(),
+      StructuredRecord.builder(SOURCE_SCHEMA_SINGLE).set(COLUMN_TOKENIZED, SENTENCE3).build(),
+      StructuredRecord.builder(SOURCE_SCHEMA_SINGLE).set(COLUMN_TOKENIZED, SENTENCE4).build());
     MockSource.writeInput(inputManager, input);
     // manually trigger the pipeline
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
@@ -210,7 +208,12 @@ public class TokenizerTest extends HydratorTestBase {
     Assert.assertEquals(expected, results);
     Assert.assertEquals(4, output.size());
     StructuredRecord rowSingle = output.get(0);
-    Assert.assertEquals(1, rowSingle.getSchema().getFields().size());
+    Schema expectedSchema = Schema.recordOf("record", Schema.Field.of(COLUMN_TOKENIZED, Schema.of(Schema.Type.STRING)),
+                                            Schema.Field.of(OUTPUT_COLUMN,
+                                                            Schema.arrayOf(Schema.of(Schema.Type.STRING))));
+    Assert.assertEquals("Schema", expectedSchema, rowSingle.getSchema());
+    Assert.assertEquals(2, rowSingle.getSchema().getFields().size());
+    Assert.assertNotNull(rowSingle.getSchema().getField(COLUMN_TOKENIZED));
     Assert.assertEquals("ARRAY", rowSingle.getSchema().getField(OUTPUT_COLUMN).getSchema().getType().toString());
   }
 
@@ -223,8 +226,7 @@ public class TokenizerTest extends HydratorTestBase {
   public void testCheckWrongArgument() throws Exception {
     Schema sourceSchema = Schema.recordOf("sourceRecord",
                                           Schema.Field.of(NAME_COLUMN, Schema.of(Schema.Type.STRING)),
-                                          Schema.Field.of(COLUMN_TOKENIZED, Schema.of(Schema.Type.INT))
-    );
+                                          Schema.Field.of(COLUMN_TOKENIZED, Schema.of(Schema.Type.INT)));
     Tokenizer.Config config = new Tokenizer.Config("output", COLUMN_TOKENIZED, "/");
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(sourceSchema);
     new Tokenizer(config).configurePipeline(configurer);
@@ -235,6 +237,7 @@ public class TokenizerTest extends HydratorTestBase {
     testDelimiter("textForComma", COMMA_DATASET, SENTENCE_WITH_COMMA, ",");
     testDelimiter("textForSpace", SPACE_DATASET, SENTENCE_WITH_SPACE, " ");
     testDelimiter("textForTab", TAB_DATASET, SENTENCE_WITH_TAB, " ");
+    testDelimiter("textForMultipleSpaces", MULTIPLE_SPACE_DATASET, SENTENCE_WITH_MULTIPLE_SPACE, "\\s+");
   }
 
   private void testDelimiter(String mockSource, String mockSink, String sentence, String delimiter) throws Exception {
@@ -248,8 +251,7 @@ public class TokenizerTest extends HydratorTestBase {
     DataSetManager<Table> inputManager = getDataset(mockSource);
     List<StructuredRecord> input = ImmutableList.of(
       StructuredRecord.builder(SOURCE_SCHEMA_MULTIPLE).set(COLUMN_TOKENIZED,
-                                                           sentence).set(NAME_COLUMN, "CDAP").build()
-    );
+                                                           sentence).set(NAME_COLUMN, "CDAP").build());
     MockSource.writeInput(inputManager, input);
     // manually trigger the pipeline
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
@@ -266,7 +268,7 @@ public class TokenizerTest extends HydratorTestBase {
     Assert.assertEquals(expected, results);
     Assert.assertEquals(1, output.size());
     StructuredRecord row = output.get(0);
-    Assert.assertEquals(1, row.getSchema().getFields().size());
+    Assert.assertEquals(3, row.getSchema().getFields().size());
     Assert.assertEquals("ARRAY", row.getSchema().getField(OUTPUT_COLUMN).getSchema().getType().toString());
   }
 

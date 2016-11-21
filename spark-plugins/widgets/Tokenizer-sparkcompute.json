@@ -13,8 +13,9 @@
         },
         {
           "widget-type": "textbox",
-          "label": "Pattern",
-          "name": "pattern"
+          "label": "Pattern Separator",
+          "name": "patternSeparator"
+
         },
         {
           "widget-type": "textbox",

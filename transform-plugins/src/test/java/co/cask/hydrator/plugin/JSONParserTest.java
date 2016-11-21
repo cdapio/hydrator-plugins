@@ -96,6 +96,10 @@ public class JSONParserTest {
   @Test
   public void testJSONParser() throws Exception {
     JSONParser.Config config = new JSONParser.Config("body", "", OUTPUT1.toString());
+    testJsonParserConfig(config);
+  }
+
+  private void testJsonParserConfig(JSONParser.Config config) throws Exception {
     Transform<StructuredRecord, StructuredRecord> transform = new JSONParser(config);
     transform.initialize(null);
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
@@ -107,6 +111,12 @@ public class JSONParserTest {
     Assert.assertEquals("3", emitter.getEmitted().get(0).get("c"));
     Assert.assertEquals("4", emitter.getEmitted().get(0).get("d"));
     Assert.assertEquals("5", emitter.getEmitted().get(0).get("e"));
+  }
+
+  @Test
+  public void testJSONParserWithNullMapping() throws Exception {
+    JSONParser.Config config = new JSONParser.Config("body", null, OUTPUT1.toString());
+    testJsonParserConfig(config);
   }
 
   @Test
