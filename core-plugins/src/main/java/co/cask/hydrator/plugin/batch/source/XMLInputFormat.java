@@ -44,7 +44,7 @@ public class XMLInputFormat extends FileInputFormat<LongWritable, Map<String, St
   public RecordReader<LongWritable, Map<String, String>> createRecordReader(InputSplit split,
                                                                             TaskAttemptContext context)
     throws IOException {
-    return new XMLRecordReader((FileSplit) split, context.getConfiguration());
+    return new XMLRecordReader();
   }
 
   protected boolean isSplitable(JobContext context, Path file) {

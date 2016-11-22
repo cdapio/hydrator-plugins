@@ -30,9 +30,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FilterInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
@@ -54,56 +52,29 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
   public static final String CLOSING_START_TAG_DELIMITER = ">";
   public static final String OPENING_START_TAG_DELIMITER = "<";
 
-  private final String fileName;
-  private final XMLStreamReader reader;
-  private final String[] nodes;
-  private final Map<Integer, String> currentNodeLevelMap;
-  private final String tempFilePath;
-  private final Path file;
-  private final String fileAction;
-  private final FileSystem fs;
-  private final String targetFolder;
-  private final long availableBytes;
-  private final TrackingInputStream inputStream;
+  private String fileName;
+  private XMLStreamReader reader;
+  private String[] nodes;
+  private Map<Integer, String> currentNodeLevelMap;
+  private String tempFilePath;
+  private Path file;
+  private String fileAction;
+  private FileSystem fs;
+  private String targetFolder;
+  private long availableBytes;
+  private FSDataInputStream fdDataInputStream;
   private final DecimalFormat df = new DecimalFormat("#.##");
 
   private LongWritable currentKey;
   private Map<String, String> currentValue;
   private int nodeLevel = 0;
 
-  public XMLRecordReader(FileSplit split, Configuration conf) throws IOException {
-    file = split.getPath();
-    fileName = file.toUri().toString();
-    fs = file.getFileSystem(conf);
-    XMLInputFactory factory = XMLInputFactory.newInstance();
-    FSDataInputStream fdDataInputStream = fs.open(file);
-    inputStream = new TrackingInputStream(fdDataInputStream);
-    availableBytes = split.getLength();
-    try {
-      reader = factory.createXMLStreamReader(inputStream);
-    } catch (XMLStreamException exception) {
-      throw new RuntimeException("XMLStreamException exception : ", exception);
-    }
-    //Set required node path details.
-    String nodePath = conf.get(XMLInputFormat.XML_INPUTFORMAT_NODE_PATH);
-    //Remove preceding '/' in node path to avoid first unwanted element after split('/')
-    if (nodePath.indexOf("/") == 0) {
-      nodePath = nodePath.substring(1, nodePath.length());
-    }
-    nodes = nodePath.split("/");
-
-    currentNodeLevelMap = new HashMap<Integer, String>();
-
-    tempFilePath = conf.get(XMLInputFormat.XML_INPUTFORMAT_PROCESSED_DATA_TEMP_FOLDER);
-    fileAction = conf.get(XMLInputFormat.XML_INPUTFORMAT_FILE_ACTION);
-    targetFolder = conf.get(XMLInputFormat.XML_INPUTFORMAT_TARGET_FOLDER);
-  }
-
   @Override
   public void close() throws IOException {
     if (reader != null) {
       try {
         reader.close();
+        fdDataInputStream.close();
       } catch (XMLStreamException exception) {
         LOG.error("Error occurred while closing reader : " +  exception.getMessage());
       }
@@ -112,7 +83,7 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
 
   @Override
   public float getProgress() throws IOException {
-    float progress = (float) inputStream.getTotalBytes() /  availableBytes;
+    float progress = (float) fdDataInputStream.getPos() /  availableBytes;
     return Float.valueOf(df.format(progress));
   }
 
@@ -128,6 +99,31 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
 
   @Override
   public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
+    FileSplit fileSplit  = (FileSplit) split;
+    file = fileSplit.getPath();
+    fileName = file.toUri().toString();
+    Configuration conf = context.getConfiguration();
+    fs = file.getFileSystem(conf);
+    XMLInputFactory factory = XMLInputFactory.newInstance();
+    fdDataInputStream = fs.open(file);
+    availableBytes = split.getLength();
+    try {
+      reader = factory.createXMLStreamReader(fdDataInputStream);
+    } catch (XMLStreamException exception) {
+      throw new RuntimeException("XMLStreamException exception : ", exception);
+    }
+    //Set required node path details.
+    String nodePath = conf.get(XMLInputFormat.XML_INPUTFORMAT_NODE_PATH);
+    //Remove preceding '/' in node path to avoid first unwanted element after split('/')
+    if (nodePath.indexOf("/") == 0) {
+      nodePath = nodePath.substring(1, nodePath.length());
+    }
+    nodes = nodePath.split("/");
+
+    currentNodeLevelMap = new HashMap<Integer, String>();
+    tempFilePath = conf.get(XMLInputFormat.XML_INPUTFORMAT_PROCESSED_DATA_TEMP_FOLDER);
+    fileAction = conf.get(XMLInputFormat.XML_INPUTFORMAT_FILE_ACTION);
+    targetFolder = conf.get(XMLInputFormat.XML_INPUTFORMAT_TARGET_FOLDER);
   }
 
   @Override
@@ -141,7 +137,6 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
     boolean xmlRecordReady = false;
     //Flag to know if matching node found as per node path
     boolean nodeFound = false;
-
     try {
       while (reader.hasNext()) {
         int event = reader.next();
@@ -257,42 +252,6 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
   private void updateFileTrackingInfo() throws IOException {
     try (FSDataOutputStream outputStream = fs.create(new Path(tempFilePath, file.getName() + ".txt"))) {
       outputStream.writeUTF(fileName);
-    }
-  }
-
-  /**
-   * Class to track input stream and get total bytes read.
-   */
-  public class TrackingInputStream extends FilterInputStream {
-    private long totalBytes = 0;
-
-    public TrackingInputStream(InputStream in) {
-      super(in);
-    }
-
-    @Override
-    public int read(byte[] b) throws IOException {
-      int count = super.read(b);
-      this.totalBytes += count;
-      return count;
-    }
-
-    @Override
-    public int read() throws IOException {
-      int count = super.read();
-      this.totalBytes += count;
-      return count;
-    }
-
-    @Override
-    public int read(byte[] b, int off, int len) throws IOException {
-      int count = super.read(b, off, len);
-      this.totalBytes += count;
-      return count;
-    }
-
-    public long getTotalBytes() {
-      return totalBytes;
     }
   }
 }
