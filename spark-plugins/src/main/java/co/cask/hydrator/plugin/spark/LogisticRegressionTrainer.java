@@ -57,7 +57,7 @@ public class LogisticRegressionTrainer extends SparkMLTrainer {
       this.numClasses = 2;
     }
 
-    public Config(String fileSetName, String path, @Nullable String featureFieldsToInclude, String labelField,
+    public Config(String fileSetName, @Nullable String path, @Nullable String featureFieldsToInclude, String labelField,
                   @Nullable String featureFieldsToExclude, @Nullable Integer numClasses) {
       super(fileSetName, path, featureFieldsToInclude, featureFieldsToExclude, labelField);
       this.numClasses = numClasses;

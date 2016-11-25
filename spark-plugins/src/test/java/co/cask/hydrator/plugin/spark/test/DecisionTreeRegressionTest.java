@@ -113,7 +113,6 @@ public class DecisionTreeRegressionTest extends HydratorTestBase {
      */
     Map<String, String> properties = new ImmutableMap.Builder<String, String>()
       .put("fileSetName", "decision-tree-regression-model")
-      .put("path", "decisionTreeRegression")
       .put("featureFieldsToInclude", "dofM,dofW,carrier,originId,destId,scheduleDepTime,scheduledArrTime,elapsedTime")
       .put("labelField", "delayed")
       .put("maxBins", "100")
@@ -178,7 +177,6 @@ public class DecisionTreeRegressionTest extends HydratorTestBase {
       .addStage(new ETLStage("sparkcompute",
                              new ETLPlugin(DecisionTreePredictor.PLUGIN_NAME, SparkCompute.PLUGIN_TYPE,
                                            ImmutableMap.of("fileSetName", "decision-tree-regression-model",
-                                                           "path", "decisionTreeRegression",
                                                            "featureFieldsToExclude", "tailNum,flightNum,origin,dest," +
                                                              "deptime,depDelayMins,arrTime,arrDelay,distance",
                                                            "predictionField", "delayed"), null)))

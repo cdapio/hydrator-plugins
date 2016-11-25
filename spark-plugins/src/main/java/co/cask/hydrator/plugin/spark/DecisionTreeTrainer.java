@@ -83,7 +83,7 @@ public class DecisionTreeTrainer extends SparkMLTrainer {
       maxBins = 100;
     }
 
-    public DecisionTreeTrainerConfig(String fileSetName, String path, @Nullable String featuresToInclude,
+    public DecisionTreeTrainerConfig(String fileSetName, @Nullable String path, @Nullable String featuresToInclude,
                                      @Nullable String featuresToExclude, @Nullable String cardinalityMapping,
                                      String labelField, @Nullable Integer maxDepth, @Nullable Integer maxBins) {
       super(fileSetName, path, featuresToInclude, featuresToExclude, labelField);
