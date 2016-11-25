@@ -209,11 +209,11 @@ public class StreamBatchSource extends BatchSource<Object, Object, StructuredRec
         parseSchema();
       }
       // check duration and delay
-      if (!this.containsMacro(duration)) {
+      if (!this.containsMacro("duration")) {
         long durationInMs = TimeParser.parseDuration(duration);
         Preconditions.checkArgument(durationInMs > 0, "Duration must be greater than 0");
       }
-      if (!this.containsMacro(delay) && !Strings.isNullOrEmpty(delay)) {
+      if (!this.containsMacro("delay") && !Strings.isNullOrEmpty(delay)) {
         TimeParser.parseDuration(delay);
       }
     }
