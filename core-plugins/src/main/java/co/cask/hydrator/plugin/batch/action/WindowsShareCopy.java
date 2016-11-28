@@ -52,11 +52,11 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 /**
- * {@link WindowsShareCopy} is a {@link Action} that will copy the data from Window share into HDFS directory.
+ * {@link WindowsShareCopy} is an {@link Action} that will copy the data from a Windows share into an HDFS directory.
  */
 @Plugin(type = Action.PLUGIN_TYPE)
 @Name("WindowsShareCopy")
-@Description("Copies Files from Windows Share into HDFS Directory without intermediate store.")
+@Description("Copies a file or files on a Microsoft Windows share to an HDFS directory.")
 public class WindowsShareCopy extends Action {
   private static final Logger LOG = LoggerFactory.getLogger(WindowsShareCopy.class);
   private static final int MIN_BUFFER_SIZE = 4096;
@@ -219,43 +219,46 @@ public class WindowsShareCopy extends Action {
     @Macro
     private final String netBiosDomainName;
 
-    @Description("Specifies the NetBios hostname to import files from")
+    @Description("Specifies the NetBios hostname to import files from.")
     @Macro
     private final String netBiosHostname;
 
-    @Description("Specifies the NetBios username to user for importing files from share")
+    @Description("Specifies the NetBios username to use when importing files from the Windows share.")
     @Macro
     private final String netBiosUsername;
 
-    @Description("Specifies the NetBios password for importing files from windows share")
+    @Description("Specifies the NetBios password to use when importing files from the Windows share.")
     @Macro
     private final String netBiosPassword;
 
-    @Description("Specifies the NetBios share name")
+    @Description("Specifies the NetBios share name.")
     @Macro
     private final String netBiosSharename;
 
-    @Description("Specifies the number of threads to execute the copy operation")
+    @Description("Specifies the number of parallel tasks to use when executing the copy operation; defaults to 1.")
     @Nullable
     @Macro
     private Integer numThreads;
 
-    @Description("Specifies if the files needs to be overwritten or not")
+    @Description("Boolean that specifies if any matching files already present in the destination " +
+      "should be overwritten or not; default is true.")
     @Nullable
     private final Boolean overwrite;
 
-    @Description("Specifies the NetBios directory")
+    @Description("Specifies the NetBios directory or file.")
     @Macro
     private final String sourceDirectory;
 
-    @Description("The valid, full HDFS destination path in the same cluster where the file or files are to be moved. " +
-      "If a directory is specified with a file sourcePath, the file will be put into that directory. If sourcePath " +
-      "is a directory, it is assumed that destPath is also a directory. HDFSAction will not catch this inconsistency.")
+    @Description("The valid full HDFS destination path in the same cluster where " +
+      "the file or files are to be moved. If a directory is specified as a destination with a " +
+      "file as the source, the source file will be put into that directory. If the source is a " +
+      "directory, it is assumed that destination is also a directory. This plugin does not check " +
+      "and will not catch any inconsistency.")
     @Macro
     private final String destinationDirectory;
 
-    @Description("The i/o buffer size used in copying bufferstream and to write to the hdfs file. The values should" +
-      " be in the multiples of 4096. Default value is 4096")
+    @Description("The size of the buffer to be used for copying the files; minimum (and " +
+      "default) buffer size is 4096; the value should be a multiple of the minimum size.")
     @Nullable
     @Macro
     private Integer bufferSize;
