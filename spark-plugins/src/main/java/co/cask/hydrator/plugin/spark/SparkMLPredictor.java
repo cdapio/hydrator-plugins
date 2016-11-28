@@ -26,6 +26,7 @@ import co.cask.cdap.etl.api.StageConfigurer;
 import co.cask.cdap.etl.api.batch.SparkCompute;
 import co.cask.cdap.etl.api.batch.SparkExecutionPluginContext;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
 import org.apache.spark.SparkContext;
@@ -57,6 +58,7 @@ public abstract class SparkMLPredictor extends SparkCompute<StructuredRecord, St
     @Description("The name of the FileSet to load the model from.")
     protected String fileSetName;
 
+    @Nullable
     @Description("Path of the FileSet to load the model from.")
     protected String path;
 
@@ -72,7 +74,7 @@ public abstract class SparkMLPredictor extends SparkCompute<StructuredRecord, St
     @Description("The field on which to set the prediction. It will be of type double.")
     protected String predictionField;
 
-    protected MLPredictorConfig(String fileSetName, String path, @Nullable String featureFieldsToInclude,
+    protected MLPredictorConfig(String fileSetName, @Nullable String path, @Nullable String featureFieldsToInclude,
                                 @Nullable String featureFieldsToExclude, String predictionField) {
       this.fileSetName = fileSetName;
       this.path = path;
@@ -103,8 +105,10 @@ public abstract class SparkMLPredictor extends SparkCompute<StructuredRecord, St
   @Override
   public void initialize(SparkExecutionPluginContext context) throws Exception {
     FileSet fileSet = context.getDataset(config.fileSetName);
-    Location modelLocation = fileSet.getBaseLocation().append(config.path);
-
+    Location modelLocation = fileSet.getBaseLocation();
+    if (!Strings.isNullOrEmpty(config.path)) {
+      modelLocation = modelLocation.append(config.path);
+    }
     if (!modelLocation.exists()) {
       throw new IllegalArgumentException("Failed to find model to use for classification. " +
                                            "Location does not exist: " + modelLocation, null);

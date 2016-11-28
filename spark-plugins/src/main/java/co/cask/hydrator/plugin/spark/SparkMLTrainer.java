@@ -26,6 +26,7 @@ import co.cask.cdap.etl.api.batch.SparkExecutionPluginContext;
 import co.cask.cdap.etl.api.batch.SparkPluginContext;
 import co.cask.cdap.etl.api.batch.SparkSink;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
 import org.apache.spark.SparkContext;
@@ -33,6 +34,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.mllib.linalg.Vectors;
 import org.apache.spark.mllib.regression.LabeledPoint;
+import org.apache.twill.filesystem.Location;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,6 +57,7 @@ public abstract class SparkMLTrainer extends SparkSink<StructuredRecord> {
     @Description("The name of the FileSet to save the model to.")
     protected String fileSetName;
 
+    @Nullable
     @Description("Path of the FileSet to save the model to.")
     protected String path;
 
@@ -72,7 +75,7 @@ public abstract class SparkMLTrainer extends SparkSink<StructuredRecord> {
     protected MLTrainerConfig() {
     }
 
-    protected MLTrainerConfig(String fileSetName, String path, @Nullable String featureFieldsToInclude,
+    protected MLTrainerConfig(String fileSetName, @Nullable String path, @Nullable String featureFieldsToInclude,
                               @Nullable String featureFieldsToExclude, String labelField) {
       this.fileSetName = fileSetName;
       this.path = path;
@@ -142,8 +145,11 @@ public abstract class SparkMLTrainer extends SparkSink<StructuredRecord> {
       });
       trainingData.cache();
       FileSet outputFS = context.getDataset(config.fileSetName);
-      trainModel(context.getSparkContext().sc(), inputSchema, trainingData,
-                 outputFS.getBaseLocation().append(config.path).toURI().getPath());
+      Location modelLocation = outputFS.getBaseLocation();
+      if (!Strings.isNullOrEmpty(config.path)) {
+        modelLocation = modelLocation.append(config.path);
+      }
+      trainModel(context.getSparkContext().sc(), inputSchema, trainingData, modelLocation.toURI().getPath());
     }
   }
 
