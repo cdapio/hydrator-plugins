@@ -23,9 +23,9 @@
               "DEFAULT",
               "EXCEL",
               "MYSQL",
-              "PDL",
+              "Pipe Delimited",
               "RFC4180",
-              "TDF",
+              "Tab Delimited",
               "Custom"
             ],
             "default": "DEFAULT"

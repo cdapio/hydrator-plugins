@@ -47,8 +47,8 @@ import javax.annotation.Nullable;
  *   <li>EXCEL</li>
  *   <li>RFC4180</li>
  *   <li>MYSQL</li>
- *   <li>TDF and</li>
- *   <li>PDL</li>
+ *   <li>Tab Delimited and</li>
+ *   <li>Pipe Delimited</li>
  *   <li>Custom</li>
  * </ul>
  * </p>
@@ -160,11 +160,11 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
         csvFormat = CSVFormat.RFC4180;
         break;
 
-      case "tdf":
+      case "tab delimited":
         csvFormat = CSVFormat.TDF;
         break;
 
-      case "pdl":
+      case "pipe delimited":
         csvFormat = PDL;
         break;
 
@@ -176,7 +176,8 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
 
       default:
         throw new IllegalArgumentException("Format {} specified is not one of the allowed format. Allowed formats are" +
-                                             "DEFAULT, EXCEL, MYSQL, RFC4180, PDL and TDF or Custom");
+                                             "DEFAULT, EXCEL, MYSQL, RFC4180, Pipe Delimited and Tab Delimited or " +
+                                             "Custom");
     }
 
     try {
@@ -253,8 +254,8 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
   public static class Config extends PluginConfig {
 
     @Name("format")
-    @Description("Specify one of the predefined formats. DEFAULT, EXCEL, MYSQL, RFC4180, PDL, TDF and Custom " +
-      "are supported formats.")
+    @Description("Specify one of the predefined formats. DEFAULT, EXCEL, MYSQL, RFC4180, Pipe Delimited, Tab " +
+      "Delimited and Custom are supported formats.")
     private final String format;
 
     @Nullable
@@ -282,15 +283,16 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
       // Check if the format specified is valid.
       if (format == null || format.isEmpty()) {
         throw new IllegalArgumentException("Format is not specified. Allowed values are DEFAULT, EXCEL, MYSQL," +
-                                             " RFC4180, PDL, TDF or Custom");
+                                             " RFC4180, Pipe Delimited, Tab Delimited or Custom");
       }
 
       // Check if format is one of the allowed types.
       if (!format.equalsIgnoreCase("DEFAULT") && !format.equalsIgnoreCase("EXCEL") &&
         !format.equalsIgnoreCase("MYSQL") && !format.equalsIgnoreCase("RFC4180") &&
-        !format.equalsIgnoreCase("TDF") && !format.equalsIgnoreCase("PDL") && !format.equalsIgnoreCase("Custom")) {
+        !format.equalsIgnoreCase("Tab Delimited") && !format.equalsIgnoreCase("Pipe Delimited")
+        && !format.equalsIgnoreCase("Custom")) {
         throw new IllegalArgumentException("Format specified is not one of the allowed values. Allowed values are " +
-                                             "DEFAULT, EXCEL, MYSQL, RFC4180, PDL, TDF or Custom");
+                                             "DEFAULT, EXCEL, MYSQL, RFC4180, Pipe Delimited, Tab Delimited or Custom");
       }
 
       if (format.equalsIgnoreCase("Custom") && (delimiter == null || delimiter == 0)) {
