@@ -197,7 +197,7 @@ public class CSVParserTest {
 
   @Test
   public void testPDL() throws Exception {
-    CSVParser.Config config = new CSVParser.Config("PDL", null, "body", OUTPUT1.toString());
+    CSVParser.Config config = new CSVParser.Config("Pipe Delimited", null, "body", OUTPUT1.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
     transform.initialize(null);
 
