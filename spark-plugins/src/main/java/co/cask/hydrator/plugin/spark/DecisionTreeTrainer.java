@@ -63,7 +63,10 @@ public class DecisionTreeTrainer extends SparkMLTrainer {
   public static class DecisionTreeTrainerConfig extends MLTrainerConfig {
 
     @Nullable
-    @Description("Mapping of the feature to the cardinality of that feature; required for categorical features.")
+    @Description("List of the categorical features along with the maximum number of unique values that feature can " +
+      "exist in. This is a comma-separated list of key-value pairs, where each pair is separated by a colon ':' and " +
+      "specifies the feature and its cardinality. For example, 'daysOfTheWeek:7', this indicates that the feature " +
+      "'daysOfTheWeek' is categorical with '7' categories indexed from 0: {0, 1, 2, 3, 4, 5, 6}.")
     private String cardinalityMapping;
 
     @Nullable
