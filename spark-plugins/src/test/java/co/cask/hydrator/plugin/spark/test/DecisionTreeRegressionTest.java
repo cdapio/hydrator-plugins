@@ -114,6 +114,7 @@ public class DecisionTreeRegressionTest extends HydratorTestBase {
     Map<String, String> properties = new ImmutableMap.Builder<String, String>()
       .put("fileSetName", "decision-tree-regression-model")
       .put("featureFieldsToInclude", "dofM,dofW,carrier,originId,destId,scheduleDepTime,scheduledArrTime,elapsedTime")
+      .put("cardinalityMapping", "dofW:7")
       .put("labelField", "delayed")
       .put("maxBins", "100")
       .put("maxDepth", "9")
@@ -155,7 +156,7 @@ public class DecisionTreeRegressionTest extends HydratorTestBase {
       Double depDelayMins = Double.parseDouble(flightData[11]);
       //For binary classification create delayed field containing values 1.0 and 0.0 depending on the delay time.
       double delayed = depDelayMins > 40 ? 1.0 : 0.0;
-      messagesToWrite.add(new Flight(Integer.parseInt(flightData[0]), Integer.parseInt(flightData[1]),
+      messagesToWrite.add(new Flight(Integer.parseInt(flightData[0]) - 1, Integer.parseInt(flightData[1]) - 1,
                                      Double.parseDouble(flightData[2]), flightData[3], Integer.parseInt(flightData[4]),
                                      Integer.parseInt(flightData[5]), flightData[6], Integer.parseInt(flightData[7]),
                                      flightData[8], Integer.parseInt(flightData[9]), Double.parseDouble(flightData[10]),
@@ -191,17 +192,17 @@ public class DecisionTreeRegressionTest extends HydratorTestBase {
 
     // Flight records to be labeled.
     Set<StructuredRecord> messagesToWrite = new HashSet<>();
-    messagesToWrite.add(new Flight(4, 6, 1.0, "N327AA", 1, 12478, "JFK", 12892, "LAX", 900, 1005.0, 65.0,
+    messagesToWrite.add(new Flight(3, 5, 1.0, "N327AA", 1, 12478, "JFK", 12892, "LAX", 900, 1005.0, 65.0,
                                    1225.0, 1324.0, 59.0, 385.0, 2475).toStructuredRecord());
-    messagesToWrite.add(new Flight(25, 6, 2.0, "N0EGMQ", 3419, 10397, "ATL", 12953, "LGA", 1150, 1229.0, 39.0,
+    messagesToWrite.add(new Flight(24, 5, 2.0, "N0EGMQ", 3419, 10397, "ATL", 12953, "LGA", 1150, 1229.0, 39.0,
                                    1359.0, 1448.0, 49.0, 129.0, 762).toStructuredRecord());
-    messagesToWrite.add(new Flight(4, 6, 3.0, "N14991", 6159, 13930, "ORD", 13198, "MCI", 2030, 2118.0, 48.0,
+    messagesToWrite.add(new Flight(3, 5, 3.0, "N14991", 6159, 13930, "ORD", 13198, "MCI", 2030, 2118.0, 48.0,
                                    2205.0, 2321.0, 76.0, 95.0, 403).toStructuredRecord());
-    messagesToWrite.add(new Flight(29, 3, 1.0, "N355AA", 2407, 12892, "LAX", 11298, "DFW", 1025, 1023.0, 0.0,
+    messagesToWrite.add(new Flight(28, 2, 1.0, "N355AA", 2407, 12892, "LAX", 11298, "DFW", 1025, 1023.0, 0.0,
                                    1530.0, 1523.0, 0.0, 185.0, 1235).toStructuredRecord());
-    messagesToWrite.add(new Flight(2, 4, 4.0, "N919DE", 1908, 13930, "ORD", 11433, "DTW", 1641, 1902.0, 141.0,
+    messagesToWrite.add(new Flight(1, 3, 4.0, "N919DE", 1908, 13930, "ORD", 11433, "DTW", 1641, 1902.0, 141.0,
                                    1905.0, 2117.0, 132.0, 84.0, 235).toStructuredRecord());
-    messagesToWrite.add(new Flight(2, 4, 4.0, "N933DN", 1791, 10397, "ATL", 15376, "TUS", 1855, 2014.0, 79.0,
+    messagesToWrite.add(new Flight(1, 3, 4.0, "N933DN", 1791, 10397, "ATL", 15376, "TUS", 1855, 2014.0, 79.0,
                                    2108.0, 2159.0, 51.0, 253.0, 1541).toStructuredRecord());
 
     DataSetManager<Table> inputManager = getDataset(Id.Namespace.DEFAULT, features);
@@ -221,19 +222,61 @@ public class DecisionTreeRegressionTest extends HydratorTestBase {
     }
 
     Set<Flight> expected = new HashSet<>();
-    expected.add(new Flight(4, 6, 1.0, "N327AA", 1, 12478, "JFK", 12892, "LAX", 900, 1005.0, 65.0, 1225.0, 1324.0, 59.0,
+    expected.add(new Flight(3, 5, 1.0, "N327AA", 1, 12478, "JFK", 12892, "LAX", 900, 1005.0, 65.0, 1225.0, 1324.0, 59.0,
                             385.0, 2475, 1.0));
-    expected.add(new Flight(29, 3, 1.0, "N355AA", 2407, 12892, "LAX", 11298, "DFW", 1025, 1023.0, 0.0, 1530.0, 1523.0,
+    expected.add(new Flight(28, 2, 1.0, "N355AA", 2407, 12892, "LAX", 11298, "DFW", 1025, 1023.0, 0.0, 1530.0, 1523.0,
                             0.0, 185.0, 1235, 0.0));
-    expected.add(new Flight(4, 6, 3.0, "N14991", 6159, 13930, "ORD", 13198, "MCI", 2030, 2118.0, 48.0, 2205.0, 2321.0,
+    expected.add(new Flight(3, 5, 3.0, "N14991", 6159, 13930, "ORD", 13198, "MCI", 2030, 2118.0, 48.0, 2205.0, 2321.0,
                             76.0, 95.0, 403, 1.0));
-    expected.add(new Flight(25, 6, 2.0, "N0EGMQ", 3419, 10397, "ATL", 12953, "LGA", 1150, 1229.0, 39.0, 1359.0, 1448.0,
+    expected.add(new Flight(24, 5, 2.0, "N0EGMQ", 3419, 10397, "ATL", 12953, "LGA", 1150, 1229.0, 39.0, 1359.0, 1448.0,
                             49.0, 129.0, 762, 0.0));
-    expected.add(new Flight(2, 4, 4.0, "N919DE", 1908, 13930, "ORD", 11433, "DTW", 1641, 1902.0, 141.0, 1905.0, 2117.0,
+    expected.add(new Flight(1, 3, 4.0, "N919DE", 1908, 13930, "ORD", 11433, "DTW", 1641, 1902.0, 141.0, 1905.0, 2117.0,
                             132.0, 84.0, 235, 1.0));
-    expected.add(new Flight(2, 4, 4.0, "N933DN", 1791, 10397, "ATL", 15376, "TUS", 1855, 2014.0, 79.0, 2108.0, 2159.0,
+    expected.add(new Flight(1, 3, 4.0, "N933DN", 1791, 10397, "ATL", 15376, "TUS", 1855, 2014.0, 79.0, 2108.0, 2159.0,
                             51.0, 253.0, 1541, 1.0));
     Assert.assertEquals(expected, results);
+  }
+
+  @Test
+  public void testInvalidCardinalityMapping() throws Exception {
+    /*
+     * source --> sparksink
+     */
+    Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+      .put("fileSetName", "decision-tree-regression-model")
+      .put("path", "decisionTreeRegression")
+      .put("featureFieldsToInclude", "dofM,dofW,carrier,originId,destId,scheduleDepTime,scheduledArrTime,elapsedTime")
+      .put("cardinalityMapping", "dofW:2")
+      .put("labelField", "delayed")
+      .put("maxBins", "100")
+      .put("maxDepth", "9")
+      .build();
+
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(new ETLStage("source", MockSource.getPlugin("flightRecords", getTrainerSchema(schema))))
+      .addStage(new ETLStage("customsink", new ETLPlugin(DecisionTreeTrainer.PLUGIN_NAME, SparkSink.PLUGIN_TYPE,
+                                                         properties, null)))
+      .addConnection("source", "customsink")
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app("SinglePhaseApp");
+    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
+
+    // send records from sample data to train the model
+    List<StructuredRecord> messagesToWrite = new ArrayList<>();
+    messagesToWrite.addAll(getInputData());
+
+    // write records to source
+    DataSetManager<Table> inputManager = getDataset(Id.Namespace.DEFAULT, "flightRecords");
+    MockSource.writeInput(inputManager, messagesToWrite);
+
+    // manually trigger the pipeline
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+
+    Assert.assertEquals("FAILED", workflowManager.getHistory().get(0).getStatus().name());
   }
 
   private Schema getTrainerSchema(Schema schema) {

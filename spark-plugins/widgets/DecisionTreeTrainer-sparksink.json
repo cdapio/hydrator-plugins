@@ -36,7 +36,7 @@
         },
         {
           "widget-type": "keyvalue",
-          "label": "Categorical Feature Cardinality Mapping",
+          "label": "Categorical Features Information",
           "name": "cardinalityMapping",
           "widget-attributes": {
             "showDelimiter": "false"
