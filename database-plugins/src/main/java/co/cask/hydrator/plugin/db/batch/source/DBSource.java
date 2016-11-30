@@ -141,12 +141,13 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
   }
 
   private static String removeConditionsClause(String importQuerySring) {
-    if (importQuerySring.toUpperCase().contains("WHERE $CONDITIONS AND")) {
-      importQuerySring = importQuerySring.toUpperCase().replace(" $CONDITIONS AND", "");
-    } else if (importQuerySring.toUpperCase().contains("WHERE $CONDITIONS")) {
-      importQuerySring = importQuerySring.toUpperCase().replace(" WHERE $CONDITIONS", "");
-    } else if (importQuerySring.toUpperCase().contains("AND $CONDITIONS")) {
-      importQuerySring = importQuerySring.toUpperCase().replace(" AND $CONDITIONS", "");
+    importQuerySring = importQuerySring.replaceAll("\\s{2,}", " ").toUpperCase();
+    if (importQuerySring.contains("WHERE $CONDITIONS AND")) {
+      importQuerySring = importQuerySring.replace("$CONDITIONS AND", "");
+    } else if (importQuerySring.contains("WHERE $CONDITIONS")) {
+      importQuerySring = importQuerySring.replace("WHERE $CONDITIONS", "");
+    } else if (importQuerySring.contains("AND $CONDITIONS")) {
+      importQuerySring = importQuerySring.replace("AND $CONDITIONS", "");
     }
     return importQuerySring;
   }
