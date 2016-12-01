@@ -298,15 +298,15 @@ public class PythonEvaluator extends Transform<StructuredRecord, StructuredRecor
         if (object instanceof BigInteger) {
           return ((BigInteger) object).longValue();
         }
-        return (Long) object;
+        return ((Number) object).longValue();
       case FLOAT:
-        return (Float) object;
+        return ((Number) object).floatValue();
       case BYTES:
         return (byte[]) object;
       case DOUBLE:
         // cast so that if it's not really a double it will fail. This is possible for unions,
         // where we don't know what the actual type of the object should be.
-        return (Double) object;
+        return ((Number) object).doubleValue();
       case BOOLEAN:
         return (Boolean) object;
       case STRING:

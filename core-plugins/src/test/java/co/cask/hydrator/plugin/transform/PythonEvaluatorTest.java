@@ -134,6 +134,52 @@ public class PythonEvaluatorTest {
   }
 
   @Test
+  public void testDecodingSimpleTypes() throws Exception {
+    PythonEvaluator.Config config = new PythonEvaluator.Config(
+      "def transform(x, emitter, context):\n" +
+        "  x['floatField'] *= 1.01\n" +
+        "  x['doubleField'] *= 1.01\n" +
+        "  x['longField'] *= 2\n" +
+        "  emitter.emit(x)",
+      null);
+    Transform<StructuredRecord, StructuredRecord> transform = new PythonEvaluator(config);
+    transform.initialize(new MockTransformContext());
+
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    transform.transform(RECORD1, emitter);
+    StructuredRecord output = emitter.getEmitted().get(0);
+
+    // check simple types are decoded properly
+    Assert.assertEquals(SCHEMA, output.getSchema());
+    Assert.assertEquals(198L, output.get("longField"));
+    Assert.assertTrue(Math.abs(2.71f - (Float) output.get("floatField")) < 0.03);
+    Assert.assertTrue(Math.abs(3.14 - (Double) output.get("doubleField")) < 0.032);
+    emitter.clear();
+  }
+
+  @Test
+  public void testNewOutputEmit() throws Exception {
+    Schema floatSchema = Schema.recordOf("record", Schema.Field.of("body", Schema.of(Schema.Type.FLOAT)));
+    StructuredRecord record3 = StructuredRecord.builder(floatSchema).set("body", 2.71f).build();
+    PythonEvaluator.Config config = new PythonEvaluator.Config(
+      "def transform(record, emitter, context):\n" +
+        "  output = {}\n" +
+        "  output['body'] = record['body']\n" +
+        "  emitter.emit(output)",
+      null);
+    Transform<StructuredRecord, StructuredRecord> transform = new PythonEvaluator(config);
+    transform.initialize(new MockTransformContext());
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    transform.transform(record3, emitter);
+    StructuredRecord output = emitter.getEmitted().get(0);
+
+    // check that output is correct
+    Assert.assertEquals(floatSchema, output.getSchema());
+    Assert.assertEquals(2.71f, (Float) output.get("body"), 0.000001f);
+    emitter.clear();
+  }
+
+  @Test
   public void testSchemaValidation() throws Exception {
     Schema outputSchema = Schema.recordOf(
       "smallerSchema",
@@ -228,8 +274,7 @@ public class PythonEvaluatorTest {
       Schema.Field.of("num", Schema.of(Schema.Type.INT)),
       Schema.Field.of("inner1", inner1Schema)
     );
-
-    /*
+/*
     {
       "complex": {
         "num": 8,
@@ -250,6 +295,7 @@ public class PythonEvaluatorTest {
       }
     }
     */
+
     StructuredRecord pi = StructuredRecord.builder(inner2Schema).set("name", "pi").set("val", 3.14).build();
     StructuredRecord e = StructuredRecord.builder(inner2Schema).set("name", "e").set("val", 2.71).build();
     StructuredRecord inner1 = StructuredRecord.builder(inner1Schema)
