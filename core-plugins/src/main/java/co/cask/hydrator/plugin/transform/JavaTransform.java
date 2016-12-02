@@ -23,14 +23,32 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.LookupConfig;
+import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
+import co.cask.cdap.etl.api.TransformContext;
 import co.cask.hydrator.plugin.common.StructuredRecordSerializer;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.reflect.Method;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import javax.annotation.Nullable;
+import javax.tools.FileObject;
+import javax.tools.ForwardingJavaFileManager;
+import javax.tools.JavaCompiler;
+import javax.tools.JavaFileManager;
+import javax.tools.JavaFileObject;
+import javax.tools.SimpleJavaFileObject;
+import javax.tools.ToolProvider;
 
 /**
  * Transforms records using custom java code provided by the config.
@@ -43,6 +61,11 @@ public class JavaTransform extends Transform<StructuredRecord, StructuredRecord>
     .registerTypeAdapter(StructuredRecord.class, new StructuredRecordSerializer())
     .create();
   private static final Logger LOG = LoggerFactory.getLogger(JavaTransform.class);
+  private static JavaCompiler javac = ToolProvider.getSystemJavaCompiler();
+  private static final String className = "MyJavaTransform";
+  private final Config config;
+  private Class<?> classz;
+  private Method method;
 
   /**
    * Configuration for the java transform.
@@ -72,8 +95,120 @@ public class JavaTransform extends Transform<StructuredRecord, StructuredRecord>
     }
   }
 
+  public JavaTransform(Config config) {
+    this.config = config;
+  }
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
+    super.configurePipeline(pipelineConfigurer);
+    try {
+      classz = compile(className, config.code);
+      method = classz.getDeclaredMethod("transform", StructuredRecord.class, Emitter.class);
+    } catch (Exception e) {
+      throw new RuntimeException("Error compiling the code", e);
+    }
+  }
+
+  @Override
+  public void initialize(TransformContext context) throws Exception {
+    super.initialize(context);
+  }
+
   @Override
   public void transform(StructuredRecord structuredRecord, Emitter<StructuredRecord> emitter) throws Exception {
+    method.invoke(classz.newInstance());
+  }
 
+  private Class<?> compile(String className, String sourceCodeText) throws Exception {
+    SourceCode sourceCode = new SourceCode(className, sourceCodeText);
+    CompiledCode compiledCode = new CompiledCode(className);
+    Iterable<? extends JavaFileObject> compilationUnits = Arrays.asList(sourceCode);
+    DynamicClassLoader dynamicClassLoader = new DynamicClassLoader(this.getClass().getClassLoader());
+    ExtendedStandardJavaFileManager fileManager
+      = new ExtendedStandardJavaFileManager(javac.getStandardFileManager(null, null, null), compiledCode,
+                                            dynamicClassLoader);
+    JavaCompiler.CompilationTask task = javac.getTask(null, fileManager, null, null, null, compilationUnits);
+    task.call();
+    return dynamicClassLoader.loadClass(className);
+  }
+
+  private static class SourceCode extends SimpleJavaFileObject {
+
+    private final String contents;
+
+    SourceCode(String className, String contents) {
+      super(URI.create("string:///" + className.replace('.', '/') + Kind.SOURCE.extension), Kind.SOURCE);
+      this.contents = contents;
+    }
+
+    @Override
+    public CharSequence getCharContent(boolean ignoreEncodingErrors) throws IOException {
+      return contents;
+    }
+  }
+
+  private static class CompiledCode extends SimpleJavaFileObject {
+    private ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+    CompiledCode(String className) throws URISyntaxException {
+      super(new URI(className), Kind.CLASS);
+    }
+
+    @Override
+    public OutputStream openOutputStream() throws IOException {
+      return baos;
+    }
+
+    public byte[] getByteCode() {
+      return baos.toByteArray();
+    }
+  }
+
+  private static class ExtendedStandardJavaFileManager extends ForwardingJavaFileManager<JavaFileManager> {
+
+    private final CompiledCode compiledCode;
+    private final ClassLoader classLoader;
+
+    protected ExtendedStandardJavaFileManager(JavaFileManager fileManager, CompiledCode compiledCode,
+                                              ClassLoader classLoader) {
+      super(fileManager);
+      this.compiledCode = compiledCode;
+      this.classLoader = classLoader;
+    }
+
+    @Override
+    public JavaFileObject getJavaFileForOutput(JavaFileManager.Location location, String className,
+                                               JavaFileObject.Kind kind, FileObject sibling) throws IOException {
+      return compiledCode;
+    }
+
+    @Override
+    public ClassLoader getClassLoader(JavaFileManager.Location location) {
+      return classLoader;
+    }
+  }
+
+  public class DynamicClassLoader extends ClassLoader {
+
+    private Map<String, CompiledCode> customCompiledCode = new HashMap<>();
+
+    public DynamicClassLoader(ClassLoader parent) {
+      super(parent);
+    }
+
+    public void setCode(CompiledCode cc) {
+      customCompiledCode.put(cc.getName(), cc);
+    }
+
+    @Override
+    protected Class<?> findClass(String name) throws ClassNotFoundException {
+      CompiledCode cc = customCompiledCode.get(name);
+      if (cc == null) {
+        return super.findClass(name);
+      }
+      byte[] byteCode = cc.getByteCode();
+      return defineClass(name, byteCode, 0, byteCode.length);
+    }
   }
 }
