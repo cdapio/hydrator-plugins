@@ -1,0 +1,85 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "NetBios NTLM Properties",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Domain Name",
+          "name": "netBiosDomainName"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Hostname",
+          "name": "netBiosHostname"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Username",
+          "name": "netBiosUsername"
+        },
+        {
+          "widget-type": "password",
+          "label": "Password",
+          "name": "netBiosPassword"
+        }
+      ]
+    },
+    {
+      "label": "Window Share Properties",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Share Name",
+          "name": "netBiosSharename"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Source Directory",
+          "name": "sourceDirectory"
+        }
+      ]
+    },
+    {
+      "label": "HDFS Properties",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Destination Directory",
+          "name": "destinationDirectory"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Buffer Size",
+          "name": "bufferSize"
+        }
+      ]
+    },
+    {
+      "label": "Plugin Properties",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Number of parallel tasks",
+          "name": "numThreads"
+        },
+        {
+          "widget-type": "select",
+          "label": "Overwrite files",
+          "name": "overwrite",
+          "widget-attributes": {
+            "values": [
+              "true",
+              "false"
+            ],
+            "default": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}

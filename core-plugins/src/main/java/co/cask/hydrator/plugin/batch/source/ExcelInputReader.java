@@ -69,23 +69,23 @@ import javax.annotation.Nullable;
   "input columns, column-mapping and field-type mapping.")
 public class ExcelInputReader extends BatchSource<LongWritable, Object, StructuredRecord> {
 
-  public static final String KEY = "key";
-  public static final String FILE = "file";
-  public static final String SHEET = "sheet";
-  public static final String RECORD = "record";
-  public static final String EXIT_ON_ERROR = "Exit on error";
-  public static final String WRITE_ERROR_DATASET = "Write to error dataset";
-  public static final String NULL = "NULL";
-  public static final String END = "END";
-  public static final String SHEET_NO = "Sheet Number";
+  private static final String KEY = "key";
+  private static final String FILE = "file";
+  private static final String SHEET = "sheet";
+  private static final String RECORD = "record";
+  private static final String EXIT_ON_ERROR = "Exit on error";
+  private static final String WRITE_ERROR_DATASET = "Write to error dataset";
+  private static final String NULL = "NULL";
+  private static final String END = "END";
+  private static final String SHEET_NO = "Sheet Number";
 
   // Non-printable ASCII character(EOT) to seperate column-values
-  public static final String CELL_SEPERATION = String.valueOf((char) 4);
-  public static final String COLUMN_SEPERATION = "\r";
+  private static final String CELL_SEPERATION = String.valueOf((char) 4);
+  private static final String COLUMN_SEPERATION = "\r";
 
   private static final Gson GSON = new Gson();
-  private static final Type ARRAYLIST_PREPROCESSED_FILES = new TypeToken<ArrayList<String>>() {
-  }.getType();
+  private static final Type ARRAYLIST_PREPROCESSED_FILES = new TypeToken<ArrayList<String>>() { }.getType();
+
   private final ExcelInputReaderConfig excelInputreaderConfig;
   private Schema outputSchema;
   private Map<String, String> columnMapping = new HashMap<>();
@@ -482,7 +482,7 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
     private String errorDatasetName;
 
     public ExcelInputReaderConfig() {
-      super(String.format("ExcelInputReader"));
+      super("ExcelInputReader");
     }
 
     public void validate() {

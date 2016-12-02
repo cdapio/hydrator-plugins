@@ -42,12 +42,10 @@ import co.cask.cdap.test.TestConfiguration;
 import co.cask.hydrator.common.Constants;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.io.FileUtils;
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
@@ -62,8 +60,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * Unit tests for {@link ExcelInputReader} class.
  */
-// TODO:(HYDRA-357) re-enable after fix
-@Ignore
 public class ExcelInputReaderTest extends HydratorTestBase {
 
   private static final ArtifactVersion CURRENT_VERSION = new ArtifactVersion("3.4.0-SNAPSHOT");
@@ -93,11 +89,6 @@ public class ExcelInputReaderTest extends HydratorTestBase {
 
     sourceFolder = temporaryFolder.newFolder("ExcelInputReaderFolder");
     sourceFolderUri = sourceFolder.toURI().toString();
-  }
-
-  @AfterClass
-  public static void tearDown() throws Exception {
-    temporaryFolder.delete();
   }
 
   @Before
@@ -136,7 +127,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
     ApplicationManager appManager = deployApp(source, sink, "ExcelTests");
-    startMRFlow(appManager);
+    startMR(appManager);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -152,14 +143,10 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     nameIdMap.put("kelly", "9.0");
     nameIdMap.put("name", "id");
 
-    Assert.assertEquals(nameIdMap.get(output.get(0).get("B")), output.get(0)
-      .get("A"));
-    Assert.assertEquals(nameIdMap.get(output.get(1).get("B")), output.get(1)
-      .get("A"));
-    Assert.assertEquals(nameIdMap.get(output.get(2).get("B")), output.get(2)
-      .get("A"));
-    Assert.assertEquals(nameIdMap.get(output.get(3).get("B")), output.get(3)
-      .get("A"));
+    Assert.assertEquals(nameIdMap.get(output.get(0).get("B")), output.get(0).get("A"));
+    Assert.assertEquals(nameIdMap.get(output.get(1).get("B")), output.get(1).get("A"));
+    Assert.assertEquals(nameIdMap.get(output.get(2).get("B")), output.get(2).get("A"));
+    Assert.assertEquals(nameIdMap.get(output.get(3).get("B")), output.get(3).get("A"));
 
     Assert.assertEquals("Expected records", 9, output.size());
   }
@@ -200,7 +187,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     keyValueTable.write(testFile.toURI().toString(), String.valueOf(System.currentTimeMillis()));
     dataSetManager.flush();
 
-    startMRFlow(appManager);
+    startMR(appManager);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -246,7 +233,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
 
     dataSetManager.flush();
 
-    startMRFlow(appManager);
+    startMR(appManager);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -258,12 +245,9 @@ public class ExcelInputReaderTest extends HydratorTestBase {
 
     Assert.assertEquals("Expected records", 3, output.size());
 
-    Assert.assertEquals(nameIdMap.get(output.get(0).get("B")), output.get(0)
-      .get("A"));
-    Assert.assertEquals(nameIdMap.get(output.get(1).get("B")), output.get(1)
-      .get("A"));
-    Assert.assertEquals(nameIdMap.get(output.get(2).get("B")), output.get(2)
-      .get("A"));
+    Assert.assertEquals(nameIdMap.get(output.get(0).get("B")), output.get(0).get("A"));
+    Assert.assertEquals(nameIdMap.get(output.get(1).get("B")), output.get(1).get("A"));
+    Assert.assertEquals(nameIdMap.get(output.get(2).get("B")), output.get(2).get("A"));
   }
 
   @Test
@@ -294,7 +278,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
     ApplicationManager appManager = deployApp(source, sink, "testWithColumnsToBeExtracted");
-    startMRFlow(appManager);
+    startMR(appManager);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -313,12 +297,9 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     nameIdMap.put("Ada", "14.0");
     nameIdMap.put("kelly", "9.0");
 
-    Assert.assertEquals(nameIdMap.get(output.get(0).get("B")), output.get(0)
-      .get("FirstColumn"));
-    Assert.assertEquals(nameIdMap.get(output.get(1).get("B")), output.get(1)
-      .get("FirstColumn"));
-    Assert.assertEquals(nameIdMap.get(output.get(2).get("B")), output.get(2)
-      .get("FirstColumn"));
+    Assert.assertEquals(nameIdMap.get(output.get(0).get("B")), output.get(0).get("FirstColumn"));
+    Assert.assertEquals(nameIdMap.get(output.get(1).get("B")), output.get(1).get("FirstColumn"));
+    Assert.assertEquals(nameIdMap.get(output.get(2).get("B")), output.get(2).get("FirstColumn"));
   }
 
   @Test
@@ -349,7 +330,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
     ApplicationManager appManager = deployApp(source, sink, "testWithErrorRecord");
-    startMRFlow(appManager);
+    startMR(appManager);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -427,7 +408,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
     ApplicationManager appManager = deployApp(source, sink, "testWithTerminateIfEmptyRow");
-    MapReduceManager mrManager = startMRFlow(appManager);
+    MapReduceManager mrManager = startMR(appManager);
 
     Assert.assertEquals("Expected :", "FAILED", mrManager.getHistory().get(0).getStatus().name());
   }
@@ -532,7 +513,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     keyValueTable.write(Bytes.toBytes(testFile.toURI().toString()), Bytes.toBytes(cal.getTimeInMillis()));
     dataSetManager.flush();
 
-    startMRFlow(appManager);
+    startMR(appManager);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -553,7 +534,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     return deployApplication(appId.toId(), appRequest);
   }
 
-  private MapReduceManager startMRFlow(ApplicationManager appManager) throws Exception {
+  private MapReduceManager startMR(ApplicationManager appManager) throws Exception {
     MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
     mrManager.start();
     mrManager.waitForFinish(5, TimeUnit.MINUTES);
