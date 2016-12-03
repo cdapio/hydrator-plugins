@@ -56,7 +56,7 @@ import javax.tools.ToolProvider;
 public class JavaTransform extends Transform<StructuredRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(JavaTransform.class);
   private static final JavaCompiler javac = ToolProvider.getSystemJavaCompiler();
-  private static final String className = "MyJavaTransform";
+  private static final String className = "CustomTransform";
 
   private final Config config;
   private Method method;
