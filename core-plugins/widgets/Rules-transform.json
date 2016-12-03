@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Rules Configuration",
+      "properties": [
+        {
+          "widget-type": "keyvalue",
+          "label": "rules",
+          "name": "rules",
+          "widget-attributes": {
+            "showDelimiter": "false",
+            "key-placeholder": "rule",
+            "value-placeholder": "string"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "field",
+          "name": "field"
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}
