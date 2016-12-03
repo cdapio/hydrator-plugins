@@ -117,7 +117,7 @@ public class JavaTransform extends Transform<StructuredRecord, StructuredRecord>
 
   @Override
   public void transform(StructuredRecord structuredRecord, Emitter<StructuredRecord> emitter) throws Exception {
-    method.invoke(classz.newInstance());
+    method.invoke(classz.newInstance(), structuredRecord, emitter);
   }
 
   private Class<?> compile(String className, String sourceCodeText) throws Exception {
