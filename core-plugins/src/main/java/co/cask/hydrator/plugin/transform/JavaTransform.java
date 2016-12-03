@@ -56,7 +56,7 @@ import javax.tools.ToolProvider;
 public class JavaTransform extends Transform<StructuredRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(JavaTransform.class);
   private static final JavaCompiler javac = ToolProvider.getSystemJavaCompiler();
-  private static final String className = "MyJavaTransform";
+  private static final String className = "CustomTransform";
 
   private final Config config;
   private Method method;
@@ -127,11 +127,13 @@ public class JavaTransform extends Transform<StructuredRecord, StructuredRecord>
     CompiledCode compiledCode = new CompiledCode(className);
     Iterable<? extends JavaFileObject> compilationUnits = Collections.singletonList(sourceCode);
     DynamicClassLoader dynamicClassLoader = new DynamicClassLoader(this.getClass().getClassLoader());
+    dynamicClassLoader.setCode(compiledCode);
     ExtendedStandardJavaFileManager fileManager
       = new ExtendedStandardJavaFileManager(javac.getStandardFileManager(null, null, null), compiledCode,
                                             dynamicClassLoader);
     JavaCompiler.CompilationTask task = javac.getTask(null, fileManager, null, null, null, compilationUnits);
     task.call();
+
     return dynamicClassLoader.loadClass(className);
   }
 

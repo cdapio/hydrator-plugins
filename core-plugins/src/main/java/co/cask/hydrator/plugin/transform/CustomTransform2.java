@@ -4,7 +4,7 @@ package co.cask.hydrator.plugin.transform;
  * Created by alianwar on 12/2/16.
  */
 public class CustomTransform2 {
-  public static final String FOO = "package co.cask.hydrator.plugin.transform;\n" +
+  public static final String FOO = //"package co.cask.hydrator.plugin.transform;\n" +
     "\n" +
     "import co.cask.cdap.api.data.format.StructuredRecord;\n" +
     "import co.cask.cdap.etl.api.Emitter;\n" +
