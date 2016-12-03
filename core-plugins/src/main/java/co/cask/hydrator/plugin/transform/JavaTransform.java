@@ -20,6 +20,7 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
@@ -34,11 +35,14 @@ import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
+import javax.tools.Diagnostic;
+import javax.tools.DiagnosticCollector;
 import javax.tools.FileObject;
 import javax.tools.ForwardingJavaFileManager;
 import javax.tools.JavaCompiler;
@@ -46,6 +50,7 @@ import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
 import javax.tools.ToolProvider;
+import javax.ws.rs.Path;
 
 /**
  * Transforms records using custom java code provided by the config.
@@ -60,6 +65,7 @@ public class JavaTransform extends Transform<StructuredRecord, StructuredRecord>
   private final Config config;
   private Method method;
   private Object userObject;
+  private Schema schema;
 
   /**
    * Configuration for the java transform.
@@ -78,18 +84,23 @@ public class JavaTransform extends Transform<StructuredRecord, StructuredRecord>
     )
     private final String code;
 
+    private final String className;
+
     @Description("The schema of output objects. If no schema is given, it is assumed that the output schema is " +
       "the same as the input schema.")
     @Nullable
     private final String schema;
 
-    public Config(String code, String schema) {
+    // TODO: leverage the schema
+
+    public Config(String code, String className, String schema) {
       this.code = code;
+      this.className = className;
       this.schema = schema;
     }
   }
 
-  public JavaTransform(Config config) {
+  JavaTransform(Config config) {
     this.config = config;
   }
 
@@ -97,16 +108,32 @@ public class JavaTransform extends Transform<StructuredRecord, StructuredRecord>
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
     try {
+      if (config.schema != null) {
+        pipelineConfigurer.getStageConfigurer().setOutputSchema(parseJson(config.schema));
+      } else {
+        pipelineConfigurer.getStageConfigurer()
+          .setOutputSchema(pipelineConfigurer.getStageConfigurer().getInputSchema());
+      }
+
       init();
     } catch (Exception e) {
       throw new RuntimeException("Error compiling the code", e);
     }
   }
 
+  private Schema parseJson(String schema) {
+    try {
+      return Schema.parseJson(schema);
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Unable to parse schema: " + e.getMessage(), e);
+    }
+  }
+
+
   // test out: two java transforms in the same pipeline
 
   private void init() throws Exception {
-    Class<?> classz = compile("CustomTransform", config.code);
+    Class<?> classz = compile(config.className, config.code, new ArrayList<CompileError>());
     // ensure that it has such a method
     method = classz.getDeclaredMethod("transform", StructuredRecord.class, Emitter.class);
     userObject = classz.newInstance();
@@ -115,26 +142,40 @@ public class JavaTransform extends Transform<StructuredRecord, StructuredRecord>
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
+    if (config.schema != null) {
+      schema = parseJson(config.schema);
+    }
     init();
   }
+
+  // remove script filter transform (or deprecate it)
 
   @Override
   public void transform(StructuredRecord structuredRecord, Emitter<StructuredRecord> emitter) throws Exception {
     method.invoke(userObject, structuredRecord, emitter);
   }
 
-  private Class<?> compile(String className, String sourceCodeText) throws Exception {
+  private Class<?> compile(String className, String sourceCodeText, List<CompileError> errors) throws Exception {
     SourceCode sourceCode = new SourceCode(className, sourceCodeText);
     CompiledCode compiledCode = new CompiledCode(className);
     Iterable<? extends JavaFileObject> compilationUnits = Collections.singletonList(sourceCode);
     DynamicClassLoader dynamicClassLoader = new DynamicClassLoader(this.getClass().getClassLoader());
     dynamicClassLoader.setCode(compiledCode);
+    DiagnosticCollector<JavaFileObject> diagnosticCollector = new DiagnosticCollector<>();
     // TODO: pass in Writer for first param to javac
     ExtendedStandardJavaFileManager fileManager
-      = new ExtendedStandardJavaFileManager(javac.getStandardFileManager(null, null, null), compiledCode,
+      = new ExtendedStandardJavaFileManager(javac.getStandardFileManager(diagnosticCollector, null, null), compiledCode,
                                             dynamicClassLoader);
-    JavaCompiler.CompilationTask task = javac.getTask(null, fileManager, null, null, null, compilationUnits);
-    task.call();
+    JavaCompiler.CompilationTask task = javac.getTask(null, fileManager, diagnosticCollector, null, null,
+                                                      compilationUnits);
+    boolean success = task.call();
+
+    if (!success) {
+      List<Diagnostic<? extends JavaFileObject>> diagnostics = diagnosticCollector.getDiagnostics();
+      for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics) {
+        errors.add(new CompileError(diagnostic.getLineNumber(), diagnostic.getMessage(null)));
+      }
+    }
 
     return dynamicClassLoader.loadClass(className);
   }
@@ -195,6 +236,9 @@ public class JavaTransform extends Transform<StructuredRecord, StructuredRecord>
     }
   }
 
+  /**
+   *
+   */
   public class DynamicClassLoader extends ClassLoader {
 
     private Map<String, CompiledCode> customCompiledCode = new HashMap<>();
@@ -216,5 +260,37 @@ public class JavaTransform extends Transform<StructuredRecord, StructuredRecord>
       byte[] byteCode = cc.getByteCode();
       return defineClass(name, byteCode, 0, byteCode.length);
     }
+  }
+
+  /**
+   *
+   */
+  public class CompileRequest {
+    public String className;
+    public String code;
+  }
+
+  /**
+   * 
+   */
+  public class CompileError {
+    public long lineNumber;
+    public final String errorMessage;
+
+    public CompileError(long lineNumber, String errorMessage) {
+      this.lineNumber = lineNumber;
+      this.errorMessage = errorMessage;
+    }
+  }
+
+  @Path("compile")
+  public List<CompileError> compileCode(CompileRequest request) throws Exception {
+    List<CompileError> errors = new ArrayList<>();
+    try {
+      compile(request.className, request.code, errors);
+    } catch (Throwable e) {
+      LOG.error("Error compiling code", e);
+    }
+    return errors;
   }
 }

@@ -31,6 +31,7 @@ import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -78,9 +79,47 @@ public class JavaTransformTest {
     .set("unionField", 3)
     .build();
 
+  public static final String IDENTITY =
+    "import co.cask.cdap.api.data.format.StructuredRecord;\n" +
+      "import co.cask.cdap.etl.api.Emitter;\n" +
+      "import co.cask.cdap.etl.api.Transform;\n" +
+      "\n" +
+      "public class CustomTransform extends Transform<StructuredRecord, StructuredRecord> {\n" +
+      "\n" +
+      "  @Override\n" +
+      "  public void transform(StructuredRecord structuredRecord,\n" +
+      "                        Emitter<StructuredRecord> emitter) throws Exception {\n" +
+      "    emitter.emit(structuredRecord);\n" +
+      "  }\n" +
+      "}\n";
+
+  public static final String NOT_IDENTITY =
+    "import co.cask.cdap.api.data.format.StructuredRecord;\n" +
+      "import co.cask.cdap.api.data.schema.Schema;\n" +
+      "import co.cask.cdap.etl.api.Emitter;\n" +
+      "import co.cask.cdap.etl.api.Transform;\n" +
+      "\n" +
+      "public class CustomTransform extends Transform<StructuredRecord, StructuredRecord> {\n" +
+      "\n" +
+      "  @Override\n" +
+      "  public void transform(StructuredRecord structuredRecord,\n" +
+      "                        Emitter<StructuredRecord> emitter) throws Exception {\n" +
+      "    StructuredRecord.Builder builder = StructuredRecord.builder(structuredRecord.getSchema());\n" +
+      "\n" +
+      "    for (Schema.Field field : structuredRecord.getSchema().getFields()) {\n" +
+      "      builder.set(field.getName(), structuredRecord.get(field.getName()));\n" +
+      "    }\n" +
+      "    builder.set(\"intField\", 1024 * (int) structuredRecord.get(\"intField\"));\n" +
+      "    StructuredRecord outputRecord = builder.build();\n" +
+      "    emitter.emit(outputRecord);\n" +
+      "    emitter.emit(outputRecord);" +
+      "  }\n" +
+      "}\n";
+
+
   @Test
   public void testSimple() throws Exception {
-    JavaTransform.Config config = new JavaTransform.Config(CustomTransform2.FOO, null);
+    JavaTransform.Config config = new JavaTransform.Config(NOT_IDENTITY, "CustomTransform", null);
     Transform<StructuredRecord, StructuredRecord> transform = new JavaTransform(config);
     transform.initialize(new MockTransformContext());
 
