@@ -22,13 +22,9 @@ import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
-import co.cask.cdap.etl.api.LookupConfig;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
-import co.cask.hydrator.plugin.common.StructuredRecordSerializer;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +35,7 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -57,15 +54,13 @@ import javax.tools.ToolProvider;
 @Name("Java")
 @Description("Executes user provided java code on each record.")
 public class JavaTransform extends Transform<StructuredRecord, StructuredRecord> {
-  private static final Gson GSON = new GsonBuilder()
-    .registerTypeAdapter(StructuredRecord.class, new StructuredRecordSerializer())
-    .create();
   private static final Logger LOG = LoggerFactory.getLogger(JavaTransform.class);
-  private static JavaCompiler javac = ToolProvider.getSystemJavaCompiler();
+  private static final JavaCompiler javac = ToolProvider.getSystemJavaCompiler();
   private static final String className = "MyJavaTransform";
+
   private final Config config;
-  private Class<?> classz;
   private Method method;
+  private Object userObject;
 
   /**
    * Configuration for the java transform.
@@ -89,7 +84,7 @@ public class JavaTransform extends Transform<StructuredRecord, StructuredRecord>
     @Nullable
     private final String schema;
 
-    public Config(String code, String schema, LookupConfig lookup) {
+    public Config(String code, String schema) {
       this.code = code;
       this.schema = schema;
     }
@@ -103,27 +98,34 @@ public class JavaTransform extends Transform<StructuredRecord, StructuredRecord>
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
     try {
-      classz = compile(className, config.code);
-      method = classz.getDeclaredMethod("transform", StructuredRecord.class, Emitter.class);
+      init();
     } catch (Exception e) {
       throw new RuntimeException("Error compiling the code", e);
     }
   }
 
+  private void init() throws Exception {
+    Class<?> classz = compile(className, config.code);
+    // ensure that it has such a method
+    method = classz.getDeclaredMethod("transform", StructuredRecord.class, Emitter.class);
+    userObject = classz.newInstance();
+  }
+
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
+    init();
   }
 
   @Override
   public void transform(StructuredRecord structuredRecord, Emitter<StructuredRecord> emitter) throws Exception {
-    method.invoke(classz.newInstance(), structuredRecord, emitter);
+    method.invoke(userObject, structuredRecord, emitter);
   }
 
   private Class<?> compile(String className, String sourceCodeText) throws Exception {
     SourceCode sourceCode = new SourceCode(className, sourceCodeText);
     CompiledCode compiledCode = new CompiledCode(className);
-    Iterable<? extends JavaFileObject> compilationUnits = Arrays.asList(sourceCode);
+    Iterable<? extends JavaFileObject> compilationUnits = Collections.singletonList(sourceCode);
     DynamicClassLoader dynamicClassLoader = new DynamicClassLoader(this.getClass().getClassLoader());
     ExtendedStandardJavaFileManager fileManager
       = new ExtendedStandardJavaFileManager(javac.getStandardFileManager(null, null, null), compiledCode,
