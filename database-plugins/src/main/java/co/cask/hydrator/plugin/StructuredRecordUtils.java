@@ -49,7 +49,7 @@ public class StructuredRecordUtils {
       if (fieldNameMap.containsValue(newName)) {
         // field name used already. indication of field names conflict. can't do anything.
         throw new IllegalStateException(String.format(
-          "Duplicate field/column name %s found when trying to confirm to the chosen case option %s. " +
+          "Duplicate field/column name %s found when trying to convert to the chosen case option %s. " +
             "Check Database Table schema.", field.getName(), fieldCase));
       }
       fieldNameMap.put(field.getName(), newName);

@@ -20,6 +20,7 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
@@ -58,6 +59,8 @@ public class JavaTransform extends Transform<StructuredRecord, StructuredRecord>
   private static final JavaCompiler javac = ToolProvider.getSystemJavaCompiler();
 
   private final Config config;
+
+  private Schema schema;
   private Method method;
   private Object userObject;
 
@@ -83,13 +86,15 @@ public class JavaTransform extends Transform<StructuredRecord, StructuredRecord>
     @Nullable
     private final String schema;
 
+    // TODO: leverage the schema
+
     public Config(String code, String schema) {
       this.code = code;
       this.schema = schema;
     }
   }
 
-  public JavaTransform(Config config) {
+  JavaTransform(Config config) {
     this.config = config;
   }
 
@@ -97,11 +102,26 @@ public class JavaTransform extends Transform<StructuredRecord, StructuredRecord>
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
     try {
+      if (config.schema != null) {
+        pipelineConfigurer.getStageConfigurer().setOutputSchema(parseJson(config.schema));
+      } else {
+        pipelineConfigurer.getStageConfigurer().setOutputSchema(pipelineConfigurer.getStageConfigurer().getInputSchema());
+      }
+
       init();
     } catch (Exception e) {
       throw new RuntimeException("Error compiling the code", e);
     }
   }
+
+  private Schema parseJson(String schema) {
+    try {
+      return Schema.parseJson(schema);
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Unable to parse schema: " + e.getMessage(), e);
+    }
+  }
+
 
   // test out: two java transforms in the same pipeline
 
@@ -115,8 +135,13 @@ public class JavaTransform extends Transform<StructuredRecord, StructuredRecord>
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
+    if (config.schema != null) {
+      schema = parseJson(config.schema);
+    }
     init();
   }
+
+  // remove script filter transform (or deprecate it)
 
   @Override
   public void transform(StructuredRecord structuredRecord, Emitter<StructuredRecord> emitter) throws Exception {
