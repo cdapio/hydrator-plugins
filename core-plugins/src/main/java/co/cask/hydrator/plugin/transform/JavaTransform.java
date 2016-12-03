@@ -56,7 +56,6 @@ import javax.tools.ToolProvider;
 public class JavaTransform extends Transform<StructuredRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(JavaTransform.class);
   private static final JavaCompiler javac = ToolProvider.getSystemJavaCompiler();
-  private static final String className = "CustomTransform";
 
   private final Config config;
   private Method method;
@@ -104,8 +103,10 @@ public class JavaTransform extends Transform<StructuredRecord, StructuredRecord>
     }
   }
 
+  // test out: two java transforms in the same pipeline
+
   private void init() throws Exception {
-    Class<?> classz = compile(className, config.code);
+    Class<?> classz = compile("CustomTransform", config.code);
     // ensure that it has such a method
     method = classz.getDeclaredMethod("transform", StructuredRecord.class, Emitter.class);
     userObject = classz.newInstance();
@@ -128,6 +129,7 @@ public class JavaTransform extends Transform<StructuredRecord, StructuredRecord>
     Iterable<? extends JavaFileObject> compilationUnits = Collections.singletonList(sourceCode);
     DynamicClassLoader dynamicClassLoader = new DynamicClassLoader(this.getClass().getClassLoader());
     dynamicClassLoader.setCode(compiledCode);
+    // TODO: pass in Writer for first param to javac
     ExtendedStandardJavaFileManager fileManager
       = new ExtendedStandardJavaFileManager(javac.getStandardFileManager(null, null, null), compiledCode,
                                             dynamicClassLoader);
