@@ -38,8 +38,11 @@ import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
+import javax.tools.Diagnostic;
+import javax.tools.DiagnosticCollector;
 import javax.tools.FileObject;
 import javax.tools.ForwardingJavaFileManager;
 import javax.tools.JavaCompiler;
@@ -154,12 +157,24 @@ public class JavaTransform extends Transform<StructuredRecord, StructuredRecord>
     Iterable<? extends JavaFileObject> compilationUnits = Collections.singletonList(sourceCode);
     DynamicClassLoader dynamicClassLoader = new DynamicClassLoader(this.getClass().getClassLoader());
     dynamicClassLoader.setCode(compiledCode);
+    DiagnosticCollector<JavaFileObject> diagnosticCollector = new DiagnosticCollector<>();
     // TODO: pass in Writer for first param to javac
     ExtendedStandardJavaFileManager fileManager
-      = new ExtendedStandardJavaFileManager(javac.getStandardFileManager(null, null, null), compiledCode,
+      = new ExtendedStandardJavaFileManager(javac.getStandardFileManager(diagnosticCollector, null, null), compiledCode,
                                             dynamicClassLoader);
-    JavaCompiler.CompilationTask task = javac.getTask(null, fileManager, null, null, null, compilationUnits);
-    task.call();
+    JavaCompiler.CompilationTask task = javac.getTask(null, fileManager, diagnosticCollector, null, null,
+                                                      compilationUnits);
+    boolean success = task.call();
+
+    if (!success) {
+      List<Diagnostic<? extends JavaFileObject>> diagnostics = diagnosticCollector.getDiagnostics();
+      for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics) {
+        // read error dertails from the diagnostic object
+        System.out.println(diagnostic.getMessage(null));
+        System.out.println(diagnostic.getCode());
+        System.out.println(diagnostic.getLineNumber());
+      }
+    }
 
     return dynamicClassLoader.loadClass(className);
   }
