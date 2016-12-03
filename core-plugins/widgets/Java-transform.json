@@ -11,8 +11,18 @@
           "name": "script",
           "widget-attributes": {
             "default": "public void transform(StructuredRecord input, Emitter<StructureRecord> emitter) {\" +\"}"
-          }
-        },
+          },
+          "plugin-function": {
+            "method": "POST",
+            "label": "Check Compilation",
+            "widget": "outputSchema",
+            "output-property": "schema",
+            "plugin-method": "compile",
+            "position": "bottom",
+            "multiple-inputs": true,
+            "button-class": "btn-hydrator"
+           }
+        }
       ]
     }
   ],
