@@ -31,6 +31,7 @@ import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -118,7 +119,7 @@ public class JavaTransformTest {
 
   @Test
   public void testSimple() throws Exception {
-    JavaTransform.Config config = new JavaTransform.Config(NOT_IDENTITY, null);
+    JavaTransform.Config config = new JavaTransform.Config(NOT_IDENTITY, "CustomTransform", null);
     Transform<StructuredRecord, StructuredRecord> transform = new JavaTransform(config);
     transform.initialize(new MockTransformContext());
 
