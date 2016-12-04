@@ -23,8 +23,9 @@ import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
+import co.cask.cdap.proto.id.ApplicationId;
+import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
@@ -43,7 +44,7 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Test for {@link HDFSAction}
+ * Test for HDFSAction.
  */
 public class HDFSActionTestRun extends ETLBatchTestBase {
   @ClassRule
@@ -103,7 +104,7 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "hdfsActionTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("hdfsActionTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
     WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     manager.start();
@@ -145,7 +146,7 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "hdfsActionTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("hdfsActionTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
     WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     manager.start();
@@ -189,7 +190,7 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "hdfsActionTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("hdfsActionTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
     WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     manager.start();
@@ -234,7 +235,7 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "hdfsDeleteActionTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("hdfsDeleteActionTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
     WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     manager.start();
@@ -275,7 +276,7 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "hdfsDeleteActionTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("hdfsDeleteActionTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
     WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     manager.start();
@@ -315,7 +316,7 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "hdfsDeleteSingleFileActionTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("hdfsDeleteSingleFileActionTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
     WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     manager.start();
@@ -358,7 +359,7 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "hdfsDeleteDirectoryActionTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("hdfsDeleteDirectoryActionTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
     WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     manager.start();

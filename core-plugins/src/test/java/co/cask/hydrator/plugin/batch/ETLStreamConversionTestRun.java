@@ -19,17 +19,18 @@ package co.cask.hydrator.plugin.batch;
 import co.cask.cdap.api.data.format.Formats;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
+import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.batch.ETLBatchApplication;
-import co.cask.cdap.etl.batch.ETLWorkflow;
 import co.cask.cdap.etl.proto.Engine;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
+import co.cask.cdap.proto.id.ApplicationId;
+import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.StreamManager;
@@ -88,11 +89,11 @@ public class ETLStreamConversionTestRun extends ETLBatchTestBase {
 
     ETLBatchConfig etlConfig = constructETLBatchConfig(engine, streamName, filesetName, sinkType);
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, String.format("app_%s", sinkType));
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app(String.format("app_%s", sinkType));
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
-    final WorkflowManager workflowManager = appManager.getWorkflowManager(ETLWorkflow.NAME);
+    final WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
     workflowManager.waitForFinish(4, TimeUnit.MINUTES);
 
@@ -103,7 +104,7 @@ public class ETLStreamConversionTestRun extends ETLBatchTestBase {
     List<GenericRecord> records = readOutput(fileSet, EVENT_SCHEMA);
     Assert.assertEquals(1, records.size());
 
-    try (Connection sqlConn = getQueryClient(appId.getNamespace());
+    try (Connection sqlConn = getQueryClient(appId.getParent().toId());
          ResultSet resultSet = sqlConn.prepareStatement(String.format("select * from dataset_%s", filesetName))
            .executeQuery()) {
       Assert.assertTrue(resultSet.next());

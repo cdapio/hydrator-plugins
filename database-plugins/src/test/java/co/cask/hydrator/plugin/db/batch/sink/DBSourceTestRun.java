@@ -24,8 +24,9 @@ import co.cask.cdap.etl.mock.batch.MockSink;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
+import co.cask.cdap.proto.id.ApplicationId;
+import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.hydrator.common.Constants;
@@ -276,7 +277,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
       .put(Constants.Reference.REFERENCE_NAME, "UserPassDBTest")
       .build();
 
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("dbTest");
 
     // null user name, null password. Should succeed.
     // as source
@@ -288,7 +289,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
       .addStage(table)
       .addConnection(database.getName(), table.getName())
       .build();
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
     deployApplication(appId, appRequest);
 
     // null user name, non-null password. Should fail.
@@ -315,7 +316,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
       .addStage(table)
       .addConnection(database.getName(), table.getName())
       .build();
-    appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
     deployApplication(appId, appRequest);
   }
 
@@ -347,7 +348,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
       .addStage(sink)
       .addConnection(sourceBadName.getName(), sink.getName())
       .build();
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "dbSourceNonExistingTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("dbSourceNonExistingTest");
     assertRuntimeFailure(appId, etlConfig, "ETL Application with DB Source should have failed because of a " +
       "non-existent source table.");
 

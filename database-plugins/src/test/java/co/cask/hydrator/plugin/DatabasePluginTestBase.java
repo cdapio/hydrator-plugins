@@ -20,13 +20,11 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.plugin.PluginClass;
 import co.cask.cdap.api.plugin.PluginPropertyField;
 import co.cask.cdap.datapipeline.DataPipelineApp;
-import co.cask.cdap.etl.batch.ETLBatchApplication;
-import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
+import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.RunRecord;
 import co.cask.cdap.proto.artifact.AppRequest;
@@ -35,8 +33,8 @@ import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.ArtifactId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
-import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestConfiguration;
+import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.db.batch.action.DBAction;
 import co.cask.hydrator.plugin.db.batch.action.QueryAction;
 import co.cask.hydrator.plugin.db.batch.sink.DBSink;
@@ -77,8 +75,6 @@ import javax.sql.rowset.serial.SerialBlob;
  * Database Plugin Tests setup.
  */
 public class DatabasePluginTestBase extends HydratorTestBase {
-  protected static final ArtifactId APP_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("etlbatch", "3.2.0");
-  protected static final ArtifactSummary ETLBATCH_ARTIFACT = new ArtifactSummary("etlbatch", "3.2.0");
   protected static final ArtifactId DATAPIPELINE_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("data-pipeline", "3.2.0");
   protected static final ArtifactSummary DATAPIPELINE_ARTIFACT = new ArtifactSummary("data-pipeline", "3.2.0");
   protected static final String CLOB_DATA =
@@ -102,12 +98,7 @@ public class DatabasePluginTestBase extends HydratorTestBase {
       return;
     }
 
-    setupBatchArtifacts(APP_ARTIFACT_ID, ETLBatchApplication.class);
     setupBatchArtifacts(DATAPIPELINE_ARTIFACT_ID, DataPipelineApp.class);
-    addPluginArtifact(NamespaceId.DEFAULT.artifact("database-plugins2", "1.4.0"),
-                      APP_ARTIFACT_ID,
-                      DBSource.class, DBSink.class, DBRecord.class, ETLDBOutputFormat.class,
-                      DataDrivenETLDBInputFormat.class, DBRecord.class, QueryAction.class, DBAction.class);
 
     addPluginArtifact(NamespaceId.DEFAULT.artifact("database-plugins", "1.4.0"),
                       DATAPIPELINE_ARTIFACT_ID,
@@ -117,9 +108,6 @@ public class DatabasePluginTestBase extends HydratorTestBase {
     // add hypersql 3rd party plugin
     PluginClass hypersql = new PluginClass("jdbc", "hypersql", "hypersql jdbc driver", JDBCDriver.class.getName(),
                                            null, Collections.<String, PluginPropertyField>emptyMap());
-    addPluginArtifact(NamespaceId.DEFAULT.artifact("hsql-jdbc2", "1.0.0"),
-                      APP_ARTIFACT_ID,
-                      Sets.newHashSet(hypersql), JDBCDriver.class);
     addPluginArtifact(NamespaceId.DEFAULT.artifact("hsql-jdbc", "1.0.0"),
                       DATAPIPELINE_ARTIFACT_ID,
                       Sets.newHashSet(hypersql), JDBCDriver.class);
@@ -257,9 +245,9 @@ public class DatabasePluginTestBase extends HydratorTestBase {
     }
   }
 
-  protected static void assertDeploymentFailure(Id.Application appId, ETLBatchConfig etlConfig,
+  protected static void assertDeploymentFailure(ApplicationId appId, ETLBatchConfig etlConfig,
                                                 String failureMessage) throws Exception {
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
     try {
       deployApplication(appId, appRequest);
       Assert.fail(failureMessage);
@@ -268,15 +256,15 @@ public class DatabasePluginTestBase extends HydratorTestBase {
     }
   }
 
-  protected static void assertRuntimeFailure(Id.Application appId, ETLBatchConfig etlConfig,
+  protected static void assertRuntimeFailure(ApplicationId appId, ETLBatchConfig etlConfig,
                                              String failureMessage) throws Exception {
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
     ApplicationManager appManager = deployApplication(appId, appRequest);
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
     // Waiting for only 1 minute here because MR should have failed in the prepareRun() stage
-    mrManager.waitForFinish(1, TimeUnit.MINUTES);
-    for (RunRecord runRecord : mrManager.getHistory()) {
+    workflowManager.waitForFinish(1, TimeUnit.MINUTES);
+    for (RunRecord runRecord : workflowManager.getHistory()) {
       Assert.assertEquals(failureMessage, ProgramRunStatus.FAILED, runRecord.getStatus());
     }
   }
@@ -290,7 +278,7 @@ public class DatabasePluginTestBase extends HydratorTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app("dbSinkTest");
     return deployApplication(appId.toId(), appRequest);
   }
@@ -301,10 +289,10 @@ public class DatabasePluginTestBase extends HydratorTestBase {
 
   protected void runETLOnce(ApplicationManager appManager,
                             Map<String, String> arguments) throws TimeoutException, InterruptedException {
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start(arguments);
-    mrManager.waitForFinish(5, TimeUnit.MINUTES);
-    List<RunRecord> runRecords = mrManager.getHistory();
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start(arguments);
+    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    List<RunRecord> runRecords = workflowManager.getHistory();
     Assert.assertEquals(ProgramRunStatus.COMPLETED, runRecords.get(0).getStatus());
   }
 
