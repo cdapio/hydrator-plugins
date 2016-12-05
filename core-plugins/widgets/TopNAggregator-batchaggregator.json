@@ -1,0 +1,23 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "WikiText Transform",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Groupby field",
+          "name": "groupByField"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "value of n",
+          "name": "topN"
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}
