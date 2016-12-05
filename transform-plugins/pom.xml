@@ -43,7 +43,7 @@
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
-      <artifactId>cdap-etl-batch</artifactId>
+      <artifactId>cdap-data-pipeline</artifactId>
     </dependency>
     <dependency>
       <groupId>co.cask.hydrator</groupId>

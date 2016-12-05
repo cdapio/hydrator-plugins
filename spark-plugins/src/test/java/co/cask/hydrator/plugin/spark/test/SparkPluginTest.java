@@ -41,6 +41,7 @@ import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactRange;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
+import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.ArtifactId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
@@ -210,7 +211,7 @@ public class SparkPluginTest extends HydratorTestBase {
       .setBatchInterval("1s")
       .build();
     AppRequest<DataStreamsConfig> appRequest = new AppRequest<>(DATASTREAMS_ARTIFACT, pipelineConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "HTTPSourceApp");
+    ApplicationId appId = NamespaceId.DEFAULT.app("HTTPSourceApp");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     SparkManager sparkManager = appManager.getSparkManager(DataStreamsSparkLauncher.NAME);
@@ -275,7 +276,7 @@ public class SparkPluginTest extends HydratorTestBase {
 
     AppRequest<DataStreamsConfig> appRequest = new AppRequest<>(DATASTREAMS_ARTIFACT, pipelineCfg);
 
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "FileSourceApp");
+    ApplicationId appId = NamespaceId.DEFAULT.app("FileSourceApp");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     SparkManager sparkManager = appManager.getSparkManager(DataStreamsSparkLauncher.NAME);
@@ -368,7 +369,7 @@ public class SparkPluginTest extends HydratorTestBase {
       .build();
 
     AppRequest<DataStreamsConfig> appRequest = new AppRequest<>(DATASTREAMS_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "KafkaSourceApp");
+    ApplicationId appId = NamespaceId.DEFAULT.app("KafkaSourceApp");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     // write some messages to kafka
@@ -475,7 +476,7 @@ public class SparkPluginTest extends HydratorTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "SinglePhaseApp");
+    ApplicationId appId = NamespaceId.DEFAULT.app("SinglePhaseApp");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
 
@@ -523,7 +524,7 @@ public class SparkPluginTest extends HydratorTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "SinglePhaseApp");
+    ApplicationId appId = NamespaceId.DEFAULT.app("SinglePhaseApp");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
 

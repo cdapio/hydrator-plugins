@@ -22,11 +22,11 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.common.utils.Networks;
 import co.cask.cdap.common.utils.Tasks;
+import co.cask.cdap.datapipeline.DataPipelineApp;
+import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.realtime.RealtimeSink;
-import co.cask.cdap.etl.batch.ETLBatchApplication;
-import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.mock.batch.MockSink;
 import co.cask.cdap.etl.mock.batch.MockSource;
 import co.cask.cdap.etl.mock.test.HydratorTestBase;
@@ -40,13 +40,14 @@ import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactRange;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
+import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.ArtifactId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
-import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkerManager;
+import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.batch.ESProperties;
 import co.cask.hydrator.plugin.batch.sink.BatchElasticsearchSink;
@@ -102,8 +103,8 @@ public class ETLESTest extends HydratorTestBase {
   private static final ArtifactVersion CURRENT_VERSION = new ArtifactVersion("3.2.0");
 
   private static final ArtifactId BATCH_APP_ARTIFACT_ID =
-    NamespaceId.DEFAULT.artifact("etlbatch", CURRENT_VERSION.getVersion());
-  private static final ArtifactSummary ETLBATCH_ARTIFACT =
+    NamespaceId.DEFAULT.artifact("data-pipeline", CURRENT_VERSION.getVersion());
+  private static final ArtifactSummary BATCH_ARTIFACT =
     new ArtifactSummary(BATCH_APP_ARTIFACT_ID.getArtifact(), BATCH_APP_ARTIFACT_ID.getVersion());
 
   private static final ArtifactId REALTIME_APP_ARTIFACT_ID =
@@ -114,7 +115,7 @@ public class ETLESTest extends HydratorTestBase {
   private static final ArtifactRange REALTIME_ARTIFACT_RANGE = new ArtifactRange(Id.Namespace.DEFAULT, "etlrealtime",
                                                                                  CURRENT_VERSION, true,
                                                                                  CURRENT_VERSION, true);
-  private static final ArtifactRange BATCH_ARTIFACT_RANGE = new ArtifactRange(Id.Namespace.DEFAULT, "etlbatch",
+  private static final ArtifactRange BATCH_ARTIFACT_RANGE = new ArtifactRange(Id.Namespace.DEFAULT, "data-pipeline",
                                                                               CURRENT_VERSION, true,
                                                                               CURRENT_VERSION, true);
   private Client client;
@@ -125,7 +126,7 @@ public class ETLESTest extends HydratorTestBase {
   @BeforeClass
   public static void setupTest() throws Exception {
     // add the artifact for etl batch app and mocks for the batch app
-    setupBatchArtifacts(BATCH_APP_ARTIFACT_ID, ETLBatchApplication.class);
+    setupBatchArtifacts(BATCH_APP_ARTIFACT_ID, DataPipelineApp.class);
 
     //add the artifact for the etl realtime app and mocks for the realtime app
     setupRealtimeArtifacts(REALTIME_APP_ARTIFACT_ID, ETLRealtimeApplication.class);
@@ -187,8 +188,8 @@ public class ETLESTest extends HydratorTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "esSinkTest");
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app("esSinkTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     List<StructuredRecord> input = ImmutableList.of(
@@ -198,9 +199,9 @@ public class ETLESTest extends HydratorTestBase {
     DataSetManager<Table> inputManager = getDataset(inputDatasetName);
     MockSource.writeInput(inputManager, input);
 
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(5, TimeUnit.MINUTES);
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
 
     SearchResponse searchResponse = client.prepareSearch("batch").execute().actionGet();
     Assert.assertEquals(2, searchResponse.getHits().getTotalHits());
@@ -238,13 +239,13 @@ public class ETLESTest extends HydratorTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "esSourceTest");
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app("esSourceTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(5, TimeUnit.MINUTES);
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);
@@ -298,7 +299,7 @@ public class ETLESTest extends HydratorTestBase {
       .build();
 
     try {
-      Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testRealtimeSink");
+      ApplicationId appId = NamespaceId.DEFAULT.app("testRealtimeSink");
       AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(REALTIME_APP_ARTIFACT, etlConfig);
       ApplicationManager appManager = deployApplication(appId, appRequest);
 

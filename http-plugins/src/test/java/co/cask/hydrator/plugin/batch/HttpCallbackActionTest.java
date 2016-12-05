@@ -17,8 +17,9 @@
 package co.cask.hydrator.plugin.batch;
 
 import co.cask.cdap.api.artifact.ArtifactVersion;
+import co.cask.cdap.datapipeline.DataPipelineApp;
+import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.batch.PostAction;
-import co.cask.cdap.etl.batch.ETLBatchApplication;
 import co.cask.cdap.etl.mock.batch.MockSink;
 import co.cask.cdap.etl.mock.batch.MockSource;
 import co.cask.cdap.etl.mock.test.HydratorTestBase;
@@ -30,6 +31,7 @@ import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactRange;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
+import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.ArtifactId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
@@ -69,8 +71,8 @@ public class HttpCallbackActionTest extends HydratorTestBase {
   @ClassRule
   public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
 
-  protected static final ArtifactId BATCH_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("etlbatch", "3.2.0");
-  protected static final ArtifactSummary BATCH_ARTIFACT = new ArtifactSummary("etlbatch", "3.2.0");
+  protected static final ArtifactId BATCH_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("data-pipeline", "3.2.0");
+  protected static final ArtifactSummary BATCH_ARTIFACT = new ArtifactSummary("data-pipeline", "3.2.0");
   protected static final ArtifactId REALTIME_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("etlrealtime", "3.2.0");
   protected static final ArtifactSummary REALTIME_ARTIFACT = new ArtifactSummary("etlrealtime", "3.2.0");
 
@@ -84,7 +86,7 @@ public class HttpCallbackActionTest extends HydratorTestBase {
       return;
     }
 
-    setupBatchArtifacts(BATCH_ARTIFACT_ID, ETLBatchApplication.class);
+    setupBatchArtifacts(BATCH_ARTIFACT_ID, DataPipelineApp.class);
     setupRealtimeArtifacts(REALTIME_ARTIFACT_ID, ETLRealtimeApplication.class);
 
     Set<ArtifactRange> parents = new HashSet<>();
@@ -150,10 +152,10 @@ public class HttpCallbackActionTest extends HydratorTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "actionTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("actionTest");
     ApplicationManager appManager = TestBase.deployApplication(appId, appRequest);
 
-    WorkflowManager manager = appManager.getWorkflowManager("ETLWorkflow");
+    WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     manager.start();
     manager.waitForFinish(5, TimeUnit.MINUTES);
 

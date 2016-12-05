@@ -20,10 +20,10 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.common.utils.Tasks;
+import co.cask.cdap.datapipeline.DataPipelineApp;
+import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.realtime.RealtimeSink;
-import co.cask.cdap.etl.batch.ETLBatchApplication;
-import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.mock.batch.MockSource;
 import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
 import co.cask.cdap.etl.mock.test.HydratorTestBase;
@@ -42,9 +42,9 @@ import co.cask.cdap.proto.id.ArtifactId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
-import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkerManager;
+import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.batch.SolrSearchSink;
 import co.cask.hydrator.plugin.common.SolrSearchSinkConfig;
@@ -88,7 +88,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
   private static final ArtifactVersion CURRENT_VERSION = new ArtifactVersion("3.2.0");
   private static final ArtifactId BATCH_APP_ARTIFACT_ID =
-    NamespaceId.DEFAULT.artifact("etlbatch", CURRENT_VERSION.getVersion());
+    NamespaceId.DEFAULT.artifact("data-pipeline", CURRENT_VERSION.getVersion());
   private static final ArtifactSummary ETLBATCH_ARTIFACT =
     new ArtifactSummary(BATCH_APP_ARTIFACT_ID.getArtifact(), BATCH_APP_ARTIFACT_ID.getVersion());
   private static final ArtifactId REALTIME_APP_ARTIFACT_ID =
@@ -98,7 +98,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
   private static final ArtifactRange REALTIME_ARTIFACT_RANGE = new ArtifactRange(Id.Namespace.DEFAULT, "etlrealtime",
                                                                                  CURRENT_VERSION, true,
                                                                                  CURRENT_VERSION, true);
-  private static final ArtifactRange BATCH_ARTIFACT_RANGE = new ArtifactRange(Id.Namespace.DEFAULT, "etlbatch",
+  private static final ArtifactRange BATCH_ARTIFACT_RANGE = new ArtifactRange(Id.Namespace.DEFAULT, "data-pipeline",
                                                                               CURRENT_VERSION, true,
                                                                               CURRENT_VERSION, true);
 
@@ -109,7 +109,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
   @BeforeClass
   public static void setupTest() throws Exception {
-    setupBatchArtifacts(BATCH_APP_ARTIFACT_ID, ETLBatchApplication.class);
+    setupBatchArtifacts(BATCH_APP_ARTIFACT_ID, DataPipelineApp.class);
 
     setupRealtimeArtifacts(REALTIME_APP_ARTIFACT_ID, ETLRealtimeApplication.class);
 
@@ -158,9 +158,9 @@ public class SolrSearchSinkTest extends HydratorTestBase {
     );
     MockSource.writeInput(inputManager, input);
 
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(5, TimeUnit.MINUTES);
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
 
     QueryResponse queryResponse = client.query(new SolrQuery("*:*"));
     SolrDocumentList resultList = queryResponse.getResults();
@@ -293,9 +293,9 @@ public class SolrSearchSinkTest extends HydratorTestBase {
     );
     MockSource.writeInput(inputManager, input);
 
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(5, TimeUnit.MINUTES);
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
 
     QueryResponse queryResponse = cloudClient.query(new SolrQuery("*:*"));
     SolrDocumentList resultList = queryResponse.getResults();
@@ -371,9 +371,9 @@ public class SolrSearchSinkTest extends HydratorTestBase {
         .set("office address", "WE Lake Side").set("pincode", 480005).build());
     MockSource.writeInput(inputManager, input);
 
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(5, TimeUnit.MINUTES);
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
 
     QueryResponse queryResponse = client.query(new SolrQuery("*:*"));
     SolrDocumentList resultList = queryResponse.getResults();
@@ -444,11 +444,11 @@ public class SolrSearchSinkTest extends HydratorTestBase {
     );
     MockSource.writeInput(inputManager, input);
 
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(5, TimeUnit.MINUTES);
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
 
-    Assert.assertEquals("FAILED", mrManager.getHistory().get(0).getStatus().name());
+    Assert.assertEquals("FAILED", workflowManager.getHistory().get(0).getStatus().name());
   }
 
   @Test
@@ -488,11 +488,11 @@ public class SolrSearchSinkTest extends HydratorTestBase {
     );
     MockSource.writeInput(inputManager, input);
 
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(5, TimeUnit.MINUTES);
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
 
-    Assert.assertEquals("FAILED", mrManager.getHistory().get(0).getStatus().name());
+    Assert.assertEquals("FAILED", workflowManager.getHistory().get(0).getStatus().name());
   }
 
   @Test(expected = IllegalArgumentException.class)

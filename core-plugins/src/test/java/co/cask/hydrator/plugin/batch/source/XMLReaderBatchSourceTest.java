@@ -23,9 +23,9 @@ import co.cask.cdap.api.dataset.lib.CloseableIterator;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.api.dataset.table.Table;
+import co.cask.cdap.datapipeline.DataPipelineApp;
+import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.batch.BatchSource;
-import co.cask.cdap.etl.batch.ETLBatchApplication;
-import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.mock.batch.MockSink;
 import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
@@ -38,8 +38,8 @@ import co.cask.cdap.proto.id.ArtifactId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
-import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestConfiguration;
+import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.common.Constants;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -70,8 +70,8 @@ import java.util.concurrent.TimeUnit;
 public class XMLReaderBatchSourceTest extends HydratorTestBase {
   private static final ArtifactVersion CURRENT_VERSION = new ArtifactVersion("3.4.0-SNAPSHOT");
   private static final ArtifactId BATCH_APP_ARTIFACT_ID =
-    NamespaceId.DEFAULT.artifact("etlbatch", CURRENT_VERSION.getVersion());
-  private static final ArtifactSummary ETLBATCH_ARTIFACT =
+    NamespaceId.DEFAULT.artifact("data-pipeline", CURRENT_VERSION.getVersion());
+  private static final ArtifactSummary BATCH_ARTIFACT =
     new ArtifactSummary(BATCH_APP_ARTIFACT_ID.getArtifact(), BATCH_APP_ARTIFACT_ID.getVersion());
   private static final String CATALOG_LARGE_XML_FILE_NAME = "catalogLarge.xml";
   private static final String CATALOG_SMALL_XML_FILE_NAME = "catalogSmall.xml";
@@ -89,7 +89,7 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
 
   @BeforeClass
   public static void setupTest() throws Exception {
-    setupBatchArtifacts(BATCH_APP_ARTIFACT_ID, ETLBatchApplication.class);
+    setupBatchArtifacts(BATCH_APP_ARTIFACT_ID, DataPipelineApp.class);
     addPluginArtifact(NamespaceId.DEFAULT.artifact("core-plugins", "1.0.1"), BATCH_APP_ARTIFACT_ID,
                       XMLReaderBatchSource.class);
 
@@ -161,7 +161,7 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
    * Method to return currently processed XML file list.
    */
   private List<String> getProcessedFileList(String processedFileTable, Date preProcessedDate) throws Exception {
-    List<String> processedFileList  = new ArrayList<String>();
+    List<String> processedFileList  = new ArrayList<>();
     DataSetManager<KeyValueTable> dataSetManager = getDataset(processedFileTable);
     KeyValueTable table = dataSetManager.get();
     try (CloseableIterator<KeyValue<byte[], byte[]>> iterator = table.scan(null, null)) {
@@ -189,15 +189,15 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app(applicationName);
     return deployApplication(appId.toId(), appRequest);
   }
 
   private void startMapReduceJob(ApplicationManager appManager) throws Exception {
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(5, TimeUnit.MINUTES);
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
   }
 
   @Test

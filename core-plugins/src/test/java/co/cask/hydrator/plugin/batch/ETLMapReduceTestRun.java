@@ -23,18 +23,19 @@ import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.api.dataset.table.Put;
 import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Table;
+import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
-import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
+import co.cask.cdap.proto.id.ApplicationId;
+import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
-import co.cask.cdap.test.MapReduceManager;
+import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.batch.source.FileBatchSource;
 import co.cask.hydrator.plugin.common.Properties;
@@ -84,8 +85,8 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
       .addConnection("transform", "sink")
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "KVToKV");
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app("KVToKV");
     try {
       deployApplication(appId, appRequest);
       Assert.fail();
@@ -114,8 +115,8 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
       .addConnection(transform.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "KVToKV");
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app("KVToKV");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     // add some data to the input table
@@ -126,9 +127,9 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     }
     table1.flush();
 
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(5, TimeUnit.MINUTES);
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
 
     DataSetManager<KeyValueTable> table2 = getDataset("kvTable2");
     try (KeyValueTable outputTable = table2.get()) {
@@ -193,8 +194,8 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
       .addConnection(transform.getName(), sink2.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "DagApp");
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app("DagApp");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     // add some data to the input table
@@ -216,9 +217,9 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     }
 
 
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(5, TimeUnit.MINUTES);
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
 
     // all records are passed to this table (validation not performed)
     DataSetManager<Table> outputManager1 = getDataset("dagOutputTable1");
@@ -295,8 +296,8 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
       .addConnection(transform.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "TableToTable");
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app("TableToTable");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     // add some data to the input table
@@ -321,9 +322,9 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     inputTable.put(put);
     inputManager.flush();
 
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(5, TimeUnit.MINUTES);
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
 
     DataSetManager<Table> outputManager = getDataset("outputTable");
     Table outputTable = outputManager.get();
@@ -396,13 +397,13 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "S3ToTPFS");
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app("S3ToTPFS");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(2, TimeUnit.MINUTES);
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForFinish(2, TimeUnit.MINUTES);
 
     DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset("TPFSsink");
     try (TimePartitionedFileSet fileSet = fileSetManager.get()) {
@@ -457,13 +458,13 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
       .addConnection(source.getName(), sink2.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "FileToTPFS");
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app("FileToTPFS");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(2, TimeUnit.MINUTES);
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForFinish(2, TimeUnit.MINUTES);
 
     for (String sinkName : new String[] { "fileSink1", "fileSink2" }) {
       DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset(sinkName);
@@ -508,8 +509,8 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
       .addConnection(source.getName(), sink2.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "FileToTPFS");
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app("FileToTPFS");
 
     // deploying would thrown an excpetion
     deployApplication(appId, appRequest);
