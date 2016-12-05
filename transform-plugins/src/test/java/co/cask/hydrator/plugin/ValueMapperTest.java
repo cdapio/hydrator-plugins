@@ -28,7 +28,6 @@ import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.NamespaceId;
@@ -122,7 +121,7 @@ public class ValueMapperTest extends TransformPluginsTestBase {
 
     DataSetManager<Table> outputManager = getDataset(sinkTable);
     List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);
-    Map<String, String> nameDesignationMap = new HashMap<String, String>();
+    Map<String, String> nameDesignationMap = new HashMap<>();
     nameDesignationMap.put("John", "DEFAULTID");
     nameDesignationMap.put("Kerry", "SSE");
     nameDesignationMap.put("Mathew", "DEFAULTID");
@@ -164,7 +163,7 @@ public class ValueMapperTest extends TransformPluginsTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "valuemappertest_without_defaults");
+    ApplicationId appId = NamespaceId.DEFAULT.app("valuemappertest_without_defaults");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     addDatasetInstance(KeyValueTable.class.getName(), "designation_lookup_table_without_defaults");
@@ -194,13 +193,13 @@ public class ValueMapperTest extends TransformPluginsTestBase {
 
     DataSetManager<Table> outputManager = getDataset(sinkTable);
     List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);
-    Map<String, String> nameDesignationMap = new HashMap<String, String>();
+    Map<String, String> nameDesignationMap = new HashMap<>();
     nameDesignationMap.put("John", null);
     nameDesignationMap.put("Kerry", "SSE");
     nameDesignationMap.put("Mathew", "");
     nameDesignationMap.put("Allie", "TL");
 
-    Map<String, String> nameSalaryMap = new HashMap<String, String>();
+    Map<String, String> nameSalaryMap = new HashMap<>();
     nameSalaryMap.put("John", "1000");
     nameSalaryMap.put("Kerry", "1030");
     nameSalaryMap.put("Mathew", "1230");
@@ -252,7 +251,7 @@ public class ValueMapperTest extends TransformPluginsTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "valuemappertest_with_multi_mapping");
+    ApplicationId appId = NamespaceId.DEFAULT.app("valuemappertest_with_multi_mapping");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     addDatasetInstance(KeyValueTable.class.getName(), "designation_lookup_table_with_multi_mapping");
@@ -289,7 +288,7 @@ public class ValueMapperTest extends TransformPluginsTestBase {
     DataSetManager<Table> outputManager = getDataset(sinkTable);
     List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);
 
-    Map<String, String> nameDesignationMap = new HashMap<String, String>();
+    Map<String, String> nameDesignationMap = new HashMap<>();
     nameDesignationMap.put("John", "SE");
     nameDesignationMap.put("Kerry", "SSE");
     nameDesignationMap.put("Mathew", "ML");
@@ -302,7 +301,7 @@ public class ValueMapperTest extends TransformPluginsTestBase {
     Assert.assertEquals(nameDesignationMap.get(outputRecords.get(2).get(NAME)), outputRecords.get(2)
       .get(DESIGNATIONNAME));
 
-    Map<String, String> nameSalaryMap = new HashMap<String, String>();
+    Map<String, String> nameSalaryMap = new HashMap<>();
     nameSalaryMap.put("John", "Low");
     nameSalaryMap.put("Kerry", "Medium");
     nameSalaryMap.put("Mathew", "High");

@@ -29,7 +29,6 @@ import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
 import co.cask.cdap.proto.id.ApplicationId;
@@ -60,7 +59,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Unit tests for {@Link DecisionTreeTrainer} and {@link DecisionTreePredictor} classes.
+ * Unit tests for {@link DecisionTreeTrainer} and {@link DecisionTreePredictor} classes.
  */
 public class DecisionTreeRegressionTest extends HydratorTestBase {
 
@@ -136,7 +135,7 @@ public class DecisionTreeRegressionTest extends HydratorTestBase {
     messagesToWrite.addAll(getInputData());
 
     // write records to source
-    DataSetManager<Table> inputManager = getDataset(Id.Namespace.DEFAULT, "flightRecords");
+    DataSetManager<Table> inputManager = getDataset(NamespaceId.DEFAULT.dataset("flightRecords"));
     MockSource.writeInput(inputManager, messagesToWrite);
 
     // manually trigger the pipeline
@@ -205,7 +204,7 @@ public class DecisionTreeRegressionTest extends HydratorTestBase {
     messagesToWrite.add(new Flight(1, 3, 4.0, "N933DN", 1791, 10397, "ATL", 15376, "TUS", 1855, 2014.0, 79.0,
                                    2108.0, 2159.0, 51.0, 253.0, 1541).toStructuredRecord());
 
-    DataSetManager<Table> inputManager = getDataset(Id.Namespace.DEFAULT, features);
+    DataSetManager<Table> inputManager = getDataset(NamespaceId.DEFAULT.dataset(features));
     MockSource.writeInput(inputManager, messagesToWrite);
 
     // manually trigger the pipeline
@@ -268,7 +267,7 @@ public class DecisionTreeRegressionTest extends HydratorTestBase {
     messagesToWrite.addAll(getInputData());
 
     // write records to source
-    DataSetManager<Table> inputManager = getDataset(Id.Namespace.DEFAULT, "flightRecords");
+    DataSetManager<Table> inputManager = getDataset(NamespaceId.DEFAULT.dataset("flightRecords"));
     MockSource.writeInput(inputManager, messagesToWrite);
 
     // manually trigger the pipeline

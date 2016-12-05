@@ -37,7 +37,6 @@ import co.cask.cdap.etl.proto.v2.DataStreamsConfig;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactRange;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
@@ -84,8 +83,6 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -137,10 +134,10 @@ public class SparkPluginTest extends HydratorTestBase {
 
     // add artifact for spark plugins
     Set<ArtifactRange> parents = ImmutableSet.of(
-      new ArtifactRange(NamespaceId.DEFAULT.toId(), DATAPIPELINE_ARTIFACT_ID.getArtifact(),
+      new ArtifactRange(NamespaceId.DEFAULT, DATAPIPELINE_ARTIFACT_ID.getArtifact(),
                         new ArtifactVersion(DATAPIPELINE_ARTIFACT_ID.getVersion()), true,
                         new ArtifactVersion(DATAPIPELINE_ARTIFACT_ID.getVersion()), true),
-      new ArtifactRange(NamespaceId.DEFAULT.toId(), DATASTREAMS_ARTIFACT_ID.getArtifact(),
+      new ArtifactRange(NamespaceId.DEFAULT, DATASTREAMS_ARTIFACT_ID.getArtifact(),
                         new ArtifactVersion(DATASTREAMS_ARTIFACT_ID.getVersion()), true,
                         new ArtifactVersion(DATASTREAMS_ARTIFACT_ID.getVersion()), true)
     );
@@ -188,6 +185,7 @@ public class SparkPluginTest extends HydratorTestBase {
   public static void cleanup() {
     kafkaClient.stopAndWait();
     kafkaServer.stopAndWait();
+    zkClient.stopAndWait();
     zkServer.stopAndWait();
     httpService.stopAndWait();
   }
@@ -494,7 +492,7 @@ public class SparkPluginTest extends HydratorTestBase {
     messagesToWrite.add(new SpamMessage("could you send me the report", 0.0).toStructuredRecord());
 
     // write records to source
-    DataSetManager<Table> inputManager = getDataset(Id.Namespace.DEFAULT, "messages");
+    DataSetManager<Table> inputManager = getDataset(NamespaceId.DEFAULT.dataset("messages"));
     MockSource.writeInput(inputManager, messagesToWrite);
 
     // manually trigger the pipeline
@@ -535,7 +533,7 @@ public class SparkPluginTest extends HydratorTestBase {
     messagesToWrite.add(new SpamMessage("what are you doing today").toStructuredRecord());
     messagesToWrite.add(new SpamMessage("genuine report").toStructuredRecord());
 
-    DataSetManager<Table> inputManager = getDataset(Id.Namespace.DEFAULT, textsToClassify);
+    DataSetManager<Table> inputManager = getDataset(NamespaceId.DEFAULT.dataset(textsToClassify));
     MockSource.writeInput(inputManager, messagesToWrite);
 
     // manually trigger the pipeline
@@ -616,17 +614,5 @@ public class SparkPluginTest extends HydratorTestBase {
     int responseCode = urlConn.getResponseCode();
     urlConn.disconnect();
     return responseCode;
-  }
-
-  protected String getFeedContent(String feedId) throws IOException {
-    URL url = new URL(httpBase + "/feeds/" + feedId);
-    HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
-    urlConn.setRequestMethod(HttpMethod.GET);
-    Assert.assertEquals(200, urlConn.getResponseCode());
-    try (Reader responseReader = new InputStreamReader(urlConn.getInputStream(), Charsets.UTF_8)) {
-      return CharStreams.toString(responseReader);
-    } finally {
-      urlConn.disconnect();
-    }
   }
 }

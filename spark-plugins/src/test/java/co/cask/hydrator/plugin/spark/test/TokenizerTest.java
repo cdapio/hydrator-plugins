@@ -100,7 +100,7 @@ public class TokenizerTest extends HydratorTestBase {
     // add the artifact for etl batch app
     setupBatchArtifacts(DATAPIPELINE_ARTIFACT_ID, DataPipelineApp.class);
     Set<ArtifactRange> parents = ImmutableSet.of(
-      new ArtifactRange(NamespaceId.DEFAULT.toId(), DATAPIPELINE_ARTIFACT_ID.getArtifact(),
+      new ArtifactRange(NamespaceId.DEFAULT, DATAPIPELINE_ARTIFACT_ID.getArtifact(),
                         new ArtifactVersion(DATAPIPELINE_ARTIFACT_ID.getVersion()), true,
                         new ArtifactVersion(DATAPIPELINE_ARTIFACT_ID.getVersion()), true));
     addPluginArtifact(NamespaceId.DEFAULT.artifact("spark-plugins", "1.0.0"), parents,
@@ -115,7 +115,7 @@ public class TokenizerTest extends HydratorTestBase {
    */
   private ETLBatchConfig buildETLBatchConfig(String mockNameOfSourcePlugin,
                                              String mockNameOfSinkPlugin, String pattern) {
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    return ETLBatchConfig.builder("* * * * *")
       .addStage(new ETLStage("source", MockSource.getPlugin(mockNameOfSourcePlugin)))
       .addStage(new ETLStage("sparkcompute", new ETLPlugin(Tokenizer.PLUGIN_NAME, SparkCompute.PLUGIN_TYPE,
                                            ImmutableMap.of("outputColumn", OUTPUT_COLUMN,
@@ -125,7 +125,6 @@ public class TokenizerTest extends HydratorTestBase {
       .addConnection("source", "sparkcompute")
       .addConnection("sparkcompute", "sink")
       .build();
-    return etlConfig;
   }
 
   @Test

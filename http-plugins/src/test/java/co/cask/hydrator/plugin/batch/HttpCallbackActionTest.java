@@ -27,7 +27,6 @@ import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
-import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactRange;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
@@ -90,10 +89,10 @@ public class HttpCallbackActionTest extends HydratorTestBase {
     setupRealtimeArtifacts(REALTIME_ARTIFACT_ID, ETLRealtimeApplication.class);
 
     Set<ArtifactRange> parents = new HashSet<>();
-    parents.add(new ArtifactRange(Id.Namespace.DEFAULT, BATCH_ARTIFACT_ID.getArtifact(),
+    parents.add(new ArtifactRange(NamespaceId.DEFAULT, BATCH_ARTIFACT_ID.getArtifact(),
                                   new ArtifactVersion(BATCH_ARTIFACT.getVersion()), true,
                                   new ArtifactVersion(BATCH_ARTIFACT.getVersion()), true));
-    parents.add(new ArtifactRange(Id.Namespace.DEFAULT, REALTIME_ARTIFACT_ID.getArtifact(),
+    parents.add(new ArtifactRange(NamespaceId.DEFAULT, REALTIME_ARTIFACT_ID.getArtifact(),
                                   new ArtifactVersion(REALTIME_ARTIFACT.getVersion()), true,
                                   new ArtifactVersion(REALTIME_ARTIFACT.getVersion()), true));
     addPluginArtifact(NamespaceId.DEFAULT.artifact("http-plugins", "1.0.0"), parents,
@@ -167,17 +166,6 @@ public class HttpCallbackActionTest extends HydratorTestBase {
     HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
     urlConn.setDoOutput(true);
     urlConn.setRequestMethod(HttpMethod.DELETE);
-    int responseCode = urlConn.getResponseCode();
-    urlConn.disconnect();
-    return responseCode;
-  }
-
-  protected int writeFeed(String feedId, String content) throws IOException {
-    URL url = new URL(String.format("%s/feeds/%s", baseURL, feedId));
-    HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
-    urlConn.setDoOutput(true);
-    urlConn.setRequestMethod(HttpMethod.PUT);
-    urlConn.getOutputStream().write(content.getBytes(Charsets.UTF_8));
     int responseCode = urlConn.getResponseCode();
     urlConn.disconnect();
     return responseCode;

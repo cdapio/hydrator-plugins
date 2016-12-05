@@ -29,9 +29,9 @@ import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
+import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.ArtifactId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
@@ -125,7 +125,7 @@ public class LogisticRegressionTest extends HydratorTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "SinglePhaseApp");
+    ApplicationId appId = NamespaceId.DEFAULT.app("SinglePhaseApp");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     // set up five spam messages and five non-spam messages to be used for classification
@@ -147,7 +147,7 @@ public class LogisticRegressionTest extends HydratorTestBase {
                           .toStructuredRecord());
 
     // write records to source
-    DataSetManager<Table> inputManager = getDataset(Id.Namespace.DEFAULT, "messages");
+    DataSetManager<Table> inputManager = getDataset(NamespaceId.DEFAULT.dataset("messages"));
     MockSource.writeInput(inputManager, messagesToWrite);
 
     // manually trigger the pipeline
@@ -182,7 +182,7 @@ public class LogisticRegressionTest extends HydratorTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "SinglePhaseApp");
+    ApplicationId appId = NamespaceId.DEFAULT.app("SinglePhaseApp");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     // write some some messages to be classified
@@ -192,7 +192,7 @@ public class LogisticRegressionTest extends HydratorTestBase {
     messagesToWrite.add(new LogisticRegressionSpamMessageModel(1, 1.0).toStructuredRecord());
     messagesToWrite.add(new LogisticRegressionSpamMessageModel(1, 1.0).toStructuredRecord());
 
-    DataSetManager<Table> inputManager = getDataset(Id.Namespace.DEFAULT, textsToClassify);
+    DataSetManager<Table> inputManager = getDataset(NamespaceId.DEFAULT.dataset(textsToClassify));
     MockSource.writeInput(inputManager, messagesToWrite);
 
     // manually trigger the pipeline

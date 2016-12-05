@@ -27,8 +27,9 @@ import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLRealtimeConfig;
 import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.etl.realtime.ETLWorker;
-import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
+import co.cask.cdap.proto.id.ApplicationId;
+import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.TestConfiguration;
@@ -75,7 +76,7 @@ public class RealtimeCubeSinkTest extends ETLRealtimeTestBase {
       .addConnection("source", "sink")
       .build();
 
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testCubeSink");
+    ApplicationId appId = NamespaceId.DEFAULT.app("testCubeSink");
     AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(APP_ARTIFACT, etlConfig);
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
