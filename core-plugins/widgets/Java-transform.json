@@ -8,7 +8,7 @@
         {
           "widget-type": "java-editor",
           "label": "Java",
-          "name": "script",
+          "name": "code",
           "widget-attributes": {
             "default": "public void transform(StructuredRecord input, Emitter<StructureRecord> emitter) {\" +\"}"
           },
