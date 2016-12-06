@@ -123,9 +123,13 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     try {
       driverCleanup = loadPluginClassAndGetDriver(request, pluginContext);
       try (Connection connection = getConnection(request.connectionString, request.user, request.password)) {
+        String query = request.query;
         Statement statement = connection.createStatement();
         statement.setMaxRows(1);
-        ResultSet resultSet = statement.executeQuery(request.query);
+        if (query.contains("$CONDITIONS")) {
+          query = removeConditionsClause(query);
+        }
+        ResultSet resultSet = statement.executeQuery(query);
         return Schema.recordOf("outputSchema", DBUtils.getSchemaFields(resultSet));
       } finally {
         driverCleanup.destroy();
@@ -134,6 +138,18 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
       LOG.error("Exception while performing getSchema", e);
       throw e;
     }
+  }
+
+  private static String removeConditionsClause(String importQuerySring) {
+    importQuerySring = importQuerySring.replaceAll("\\s{2,}", " ").toUpperCase();
+    if (importQuerySring.contains("WHERE $CONDITIONS AND")) {
+      importQuerySring = importQuerySring.replace("$CONDITIONS AND", "");
+    } else if (importQuerySring.contains("WHERE $CONDITIONS")) {
+      importQuerySring = importQuerySring.replace("WHERE $CONDITIONS", "");
+    } else if (importQuerySring.contains("AND $CONDITIONS")) {
+      importQuerySring = importQuerySring.replace("AND $CONDITIONS", "");
+    }
+    return importQuerySring;
   }
 
   private DriverCleanup loadPluginClassAndGetDriver(GetSchemaRequest request, EndpointPluginContext pluginContext)
