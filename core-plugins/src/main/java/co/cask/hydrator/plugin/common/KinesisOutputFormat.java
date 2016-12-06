@@ -137,13 +137,13 @@ public class KinesisOutputFormat extends OutputFormat {
         putRecordRequest.setData(data);
         try {
           kinesisClient.putRecord(putRecordRequest);
-          done = true;
+          return;
         } catch (ProvisionedThroughputExceededException ex) {
           retry++;
           if (retry < MAX_RETRIES) {
             LOG.debug("Throughput exceeded. Sleeping for 10 ms and retrying. Try # {}", retry + 1);
           } else {
-            LOG.error("Maximum retries exhausted");
+            LOG.error("Maximum retries exhausted", ex);
             done = true;
           }
           try {
