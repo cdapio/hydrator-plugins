@@ -16,10 +16,7 @@
 
 package co.cask.hydrator.plugin.batch.sink;
 
-import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.table.Put;
-import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.etl.batch.config.ETLBatchConfig;
 import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.common.ETLStage;
@@ -27,7 +24,6 @@ import co.cask.cdap.etl.common.Plugin;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.test.ApplicationManager;
-import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.MapReduceManager;
 import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
 import co.cask.hydrator.plugin.common.Properties;
@@ -39,7 +35,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Test for Kinesis configuration
+ * Test for Kinesis batch sink
  */
 public class KinesisSinkTest extends ETLBatchTestBase {
 
@@ -81,37 +77,13 @@ public class KinesisSinkTest extends ETLBatchTestBase {
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testKinesis");
-    // This will throw illegal argument exception because of invalid keys
+
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
-    // add some data to the input table
-    DataSetManager<Table> inputManager = getDataset("KinesisSinkInputTable");
-    Table inputTable = inputManager.get();
-    Put put = new Put(Bytes.toBytes("row1"));
-    put.add("body", "samuel");
-    put.add("count", 5);
-
-    // Row 2
-    Put put2 = new Put(Bytes.toBytes("row2"));
-    put2.add("body", "name2");
-    put2.add("count", 2);
-
-    // Row 3
-    Put put3 = new Put(Bytes.toBytes("row3"));
-    put3.add("body", "name3");
-    put3.add("count", 3);
-
-    inputTable.put(put);
-    inputTable.put(put2);
-    inputTable.put(put3);
-    inputManager.flush();
-
-    long startTs = System.currentTimeMillis() / 1000;
-
     MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
+    // Throws illegal argument exception because of invalid AWS keys
     mrManager.start();
     mrManager.waitForFinish(5, TimeUnit.MINUTES);
 
-    long endTs = System.currentTimeMillis() / 1000;
   }
 }

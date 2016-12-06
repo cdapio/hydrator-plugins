@@ -19,14 +19,14 @@ will be created if it does not exist.
 **accessKey:** AWS access key secret having access to Kinesis streams.
 
 **distribute:** Boolean to decide if the data has to be sent to a single shard or has to be uniformly distributed
-among all the shards. Default value is true
+among all the shards. Default value is true.
 
 **shardCount:** Number of shards to be created, each shard has input of 1mb/s. Default value is 1.
 
 Example
 -------
 This example will write to a kinesis stream named 'MyKinesisStream'. The kinesis stream will be created if it does not
-exists already. Each record it receives will be written as a single stream event. @ shards for this stream will be
+exists already. Each record it receives will be written as a single stream event. Two shards for this stream will be
 created and records will be distributed uniformly across the records::
 
     {

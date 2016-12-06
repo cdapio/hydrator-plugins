@@ -41,6 +41,7 @@ import java.nio.ByteBuffer;
 public class KinesisOutputFormat extends OutputFormat {
   private static AmazonKinesisClient kinesisClient;
   private static final Logger LOG = LoggerFactory.getLogger(KinesisOutputFormat.class);
+  private static final int MAX_RETRIES = 3;
 
   /**
    * Get the {@link RecordWriter} for the given task.
@@ -76,7 +77,11 @@ public class KinesisOutputFormat extends OutputFormat {
         KinesisUtil.createAndWaitForStream(kinesisClient, conf.get(Properties.KinesisRealtimeSink.NAME),
                                            Integer.valueOf(conf.get(Properties.KinesisRealtimeSink.SHARD_COUNT)));
       } catch (AmazonServiceException e) {
-        throw new IllegalArgumentException("AWS credentials are not correct", e);
+        if (e.getStatusCode() == 400 && e.getErrorCode().equalsIgnoreCase("UnrecognizedClientException")) {
+          throw new IllegalArgumentException("AWS credentials are not correct", e);
+        } else {
+          throw e;
+        }
       }
     }
   }
@@ -126,17 +131,27 @@ public class KinesisOutputFormat extends OutputFormat {
     }
 
     private void sendKinesisRecord(ByteBuffer data, PutRecordRequest putRecordRequest) {
-
-      putRecordRequest.setData(data);
-      try {
-        kinesisClient.putRecord(putRecordRequest);
-      } catch (ProvisionedThroughputExceededException ex) {
-        LOG.debug("Throughput exceeded. Sleeping for 10 ms and retrying");
-      }
-      try {
-        Thread.sleep(10);
-      } catch (InterruptedException e) {
-        LOG.info("Retry wait interrupted", e);
+      boolean done = false;
+      int retry = 0;
+      while (!done) {
+        putRecordRequest.setData(data);
+        try {
+          kinesisClient.putRecord(putRecordRequest);
+          done = true;
+        } catch (ProvisionedThroughputExceededException ex) {
+          retry++;
+          if (retry < MAX_RETRIES) {
+            LOG.debug("Throughput exceeded. Sleeping for 10 ms and retrying. Try # {}", retry + 1);
+          } else {
+            LOG.error("Maximum retries exhausted");
+            done = true;
+          }
+          try {
+            Thread.sleep(10);
+          } catch (InterruptedException e) {
+            LOG.info("Retry wait interrupted", e);
+          }
+        }
       }
     }
 
