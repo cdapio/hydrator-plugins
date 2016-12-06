@@ -34,8 +34,9 @@ import co.cask.cdap.etl.proto.v2.ETLRealtimeConfig;
 import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
 import co.cask.cdap.etl.realtime.ETLWorker;
-import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
+import co.cask.cdap.proto.id.ApplicationId;
+import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.StreamManager;
@@ -89,7 +90,7 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testAdap");
+    ApplicationId appId = NamespaceId.DEFAULT.app("testAdap");
     AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(APP_ARTIFACT, etlConfig);
     ApplicationManager appManager = deployApplication(appId, appRequest);
     Assert.assertNotNull(appManager);
@@ -122,7 +123,7 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
       .addConnection(source.getName(), "sink3")
       .build();
 
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testToStream");
+    ApplicationId appId = NamespaceId.DEFAULT.app("testToStream");
     AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(APP_ARTIFACT, etlConfig);
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
@@ -131,9 +132,9 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
     workerManager.start();
 
     List<StreamManager> streamManagers = Lists.newArrayList(
-      getStreamManager(Id.Namespace.DEFAULT, "streamA"),
-      getStreamManager(Id.Namespace.DEFAULT, "streamB"),
-      getStreamManager(Id.Namespace.DEFAULT, "streamC")
+      getStreamManager(NamespaceId.DEFAULT.stream("streamA")),
+      getStreamManager(NamespaceId.DEFAULT.stream("streamB")),
+      getStreamManager(NamespaceId.DEFAULT.stream("streamC"))
     );
 
     int retries = 0;
@@ -196,7 +197,7 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
       .addConnection("transform", "sink")
       .build();
 
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testToStream");
+    ApplicationId appId = NamespaceId.DEFAULT.app("testToStream");
     AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(APP_ARTIFACT, etlConfig);
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
@@ -247,7 +248,7 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
       .addConnection("source", "sink")
       .build();
 
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testToStream");
+    ApplicationId appId = NamespaceId.DEFAULT.app("testToStream");
     AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(APP_ARTIFACT, etlConfig);
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
@@ -327,7 +328,7 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
       .addConnection("transform", "sink2")
       .build();
 
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "testToStream");
+    ApplicationId appId = NamespaceId.DEFAULT.app("testToStream");
     AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(APP_ARTIFACT, etlConfig);
     ApplicationManager appManager = deployApplication(appId, appRequest);
 

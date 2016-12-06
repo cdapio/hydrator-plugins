@@ -35,7 +35,6 @@ import co.cask.cdap.etl.proto.v2.ETLRealtimeConfig;
 import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
 import co.cask.cdap.etl.realtime.ETLWorker;
-import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactRange;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
@@ -101,24 +100,23 @@ public class ETLCassandraTest extends HydratorTestBase {
   @ClassRule
   public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
 
-  private static final ArtifactVersion CURRENT_VERSION = new ArtifactVersion("3.2.0");
+  private static final String VERSION = "3.2.0";
+  private static final ArtifactVersion CURRENT_VERSION = new ArtifactVersion(VERSION);
 
-  private static final ArtifactId BATCH_APP_ARTIFACT_ID =
-    NamespaceId.DEFAULT.artifact("data-pipeline", CURRENT_VERSION.getVersion());
+  private static final ArtifactId BATCH_APP_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("data-pipeline", VERSION);
   private static final ArtifactSummary ETLBATCH_ARTIFACT =
     new ArtifactSummary(BATCH_APP_ARTIFACT_ID.getArtifact(), BATCH_APP_ARTIFACT_ID.getVersion());
 
-  private static final ArtifactId REALTIME_APP_ARTIFACT_ID =
-    NamespaceId.DEFAULT.artifact("etlrealtime", CURRENT_VERSION.getVersion());
+  private static final ArtifactId REALTIME_APP_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("etlrealtime", VERSION);
   private static final ArtifactSummary REALTIME_APP_ARTIFACT =
     new ArtifactSummary(REALTIME_APP_ARTIFACT_ID.getArtifact(), REALTIME_APP_ARTIFACT_ID.getVersion());
 
-  private static final ArtifactRange REALTIME_ARTIFACT_RANGE = new ArtifactRange(Id.Namespace.DEFAULT, "etlrealtime",
+  private static final ArtifactRange REALTIME_ARTIFACT_RANGE = new ArtifactRange(NamespaceId.DEFAULT, "etlrealtime",
                                                                                  CURRENT_VERSION, true,
                                                                                  CURRENT_VERSION, true);
-  private static final ArtifactRange BATCH_ARTIFACT_RANGE = new ArtifactRange(Id.Namespace.DEFAULT, "data-pipeline",
-                                                                                 CURRENT_VERSION, true,
-                                                                                 CURRENT_VERSION, true);
+  private static final ArtifactRange BATCH_ARTIFACT_RANGE = new ArtifactRange(NamespaceId.DEFAULT, "data-pipeline",
+                                                                              CURRENT_VERSION, true,
+                                                                              CURRENT_VERSION, true);
   @BeforeClass
   public static void setupTest() throws Exception {
     setupBatchArtifacts(BATCH_APP_ARTIFACT_ID, DataPipelineApp.class);
