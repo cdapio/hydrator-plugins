@@ -34,7 +34,6 @@ import co.cask.hydrator.plugin.realtime.source.TwitterSource;
 import co.cask.hydrator.plugin.transform.JavaScriptTransform;
 import co.cask.hydrator.plugin.transform.ProjectionTransform;
 import co.cask.hydrator.plugin.transform.PythonEvaluator;
-import co.cask.hydrator.plugin.transform.ScriptFilterTransform;
 import co.cask.hydrator.plugin.transform.StructuredRecordToGenericRecordTransform;
 import co.cask.hydrator.plugin.transform.ValidatorTransform;
 import org.junit.BeforeClass;
@@ -62,7 +61,7 @@ public class ETLRealtimeTestBase extends TestBase {
                       TwitterSource.class, SqsSource.class,
                       RealtimeCubeSink.class, RealtimeTableSink.class,
                       StreamSink.class,
-                      ProjectionTransform.class, ScriptFilterTransform.class,
+                      ProjectionTransform.class,
                       JavaScriptTransform.class, ValidatorTransform.class,
                       PythonEvaluator.class, PythonInterpreter.class,
                       StructuredRecordToGenericRecordTransform.class);
