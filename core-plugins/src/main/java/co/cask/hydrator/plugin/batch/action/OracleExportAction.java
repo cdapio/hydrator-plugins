@@ -103,11 +103,21 @@ public class OracleExportAction extends Action {
           throw new IOException(String.format("Error running command %s on hostname %s; exit code: %d",
                                               oracleExportCommand, config.oracleServerHostname, exitCode));
         }
-        String out = CharStreams.toString(outBuffer);
+
+        // Removing lines other than the query results from the output
+        StringBuffer out = new StringBuffer();
+        String line;
+        while ((line = outBuffer.readLine()) != null) {
+          if (Strings.isNullOrEmpty(line.trim())) {
+            break;
+          }
+          out.append(line + "\n");
+        }
+
         //SQLPLUS command errors are not fetched from session.getStderr().
         //Errors and output received after executing the command in SQLPlus prompt are the one that
         //are printed on the SQL prompt
-        if (out.contains("ERROR at line")) {
+        if (out.toString().contains("ERROR at line")) {
           throw new IOException(String.format("Error executing sqlplus query %s on hostname %s; error message: %s",
                                               config.queryToExecute, config.oracleServerHostname, out));
         }
@@ -115,7 +125,7 @@ public class OracleExportAction extends Action {
         try (FileSystem fs = FileSystem.get(file.toUri(), new Configuration());
              FSDataOutputStream outStream = fs.create(file);
              BufferedWriter br = new BufferedWriter(new OutputStreamWriter(outStream, StandardCharsets.UTF_8))) {
-          br.write(out);
+          br.write(out.toString());
         }
       }
     } finally {
