@@ -32,12 +32,12 @@ import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetAddress;
 import javax.annotation.Nullable;
 
 /**
@@ -85,14 +85,19 @@ public class RealtimeElasticsearchSink extends ReferenceRealtimeSink<StructuredR
     realtimeESSinkConfig.cluster = Strings.isNullOrEmpty(realtimeESSinkConfig.cluster) ?
       "elasticsearch" : realtimeESSinkConfig.cluster;
 
-    Settings settings = ImmutableSettings.settingsBuilder()
+    Settings settings = Settings.settingsBuilder()
       .put("node.name", "cdap")
       .put("cluster.name", realtimeESSinkConfig.cluster)
       .put("client.transport.sniff", true).build();
-    client = new TransportClient(settings);
+    client = TransportClient.builder().settings(settings).build();
+    String ipPort = realtimeESSinkConfig.transportAddresses;
 
-    for (String address : realtimeESSinkConfig.transportAddresses.split(",")) {
-      client.addTransportAddress(new InetSocketTransportAddress(address.split(":")[0],
+    if (Strings.isNullOrEmpty(ipPort)) {
+      ipPort = "localhost:9200";
+    }
+
+    for (String address : ipPort.split(",")) {
+      client.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(address.split(":")[0]),
                                                                 Integer.valueOf(address.split(":")[1])));
     }
   }
@@ -149,11 +154,11 @@ public class RealtimeElasticsearchSink extends ReferenceRealtimeSink<StructuredR
 
     @Name(ESProperties.ID_FIELD)
     @Description(ID_DESCRIPTION)
-    @Nullable
     private String idField;
 
     @Name(ESProperties.TRANSPORT_ADDRESSES)
     @Description(TRANSPORT_ADDRESS_DESCRIPTION)
+    @Nullable
     private String transportAddresses;
 
     @Name(ESProperties.CLUSTER)
@@ -161,8 +166,8 @@ public class RealtimeElasticsearchSink extends ReferenceRealtimeSink<StructuredR
     @Nullable
     private String cluster;
 
-    public RealtimeESSinkConfig(String referenceName, String index, String type, @Nullable String idField,
-                                String transportAddresses, @Nullable String cluster) {
+    public RealtimeESSinkConfig(String referenceName, String index, String type, String idField,
+                                @Nullable String transportAddresses, @Nullable String cluster) {
       super(referenceName);
       this.index = index;
       this.type = type;

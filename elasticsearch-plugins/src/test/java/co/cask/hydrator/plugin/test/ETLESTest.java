@@ -61,7 +61,7 @@ import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.search.SearchHit;
 import org.junit.After;
@@ -141,12 +141,12 @@ public class ETLESTest extends HydratorTestBase {
   public void beforeTest() throws Exception {
     httpPort = Networks.getRandomPort();
     transportPort = Networks.getRandomPort();
-    ImmutableSettings.Builder elasticsearchSettings = ImmutableSettings.settingsBuilder()
+    Settings elasticsearchSettings = Settings.settingsBuilder()
       .put("path.data", tmpFolder.newFolder("data"))
       .put("cluster.name", "testcluster")
       .put("http.port", httpPort)
-      .put("transport.tcp.port", transportPort);
-    node = nodeBuilder().settings(elasticsearchSettings.build()).client(false).node();
+      .put("transport.tcp.port", transportPort).build();
+    node = nodeBuilder().settings(elasticsearchSettings).client(false).node();
     client = node.client();
   }
 
