@@ -100,7 +100,8 @@ public class AvroGenericRecordReader implements
           }
 
           Properties props = pathsAndParts.getValue().getProperties();
-          if(props.containsKey(AvroSerdeUtils.SCHEMA_LITERAL) || props.containsKey(AvroSerdeUtils.SCHEMA_URL)) {
+          if(props.containsKey(AvroSerdeUtils.AvroTableProperties.SCHEMA_LITERAL) ||
+            props.containsKey(AvroSerdeUtils.AvroTableProperties.SCHEMA_URL)) {
             return AvroSerdeUtils.determineSchemaOrThrowException(job, props);
           }
           else {

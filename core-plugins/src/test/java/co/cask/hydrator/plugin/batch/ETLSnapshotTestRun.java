@@ -47,6 +47,7 @@ import org.apache.twill.filesystem.Location;
 import org.junit.Assert;
 import org.junit.Test;
 import parquet.avro.AvroParquetReader;
+import parquet.hadoop.ParquetReader;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -292,7 +293,8 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
         fileStream.close();
       } else if (fileName.endsWith(".parquet")) {
         Path parquetFile = new Path(file.toString());
-        AvroParquetReader<GenericRecord> reader = new AvroParquetReader<>(parquetFile);
+        AvroParquetReader.Builder<GenericRecord> genericRecordBuilder = AvroParquetReader.builder(parquetFile);
+        ParquetReader<GenericRecord> reader = genericRecordBuilder.build();
         GenericRecord record = reader.read();
         while (record != null) {
           contents.put(record.get("id").toString(), (Integer) record.get("price"));

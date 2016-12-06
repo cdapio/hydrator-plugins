@@ -104,7 +104,7 @@ public class ETLStreamConversionTestRun extends ETLBatchTestBase {
     List<GenericRecord> records = readOutput(fileSet, EVENT_SCHEMA);
     Assert.assertEquals(1, records.size());
 
-    try (Connection sqlConn = getQueryClient(appId.getParent().toId());
+    try (Connection sqlConn = getQueryClient(appId.getParent());
          ResultSet resultSet = sqlConn.prepareStatement(String.format("select * from dataset_%s", filesetName))
            .executeQuery()) {
       Assert.assertTrue(resultSet.next());

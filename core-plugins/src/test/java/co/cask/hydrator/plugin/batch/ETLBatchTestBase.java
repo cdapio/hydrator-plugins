@@ -74,6 +74,7 @@ import org.junit.ClassRule;
 import parquet.avro.AvroParquetInputFormat;
 import parquet.avro.AvroParquetOutputFormat;
 import parquet.avro.AvroParquetReader;
+import parquet.hadoop.ParquetReader;
 
 import java.io.IOException;
 import java.util.List;
@@ -160,7 +161,8 @@ public class ETLBatchTestBase extends HydratorTestBase {
       }
       if (locName.endsWith(".parquet")) {
         Path parquetFile = new Path(file.toString());
-        AvroParquetReader<GenericRecord> reader = new AvroParquetReader<>(parquetFile);
+        AvroParquetReader.Builder<GenericRecord> genericRecordBuilder = AvroParquetReader.builder(parquetFile);
+        ParquetReader<GenericRecord> reader = genericRecordBuilder.build();
         GenericRecord result = reader.read();
         while (result != null) {
           records.add(result);
