@@ -29,6 +29,8 @@ import net.sf.cb2xml.def.Cb2xmlConstants;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Utility class to parse and read COBOL Copybook and binary data file contents.
@@ -61,8 +63,12 @@ public class CopybookIOUtils {
    */
   public static int getRecordLength(ExternalRecord externalRecord, int fileStructure) {
     int recordByteLength = 0;
+    Set<Integer> fieldPositions = new HashSet<>();
     for (ExternalField field : externalRecord.getRecordFields()) {
-      recordByteLength += field.getLen();
+      if (!fieldPositions.contains(field.getPos())) {
+        recordByteLength += field.getLen();
+        fieldPositions.add(field.getPos());
+      }
     }
     return recordByteLength;
   }
