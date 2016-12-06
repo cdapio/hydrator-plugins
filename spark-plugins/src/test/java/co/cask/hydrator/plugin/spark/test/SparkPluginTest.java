@@ -164,7 +164,7 @@ public class SparkPluginTest extends HydratorTestBase {
 
     List<HttpHandler> handlers = new ArrayList<>();
     handlers.add(new MockFeedHandler());
-    httpService = NettyHttpService.builder()
+    httpService = NettyHttpService.builder("MockService")
       .addHttpHandlers(handlers)
       .build();
     httpService.startAndWait();
