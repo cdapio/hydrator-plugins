@@ -22,9 +22,9 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
+import co.cask.cdap.datapipeline.DataPipelineApp;
+import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.batch.BatchSource;
-import co.cask.cdap.etl.batch.ETLBatchApplication;
-import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.mock.batch.MockSink;
 import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
@@ -37,8 +37,8 @@ import co.cask.cdap.proto.id.ArtifactId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
-import co.cask.cdap.test.MapReduceManager;
 import co.cask.cdap.test.TestConfiguration;
+import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.common.Constants;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.io.FileUtils;
@@ -64,8 +64,8 @@ public class ExcelInputReaderTest extends HydratorTestBase {
 
   private static final ArtifactVersion CURRENT_VERSION = new ArtifactVersion("3.4.0-SNAPSHOT");
   private static final ArtifactId BATCH_APP_ARTIFACT_ID =
-    NamespaceId.DEFAULT.artifact("etlbatch", CURRENT_VERSION.getVersion());
-  private static final ArtifactSummary ETLBATCH_ARTIFACT =
+    NamespaceId.DEFAULT.artifact("data-pipeline", CURRENT_VERSION.getVersion());
+  private static final ArtifactSummary BATCH_ARTIFACT =
     new ArtifactSummary(BATCH_APP_ARTIFACT_ID.getArtifact(), BATCH_APP_ARTIFACT_ID.getVersion());
 
   @ClassRule
@@ -81,7 +81,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
 
   @BeforeClass
   public static void setupTest() throws Exception {
-    setupBatchArtifacts(BATCH_APP_ARTIFACT_ID, ETLBatchApplication.class);
+    setupBatchArtifacts(BATCH_APP_ARTIFACT_ID, DataPipelineApp.class);
 
     // add artifact for batch sources and sinks
     addPluginArtifact(NamespaceId.DEFAULT.artifact("excelreader-plugins", "4.0.0"), BATCH_APP_ARTIFACT_ID,
@@ -127,7 +127,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
     ApplicationManager appManager = deployApp(source, sink, "ExcelTests");
-    startMR(appManager);
+    startWorkflow(appManager);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -187,7 +187,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     keyValueTable.write(testFile.toURI().toString(), String.valueOf(System.currentTimeMillis()));
     dataSetManager.flush();
 
-    startMR(appManager);
+    startWorkflow(appManager);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -233,7 +233,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
 
     dataSetManager.flush();
 
-    startMR(appManager);
+    startWorkflow(appManager);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -278,7 +278,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
     ApplicationManager appManager = deployApp(source, sink, "testWithColumnsToBeExtracted");
-    startMR(appManager);
+    startWorkflow(appManager);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -330,7 +330,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
     ApplicationManager appManager = deployApp(source, sink, "testWithErrorRecord");
-    startMR(appManager);
+    startWorkflow(appManager);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -408,9 +408,9 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
     ApplicationManager appManager = deployApp(source, sink, "testWithTerminateIfEmptyRow");
-    MapReduceManager mrManager = startMR(appManager);
+    WorkflowManager workflowManager = startWorkflow(appManager);
 
-    Assert.assertEquals("Expected :", "FAILED", mrManager.getHistory().get(0).getStatus().name());
+    Assert.assertEquals("Expected :", "FAILED", workflowManager.getHistory().get(0).getStatus().name());
   }
 
   @Test(expected = IllegalStateException.class)
@@ -513,7 +513,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     keyValueTable.write(Bytes.toBytes(testFile.toURI().toString()), Bytes.toBytes(cal.getTimeInMillis()));
     dataSetManager.flush();
 
-    startMR(appManager);
+    startWorkflow(appManager);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -529,16 +529,16 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app(appName);
     return deployApplication(appId.toId(), appRequest);
   }
 
-  private MapReduceManager startMR(ApplicationManager appManager) throws Exception {
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(5, TimeUnit.MINUTES);
-    return mrManager;
+  private WorkflowManager startWorkflow(ApplicationManager appManager) throws Exception {
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    return workflowManager;
   }
 
   @Test(expected = IllegalStateException.class)

@@ -17,7 +17,7 @@
 package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.artifact.ArtifactVersion;
-import co.cask.cdap.etl.batch.ETLBatchApplication;
+import co.cask.cdap.datapipeline.DataPipelineApp;
 import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
 import co.cask.cdap.proto.id.ArtifactId;
@@ -44,14 +44,14 @@ public class TransformPluginsTestBase extends HydratorTestBase {
   private static final ArtifactVersion CURRENT_VERSION = new ArtifactVersion("3.2.0");
 
   private static final ArtifactId BATCH_APP_ARTIFACT_ID =
-    NamespaceId.DEFAULT.artifact("etlbatch", CURRENT_VERSION.getVersion());
-  protected static final ArtifactSummary ETLBATCH_ARTIFACT =
+    NamespaceId.DEFAULT.artifact("data-pipeline", CURRENT_VERSION.getVersion());
+  protected static final ArtifactSummary BATCH_ARTIFACT =
     new ArtifactSummary(BATCH_APP_ARTIFACT_ID.getArtifact(), BATCH_APP_ARTIFACT_ID.getVersion());
 
   @BeforeClass
   public static void setupTestClass() throws Exception {
     // Add the ETL batch artifact and mock plugins.
-    setupBatchArtifacts(BATCH_APP_ARTIFACT_ID, ETLBatchApplication.class);
+    setupBatchArtifacts(BATCH_APP_ARTIFACT_ID, DataPipelineApp.class);
 
     // Add our plugins artifact with the ETL batch artifact as its parent.
     // This will make our plugins available to the ETL batch.

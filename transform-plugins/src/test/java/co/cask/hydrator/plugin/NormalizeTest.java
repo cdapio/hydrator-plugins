@@ -19,8 +19,8 @@ package co.cask.hydrator.plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Table;
+import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.Transform;
-import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.mock.batch.MockSink;
 import co.cask.cdap.etl.mock.batch.MockSource;
 import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
@@ -32,7 +32,7 @@ import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
-import co.cask.cdap.test.MapReduceManager;
+import co.cask.cdap.test.WorkflowManager;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
@@ -67,7 +67,7 @@ public class NormalizeTest extends TransformPluginsTestBase {
   private static final double ITEM_COST_ROW1 = 245.67;
   private static final double ITEM_COST_ROW2 = 67.90;
   private static final double ITEM_COST_ROW3 = 14.15;
-  private static final Map<String, Object> dataMap = new HashMap<String, Object>();
+  private static final Map<String, Object> dataMap = new HashMap<>();
   private static final Schema INPUT_SCHEMA =
     Schema.recordOf("inputSchema",
                     Schema.Field.of(CUSTOMER_ID, Schema.of(Schema.Type.STRING)),
@@ -119,15 +119,15 @@ public class NormalizeTest extends TransformPluginsTestBase {
       .addConnection(transform.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app(applicationName);
     return deployApplication(appId.toId(), appRequest);
   }
 
   private void startMapReduceJob(ApplicationManager appManager) throws Exception {
-    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
-    mrManager.start();
-    mrManager.waitForFinish(5, TimeUnit.MINUTES);
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
   }
 
   @Test

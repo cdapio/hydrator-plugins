@@ -99,7 +99,7 @@ public class NGramTransformTest extends HydratorTestBase {
     setupBatchArtifacts(DATAPIPELINE_ARTIFACT_ID, DataPipelineApp.class);
     // add artifact for spark plugins
     Set<ArtifactRange> parents = ImmutableSet.of(
-      new ArtifactRange(NamespaceId.DEFAULT.toId(), DATAPIPELINE_ARTIFACT_ID.getArtifact(),
+      new ArtifactRange(NamespaceId.DEFAULT, DATAPIPELINE_ARTIFACT_ID.getArtifact(),
                         new ArtifactVersion(DATAPIPELINE_ARTIFACT_ID.getVersion()), true,
                         new ArtifactVersion(DATAPIPELINE_ARTIFACT_ID.getVersion()), true)
     );
@@ -115,7 +115,7 @@ public class NGramTransformTest extends HydratorTestBase {
    */
   private ETLBatchConfig buildETLBatchConfig(String mockNameOfSourcePlugin,
                                              String mockNameOfSinkPlugin, String ngramSize) {
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    return ETLBatchConfig.builder("* * * * *")
       .addStage(new ETLStage("source", MockSource.getPlugin(mockNameOfSourcePlugin)))
       .addStage(new ETLStage("sparkcompute",
                              new ETLPlugin(NGramTransform.PLUGIN_NAME, SparkCompute.PLUGIN_TYPE,
@@ -127,7 +127,6 @@ public class NGramTransformTest extends HydratorTestBase {
       .addConnection("source", "sparkcompute")
       .addConnection("sparkcompute", "sink")
       .build();
-    return etlConfig;
   }
 
   @Test

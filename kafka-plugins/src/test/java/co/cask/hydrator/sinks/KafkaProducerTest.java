@@ -107,7 +107,7 @@ public class KafkaProducerTest {
     kafkaproducer.write(input, null);
     
     final CountDownLatch latch = new CountDownLatch(input.size());
-    final List<String> consumedMessages = new ArrayList<String>(input.size());
+    final List<String> consumedMessages = new ArrayList<>(input.size());
       kafkaClient.getConsumer().prepare()
         .addFromBeginning(testTopic, 0)
         .addFromBeginning(testTopic, 1)
@@ -158,7 +158,7 @@ public class KafkaProducerTest {
     kafkaproducer.write(input, null);
 
     final CountDownLatch latch = new CountDownLatch(input.size());
-    final List<String> consumedMessages = new ArrayList<String>(input.size());
+    final List<String> consumedMessages = new ArrayList<>(input.size());
     kafkaClient.getConsumer().prepare()
       .addFromBeginning(testTopic, 0)
       .addFromBeginning(testTopic, 1)
@@ -209,7 +209,7 @@ public class KafkaProducerTest {
     kafkaproducer.write(input, null);
 
     final CountDownLatch latch = new CountDownLatch(input.size());
-    final List<String> consumedMessages = new ArrayList<String>(input.size());
+    final List<String> consumedMessages = new ArrayList<>(input.size());
     kafkaClient.getConsumer().prepare()
       .addFromBeginning(testTopic, 0)
       .addFromBeginning(testTopic, 1)
@@ -260,7 +260,7 @@ public class KafkaProducerTest {
     kafkaproducer.write(input, null);
 
     final CountDownLatch latch = new CountDownLatch(input.size());
-    final List<String> consumedMessages = new ArrayList<String>(input.size());
+    final List<String> consumedMessages = new ArrayList<>(input.size());
     kafkaClient.getConsumer().prepare()
       .addFromBeginning(testTopic, 0)
       .addFromBeginning(testTopic, 1)
@@ -311,7 +311,7 @@ public class KafkaProducerTest {
     kafkaproducer.write(input, null);
 
     final CountDownLatch latch = new CountDownLatch(input.size());
-    final List<String> consumedMessages = new ArrayList<String>(input.size());
+    final List<String> consumedMessages = new ArrayList<>(input.size());
     kafkaClient.getConsumer().prepare()
       .addFromBeginning(testTopic, 0)
       .addFromBeginning(testTopic, 1)
@@ -363,7 +363,7 @@ public class KafkaProducerTest {
     kafkaproducer.write(input, null);
 
     final CountDownLatch latch = new CountDownLatch(input.size());
-    final List<String> consumedMessages = new ArrayList<String>(input.size());
+    final List<String> consumedMessages = new ArrayList<>(input.size());
     kafkaClient.getConsumer().prepare()
       .addFromBeginning(testTopic, 0)
       .addFromBeginning(testTopic, 1)

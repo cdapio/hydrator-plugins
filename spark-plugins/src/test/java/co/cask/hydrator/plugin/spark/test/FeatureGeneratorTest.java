@@ -27,7 +27,6 @@ import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
 import co.cask.cdap.proto.id.ApplicationId;
@@ -112,7 +111,7 @@ public class FeatureGeneratorTest extends HydratorTestBase {
         .set("body", "Logistic regression models are neat").build()
     );
 
-    DataSetManager<Table> inputManager = getDataset(Id.Namespace.DEFAULT, source);
+    DataSetManager<Table> inputManager = getDataset(NamespaceId.DEFAULT.dataset(source));
     MockSource.writeInput(inputManager, input);
 
     // manually trigger the pipeline

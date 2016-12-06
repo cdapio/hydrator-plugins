@@ -18,6 +18,7 @@ package co.cask.hydrator.plugin.batch.sink;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Macro;
+import co.cask.cdap.api.data.batch.Output;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.DatasetManagementException;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
@@ -88,7 +89,8 @@ public abstract class SnapshotFileBatchSink<KEY_OUT, VAL_OUT> extends BatchSink<
     if (config.getFileProperties() != null) {
       arguments = GSON.fromJson(config.getFileProperties(), MAP_TYPE);
     }
-    context.addOutput(config.getName(), snapshotFileSet.getOutputArguments(context.getLogicalStartTime(), arguments));
+    context.addOutput(Output.ofDataset(config.getName(),
+                                       snapshotFileSet.getOutputArguments(context.getLogicalStartTime(), arguments)));
   }
 
   @Override
