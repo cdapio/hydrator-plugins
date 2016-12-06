@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -38,6 +38,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 import java.text.SimpleDateFormat;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * {@link S3AvroBatchSink} that stores data in avro format to S3.
@@ -84,6 +85,10 @@ public class S3AvroBatchSink extends S3BatchSink<AvroKey<GenericRecord>, NullWri
     @Description(SCHEMA_DESC)
     private String schema;
 
+    @Nullable
+    @Description("Used to specify the compression codec to be used for the final dataset.")
+    private String compressionCodec;
+
     @SuppressWarnings("unused")
     public S3AvroSinkConfig() {
       super();
@@ -91,9 +96,10 @@ public class S3AvroBatchSink extends S3BatchSink<AvroKey<GenericRecord>, NullWri
 
     @SuppressWarnings("unused")
     public S3AvroSinkConfig(String referenceName, String basePath, String schema, String accessID, String accessKey,
-                            String pathFormat, String filesystemProperties) {
+                            String pathFormat, String filesystemProperties, @Nullable String compressionCodec) {
       super(referenceName, basePath, accessID, accessKey, pathFormat, filesystemProperties);
       this.schema = schema;
+      this.compressionCodec = compressionCodec;
     }
   }
 
@@ -111,6 +117,19 @@ public class S3AvroBatchSink extends S3BatchSink<AvroKey<GenericRecord>, NullWri
       conf = Maps.newHashMap();
       conf.put(JobContext.OUTPUT_KEY_CLASS, AvroKey.class.getName());
       conf.put("avro.schema.output.key", config.schema);
+      if (config.compressionCodec != null && !config.compressionCodec.equals("None")) {
+        conf.put("mapred.output.compress", "true");
+        switch (config.compressionCodec) {
+          case "Snappy":
+            conf.put("avro.output.codec", "snappy");
+            break;
+          case "Deflate":
+            conf.put("avro.output.codec", "deflate");
+            break;
+          default:
+            throw new IllegalArgumentException("Unsupported compression codec " + config.compressionCodec);
+        }
+      }
       conf.put(FileOutputFormat.OUTDIR,
                String.format("%s/%s", config.basePath, format.format(context.getLogicalStartTime())));
     }

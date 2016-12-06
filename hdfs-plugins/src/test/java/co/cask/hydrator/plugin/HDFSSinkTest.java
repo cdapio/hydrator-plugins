@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -182,5 +182,55 @@ public class HDFSSinkTest extends HydratorTestBase {
     }
     Assert.assertEquals(2, lines.size());
     Assert.assertEquals(2, count);
+  }
+
+  @Test
+  public void testAddingJobProperties() throws Exception {
+    String inputDatasetName = "input-hdfssinktest";
+
+    ETLStage source = new ETLStage("source", MockSource.getPlugin(inputDatasetName));
+
+    Path outputDir = dfsCluster.getFileSystem().getHomeDirectory();
+    ETLStage sink = new ETLStage("HDFS", new ETLPlugin(
+      "HDFS",
+      BatchSink.PLUGIN_TYPE,
+      ImmutableMap.<String, String>builder()
+        .put("path", outputDir.toUri().toString())
+        .put(Constants.Reference.REFERENCE_NAME, "HDFSinkTest")
+        .put("jobProperties", "{" +
+          "\"mapreduce.output.fileoutputformat.compress\":\"true\"," +
+          "\"mapreduce.output.fileoutputformat.compress.codec\":\"org.apache.hadoop.io.compress.DefaultCodec\"," +
+          "\"mapreduce.output.fileoutputformat.compress.type\":\"BLOCK\"" +
+          "}")
+        .build(),
+      null));
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
+    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "HDFSTest");
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+
+    DataSetManager<Table> inputManager = getDataset(inputDatasetName);
+    List<StructuredRecord> input = ImmutableList.of(
+      StructuredRecord.builder(SCHEMA).set("ticker", null).set("num", 10).set("price", 400.23).build(),
+      StructuredRecord.builder(SCHEMA).set("ticker", "CDAP").set("num", 13).set("price", 123.23).build()
+    );
+    MockSource.writeInput(inputManager, input);
+
+    MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
+    mrManager.start();
+    mrManager.waitForFinish(5, TimeUnit.MINUTES);
+
+    Path[] outputFiles = FileUtil.stat2Paths(dfsCluster.getFileSystem().listStatus(
+      outputDir, new Utils.OutputFileUtils.OutputFilesFilter()));
+    Assert.assertNotNull(outputFiles);
+    Assert.assertTrue(outputFiles.length > 0);
+    for (Path path : outputFiles) {
+      Assert.assertTrue(path.getName().endsWith(".deflate"));
+    }
   }
 }

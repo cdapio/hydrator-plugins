@@ -1,3 +1,4 @@
+
 {
   "metadata": {
     "spec-version": "1.0"
@@ -32,6 +33,20 @@
           "name": "pathFormat"
         },
         {
+          "widget-type": "select",
+          "label": "Compression Codec",
+          "name": "compressionCodec",
+          "widget-attributes": {
+            "values": [
+              "None",
+              "Snappy",
+              "GZip",
+              "LZO"
+            ],
+            "default": "None"
+          }
+        },
+        {
           "widget-type": "json-editor",
           "label": "File System Properties",
           "name": "fileSystemProperties"
@@ -40,22 +55,22 @@
     }
   ],
   "outputs": [
-  {
-    "name": "schema",
-    "widget-type": "schema",
-    "widget-attributes": {
-      "schema-types": [
-        "boolean",
-        "int",
-        "long",
-        "float",
-        "double",
-        "bytes",
-        "string",
-        "map<string, string>"
-      ],
-      "schema-default-type": "string"
+    {
+      "name": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "schema-types": [
+          "boolean",
+          "int",
+          "long",
+          "float",
+          "double",
+          "bytes",
+          "string",
+          "map<string, string>"
+        ],
+        "schema-default-type": "string"
+      }
     }
-  }
-]
+  ]
 }
