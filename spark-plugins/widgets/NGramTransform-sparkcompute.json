@@ -12,6 +12,23 @@
           "name": "fieldToBeTransformed"
         },
         {
+          "widget-type": "select",
+          "label": "Entity to be tokenized",
+          "name": "tokenizationUnit",
+          "widget-attributes": {
+            "values": [
+              "word",
+              "character"
+            ],
+            "default": "word"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Pattern to split the input string fields on",
+          "name": "patternSeparator"
+        },
+        {
           "widget-type": "textbox",
           "label": "N-Gram Size",
           "name": "ngramSize"
