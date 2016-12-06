@@ -52,7 +52,6 @@ import co.cask.hydrator.plugin.batch.source.TimePartitionedFileSetDatasetParquet
 import co.cask.hydrator.plugin.transform.JavaScriptTransform;
 import co.cask.hydrator.plugin.transform.ProjectionTransform;
 import co.cask.hydrator.plugin.transform.PythonEvaluator;
-import co.cask.hydrator.plugin.transform.ScriptFilterTransform;
 import co.cask.hydrator.plugin.transform.StructuredRecordToGenericRecordTransform;
 import co.cask.hydrator.plugin.transform.ValidatorTransform;
 import co.cask.hydrator.plugin.validator.CoreValidator;
@@ -122,7 +121,7 @@ public class ETLBatchTestBase extends HydratorTestBase {
                       SnapshotFileBatchAvroSource.class, SnapshotFileBatchParquetSource.class,
                       S3AvroBatchSink.class, S3ParquetBatchSink.class,
                       FTPBatchSource.class,
-                      ProjectionTransform.class, ScriptFilterTransform.class,
+                      ProjectionTransform.class,
                       ValidatorTransform.class, CoreValidator.class,
                       StructuredRecordToGenericRecordTransform.class,
                       JavaScriptTransform.class,
