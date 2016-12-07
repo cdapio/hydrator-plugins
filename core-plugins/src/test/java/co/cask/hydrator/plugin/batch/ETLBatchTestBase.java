@@ -65,6 +65,7 @@ import org.apache.avro.io.DatumReader;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hive.ql.exec.vector.TimestampColumnVector;
 import org.apache.orc.mapred.OrcStruct;
 import org.apache.orc.mapreduce.OrcMapreduceRecordWriter;
 import org.apache.twill.filesystem.Location;
@@ -116,7 +117,8 @@ public class ETLBatchTestBase extends HydratorTestBase {
                       BatchCubeSink.class, KVTableSink.class, TableSink.class,
                       TimePartitionedFileSetDatasetAvroSink.class, AvroKeyOutputFormat.class, AvroKey.class,
                       TimePartitionedFileSetDatasetParquetSink.class, AvroParquetOutputFormat.class,
-                      TimePartitionedFileSetDataSetORCSink.class, OrcStruct.class, OrcMapreduceRecordWriter.class,
+                      TimePartitionedFileSetDataSetORCSink.class, OrcStruct.class,
+                      OrcMapreduceRecordWriter.class, TimestampColumnVector.class,
                       SnapshotFileBatchAvroSink.class, SnapshotFileBatchParquetSink.class,
                       SnapshotFileBatchAvroSource.class, SnapshotFileBatchParquetSource.class,
                       S3AvroBatchSink.class, S3ParquetBatchSink.class,
