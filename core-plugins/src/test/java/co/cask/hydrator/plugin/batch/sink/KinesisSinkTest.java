@@ -22,12 +22,14 @@ import co.cask.cdap.etl.batch.mapreduce.ETLMapReduce;
 import co.cask.cdap.etl.common.ETLStage;
 import co.cask.cdap.etl.common.Plugin;
 import co.cask.cdap.proto.Id;
+import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.MapReduceManager;
 import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -84,6 +86,6 @@ public class KinesisSinkTest extends ETLBatchTestBase {
     // Throws illegal argument exception because of invalid AWS keys
     mrManager.start();
     mrManager.waitForFinish(5, TimeUnit.MINUTES);
-
+    Assert.assertEquals(mrManager.getHistory().get(0).getStatus(), ProgramRunStatus.FAILED);
   }
 }

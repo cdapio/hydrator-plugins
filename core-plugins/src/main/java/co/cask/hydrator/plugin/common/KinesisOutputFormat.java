@@ -131,9 +131,8 @@ public class KinesisOutputFormat extends OutputFormat {
     }
 
     private void sendKinesisRecord(ByteBuffer data, PutRecordRequest putRecordRequest) {
-      boolean done = false;
       int retry = 0;
-      while (!done) {
+      while (true) {
         putRecordRequest.setData(data);
         try {
           kinesisClient.putRecord(putRecordRequest);
@@ -144,7 +143,7 @@ public class KinesisOutputFormat extends OutputFormat {
             LOG.debug("Throughput exceeded. Sleeping for 10 ms and retrying. Try # {}", retry + 1);
           } else {
             LOG.error("Maximum retries exhausted", ex);
-            done = true;
+            return;
           }
           try {
             Thread.sleep(10);
