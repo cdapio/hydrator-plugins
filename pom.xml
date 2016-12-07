@@ -40,7 +40,6 @@
     <module>mongodb-plugins</module>
     <module>spark-plugins</module>
     <module>transform-plugins</module>
-    <module>copybookreader-plugins</module>
   </modules>
 
   <licenses>
