@@ -86,6 +86,7 @@ public class KinesisSinkTest extends ETLBatchTestBase {
     // Throws illegal argument exception because of invalid AWS keys
     mrManager.start();
     mrManager.waitForFinish(5, TimeUnit.MINUTES);
+    Assert.assertEquals(mrManager.getHistory().size(), 1);
     Assert.assertEquals(mrManager.getHistory().get(0).getStatus(), ProgramRunStatus.FAILED);
   }
 }

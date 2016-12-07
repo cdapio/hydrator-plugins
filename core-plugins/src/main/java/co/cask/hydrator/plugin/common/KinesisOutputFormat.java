@@ -39,9 +39,9 @@ import java.nio.ByteBuffer;
  *
  */
 public class KinesisOutputFormat extends OutputFormat {
-  private static AmazonKinesisClient kinesisClient;
   private static final Logger LOG = LoggerFactory.getLogger(KinesisOutputFormat.class);
   private static final int MAX_RETRIES = 3;
+  private static AmazonKinesisClient kinesisClient;
 
   /**
    * Get the {@link RecordWriter} for the given task.
@@ -131,20 +131,13 @@ public class KinesisOutputFormat extends OutputFormat {
     }
 
     private void sendKinesisRecord(ByteBuffer data, PutRecordRequest putRecordRequest) {
-      int retry = 0;
-      while (true) {
+      for (int i = 0; i < MAX_RETRIES; i++) {
         putRecordRequest.setData(data);
         try {
           kinesisClient.putRecord(putRecordRequest);
           return;
         } catch (ProvisionedThroughputExceededException ex) {
-          retry++;
-          if (retry < MAX_RETRIES) {
-            LOG.debug("Throughput exceeded. Sleeping for 10 ms and retrying. Try # {}", retry + 1);
-          } else {
-            LOG.error("Maximum retries exhausted", ex);
-            return;
-          }
+          LOG.debug("Throughput exceeded. Sleeping for 10 ms and retrying.");
           try {
             Thread.sleep(10);
           } catch (InterruptedException e) {
@@ -152,6 +145,7 @@ public class KinesisOutputFormat extends OutputFormat {
           }
         }
       }
+      LOG.error("Maximum retries exhausted");
     }
 
     /**
