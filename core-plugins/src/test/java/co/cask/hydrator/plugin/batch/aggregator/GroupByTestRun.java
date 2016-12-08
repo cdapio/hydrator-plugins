@@ -28,8 +28,9 @@ import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
+import co.cask.cdap.proto.id.ApplicationId;
+import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.WorkflowManager;
@@ -132,7 +133,7 @@ public class GroupByTestRun extends ETLBatchTestBase {
       .addConnection(itemGroupStage.getName(), itemSinkStage.getName())
       .build();
     AppRequest<ETLBatchConfig> request = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "groupby-test");
+    ApplicationId appId = NamespaceId.DEFAULT.app("groupby-test");
     ApplicationManager appManager = deployApplication(appId, request);
 
     // write input data

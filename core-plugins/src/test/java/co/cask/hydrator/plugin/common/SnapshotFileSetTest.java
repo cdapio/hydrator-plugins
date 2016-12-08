@@ -22,7 +22,6 @@ import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSetProperties;
 import co.cask.cdap.api.dataset.lib.Partitioning;
 import co.cask.cdap.etl.mock.test.HydratorTestBase;
-import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.hydrator.plugin.batch.sink.SnapshotFileBatchSink;
 import co.cask.hydrator.plugin.dataset.SnapshotFileSet;
 import org.apache.avro.mapreduce.AvroKeyInputFormat;
@@ -36,8 +35,7 @@ import org.junit.Test;
 public class SnapshotFileSetTest extends HydratorTestBase {
   @Test
   public void testCleanup() throws Exception {
-    addDatasetInstance(NamespaceId.DEFAULT.toId(),
-                       PartitionedFileSet.class.getName(), "pfs", PartitionedFileSetProperties.builder()
+    addDatasetInstance(PartitionedFileSet.class.getName(), "pfs", PartitionedFileSetProperties.builder()
                          .setPartitioning(Partitioning.builder().addLongField(SnapshotFileSet.SNAPSHOT_FIELD).build())
                          .setInputFormat(AvroKeyInputFormat.class)
                          .setOutputFormat(AvroKeyOutputFormat.class)

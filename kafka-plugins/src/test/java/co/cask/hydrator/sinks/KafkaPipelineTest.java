@@ -27,9 +27,9 @@ import co.cask.cdap.etl.proto.v2.ETLRealtimeConfig;
 import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
 import co.cask.cdap.etl.realtime.ETLWorker;
-import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
+import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.ArtifactId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
@@ -140,7 +140,7 @@ public class KafkaPipelineTest extends HydratorTestBase {
       .addConnection("source", "sink")
       .build();
 
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "kafkaSourceTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("kafkaSourceTest");
     AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(APP_ARTIFACT, etlConfig);
     ApplicationManager appManager = deployApplication(appId, appRequest);
 

@@ -16,15 +16,16 @@
 
 package co.cask.hydrator.plugin.db.batch.action;
 
+import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.batch.PostAction;
-import co.cask.cdap.etl.batch.ETLWorkflow;
 import co.cask.cdap.etl.mock.batch.MockSink;
 import co.cask.cdap.etl.mock.batch.MockSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
+import co.cask.cdap.proto.id.ApplicationId;
+import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.DatabasePluginTestBase;
@@ -75,11 +76,11 @@ public class DBQueryActionTestRun extends DatabasePluginTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, config);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "postActionTest");
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
+    ApplicationId appId = NamespaceId.DEFAULT.app("postActionTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
-    WorkflowManager workflowManager = appManager.getWorkflowManager(ETLWorkflow.NAME);
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start(ImmutableMap.of("logical.start.time", "0"));
     workflowManager.waitForFinish(5, TimeUnit.MINUTES);
 

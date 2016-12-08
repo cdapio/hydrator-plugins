@@ -20,9 +20,7 @@ import co.cask.cdap.api.artifact.ArtifactVersion;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.datapipeline.DataPipelineApp;
-import co.cask.cdap.etl.batch.ETLBatchApplication;
 import co.cask.cdap.etl.mock.test.HydratorTestBase;
-import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.ArtifactRange;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
 import co.cask.cdap.proto.id.ArtifactId;
@@ -67,6 +65,7 @@ import org.apache.avro.io.DatumReader;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hive.ql.exec.vector.TimestampColumnVector;
 import org.apache.orc.mapred.OrcStruct;
 import org.apache.orc.mapreduce.OrcMapreduceRecordWriter;
 import org.apache.twill.filesystem.Location;
@@ -75,6 +74,7 @@ import org.junit.ClassRule;
 import parquet.avro.AvroParquetInputFormat;
 import parquet.avro.AvroParquetOutputFormat;
 import parquet.avro.AvroParquetReader;
+import parquet.hadoop.ParquetReader;
 
 import java.io.IOException;
 import java.util.List;
@@ -88,10 +88,8 @@ public class ETLBatchTestBase extends HydratorTestBase {
   @ClassRule
   public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", true);
 
-  protected static final ArtifactId ETLBATCH_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("etlbatch", "3.2.0");
   protected static final ArtifactId DATAPIPELINE_ARTIFACT_ID =
     NamespaceId.DEFAULT.artifact("data-pipeline", "3.2.0");
-  protected static final ArtifactSummary ETLBATCH_ARTIFACT = new ArtifactSummary("etlbatch", "3.2.0");
   protected static final ArtifactSummary DATAPIPELINE_ARTIFACT = new ArtifactSummary("data-pipeline", "3.2.0");
 
   private static int startCount;
@@ -102,14 +100,10 @@ public class ETLBatchTestBase extends HydratorTestBase {
       return;
     }
 
-    setupBatchArtifacts(ETLBATCH_ARTIFACT_ID, ETLBatchApplication.class);
     setupBatchArtifacts(DATAPIPELINE_ARTIFACT_ID, DataPipelineApp.class);
 
     Set<ArtifactRange> parents = ImmutableSet.of(
-      new ArtifactRange(Id.Namespace.DEFAULT, ETLBATCH_ARTIFACT_ID.getArtifact(),
-                        new ArtifactVersion(ETLBATCH_ARTIFACT_ID.getVersion()), true,
-                        new ArtifactVersion(ETLBATCH_ARTIFACT_ID.getVersion()), true),
-      new ArtifactRange(Id.Namespace.DEFAULT, DATAPIPELINE_ARTIFACT_ID.getArtifact(),
+      new ArtifactRange(NamespaceId.DEFAULT, DATAPIPELINE_ARTIFACT_ID.getArtifact(),
                         new ArtifactVersion(DATAPIPELINE_ARTIFACT_ID.getVersion()), true,
                         new ArtifactVersion(DATAPIPELINE_ARTIFACT_ID.getVersion()), true)
     );
@@ -123,7 +117,8 @@ public class ETLBatchTestBase extends HydratorTestBase {
                       BatchCubeSink.class, KVTableSink.class, TableSink.class,
                       TimePartitionedFileSetDatasetAvroSink.class, AvroKeyOutputFormat.class, AvroKey.class,
                       TimePartitionedFileSetDatasetParquetSink.class, AvroParquetOutputFormat.class,
-                      TimePartitionedFileSetDataSetORCSink.class, OrcStruct.class, OrcMapreduceRecordWriter.class,
+                      TimePartitionedFileSetDataSetORCSink.class, OrcStruct.class,
+                      OrcMapreduceRecordWriter.class, TimestampColumnVector.class,
                       SnapshotFileBatchAvroSink.class, SnapshotFileBatchParquetSink.class,
                       SnapshotFileBatchAvroSource.class, SnapshotFileBatchParquetSource.class,
                       S3AvroBatchSink.class, S3ParquetBatchSink.class,
@@ -167,7 +162,8 @@ public class ETLBatchTestBase extends HydratorTestBase {
       }
       if (locName.endsWith(".parquet")) {
         Path parquetFile = new Path(file.toString());
-        AvroParquetReader<GenericRecord> reader = new AvroParquetReader<>(parquetFile);
+        AvroParquetReader.Builder<GenericRecord> genericRecordBuilder = AvroParquetReader.builder(parquetFile);
+        ParquetReader<GenericRecord> reader = genericRecordBuilder.build();
         GenericRecord result = reader.read();
         while (result != null) {
           records.add(result);

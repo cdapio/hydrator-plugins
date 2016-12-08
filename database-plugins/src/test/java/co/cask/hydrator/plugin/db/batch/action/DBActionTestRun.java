@@ -23,8 +23,9 @@ import co.cask.cdap.etl.mock.batch.MockSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.artifact.AppRequest;
+import co.cask.cdap.proto.id.ApplicationId;
+import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.DatabasePluginTestBase;
@@ -75,7 +76,7 @@ public class DBActionTestRun extends DatabasePluginTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "actionTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("actionTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);

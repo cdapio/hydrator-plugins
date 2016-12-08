@@ -59,7 +59,7 @@ public class SqsSourceTest {
     String testMsgExists = "testMessage1";
     String testMsgOrder = "testMessage2";
     AmazonSQSClient sqsClient = new AmazonSQSClient(new BasicAWSCredentials(SQSServer.AWS_CRED, SQSServer.AWS_CRED));
-    sqsClient.setEndpoint(sqsServer.getURL(), "sqs", "");
+    sqsClient.setEndpoint(sqsServer.getURL());
     sqsClient.createQueue(queueName);
     String queueURL = sqsClient.getQueueUrl(queueName).getQueueUrl();
     sqsClient.sendMessage(queueURL, testMsgExists);

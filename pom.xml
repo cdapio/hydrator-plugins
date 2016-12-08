@@ -40,7 +40,6 @@
     <module>mongodb-plugins</module>
     <module>spark-plugins</module>
     <module>transform-plugins</module>
-    <module>copybookreader-plugins</module>
     <module>solrsearch-plugins</module>
   </modules>
 
@@ -189,12 +188,6 @@
         <groupId>co.cask.cdap</groupId>
         <artifactId>cdap-formats</artifactId>
         <version>${cdap.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>co.cask.cdap</groupId>
-        <artifactId>cdap-etl-batch</artifactId>
-        <version>${cdap.version}</version>
-        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>co.cask.cdap</groupId>

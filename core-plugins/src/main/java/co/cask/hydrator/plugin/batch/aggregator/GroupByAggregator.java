@@ -148,6 +148,10 @@ public class GroupByAggregator extends RecordAggregator {
           "Invalid aggregate %s(%s): Field '%s' does not exist in input schema %s.",
           functionInfo.getFunction(), functionInfo.getField(), functionInfo.getField(), inputSchema));
       }
+      if (functionInfo.getField().equalsIgnoreCase(functionInfo.getName())) {
+        throw new IllegalArgumentException(String.format("Name '%s' should not be same as aggregate field '%s'",
+                                                         functionInfo.getName(), functionInfo.getField()));
+      }
       AggregateFunction aggregateFunction = functionInfo.getAggregateFunction(inputField.getSchema());
       outputFields.add(Schema.Field.of(functionInfo.getName(), aggregateFunction.getOutputSchema()));
     }
