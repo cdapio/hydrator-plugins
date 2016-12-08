@@ -16,7 +16,6 @@
 
 package co.cask.hydrator.plugin.common;
 
-import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
 import com.amazonaws.services.kinesis.model.ProvisionedThroughputExceededException;
@@ -73,16 +72,8 @@ public class KinesisOutputFormat extends OutputFormat {
     if (kinesisClient == null) {
       LOG.info("Creating amazon kinesis client for stream {}", Properties.KinesisRealtimeSink.NAME);
       kinesisClient = new AmazonKinesisClient(awsCred);
-      try {
         KinesisUtil.createAndWaitForStream(kinesisClient, conf.get(Properties.KinesisRealtimeSink.NAME),
                                            Integer.valueOf(conf.get(Properties.KinesisRealtimeSink.SHARD_COUNT)));
-      } catch (AmazonServiceException e) {
-        if (e.getStatusCode() == 400 && e.getErrorCode().equalsIgnoreCase("UnrecognizedClientException")) {
-          throw new IllegalArgumentException("AWS credentials are not correct", e);
-        } else {
-          throw e;
-        }
-      }
     }
   }
 
