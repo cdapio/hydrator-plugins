@@ -56,9 +56,7 @@ public class KinesisOutputFormat extends OutputFormat {
 
   /**
    * Check for validity of the output-specification for the job and initialize {@link AmazonKinesisClient}
-   * <p>
-   * <p>This is to validate the output specification for the job when it is
-   * a job is submitted.</p>
+   * This is to validate the output specification for the job when it is a job is submitted.
    *
    * @param context information about the job
    * @throws IOException when output should not be attempted
