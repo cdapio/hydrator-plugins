@@ -48,7 +48,7 @@ public class HTTPPollTest extends TestBase {
   @Before
   public void setupHttpService() {
     // Setup HTTP service for testing and add Handlers
-    service = NettyHttpService.builder()
+    service = NettyHttpService.builder("MockService")
       .setHost("localhost")
       .setPort(7777)
       .addHttpHandlers(ImmutableList.of(new PingHandler()))

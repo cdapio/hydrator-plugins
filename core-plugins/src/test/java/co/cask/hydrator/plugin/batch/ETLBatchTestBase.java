@@ -52,7 +52,6 @@ import co.cask.hydrator.plugin.batch.source.TimePartitionedFileSetDatasetParquet
 import co.cask.hydrator.plugin.transform.JavaScriptTransform;
 import co.cask.hydrator.plugin.transform.ProjectionTransform;
 import co.cask.hydrator.plugin.transform.PythonEvaluator;
-import co.cask.hydrator.plugin.transform.ScriptFilterTransform;
 import co.cask.hydrator.plugin.transform.StructuredRecordToGenericRecordTransform;
 import co.cask.hydrator.plugin.transform.ValidatorTransform;
 import co.cask.hydrator.plugin.validator.CoreValidator;
@@ -66,6 +65,7 @@ import org.apache.avro.io.DatumReader;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hive.ql.exec.vector.TimestampColumnVector;
 import org.apache.orc.mapred.OrcStruct;
 import org.apache.orc.mapreduce.OrcMapreduceRecordWriter;
 import org.apache.twill.filesystem.Location;
@@ -74,6 +74,7 @@ import org.junit.ClassRule;
 import parquet.avro.AvroParquetInputFormat;
 import parquet.avro.AvroParquetOutputFormat;
 import parquet.avro.AvroParquetReader;
+import parquet.hadoop.ParquetReader;
 
 import java.io.IOException;
 import java.util.List;
@@ -116,12 +117,13 @@ public class ETLBatchTestBase extends HydratorTestBase {
                       BatchCubeSink.class, KVTableSink.class, TableSink.class,
                       TimePartitionedFileSetDatasetAvroSink.class, AvroKeyOutputFormat.class, AvroKey.class,
                       TimePartitionedFileSetDatasetParquetSink.class, AvroParquetOutputFormat.class,
-                      TimePartitionedFileSetDataSetORCSink.class, OrcStruct.class, OrcMapreduceRecordWriter.class,
+                      TimePartitionedFileSetDataSetORCSink.class, OrcStruct.class,
+                      OrcMapreduceRecordWriter.class, TimestampColumnVector.class,
                       SnapshotFileBatchAvroSink.class, SnapshotFileBatchParquetSink.class,
                       SnapshotFileBatchAvroSource.class, SnapshotFileBatchParquetSource.class,
                       S3AvroBatchSink.class, S3ParquetBatchSink.class,
                       FTPBatchSource.class,
-                      ProjectionTransform.class, ScriptFilterTransform.class,
+                      ProjectionTransform.class,
                       ValidatorTransform.class, CoreValidator.class,
                       StructuredRecordToGenericRecordTransform.class,
                       JavaScriptTransform.class,
@@ -160,7 +162,8 @@ public class ETLBatchTestBase extends HydratorTestBase {
       }
       if (locName.endsWith(".parquet")) {
         Path parquetFile = new Path(file.toString());
-        AvroParquetReader<GenericRecord> reader = new AvroParquetReader<>(parquetFile);
+        AvroParquetReader.Builder<GenericRecord> genericRecordBuilder = AvroParquetReader.builder(parquetFile);
+        ParquetReader<GenericRecord> reader = genericRecordBuilder.build();
         GenericRecord result = reader.read();
         while (result != null) {
           records.add(result);

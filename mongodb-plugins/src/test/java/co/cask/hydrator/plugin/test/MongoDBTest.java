@@ -54,8 +54,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
 import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoCollection;
@@ -146,15 +144,15 @@ public class MongoDBTest extends HydratorTestBase {
     MongoIterable<String> collections = mongoDatabase.listCollectionNames();
     Assert.assertFalse(collections.iterator().hasNext());
     mongoDatabase.createCollection(MONGO_SOURCE_COLLECTIONS);
-    DB db = mongoClient.getDB(MONGO_DB);
-    DBCollection dbCollection = db.getCollection(MONGO_SOURCE_COLLECTIONS);
+    MongoDatabase db = mongoClient.getDatabase(MONGO_DB);
+    MongoCollection dbCollection = db.getCollection(MONGO_SOURCE_COLLECTIONS, BasicDBObject.class);
     BasicDBList basicDBList = new BasicDBList();
     basicDBList.put(1, "a1");
     basicDBList.put(2, "a2");
-    dbCollection.insert(new BasicDBObject(ImmutableMap.of("ticker", "AAPL", "num", 10, "price", 23.23,
-                                                          "agents", basicDBList)));
-    dbCollection.insert(new BasicDBObject(ImmutableMap.of("ticker", "ORCL", "num", 12, "price", 10.10,
-                                                          "agents", basicDBList)));
+    dbCollection.insertOne(new BasicDBObject(ImmutableMap.of("ticker", "AAPL", "num", 10, "price", 23.23,
+                                                             "agents", basicDBList)));
+    dbCollection.insertOne(new BasicDBObject(ImmutableMap.of("ticker", "ORCL", "num", 12, "price", 10.10,
+                                                             "agents", basicDBList)));
   }
 
   @After
