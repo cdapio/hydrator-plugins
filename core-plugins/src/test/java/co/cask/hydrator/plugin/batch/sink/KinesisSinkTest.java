@@ -41,10 +41,12 @@ import java.util.concurrent.TimeUnit;
  */
 public class KinesisSinkTest extends ETLBatchTestBase {
 
-
-
+  /**
+   * Method to test the kinesis client creation
+   * @throws Exception
+   */
   @Test
-  public void test() throws Exception {
+  public void testKinesisSink() throws Exception {
 
     Schema schema = Schema.recordOf(
       "action",

@@ -104,11 +104,13 @@ public class KinesisOutputFormat extends OutputFormat {
     private final AmazonKinesisClient kinesisClient;
     private final TaskAttemptContext context;
     private final boolean distribute;
+    private final String streamName;
 
     KinesisRecordWriter(AmazonKinesisClient kinesisClient, TaskAttemptContext context) {
       this.kinesisClient = kinesisClient;
       this.context = context;
-      distribute = "true".equals(context.getConfiguration().get(Properties.KinesisRealtimeSink.DISTRIBUTE));
+      this.distribute = context.getConfiguration().getBoolean(Properties.KinesisRealtimeSink.DISTRIBUTE, true);
+      this.streamName = context.getConfiguration().get(Properties.KinesisRealtimeSink.NAME);
     }
 
     /**
@@ -121,7 +123,7 @@ public class KinesisOutputFormat extends OutputFormat {
     @Override
     public void write(NullWritable key, Text value) throws IOException, InterruptedException {
       PutRecordRequest putRecordRequest = new PutRecordRequest();
-      putRecordRequest.setStreamName(context.getConfiguration().get(Properties.KinesisRealtimeSink.NAME));
+      putRecordRequest.setStreamName(streamName);
       // uniformly distribute data between shards if distribute is set to true, Otherwise write everything to a
       // single shard
       String dist = distribute ? String.valueOf(Math.random()) : String.valueOf(distribute);

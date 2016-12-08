@@ -53,9 +53,10 @@ import javax.annotation.Nullable;
 @Description("Sink that outputs to a specified AWS Kinesis stream.")
 public class KinesisSink extends ReferenceBatchSink<StructuredRecord, NullWritable, Text> {
 
-  private final KinesisConfig config;
   private static final String NULL_STRING = "\0";
   private static final Integer DEFAULT_SHARD_COUNT = 1;
+
+  private final KinesisConfig config;
 
   public KinesisSink(KinesisConfig config) {
     super(config);
@@ -158,7 +159,7 @@ public class KinesisSink extends ReferenceBatchSink<StructuredRecord, NullWritab
 
     public String getDistribute() {
       //ensuring that distribute can have only 2 possible values "true" or "false". defaults to true
-      return String.valueOf("true".equals(distribute));
+      return Boolean.toString(Boolean.parseBoolean(distribute));
     }
 
   }
