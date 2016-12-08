@@ -76,16 +76,16 @@ public class OracleExportAction extends Action {
     try {
       connection.connect();
       boolean isAuthenticated;
-      if ("password".equalsIgnoreCase(config.authMechanism)) {
-        isAuthenticated = connection.authenticateWithPassword(config.oracleServerUsername,
-                                                              config.oracleServerPassword);
+      if ("private key".equalsIgnoreCase(config.oracleServerSSHAuthMechanism)) {
+        isAuthenticated = connection.authenticateWithPublicKey(config.oracleServerSSHUsername ,
+                                                               config.oracleServerSSHPrivateKey.toCharArray(),
+                                                               config.oracleServerSSHPassphrase);
       } else {
-        isAuthenticated = connection.authenticateWithPublicKey(config.oracleServerUsername,
-                                                               config.privateKey.toCharArray(),
-                                                               config.passphrase);
+        isAuthenticated = connection.authenticateWithPassword(config.oracleServerSSHUsername ,
+                                                              config.oracleServerSSHPassword);
       }
       if (!isAuthenticated) {
-        throw new SSHAuthenticationException(config.oracleServerUsername, config.oracleServerHostname,
+        throw new SSHAuthenticationException(config.oracleServerSSHUsername , config.oracleServerHostname,
                                              config.oracleServerSSHPort);
       }
       Session session = connection.openSession();
@@ -117,7 +117,7 @@ public class OracleExportAction extends Action {
         //SQLPLUS command errors are not fetched from session.getStderr().
         //Errors and output received after executing the command in SQLPlus prompt are the one that
         //are printed on the SQL prompt
-        if (out.toString().contains("ERROR at line")) {
+        if (out.toString().contains("ERROR:") || out.toString().contains("ERROR at line")) {
           throw new IOException(String.format("Error executing sqlplus query %s on hostname %s; error message: %s",
                                               config.queryToExecute, config.oracleServerHostname, out));
         }
@@ -198,30 +198,30 @@ public class OracleExportAction extends Action {
 
     @Description("Username to use to connect to the remote Oracle Host via SSH.")
     @Macro
-    private String oracleServerUsername;
+    private String oracleServerSSHUsername;
 
     @Description("Authentication mechanism to perform the secure shell action. Acceptable values " +
       "are Private Key, Password.")
     @Macro
-    private String authMechanism;
+    private String oracleServerSSHAuthMechanism;
 
     @Nullable
     @Description("The password to be used to perform the secure shell action. This will be ignored when " +
       "Private Key is used as the authentication mechanism.")
     @Macro
-    private String oracleServerPassword;
+    private String oracleServerSSHPassword;
 
     @Nullable
     @Description("The private key to be used to perform the secure shell action. This will be ignored " +
       "when Password is used as the authentication mechanism.")
     @Macro
-    private String privateKey;
+    private String oracleServerSSHPrivateKey;
 
     @Nullable
     @Description("Passphrase used to decrypt the provided private key. This will be ignored " +
       "when Password is used as the authentication mechanism.")
     @Macro
-    private String passphrase;
+    private String oracleServerSSHPassphrase;
 
     @Description("Username to connect to the Oracle database.")
     @Macro
@@ -273,18 +273,20 @@ public class OracleExportAction extends Action {
     }
 
     public OracleExportActionConfig(String oracleServerHostname, @Nullable Integer oracleServerPort,
-                                    String oracleServerUsername, String authMechanism, String oracleServerPassword,
-                                    String privateKey, String passphrase, String dbUsername, String dbPassword,
-                                    String oracleHome, String oracleSID,
-                                    String outputPath, String queryToExecute, String commandToRun,
-                                    String tmpSQLScriptDirectory, String format) {
+                                    String oracleServerSSHUsername , String oracleServerSSHAuthMechanism,
+                                    @Nullable String oracleServerSSHPassword,
+                                    @Nullable String oracleServerSSHPrivateKey,
+                                    @Nullable String oracleServerSSHPassphrase, String dbUsername, String dbPassword,
+                                    String oracleHome, String oracleSID, String outputPath, String queryToExecute,
+                                    @Nullable String commandToRun, @Nullable String tmpSQLScriptDirectory,
+                                    String format) {
       this.oracleServerHostname = oracleServerHostname;
       this.oracleServerSSHPort  = oracleServerPort;
-      this.oracleServerUsername = oracleServerUsername;
-      this.authMechanism = authMechanism;
-      this.passphrase = passphrase;
-      this.oracleServerPassword = oracleServerPassword;
-      this.privateKey = privateKey;
+      this.oracleServerSSHUsername  = oracleServerSSHUsername;
+      this.oracleServerSSHAuthMechanism  = oracleServerSSHAuthMechanism;
+      this.oracleServerSSHPassphrase = oracleServerSSHPassphrase;
+      this.oracleServerSSHPassword = oracleServerSSHPassword;
+      this.oracleServerSSHPrivateKey = oracleServerSSHPrivateKey;
       this.dbUsername = dbUsername;
       this.dbPassword = dbPassword;
       this.oracleHome = oracleHome;
@@ -301,15 +303,17 @@ public class OracleExportAction extends Action {
         throw new IllegalArgumentException("Port cannot be negative");
       }
 
-      if (!("password".equalsIgnoreCase(authMechanism) || "private key".equalsIgnoreCase(authMechanism))) {
+      if (!("password".equalsIgnoreCase(oracleServerSSHAuthMechanism)
+        || "private key".equalsIgnoreCase(oracleServerSSHAuthMechanism))) {
         throw new IllegalArgumentException(
           String.format("Invalid authentication mechanism '%s'. Must be one of Private Key or Password",
-                        authMechanism));
+                        oracleServerSSHAuthMechanism));
       }
 
-      if ("password".equalsIgnoreCase(authMechanism) && Strings.isNullOrEmpty(oracleServerPassword)) {
+      if ("password".equalsIgnoreCase(oracleServerSSHAuthMechanism) && Strings.isNullOrEmpty(oracleServerSSHPassword)) {
         throw new IllegalArgumentException("Password cannot be empty");
-      } else if ("private key".equalsIgnoreCase(authMechanism) && Strings.isNullOrEmpty(privateKey)) {
+      } else if ("private key".equalsIgnoreCase(oracleServerSSHAuthMechanism)
+        && Strings.isNullOrEmpty(oracleServerSSHPrivateKey)) {
         throw new IllegalArgumentException("Private Key cannot be empty");
       }
 

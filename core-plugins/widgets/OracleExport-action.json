@@ -19,12 +19,12 @@
         {
           "widget-type": "textbox",
           "label": "Oracle Server Username",
-          "name": "oracleServerUsername"
+          "name": "oracleServerSSHUsername"
         },
         {
           "widget-type": "select",
           "label": "Authentication Mechanism",
-          "name": "authMechanism",
+          "name": "oracleServerSSHAuthMechanism",
           "widget-attributes": {
             "values": [
               "Password",
@@ -36,17 +36,17 @@
         {
           "widget-type": "password",
           "label": "Oracle Server Password",
-          "name": "oracleServerPassword"
+          "name": "oracleServerSSHPassword"
         },
         {
           "widget-type": "textarea",
           "label": "Oracle Server Private Key",
-          "name": "privateKey"
+          "name": "oracleServerSSHPrivateKey"
         },
         {
           "widget-type": "password",
           "label": "Private Key Passphrase",
-          "name": "passphrase"
+          "name": "oracleServerSSHPassphrase"
         },
         {
           "widget-type": "textbox",

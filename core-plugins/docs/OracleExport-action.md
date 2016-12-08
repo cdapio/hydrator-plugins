@@ -20,14 +20,15 @@ Properties
 
 **oracleServerSSHPort:** Port to use to SSH to the remote Oracle Host. Defaults to 22.
 
-**oracleServerUsername:** Username to use to connect to the remote Oracle Host via SSH.
+**oracleServerSSHUsername:** Username to use to connect to the remote Oracle Host via SSH.
 
-**authMechanism:** Mechanism to perform the secure shell action. Acceptable values are Private Key, Password.
+**oracleServerSSHAuthMechanism :** Mechanism to perform the secure shell action. Acceptable values are Private Key,
+Password.
 
-**oracleServerPassword:** Password to use to connect to the remote Oracle Host via SSH. This will be ignored
+**oracleServerSSHPassword:** Password to use to connect to the remote Oracle Host via SSH. This will be ignored
 when 'Private Key' is used as the authentication mechanism.
 
-**privateKey:** The private key to be used to perform the secure shell action. This will be ignored
+**oracleServerSSHPrivateKey:** The private key to be used to perform the secure shell action. This will be ignored
 when 'Password' is used as the authentication mechanism.
 
 **passphrase:** Passphrase used to decrypt the provided private key in "privateKey". This will be ignored
@@ -76,11 +77,11 @@ This example exports data from oracle server example.com using oracle user:
           "properties": {
               "oracleServerHostname": "example.com",
               "oracleServerSSHPort": "22",
-              "oracleServerUsername": "oracle",
-              "authMechanism": "Password",
-              "oracleServerPassword": "oracle@123",
-              "privateKey": "",
-              "passphrase": "",
+              "oracleServerSSHUsername": "oracle",
+              "oracleServerSSHAuthMechanism": "Password",
+              "oracleServerSSHPassword": "oracle@123",
+              "oracleServerSSHPrivateKey": "",
+              "oracleServerSSHPassphrase": "",
               "dbUsername": "system",
               "dbPassword": "cask",
               "oracleHome": "/u01/app/oracle/product/11.2.0/xe",
