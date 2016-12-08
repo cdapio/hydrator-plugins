@@ -72,8 +72,8 @@ public class KinesisOutputFormat extends OutputFormat {
     if (kinesisClient == null) {
       LOG.info("Creating amazon kinesis client for stream {}", Properties.KinesisRealtimeSink.NAME);
       kinesisClient = new AmazonKinesisClient(awsCred);
-        KinesisUtil.createAndWaitForStream(kinesisClient, conf.get(Properties.KinesisRealtimeSink.NAME),
-                                           Integer.valueOf(conf.get(Properties.KinesisRealtimeSink.SHARD_COUNT)));
+      KinesisUtil.createAndWaitForStream(kinesisClient, conf.get(Properties.KinesisRealtimeSink.NAME),
+                                         Integer.valueOf(conf.get(Properties.KinesisRealtimeSink.SHARD_COUNT)));
     }
   }
 

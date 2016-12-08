@@ -138,8 +138,8 @@ public class KinesisSink extends ReferenceBatchSink<StructuredRecord, NullWritab
     private Integer shardCount;
 
     @Name(Properties.KinesisRealtimeSink.DISTRIBUTE)
-    @Description("Boolean to decide if the data has to be sent to a single shard or has to be uniformly distributed" +
-      "among all the shards. Default value is true")
+    @Description("Boolean to decide if the data has to be uniformly distributed among all the shards or has to be " +
+      "sent to a single shard.")
     private String distribute;
 
     public KinesisConfig(String referenceName, String name, String awsAccessKey,
