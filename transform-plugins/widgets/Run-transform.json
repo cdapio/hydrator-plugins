@@ -1,0 +1,57 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Run Configuration",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Command to Execute",
+          "name": "commandToExecute"
+        },
+        {
+          "widget-type": "csv",
+          "label": "Fields to Process for Variable Inputs",
+          "name": "fieldsToProcess",
+          "widget-attributes": {
+            "delimiter": ",",
+            "value-placeholder": "Field Name"
+          }
+        },
+        {
+          "widget-type": "csv",
+          "label": "Fixed Inputs",
+          "name": "fixedInputs",
+          "widget-attributes": {
+            "delimiter": " ",
+            "value-placeholder": "Input Value"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Output Field",
+          "name": "outputField"
+        },
+        {
+          "widget-type": "select",
+          "label": "Output Field Type",
+          "name": "outputFieldType",
+          "widget-attributes": {
+            "values": [
+              "boolean",
+              "bytes",
+              "double",
+              "float",
+              "int",
+              "long",
+              "string"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}
