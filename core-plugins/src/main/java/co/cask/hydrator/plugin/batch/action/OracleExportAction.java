@@ -77,7 +77,7 @@ public class OracleExportAction extends Action {
       connection.connect();
       boolean isAuthenticated;
       if ("private key".equalsIgnoreCase(config.oracleServerSSHAuthMechanism)) {
-        isAuthenticated = connection.authenticateWithPublicKey(config.oracleServerSSHUsername ,
+        isAuthenticated = connection.authenticateWithPublicKey(config.oracleServerSSHUsername,
                                                                config.oracleServerSSHPrivateKey.toCharArray(),
                                                                config.oracleServerSSHPassphrase);
       } else {
@@ -114,10 +114,11 @@ public class OracleExportAction extends Action {
           out.append(line + "\n");
         }
 
+        String results = out.toString();
         //SQLPLUS command errors are not fetched from session.getStderr().
         //Errors and output received after executing the command in SQLPlus prompt are the one that
         //are printed on the SQL prompt
-        if (out.toString().contains("ERROR:") || out.toString().contains("ERROR at line")) {
+        if (results.contains("ERROR:") || results.contains("ERROR at line")) {
           throw new IOException(String.format("Error executing sqlplus query %s on hostname %s; error message: %s",
                                               config.queryToExecute, config.oracleServerHostname, out));
         }
@@ -125,7 +126,7 @@ public class OracleExportAction extends Action {
         try (FileSystem fs = FileSystem.get(file.toUri(), new Configuration());
              FSDataOutputStream outStream = fs.create(file);
              BufferedWriter br = new BufferedWriter(new OutputStreamWriter(outStream, StandardCharsets.UTF_8))) {
-          br.write(out.toString());
+          br.write(results);
         }
       }
     } finally {
