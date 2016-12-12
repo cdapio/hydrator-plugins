@@ -263,6 +263,10 @@
         </exclusion>
       </exclusions>
     </dependency>
+    <dependency>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-firefox-driver</artifactId>
+    </dependency>
 
   </dependencies>
 
@@ -284,7 +288,8 @@
               co.cask.hydrator.plugin.validator.*;
               org.apache.avro.mapreduce;
               parquet.avro.*;
-              org.apache.orc.*
+              org.apache.orc.*;
+              org.openqa.selenium.*;
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>

@@ -28,6 +28,7 @@ import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.hydrator.plugin.batch.action.EmailAction;
 import co.cask.hydrator.plugin.batch.action.SSHAction;
+import co.cask.hydrator.plugin.batch.action.TweetAction;
 import co.cask.hydrator.plugin.batch.aggregator.DedupAggregator;
 import co.cask.hydrator.plugin.batch.aggregator.GroupByAggregator;
 import co.cask.hydrator.plugin.batch.joiner.Joiner;
@@ -132,7 +133,8 @@ public class ETLBatchTestBase extends HydratorTestBase {
                       DedupAggregator.class,
                       Joiner.class,
                       EmailAction.class,
-                      SSHAction.class);
+                      SSHAction.class,
+                      TweetAction.class);
   }
 
   protected List<GenericRecord> readOutput(TimePartitionedFileSet fileSet, Schema schema) throws IOException {
