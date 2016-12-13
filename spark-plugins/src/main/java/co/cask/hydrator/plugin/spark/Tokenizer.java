@@ -50,10 +50,10 @@ import java.util.List;
 public class Tokenizer extends SparkCompute<StructuredRecord, StructuredRecord> {
 
   public static final String PLUGIN_NAME = "Tokenizer";
-  private static Schema outputSchema;
-  private static Schema inputSchema;
-  private static List<String> fieldList = new ArrayList<>();
 
+  private Schema outputSchema;
+  private Schema inputSchema;
+  private List<String> fieldList = new ArrayList<>();
   private Config config;
 
   public Tokenizer(Config config) {
@@ -131,7 +131,6 @@ public class Tokenizer extends SparkCompute<StructuredRecord, StructuredRecord> 
 
     List<StructField> fields = new ArrayList<>();
     for (Schema.Field field : inputSchema.getFields()) {
-      field.getSchema().getType();
       fields.add(DataTypes.createStructField(field.getName(), getDataType(field.getSchema()), true));
     }
     final StructType schema = DataTypes.createStructType(fields);
