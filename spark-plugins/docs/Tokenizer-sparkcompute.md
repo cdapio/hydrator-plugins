@@ -2,7 +2,7 @@
 
 Description
 -----------
-Tokenization is the process of taking text (such as a sentence) and breaking it into individual terms (usually words) 
+Tokenization is the process of taking text (such as a sentence) and breaking it into individual terms (usually words)
 on the basis of pattern.
 
 Tokenizer splits data on the basis of specified pattern and emits the output as string array of tokens.
