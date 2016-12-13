@@ -38,9 +38,10 @@
     <module>http-plugins</module>
     <module>kafka-plugins</module>
     <module>mongodb-plugins</module>
+    <module>solrsearch-plugins</module>
     <module>spark-plugins</module>
     <module>transform-plugins</module>
-    <module>solrsearch-plugins</module>
+    <module>wrangler-transform</module>
   </modules>
 
   <licenses>
