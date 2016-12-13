@@ -38,9 +38,10 @@
     <module>http-plugins</module>
     <module>kafka-plugins</module>
     <module>mongodb-plugins</module>
+    <module>solrsearch-plugins</module>
     <module>spark-plugins</module>
     <module>transform-plugins</module>
-    <module>solrsearch-plugins</module>
+    <module>wrangler-transform</module>
   </modules>
 
   <licenses>
@@ -241,6 +242,28 @@
         <artifactId>hadoop-minicluster</artifactId>
         <version>${hadoop.version}</version>
         <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>asm</groupId>
+            <artifactId>asm</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>javax.servlet</groupId>
+            <artifactId>servlet-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-core</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>

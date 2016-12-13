@@ -64,30 +64,6 @@
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-minicluster</artifactId>
-      <version>2.3.0</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>asm</groupId>
-          <artifactId>asm</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-log4j12</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>javax.servlet</groupId>
-          <artifactId>servlet-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>commons-logging</groupId>
-          <artifactId>commons-logging</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.sun.jersey</groupId>
-          <artifactId>jersey-core</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.twitter4j</groupId>
@@ -284,7 +260,9 @@
               co.cask.hydrator.plugin.validator.*;
               org.apache.avro.mapreduce;
               parquet.avro.*;
-              org.apache.orc.*
+              org.apache.orc.*;
+              <!-- Used by S3 source/sink -->
+              org.apache.http.*
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
