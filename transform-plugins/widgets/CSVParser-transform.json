@@ -58,5 +58,8 @@
         "property-watch": "format"
       }
     }
-  ]
+  ],
+  "errorDataset": {
+    "errorDatasetTooltip": "Dataset that collects error messages from emitter."
+  }
 }
