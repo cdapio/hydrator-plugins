@@ -27,6 +27,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
+import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
@@ -195,7 +196,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
 
     // Parse the text as CSV and emit it as structured record.
     try {
-      if (body == null) {
+      if (Strings.isNullOrEmpty(body)) {
         emitter.emit(createStructuredRecord(null, in));
       } else {
         org.apache.commons.csv.CSVParser parser = org.apache.commons.csv.CSVParser.parse(body, csvFormat);
