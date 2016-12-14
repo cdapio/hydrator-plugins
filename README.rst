@@ -49,6 +49,8 @@ You get started with Hydrator plugins by building directly from the latest sourc
 
   git clone https://github.com/caskdata/hydrator-plugins.git
   cd hydrator-plugins
+  git submodule init
+  git submodule update
   mvn clean package
 
 After the build completes, you will have a JAR for each plugin under each

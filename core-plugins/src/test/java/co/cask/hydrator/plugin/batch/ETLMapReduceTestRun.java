@@ -383,6 +383,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
                       .put(Properties.S3.ACCESS_ID, "ID")
                       .put(Properties.S3.PATH, testPath)
                       .put(Properties.S3.FILE_REGEX, "abc.*")
+                      .put(Properties.S3.IGNORE_NON_EXISTING_FOLDERS, "false")
                       .build(),
                     null));
     ETLStage sink = new ETLStage(
@@ -434,6 +435,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
                                 .put(Constants.Reference.REFERENCE_NAME, "TestFile")
                                 .put(Properties.File.FILESYSTEM, "Text")
                                 .put(Properties.File.PATH, filePath)
+                                .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
                                 .build(),
                               null));
 
@@ -484,6 +486,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
                                                            ImmutableMap.<String, String>builder()
                                                              .put(Properties.File.FILESYSTEM, "Text")
                                                              .put(Properties.File.PATH, filePath)
+                                                             .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
                                                              .build(),
                                                            null));
 

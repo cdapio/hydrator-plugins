@@ -43,12 +43,16 @@ import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.CombineTextInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -66,7 +70,6 @@ import javax.annotation.Nullable;
 @Name("File")
 @Description("Batch source for File Systems")
 public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, StructuredRecord> {
-
   public static final String INPUT_NAME_CONFIG = "input.path.name";
   public static final String INPUT_REGEX_CONFIG = "input.path.regex";
   public static final String LAST_TIME_READ = "last.time.read";
@@ -102,10 +105,13 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
   @VisibleForTesting
   static final long DEFAULT_MAX_SPLIT_SIZE = 134217728;
 
+  private static final Logger LOG = LoggerFactory.getLogger(FileBatchSource.class);
   private final FileBatchConfig config;
   private KeyValueTable table;
   private Date prevHour;
   private String datesToRead;
+  private Path path;
+  private FileSystem fs;
 
   public FileBatchSource(FileBatchConfig config) {
     super(config);
@@ -142,6 +148,8 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
 
     Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();
+    FileSystem pathFileSystem = FileSystem.get(new Path(config.path).toUri(), conf);
+    fs = FileSystem.get(conf);
 
     Map<String, String> properties = GSON.fromJson(config.fileSystemProperties, MAP_STRING_STRING_TYPE);
     //noinspection ConstantConditions
@@ -150,7 +158,6 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
     }
 
     conf.set(INPUT_REGEX_CONFIG, config.fileRegex);
-    conf.set(INPUT_NAME_CONFIG, config.path);
 
     if (config.timeTable != null) {
       table = context.getDataset(config.timeTable);
@@ -169,7 +176,19 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
 
     conf.set(CUTOFF_READ_TIME, dateFormat.format(prevHour));
     FileInputFormat.setInputPathFilter(job, BatchFileFilter.class);
-    FileInputFormat.addInputPath(job, new Path(config.path));
+
+    if (!pathFileSystem.exists(new Path(config.path)) && config.ignoreNonExistingFolders) {
+      path = fs.getWorkingDirectory().suffix("/tmp/tmp.txt");
+      LOG.warn(String.format("File/Folder specified in %s does not exists. Setting input path to %s.", config.path,
+                             path));
+      fs.createNewFile(path);
+      conf.set(INPUT_NAME_CONFIG, path.toUri().getPath());
+      FileInputFormat.addInputPath(job, path);
+    } else {
+      conf.set(INPUT_NAME_CONFIG, config.path);
+      FileInputFormat.addInputPath(job, new Path(config.path));
+    }
+
     if (config.maxSplitSize != null) {
       FileInputFormat.setMaxInputSplitSize(job, config.maxSplitSize);
     }
@@ -197,6 +216,13 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
       failed.add(prevHour);
       failed.addAll(existing);
       table.write(LAST_TIME_READ, GSON.toJson(failed, ARRAYLIST_DATE_TYPE));
+    }
+    try {
+      if (path != null && fs.exists(path.getParent())) {
+        fs.delete(path.getParent(), true);
+      }
+    } catch (IOException e) {
+      throw new IllegalArgumentException(String.format("Error deleting temporary file. %s.", e.getMessage()), e);
     }
   }
 
@@ -238,17 +264,22 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
     @Macro
     public Long maxSplitSize;
 
+    @Description("Identify if path needs to be ignored or not, for case when directory or file does not exists. If " +
+      "set to true it will treat the not present folder as zero input and log a warning. Default is false.")
+    public Boolean ignoreNonExistingFolders;
+
     public FileBatchConfig() {
       super("");
       this.fileSystemProperties = GSON.toJson(ImmutableMap.<String, String>of());
       this.fileRegex = ".*";
       this.inputFormatClass = CombineTextInputFormat.class.getName();
       this.maxSplitSize = DEFAULT_MAX_SPLIT_SIZE;
+      this.ignoreNonExistingFolders = false;
     }
 
     public FileBatchConfig(String referenceName, String path, @Nullable String fileRegex, @Nullable String timeTable,
                            @Nullable String inputFormatClass, @Nullable String fileSystemProperties,
-                           @Nullable Long maxSplitSize) {
+                           @Nullable Long maxSplitSize, Boolean ignoreNonExistingFolders) {
       super(referenceName);
       this.path = path;
       this.fileSystemProperties = fileSystemProperties == null ? GSON.toJson(ImmutableMap.<String, String>of()) :
@@ -258,6 +289,7 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
       this.timeTable = timeTable;
       this.inputFormatClass = inputFormatClass == null ? CombineTextInputFormat.class.getName() : inputFormatClass;
       this.maxSplitSize = maxSplitSize == null ? DEFAULT_MAX_SPLIT_SIZE : maxSplitSize;
+      this.ignoreNonExistingFolders = ignoreNonExistingFolders;
     }
   }
 }

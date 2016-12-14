@@ -24,10 +24,10 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.data.schema.Schema.Field;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.InvalidEntry;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
-import com.google.common.base.Throwables;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 
@@ -205,7 +205,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
         }
       }
     } catch (IOException e) {
-      throw Throwables.propagate(e);
+      emitter.emitError(new InvalidEntry<>(31, e.getStackTrace()[0].toString() + " : " + e.getMessage(), in));
     }
   }
 
@@ -260,7 +260,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
 
     @Nullable
     @Description("Custom delimiter to be used for parsing the fields. The custom delimiter can only be specified by " +
-      "selecting the option 'Custom' from the format drop-down.")
+      "selecting the option 'Custom' from the format drop-down. In case of null, defaults to ','.")
     private final Character delimiter;
 
     @Name("field")

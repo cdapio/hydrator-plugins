@@ -18,9 +18,11 @@ package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.etl.api.InvalidEntry;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.mock.common.MockEmitter;
 import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
+import co.cask.cdap.etl.mock.transform.MockTransformContext;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -68,6 +70,10 @@ public class CSVParserTest {
                                                         Schema.Field.of("c", Schema.of(Schema.Type.INT)),
                                                         Schema.Field.of("d", Schema.of(Schema.Type.DOUBLE)),
                                                         Schema.Field.of("e", Schema.of(Schema.Type.BOOLEAN)),
+                                                        Schema.Field.of("offset", Schema.of(Schema.Type.INT)));
+
+  private static final Schema OUTPUT5 = Schema.recordOf("output5",
+                                                        Schema.Field.of("body", Schema.of(Schema.Type.STRING)),
                                                         Schema.Field.of("offset", Schema.of(Schema.Type.INT)));
 
   // Input schema with nullable field to parse
@@ -297,7 +303,7 @@ public class CSVParserTest {
     Assert.assertEquals(10, emitter.getEmitted().get(0).get("offset")); // Pass through from input.
   }
 
-  @Test (expected = IllegalArgumentException.class)
+  @Test(expected = IllegalArgumentException.class)
   public void testPassThroughTypeMisMatch() throws Exception {
     CSVParser.Config config = new CSVParser.Config("DEFAULT", null, "body", OUTPUT4.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
@@ -314,5 +320,23 @@ public class CSVParserTest {
     } catch (IllegalArgumentException e) {
       Assert.assertEquals("Please specify the delimiter for format option 'Custom'.", e.getMessage());
     }
+  }
+
+  @Test
+  public void testEmitErrors() throws Exception {
+    CSVParser.Config config = new CSVParser.Config("DEFAULT", null, "body", OUTPUT5.toString());
+    Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
+    transform.initialize(new MockTransformContext());
+    StructuredRecord inputRecord = StructuredRecord.builder(INPUT2)
+      .set("offset", 1)
+      .set("body", "0,\"020\"1,\"BS:12345  ORDER:111\"4").build();
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    transform.transform(inputRecord, emitter);
+    Assert.assertEquals(0, emitter.getEmitted().size());
+    Assert.assertEquals(1, emitter.getErrors().size());
+    InvalidEntry<StructuredRecord> invalidEntry = emitter.getErrors().get(0);
+    Assert.assertEquals(31, invalidEntry.getErrorCode());
+    Assert.assertEquals("offset", 1, invalidEntry.getInvalidRecord().get("offset"));
+    Assert.assertEquals("body", "0,\"020\"1,\"BS:12345  ORDER:111\"4", invalidEntry.getInvalidRecord().get("body"));
   }
 }

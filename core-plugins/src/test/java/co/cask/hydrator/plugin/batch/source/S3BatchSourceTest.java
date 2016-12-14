@@ -51,7 +51,8 @@ public class S3BatchSourceTest {
 
     // Test extra properties
     s3BatchConfig = new S3BatchSource.S3BatchConfig(referenceName, accessID, accessKey, path, null, null, null,
-                                                    GSON.toJson(ImmutableMap.of("s3.compression", "gzip")), null);
+                                                    GSON.toJson(ImmutableMap.of("s3.compression", "gzip")), null,
+                                                    false);
     s3BatchSource = new S3BatchSource(s3BatchConfig);
     fileBatchConfig = s3BatchSource.getConfig();
     fsProperties = GSON.fromJson(fileBatchConfig.fileSystemProperties, MAP_STRING_STRING_TYPE);

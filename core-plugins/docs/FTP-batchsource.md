@@ -26,6 +26,9 @@ needed for the distributed file system. (Macro-enabled)
 **inputFormatClassName:** Name of the input format class, which must be a subclass of FileInputFormat.
 Defaults to CombineTextInputFormat. (Macro-enabled)
 
+**ignoreNonExistingFolders:** Identify if path needs to be ignored or not, for case when directory or file does not
+exists. If set to true it will treat the not present folder as 0 input and log a warning. Default is false.
+
 
 Example
 -------
@@ -35,6 +38,7 @@ This example connects to an SFTP server and reads in files found in the specifie
         "name": "FTP",
         "type": "batchsource",
         "properties": {
-            "path": "sftp://username:password@hostname:21/path/to/logs"
+            "path": "sftp://username:password@hostname:21/path/to/logs",
+            "ignoreNonExistingFolders": "false"
         }
     }
