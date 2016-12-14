@@ -28,6 +28,7 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.streaming.StreamingContext;
 import co.cask.cdap.etl.api.streaming.StreamingSource;
 import co.cask.cdap.format.RecordFormats;
+import com.google.common.collect.Sets;
 import kafka.api.OffsetRequest;
 import kafka.api.PartitionOffsetRequestInfo;
 import kafka.common.TopicAndPartition;
@@ -49,8 +50,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -82,24 +86,45 @@ public class KafkaStreamingSource extends ReferenceStreamingSource<StructuredRec
     Map<String, String> kafkaParams = new HashMap<>();
     kafkaParams.put("metadata.broker.list", conf.getBrokers());
 
-    Map.Entry<String, Integer> firstBroker = conf.getBrokerMap().entrySet().iterator().next();
-    String brokerHost = firstBroker.getKey();
-    Integer brokerPort = firstBroker.getValue();
-    SimpleConsumer consumer = new SimpleConsumer(brokerHost, brokerPort, 20 * 1000, 128 * 1024, "partitionLookup");
+    List<SimpleConsumer> consumers = new ArrayList<>();
+    for (Map.Entry<String, Integer> brokerEntry : conf.getBrokerMap().entrySet()) {
+      consumers.add(new SimpleConsumer(brokerEntry.getKey(), brokerEntry.getValue(),
+                                       20 * 1000, 128 * 1024, "partitionLookup"));
+    }
 
     try {
-      Map<TopicAndPartition, Long> offsets = conf.getInitialPartitionOffsets(getPartitions(consumer));
+      Map<TopicAndPartition, Long> offsets = conf.getInitialPartitionOffsets(getPartitions(consumers));
       // KafkaUtils doesn't understand -1 and -2 as smallest offset and latest offset.
       // so we have to replace them with the actual smallest and latest
-      Map<TopicAndPartition, Long> updates = new HashMap<>();
+      Map<TopicAndPartition, PartitionOffsetRequestInfo> offsetsToRequest = new HashMap<>();
       for (Map.Entry<TopicAndPartition, Long> entry : offsets.entrySet()) {
         TopicAndPartition topicAndPartition = entry.getKey();
         Long offset = entry.getValue();
         if (offset == OffsetRequest.EarliestTime() || offset == OffsetRequest.LatestTime()) {
-          updates.put(topicAndPartition, getOffset(consumer, topicAndPartition, offset));
+          offsetsToRequest.put(topicAndPartition, new PartitionOffsetRequestInfo(offset, 1));
         }
       }
-      offsets.putAll(updates);
+
+      kafka.javaapi.OffsetRequest offsetRequest =
+        new kafka.javaapi.OffsetRequest(offsetsToRequest, OffsetRequest.CurrentVersion(), "offsetLookup");
+      Set<TopicAndPartition> offsetsFound = new HashSet<>();
+      for (SimpleConsumer consumer : consumers) {
+        OffsetResponse response = consumer.getOffsetsBefore(offsetRequest);
+        for (TopicAndPartition topicAndPartition : offsetsToRequest.keySet()) {
+          String topic = topicAndPartition.topic();
+          int partition = topicAndPartition.partition();
+          if (response.errorCode(topic, partition) == 0) {
+            offsets.put(topicAndPartition, response.offsets(topic, partition)[0]);
+            offsetsFound.add(topicAndPartition);
+          }
+        }
+      }
+
+      Set<TopicAndPartition> missingOffsets = Sets.difference(offsetsToRequest.keySet(), offsetsFound);
+      if (!missingOffsets.isEmpty()) {
+        throw new IllegalStateException(String.format(
+          "Could not find offsets for %s. Please check all brokers were included in the broker list.", missingOffsets));
+      }
       LOG.info("Using initial offsets {}", offsets);
 
       return KafkaUtils.createDirectStream(
@@ -112,35 +137,29 @@ public class KafkaStreamingSource extends ReferenceStreamingSource<StructuredRec
           }
         }).transform(new RecordTransform(conf));
     } finally {
-      consumer.close();
+      for (SimpleConsumer consumer : consumers) {
+        try {
+          consumer.close();
+        } catch (Exception e) {
+          LOG.warn("Error closing Kafka consumer {}.", e);
+        }
+      }
     }
   }
 
-  private long getOffset(SimpleConsumer consumer, TopicAndPartition topicAndPartition, long before) {
-    Map<TopicAndPartition, PartitionOffsetRequestInfo> requestInfo = new HashMap<>();
-    requestInfo.put(topicAndPartition, new PartitionOffsetRequestInfo(before, 1));
-    kafka.javaapi.OffsetRequest offsetRequest =
-      new kafka.javaapi.OffsetRequest(requestInfo, OffsetRequest.CurrentVersion(), "offsetLookup");
-    OffsetResponse response = consumer.getOffsetsBefore(offsetRequest);
-    if (response.hasError()) {
-      throw new RuntimeException(String.format(
-        "Unable to get offset information for partition %d. Error Code: %d",
-        topicAndPartition.partition(), response.errorCode(topicAndPartition.topic(), topicAndPartition.partition())));
-    }
-    return response.offsets(topicAndPartition.topic(), topicAndPartition.partition())[0];
-  }
-
-  private Set<Integer> getPartitions(SimpleConsumer consumer) {
+  private Set<Integer> getPartitions(List<SimpleConsumer> consumers) {
     Set<Integer> partitions = conf.getPartitions();
     if (!partitions.isEmpty()) {
       return partitions;
     }
 
     TopicMetadataRequest topicMetadataRequest = new TopicMetadataRequest(Collections.singletonList(conf.getTopic()));
-    TopicMetadataResponse response = consumer.send(topicMetadataRequest);
-    for (TopicMetadata topicMetadata : response.topicsMetadata()) {
-      for (PartitionMetadata partitionMetadata : topicMetadata.partitionsMetadata()) {
-        partitions.add(partitionMetadata.partitionId());
+    for (SimpleConsumer consumer : consumers) {
+      TopicMetadataResponse response = consumer.send(topicMetadataRequest);
+      for (TopicMetadata topicMetadata : response.topicsMetadata()) {
+        for (PartitionMetadata partitionMetadata : topicMetadata.partitionsMetadata()) {
+          partitions.add(partitionMetadata.partitionId());
+        }
       }
     }
 
