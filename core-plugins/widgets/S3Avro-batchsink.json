@@ -1,3 +1,4 @@
+
 {
   "metadata": {
     "spec-version": "1.0"
@@ -30,6 +31,19 @@
           "widget-type": "textbox",
           "label": "Path Format",
           "name": "pathFormat"
+        },
+        {
+          "widget-type": "select",
+          "label": "Compression Codec",
+          "name": "compressionCodec",
+          "widget-attributes": {
+            "values": [
+              "None",
+              "Snappy",
+              "Deflate"
+            ],
+            "default": "None"
+          }
         },
         {
           "widget-type": "json-editor",
