@@ -85,7 +85,7 @@ public class S3BatchSource extends FileBatchSource {
     public S3BatchConfig(String referenceName, String accessID, String accessKey, String path, @Nullable String regex,
                          @Nullable String timeTable, @Nullable String inputFormatClass,
                          @Nullable String fileSystemProperties, @Nullable Long maxSplitSize,
-                         Boolean ignoreNonExistingFolders) {
+                         @Nullable Boolean ignoreNonExistingFolders) {
       super(referenceName, path, regex, timeTable, inputFormatClass,
             updateFileSystemProperties(fileSystemProperties, accessID, accessKey), maxSplitSize,
             ignoreNonExistingFolders);

@@ -264,6 +264,7 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
     @Macro
     public Long maxSplitSize;
 
+    @Nullable
     @Description("Identify if path needs to be ignored or not, for case when directory or file does not exists. If " +
       "set to true it will treat the not present folder as zero input and log a warning. Default is false.")
     public Boolean ignoreNonExistingFolders;
@@ -279,7 +280,7 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
 
     public FileBatchConfig(String referenceName, String path, @Nullable String fileRegex, @Nullable String timeTable,
                            @Nullable String inputFormatClass, @Nullable String fileSystemProperties,
-                           @Nullable Long maxSplitSize, Boolean ignoreNonExistingFolders) {
+                           @Nullable Long maxSplitSize, @Nullable Boolean ignoreNonExistingFolders) {
       super(referenceName);
       this.path = path;
       this.fileSystemProperties = fileSystemProperties == null ? GSON.toJson(ImmutableMap.<String, String>of()) :
@@ -289,7 +290,7 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
       this.timeTable = timeTable;
       this.inputFormatClass = inputFormatClass == null ? CombineTextInputFormat.class.getName() : inputFormatClass;
       this.maxSplitSize = maxSplitSize == null ? DEFAULT_MAX_SPLIT_SIZE : maxSplitSize;
-      this.ignoreNonExistingFolders = ignoreNonExistingFolders;
+      this.ignoreNonExistingFolders = ignoreNonExistingFolders == null ? false : ignoreNonExistingFolders;
     }
   }
 }
