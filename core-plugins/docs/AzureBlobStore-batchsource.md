@@ -28,7 +28,7 @@ Azure Storage account name. (Macro-enabled)
 Must be a valid base64 encoded storage key provided by Microsoft Azure. (Macro-enabled)
 
 **ignoreNonExistingFolders:** Identify if path needs to be ignored or not, for case when directory or file does not
-exists. If set to true it will treat the not present folder as 0 input and log a warning. Default is false.
+exists. If set to true it will treat the not present folder as 0 input and log a warning.
 
 Example
 -------
