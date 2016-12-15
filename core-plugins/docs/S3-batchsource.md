@@ -41,7 +41,7 @@ subclass of FileInputFormat. Defaults to TextInputFormat. (Macro-enabled)
 **maxSplitSize:** Maximum split-size for each mapper in the MapReduce Job. Defaults to 128MB. (Macro-enabled)
 
 **ignoreNonExistingFolders:** Identify if path needs to be ignored or not, for case when directory or file does not
-exists. If set to true it will treat the not present folder as 0 input and log a warning.
+exists. If set to true it will treat the not present folder as 0 input and log a warning. Default is false.
 
 
 Example
