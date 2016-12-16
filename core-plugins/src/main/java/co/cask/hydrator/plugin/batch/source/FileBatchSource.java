@@ -148,8 +148,6 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
 
     Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();
-    FileSystem pathFileSystem = FileSystem.get(new Path(config.path).toUri(), conf);
-    fs = FileSystem.get(conf);
 
     Map<String, String> properties = GSON.fromJson(config.fileSystemProperties, MAP_STRING_STRING_TYPE);
     //noinspection ConstantConditions
@@ -176,6 +174,9 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
 
     conf.set(CUTOFF_READ_TIME, dateFormat.format(prevHour));
     FileInputFormat.setInputPathFilter(job, BatchFileFilter.class);
+
+    FileSystem pathFileSystem = FileSystem.get(new Path(config.path).toUri(), conf);
+    fs = FileSystem.get(conf);
 
     if (!pathFileSystem.exists(new Path(config.path)) && config.ignoreNonExistingFolders) {
       path = fs.getWorkingDirectory().suffix("/tmp/tmp.txt");
