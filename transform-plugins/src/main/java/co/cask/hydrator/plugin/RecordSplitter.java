@@ -72,7 +72,6 @@ public final class RecordSplitter extends Transform<StructuredRecord, Structured
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
     try {
-      config.validate();
       outSchema = Schema.parseJson(config.schema);
     } catch (IOException e) {
       throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.", e);
@@ -82,17 +81,20 @@ public final class RecordSplitter extends Transform<StructuredRecord, Structured
   @Override
   public void transform(StructuredRecord in, Emitter<StructuredRecord> emitter) throws Exception {
     List<Schema.Field> fields = in.getSchema().getFields();
-    String[] records = String.valueOf(in.get(config.fieldToSplit)).split(config.delimiter);
-    for (String record : records) {
-      StructuredRecord.Builder builder = StructuredRecord.builder(outSchema);
-      for (Schema.Field field : fields) {
-        String name = field.getName();
-        if (outSchema.getField(name) != null && !name.equals(config.fieldToSplit)) {
-          builder.set(name, in.get(name));
+    Object valueToSplit = in.get(config.fieldToSplit);
+    if (valueToSplit != null) {
+      String[] records = String.valueOf(valueToSplit).split(config.delimiter);
+      for (String record : records) {
+        StructuredRecord.Builder builder = StructuredRecord.builder(outSchema);
+        for (Schema.Field field : fields) {
+          String name = field.getName();
+          if (outSchema.getField(name) != null && !name.equals(config.fieldToSplit)) {
+            builder.set(name, in.get(name));
+          }
         }
+        builder.set(config.outputField, record.trim());
+        emitter.emit(builder.build());
       }
-      builder.set(config.outputField, record.trim());
-      emitter.emit(builder.build());
     }
   }
 
