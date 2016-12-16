@@ -27,6 +27,9 @@ Azure Storage account name. (Macro-enabled)
 **storageKey:** The storage key for the specified container on the Microsoft Azure Storage account. 
 Must be a valid base64 encoded storage key provided by Microsoft Azure. (Macro-enabled)
 
+**ignoreNonExistingFolders:** Identify if path needs to be ignored or not, for case when directory or file does not
+exists. If set to true it will treat the not present folder as 0 input and log a warning. Default is false.
+
 Example
 -------
 
@@ -42,6 +45,7 @@ specified directory. This example uses the 'hydrator' container at
             "path": "/path/to/input",
             "account": "hydratorstorage.blob.core.windows.net",
             "container": "hydrator",
-            "storageKey": "XXXXXEEESSS/YYYY="
+            "storageKey": "XXXXXEEESSS/YYYY=",
+            "ignoreNonExistingFolders": "false"
         }
     }

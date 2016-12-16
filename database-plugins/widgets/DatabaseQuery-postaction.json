@@ -63,8 +63,8 @@
           "name": "enableAutoCommit",
           "widget-attributes": {
             "values": [
-              "false",
-              "true"
+              "true",
+              "false"
             ],
             "default": "false"
           }

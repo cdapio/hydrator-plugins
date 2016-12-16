@@ -49,7 +49,8 @@ public class FTPBatchSource extends FileBatchSource {
 
   public FTPBatchSource(FTPBatchSourceConfig config) {
     super(new FileBatchConfig(config.referenceName, config.path, config.fileRegex, null, config.inputFormatClassName,
-                              limitSplits(config.fileSystemProperties), null));
+                              limitSplits(config.fileSystemProperties), Long.MAX_VALUE,
+                              config.ignoreNonExistingFolders));
     this.config = config;
   }
 
@@ -88,13 +89,20 @@ public class FTPBatchSource extends FileBatchSource {
     @Macro
     public String inputFormatClassName;
 
+    @Nullable
+    @Description("Identify if path needs to be ignored or not, for case when directory or file does not exists. If " +
+      "set to true it will treat the not present folder as zero input and log a warning. Default is false.")
+    public Boolean ignoreNonExistingFolders;
+
     public FTPBatchSourceConfig(String referenceName, String path, @Nullable String fileSystemProperties,
-                                @Nullable String fileRegex, @Nullable String inputFormatClassName) {
+                                @Nullable String fileRegex, @Nullable String inputFormatClassName,
+                                @Nullable Boolean ignoreNonExistingFolders) {
       super(referenceName);
       this.path = path;
       this.fileSystemProperties = fileSystemProperties;
       this.fileRegex = fileRegex;
       this.inputFormatClassName = inputFormatClassName;
+      this.ignoreNonExistingFolders = ignoreNonExistingFolders == null ? false : ignoreNonExistingFolders;
     }
   }
 }

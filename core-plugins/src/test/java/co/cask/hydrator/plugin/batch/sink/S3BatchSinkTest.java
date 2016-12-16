@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015, 2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -39,7 +39,7 @@ public class S3BatchSinkTest {
     String schema = "schema";
     // Test default properties
     S3AvroBatchSink.S3AvroSinkConfig s3AvroSinkConfig =
-      new S3AvroBatchSink.S3AvroSinkConfig("s3test", path, schema, accessID, accessKey, null, null);
+      new S3AvroBatchSink.S3AvroSinkConfig("s3test", path, schema, accessID, accessKey, null, null, null);
     S3AvroBatchSink s3AvroBatchSink = new S3AvroBatchSink(s3AvroSinkConfig);
     S3BatchSink.S3BatchSinkConfig s3BatchSinkConfig = s3AvroBatchSink.getConfig();
     Map<String, String> fsProperties = GSON.fromJson(s3BatchSinkConfig.fileSystemProperties, MAP_STRING_STRING_TYPE);
@@ -48,4 +48,5 @@ public class S3BatchSinkTest {
     Assert.assertEquals(accessID, fsProperties.get("fs.s3n.awsAccessKeyId"));
     Assert.assertEquals(accessKey, fsProperties.get("fs.s3n.awsSecretAccessKey"));
   }
+
 }

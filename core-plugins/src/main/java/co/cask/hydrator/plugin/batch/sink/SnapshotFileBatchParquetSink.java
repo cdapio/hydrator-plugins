@@ -1,5 +1,5 @@
 /*
- * Copyright © 2016 Cask Data, Inc.
+ * Copyright © 2015, 2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -28,6 +28,7 @@ import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.hydrator.common.HiveSchemaConverter;
+import co.cask.hydrator.plugin.common.FileSetUtil;
 import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
 import org.apache.avro.generic.GenericRecord;
 import parquet.avro.AvroParquetInputFormat;
@@ -76,6 +77,8 @@ public class SnapshotFileBatchParquetSink extends SnapshotFileBatchSink<Void, Ge
     } catch (UnsupportedTypeException | IOException e) {
       throw new RuntimeException("Error: Schema is not valid ", e);
     }
+    propertiesBuilder.addAll(FileSetUtil.getParquetCompressionConfiguration(config.compressionCodec, config.schema,
+                                                                            true));
 
     propertiesBuilder
       .setInputFormat(AvroParquetInputFormat.class)
@@ -83,7 +86,6 @@ public class SnapshotFileBatchParquetSink extends SnapshotFileBatchSink<Void, Ge
       .setEnableExploreOnCreate(true)
       .setExploreFormat("parquet")
       .setExploreSchema(hiveSchema.substring(1, hiveSchema.length() - 1))
-      .setOutputProperty("parquet.avro.schema", schema)
       .add(DatasetProperties.SCHEMA, schema);
   }
 
@@ -94,9 +96,15 @@ public class SnapshotFileBatchParquetSink extends SnapshotFileBatchSink<Void, Ge
     @Description("The Parquet schema of the record being written to the Sink as a JSON Object.")
     private String schema;
 
-    public SnapshotParquetConfig(String name, @Nullable String basePath, String schema) {
+    @Nullable
+    @Description("Used to specify the compression codec to be used for the final dataset.")
+    private String compressionCodec;
+
+    public SnapshotParquetConfig(String name, @Nullable String basePath, String schema,
+                                 @Nullable String compressionCodec) {
       super(name, basePath, null);
       this.schema = schema;
+      this.compressionCodec = compressionCodec;
     }
   }
 }

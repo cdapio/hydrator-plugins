@@ -55,6 +55,18 @@
           "widget-type": "textbox",
           "label": "Time Table",
           "name": "timeTable"
+        },
+        {
+          "widget-type": "select",
+          "label": "Ignore Non-Existing Folders",
+          "name": "ignoreNonExistingFolders",
+          "widget-attributes": {
+            "values": [
+              "true",
+              "false"
+            ],
+            "default": "false"
+          }
         }
       ]
     }

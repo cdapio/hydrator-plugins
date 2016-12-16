@@ -108,6 +108,7 @@ public class ETLFTPTestRun extends ETLBatchTestBase {
       ImmutableMap.<String, String>builder()
         .put(Properties.File.PATH, String.format("ftp://%s:%s@localhost:%d%s",
                                                  USER, PWD, port, folder.getAbsolutePath()))
+        .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
         .build(),
       null));
     ETLStage sink = new ETLStage("sink", new ETLPlugin(

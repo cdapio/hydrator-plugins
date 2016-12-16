@@ -30,6 +30,18 @@
           "widget-type": "json-editor",
           "label": "File System Properties",
           "name": "fileSystemProperties"
+        },
+        {
+          "widget-type": "select",
+          "label": "Ignore Non-Existing Folders",
+          "name": "ignoreNonExistingFolders",
+          "widget-attributes": {
+            "values": [
+              "true",
+              "false"
+            ],
+            "default": "false"
+          }
         }
       ]
     }

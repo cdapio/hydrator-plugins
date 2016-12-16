@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015, 2016 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -26,9 +26,9 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
+import co.cask.hydrator.plugin.common.FileSetUtil;
 import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
-import com.google.common.collect.Maps;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.avro.mapreduce.AvroKeyOutputFormat;
@@ -37,7 +37,9 @@ import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 import java.text.SimpleDateFormat;
+import java.util.HashMap;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * {@link S3AvroBatchSink} that stores data in avro format to S3.
@@ -84,6 +86,10 @@ public class S3AvroBatchSink extends S3BatchSink<AvroKey<GenericRecord>, NullWri
     @Description(SCHEMA_DESC)
     private String schema;
 
+    @Nullable
+    @Description("Used to specify the compression codec to be used for the final dataset.")
+    private String compressionCodec;
+
     @SuppressWarnings("unused")
     public S3AvroSinkConfig() {
       super();
@@ -91,9 +97,10 @@ public class S3AvroBatchSink extends S3BatchSink<AvroKey<GenericRecord>, NullWri
 
     @SuppressWarnings("unused")
     public S3AvroSinkConfig(String referenceName, String basePath, String schema, String accessID, String accessKey,
-                            String pathFormat, String filesystemProperties) {
+                            String pathFormat, String filesystemProperties, @Nullable String compressionCodec) {
       super(referenceName, basePath, accessID, accessKey, pathFormat, filesystemProperties);
       this.schema = schema;
+      this.compressionCodec = compressionCodec;
     }
   }
 
@@ -105,14 +112,12 @@ public class S3AvroBatchSink extends S3BatchSink<AvroKey<GenericRecord>, NullWri
     private final Map<String, String> conf;
 
     public S3AvroOutputFormatProvider(S3AvroSinkConfig config, BatchSinkContext context) {
-      @SuppressWarnings("ConstantConditions")
       SimpleDateFormat format = new SimpleDateFormat(config.pathFormat);
-
-      conf = Maps.newHashMap();
+      conf = new HashMap<>();
+      conf.putAll(FileSetUtil.getAvroCompressionConfiguration(config.compressionCodec, config.schema, false));
       conf.put(JobContext.OUTPUT_KEY_CLASS, AvroKey.class.getName());
-      conf.put("avro.schema.output.key", config.schema);
-      conf.put(FileOutputFormat.OUTDIR,
-               String.format("%s/%s", config.basePath, format.format(context.getLogicalStartTime())));
+      conf.put(FileOutputFormat.OUTDIR, String.format("%s/%s", config.basePath,
+                                                      format.format(context.getLogicalStartTime())));
     }
 
     @Override

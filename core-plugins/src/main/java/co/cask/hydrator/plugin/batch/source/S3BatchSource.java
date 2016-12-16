@@ -49,7 +49,7 @@ public class S3BatchSource extends FileBatchSource {
     super(new FileBatchConfig(config.referenceName, config.path, config.fileRegex, config.timeTable,
                               config.inputFormatClass, updateFileSystemProperties(
                                 config.fileSystemProperties, config.accessID, config.accessKey),
-                              config.maxSplitSize));
+                              config.maxSplitSize, config.ignoreNonExistingFolders));
     this.config = config;
   }
 
@@ -79,14 +79,16 @@ public class S3BatchSource extends FileBatchSource {
     private final String accessKey;
 
     public S3BatchConfig(String referenceName, String accessID, String accessKey, String path) {
-      this(referenceName, accessID, accessKey, path, null, null, null, null, null);
+      this(referenceName, accessID, accessKey, path, null, null, null, null, null, false);
     }
 
     public S3BatchConfig(String referenceName, String accessID, String accessKey, String path, @Nullable String regex,
                          @Nullable String timeTable, @Nullable String inputFormatClass,
-                         @Nullable String fileSystemProperties, @Nullable Long maxSplitSize) {
+                         @Nullable String fileSystemProperties, @Nullable Long maxSplitSize,
+                         @Nullable Boolean ignoreNonExistingFolders) {
       super(referenceName, path, regex, timeTable, inputFormatClass,
-            updateFileSystemProperties(fileSystemProperties, accessID, accessKey), maxSplitSize);
+            updateFileSystemProperties(fileSystemProperties, accessID, accessKey), maxSplitSize,
+            ignoreNonExistingFolders);
       this.accessID = accessID;
       this.accessKey = accessKey;
     }

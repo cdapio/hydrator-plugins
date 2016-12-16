@@ -46,7 +46,7 @@ public class AzureBatchSource extends FileBatchSource {
     super(new FileBatchConfig(config.referenceName, config.path, config.fileRegex, config.timeTable,
                               config.inputFormatClass, updateFileSystemProperties(
                                 config.fileSystemProperties, config.account, config.container, config.storageKey),
-                              config.maxSplitSize));
+                              config.maxSplitSize, config.ignoreNonExistingFolders));
     this.config = config;
   }
 
@@ -83,19 +83,21 @@ public class AzureBatchSource extends FileBatchSource {
     private final String storageKey;
 
     public AzureBatchConfig(String referenceName, String path, String account, String container, String storageKey) {
-      this(referenceName, path, account, container, storageKey, null, null, null, null, null);
+      this(referenceName, path, account, container, storageKey, null, null, null, null, null, false);
     }
 
     public AzureBatchConfig(String referenceName, String path, String account, String container, String storageKey,
                             @Nullable String regex, @Nullable String timeTable, @Nullable String inputFormatClass,
-                            @Nullable String fileSystemProperties, @Nullable Long maxSplitSize) {
+                            @Nullable String fileSystemProperties, @Nullable Long maxSplitSize,
+                            @Nullable Boolean ignoreNonExistingFolders) {
       super(referenceName, path, regex, timeTable, inputFormatClass,
             updateFileSystemProperties(fileSystemProperties, account, container, storageKey),
-            maxSplitSize);
+            maxSplitSize, ignoreNonExistingFolders);
       this.account = account;
       this.container = container;
       this.storageKey = storageKey;
       this.path = path;
+      this.ignoreNonExistingFolders = ignoreNonExistingFolders == null ? false : ignoreNonExistingFolders;
     }
   }
 }
