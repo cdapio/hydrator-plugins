@@ -267,10 +267,10 @@ public class DatabasePluginTestBase extends HydratorTestBase {
     workflowManager.start();
     // Waiting for only 1 minute here because MR should have failed in the prepareRun() stage
     workflowManager.waitForFinish(1, TimeUnit.MINUTES);
-    Tasks.waitFor(1, new Callable<Integer>() {
+    Tasks.waitFor(ProgramRunStatus.FAILED, new Callable<ProgramRunStatus>() {
       @Override
-      public Integer call() throws Exception {
-        return workflowManager.getHistory(ProgramRunStatus.FAILED).size();
+      public ProgramRunStatus call() throws Exception {
+        return workflowManager.getHistory().get(0).getStatus();
       }
     }, 5, TimeUnit.SECONDS);
   }
@@ -301,13 +301,12 @@ public class DatabasePluginTestBase extends HydratorTestBase {
     workflowManager.start(arguments);
     workflowManager.waitForFinish(5, TimeUnit.MINUTES);
     List<RunRecord> runRecords = workflowManager.getHistory();
-    Tasks.waitFor(1, new Callable<Integer>() {
+    Tasks.waitFor(ProgramRunStatus.COMPLETED, new Callable<ProgramRunStatus>() {
       @Override
-      public Integer call() throws Exception {
-        return workflowManager.getHistory(ProgramRunStatus.COMPLETED).size();
+      public ProgramRunStatus call() throws Exception {
+        return workflowManager.getHistory().get(0).getStatus();
       }
     }, 5, TimeUnit.SECONDS);
-    Assert.assertEquals(ProgramRunStatus.COMPLETED, runRecords.get(0).getStatus());
   }
 
   @AfterClass
