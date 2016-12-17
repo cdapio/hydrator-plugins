@@ -74,7 +74,7 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
       pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
       fields = outputSchema.getFields();
     } catch (IOException e) {
-      throw new IllegalArgumentException("Output Schema specified is not a valid JSON. Please check the Schema JSON");
+      throw new IllegalArgumentException("Output Schema specified is not a valid JSON. Please check the Schema JSON.");
     }
 
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
@@ -100,11 +100,11 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
         String field = mapParts[0];
         String expression = mapParts[1];
         if (field.isEmpty() && !expression.isEmpty()) {
-          throw new IllegalArgumentException("Json path expression '" + expression +
-                  "' has no output field specified");
+          throw new IllegalArgumentException("JSON path expression '" + expression +
+                  "' has no output field specified.");
         }
         if (expression.isEmpty() && !field.isEmpty()) {
-          throw new IllegalArgumentException("Field '" + field + "' doesn't have Json path expression.");
+          throw new IllegalArgumentException("Field '" + field + "' doesn't have JSON path expression.");
         }
         mapping.put(field, expression);
       }
@@ -118,7 +118,7 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
       outSchema = Schema.parseJson(config.schema);
       fields = outSchema.getFields();
     } catch (IOException e) {
-      throw new IllegalArgumentException("Output Schema specified is not a valid JSON. Please check the Schema JSON");
+      throw new IllegalArgumentException("Output Schema specified is not a valid JSON. Please check the Schema JSON.");
     }
     extractMappings();
   }
@@ -146,13 +146,13 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
           Object value = JsonPath.read(document, path);
           builder.set(field.getName(), value);
         } catch (PathNotFoundException e) {
-          LOG.error("Json path '" + path + "' specified for the field '" + name + "' doesn't exist. " +
+          LOG.error("JSON path '" + path + "' specified for the field '" + name + "' doesn't exist. " +
                   "Fix the issue before proceeding further with processing.");
           throw e;
         }
       } else {
         // We didn't find the field name in the mapping, we will not attempt to see if the field is present
-        // int the input, if it's, then we will transfer the input field value to the output field value.
+        // in the input; if it is, then we will transfer the input field value to the output field value.
         Object value = input.get(name);
         if (value != null) {
           builder.set(name, value);
@@ -167,11 +167,13 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
    */
   public static class Config extends PluginConfig {
     @Name("field")
-    @Description("Input Field")
+    @Description("Input field to be parsed as JSON")
     private String field;
 
     @Name("mapping")
-    @Description("Mapping complex JSON to fields using JSON Path expressions")
+    @Description("Maps complex JSON to output fields using JSON path expressions. First field defines the output " +
+      "field name and the second field specifies the JSON path expression, such as '$.employee.name.first'. " +
+      "See reference documentation for additional examples.")
     @Nullable
     private String mapping;
 
