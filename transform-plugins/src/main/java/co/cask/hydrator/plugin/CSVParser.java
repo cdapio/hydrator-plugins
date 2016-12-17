@@ -28,11 +28,14 @@ import co.cask.cdap.etl.api.InvalidEntry;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
+import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
@@ -62,6 +65,10 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
   // Output Schema associated with transform output.
   private Schema outSchema;
 
+  static final Set<String> FORMATS = ImmutableSet.of("DEFAULT", "EXCEL", "MYSQL", "RFC4180",
+                                                  "TDF", "Pipe Delimited", "Tab Delimited",
+                                                  "PDL", "Custom");
+
   // List of fields specified in the schema.
   private List<Field> fields;
 
@@ -74,7 +81,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
   // Initialize Pipe Delimiter CSV Parser.
   static {
     PDL = CSVFormat.DEFAULT.withDelimiter('|').withEscape('\\').withIgnoreEmptyLines(false)
-      .withAllowMissingColumnNames().withQuote((Character) null).withRecordSeparator('\n')
+      .withAllowMissingColumnNames().withQuote(null).withRecordSeparator('\n')
       .withIgnoreSurroundingSpaces();
   }
 
@@ -142,7 +149,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
     super.initialize(context);
     config.validate();
 
-    String csvFormatString = config.format.toLowerCase();
+    String csvFormatString = config.format == null ? "default" : config.format.toLowerCase();
     switch (csvFormatString) {
       case "default":
         csvFormat = CSVFormat.DEFAULT;
@@ -160,17 +167,19 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
         csvFormat = CSVFormat.RFC4180;
         break;
 
+      case "tdf":
       case "tab delimited":
         csvFormat = CSVFormat.TDF;
         break;
 
+      case "pdl":
       case "pipe delimited":
         csvFormat = PDL;
         break;
 
       case "custom":
         csvFormat = CSVFormat.DEFAULT.withDelimiter(config.delimiter).withEscape('\\').withIgnoreEmptyLines(false)
-          .withAllowMissingColumnNames().withQuote((Character) null).withRecordSeparator('\n')
+          .withAllowMissingColumnNames().withQuote(null).withRecordSeparator('\n')
           .withIgnoreSurroundingSpaces();
         break;
 
@@ -253,46 +262,48 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
    */
   public static class Config extends PluginConfig {
 
+    @Nullable
     @Name("format")
     @Description("Specify one of the predefined formats. DEFAULT, EXCEL, MYSQL, RFC4180, Pipe Delimited, Tab " +
       "Delimited and Custom are supported formats.")
-    private final String format;
+    private String format;
 
     @Nullable
     @Description("Custom delimiter to be used for parsing the fields. The custom delimiter can only be specified by " +
       "selecting the option 'Custom' from the format drop-down. In case of null, defaults to ','.")
-    private final Character delimiter;
+    private Character delimiter;
 
     @Name("field")
     @Description("Specify the field that should be used for parsing into CSV. Input records with a null input field " +
       "propagate all other fields and set fields that would otherwise be parsed by the CSVParser to null.")
-    private final String field;
+    private String field;
 
     @Name("schema")
     @Description("Specifies the schema that has to be output.")
-    private final String schema;
+    private String schema;
 
-    public Config(String format, Character delimiter, String field, String schema) {
-      this.format = format;
+    public Config(@Nullable String format, @Nullable Character delimiter, String field, String schema) {
+      this.format = format == null ? "DEFAULT" : format;
       this.delimiter = delimiter;
       this.field = field;
       this.schema = schema;
     }
 
+    //Constructor to assign default value to format
+    public Config() {
+      format = "DEFAULT";
+    }
+
     private void validate() {
-      // Check if the format specified is valid.
-      if (format == null || format.isEmpty()) {
-        throw new IllegalArgumentException("Format is not specified. Allowed values are DEFAULT, EXCEL, MYSQL," +
-                                             " RFC4180, Pipe Delimited, Tab Delimited or Custom");
-      }
 
       // Check if format is one of the allowed types.
       if (!format.equalsIgnoreCase("DEFAULT") && !format.equalsIgnoreCase("EXCEL") &&
         !format.equalsIgnoreCase("MYSQL") && !format.equalsIgnoreCase("RFC4180") &&
-        !format.equalsIgnoreCase("Tab Delimited") && !format.equalsIgnoreCase("Pipe Delimited")
-        && !format.equalsIgnoreCase("Custom")) {
-        throw new IllegalArgumentException("Format specified is not one of the allowed values. Allowed values are " +
-                                             "DEFAULT, EXCEL, MYSQL, RFC4180, Pipe Delimited, Tab Delimited or Custom");
+        !format.equalsIgnoreCase("Tab Delimited") && !format.equalsIgnoreCase("Pipe Delimited") &&
+        !format.equalsIgnoreCase("Custom") && !format.equalsIgnoreCase("PDL") &&
+        !format.equalsIgnoreCase("TDF")) {
+        throw new IllegalArgumentException(String.format("Format %s is not one of the allowed values. Allowed values " +
+                                                           "are %s", format, Joiner.on(", ").join(FORMATS)));
       }
 
       if (format.equalsIgnoreCase("Custom") && (delimiter == null || delimiter == 0)) {
