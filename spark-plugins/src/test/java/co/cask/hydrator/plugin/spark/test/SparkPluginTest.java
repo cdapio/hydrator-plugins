@@ -78,6 +78,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
@@ -342,6 +343,8 @@ public class SparkPluginTest extends HydratorTestBase {
   }
 
   @Test
+  @Ignore
+  // TODO: https://issues.cask.co/browse/HYDRATOR-1194
   public void testKafkaStreamingSource() throws Exception {
     Schema schema = Schema.recordOf(
       "user",
