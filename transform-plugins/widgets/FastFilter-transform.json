@@ -1,0 +1,71 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Fast Filter",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Source Field",
+          "name": "sourceField",
+          "widget-attributes": {
+            "width": "small"
+          }
+        },
+        {
+          "widget-type": "select",
+          "label": "Operator",
+          "name": "operator",
+          "widget-attributes": {
+            "values": [
+              "=",
+              "!=",
+              ">",
+              ">=",
+              "<",
+              "<=",
+              "contains",
+              "does not contain",
+              "starts with",
+              "ends with",
+              "doesn't start with",
+              "doesn't end with",
+              "matches regex",
+              "does not match regex"
+            ],
+            "default": "contains"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Criteria",
+          "name": "criteria",
+          "widget-attributes": {
+            "width": "small"
+          }
+        },
+        {
+          "widget-type": "select",
+          "label": "Ignore Case?",
+          "name": "shouldIgnoreCase",
+          "widget-attributes" : {
+            "values": [
+              "true",
+              "false"
+            ],
+            "default": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "label": "schema",
+      "widget-type": "schema"
+    }
+  ]
+}
