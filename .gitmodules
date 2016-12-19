@@ -18,4 +18,4 @@
 [submodule "wrangler-transform"]
 	path = wrangler-transform
 	url = https://github.com/hydrator/wrangler-transform.git
-	branch = develop
+	branch = release/1.0 
