@@ -7,13 +7,21 @@
       "label": "Projection Configuration",
       "properties": [
         {
-          "widget-type": "keyvalue",
+          "widget-type": "keyvalue-dropdown",
           "label": "Convert",
           "name": "convert",
           "widget-attributes": {
             "showDelimiter": "false",
             "key-placeholder": "Field Name",
-            "value-placeholder": "Type"
+            "dropdownOptions": [
+              "boolean",
+              "bytes",
+              "double",
+              "float",
+              "int",
+              "long",
+              "string"
+            ]
           }
         },
         {
