@@ -19,7 +19,7 @@ Properties
 
 **schema:** Optional schema of the table as a JSON Object. If the table does not
 already exist, one will be created with this schema, which will allow the table to be
-explored through Hive.
+explored through Hive. Output schema should have columns other than rowkey.
 
 **schema.row.field:** The name of the record field that should be used as the row
 key when writing to the table.

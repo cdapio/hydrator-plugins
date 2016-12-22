@@ -171,4 +171,21 @@ public class TableSinkTest {
     Assert.assertEquals(outputSchema, mockPipelineConfigurer.getOutputSchema());
   }
 
+  @Test(expected = IllegalArgumentException.class)
+  public void testTableSinkWithOutputSchemaWithOnlyRowKeyField() {
+    Schema outputSchema = Schema.recordOf(
+      "purchase",
+      Schema.Field.of("rowkey", Schema.of(Schema.Type.STRING))
+    );
+    Schema inputSchema = Schema.recordOf(
+      "purchase",
+      Schema.Field.of("rowkey", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("user", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("count", Schema.of(Schema.Type.INT))
+    );
+    TableSinkConfig tableSinkConfig = new TableSinkConfig("tableSink", "rowkey", outputSchema.toString());
+    TableSink tableSink = new TableSink(tableSinkConfig);
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
+    tableSink.configurePipeline(mockPipelineConfigurer);
+  }
 }
