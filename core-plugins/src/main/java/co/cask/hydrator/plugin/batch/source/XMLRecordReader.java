@@ -16,6 +16,7 @@
 
 package co.cask.hydrator.plugin.batch.source;
 
+import com.google.common.base.Strings;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -195,7 +196,9 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
     } catch (XMLStreamException exception) {
       throw new IllegalArgumentException(exception);
     }
-    updateFileTrackingInfo();
+    if (!Strings.isNullOrEmpty(tempFilePath)) {
+      updateFileTrackingInfo();
+    }
     processFileAction();
     return false;
   }

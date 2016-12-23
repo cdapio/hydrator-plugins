@@ -43,7 +43,6 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Iterators;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
@@ -107,7 +106,7 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     super.configurePipeline(pipelineConfigurer);
     config.validate();
     pipelineConfigurer.getStageConfigurer().setOutputSchema(DEFAULT_XML_SCHEMA);
-    if (!config.containsMacro("tableName")) {
+    if (!config.containsMacro("tableName") && !Strings.isNullOrEmpty(config.tableName)) {
       pipelineConfigurer.createDataset(config.tableName, KeyValueTable.class.getName());
     }
   }
@@ -116,32 +115,33 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
   public void prepareRun(BatchSourceContext context) throws Exception {
     config.validate();
     // Create dataset if macros were provided at configure time
-    if (!context.datasetExists(config.tableName)) {
+    if (!Strings.isNullOrEmpty(config.tableName) && !context.datasetExists(config.tableName)) {
       context.createDataset(config.tableName, KeyValueTable.class.getName(), DatasetProperties.EMPTY);
     }
     Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();
     conf.set(XMLInputFormat.XML_INPUTFORMAT_PATH_NAME, config.path);
     conf.set(XMLInputFormat.XML_INPUTFORMAT_NODE_PATH, config.nodePath);
-    if (StringUtils.isNotEmpty(config.pattern)) {
+    if (!Strings.isNullOrEmpty(config.pattern)) {
       conf.set(XMLInputFormat.XML_INPUTFORMAT_PATTERN, config.pattern);
     }
     conf.set(XMLInputFormat.XML_INPUTFORMAT_FILE_ACTION, config.actionAfterProcess);
-    if (StringUtils.isNotEmpty(config.targetFolder)) {
+    if (!Strings.isNullOrEmpty(config.targetFolder)) {
       conf.set(XMLInputFormat.XML_INPUTFORMAT_TARGET_FOLDER, config.targetFolder);
     }
 
-    setFileTrackingInfo(context, conf);
-
-    //Create a temporary directory, in which XMLRecordReader will add file tracking information.
-    fileSystem = FileSystem.get(conf);
-    long startTime = context.getLogicalStartTime();
-    //Create temp file name using start time to make it unique.
-    String tempDirectory = config.tableName + startTime;
-    tempDirectoryPath = new Path(config.temporaryFolder, tempDirectory);
-    fileSystem.mkdirs(tempDirectoryPath);
-    fileSystem.deleteOnExit(tempDirectoryPath);
-    conf.set(XMLInputFormat.XML_INPUTFORMAT_PROCESSED_DATA_TEMP_FOLDER, tempDirectoryPath.toUri().toString());
+    if (!config.containsMacro("tableName") && !Strings.isNullOrEmpty(config.tableName)) {
+      setFileTrackingInfo(context, conf);
+      //Create a temporary directory, in which XMLRecordReader will add file tracking information.
+      fileSystem = FileSystem.get(conf);
+      long startTime = context.getLogicalStartTime();
+      //Create temp file name using start time to make it unique.
+      String tempDirectory = config.tableName + startTime;
+      tempDirectoryPath = new Path(config.temporaryFolder, tempDirectory);
+      fileSystem.mkdirs(tempDirectoryPath);
+      fileSystem.deleteOnExit(tempDirectoryPath);
+      conf.set(XMLInputFormat.XML_INPUTFORMAT_PROCESSED_DATA_TEMP_FOLDER, tempDirectoryPath.toUri().toString());
+    }
 
     XMLInputFormat.setInputPathFilter(job, BatchXMLFileFilter.class);
     XMLInputFormat.addInputPath(job, new Path(config.path));
@@ -156,9 +156,12 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     processedFileTrackingTable = context.getDataset(config.tableName);
     if (processedFileTrackingTable != null && !config.isReprocessingRequired()) {
       List<String> processedFiles = new ArrayList<String>();
-      Calendar cal = Calendar.getInstance();
-      cal.add(Calendar.DATE, -Integer.valueOf(config.tableExpiryPeriod));
-      Date expiryDate = cal.getTime();
+      Date expiryDate = null;
+      if (config.tableExpiryPeriod != null && config.tableExpiryPeriod > 0) {
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DATE, -Integer.valueOf(config.tableExpiryPeriod));
+        expiryDate = cal.getTime();
+      }
 
       try (CloseableIterator<KeyValue<byte[], byte[]>> iterator = processedFileTrackingTable.scan(null, null)) {
         while (iterator.hasNext()) {
@@ -166,7 +169,8 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
           //Delete record before expiry time period
           Long time = Bytes.toLong(keyValue.getValue());
           Date processedDate = new Date(time);
-          if (processedDate.before(expiryDate)) {
+          if (config.tableExpiryPeriod != null && config.tableExpiryPeriod > 0 && expiryDate != null &&
+            processedDate.before(expiryDate)) {
             processedFileTrackingTable.delete(keyValue.getKey());
           } else {
             processedFiles.add(Bytes.toString(keyValue.getKey()));
@@ -198,20 +202,22 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
   @Override
   public void onRunFinish(boolean succeeded, BatchSourceContext context) {
     super.onRunFinish(succeeded, context);
-    try {
-      FileStatus[] status = fileSystem.listStatus(tempDirectoryPath);
-      long processingTime = new Date().getTime();
-      Path[] paths = FileUtil.stat2Paths(status);
-      if (paths != null && paths.length > 0) {
-        for (Path path : paths) {
-          try (FSDataInputStream input = fileSystem.open(path)) {
-            String key = input.readUTF();
-            processedFileTrackingTable.write(Bytes.toBytes(key), Bytes.toBytes(processingTime));
+    if (!Strings.isNullOrEmpty(config.tableName)) {
+      try {
+        FileStatus[] status = fileSystem.listStatus(tempDirectoryPath);
+        long processingTime = new Date().getTime();
+        Path[] paths = FileUtil.stat2Paths(status);
+        if (paths != null && paths.length > 0) {
+          for (Path path : paths) {
+            try (FSDataInputStream input = fileSystem.open(path)) {
+              String key = input.readUTF();
+              processedFileTrackingTable.write(Bytes.toBytes(key), Bytes.toBytes(processingTime));
+            }
           }
         }
+      } catch (IOException exception) {
+        LOG.error("IOException occurred while reading temp directory path : " + exception.getMessage());
       }
-    } catch (IOException exception) {
-      LOG.error("IOException occurred while reading temp directory path : " + exception.getMessage());
     }
   }
 
@@ -253,14 +259,17 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     @Description("Specifies whether the file(s) should be reprocessed.")
     private final String reprocessingRequired;
 
+    @Nullable
     @Description("Table name to be used to keep track of processed file(s).")
     @Macro
     private final String tableName;
 
-    @Description("Expiry period (days) for data in the table. Default is 30 days. " +
+    @Nullable
+    @Description("Expiry period (days) for data in the table. Data will be persisted in the table " +
+      "if no expiry period is provided." +
       "Example: For tableExpiryPeriod = 30, data before 30 days get deleted from the table.")
     @Macro
-    private final String tableExpiryPeriod;
+    private final Integer tableExpiryPeriod;
 
     @Description("An existing HDFS folder path with read and write access for the current user; required for storing " +
       "temporary files containing paths of the processed XML files. These temporary files will be read at the end of " +
@@ -271,7 +280,7 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     @VisibleForTesting
     XMLReaderConfig(String referenceName, String path, @Nullable String pattern, String nodePath,
                     String actionAfterProcess, @Nullable String targetFolder, String reprocessingRequired,
-                    String tableName, String tableExpiryPeriod, String temporaryFolder) {
+                    @Nullable String tableName, @Nullable Integer tableExpiryPeriod, String temporaryFolder) {
       super(referenceName);
       this.path = path;
       this.pattern = pattern;
@@ -310,12 +319,11 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       if (!containsMacro("nodePath")) {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(nodePath), "Node path cannot be empty.");
       }
-      if (!containsMacro("tableName")) {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(tableName), "Table name cannot be empty.");
+
+      if (!containsMacro("tableExpiryPeriod") && tableExpiryPeriod != null && tableExpiryPeriod < 0) {
+        throw new IllegalArgumentException("Value for Table expiry period should either be empty or greater than 0.");
       }
-      if (!containsMacro("tableExpiryPeriod")) {
-        Preconditions.checkArgument(tableExpiryPeriod != null, "Table expiry period cannot be empty.");
-      }
+
       if (!containsMacro("temporaryFolder")) {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(temporaryFolder), "Temporary folder cannot be empty.");
       }

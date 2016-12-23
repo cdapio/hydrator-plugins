@@ -44,8 +44,8 @@ Target folder must be an existing directory. (Optional) (Macro-enabled)
 
 **tableName:** Table name to be used to keep track of processed file(s). (Macro-enabled)
 
-**tableExpiryPeriod:** Expiry period (days) for data in the table. Default is 30 days.
-Example: For tableExpiryPeriod = 30, data before 30 days get deleted from the table. (Macro-enabled)
+**tableExpiryPeriod:** Expiry period (days) for data in the table. Data will be persisted in the table if no expiry
+period is provided. Example: For tableExpiryPeriod = 30, data before 30 days get deleted from the table. (Macro-enabled)
 
 **temporaryFolder:** An existing HDFS folder path with read and write access for the current user;
 required for storing temporary files containing paths of the processed XML files.
