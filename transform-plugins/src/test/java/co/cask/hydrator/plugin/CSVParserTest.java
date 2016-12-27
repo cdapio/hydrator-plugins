@@ -123,6 +123,21 @@ public class CSVParserTest {
   }
 
   @Test
+  public void testNullFormat() throws Exception {
+    CSVParser.Config config = new CSVParser.Config(null, null, "body", OUTPUT1.toString());
+    Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
+    transform.initialize(null);
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+
+    transform.transform(StructuredRecord.builder(INPUT1)
+                          .set("body", "1,2,3,4,").build(), emitter);
+    Assert.assertEquals("1", emitter.getEmitted().get(0).get("a"));
+    Assert.assertEquals("2", emitter.getEmitted().get(0).get("b"));
+    Assert.assertEquals("3", emitter.getEmitted().get(0).get("c"));
+    Assert.assertEquals("4", emitter.getEmitted().get(0).get("d"));
+  }
+
+  @Test
   public void testDefaultCSVParser() throws Exception {
     CSVParser.Config config = new CSVParser.Config("DEFAULT", null, "body", OUTPUT1.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
@@ -202,17 +217,63 @@ public class CSVParserTest {
   }
 
   @Test
+  public void testPDLforBackwardCompat() throws Exception {
+    CSVParser.Config config = new CSVParser.Config("PDL", null, "body", OUTPUT1.toString());
+    Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
+    transform.initialize(null);
+
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+
+    transform.transform(StructuredRecord.builder(INPUT1)
+                          .set("body", "1|    2|3 |4|        ").build(), emitter);
+    Assert.assertEquals("1", emitter.getEmitted().get(0).get("a"));
+    Assert.assertEquals("2", emitter.getEmitted().get(0).get("b"));
+    Assert.assertEquals("3", emitter.getEmitted().get(0).get("c"));
+    Assert.assertEquals("4", emitter.getEmitted().get(0).get("d"));
+    Assert.assertEquals("", emitter.getEmitted().get(0).get("e"));
+  }
+
+  @Test
+  public void testTDFforBackwardCompat() throws Exception {
+    CSVParser.Config config = new CSVParser.Config("TDF", null, "body", OUTPUT1.toString());
+    Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
+    transform.initialize(null);
+
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    transform.transform(StructuredRecord.builder(INPUT1)
+                          .set("body", "1\t2\t3\t4\t").build(), emitter);
+    Assert.assertEquals("1", emitter.getEmitted().get(0).get("a"));
+    Assert.assertEquals("2", emitter.getEmitted().get(0).get("b"));
+    Assert.assertEquals("3", emitter.getEmitted().get(0).get("c"));
+    Assert.assertEquals("4", emitter.getEmitted().get(0).get("d"));
+    Assert.assertEquals("", emitter.getEmitted().get(0).get("e"));
+  }
+
+  @Test
   public void testPDL() throws Exception {
     CSVParser.Config config = new CSVParser.Config("Pipe Delimited", null, "body", OUTPUT1.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
     transform.initialize(null);
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
-
-    // Test missing field.
-    emitter.clear();
     transform.transform(StructuredRecord.builder(INPUT1)
                           .set("body", "1|    2|3 |4|        ").build(), emitter);
+    Assert.assertEquals("1", emitter.getEmitted().get(0).get("a"));
+    Assert.assertEquals("2", emitter.getEmitted().get(0).get("b"));
+    Assert.assertEquals("3", emitter.getEmitted().get(0).get("c"));
+    Assert.assertEquals("4", emitter.getEmitted().get(0).get("d"));
+    Assert.assertEquals("", emitter.getEmitted().get(0).get("e"));
+  }
+
+  @Test
+  public void testTDF() throws Exception {
+    CSVParser.Config config = new CSVParser.Config("Tab Delimited", null, "body", OUTPUT1.toString());
+    Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
+    transform.initialize(null);
+
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    transform.transform(StructuredRecord.builder(INPUT1)
+                          .set("body", "1\t2\t3\t4\t").build(), emitter);
     Assert.assertEquals("1", emitter.getEmitted().get(0).get("a"));
     Assert.assertEquals("2", emitter.getEmitted().get(0).get("b"));
     Assert.assertEquals("3", emitter.getEmitted().get(0).get("c"));

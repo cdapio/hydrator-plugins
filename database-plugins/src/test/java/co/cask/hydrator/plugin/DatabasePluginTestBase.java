@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.plugin.PluginClass;
 import co.cask.cdap.api.plugin.PluginPropertyField;
+import co.cask.cdap.common.utils.Tasks;
 import co.cask.cdap.datapipeline.DataPipelineApp;
 import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.mock.test.HydratorTestBase;
@@ -67,6 +68,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.sql.rowset.serial.SerialBlob;
@@ -260,13 +263,16 @@ public class DatabasePluginTestBase extends HydratorTestBase {
                                              String failureMessage) throws Exception {
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
     ApplicationManager appManager = deployApplication(appId, appRequest);
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    final WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
     // Waiting for only 1 minute here because MR should have failed in the prepareRun() stage
     workflowManager.waitForFinish(1, TimeUnit.MINUTES);
-    for (RunRecord runRecord : workflowManager.getHistory()) {
-      Assert.assertEquals(failureMessage, ProgramRunStatus.FAILED, runRecord.getStatus());
-    }
+    Tasks.waitFor(ProgramRunStatus.FAILED, new Callable<ProgramRunStatus>() {
+      @Override
+      public ProgramRunStatus call() throws Exception {
+        return workflowManager.getHistory().get(0).getStatus();
+      }
+    }, 5, TimeUnit.SECONDS);
   }
 
   protected ApplicationManager deployETL(ETLPlugin sourcePlugin, ETLPlugin sinkPlugin) throws Exception {
@@ -283,17 +289,24 @@ public class DatabasePluginTestBase extends HydratorTestBase {
     return deployApplication(appId.toId(), appRequest);
   }
 
-  protected void runETLOnce(ApplicationManager appManager) throws TimeoutException, InterruptedException {
+  protected void runETLOnce(ApplicationManager appManager) throws TimeoutException,
+                                                                  InterruptedException, ExecutionException {
     runETLOnce(appManager, new HashMap<String, String>());
   }
 
   protected void runETLOnce(ApplicationManager appManager,
-                            Map<String, String> arguments) throws TimeoutException, InterruptedException {
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+                            Map<String, String> arguments) throws TimeoutException, InterruptedException,
+    ExecutionException {
+    final WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start(arguments);
     workflowManager.waitForFinish(5, TimeUnit.MINUTES);
     List<RunRecord> runRecords = workflowManager.getHistory();
-    Assert.assertEquals(ProgramRunStatus.COMPLETED, runRecords.get(0).getStatus());
+    Tasks.waitFor(ProgramRunStatus.COMPLETED, new Callable<ProgramRunStatus>() {
+      @Override
+      public ProgramRunStatus call() throws Exception {
+        return workflowManager.getHistory().get(0).getStatus();
+      }
+    }, 5, TimeUnit.SECONDS);
   }
 
   @AfterClass
