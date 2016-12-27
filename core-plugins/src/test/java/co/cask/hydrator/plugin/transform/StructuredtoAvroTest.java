@@ -23,6 +23,8 @@ import org.apache.avro.generic.GenericRecord;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.nio.ByteBuffer;
+
 public class StructuredtoAvroTest {
 
   @Test
@@ -70,6 +72,32 @@ public class StructuredtoAvroTest {
     Assert.assertEquals(123L, result.get("id"));
     Assert.assertEquals("ABC", result.get("name"));
     Assert.assertNull(result.get("age"));
+  }
+
+  @Test
+  public void testByteArrayConversionToByteBuffer() throws Exception {
+    Schema outputSchema = Schema.recordOf("output",
+                                          Schema.Field.of("testForBytes", Schema.of(Schema.Type.BYTES)));
+    Schema inputSchema = Schema.recordOf("input",
+                                         Schema.Field.of("testForBytes", Schema.of(Schema.Type.BYTES)));
+    StructuredRecord record = StructuredRecord.builder(inputSchema).set("testForBytes", new byte[1234]).build();
+    StructuredToAvroTransformer avroTransformer = new StructuredToAvroTransformer(outputSchema.toString());
+    GenericRecord result = avroTransformer.transform(record);
+    Assert.assertEquals(ByteBuffer.wrap(new byte[1234]), result.get("testForBytes"));
+  }
+
+  @Test
+  public void testByteArrayConversionToByteBufferForNullableField() throws Exception {
+    Schema outputSchema = Schema.recordOf("output",
+                                          Schema.Field.of("testForBytes",
+                                                          Schema.nullableOf(Schema.of(Schema.Type.BYTES))));
+    Schema inputSchema = Schema.recordOf("input",
+                                         Schema.Field.of("testForBytes",
+                                                         Schema.nullableOf(Schema.of(Schema.Type.BYTES))));
+    StructuredRecord record = StructuredRecord.builder(inputSchema).set("testForBytes", new byte[1234]).build();
+    StructuredToAvroTransformer avroTransformer = new StructuredToAvroTransformer(outputSchema.toString());
+    GenericRecord result = avroTransformer.transform(record);
+    Assert.assertEquals(ByteBuffer.wrap(new byte[1234]), result.get("testForBytes"));
   }
 
 }
