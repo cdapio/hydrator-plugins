@@ -52,6 +52,7 @@ import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -143,6 +144,7 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     fileSystem.deleteOnExit(tempDirectoryPath);
     conf.set(XMLInputFormat.XML_INPUTFORMAT_PROCESSED_DATA_TEMP_FOLDER, tempDirectoryPath.toUri().toString());
 
+    conf.set(FileInputFormat.INPUT_DIR_RECURSIVE, "true");
     XMLInputFormat.setInputPathFilter(job, BatchXMLFileFilter.class);
     XMLInputFormat.addInputPath(job, new Path(config.path));
     context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(XMLInputFormat.class, conf)));
