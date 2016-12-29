@@ -186,7 +186,7 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
       conf.set(INPUT_NAME_CONFIG, path.toUri().getPath());
       FileInputFormat.addInputPath(job, path);
     } else {
-      conf.set(INPUT_NAME_CONFIG, config.path);
+      conf.set(INPUT_NAME_CONFIG, new Path(config.path).toString());
       FileInputFormat.addInputPath(job, new Path(config.path));
     }
 

@@ -46,8 +46,10 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -145,5 +147,48 @@ public class FileBatchSourceTest extends HydratorTestBase {
     workflowManager.start();
     workflowManager.waitForFinish(5, TimeUnit.MINUTES);
     Assert.assertEquals("FAILED", workflowManager.getHistory().get(0).getStatus().name());
+  }
+
+  @Test
+  public void testRecursiveFolders() throws Exception {
+    Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
+      .put(Constants.Reference.REFERENCE_NAME, "TestCase")
+      .put(Properties.File.PATH, "src/test/resources/")
+      .put(Properties.File.FILE_REGEX, "fileBatchSource.*")
+      .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
+      .put(Properties.File.FILESYSTEM_PROPERTIES,
+           "{\"mapreduce.input.fileinputformat.input.dir.recursive\": \"true\" }")
+      .build();
+
+    ETLStage source = new ETLStage("FileInput", new ETLPlugin("File", BatchSource.PLUGIN_TYPE, sourceProperties, null));
+
+    String outputDatasetName = "recursive-folders";
+    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
+
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app("FileTest");
+
+    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
+
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> output = MockSink.readOutput(outputManager);
+
+    Assert.assertEquals("Expected records", 2, output.size());
+    Set<String> outputValue = new HashSet<>();
+    for (StructuredRecord record : output) {
+      outputValue.add((String) record.get("body"));
+    }
+    Assert.assertTrue(outputValue.contains("Hello,World"));
+    Assert.assertTrue(outputValue.contains("CDAP,Platform"));
   }
 }

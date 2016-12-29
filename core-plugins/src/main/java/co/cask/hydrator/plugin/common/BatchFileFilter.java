@@ -21,11 +21,13 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -73,9 +75,13 @@ public class BatchFileFilter extends Configured implements PathFilter {
   @Override
   public boolean accept(Path path) {
     String filePathName = path.toString();
-    //The path filter will first check the directory if a directory is given
-    if (filePathName.equals(pathName) || filePathName.equals(pathName + "/")) {
-      return true;
+    try {
+      FileSystem fileSystem = path.getFileSystem(new Configuration());
+      if (fileSystem.exists(path) && fileSystem.isDirectory(path)) {
+        return true;
+      }
+    } catch (IOException e) {
+      throw new IllegalArgumentException(String.format("Error accessing path: %s.", path), e);
     }
 
     //filter by file name using regex from configuration
