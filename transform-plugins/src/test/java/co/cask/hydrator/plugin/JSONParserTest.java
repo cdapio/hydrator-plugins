@@ -22,7 +22,6 @@ import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.mock.common.MockEmitter;
 import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
 import com.google.common.base.Joiner;
-import com.jayway.jsonpath.PathNotFoundException;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -54,6 +53,13 @@ public class JSONParserTest {
                                                         Schema.Field.of("bicycle_color", Schema.of(Schema.Type.STRING)),
                                                         Schema.Field.of("bicycle_price", Schema.of(Schema.Type.FLOAT)),
                                                         Schema.Field.of("window", Schema.of(Schema.Type.FLOAT)));
+
+  private static final Schema OUTPUT5 = Schema.recordOf("output4",
+                                                        Schema.Field.of("expensive", Schema.of(Schema.Type.INT)),
+                                                        Schema.Field.of("bicycle_color", Schema.of(Schema.Type.STRING)),
+                                                        Schema.Field.of("bicycle_price", Schema.of(Schema.Type.FLOAT)),
+                                                        Schema.Field.of("window", Schema.nullableOf(
+                                                          Schema.of(Schema.Type.FLOAT))));
 
   private static final String json = "{\n" +
     "    \"store\": {\n" +
@@ -177,8 +183,8 @@ public class JSONParserTest {
     Assert.assertEquals(19.95, emitter.getEmitted().get(0).get("bicycle_price"));
   }
 
-  @Test(expected = PathNotFoundException.class)
-  public void testInvalidJsonPath() throws Exception {
+  @Test
+  public void testInvalidJsonPathForNonNullableSchema() throws Exception {
     final String[] jsonPaths = {
       "expensive:$.expensive",
       "bicycle_color:$.store.bicycle.color",
@@ -197,5 +203,32 @@ public class JSONParserTest {
     transform.transform(StructuredRecord.builder(INPUT1)
                           .set("body", json)
                           .build(), emitter);
+    Assert.assertEquals(0, emitter.getEmitted().size());
+  }
+
+  @Test
+  public void testInvalidJsonPathForNullableSchema() throws Exception {
+    final String[] jsonPaths = {
+      "expensive:$.expensive",
+      "bicycle_color:$.store.bicycle.color",
+      "bicycle_price:$.store.bicycle.price",
+      "window:$.store.window"
+    };
+
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    JSONParser.Config config = new JSONParser.Config("body", Joiner.on(",").join(jsonPaths),
+                                                     OUTPUT5.toString());
+    Transform<StructuredRecord, StructuredRecord> transform = new JSONParser(config);
+
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT1);
+    transform.configurePipeline(mockPipelineConfigurer);
+    transform.initialize(null);
+    transform.transform(StructuredRecord.builder(INPUT1)
+                          .set("body", json)
+                          .build(), emitter);
+    Assert.assertEquals(10, emitter.getEmitted().get(0).get("expensive"));
+    Assert.assertEquals("red", emitter.getEmitted().get(0).get("bicycle_color"));
+    Assert.assertEquals(19.95, emitter.getEmitted().get(0).get("bicycle_price"));
+    Assert.assertEquals(null, emitter.getEmitted().get(0).get("window"));
   }
 }

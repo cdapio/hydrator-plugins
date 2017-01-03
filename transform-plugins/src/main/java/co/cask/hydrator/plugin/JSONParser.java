@@ -146,9 +146,13 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
           Object value = JsonPath.read(document, path);
           builder.set(field.getName(), value);
         } catch (PathNotFoundException e) {
-          LOG.error("JSON path '" + path + "' specified for the field '" + name + "' doesn't exist. " +
-                  "Fix the issue before proceeding further with processing.");
-          throw e;
+          if (field.getSchema().isNullable()) {
+            builder.set(field.getName(), null);
+          } else {
+            LOG.error("Json path '" + path + "' specified for the field '" + name + "' doesn't exist. " +
+                        "Dropping the error record: " + StructuredRecordStringConverter.toJsonString(input));
+            return;
+          }
         }
       } else {
         // We didn't find the field name in the mapping, we will not attempt to see if the field is present
