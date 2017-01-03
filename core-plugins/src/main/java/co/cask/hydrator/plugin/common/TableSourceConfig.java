@@ -38,8 +38,8 @@ public class TableSourceConfig extends BatchReadableWritableConfig {
   private String schemaStr;
 
   @Name(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD)
-  @Description("Optional field name indicating that the field value should come from the row key instead of a " +
-    "row column. The field name specified must be present in the schema, and must not be nullable.")
+  @Description("Optional record field for which row key will be considered as value instead of row column. " +
+    "The field name specified must be present in the schema, and must not be nullable.")
   @Nullable
   @Macro
   private String rowField;
