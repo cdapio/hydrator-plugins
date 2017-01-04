@@ -32,7 +32,7 @@ public class XMLReaderConfigTest {
     XMLReaderBatchSource.XMLReaderConfig config = new XMLReaderBatchSource.XMLReaderConfig("validReference", path,
                                                                                            null, nodePath, null, null,
                                                                                            reprocessingRequired,
-                                                                                           tableName, "30", "/tmp");
+                                                                                           tableName, 30, "/tmp");
     Assert.assertEquals(path, config.getPath());
     Assert.assertEquals(nodePath, config.getNodePath());
     Assert.assertEquals(true, config.isReprocessingRequired());
@@ -44,7 +44,7 @@ public class XMLReaderConfigTest {
     XMLReaderBatchSource.XMLReaderConfig config = new XMLReaderBatchSource.XMLReaderConfig("emptyPathReference", "",
                                                                                            null, "/catalog/book/",
                                                                                            null, null, "Yes",
-                                                                                           "XMLTrackingTable", "30",
+                                                                                           "XMLTrackingTable", 30,
                                                                                            "/tmp");
     config.validate();
   }
@@ -55,7 +55,7 @@ public class XMLReaderConfigTest {
                                                                                            "/opt/hdfs/catalog.xml",
                                                                                            null, "", null, null,
                                                                                            "Yes", "XMLTrackingTable",
-                                                                                           "30", "/tmp");
+                                                                                           30, "/tmp");
     config.validate();
   }
 
@@ -65,7 +65,7 @@ public class XMLReaderConfigTest {
                                                                                            "/opt/hdfs/catalog.xml",
                                                                                            null, "/catalog/book/",
                                                                                            "Delete", null, "Yes",
-                                                                                           "XMLTrackingTable", "30",
+                                                                                           "XMLTrackingTable", 30,
                                                                                            "/tmp");
     config.validate();
   }
@@ -76,18 +76,8 @@ public class XMLReaderConfigTest {
                                                                                            "/opt/hdfs/catalog.xml",
                                                                                            null, "/catalog/book/",
                                                                                            "Move", "", "No",
-                                                                                           "XMLTrackingTable", "30",
+                                                                                           "XMLTrackingTable", 30,
                                                                                            "/tmp");
-    config.validate();
-  }
-
-  @Test(expected = IllegalArgumentException.class)
-  public void testEmptyTableName() {
-    XMLReaderBatchSource.XMLReaderConfig config = new XMLReaderBatchSource.XMLReaderConfig("emptyNodePathReference",
-                                                                                           "/opt/hdfs/catalog.xml",
-                                                                                           null, "/catalog/book/",
-                                                                                           "Delete", null, "No", null,
-                                                                                           "30", "/tmp");
     config.validate();
   }
 
@@ -97,7 +87,7 @@ public class XMLReaderConfigTest {
                                                                                            "/opt/hdfs/catalog.xml",
                                                                                            null, "/catalog/book/",
                                                                                            "Delete", null, "No",
-                                                                                           "XMLTrackingTable", "30",
+                                                                                           "XMLTrackingTable", 30,
                                                                                            null);
     config.validate();
   }
