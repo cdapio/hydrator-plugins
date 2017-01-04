@@ -82,16 +82,6 @@ public class XMLReaderConfigTest {
   }
 
   @Test(expected = IllegalArgumentException.class)
-  public void testEmptyTableName() {
-    XMLReaderBatchSource.XMLReaderConfig config = new XMLReaderBatchSource.XMLReaderConfig("emptyNodePathReference",
-                                                                                           "/opt/hdfs/catalog.xml",
-                                                                                           null, "/catalog/book/",
-                                                                                           "Delete", null, "No", null,
-                                                                                           30, "/tmp");
-    config.validate();
-  }
-
-  @Test(expected = IllegalArgumentException.class)
   public void testEmptyTemporaryFolder() {
     XMLReaderBatchSource.XMLReaderConfig config = new XMLReaderBatchSource.XMLReaderConfig("emptyNodePathReference",
                                                                                            "/opt/hdfs/catalog.xml",
