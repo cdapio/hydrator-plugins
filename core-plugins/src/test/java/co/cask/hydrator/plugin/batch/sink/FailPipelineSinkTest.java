@@ -58,7 +58,7 @@ public class FailPipelineSinkTest extends ETLBatchTestBase {
 
   @Test
   public void testPlugin() throws Exception {
-    String inputTable = "input_table_test_Empty_Null";
+    String inputTable = "input_table";
     ETLStage source = new ETLStage("source", MockSource.getPlugin(inputTable));
     Map<String, String> map = new HashMap<>();
     ETLStage sink = new ETLStage("sink",
@@ -71,7 +71,7 @@ public class FailPipelineSinkTest extends ETLBatchTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("test");
+    ApplicationId appId = NamespaceId.DEFAULT.app("FailPipelineSinkTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     DataSetManager<Table> inputManager = getDataset(inputTable);

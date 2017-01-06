@@ -36,7 +36,7 @@ import java.util.Map;
  */
 @Plugin(type = "batchsink")
 @Name("FailPipeline")
-@Description("Fails a pipeline if any record flows to this sink.")
+@Description("Fails the pipeline if any record flows to this sink.")
 public class FailPipelineSink extends BatchSink<StructuredRecord, Void, Void> {
 
   @Override
