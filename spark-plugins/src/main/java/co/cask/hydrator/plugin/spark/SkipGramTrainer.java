@@ -26,6 +26,7 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.SparkExecutionPluginContext;
 import co.cask.cdap.etl.api.batch.SparkPluginContext;
 import co.cask.cdap.etl.api.batch.SparkSink;
+import co.cask.hydrator.common.spark.SparkUtils;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import org.apache.spark.api.java.JavaRDD;
