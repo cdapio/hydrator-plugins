@@ -16,16 +16,40 @@
 
 package co.cask.hydrator.plugin.batch.sink;
 
+import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.table.Put;
+import co.cask.cdap.api.dataset.table.Table;
+import co.cask.cdap.datapipeline.SmartWorkflow;
+import co.cask.cdap.etl.api.batch.BatchSink;
+import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
+import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
+import co.cask.cdap.etl.proto.v2.ETLPlugin;
+import co.cask.cdap.etl.proto.v2.ETLStage;
+import co.cask.cdap.proto.artifact.AppRequest;
+import co.cask.cdap.proto.id.ApplicationId;
+import co.cask.cdap.proto.id.NamespaceId;
+import co.cask.cdap.test.ApplicationManager;
+import co.cask.cdap.test.DataSetManager;
+import co.cask.cdap.test.TestConfiguration;
+import co.cask.cdap.test.WorkflowManager;
+import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
+import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.common.TableSinkConfig;
+import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Test configuring Table sink with valid and invalid scenarios based on input and output schemas.
  */
-public class TableSinkTest {
+public class TableSinkTest extends ETLBatchTestBase {
 
   @Test(expected = IllegalArgumentException.class)
   public void testTableSinkWithOutputSchemaExtraField() {
@@ -187,5 +211,57 @@ public class TableSinkTest {
     TableSink tableSink = new TableSink(tableSinkConfig);
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
     tableSink.configurePipeline(mockPipelineConfigurer);
+  }
+
+  @Test
+  public void testTableSinkWithMacro() throws Exception {
+    Schema schema = Schema.recordOf(
+      "action",
+      Schema.Field.of("rowkey", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("user", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("count", Schema.of(Schema.Type.INT))
+    );
+    ETLPlugin sourceConfig = new ETLPlugin("Table",
+                                           BatchSource.PLUGIN_TYPE,
+                                           ImmutableMap.of(
+                                             Properties.BatchReadableWritable.NAME, "TableSinkInputTable",
+                                             Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "rowkey",
+                                             Properties.Table.PROPERTY_SCHEMA, schema.toString()),
+                                           null);
+    ETLStage source = new ETLStage("tableSource", sourceConfig);
+    ETLPlugin sinkConfig = new ETLPlugin("Table",
+                                         BatchSink.PLUGIN_TYPE,
+                                         ImmutableMap.of(Properties.Table.NAME, "${name}",
+                                                         Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "rowkey"),
+                                         null);
+    ETLStage sink = new ETLStage("tableSinkUnique", sinkConfig);
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app("testTableSink");
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+    // add some data to the input table
+    DataSetManager<Table> inputManager = getDataset("TableSinkInputTable");
+    Table inputTable = inputManager.get();
+    Put put = new Put(Bytes.toBytes("row1"));
+    put.add("user", "samuel");
+    put.add("count", 5);
+    put.add("price", 123.45);
+    put.add("item", "scotch");
+    inputTable.put(put);
+    inputManager.flush();
+    Map<String, String> runTimeProperties = new HashMap<String, String>();
+    runTimeProperties.put("name", "tableSinkName");
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.setRuntimeArgs(runTimeProperties);
+    workflowManager.start();
+    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    // verify
+    DataSetManager<Table> tableManager = getDataset("tableSinkName");
+    Table table = tableManager.get();
+    Assert.assertEquals("samuel", table.get(Bytes.toBytes("row1")).getString("user"));
   }
 }

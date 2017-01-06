@@ -71,14 +71,11 @@ public abstract class BatchWritableSink<IN, KEY_OUT, VAL_OUT> extends BatchSink<
   @Override
   public void prepareRun(BatchSinkContext context) throws DatasetManagementException {
     Map<String, String> properties = getProperties();
-    if (batchReadableWritableConfig.containsMacro(Properties.BatchReadableWritable.NAME)) {
-      if (!context.datasetExists(properties.get(Properties.BatchReadableWritable.NAME))) {
-        context.createDataset(properties.get(Properties.BatchReadableWritable.NAME),
-                              properties.get(Properties.BatchReadableWritable.TYPE),
-                              DatasetProperties.builder().addAll(properties).build());
-      }
+    if (!context.datasetExists(properties.get(Properties.BatchReadableWritable.NAME))) {
+      context.createDataset(properties.get(Properties.BatchReadableWritable.NAME),
+                            properties.get(Properties.BatchReadableWritable.TYPE),
+                            DatasetProperties.builder().addAll(properties).build());
     }
-
     context.addOutput(Output.ofDataset(properties.get(Properties.BatchReadableWritable.NAME)));
   }
 }
