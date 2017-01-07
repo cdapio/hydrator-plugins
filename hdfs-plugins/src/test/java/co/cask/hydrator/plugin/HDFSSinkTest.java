@@ -134,7 +134,7 @@ public class HDFSSinkTest extends HydratorTestBase {
       BatchSink.PLUGIN_TYPE,
       ImmutableMap.<String, String>builder()
         .put("path", outputDir.toUri().toString())
-        .put(Constants.Reference.REFERENCE_NAME, "HDFSinkTest")
+        .put(Constants.Reference.REFERENCE_NAME, "${refName}")
         .build(),
       null));
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
@@ -153,8 +153,9 @@ public class HDFSSinkTest extends HydratorTestBase {
       StructuredRecord.builder(SCHEMA).set("ticker", "CDAP").set("num", 13).set("price", 123.23).build()
     );
     MockSource.writeInput(inputManager, input);
-
     MapReduceManager mrManager = appManager.getMapReduceManager(ETLMapReduce.NAME);
+
+    mrManager.setRuntimeArgs(ImmutableMap.<String, String>builder().put("refName", "HDFSinkTest").build());
     mrManager.start();
     mrManager.waitForFinish(5, TimeUnit.MINUTES);
 
