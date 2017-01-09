@@ -41,9 +41,7 @@ import java.util.TreeMap;
 
 /**
  * Decodes the input fields as BASE64, BASE32 or HEX.
- *
- * Please note that Encoder and Decoder might look the same right now, but 
- * in near future they will diverge.
+ * Please note that Encoder and Decoder might look the same right now, but in near future they will diverge.
  */
 @Plugin(type = "transform")
 @Name("Decoder")
@@ -51,20 +49,16 @@ import java.util.TreeMap;
 public final class Decoder extends Transform<StructuredRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(Decoder.class);
   private final Config config;
-
-  // Output Schema associated with transform output.
-  private Schema outSchema;
-
   // Mapping of input field to decoder type.
   private final Map<String, DecoderType> decodeMap = new TreeMap<>();
-
   // Decoder handlers.
   private final Base64 base64Decoder = new Base64();
   private final Base32 base32Decoder = new Base32();
   private final Hex hexDecoder = new Hex();
-
   // Output Field name to type map
   private final Map<String, Schema.Type> outSchemaMap = new HashMap<>();
+  // Output Schema associated with transform output.
+  private Schema outSchema;
 
   // This is used only for tests, otherwise this is being injected by the ingestion framework.
   public Decoder(Config config) {
@@ -143,31 +137,28 @@ public final class Decoder extends Transform<StructuredRecord, StructuredRecord>
   @Override
   public void transform(StructuredRecord in, Emitter<StructuredRecord> emitter) throws Exception {
     StructuredRecord.Builder builder = StructuredRecord.builder(outSchema);
-
     Schema inSchema = in.getSchema();
     List<Field> inFields = inSchema.getFields();
-
-    // Iterate through input fields. Check if field name is present 
+    // Iterate through input fields. Check if field name is present
     // in the fields that need to be decoded, if it's not then write
-    // to output as it is. 
+    // to output as it is.
     for (Field field : inFields) {
       String name = field.getName();
 
       // Check if the output schema has the field, if it's not there
-      // then skip and move to processing the next field. 
+      // then skip and move to processing the next field.
       if (!outSchemaMap.containsKey(name)) {
         continue;
       }
-
       Schema.Type outFieldType = outSchemaMap.get(name);
 
       // Check if the input field name is configured to be decoded. If the field is not
-      // present or is defined as none, then pass through the field as is. 
+      // present or is defined as none, then pass through the field as is.
       if (!decodeMap.containsKey(name) || decodeMap.get(name) == DecoderType.NONE) {
         builder.set(name, in.get(name));
       } else {
         // Now, the input field could be of type String or byte[], so transform everything
-        // to byte[] 
+        // to byte[]
         byte[] obj = new byte[0];
         if (field.getSchema().getType() == Schema.Type.STRING) {
           obj = ((String) in.get(name)).getBytes();
@@ -187,8 +178,8 @@ public final class Decoder extends Transform<StructuredRecord, StructuredRecord>
           outValue = hexDecoder.decode(obj);
         }
 
-        // Depending on the output field type, either convert it to 
-        // Bytes or to String. 
+        // Depending on the output field type, either convert it to
+        // Bytes or to String.
         if (outFieldType == Schema.Type.BYTES) {
           builder.set(name, outValue);
         } else if (outFieldType == Schema.Type.STRING) {

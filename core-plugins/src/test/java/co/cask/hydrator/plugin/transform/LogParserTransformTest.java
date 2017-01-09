@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.transform;
 import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.etl.api.InvalidEntry;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.mock.common.MockEmitter;
 import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
@@ -113,7 +114,7 @@ public class LogParserTransformTest {
       "event",
       Schema.Field.of("CLF", Schema.of(Schema.Type.STRING))
       // "body" is config.inputName and we skip that, causing that field to be null
-      );
+    );
     MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(inputSchemaString,
                                                                        ImmutableMap.<String, Object>of(
                                                                          CoreValidator.ID, new CoreValidator()));
@@ -132,10 +133,10 @@ public class LogParserTransformTest {
 
     StructuredRecord browserRecord = StructuredRecord.builder(STRING_SCHEMA)
       .set("body", "13a9f69e4a00effd6b4b891dcef632ef9afe38cc8b0 localhost " +
-             "[31/Jan/2015:21:57:57 +0000] 133.133.133.133 - 0E94306589 REST.GET.OBJECT " +
-             "downloads/this/is/another/folder/with/a/file/file.zip " +
-             "\"GET /my/uri.jpg HTTP/1.1\" 304 - - 195750039 198 - " +
-             "\"-\" \"Mozilla/5.0 Gecko/20100115 Firefox/3.6\" -")
+        "[31/Jan/2015:21:57:57 +0000] 133.133.133.133 - 0E94306589 REST.GET.OBJECT " +
+        "downloads/this/is/another/folder/with/a/file/file.zip " +
+        "\"GET /my/uri.jpg HTTP/1.1\" 304 - - 195750039 198 - " +
+        "\"-\" \"Mozilla/5.0 Gecko/20100115 Firefox/3.6\" -")
       .build();
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
@@ -210,5 +211,45 @@ public class LogParserTransformTest {
     Assert.assertEquals("Personal computer", output.get("device"));
     Assert.assertEquals(200, output.get("httpStatus"));
     Assert.assertEquals(971211336000L, output.get("ts"));
+  }
+
+  @Test
+  public void testErrorDatasetForInvalidCLFLog() throws Exception {
+    StructuredRecord record = StructuredRecord.builder(BYTE_SCHEMA)
+      .set("body", ByteBuffer.wrap((Bytes.toBytes("127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] " +
+                                                    "\"GET /apache_pb.gif HTTP/1.0\" 200 2326 " +
+                                                    "\"http://www.example.com/start.html\" \"Mozilla/5.0 " +
+                                                    "")))).build();
+
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    CLF_TRANSFORM.transform(record, emitter);
+
+    Assert.assertEquals(0, emitter.getEmitted().size());
+    Assert.assertEquals(1, emitter.getErrors().size());
+    InvalidEntry<StructuredRecord> invalidEntry = emitter.getErrors().get(0);
+    Assert.assertEquals(31, invalidEntry.getErrorCode());
+    Assert.assertEquals("Error Message", "Couldn't parse log, because the log did not match the CLF format.",
+                        invalidEntry.getErrorMsg());
+    Assert.assertEquals("Error Record", record, invalidEntry.getInvalidRecord());
+  }
+
+  @Test
+  public void testErrorDatasetForInvalidS3Log() throws Exception {
+    StructuredRecord botRecord = StructuredRecord.builder(STRING_SCHEMA)
+      .set("body", "13a9f69e4a00effd6b4b891dcbcabef632ef9a9da7c - 6006CA0AE4 REST.GET.OBJECT " +
+        "ubuntu/this/is/some/folder " +
+        "\"GET /my/uri.gif releases/dists/precise/releases/i18n/Translation-en HTTP/1.1\" " +
+        "403 AccessDenied 231 - 10 - \"-\" \"Debian APT-HTTP/1.3 (0.8.16~exp12ubuntu10.  17)\" -")
+      .build();
+
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    S3_TRANSFORM.transform(botRecord, emitter);
+    Assert.assertEquals(0, emitter.getEmitted().size());
+    Assert.assertEquals(1, emitter.getErrors().size());
+    InvalidEntry<StructuredRecord> invalidEntry = emitter.getErrors().get(0);
+    Assert.assertEquals(31, invalidEntry.getErrorCode());
+    Assert.assertEquals("Error Message", "Couldn't parse log, because the log did not match the S3 format.",
+                        invalidEntry.getErrorMsg());
+    Assert.assertEquals("Error Record", botRecord, invalidEntry.getInvalidRecord());
   }
 }

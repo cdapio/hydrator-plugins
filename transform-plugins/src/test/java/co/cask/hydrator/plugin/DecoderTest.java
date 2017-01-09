@@ -211,9 +211,9 @@ public class DecoderTest {
       new Decoder(new Decoder.Config("a:BASE64", OUTPUT.toString()));
 
     final Schema invalidInput = Schema.recordOf("input",
-                                         Schema.Field.of("a", Schema.of(Schema.Type.INT)),
-                                         Schema.Field.of("b", Schema.of(Schema.Type.STRING)),
-                                         Schema.Field.of("c", Schema.of(Schema.Type.STRING)));
+                                                Schema.Field.of("a", Schema.of(Schema.Type.INT)),
+                                                Schema.Field.of("b", Schema.of(Schema.Type.STRING)),
+                                                Schema.Field.of("c", Schema.of(Schema.Type.STRING)));
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(invalidInput);
     decoder.configurePipeline(mockPipelineConfigurer);

@@ -21,6 +21,11 @@ Properties
 **inputName:** Name of the field in the input schema which encodes the
 log information. The given field must be of type ``String`` or ``Bytes``.
 
+Conditions
+----------
+If error dataset is configured, then all the erroneous rows, if present in the input, will be committed to the
+specified error dataset.
+If no error dataset is configured, then pipeline will get completed but with warnings in the logs.
 
 Example
 -------

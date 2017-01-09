@@ -27,6 +27,12 @@ children of the elements referenced by the XPath. For example: /rss/channel/item
 **schema:** The schema of records to output. Each field in the schema must be a child of the XML element referenced by
 the XPath. Currently only simply types are supported.
 
+Conditions
+----------
+If error dataset is configured, then all the erroneous rows, if present in the input, will be committed to the
+specified error dataset.
+If no error dataset is configured, then pipeline will get completed but with warnings in the logs.
+
 Example
 -------
 
