@@ -24,6 +24,7 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.InvalidEntry;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
 import net.sf.uadetector.ReadableUserAgent;
@@ -130,6 +131,8 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
       Matcher logMatcher = S3_LOG_PATTERN.matcher(log);
       if (!logMatcher.matches() || logMatcher.groupCount() < S3_REGEX_LENGTH) {
         LOG.debug("Couldn't parse log because log did not match the S3 format, log: {}", log);
+        emitter.emitError(new InvalidEntry<>(31, "Couldn't parse log, because the log did not match the S3 format.",
+                                             input));
         return;
       }
       output = parseRequest(logMatcher, S3_INDICES);
@@ -137,6 +140,8 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
       Matcher logMatcher = CLF_LOG_PATTERN.matcher(log);
       if (!logMatcher.matches() || logMatcher.groupCount() < CLF_REGEX_LENGTH) {
         LOG.debug("Couldn't parse log because the log did not match the CLF format. log: {}", log);
+        emitter.emitError(new InvalidEntry<>(31, "Couldn't parse log, because the log did not match the CLF format.",
+                                             input));
         return;
       }
       output = parseRequest(logMatcher, CLF_INDICES);
@@ -165,7 +170,6 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
         .set("ts", ts)
         .build();
     }
-
     if (output != null) {
       emitter.emit(output);
     }
@@ -173,6 +177,7 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
 
   /**
    * Gets the log message from the input
+   *
    * @param input the StructuredRecord to extract the log from
    * @return the log message, or null on failure
    */
@@ -222,9 +227,10 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
 
   /**
    * Parses a request for the URI, IP, Browser, Device, and Time
+   *
    * @param logMatcher the regex matcher to use
-   * @param indices array of indices that define what position in the regex the fields are,
-   *                 in the order of Request, Time, IP, User Agent, and HTTP status code.
+   * @param indices array of indices that define what position in the regex the fields are, in the order of Request,
+   *                Time, IP, User Agent, and HTTP status code.
    */
   @Nullable
   private StructuredRecord parseRequest(Matcher logMatcher, int[] indices) {

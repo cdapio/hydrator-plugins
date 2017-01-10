@@ -12,5 +12,5 @@ Configuration
 **decode:** Specifies the configuration for decode fields; in JSON configuration, 
 this is specified as ``<field>:<decoder>[,<field>:<decoder>]*``.
 
-**schema:** Specifies the output schema; the fields that are decoded will have the same field 
+**schema:** Specifies the output schema; the fields that are decoded will have the same field
 name but they will be of type ``BYTES`` or ``STRING``.
