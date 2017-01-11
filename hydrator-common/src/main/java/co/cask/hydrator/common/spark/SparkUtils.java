@@ -13,15 +13,14 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package co.cask.hydrator.plugin.spark;
+package co.cask.hydrator.common.spark;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import joptsimple.internal.Strings;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,7 +35,7 @@ import javax.annotation.Nullable;
 /**
  * Spark plugin Utility class. Contains common code to be used in trainer and predictors.
  */
-final class SparkUtils {
+public final class SparkUtils {
 
   private SparkUtils() {
   }
@@ -49,7 +48,7 @@ final class SparkUtils {
    * @param featuresToExclude features to be excluded when training/predicting.
    * @param predictionField field containing the prediction values.
    */
-  static void validateConfigParameters(Schema inputSchema, @Nullable String featuresToInclude,
+  public static void validateConfigParameters(Schema inputSchema, @Nullable String featuresToInclude,
                                        @Nullable String featuresToExclude, String predictionField,
                                        @Nullable String cardinalityMapping) {
     if (!Strings.isNullOrEmpty(featuresToExclude) && !Strings.isNullOrEmpty(featuresToInclude)) {
@@ -80,7 +79,7 @@ final class SparkUtils {
    * @param predictionField field containing the prediction values.
    * @return feature list to be used for training/prediction.
    */
-  static Map<String, Integer> getFeatureList(Schema inputSchema, @Nullable String featuresToInclude,
+  public static Map<String, Integer> getFeatureList(Schema inputSchema, @Nullable String featuresToInclude,
                                              @Nullable String featuresToExclude, String predictionField) {
     if (!Strings.isNullOrEmpty(featuresToExclude) && !Strings.isNullOrEmpty(featuresToInclude)) {
       throw new IllegalArgumentException("Cannot specify values for both featuresToInclude and featuresToExclude. " +
@@ -124,7 +123,7 @@ final class SparkUtils {
    * @param cardinalityMapping feature to cardinality mapping specified for categorical features.
    * @return categoricalFeatureInfo for categorical features.
    */
-  static Map<Integer, Integer> getCategoricalFeatureInfo(Schema inputSchema,
+  public static Map<Integer, Integer> getCategoricalFeatureInfo(Schema inputSchema,
                                                          @Nullable String featuresToInclude,
                                                          @Nullable String featuresToExclude,
                                                          String labelField,
@@ -160,7 +159,7 @@ final class SparkUtils {
    * @param inputSchema schema of the received record.
    * @param labelField field from which to get the prediction.
    */
-  static void validateLabelFieldForTrainer(Schema inputSchema, String labelField) {
+  public static void validateLabelFieldForTrainer(Schema inputSchema, String labelField) {
     Schema.Field prediction = inputSchema.getField(labelField);
     if (prediction == null) {
       throw new IllegalArgumentException(String.format("Label field %s does not exists in the input schema.",
@@ -178,7 +177,7 @@ final class SparkUtils {
   /**
    * Creates a builder based off the given record. The record will be cloned without the prediction field.
    */
-  static StructuredRecord.Builder cloneRecord(StructuredRecord record, Schema outputSchema,
+  public static StructuredRecord.Builder cloneRecord(StructuredRecord record, Schema outputSchema,
                                               String predictionField) {
     List<Schema.Field> fields = new ArrayList<>(outputSchema.getFields());
     fields.add(Schema.Field.of(predictionField, Schema.of(Schema.Type.DOUBLE)));
@@ -192,7 +191,7 @@ final class SparkUtils {
     return builder;
   }
 
-  static Schema getOutputSchema(Schema inputSchema, String predictionField) {
+  public static Schema getOutputSchema(Schema inputSchema, String predictionField) {
     List<Schema.Field> fields = new ArrayList<>(inputSchema.getFields());
     fields.add(Schema.Field.of(predictionField, Schema.of(Schema.Type.DOUBLE)));
     return Schema.recordOf(inputSchema.getRecordName() + ".predicted", fields);
@@ -204,7 +203,7 @@ final class SparkUtils {
    * @param inputSchema input Schema
    * @param map Map of the input fields to map to the transformed output fields.
    */
-  static void validateFeatureGeneratorConfig(Schema inputSchema, Map<String, String> map, String pattern) {
+  public static void validateFeatureGeneratorConfig(Schema inputSchema, Map<String, String> map, String pattern) {
     try {
       Pattern.compile(pattern);
     } catch (PatternSyntaxException e) {
@@ -233,7 +232,7 @@ final class SparkUtils {
    * @param inputSchema input schema coming in from the previous stage
    * @param key text field on which to perform text based feature generation
    */
-  static void validateTextField(Schema inputSchema, String key) {
+  public static void validateTextField(Schema inputSchema, String key) {
     if (inputSchema.getField(key) == null) {
       throw new IllegalArgumentException(String.format("Input field %s does not exist in the input schema %s.",
                                                        key, inputSchema.toString()));
@@ -264,7 +263,7 @@ final class SparkUtils {
    * @param splitter Splitter object to be used for splitting the input string
    * @return text to be used for feature generation
    */
-  static List<String> getInputFieldValue(StructuredRecord input, String inputField, Splitter splitter) {
+  public static List<String> getInputFieldValue(StructuredRecord input, String inputField, Splitter splitter) {
     List<String> text = new ArrayList<>();
     Schema schema = input.getSchema().getField(inputField).getSchema();
     Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
