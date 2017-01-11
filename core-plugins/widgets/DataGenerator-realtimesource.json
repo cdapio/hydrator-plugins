@@ -12,9 +12,16 @@
           "name": "referenceName"
         },
         {
-          "widget-type": "textbox",
+          "widget-type": "select",
           "label": "Type",
-          "name": "type"
+          "name": "type",
+          "widget-attributes": {
+            "values": [
+              "stream",
+              "table"
+            ],
+            "default": "stream"
+          }
         }
       ]
     }
