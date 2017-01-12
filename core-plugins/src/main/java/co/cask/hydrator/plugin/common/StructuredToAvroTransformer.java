@@ -25,6 +25,7 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericRecordBuilder;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Map;
 
 /**
@@ -66,7 +67,15 @@ public class StructuredToAvroTransformer extends RecordConverter<StructuredRecor
       if (schemaField == null) {
         throw new IllegalArgumentException("Input record does not contain the " + fieldName + " field.");
       }
-      recordBuilder.set(fieldName, convertField(structuredRecord.get(fieldName), schemaField.getSchema()));
+      co.cask.cdap.api.data.schema.Schema schemaFieldSchema = schemaField.getSchema();
+      co.cask.cdap.api.data.schema.Schema.Type inputFieldType = (schemaFieldSchema.isNullableSimple())
+        ? schemaFieldSchema.getNonNullable().getType()
+        : schemaFieldSchema.getType();
+      if (inputFieldType.equals(co.cask.cdap.api.data.schema.Schema.Type.BYTES)) {
+        recordBuilder.set(fieldName, ByteBuffer.wrap((byte[]) structuredRecord.get(fieldName)));
+      } else {
+        recordBuilder.set(fieldName, convertField(structuredRecord.get(fieldName), schemaField.getSchema()));
+      }
     }
     return recordBuilder.build();
   }
