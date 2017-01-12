@@ -24,14 +24,19 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.SparkCompute;
 import co.cask.cdap.etl.api.batch.SparkExecutionPluginContext;
-import co.cask.cdap.format.StructuredRecordStringConverter;
 import com.google.common.base.Preconditions;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.ml.feature.RegexTokenizer;
 import org.apache.spark.sql.DataFrame;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SQLContext;
+import org.apache.spark.sql.types.DataType;
+import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,11 +50,45 @@ import java.util.List;
 public class Tokenizer extends SparkCompute<StructuredRecord, StructuredRecord> {
 
   public static final String PLUGIN_NAME = "Tokenizer";
-  private Config config;
+
   private Schema outputSchema;
+  private Schema inputSchema;
+  private List<String> fieldList = new ArrayList<>();
+  private Config config;
 
   public Tokenizer(Config config) {
     this.config = config;
+  }
+
+  private static DataType getDataType(Schema schema) {
+    DataType returnDataType = DataTypes.StringType;
+    switch (schema.getType()) {
+      case INT:
+        returnDataType = DataTypes.IntegerType;
+        break;
+      case STRING:
+        returnDataType = DataTypes.StringType;
+        break;
+      case BOOLEAN:
+        returnDataType = DataTypes.BooleanType;
+        break;
+      case BYTES:
+        returnDataType = DataTypes.ByteType;
+        break;
+      case DOUBLE:
+        returnDataType = DataTypes.DoubleType;
+        break;
+      case FLOAT:
+        returnDataType = DataTypes.FloatType;
+        break;
+      case LONG:
+        returnDataType = DataTypes.LongType;
+        break;
+      case ENUM:
+        returnDataType = DataTypes.StringType;
+        break;
+    }
+    return returnDataType;
   }
 
   @Override
@@ -72,31 +111,66 @@ public class Tokenizer extends SparkCompute<StructuredRecord, StructuredRecord> 
   @Override
   public JavaRDD<StructuredRecord> transform(SparkExecutionPluginContext context,
                                              JavaRDD<StructuredRecord> input) throws Exception {
+
     JavaSparkContext javaSparkContext = context.getSparkContext();
     SQLContext sqlContext = new SQLContext(javaSparkContext);
+
     if (input == null) {
       return context.getSparkContext().emptyRDD();
     }
-    outputSchema = outputSchema != null ? outputSchema : config.getOutputSchema(input.first().getSchema(),
-                                                                                config.outputColumn);
-    JavaRDD<String> javardd = input.map(new Function<StructuredRecord, String>() {
+
+    //initializing schema caches on first input
+    inputSchema = inputSchema != null ? inputSchema : input.first().getSchema();
+    outputSchema = outputSchema != null ? outputSchema : config.getOutputSchema(inputSchema, config.outputColumn);
+    if (fieldList.isEmpty()) {
+      for (Schema.Field field : inputSchema.getFields()) {
+        fieldList.add(field.getName());
+      }
+      fieldList.add(config.outputColumn);
+    }
+
+    List<StructField> fields = new ArrayList<>();
+    for (Schema.Field field : inputSchema.getFields()) {
+      fields.add(DataTypes.createStructField(field.getName(), getDataType(field.getSchema()), true));
+    }
+    final StructType schema = DataTypes.createStructType(fields);
+
+    //Transform input i.e JavaRDD<StructuredRecord> to JavaRDD<Row>
+    JavaRDD<Row> rowRDD = input.map(new Function<StructuredRecord, Row>() {
       @Override
-      public String call(StructuredRecord structuredRecord) throws Exception {
-        return StructuredRecordStringConverter.toJsonString(structuredRecord);
+      public Row call(StructuredRecord record) throws Exception {
+        List<Object> fields = new ArrayList<>();
+        for (String field : schema.fieldNames()) {
+          fields.add(record.get(field));
+        }
+        return RowFactory.create(fields.toArray());
       }
     });
-    DataFrame sentenceDataFrame = sqlContext.read().json(javardd);
+
+    DataFrame sentenceDataFrame = sqlContext.createDataFrame(rowRDD, schema);
+
     RegexTokenizer regexTokenizer = new RegexTokenizer().setInputCol(config.columnToBeTokenized)
       .setOutputCol(config.outputColumn)
       .setPattern(config.patternSeparator);
     DataFrame tokenizedDataFrame = regexTokenizer.transform(sentenceDataFrame);
-    JavaRDD<StructuredRecord> output = tokenizedDataFrame.toJSON().toJavaRDD()
-      .map(new Function<String, StructuredRecord>() {
-        @Override
-        public StructuredRecord call(String record) throws Exception {
-          return StructuredRecordStringConverter.fromJsonString(record, outputSchema);
+
+    JavaRDD<StructuredRecord> output = tokenizedDataFrame.toJavaRDD().map(new Function<Row, StructuredRecord>() {
+      @Override
+      public StructuredRecord call(Row row) throws Exception {
+        StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
+        for (int i = 0; i < fieldList.size(); i++) {
+          Schema.Type type = outputSchema.getField(fieldList.get(i)).getSchema().getType();
+          if (type.equals(Schema.Type.ARRAY)) {
+            builder.set(fieldList.get(i), row.getList(i));
+          } else if (type.equals(Schema.Type.MAP)) {
+            builder.set(fieldList.get(i), row.getJavaMap(i));
+          } else {
+            builder.set(fieldList.get(i), row.get(i));
+          }
         }
-      });
+        return builder.build();
+      }
+    });
     return output;
   }
 

@@ -2,15 +2,15 @@
 
 Description
 -----------
-Tokenization is the process of taking text (such as a sentence) and breaking it into individual terms (usually words) 
-on the basis of pattern.
+Tokenization is the process of taking text (such as a sentence) and breaking it into individual terms (usually words)
+on the basis of a pattern.
 
-Tokenizer splits data on the basis of specified pattern and emits the output as string array of tokens.
+Tokenizer splits data on the basis of a specified pattern and emits the output as string array of tokens.
 
 Use Case
 --------
-User wants to extract the hashtags from the twitter feeds. User would tokenize the words based on space and then can
-identify the words that start with hashtags.
+User wants to extract the hashtags from a Twitter feed. User would tokenize the words based on spaces and then can
+identify the words that start with hashtags in another stage.
 
 Properties
 ----------
@@ -22,7 +22,7 @@ Properties
 
 Example
 -------
-This example tokenizes "sentence" column into output column "words" using pattern "/".
+This example tokenizes the "sentence" column into the output column "words" using the pattern "/":
 
     {
         "name": "Tokenizer",
@@ -34,8 +34,7 @@ This example tokenizes "sentence" column into output column "words" using patter
         }
     }
 
-
-For example, suppose the tokenizer receives below input records:
+For example, suppose the tokenizer receives these input records:
 
     +=======================================================+
     | topic | sentence                                      |
@@ -45,7 +44,7 @@ For example, suppose the tokenizer receives below input records:
     | Spark | Spark /is an engine for /bigdata processing   |
     +=======================================================+
 
-Output schema will contain additional column "words" having tokenized data in string array form:
+Output schema will contain an additional column "words", having tokenized the data into string array form:
 
     +=====================================================================================================+
     | topic | sentence                                     | words                                        |
