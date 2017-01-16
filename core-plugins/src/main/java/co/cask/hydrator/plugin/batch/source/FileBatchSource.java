@@ -43,6 +43,7 @@ import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -85,12 +86,14 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
   protected static final String PATH_DESCRIPTION = "Path to file(s) to be read. If a directory is specified, " +
     "terminate the path name with a \'/\'. For distributed file system such as HDFS, file system name should come" +
     " from 'fs.DefaultFS' property in the 'core-site.xml'. For example, 'hdfs://mycluster.net:8020/input', where" +
-    " value of the property 'fs.DefaultFS' in the 'core-site.xml' is 'hdfs://mycluster.net:8020'.";
+    " value of the property 'fs.DefaultFS' in the 'core-site.xml' is 'hdfs://mycluster.net:8020'. Also, the path " +
+    "uses Globbing to read files.";
   protected static final String TABLE_DESCRIPTION = "Name of the Table that keeps track of the last time files " +
     "were read in. If this is null or empty, the Regex is used to filter filenames.";
   protected static final String INPUT_FORMAT_CLASS_DESCRIPTION = "Name of the input format class, which must be a " +
     "subclass of FileInputFormat. Defaults to CombineTextInputFormat.";
-  protected static final String REGEX_DESCRIPTION = "Regex to filter out filenames in the path. " +
+  protected static final String REGEX_DESCRIPTION = "Regex to filter out files in the path. It accepts regular " +
+    "expression which is applied to the complete path and returns the list of files that match the specified pattern." +
     "To use the TimeFilter, input \"timefilter\". The TimeFilter assumes that it " +
     "is reading in files with the File log naming convention of 'YYYY-MM-DD-HH-mm-SS-Tag'. The TimeFilter " +
     "reads in files from the previous hour if the field 'timeTable' is left blank. If it's currently " +
@@ -174,11 +177,13 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
 
     conf.set(CUTOFF_READ_TIME, dateFormat.format(prevHour));
     FileInputFormat.setInputPathFilter(job, BatchFileFilter.class);
+    FileInputFormat.setInputDirRecursive(job, config.recursive);
 
     FileSystem pathFileSystem = FileSystem.get(new Path(config.path).toUri(), conf);
+    FileStatus[] fileStatus = pathFileSystem.globStatus(new Path(config.path));
     fs = FileSystem.get(conf);
 
-    if (!pathFileSystem.exists(new Path(config.path)) && config.ignoreNonExistingFolders) {
+    if (fileStatus == null && config.ignoreNonExistingFolders) {
       path = fs.getWorkingDirectory().suffix("/tmp/tmp.txt");
       LOG.warn(String.format("File/Folder specified in %s does not exists. Setting input path to %s.", config.path,
                              path));
@@ -270,6 +275,10 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
       "set to true it will treat the not present folder as zero input and log a warning. Default is false.")
     public Boolean ignoreNonExistingFolders;
 
+    @Nullable
+    @Description("Boolean value to determine if files are to be read recursively from the path. Default is false.")
+    public Boolean recursive;
+
     public FileBatchConfig() {
       super("");
       this.fileSystemProperties = GSON.toJson(ImmutableMap.<String, String>of());
@@ -277,11 +286,13 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
       this.inputFormatClass = CombineTextInputFormat.class.getName();
       this.maxSplitSize = DEFAULT_MAX_SPLIT_SIZE;
       this.ignoreNonExistingFolders = false;
+      this.recursive = false;
     }
 
     public FileBatchConfig(String referenceName, String path, @Nullable String fileRegex, @Nullable String timeTable,
                            @Nullable String inputFormatClass, @Nullable String fileSystemProperties,
-                           @Nullable Long maxSplitSize, @Nullable Boolean ignoreNonExistingFolders) {
+                           @Nullable Long maxSplitSize, @Nullable Boolean ignoreNonExistingFolders,
+                           @Nullable Boolean recursive) {
       super(referenceName);
       this.path = path;
       this.fileSystemProperties = fileSystemProperties == null ? GSON.toJson(ImmutableMap.<String, String>of()) :
@@ -292,6 +303,7 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
       this.inputFormatClass = inputFormatClass == null ? CombineTextInputFormat.class.getName() : inputFormatClass;
       this.maxSplitSize = maxSplitSize == null ? DEFAULT_MAX_SPLIT_SIZE : maxSplitSize;
       this.ignoreNonExistingFolders = ignoreNonExistingFolders == null ? false : ignoreNonExistingFolders;
+      this.recursive = recursive == null ? false : recursive;
     }
   }
 }

@@ -46,7 +46,7 @@ public class AzureBatchSource extends FileBatchSource {
     super(new FileBatchConfig(config.referenceName, config.path, config.fileRegex, config.timeTable,
                               config.inputFormatClass, updateFileSystemProperties(
                                 config.fileSystemProperties, config.account, config.container, config.storageKey),
-                              config.maxSplitSize, config.ignoreNonExistingFolders));
+                              config.maxSplitSize, config.ignoreNonExistingFolders, config.recursive));
     this.config = config;
   }
 
@@ -83,21 +83,22 @@ public class AzureBatchSource extends FileBatchSource {
     private final String storageKey;
 
     public AzureBatchConfig(String referenceName, String path, String account, String container, String storageKey) {
-      this(referenceName, path, account, container, storageKey, null, null, null, null, null, false);
+      this(referenceName, path, account, container, storageKey, null, null, null, null, null, false, false);
     }
 
     public AzureBatchConfig(String referenceName, String path, String account, String container, String storageKey,
                             @Nullable String regex, @Nullable String timeTable, @Nullable String inputFormatClass,
                             @Nullable String fileSystemProperties, @Nullable Long maxSplitSize,
-                            @Nullable Boolean ignoreNonExistingFolders) {
+                            @Nullable Boolean ignoreNonExistingFolders, @Nullable Boolean recursive) {
       super(referenceName, path, regex, timeTable, inputFormatClass,
             updateFileSystemProperties(fileSystemProperties, account, container, storageKey),
-            maxSplitSize, ignoreNonExistingFolders);
+            maxSplitSize, ignoreNonExistingFolders, recursive);
       this.account = account;
       this.container = container;
       this.storageKey = storageKey;
       this.path = path;
       this.ignoreNonExistingFolders = ignoreNonExistingFolders == null ? false : ignoreNonExistingFolders;
+      this.recursive = recursive == null ? false : recursive;
     }
   }
 }

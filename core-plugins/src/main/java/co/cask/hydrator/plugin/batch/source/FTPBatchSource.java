@@ -40,7 +40,7 @@ import javax.annotation.Nullable;
   "the source server type, either FTP or SFTP.")
 public class FTPBatchSource extends FileBatchSource {
   private static final String PATH_DESCRIPTION = "Path to file(s) to be read. Path is expected to be of the form " +
-    "'prefix://username:password@hostname:port/path'";
+    "'prefix://username:password@hostname:port/path'. Also, the path uses Globbing to read files.";
   private static final Gson GSON = new Gson();
   private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
 
@@ -50,7 +50,7 @@ public class FTPBatchSource extends FileBatchSource {
   public FTPBatchSource(FTPBatchSourceConfig config) {
     super(new FileBatchConfig(config.referenceName, config.path, config.fileRegex, null, config.inputFormatClassName,
                               limitSplits(config.fileSystemProperties), Long.MAX_VALUE,
-                              config.ignoreNonExistingFolders));
+                              config.ignoreNonExistingFolders, config.recursive));
     this.config = config;
   }
 
@@ -79,7 +79,7 @@ public class FTPBatchSource extends FileBatchSource {
     @Macro
     public String fileSystemProperties;
 
-    @Description("Regex to filter out filenames in the path. Defaults to '.*'")
+    @Description("Regex to filter out files in the path. Defaults to '.*'")
     @Nullable
     @Macro
     public String fileRegex;
@@ -94,15 +94,20 @@ public class FTPBatchSource extends FileBatchSource {
       "set to true it will treat the not present folder as zero input and log a warning. Default is false.")
     public Boolean ignoreNonExistingFolders;
 
+    @Nullable
+    @Description("Boolean value to determine if files are to be read recursively from the path. Default is false.")
+    public Boolean recursive;
+
     public FTPBatchSourceConfig(String referenceName, String path, @Nullable String fileSystemProperties,
                                 @Nullable String fileRegex, @Nullable String inputFormatClassName,
-                                @Nullable Boolean ignoreNonExistingFolders) {
+                                @Nullable Boolean ignoreNonExistingFolders, @Nullable Boolean recursive) {
       super(referenceName);
       this.path = path;
       this.fileSystemProperties = fileSystemProperties;
       this.fileRegex = fileRegex;
       this.inputFormatClassName = inputFormatClassName;
       this.ignoreNonExistingFolders = ignoreNonExistingFolders == null ? false : ignoreNonExistingFolders;
+      this.recursive = recursive == null ? false : recursive;
     }
   }
 }

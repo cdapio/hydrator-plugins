@@ -21,6 +21,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
@@ -63,6 +64,7 @@ public class BatchFileFilter extends Configured implements PathFilter {
   private String pathName;
   private String lastRead;
   private Date prevHour;
+  private Pattern pattern;
 
   /*
    * dateRangesToRead is an odd length List of Dates. The non terminal elements are tuples of Dates that
@@ -77,17 +79,22 @@ public class BatchFileFilter extends Configured implements PathFilter {
     String filePathName = path.toString();
     try {
       FileSystem fileSystem = path.getFileSystem(new Configuration());
-      if (fileSystem.exists(path) && fileSystem.isDirectory(path)) {
+      FileStatus[] fileStatus = fileSystem.globStatus(path);
+      if (fileSystem.isDirectory(path) && !filePathName.endsWith("/")) {
+        filePathName += "/";
+      }
+      if (fileStatus != null && fileSystem.isDirectory(path) &&
+        (fileSystem.getContentSummary(path).getDirectoryCount() > 1 || pattern.matcher(filePathName).find())) {
         return true;
       }
     } catch (IOException e) {
-      throw new IllegalArgumentException(String.format("Error accessing path: %s.", path), e);
+      throw new IllegalArgumentException(String.format("Input path %s does not exists. %s.", path.toString(),
+                                                       e.getMessage()), e);
     }
 
     //filter by file name using regex from configuration
     if (!useTimeFilter) {
-      String fileName = path.getName();
-      Matcher matcher = regex.matcher(fileName);
+      Matcher matcher = regex.matcher(filePathName);
       return matcher.matches();
     }
 
@@ -132,6 +139,10 @@ public class BatchFileFilter extends Configured implements PathFilter {
       useTimeFilter = true;
     } else {
       useTimeFilter = false;
+      pattern = Pattern.compile("");
+      if (input.contains("/")) {
+        pattern = Pattern.compile(input.substring(0, input.lastIndexOf("/") + 1));
+      }
       regex = Pattern.compile(input);
     }
     lastRead = conf.get(FileBatchSource.LAST_TIME_READ, "-1");

@@ -22,9 +22,10 @@ Properties
 **accessKey:** Access Key of the Amazon S3 instance to connect to. (Macro-enabled)
 
 **path:** Path to file(s) to be read. If a directory is specified,
-terminate the path name with a '/'. (Macro-enabled)
+terminate the path name with a '/'. Also, the path uses Globbing to read files. (Macro-enabled)
 
-**fileRegex:** Regex to filter out filenames in the path.
+**fileRegex:** Regex to filter out files in the path. It accepts regular expression which is applied to the complete
+path and returns the list of files that match the specified pattern.
 To use the *TimeFilter*, input ``timefilter``. The TimeFilter assumes that it is
 reading in files with the File log naming convention of *YYYY-MM-DD-HH-mm-SS-Tag*.
 The TimeFilter reads in files from the previous hour if the field ``timeTable`` is
@@ -42,6 +43,8 @@ subclass of FileInputFormat. Defaults to TextInputFormat. (Macro-enabled)
 
 **ignoreNonExistingFolders:** Identify if path needs to be ignored or not, for case when directory or file does not
 exists. If set to true it will treat the not present folder as 0 input and log a warning. Default is false.
+
+**recursive:** Boolean value to determine if files are to be read recursively from the path. Default is false.
 
 
 Example
@@ -63,6 +66,7 @@ configure Hadoop to use one mapper per MB:
             "fileRegex": "timefilter",
             "timeTable": "timeTable",
             "maxSplitSize": "1048576",
-            "ignoreNonExistingFolders": "false"
+            "ignoreNonExistingFolders": "false",
+            "recursive": "false"
         }
     }

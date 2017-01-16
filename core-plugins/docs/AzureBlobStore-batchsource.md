@@ -16,7 +16,7 @@ Properties
 ----------
 **referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
 
-**path:** The path on Microsoft Azure Blob Storage to use as input.
+**path:** The path on Microsoft Azure Blob Storage to use as input. Also, the path uses Globbing to read files.
 
 **account:** The Microsoft Azure Blob Storage account to use. This is of the form 
 `mystorageaccount.blob.core.windows.net`, where `mystorageaccount` is the Microsoft 
@@ -29,6 +29,8 @@ Must be a valid base64 encoded storage key provided by Microsoft Azure. (Macro-e
 
 **ignoreNonExistingFolders:** Identify if path needs to be ignored or not, for case when directory or file does not
 exists. If set to true it will treat the not present folder as 0 input and log a warning. Default is false.
+
+**recursive:** Boolean value to determine if files are to be read recursively from the path. Default is false.
 
 Example
 -------
@@ -46,6 +48,7 @@ specified directory. This example uses the 'hydrator' container at
             "account": "hydratorstorage.blob.core.windows.net",
             "container": "hydrator",
             "storageKey": "XXXXXEEESSS/YYYY=",
-            "ignoreNonExistingFolders": "false"
+            "ignoreNonExistingFolders": "false",
+            "recursive": "false"
         }
     }
