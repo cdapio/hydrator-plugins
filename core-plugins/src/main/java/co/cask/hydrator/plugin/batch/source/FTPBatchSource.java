@@ -40,7 +40,7 @@ import javax.annotation.Nullable;
   "the source server type, either FTP or SFTP.")
 public class FTPBatchSource extends FileBatchSource {
   private static final String PATH_DESCRIPTION = "Path to file(s) to be read. Path is expected to be of the form " +
-    "'prefix://username:password@hostname:port/path'. Also, the path uses Globbing to read files.";
+    "'prefix://username:password@hostname:port/path'. The path uses filename expansion (globbing) to read files.";
   private static final Gson GSON = new Gson();
   private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
 

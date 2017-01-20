@@ -16,7 +16,7 @@ Properties
 ----------
 **referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
 
-**path:** Path to file(s) to be read. Also, the path uses Globbing to read files.
+**path:** Path to file(s) to be read. The path uses filename expansion (globbing) to read files.
 Path is expected to be of the form prefix://username:password@hostname:port/path (Macro-enabled)
 
 **fileRegex:** Regex to filter out files in the path. It accepts regular expression which is applied to the complete

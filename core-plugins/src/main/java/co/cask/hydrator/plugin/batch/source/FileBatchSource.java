@@ -86,8 +86,8 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
   protected static final String PATH_DESCRIPTION = "Path to file(s) to be read. If a directory is specified, " +
     "terminate the path name with a \'/\'. For distributed file system such as HDFS, file system name should come" +
     " from 'fs.DefaultFS' property in the 'core-site.xml'. For example, 'hdfs://mycluster.net:8020/input', where" +
-    " value of the property 'fs.DefaultFS' in the 'core-site.xml' is 'hdfs://mycluster.net:8020'. Also, the path " +
-    "uses Globbing to read files.";
+    " value of the property 'fs.DefaultFS' in the 'core-site.xml' is 'hdfs://mycluster.net:8020'. The path uses " +
+    "filename expansion (globbing) to read files.";
   protected static final String TABLE_DESCRIPTION = "Name of the Table that keeps track of the last time files " +
     "were read in. If this is null or empty, the Regex is used to filter filenames.";
   protected static final String INPUT_FORMAT_CLASS_DESCRIPTION = "Name of the input format class, which must be a " +

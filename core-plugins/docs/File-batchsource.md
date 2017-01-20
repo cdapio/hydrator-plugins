@@ -25,7 +25,7 @@ For example, the property names needed for S3 are "fs.s3n.awsSecretAccessKey"
 and "fs.s3n.awsAccessKeyId". (Macro-enabled)
 
 **path:** Path to file(s) to be read. If a directory is specified,
-terminate the path name with a '/'. Also, the path uses Globbing to read files.
+terminate the path name with a '/'. The path uses filename expansion (globbing) to read files. (Macro-enabled)
 
 **fileRegex:** Regex to filter out files in the path. It accepts regular expression which is applied to the complete
 path and returns the list of files that match the specified pattern.

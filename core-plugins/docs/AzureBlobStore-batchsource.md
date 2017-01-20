@@ -16,7 +16,8 @@ Properties
 ----------
 **referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
 
-**path:** The path on Microsoft Azure Blob Storage to use as input. Also, the path uses Globbing to read files.
+**path:** The path on Microsoft Azure Blob Storage to use as input. The path uses filename expansion (globbing) to read
+files. (Macro-enabled)
 
 **account:** The Microsoft Azure Blob Storage account to use. This is of the form 
 `mystorageaccount.blob.core.windows.net`, where `mystorageaccount` is the Microsoft 
