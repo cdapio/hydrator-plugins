@@ -34,9 +34,6 @@ import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.common.Properties;
-import co.cask.tephra.Transaction;
-import co.cask.tephra.TransactionAware;
-import co.cask.tephra.TransactionManager;
 import com.google.common.collect.ImmutableMap;
 import org.apache.avro.file.DataFileWriter;
 import org.apache.avro.generic.GenericDatumWriter;
@@ -148,74 +145,6 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     Assert.assertEquals(1, outputRecords.size());
     Assert.assertEquals(Integer.MAX_VALUE, outputRecords.get(0).get("i"));
     Assert.assertEquals(Long.MAX_VALUE, outputRecords.get(0).get("l"));
-  }
-
-  @Test
-  public void testAvroSourceConversionToAvroSink() throws Exception {
-
-    Schema eventSchema = Schema.recordOf(
-      "record",
-      Schema.Field.of("int", Schema.of(Schema.Type.INT)));
-
-    org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(eventSchema.toString());
-
-    GenericRecord record = new GenericRecordBuilder(avroSchema)
-      .set("int", Integer.MAX_VALUE)
-      .build();
-
-    String filesetName = "tpfs";
-    addDatasetInstance(TimePartitionedFileSet.class.getName(), filesetName, FileSetProperties.builder()
-      .setInputFormat(AvroKeyInputFormat.class)
-      .setOutputFormat(AvroKeyOutputFormat.class)
-      .setInputProperty("schema", avroSchema.toString())
-      .setOutputProperty("schema", avroSchema.toString())
-      .setEnableExploreOnCreate(true)
-      .setSerDe("org.apache.hadoop.hive.serde2.avro.AvroSerDe")
-      .setExploreInputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat")
-      .setExploreOutputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat")
-      .setTableProperty("avro.schema.literal", (avroSchema.toString()))
-      .build());
-    DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset(filesetName);
-    TimePartitionedFileSet tpfs = fileSetManager.get();
-
-    TransactionManager txService = getTxService();
-    Transaction tx1 = txService.startShort(100);
-    TransactionAware txTpfs = (TransactionAware) tpfs;
-    txTpfs.startTx(tx1);
-
-    long timeInMillis = System.currentTimeMillis();
-    fileSetManager.get().addPartition(timeInMillis, "directory", ImmutableMap.of("key1", "value1"));
-    Location location = fileSetManager.get().getPartitionByTime(timeInMillis).getLocation();
-    location = location.append("file.avro");
-    FSDataOutputStream outputStream = new FSDataOutputStream(location.getOutputStream(), null);
-    DataFileWriter dataFileWriter = new DataFileWriter<>(new GenericDatumWriter<GenericRecord>(avroSchema));
-    dataFileWriter.create(avroSchema, outputStream);
-    dataFileWriter.append(record);
-    dataFileWriter.flush();
-
-    txTpfs.commitTx();
-    txService.canCommit(tx1, txTpfs.getTxChanges());
-    txService.commit(tx1);
-    txTpfs.postTxCommit();
-
-    String newFilesetName = filesetName + "_op";
-    ETLBatchConfig etlBatchConfig = constructTPFSETLConfig(filesetName, newFilesetName, eventSchema);
-
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlBatchConfig);
-    Id.Application appId = Id.Application.from(Id.Namespace.DEFAULT, "sconversion1");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-
-    WorkflowManager workflowManager = appManager.getWorkflowManager(ETLWorkflow.NAME);
-    // add a minute to the end time to make sure the newly added partition is included in the run.
-    workflowManager.start(ImmutableMap.of("logical.start.time", String.valueOf(timeInMillis + 60 * 1000)));
-    workflowManager.waitForFinish(4, TimeUnit.MINUTES);
-
-    DataSetManager<TimePartitionedFileSet> newFileSetManager = getDataset(newFilesetName);
-    TimePartitionedFileSet newFileSet = newFileSetManager.get();
-
-    List<GenericRecord> newRecords = readOutput(newFileSet, eventSchema);
-    Assert.assertEquals(1, newRecords.size());
-    Assert.assertEquals(Integer.MAX_VALUE, newRecords.get(0).get("int"));
   }
 
   @Test
