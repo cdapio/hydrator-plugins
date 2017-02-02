@@ -28,6 +28,7 @@ import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
+import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
 import co.cask.cdap.proto.id.ApplicationId;
@@ -156,7 +157,7 @@ public class HDFSSinkTest extends HydratorTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     Path[] outputFiles = FileUtil.stat2Paths(dfsCluster.getFileSystem().listStatus(
       outputDir, new Utils.OutputFileUtils.OutputFilesFilter()));
@@ -211,7 +212,7 @@ public class HDFSSinkTest extends HydratorTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("HDFSTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("HDFSTest-adding-jobproperties");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     DataSetManager<Table> inputManager = getDataset(inputDatasetName);
@@ -223,7 +224,7 @@ public class HDFSSinkTest extends HydratorTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     Path[] outputFiles = FileUtil.stat2Paths(dfsCluster.getFileSystem().listStatus(
       outputDir, new Utils.OutputFileUtils.OutputFilesFilter()));

@@ -33,6 +33,7 @@ import co.cask.cdap.etl.proto.v2.ETLRealtimeConfig;
 import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
 import co.cask.cdap.etl.realtime.ETLWorker;
+import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactRange;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
@@ -429,7 +430,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    ApplicationId appId = NamespaceId.DEFAULT.app("testBatchSolrSink");
+    ApplicationId appId = NamespaceId.DEFAULT.app("testBatchSolrSinkWrongHost");
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
 
@@ -444,9 +445,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
-
-    Assert.assertEquals("FAILED", workflowManager.getHistory().get(0).getStatus().name());
+    workflowManager.waitForRuns(ProgramRunStatus.FAILED, 1, 5, TimeUnit.MINUTES);
   }
 
   @Test
@@ -488,9 +487,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
-
-    Assert.assertEquals("FAILED", workflowManager.getHistory().get(0).getStatus().name());
+    workflowManager.waitForRuns(ProgramRunStatus.FAILED, 1, 5, TimeUnit.MINUTES);
   }
 
   @Test(expected = IllegalArgumentException.class)

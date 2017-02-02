@@ -28,6 +28,7 @@ import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
+import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.NamespaceId;
@@ -60,12 +61,12 @@ public class DistinctTestRun extends ETLBatchTestBase {
     Schema inputSchema = Schema.recordOf(
       "purchase",
       Schema.Field.of("ts", Schema.of(Schema.Type.LONG)),
-      Schema.Field.of("user", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("user_name", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("item", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
     Schema outputSchema = Schema.recordOf(
       "purchase.distinct",
-      Schema.Field.of("user", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("user_name", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("item", Schema.of(Schema.Type.STRING)));
 
     ETLStage sourceStage = new ETLStage(
@@ -77,7 +78,7 @@ public class DistinctTestRun extends ETLBatchTestBase {
 
     ETLStage distinctStage = new ETLStage(
       "distinct", new ETLPlugin("Distinct", BatchAggregator.PLUGIN_TYPE,
-                                ImmutableMap.of("fields", "user,item"), null));
+                                ImmutableMap.of("fields", "user_name,item"), null));
 
 
     ETLStage sinkStage = new ETLStage(
@@ -102,31 +103,31 @@ public class DistinctTestRun extends ETLBatchTestBase {
     Table purchaseTable = purchaseManager.get();
     Put put = new Put(Bytes.toBytes(1));
     put.add("ts", 1234567890000L);
-    put.add("user", "samuel");
+    put.add("user_name", "samuel");
     put.add("item", "shirt");
     put.add("price", 10d);
     purchaseTable.put(put);
     put = new Put(Bytes.toBytes(2));
     put.add("ts", 1234567890001L);
-    put.add("user", "samuel");
+    put.add("user_name", "samuel");
     put.add("item", "shirt");
     put.add("price", 15.34d);
     purchaseTable.put(put);
     put = new Put(Bytes.toBytes(3));
     put.add("ts", 1234567890001L);
-    put.add("user", "samuel");
+    put.add("user_name", "samuel");
     put.add("item", "pie");
     put.add("price", 3.14d);
     purchaseTable.put(put);
     put = new Put(Bytes.toBytes(4));
     put.add("ts", 1234567890002L);
-    put.add("user", "samuel");
+    put.add("user_name", "samuel");
     put.add("item", "pie");
     put.add("price", 3.14d);
     purchaseTable.put(put);
     put = new Put(Bytes.toBytes(5));
     put.add("ts", 1234567890003L);
-    put.add("user", "samuel");
+    put.add("user_name", "samuel");
     put.add("item", "shirt");
     put.add("price", 20.53d);
     purchaseTable.put(put);
@@ -135,7 +136,7 @@ public class DistinctTestRun extends ETLBatchTestBase {
     // run the pipeline
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     DataSetManager<TimePartitionedFileSet> outputManager = getDataset(outputDatasetName);
     TimePartitionedFileSet fileSet = outputManager.get();
@@ -145,7 +146,7 @@ public class DistinctTestRun extends ETLBatchTestBase {
     Set<String> users = new HashSet<>();
     for (GenericRecord record : records) {
       items.add(record.get("item").toString());
-      users.add(record.get("user").toString());
+      users.add(record.get("user_name").toString());
     }
     Assert.assertEquals(ImmutableSet.of("samuel"), users);
     Assert.assertEquals(ImmutableSet.of("shirt", "pie"), items);

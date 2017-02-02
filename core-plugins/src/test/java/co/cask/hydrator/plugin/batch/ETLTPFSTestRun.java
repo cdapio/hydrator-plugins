@@ -32,6 +32,7 @@ import co.cask.cdap.etl.mock.batch.MockSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
+import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.NamespaceId;
@@ -143,7 +144,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     // run the pipeline
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start(ImmutableMap.of("logical.start.time", String.valueOf(runtime)));
-    workflowManager.waitForFinish(4, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 4, TimeUnit.MINUTES);
 
     outputManager.flush();
     // check old partition was cleaned up
@@ -246,7 +247,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     // run the pipeline
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(4, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 4, TimeUnit.MINUTES);
 
     Connection connection = getQueryClient();
     ResultSet results = connection.prepareStatement("select * from dataset_outputOrc").executeQuery();
@@ -269,15 +270,14 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     Assert.assertEquals(0, results.getDouble(15), 0.1);
   }
 
-
   @Test
   public void testAvroSourceConversionToAvroSink() throws Exception {
 
-    Schema eventSchema = Schema.recordOf("record", Schema.Field.of("int", Schema.of(Schema.Type.INT)));
+    Schema eventSchema = Schema.recordOf("record", Schema.Field.of("intVar", Schema.of(Schema.Type.INT)));
 
     org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(eventSchema.toString());
 
-    GenericRecord record = new GenericRecordBuilder(avroSchema).set("int", Integer.MAX_VALUE).build();
+    GenericRecord record = new GenericRecordBuilder(avroSchema).set("intVar", Integer.MAX_VALUE).build();
 
     String filesetName = "tpfs";
     addDatasetInstance(TimePartitionedFileSet.class.getName(), filesetName, FileSetProperties.builder()
@@ -324,14 +324,14 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     // add a minute to the end time to make sure the newly added partition is included in the run.
     workflowManager.start(ImmutableMap.of("logical.start.time", String.valueOf(timeInMillis + 60 * 1000)));
-    workflowManager.waitForFinish(4, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 4, TimeUnit.MINUTES);
 
     DataSetManager<TimePartitionedFileSet> newFileSetManager = getDataset(newFilesetName);
     TimePartitionedFileSet newFileSet = newFileSetManager.get();
 
     List<GenericRecord> newRecords = readOutput(newFileSet, eventSchema);
     Assert.assertEquals(1, newRecords.size());
-    Assert.assertEquals(Integer.MAX_VALUE, newRecords.get(0).get("int"));
+    Assert.assertEquals(Integer.MAX_VALUE, newRecords.get(0).get("intVar"));
   }
 
   @Test
@@ -347,7 +347,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     // add a minute to the end time to make sure the newly added partition is included in the run.
     workflowManager.start(ImmutableMap.of("logical.start.time", String.valueOf(timeInMillis + 60 * 1000)));
-    workflowManager.waitForFinish(4, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 4, TimeUnit.MINUTES);
 
     DataSetManager<TimePartitionedFileSet> outputManager = getDataset("outputParquet");
     TimePartitionedFileSet newFileSet = outputManager.get();
@@ -365,7 +365,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
    ETLBatchConfig etlConfig = buildBatchConfig("Snappy");
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("parquetTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("parquetTestSnappy");
     ApplicationManager appManager = deployApplication(appId, appRequest);
     long timeInMillis = System.currentTimeMillis();
     writeDataToPipeline(timeInMillis);
@@ -374,7 +374,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     // add a minute to the end time to make sure the newly added partition is included in the run.
     workflowManager.start(ImmutableMap.of("logical.start.time", String.valueOf(timeInMillis + 60 * 1000)));
-    workflowManager.waitForFinish(4, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 4, TimeUnit.MINUTES);
 
     DataSetManager<TimePartitionedFileSet> outputManager = getDataset("outputParquet");
     TimePartitionedFileSet newFileSet = outputManager.get();
@@ -391,11 +391,11 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
 
   @Test
   public void testAvroCompressionDeflate() throws Exception {
-    Schema eventSchema = Schema.recordOf("record", Schema.Field.of("int", Schema.of(Schema.Type.INT)));
+    Schema eventSchema = Schema.recordOf("record", Schema.Field.of("intVar", Schema.of(Schema.Type.INT)));
 
     org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(eventSchema.toString());
 
-    GenericRecord record = new GenericRecordBuilder(avroSchema).set("int", Integer.MAX_VALUE).build();
+    GenericRecord record = new GenericRecordBuilder(avroSchema).set("intVar", Integer.MAX_VALUE).build();
 
     String filesetName = "tpfs_deflate_codec";
     addDatasetInstance(TimePartitionedFileSet.class.getName(), filesetName, FileSetProperties.builder()
@@ -442,7 +442,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     // add a minute to the end time to make sure the newly added partition is included in the run.
     workflowManager.start(ImmutableMap.of("logical.start.time", String.valueOf(timeInMillis + 60 * 1000)));
-    workflowManager.waitForFinish(4, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 4, TimeUnit.MINUTES);
 
     DataSetManager<TimePartitionedFileSet> newFileSetManager = getDataset(newFilesetName);
     TimePartitionedFileSet newFileSet = newFileSetManager.get();
@@ -451,7 +451,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
 
     List<GenericRecord> newRecords = readOutput(newFileSet, eventSchema);
     Assert.assertEquals(1, newRecords.size());
-    Assert.assertEquals(Integer.MAX_VALUE, newRecords.get(0).get("int"));
+    Assert.assertEquals(Integer.MAX_VALUE, newRecords.get(0).get("intVar"));
   }
 
   @Test(expected = IllegalStateException.class)

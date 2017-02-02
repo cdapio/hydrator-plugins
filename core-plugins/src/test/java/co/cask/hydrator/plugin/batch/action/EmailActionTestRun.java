@@ -24,6 +24,7 @@ import co.cask.cdap.etl.api.batch.PostAction;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
+import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.NamespaceId;
@@ -86,7 +87,7 @@ public class EmailActionTestRun extends ETLBatchTestBase {
 
     WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     manager.start(ImmutableMap.of("logical.start.time", "0"));
-    manager.waitForFinish(5, TimeUnit.MINUTES);
+    manager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     server.stop();
 

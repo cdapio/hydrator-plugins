@@ -30,6 +30,7 @@ import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
+import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.NamespaceId;
@@ -129,7 +130,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     DataSetManager<KeyValueTable> table2 = getDataset("kvTable2");
     try (KeyValueTable outputTable = table2.get()) {
@@ -219,7 +220,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     // all records are passed to this table (validation not performed)
     DataSetManager<Table> outputManager1 = getDataset("dagOutputTable1");
@@ -324,7 +325,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     DataSetManager<Table> outputManager = getDataset("outputTable");
     Table outputTable = outputManager.get();
@@ -404,7 +405,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(2, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 2, TimeUnit.MINUTES);
 
     DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset("TPFSsink");
     try (TimePartitionedFileSet fileSet = fileSetManager.get()) {
@@ -466,7 +467,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(2, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 2, TimeUnit.MINUTES);
 
     for (String sinkName : new String[] { "fileSink1", "fileSink2" }) {
       DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset(sinkName);

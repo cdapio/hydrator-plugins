@@ -30,6 +30,7 @@ import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
+import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
 import co.cask.cdap.proto.id.ApplicationId;
@@ -127,7 +128,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
     ApplicationManager appManager = deployApp(source, sink, "ExcelTests");
-    startWorkflow(appManager);
+    startWorkflow(appManager, ProgramRunStatus.COMPLETED);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -187,7 +188,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     keyValueTable.write(testFile.toURI().toString(), String.valueOf(System.currentTimeMillis()));
     dataSetManager.flush();
 
-    startWorkflow(appManager);
+    startWorkflow(appManager, ProgramRunStatus.COMPLETED);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -223,7 +224,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     String outputDatasetName = "output-testWithReProcessedFalse";
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
-    ApplicationManager appManager = deployApp(source, sink, "testWithReProcessedTrue");
+    ApplicationManager appManager = deployApp(source, sink, "testWithReProcessedFalse");
 
     DataSetManager<KeyValueTable> dataSetManager = getDataset("trackMemoryTableWithReProcessedFalse");
     KeyValueTable keyValueTable = dataSetManager.get();
@@ -233,12 +234,12 @@ public class ExcelInputReaderTest extends HydratorTestBase {
 
     dataSetManager.flush();
 
-    startWorkflow(appManager);
+    startWorkflow(appManager, ProgramRunStatus.COMPLETED);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
 
-    Map<String, String> nameIdMap = new HashMap<String, String>();
+    Map<String, String> nameIdMap = new HashMap<>();
     nameIdMap.put("john", "3.0");
     nameIdMap.put("romy", "1.0");
     nameIdMap.put("name", "id");
@@ -278,7 +279,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
     ApplicationManager appManager = deployApp(source, sink, "testWithColumnsToBeExtracted");
-    startWorkflow(appManager);
+    startWorkflow(appManager, ProgramRunStatus.COMPLETED);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -288,7 +289,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     Assert.assertNotNull(output.get(1).getSchema().getField("FirstColumn"));
     Assert.assertNotNull(output.get(1).getSchema().getFields().contains("B"));
 
-    Map<String, String> nameIdMap = new HashMap<String, String>();
+    Map<String, String> nameIdMap = new HashMap<>();
     nameIdMap.put("john", "3.0");
     nameIdMap.put("romy", "1.0");
     nameIdMap.put("Paulo", "11.0");
@@ -330,7 +331,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
     ApplicationManager appManager = deployApp(source, sink, "testWithErrorRecord");
-    startWorkflow(appManager);
+    startWorkflow(appManager, ProgramRunStatus.COMPLETED);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -408,9 +409,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
     ApplicationManager appManager = deployApp(source, sink, "testWithTerminateIfEmptyRow");
-    WorkflowManager workflowManager = startWorkflow(appManager);
-
-    Assert.assertEquals("Expected :", "FAILED", workflowManager.getHistory().get(0).getStatus().name());
+    startWorkflow(appManager, ProgramRunStatus.FAILED);
   }
 
   @Test(expected = IllegalStateException.class)
@@ -502,7 +501,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     String outputDatasetName = "output-WithTTL";
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
-    ApplicationManager appManager = deployApp(source, sink, "testWithReProcessedTrue");
+    ApplicationManager appManager = deployApp(source, sink, "testWithTTL");
 
     DataSetManager<KeyValueTable> dataSetManager = getDataset("trackMemoryTableWithTTL");
     KeyValueTable keyValueTable = dataSetManager.get();
@@ -513,7 +512,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     keyValueTable.write(Bytes.toBytes(testFile.toURI().toString()), Bytes.toBytes(cal.getTimeInMillis()));
     dataSetManager.flush();
 
-    startWorkflow(appManager);
+    startWorkflow(appManager, ProgramRunStatus.COMPLETED);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -534,10 +533,10 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     return deployApplication(appId.toId(), appRequest);
   }
 
-  private WorkflowManager startWorkflow(ApplicationManager appManager) throws Exception {
+  private WorkflowManager startWorkflow(ApplicationManager appManager, ProgramRunStatus status) throws Exception {
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(status, 1, 5, TimeUnit.MINUTES);
     return workflowManager;
   }
 

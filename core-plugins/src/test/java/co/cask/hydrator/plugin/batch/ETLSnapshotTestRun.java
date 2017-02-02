@@ -26,6 +26,7 @@ import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
+import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.NamespaceId;
@@ -108,7 +109,7 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("snapshotSinkTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("snapshotSinkTest-multisnapshot");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     // run the pipeline once with some state in the table
@@ -122,7 +123,7 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     Map<String, Integer> expected = new HashMap<>();
     expected.put("id123", 777);
@@ -141,7 +142,7 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
     inputManager.flush();
 
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 2, 5, TimeUnit.MINUTES);
     expected.clear();
     expected.put("id456", 100);
 
@@ -187,7 +188,7 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("snapshotSinkTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("snapshotSinkTest-snapshottext");
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     // run the pipeline once with some state in the table
@@ -202,7 +203,7 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     Set<String> expected = new HashSet<>();
     expected.add("id123\t777");
@@ -247,13 +248,13 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("snapshotSinkTest2");
+    ApplicationId appId = NamespaceId.DEFAULT.app(String.format("snapshotSinkTest_%s_%s", sourceETLPlugin, sourceName));
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     // run the pipeline, should see the 2nd state of the table
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     DataSetManager<PartitionedFileSet> output = getDataset(outputName);
     Location partitionLocation = new SnapshotFileSet(output.get()).getLocation();
