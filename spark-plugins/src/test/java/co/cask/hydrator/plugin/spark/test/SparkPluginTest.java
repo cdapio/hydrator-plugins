@@ -78,7 +78,6 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
@@ -343,8 +342,6 @@ public class SparkPluginTest extends HydratorTestBase {
   }
 
   @Test
-  @Ignore
-  // TODO: https://issues.cask.co/browse/HYDRATOR-1194
   public void testKafkaStreamingSource() throws Exception {
     Schema schema = Schema.recordOf(
       "user",
@@ -367,6 +364,7 @@ public class SparkPluginTest extends HydratorTestBase {
       .addStage(new ETLStage("sink", MockSink.getPlugin("kafkaOutput")))
       .addConnection("source", "sink")
       .setBatchInterval("1s")
+      .setStopGracefully(true)
       .build();
 
     AppRequest<DataStreamsConfig> appRequest = new AppRequest<>(DATASTREAMS_ARTIFACT, etlConfig);
@@ -384,40 +382,28 @@ public class SparkPluginTest extends HydratorTestBase {
     sparkManager.start();
     sparkManager.waitForStatus(true, 10, 1);
 
-    final Map<Long, String> expected = ImmutableMap.of(
-      1L, "samuel jackson",
-      2L, "dwayne johnson",
-      3L, "christopher walken"
-    );
-
     final DataSetManager<Table> outputManager = getDataset("kafkaOutput");
     Tasks.waitFor(
-      true,
-      new Callable<Boolean>() {
+      ImmutableMap.of(1L, "samuel jackson", 2L, "dwayne johnson", 3L, "christopher walken"),
+      new Callable<Map<Long, String>>() {
         @Override
-        public Boolean call() throws Exception {
+        public Map<Long, String> call() throws Exception {
           outputManager.flush();
           Map<Long, String> actual = new HashMap<>();
           for (StructuredRecord outputRecord : MockSink.readOutput(outputManager)) {
             actual.put((Long) outputRecord.get("id"), outputRecord.get("first") + " " + outputRecord.get("last"));
           }
-          return expected.equals(actual);
+          return actual;
         }
       },
-      4,
+      2,
       TimeUnit.MINUTES);
 
     sparkManager.stop();
     sparkManager.waitForStatus(false, 10, 1);
 
     // clear the output table
-    Table outputTable = outputManager.get();
-    Scanner scanner = outputTable.scan(null, null);
-    Row row;
-    while ((row = scanner.next()) != null) {
-      outputTable.delete(row.getRow());
-    }
-    outputManager.flush();
+    MockSink.clear(outputManager);
 
     // now write some more messages to kafka and start the program again to make sure it picks up where it left off
     messages = new HashMap<>();
@@ -428,24 +414,20 @@ public class SparkPluginTest extends HydratorTestBase {
     sparkManager.start();
     sparkManager.waitForStatus(true, 10, 1);
 
-    final Map<Long, String> expected2 = ImmutableMap.of(
-      4L, "terry crews",
-      5L, "sylvester stallone"
-    );
     Tasks.waitFor(
-      true,
-      new Callable<Boolean>() {
+      ImmutableMap.of(4L, "terry crews", 5L, "sylvester stallone"),
+      new Callable<Map<Long, String>>() {
         @Override
-        public Boolean call() throws Exception {
+        public Map<Long, String> call() throws Exception {
           outputManager.flush();
           Map<Long, String> actual = new HashMap<>();
           for (StructuredRecord outputRecord : MockSink.readOutput(outputManager)) {
             actual.put((Long) outputRecord.get("id"), outputRecord.get("first") + " " + outputRecord.get("last"));
           }
-          return expected2.equals(actual);
+          return actual;
         }
       },
-      4,
+      2,
       TimeUnit.MINUTES);
 
     sparkManager.stop();
