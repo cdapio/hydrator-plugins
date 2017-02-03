@@ -23,6 +23,7 @@ import co.cask.cdap.etl.mock.batch.MockSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
+import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.NamespaceId;
@@ -82,7 +83,7 @@ public class DBQueryActionTestRun extends DatabasePluginTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start(ImmutableMap.of("logical.start.time", "0"));
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     try (Connection connection = getConnection()) {
       try (Statement statement = connection.createStatement()) {

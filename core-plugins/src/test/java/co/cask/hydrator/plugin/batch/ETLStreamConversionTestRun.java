@@ -28,6 +28,7 @@ import co.cask.cdap.etl.proto.Engine;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
+import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.NamespaceId;
@@ -90,12 +91,12 @@ public class ETLStreamConversionTestRun extends ETLBatchTestBase {
     ETLBatchConfig etlConfig = constructETLBatchConfig(engine, streamName, filesetName, sinkType);
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app(String.format("app_%s", sinkType));
+    ApplicationId appId = NamespaceId.DEFAULT.app(String.format("app_%s_%s", engine, sinkType));
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     final WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(4, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 4, TimeUnit.MINUTES);
 
     // get the output fileset, and read the parquet/avro files it output.
     DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset(filesetName);

@@ -27,6 +27,7 @@ import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
+import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.NamespaceId;
@@ -124,10 +125,10 @@ public class NormalizeTest extends TransformPluginsTestBase {
     return deployApplication(appId.toId(), appRequest);
   }
 
-  private void startMapReduceJob(ApplicationManager appManager) throws Exception {
+  private void startWorkflow(ApplicationManager appManager, ProgramRunStatus status) throws Exception {
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(status, 1, 5, TimeUnit.MINUTES);
   }
 
   @Test
@@ -261,7 +262,7 @@ public class NormalizeTest extends TransformPluginsTestBase {
     );
     MockSource.writeInput(inputManager, input);
 
-    startMapReduceJob(applicationManager);
+    startWorkflow(applicationManager, ProgramRunStatus.COMPLETED);
 
     DataSetManager<Table> outputManager = getDataset(outputTable);
     List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);
@@ -299,7 +300,7 @@ public class NormalizeTest extends TransformPluginsTestBase {
     );
     MockSource.writeInput(inputManager, input);
 
-    startMapReduceJob(applicationManager);
+    startWorkflow(applicationManager, ProgramRunStatus.COMPLETED);
 
     DataSetManager<Table> outputManager = getDataset(outputTable);
     List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);

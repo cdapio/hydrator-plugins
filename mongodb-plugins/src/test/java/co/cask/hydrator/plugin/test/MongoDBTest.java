@@ -35,6 +35,7 @@ import co.cask.cdap.etl.proto.v2.ETLRealtimeConfig;
 import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
 import co.cask.cdap.etl.realtime.ETLWorker;
+import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactRange;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
@@ -231,7 +232,7 @@ public class MongoDBTest extends HydratorTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     MongoClient mongoClient = factory.newMongo();
     MongoDatabase mongoDatabase = mongoClient.getDatabase(MONGO_DB);
@@ -287,7 +288,7 @@ public class MongoDBTest extends HydratorTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     MongoClient mongoClient = factory.newMongo();
     MongoDatabase mongoDatabase = mongoClient.getDatabase(MONGO_DB);
@@ -339,7 +340,7 @@ public class MongoDBTest extends HydratorTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);

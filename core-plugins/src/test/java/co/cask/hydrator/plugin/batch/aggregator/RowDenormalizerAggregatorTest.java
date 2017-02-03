@@ -28,6 +28,7 @@ import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
+import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.NamespaceId;
@@ -143,7 +144,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
     // run the pipeline
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     DataSetManager<TimePartitionedFileSet> outputManager = getDataset(outputDatasetName);
     TimePartitionedFileSet fileSet = outputManager.get();
@@ -206,7 +207,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
       .addConnection(aggregateStage.getName(), sinkStage.getName())
       .build();
     AppRequest<ETLBatchConfig> request = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
-    ApplicationId appId = NamespaceId.DEFAULT.app("denormalize-test");
+    ApplicationId appId = NamespaceId.DEFAULT.app("denormalize-test-with-null");
     ApplicationManager appManager = deployApplication(appId, request);
 
     // write input data
@@ -263,7 +264,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
     // run the pipeline
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     DataSetManager<TimePartitionedFileSet> outputManager = getDataset(outputDatasetName);
     TimePartitionedFileSet fileSet = outputManager.get();
@@ -329,7 +330,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
       .addConnection(aggregateStage.getName(), sinkStage.getName())
       .build();
     AppRequest<ETLBatchConfig> request = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
-    ApplicationId appId = NamespaceId.DEFAULT.app("denormalize-test");
+    ApplicationId appId = NamespaceId.DEFAULT.app("denormalize-test-with-wrong-output");
     ApplicationManager appManager = deployApplication(appId, request);
 
     // write input data
@@ -355,7 +356,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
     // run the pipeline
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     DataSetManager<TimePartitionedFileSet> outputManager = getDataset(outputDatasetName);
     TimePartitionedFileSet fileSet = outputManager.get();

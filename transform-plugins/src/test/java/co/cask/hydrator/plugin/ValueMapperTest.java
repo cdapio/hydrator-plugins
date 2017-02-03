@@ -28,6 +28,7 @@ import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
+import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.NamespaceId;
@@ -117,7 +118,7 @@ public class ValueMapperTest extends TransformPluginsTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     DataSetManager<Table> outputManager = getDataset(sinkTable);
     List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);
@@ -189,7 +190,7 @@ public class ValueMapperTest extends TransformPluginsTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     DataSetManager<Table> outputManager = getDataset(sinkTable);
     List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);
@@ -283,7 +284,7 @@ public class ValueMapperTest extends TransformPluginsTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     DataSetManager<Table> outputManager = getDataset(sinkTable);
     List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);

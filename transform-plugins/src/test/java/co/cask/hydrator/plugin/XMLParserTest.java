@@ -30,6 +30,7 @@ import co.cask.cdap.etl.mock.transform.MockTransformContext;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
+import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.NamespaceId;
@@ -110,7 +111,7 @@ public class XMLParserTest extends TransformPluginsTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     DataSetManager<Table> outputManager = getDataset(sinkTable);
     List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);
@@ -147,7 +148,7 @@ public class XMLParserTest extends TransformPluginsTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("XMLReaderTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("XMLReaderTestWithMultipleElements");
     ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
 
     DataSetManager<Table> inputManager = getDataset(inputTable);
@@ -172,7 +173,7 @@ public class XMLParserTest extends TransformPluginsTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     DataSetManager<Table> outputManager = getDataset(sinkTable);
     List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);
@@ -297,7 +298,7 @@ public class XMLParserTest extends TransformPluginsTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("XMLReaderTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("XMLReaderTestError");
     ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
 
     DataSetManager<Table> inputManager = getDataset(inputTable);
@@ -312,7 +313,6 @@ public class XMLParserTest extends TransformPluginsTestBase {
     MockSource.writeInput(inputManager, input);
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
-    Assert.assertEquals("FAILED", workflowManager.getHistory().get(0).getStatus().name());
+    workflowManager.waitForRuns(ProgramRunStatus.FAILED, 1, 5, TimeUnit.MINUTES);
   }
 }

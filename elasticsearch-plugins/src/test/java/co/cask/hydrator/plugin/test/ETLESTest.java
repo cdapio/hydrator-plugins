@@ -36,6 +36,7 @@ import co.cask.cdap.etl.proto.v2.ETLRealtimeConfig;
 import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
 import co.cask.cdap.etl.realtime.ETLWorker;
+import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactRange;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
@@ -199,7 +200,7 @@ public class ETLESTest extends HydratorTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     SearchResponse searchResponse = client.prepareSearch("batch").execute().actionGet();
     Assert.assertEquals(2, searchResponse.getHits().getTotalHits());
@@ -243,7 +244,7 @@ public class ETLESTest extends HydratorTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);

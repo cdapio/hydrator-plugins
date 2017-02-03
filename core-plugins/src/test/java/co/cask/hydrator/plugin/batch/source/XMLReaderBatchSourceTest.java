@@ -31,6 +31,7 @@ import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
+import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
 import co.cask.cdap.proto.id.ApplicationId;
@@ -194,10 +195,10 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
     return deployApplication(appId.toId(), appRequest);
   }
 
-  private void startMapReduceJob(ApplicationManager appManager) throws Exception {
+  private void startWorkflow(ApplicationManager appManager, ProgramRunStatus status) throws Exception {
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(status, 1, 5, TimeUnit.MINUTES);
   }
 
   @Test
@@ -230,7 +231,7 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
     createPreProcessedRecord(processedFileTable, preProcessedDate);
     createExpiredRecord(processedFileTable);
 
-    startMapReduceJob(appManager);
+    startWorkflow(appManager, ProgramRunStatus.COMPLETED);
 
     //Nmber of files processed
     List<String> processedFileList = getProcessedFileList(processedFileTable, preProcessedDate);
@@ -273,7 +274,7 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
     Date preProcessedDate = new Date();
     createPreProcessedRecord(processedFileTable, preProcessedDate);
 
-    startMapReduceJob(appManager);
+    startWorkflow(appManager, ProgramRunStatus.COMPLETED);
 
     List<String> processedFileList = getProcessedFileList(processedFileTable, preProcessedDate);
     Assert.assertEquals(2, processedFileList.size());
@@ -301,7 +302,7 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
     String outputDatasetName = "output-batchsink-test-invalid-node-path-archived-files";
     ApplicationManager appManager = deployApplication(sourceProperties, outputDatasetName,
                                                       "XMLReaderInvalidNodePathArchiveFilesTest");
-    startMapReduceJob(appManager);
+    startWorkflow(appManager, ProgramRunStatus.COMPLETED);
 
     //No records for invalid node path
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
@@ -336,7 +337,7 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
     String outputDatasetName = "output-batchsink-test-pattern-move-files";
     ApplicationManager appManager = deployApplication(sourceProperties, outputDatasetName,
                                                       "XMLReaderWithPatternAndMoveFilesTest");
-    startMapReduceJob(appManager);
+    startWorkflow(appManager, ProgramRunStatus.COMPLETED);
 
     //Number of record derived from XML.
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
@@ -371,7 +372,7 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
     String outputDatasetName = "output-batchsink-test-invalid-pattern-delete-files";
     ApplicationManager appManager = deployApplication(sourceProperties, outputDatasetName,
                                                       "XMLReaderInvalidPatternDeleteFilesTest");
-    startMapReduceJob(appManager);
+    startWorkflow(appManager, ProgramRunStatus.COMPLETED);
 
     //No record fetched as no pattern matching file
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);

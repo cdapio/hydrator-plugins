@@ -28,6 +28,7 @@ import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
+import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.NamespaceId;
@@ -152,7 +153,7 @@ public class JoinerTestRun extends ETLBatchTestBase {
       .addConnection(joinStage.getName(), joinSinkStage.getName())
       .build();
     AppRequest<ETLBatchConfig> request = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
-    ApplicationId appId = NamespaceId.DEFAULT.app("joiner-test");
+    ApplicationId appId = NamespaceId.DEFAULT.app("inner-joiner-test");
     ApplicationManager appManager = deployApplication(appId, request);
 
     // ingest data
@@ -163,7 +164,7 @@ public class JoinerTestRun extends ETLBatchTestBase {
     // run the pipeline
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     DataSetManager<TimePartitionedFileSet> outputManager = getDataset(joinedDatasetName);
     TimePartitionedFileSet fileSet = outputManager.get();
@@ -252,7 +253,7 @@ public class JoinerTestRun extends ETLBatchTestBase {
       .addConnection(joinStage.getName(), joinSinkStage.getName())
       .build();
     AppRequest<ETLBatchConfig> request = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
-    ApplicationId appId = NamespaceId.DEFAULT.app("joiner-test");
+    ApplicationId appId = NamespaceId.DEFAULT.app("outer-joiner-test");
     ApplicationManager appManager = deployApplication(appId, request);
 
     // ingest data
@@ -263,7 +264,7 @@ public class JoinerTestRun extends ETLBatchTestBase {
     // run the pipeline
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     DataSetManager<TimePartitionedFileSet> outputManager = getDataset(joinedDatasetName);
     TimePartitionedFileSet fileSet = outputManager.get();
@@ -352,7 +353,7 @@ public class JoinerTestRun extends ETLBatchTestBase {
       .addConnection(joinStage.getName(), joinSinkStage.getName())
       .build();
     AppRequest<ETLBatchConfig> request = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
-    ApplicationId appId = NamespaceId.DEFAULT.app("joiner-test");
+    ApplicationId appId = NamespaceId.DEFAULT.app("outer-joiner-without-required-inputs-test");
     ApplicationManager appManager = deployApplication(appId, request);
 
     // ingest data
@@ -363,7 +364,7 @@ public class JoinerTestRun extends ETLBatchTestBase {
     // run the pipeline
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     DataSetManager<TimePartitionedFileSet> outputManager = getDataset(joinedDatasetName);
     TimePartitionedFileSet fileSet = outputManager.get();

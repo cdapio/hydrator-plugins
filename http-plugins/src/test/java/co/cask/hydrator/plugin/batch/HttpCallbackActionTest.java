@@ -27,6 +27,7 @@ import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
+import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.artifact.ArtifactRange;
 import co.cask.cdap.proto.artifact.ArtifactSummary;
@@ -156,7 +157,7 @@ public class HttpCallbackActionTest extends HydratorTestBase {
 
     WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     manager.start();
-    manager.waitForFinish(5, TimeUnit.MINUTES);
+    manager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     Assert.assertEquals(body, getFeedContent("users"));
   }
