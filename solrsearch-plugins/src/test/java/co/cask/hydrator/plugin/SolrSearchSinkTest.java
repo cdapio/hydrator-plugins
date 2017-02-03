@@ -159,7 +159,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     QueryResponse queryResponse = client.query(new SolrQuery("*:*"));
     SolrDocumentList resultList = queryResponse.getResults();
@@ -294,7 +294,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     QueryResponse queryResponse = cloudClient.query(new SolrQuery("*:*"));
     SolrDocumentList resultList = queryResponse.getResults();
@@ -372,7 +372,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     QueryResponse queryResponse = client.query(new SolrQuery("*:*"));
     SolrDocumentList resultList = queryResponse.getResults();

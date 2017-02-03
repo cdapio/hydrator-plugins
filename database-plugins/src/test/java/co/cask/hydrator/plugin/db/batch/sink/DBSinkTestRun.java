@@ -65,7 +65,7 @@ public class DBSinkTestRun extends DatabasePluginTestBase {
                                                          DBConfig.JDBC_PLUGIN_NAME, "hypersql",
                                                          Constants.Reference.REFERENCE_NAME, "DBTest"),
                                          null);
-    ApplicationManager appManager = deployETL(sourceConfig, sinkConfig);
+    ApplicationManager appManager = deployETL(sourceConfig, sinkConfig, "testDBSink");
     createInputData(inputDatasetName);
 
     runETLOnce(appManager);
@@ -115,7 +115,7 @@ public class DBSinkTestRun extends DatabasePluginTestBase {
         Constants.Reference.REFERENCE_NAME, "DBTestSink"),
       null
     );
-    ApplicationManager appManager = deployETL(sourceConfig, sinkConfig);
+    ApplicationManager appManager = deployETL(sourceConfig, sinkConfig, "testNullFields");
     // if nulls are not handled correctly, the MR program will fail with an NPE
     runETLOnce(appManager);
   }

@@ -266,16 +266,11 @@ public class DatabasePluginTestBase extends HydratorTestBase {
     final WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
     // Waiting for only 1 minute here because MR should have failed in the prepareRun() stage
-    workflowManager.waitForFinish(1, TimeUnit.MINUTES);
-    Tasks.waitFor(ProgramRunStatus.FAILED, new Callable<ProgramRunStatus>() {
-      @Override
-      public ProgramRunStatus call() throws Exception {
-        return workflowManager.getHistory().get(0).getStatus();
-      }
-    }, 5, TimeUnit.SECONDS);
+    workflowManager.waitForRun(ProgramRunStatus.FAILED, 1, TimeUnit.MINUTES);
   }
 
-  protected ApplicationManager deployETL(ETLPlugin sourcePlugin, ETLPlugin sinkPlugin) throws Exception {
+  protected ApplicationManager deployETL(ETLPlugin sourcePlugin, ETLPlugin sinkPlugin, String appName)
+    throws Exception {
     ETLStage source = new ETLStage("source", sourcePlugin);
     ETLStage sink = new ETLStage("sink", sinkPlugin);
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
@@ -285,7 +280,7 @@ public class DatabasePluginTestBase extends HydratorTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("dbSinkTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app(appName);
     return deployApplication(appId.toId(), appRequest);
   }
 
@@ -299,14 +294,7 @@ public class DatabasePluginTestBase extends HydratorTestBase {
     ExecutionException {
     final WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start(arguments);
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
-    List<RunRecord> runRecords = workflowManager.getHistory();
-    Tasks.waitFor(ProgramRunStatus.COMPLETED, new Callable<ProgramRunStatus>() {
-      @Override
-      public ProgramRunStatus call() throws Exception {
-        return workflowManager.getHistory().get(0).getStatus();
-      }
-    }, 5, TimeUnit.SECONDS);
+    workflowManager.waitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
   }
 
   @AfterClass
