@@ -73,7 +73,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
 
     ETLPlugin sinkConfig = MockSink.getPlugin("macroOutputTable");
 
-    ApplicationManager appManager = deployETL(sourceConfig, sinkConfig);
+    ApplicationManager appManager = deployETL(sourceConfig, sinkConfig, "testDBMacro");
 
     Map<String, String> arguments = new HashMap<>();
     arguments.put("logical.start.time", String.valueOf(CURRENT_TS));
@@ -109,7 +109,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     String outputDatasetName = "output-dbsourcetest";
     ETLPlugin sinkConfig = MockSink.getPlugin(outputDatasetName);
 
-    ApplicationManager appManager = deployETL(sourceConfig, sinkConfig);
+    ApplicationManager appManager = deployETL(sourceConfig, sinkConfig, "testDBSource");
 
     runETLOnce(appManager);
 
@@ -200,7 +200,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     String outputDatasetName = "output-lowercasetest";
     ETLPlugin sinkConfig = MockSink.getPlugin(outputDatasetName);
 
-    ApplicationManager appManager = deployETL(sourceConfig, sinkConfig);
+    ApplicationManager appManager = deployETL(sourceConfig, sinkConfig, "testDBSourceWithLowerCase");
     runETLOnce(appManager);
 
     // records should be written
@@ -243,7 +243,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     String outputDatasetName = "output-multitabletest";
     ETLPlugin sinkConfig = MockSink.getPlugin(outputDatasetName);
 
-    ApplicationManager appManager = deployETL(sourceConfig, sinkConfig);
+    ApplicationManager appManager = deployETL(sourceConfig, sinkConfig, "testDBSourceWithMultipleTables");
     runETLOnce(appManager);
 
     // records should be written
