@@ -383,7 +383,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
                       .put(Properties.S3.ACCESS_KEY, "key")
                       .put(Properties.S3.ACCESS_ID, "ID")
                       .put(Properties.S3.PATH, testPath)
-                      .put(Properties.S3.FILE_REGEX, "abc.*")
+                      .put(Properties.S3.FILE_REGEX, ".*abc.*")
                       .put(Properties.S3.IGNORE_NON_EXISTING_FOLDERS, "false")
                       .build(),
                     null));

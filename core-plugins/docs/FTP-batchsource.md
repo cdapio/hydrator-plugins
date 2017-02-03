@@ -16,9 +16,11 @@ Properties
 ----------
 **referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
 
-**path:** Path to file(s) to be read. Path is expected to be of the form prefix://username:password@hostname:port/path (Macro-enabled)
+**path:** Path to file(s) to be read. The path uses filename expansion (globbing) to read files.
+Path is expected to be of the form prefix://username:password@hostname:port/path (Macro-enabled)
 
-**fileRegex:** Regex to filter out filenames in the path. (Macro-enabled)
+**fileRegex:** Regex to filter out files in the path. It accepts regular expression which is applied to the complete
+path and returns the list of files that match the specified pattern. (Macro-enabled)
 
 **fileSystemProperties:** A JSON string representing a map of properties
 needed for the distributed file system. (Macro-enabled)
@@ -28,6 +30,8 @@ Defaults to CombineTextInputFormat. (Macro-enabled)
 
 **ignoreNonExistingFolders:** Identify if path needs to be ignored or not, for case when directory or file does not
 exists. If set to true it will treat the not present folder as 0 input and log a warning. Default is false.
+
+**recursive:** Boolean value to determine if files are to be read recursively from the path. Default is false.
 
 
 Example
@@ -39,6 +43,7 @@ This example connects to an SFTP server and reads in files found in the specifie
         "type": "batchsource",
         "properties": {
             "path": "sftp://username:password@hostname:21/path/to/logs",
-            "ignoreNonExistingFolders": "false"
+            "ignoreNonExistingFolders": "false",
+            "recursive": "false"
         }
     }

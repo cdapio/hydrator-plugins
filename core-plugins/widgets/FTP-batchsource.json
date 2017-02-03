@@ -18,7 +18,7 @@
         },
         {
           "widget-type": "textbox",
-          "label": "File Regex",
+          "label": "Regex Path Filter",
           "name": "fileRegex"
         },
         {
@@ -35,6 +35,18 @@
           "widget-type": "select",
           "label": "Ignore Non-Existing Folders",
           "name": "ignoreNonExistingFolders",
+          "widget-attributes": {
+            "values": [
+              "true",
+              "false"
+            ],
+            "default": "false"
+          }
+        },
+        {
+          "widget-type": "select",
+          "label": "Read files recursively",
+          "name": "recursive",
           "widget-attributes": {
             "values": [
               "true",
