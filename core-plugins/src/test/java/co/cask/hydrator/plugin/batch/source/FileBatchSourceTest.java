@@ -106,7 +106,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("FileTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-ignore-non-existing-files");
 
     ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
 
@@ -140,7 +140,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("InvalidFileTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-not-present-folder");
 
     ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
 
@@ -171,13 +171,13 @@ public class FileBatchSourceTest extends HydratorTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("FileTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-recursive-folders");
 
     ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -213,13 +213,13 @@ public class FileBatchSourceTest extends HydratorTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("FileTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-non-recursive-regex");
 
     ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -254,13 +254,13 @@ public class FileBatchSourceTest extends HydratorTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("FileTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-file-Regex");
 
     ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -272,7 +272,6 @@ public class FileBatchSourceTest extends HydratorTestBase {
     }
     Assert.assertTrue(outputValue.contains("CDAP,Platform"));
   }
-
 
   @Test
   public void testRecursiveRegex() throws Exception {
@@ -296,13 +295,13 @@ public class FileBatchSourceTest extends HydratorTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("FileTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-recursive-regex");
 
     ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -338,13 +337,13 @@ public class FileBatchSourceTest extends HydratorTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("FileTest");
+    ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-path-globbing");
 
     ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
 
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
-    workflowManager.waitForFinish(5, TimeUnit.MINUTES);
+    workflowManager.waitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
