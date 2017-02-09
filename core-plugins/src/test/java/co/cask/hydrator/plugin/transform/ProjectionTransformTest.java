@@ -541,4 +541,60 @@ public class ProjectionTransformTest {
     Assert.assertEquals(expectedSchema, output.getSchema());
     Assert.assertNull(output.get("x"));
   }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testDropFieldsValidations() {
+    Schema schema = Schema.recordOf("three",
+            Schema.Field.of("x", Schema.of(Schema.Type.INT)),
+            Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
+            Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
+
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema,
+            ImmutableMap.<String, Object>of(CoreValidator.ID, new CoreValidator()));
+    ProjectionTransform.ProjectionTransformConfig config =
+            new ProjectionTransform.ProjectionTransformConfig("x,y,z", null, null, null);
+    new ProjectionTransform(config).configurePipeline(mockConfigurer);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testKeepFieldsValidations() {
+    Schema schema = Schema.recordOf("three",
+            Schema.Field.of("x", Schema.of(Schema.Type.INT)),
+            Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
+            Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
+
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema,
+            ImmutableMap.<String, Object>of(CoreValidator.ID, new CoreValidator()));
+    ProjectionTransform.ProjectionTransformConfig config =
+            new ProjectionTransform.ProjectionTransformConfig(null, null, null, "n");
+    new ProjectionTransform(config).configurePipeline(mockConfigurer);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testConvertFieldsValidations() {
+    Schema schema = Schema.recordOf("three",
+            Schema.Field.of("x", Schema.of(Schema.Type.INT)),
+            Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
+            Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
+
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema,
+            ImmutableMap.<String, Object>of(CoreValidator.ID, new CoreValidator()));
+    ProjectionTransform.ProjectionTransformConfig config =
+            new ProjectionTransform.ProjectionTransformConfig(null, null, "n:boolean", "x");
+    new ProjectionTransform(config).configurePipeline(mockConfigurer);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testRenameFieldsValidations() {
+    Schema schema = Schema.recordOf("three",
+            Schema.Field.of("x", Schema.of(Schema.Type.INT)),
+            Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
+            Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
+
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema,
+            ImmutableMap.<String, Object>of(CoreValidator.ID, new CoreValidator()));
+    ProjectionTransform.ProjectionTransformConfig config =
+            new ProjectionTransform.ProjectionTransformConfig(null, "n:m", null, "x");
+    new ProjectionTransform(config).configurePipeline(mockConfigurer);
+  }
 }

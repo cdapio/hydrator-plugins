@@ -113,7 +113,7 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
     // call init so any invalid config is caught here to fail application creation
-    init();
+    init(pipelineConfigurer.getStageConfigurer().getInputSchema());
     Schema outputSchema = null;
     if (pipelineConfigurer.getStageConfigurer().getInputSchema() != null) {
       //validate the input schema and get the output schema for it
@@ -125,7 +125,7 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
-    init();
+    init(null);
   }
 
   @Override
@@ -159,7 +159,7 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
     emitter.emit(builder.build());
   }
 
-  private void init() {
+  private void init(Schema inputSchema) {
 
     if (!Strings.isNullOrEmpty(projectionTransformConfig.drop) &&
       !Strings.isNullOrEmpty(projectionTransformConfig.keep)) {
@@ -168,13 +168,36 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
 
     if (!Strings.isNullOrEmpty(projectionTransformConfig.drop)) {
       Iterables.addAll(fieldsToDrop, Splitter.on(fieldDelimiter).split(projectionTransformConfig.drop));
+      if (inputSchema != null) {
+        boolean containAllFields = true;
+        for (Schema.Field fieldName : inputSchema.getFields()) {
+          if (!fieldsToDrop.contains(fieldName.getName())) {
+            containAllFields = false;
+          }
+        }
+        if (containAllFields) {
+          throw new IllegalArgumentException("'Fields to drop' cannot contain all the fields of input s chema.");
+        }
+      }
     } else if (!Strings.isNullOrEmpty(projectionTransformConfig.keep)) {
       Iterables.addAll(fieldsToKeep, Splitter.on(fieldDelimiter).split(projectionTransformConfig.keep));
+      if (inputSchema != null) {
+        for (String field : fieldsToKeep) {
+          if (inputSchema.getField(field) == null) {
+            throw new IllegalArgumentException(String.format("Field: '%s' provided in 'Fields to keep' input is not " +
+                    "present in the input schema.", field));
+          }
+        }
+      }
     }
     KeyValueListParser kvParser = new KeyValueListParser("\\s*,\\s*", ":");
     if (!Strings.isNullOrEmpty(projectionTransformConfig.rename)) {
       for (KeyValue<String, String> keyVal : kvParser.parse(projectionTransformConfig.rename)) {
         String key = keyVal.getKey();
+        if (inputSchema != null && inputSchema.getField(key) ==  null) {
+          throw new IllegalArgumentException(String.format("Field: '%s' provided in 'Fields to rename' input is not " +
+                  "present in the input schema.", key));
+        }
         String val = keyVal.getValue();
         try {
           String oldVal = fieldsToRename.put(key, val);
@@ -191,6 +214,10 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
     if (!Strings.isNullOrEmpty(projectionTransformConfig.convert)) {
       for (KeyValue<String, String> keyVal : kvParser.parse(projectionTransformConfig.convert)) {
         String name = keyVal.getKey();
+        if (inputSchema != null && inputSchema.getField(name) ==  null) {
+          throw new IllegalArgumentException(String.format("Field: '%s' provided in 'Convert' input is not " +
+                  "present in the input schema.", name));
+        }
         String typeStr = keyVal.getValue();
         Schema.Type type = Schema.Type.valueOf(typeStr.toUpperCase());
         if (!type.isSimpleType() || type == Schema.Type.NULL) {
