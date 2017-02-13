@@ -258,6 +258,7 @@
               co.cask.hydrator.plugin.streaming.*;
               co.cask.hydrator.plugin.transform.*;
               co.cask.hydrator.plugin.validator.*;
+              co.cask.hydrator.plugin.error.*;
               org.apache.avro.mapreduce;
               parquet.avro.*;
               org.apache.orc.*;
