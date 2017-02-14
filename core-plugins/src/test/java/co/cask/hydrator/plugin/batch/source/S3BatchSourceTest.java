@@ -50,8 +50,8 @@ public class S3BatchSourceTest {
     Assert.assertEquals(accessKey, fsProperties.get("fs.s3n.awsSecretAccessKey"));
 
     // Test extra properties
-    s3BatchConfig = new S3BatchSource.S3BatchConfig(referenceName, accessID, accessKey, path, null, null, null,
-                                                    GSON.toJson(ImmutableMap.of("s3.compression", "gzip")), null,
+    s3BatchConfig = new S3BatchSource.S3BatchConfig(referenceName, accessID, accessKey, path, null, null, null, null,
+                                                    null, GSON.toJson(ImmutableMap.of("s3.compression", "gzip")), null,
                                                     false, false);
     s3BatchSource = new S3BatchSource(s3BatchConfig);
     fileBatchConfig = s3BatchSource.getConfig();

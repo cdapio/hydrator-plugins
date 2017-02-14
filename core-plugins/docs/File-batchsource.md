@@ -39,6 +39,12 @@ present, then it will read in files that have not yet been read. (Macro-enabled)
 **timeTable:** Name of the Table that keeps track of the last time files
 were read in. (Macro-enabled)
 
+**timeTableExplorer:** Name of the Explorer table corresponding to 'Time Table' dataset. If not mentioned, name will
+be same as the 'Time Table' dataset. (Macro-enabled)
+
+**timeTableExplorerDatabase:** Database name for the 'Time Table for Explorer' dataset. If left blank, table will be
+stored in default database. (Macro-enabled)
+
 **inputFormatClass:** Name of the input format class, which must be a
 subclass of FileInputFormat. Defaults to CombineTextInputFormat. (Macro-enabled)
 
@@ -70,6 +76,7 @@ configure Hadoop to use more than one mapper:
             "path": "s3n://path/to/logs/",
             "fileRegex": "timefilter",
             "timeTable": "timeTable",
+            "timeTableExplorer": "timeTable",
             "maxSplitSize": "1048576",
             "ignoreNonExistingFolders": "false",
             "recursive": "false"

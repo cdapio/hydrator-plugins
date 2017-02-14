@@ -25,6 +25,7 @@ import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.DatasetProperties;
+import co.cask.cdap.api.dataset.ExploreProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.etl.api.Emitter;
@@ -37,6 +38,7 @@ import co.cask.hydrator.common.SourceInputFormatProvider;
 import co.cask.hydrator.common.batch.JobUtils;
 import co.cask.hydrator.plugin.common.BatchFileFilter;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -90,6 +92,10 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
     "filename expansion (globbing) to read files.";
   protected static final String TABLE_DESCRIPTION = "Name of the Table that keeps track of the last time files " +
     "were read in. If this is null or empty, the Regex is used to filter filenames.";
+  protected static final String EXPLORER_TABLE_DESCRIPTION = "Name of the Explorer table corresponding to " +
+          "'Time Table' dataset. If not mentioned, name will be same as the 'Time Table' dataset.";
+  protected static final String EXPLORER_DATABASE_DESCRIPTION = "Existing Database name for the " +
+          "'Time Table for Explorer' dataset. If left blank, table will be stored in default database.";
   protected static final String INPUT_FORMAT_CLASS_DESCRIPTION = "Name of the input format class, which must be a " +
     "subclass of FileInputFormat. Defaults to CombineTextInputFormat.";
   protected static final String REGEX_DESCRIPTION = "Regex to filter out files in the path. It accepts regular " +
@@ -125,7 +131,17 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
     if (!config.containsMacro("timeTable") && config.timeTable != null) {
-      pipelineConfigurer.createDataset(config.timeTable, KeyValueTable.class, DatasetProperties.EMPTY);
+      ExploreProperties.Builder builder = ExploreProperties.builder();
+      if (!Strings.isNullOrEmpty(config.timeTableExplorer)) {
+        builder.setExploreTableName(config.timeTableExplorer);
+      } else {
+        builder.setExploreTableName(config.timeTable);
+      }
+
+      if (!Strings.isNullOrEmpty(config.timeTableExplorerDatabase)) {
+        builder.setExploreDatabaseName(config.timeTableExplorerDatabase);
+      }
+      pipelineConfigurer.createDataset(config.timeTable, KeyValueTable.class.getName(), builder.build());
     }
     pipelineConfigurer.getStageConfigurer().setOutputSchema(DEFAULT_SCHEMA);
   }
@@ -134,7 +150,17 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
   public void prepareRun(BatchSourceContext context) throws Exception {
     // Need to create dataset now if macro was provided at configure time
     if (config.timeTable != null && !context.datasetExists(config.timeTable)) {
-      context.createDataset(config.timeTable, KeyValueTable.class.getName(), DatasetProperties.EMPTY);
+      ExploreProperties.Builder builder = ExploreProperties.builder();
+      if (!Strings.isNullOrEmpty(config.timeTableExplorer)) {
+        builder.setExploreTableName(config.timeTableExplorer);
+      } else {
+        builder.setExploreTableName(config.timeTable);
+      }
+
+      if (!Strings.isNullOrEmpty(config.timeTableExplorerDatabase)) {
+        builder.setExploreDatabaseName(config.timeTableExplorerDatabase);
+      }
+      context.createDataset(config.timeTable, KeyValueTable.class.getName(), builder.build());
     }
 
     //SimpleDateFormat needs to be local because it is not threadsafe
@@ -261,6 +287,16 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
     public String timeTable;
 
     @Nullable
+    @Description(EXPLORER_TABLE_DESCRIPTION)
+    @Macro
+    public String timeTableExplorer;
+
+    @Nullable
+    @Description(EXPLORER_DATABASE_DESCRIPTION)
+    @Macro
+    public String timeTableExplorerDatabase;
+
+    @Nullable
     @Description(INPUT_FORMAT_CLASS_DESCRIPTION)
     @Macro
     public String inputFormatClass;
@@ -290,6 +326,7 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
     }
 
     public FileBatchConfig(String referenceName, String path, @Nullable String fileRegex, @Nullable String timeTable,
+                           @Nullable String timeTableExplorer, @Nullable String timeTableExplorerDatabase,
                            @Nullable String inputFormatClass, @Nullable String fileSystemProperties,
                            @Nullable Long maxSplitSize, @Nullable Boolean ignoreNonExistingFolders,
                            @Nullable Boolean recursive) {
@@ -300,6 +337,8 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
       this.fileRegex = fileRegex == null ? ".*" : fileRegex;
       // There is no default for timeTable, the code handles nulls
       this.timeTable = timeTable;
+      this.timeTableExplorer = timeTableExplorer;
+      this.timeTableExplorerDatabase = timeTableExplorerDatabase;
       this.inputFormatClass = inputFormatClass == null ? CombineTextInputFormat.class.getName() : inputFormatClass;
       this.maxSplitSize = maxSplitSize == null ? DEFAULT_MAX_SPLIT_SIZE : maxSplitSize;
       this.ignoreNonExistingFolders = ignoreNonExistingFolders == null ? false : ignoreNonExistingFolders;

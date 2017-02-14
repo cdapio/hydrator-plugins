@@ -47,8 +47,9 @@ public class S3BatchSource extends FileBatchSource {
   public S3BatchSource(S3BatchConfig config) {
     // update fileSystemProperties with S3 properties, so FileBatchSource.prepareRun can use them
     super(new FileBatchConfig(config.referenceName, config.path, config.fileRegex, config.timeTable,
-                              config.inputFormatClass, updateFileSystemProperties(
-                                config.fileSystemProperties, config.accessID, config.accessKey),
+                              config.timeTableExplorer, config.timeTableExplorerDatabase,
+                              config.inputFormatClass, updateFileSystemProperties(config.fileSystemProperties,
+                                                                                  config.accessID, config.accessKey),
                               config.maxSplitSize, config.ignoreNonExistingFolders, config.recursive));
     this.config = config;
   }
@@ -79,14 +80,15 @@ public class S3BatchSource extends FileBatchSource {
     private final String accessKey;
 
     public S3BatchConfig(String referenceName, String accessID, String accessKey, String path) {
-      this(referenceName, accessID, accessKey, path, null, null, null, null, null, false, false);
+      this(referenceName, accessID, accessKey, path, null, null, null, null, null, null, null, false, false);
     }
 
     public S3BatchConfig(String referenceName, String accessID, String accessKey, String path, @Nullable String regex,
-                         @Nullable String timeTable, @Nullable String inputFormatClass,
+                         @Nullable String timeTable, @Nullable String timeTableExplorer,
+                         @Nullable String timeTableExplorerDatabase, @Nullable String inputFormatClass,
                          @Nullable String fileSystemProperties, @Nullable Long maxSplitSize,
                          @Nullable Boolean ignoreNonExistingFolders, @Nullable Boolean recursive) {
-      super(referenceName, path, regex, timeTable, inputFormatClass,
+      super(referenceName, path, regex, timeTable, timeTableExplorer, timeTableExplorerDatabase, inputFormatClass,
             updateFileSystemProperties(fileSystemProperties, accessID, accessKey), maxSplitSize,
             ignoreNonExistingFolders, recursive);
       this.accessID = accessID;

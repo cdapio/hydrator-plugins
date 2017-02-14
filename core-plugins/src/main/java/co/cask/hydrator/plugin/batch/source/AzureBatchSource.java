@@ -44,8 +44,9 @@ public class AzureBatchSource extends FileBatchSource {
 
   public AzureBatchSource(AzureBatchConfig config) {
     super(new FileBatchConfig(config.referenceName, config.path, config.fileRegex, config.timeTable,
-                              config.inputFormatClass, updateFileSystemProperties(
-                                config.fileSystemProperties, config.account, config.container, config.storageKey),
+                              config.timeTableExplorer, config.timeTableExplorerDatabase, config.inputFormatClass,
+                              updateFileSystemProperties(config.fileSystemProperties, config.account,
+                                                         config.container, config.storageKey),
                               config.maxSplitSize, config.ignoreNonExistingFolders, config.recursive));
     this.config = config;
   }
@@ -83,14 +84,15 @@ public class AzureBatchSource extends FileBatchSource {
     private final String storageKey;
 
     public AzureBatchConfig(String referenceName, String path, String account, String container, String storageKey) {
-      this(referenceName, path, account, container, storageKey, null, null, null, null, null, false, false);
+      this(referenceName, path, account, container, storageKey, null, null, null, null, null, null, null, false, false);
     }
 
     public AzureBatchConfig(String referenceName, String path, String account, String container, String storageKey,
-                            @Nullable String regex, @Nullable String timeTable, @Nullable String inputFormatClass,
+                            @Nullable String regex, @Nullable String timeTable, @Nullable String timeTableExplorer,
+                            @Nullable String timeTableExplorerDatabase, @Nullable String inputFormatClass,
                             @Nullable String fileSystemProperties, @Nullable Long maxSplitSize,
                             @Nullable Boolean ignoreNonExistingFolders, @Nullable Boolean recursive) {
-      super(referenceName, path, regex, timeTable, inputFormatClass,
+      super(referenceName, path, regex, timeTable, timeTableExplorer, timeTableExplorerDatabase, inputFormatClass,
             updateFileSystemProperties(fileSystemProperties, account, container, storageKey),
             maxSplitSize, ignoreNonExistingFolders, recursive);
       this.account = account;

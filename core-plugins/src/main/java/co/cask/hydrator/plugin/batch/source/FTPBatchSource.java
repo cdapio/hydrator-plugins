@@ -48,8 +48,8 @@ public class FTPBatchSource extends FileBatchSource {
   private final FTPBatchSourceConfig config;
 
   public FTPBatchSource(FTPBatchSourceConfig config) {
-    super(new FileBatchConfig(config.referenceName, config.path, config.fileRegex, null, config.inputFormatClassName,
-                              limitSplits(config.fileSystemProperties), Long.MAX_VALUE,
+    super(new FileBatchConfig(config.referenceName, config.path, config.fileRegex, null, null, null,
+                              config.inputFormatClassName, limitSplits(config.fileSystemProperties), Long.MAX_VALUE,
                               config.ignoreNonExistingFolders, config.recursive));
     this.config = config;
   }

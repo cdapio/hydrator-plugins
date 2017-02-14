@@ -25,6 +25,7 @@ import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.DatasetProperties;
+import co.cask.cdap.api.dataset.ExploreProperties;
 import co.cask.cdap.api.dataset.lib.CloseableIterator;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
@@ -312,12 +313,21 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
         Map<String, String> properties = new HashMap<>();
         properties.put(Properties.Table.PROPERTY_SCHEMA, errorRecordSchema.toString());
         properties.put(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, KEY);
-        DatasetProperties datasetProperties = DatasetProperties.builder().addAll(properties).build();
+        ExploreProperties.Builder builder = ExploreProperties.builder();
+        if (!Strings.isNullOrEmpty(excelInputreaderConfig.errorDatasetExplorer)) {
+          builder.setExploreTableName(excelInputreaderConfig.errorDatasetExplorer);
+        } else {
+          builder.setExploreTableName(excelInputreaderConfig.errorDatasetName);
+        }
+        if (!Strings.isNullOrEmpty(excelInputreaderConfig.errorDatasetExplorerDatabase)) {
+          builder.setExploreDatabaseName(excelInputreaderConfig.errorDatasetExplorerDatabase);
+        }
+        builder.addAll(properties);
 
         if (pipelineConfigurer != null) {
-          pipelineConfigurer.createDataset(excelInputreaderConfig.errorDatasetName, Table.class, datasetProperties);
+          pipelineConfigurer.createDataset(excelInputreaderConfig.errorDatasetName, Table.class, builder.build());
         } else if (context != null && !context.datasetExists(excelInputreaderConfig.errorDatasetName)) {
-          context.createDataset(excelInputreaderConfig.errorDatasetName, Table.class.getName(), datasetProperties);
+          context.createDataset(excelInputreaderConfig.errorDatasetName, Table.class.getName(), builder.build());
         }
 
       } else if (!excelInputreaderConfig.containsMacro("ifErrorRecord") &&
@@ -328,11 +338,23 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
 
       if (!excelInputreaderConfig.containsMacro("memoryTableName") &&
         !Strings.isNullOrEmpty(excelInputreaderConfig.memoryTableName)) {
+
+        ExploreProperties.Builder builder = ExploreProperties.builder();
+        if (!Strings.isNullOrEmpty(excelInputreaderConfig.memoryDatasetExplorer)) {
+          builder.setExploreTableName(excelInputreaderConfig.memoryDatasetExplorer);
+        } else {
+          builder.setExploreTableName(excelInputreaderConfig.memoryTableName);
+        }
+        if (!Strings.isNullOrEmpty(excelInputreaderConfig.memoryDatasetExplorerDatabase)) {
+          builder.setExploreDatabaseName(excelInputreaderConfig.memoryDatasetExplorerDatabase);
+        }
+
         if (pipelineConfigurer != null) {
-          pipelineConfigurer.createDataset(excelInputreaderConfig.memoryTableName, KeyValueTable.class);
+          pipelineConfigurer.createDataset(excelInputreaderConfig.memoryTableName, KeyValueTable.class,
+                  builder.build());
         } else if (context != null && !context.datasetExists(excelInputreaderConfig.memoryTableName)) {
           context.createDataset(excelInputreaderConfig.memoryTableName, KeyValueTable.class.getName(),
-                                DatasetProperties.EMPTY);
+                  builder.build());
         }
       }
     } catch (Exception e) {
@@ -409,6 +431,20 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
     private String memoryTableName;
 
     @Nullable
+    @Name("memoryDatasetExplorer")
+    @Description("Name of the Explorer table corresponding to 'File Tracking Table' dataset.  If not mentioned, " +
+            "name will be same as the 'File Tracking Table' dataset.")
+    @Macro
+    private String memoryDatasetExplorer;
+
+    @Nullable
+    @Name("memoryDatasetExplorerDatabase")
+    @Description("Existing Database name for the 'File Tracking Table for Explorer' dataset. If left blank, " +
+            "table will be stored in default database.")
+    @Macro
+    private String memoryDatasetExplorerDatabase;
+
+    @Nullable
     @Description("Expiry period (days) for data in the table. Default is 30 days." +
       "Example - For tableExpiryPeriod = 30, data before 30 days get deleted from the table.")
     private String tableExpiryPeriod;
@@ -480,6 +516,20 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
     @Description("Name of the table to store error record; for example: 'error-table-name'.")
     @Macro
     private String errorDatasetName;
+
+    @Nullable
+    @Name("errorDatasetExplorer")
+    @Description("Name of the Explorer table corresponding to 'Error Dataset' dataset.  If not mentioned, " +
+            "name will be same as the 'Error Dataset' dataset.")
+    @Macro
+    private String errorDatasetExplorer;
+
+    @Nullable
+    @Name("errorDatasetExplorerDatabase")
+    @Description("Existing Database name for the 'Error Dataset for Explorer' dataset. If left blank, " +
+            "table will be stored in default database.")
+    @Macro
+    private String errorDatasetExplorerDatabase;
 
     public ExcelInputReaderConfig() {
       super("ExcelInputReader");

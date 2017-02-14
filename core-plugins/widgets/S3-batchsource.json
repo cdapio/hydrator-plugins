@@ -38,6 +38,16 @@
         },
         {
           "widget-type": "textbox",
+          "label": "Time Table for Explorer",
+          "name": "timeTableExplorer"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Time Table Explorer Database",
+          "name": "timeTableExplorerDatabase"
+        },
+        {
+          "widget-type": "textbox",
           "label": "Input Format Class",
           "name": "inputFormatClass"
         },
