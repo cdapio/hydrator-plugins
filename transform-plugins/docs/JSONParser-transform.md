@@ -106,7 +106,7 @@ The mappings in the plugin will be:
 
 The "root member object" for parsing any JSON is referred to as ```$```, regardless of
 whether it's an array or an object. It also uses either dot notation or bracket notation for
-defining the levels of parsing. For example: ```$.employee.name``` or ```$[employee][name]```.
+defining the levels of parsing. For example: ```$.employee.name``` or ```$['employee']['name']```.
 
 #### Supported Operators
 

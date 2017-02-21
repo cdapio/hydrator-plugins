@@ -230,5 +230,27 @@ public class JSONParserTest {
     Assert.assertEquals("red", emitter.getEmitted().get(0).get("bicycle_color"));
     Assert.assertEquals(19.95, emitter.getEmitted().get(0).get("bicycle_price"));
     Assert.assertEquals(null, emitter.getEmitted().get(0).get("window"));
+
+    final String[] jsonPaths2 = {
+      "expensive:$['expensive']",
+      "bicycle_color:$['store']['bicycle']['color']",
+      "bicycle_price:$['store']['bicycle']['price']",
+      "window:$['store']['window']"
+    };
+
+    emitter.clear();
+    config = new JSONParser.Config("body", Joiner.on(",").join(jsonPaths2), OUTPUT5.toString());
+    transform = new JSONParser(config);
+
+    mockPipelineConfigurer = new MockPipelineConfigurer(INPUT1);
+    transform.configurePipeline(mockPipelineConfigurer);
+    transform.initialize(null);
+    transform.transform(StructuredRecord.builder(INPUT1)
+                          .set("body", json)
+                          .build(), emitter);
+    Assert.assertEquals(10, emitter.getEmitted().get(0).get("expensive"));
+    Assert.assertEquals("red", emitter.getEmitted().get(0).get("bicycle_color"));
+    Assert.assertEquals(19.95, emitter.getEmitted().get(0).get("bicycle_price"));
+    Assert.assertEquals(null, emitter.getEmitted().get(0).get("window"));
   }
 }
