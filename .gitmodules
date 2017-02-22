@@ -18,4 +18,28 @@
 [submodule "wrangler-transform"]
 	path = wrangler-transform
 	url = https://github.com/hydrator/wrangler-transform.git
-	branch = develop
+	branch = release/1.0 
+[submodule "realtime-stream-source"]
+	path = realtime-stream-source
+	url = https://github.com/hydrator/realtime-stream-source.git
+	branch = release/1.0 
+[submodule "hashing-tf-feature-generator"]
+	path = hashing-tf-feature-generator
+	url = https://github.com/hydrator/hashing-tf-feature-generator.git
+	branch = release/1.0 
+[submodule "naive-bayes-analytics"]
+	path = naive-bayes-analytics
+	url = https://github.com/hydrator/naive-bayes-analytics.git
+	branch = release/1.0 
+[submodule "logistic-regression-analytics"]
+	path = logistic-regression-analytics
+	url = https://github.com/hydrator/logistic-regression-analytics.git
+	branch = release/1.0 
+[submodule "skipgram-analytics"]
+	path = skipgram-analytics
+	url = https://github.com/hydrator/skipgram-analytics.git
+	branch = release/1.0 
+[submodule "tokenizer-analytics"]
+	path = tokenizer-analytics
+	url = https://github.com/hydrator/tokenizer-analytics.git
+	branch = release/1.0 
