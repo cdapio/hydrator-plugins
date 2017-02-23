@@ -36,6 +36,8 @@ import org.xml.sax.InputSource;
 
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -76,7 +78,11 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
     outSchema = config.getOutputSchema();
-    validateXpathAndSchema();
+    try {
+      validateXpathAndSchema();
+    } catch (UnsupportedEncodingException e) {
+      throw new IllegalArgumentException("Failed to parse XPath mappings. Reason : " + e.getMessage());
+    }
     pipelineConfigurer.getStageConfigurer().setOutputSchema(outSchema);
   }
 
@@ -90,7 +96,7 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
   /**
    * Valid if xpathMappings and schema contain the same field names.
    */
-  private void validateXpathAndSchema() {
+  private void validateXpathAndSchema() throws UnsupportedEncodingException {
     xPathMapping = getXPathMapping();
     List<Schema.Field> outFields = outSchema.getFields();
     // Checks if all the fields in the XPath mapping are present in the output schema.
@@ -108,19 +114,28 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
     }
   }
 
-  private Map<String, String> getXPathMapping() {
+  private Map<String, String> getXPathMapping() throws UnsupportedEncodingException, IllegalArgumentException {
     Map<String, String> map = new HashMap<>();
     String[] xpaths = config.xPathFieldMapping.split(",");
     for (String xpath : xpaths) {
       String[] xpathmap = xpath.split(":"); //name:xpath[,name:xpath]*
-      String fieldName = xpathmap[0].trim();
-      if (Strings.isNullOrEmpty(fieldName)) {
-        throw new IllegalArgumentException("Field name cannot be null or empty.");
-      } else if (xpathmap.length < 2 || Strings.isNullOrEmpty(xpathmap[1])) {
-        throw new IllegalArgumentException(String.format("XPath for field name %s cannot be null or empty.",
-                                                         fieldName));
+
+      if (xpathmap.length != 2) {
+        throw new IllegalArgumentException("Invalid XPath mapping specified : '" + xpath + "'");
       }
-      map.put(fieldName, xpathmap[1].trim());
+
+      if (xpathmap[0] == null || xpathmap[0].trim().isEmpty()) {
+        throw new IllegalArgumentException("XPath mapping is missing a field name : '" + xpath + "'");
+      }
+
+      if (xpathmap[1] == null || xpathmap[1].trim().isEmpty()) {
+        throw new IllegalArgumentException("XPath mapping is missing xpath : '" + xpath + "'");
+      }
+
+
+      String fieldName = URLDecoder.decode(xpathmap[0].trim(), "UTF-8");
+      String path = URLDecoder.decode(xpathmap[1].trim(), "UTF-8");
+      map.put(fieldName, path);
     }
     return map;
   }
@@ -186,7 +201,7 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
         != null && (firstChild.getNextSibling().getNodeType() == Node.ELEMENT_NODE)))) {
         if (!type.equals(Schema.Type.STRING)) {
           throw new IllegalArgumentException(String.format("The xpath returned node which contains child nodes. " +
-                                                             "Cannot convert %s  to type %s", fieldName, type));
+                                                             "Cannot convert %s to type %s", fieldName, type));
         } else {
           return nodeToString(node.cloneNode(true));
         }

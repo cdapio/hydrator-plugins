@@ -26,7 +26,7 @@
           }
         },
         {
-          "widget-type": "keyvalue",
+          "widget-type": "key-value-encoded",
           "label": "XPath Mappings",
           "name": "xPathMappings",
           "widget-attributes": {
