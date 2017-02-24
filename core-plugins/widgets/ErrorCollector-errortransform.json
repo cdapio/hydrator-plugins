@@ -4,7 +4,7 @@
   },
   "configuration-groups": [
     {
-      "label": "Error Flattener Configuration",
+      "label": "Error Collector Configuration",
       "properties": [
         {
           "widget-type": "textbox",
@@ -14,17 +14,26 @@
             "method": "POST",
             "widget": "outputSchema",
             "plugin-method": "getSchema"
+          },
+          "widget-attributes": {
+            "default": "errMsg"
           }
         },
         {
           "widget-type": "textbox",
           "label": "Code Field",
-          "name": "codeField"
+          "name": "codeField",
+          "widget-attributes": {
+            "default": "errCode"
+          }
         },
         {
           "widget-type": "textbox",
           "label": "Stage Field",
-          "name": "stageField"
+          "name": "stageField",
+          "widget-attributes": {
+            "default": "errStage"
+          }
         }
       ]
     }

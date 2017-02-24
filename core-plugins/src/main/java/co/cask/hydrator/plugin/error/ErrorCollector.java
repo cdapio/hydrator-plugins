@@ -37,11 +37,11 @@ import javax.ws.rs.Path;
  * Adds the error code and error message to each record, then emits it.
  */
 @Plugin(type = ErrorTransform.PLUGIN_TYPE)
-@Name("ErrorFlattener")
-public class ErrorFlattener extends ErrorTransform<StructuredRecord, StructuredRecord> {
+@Name("ErrorCollector")
+public class ErrorCollector extends ErrorTransform<StructuredRecord, StructuredRecord> {
   private final Config config;
 
-  public ErrorFlattener(Config config) {
+  public ErrorCollector(Config config) {
     this.config = config;
   }
 
