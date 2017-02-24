@@ -121,7 +121,7 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
     }
     nodes = nodePath.split("/");
 
-    currentNodeLevelMap = new HashMap<Integer, String>();
+    currentNodeLevelMap = new HashMap<>();
     tempFilePath = conf.get(XMLInputFormat.XML_INPUTFORMAT_PROCESSED_DATA_TEMP_FOLDER);
     fileAction = conf.get(XMLInputFormat.XML_INPUTFORMAT_FILE_ACTION);
     targetFolder = conf.get(XMLInputFormat.XML_INPUTFORMAT_TARGET_FOLDER);
@@ -130,7 +130,7 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
   @Override
   public boolean nextKeyValue() throws IOException, InterruptedException {
     currentKey = new LongWritable();
-    currentValue = new HashMap<String, String>();
+    currentValue = new HashMap<>();
     String lastNode = nodes[nodes.length - 1];
     StringBuilder xmlRecord = new StringBuilder();
 
@@ -210,7 +210,10 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
     xmlRecord.append(OPENING_START_TAG_DELIMITER).append(nodeNameStart);
     int count = reader.getAttributeCount();
     for (int i = 0; i < count; i++) {
-      xmlRecord.append(" ").append(reader.getAttributeLocalName(i)).append("=\"").append(reader.getAttributeValue(i))
+      xmlRecord.append(" ")
+        .append(StringEscapeUtils.escapeXml(reader.getAttributeLocalName(i)))
+        .append("=\"")
+        .append(StringEscapeUtils.escapeXml(reader.getAttributeValue(i)))
         .append("\"");
     }
     xmlRecord.append(CLOSING_START_TAG_DELIMITER);
