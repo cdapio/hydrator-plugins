@@ -32,6 +32,7 @@ import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
 import co.cask.hydrator.plugin.ScriptConstants;
 import co.cask.hydrator.plugin.common.StructuredRecordSerializer;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -70,6 +71,7 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
   private ScriptEngine engine;
   private Invocable invocable;
   private Schema schema;
+  private Schema errSchema;
   private final Config config;
   private StageMetrics metrics;
 
@@ -139,6 +141,7 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
     metrics = context.getMetrics();
+    setErrorSchema(context.getInputSchema());
 
     // for Nashorn (Java 8+) support -- get method to convert ScriptObjectMirror to List
     try {
@@ -153,6 +156,11 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
     }
 
     init(context);
+  }
+
+  @VisibleForTesting
+  void setErrorSchema(Schema schema) {
+    errSchema = schema;
   }
 
   @Override
@@ -182,21 +190,18 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
 
     @Override
     public void emit(Map value) {
-      emitter.emit(decode(value));
+      emitter.emit(decodeRecord(value, schema));
     }
 
     @Override
     public void emitError(InvalidEntry<Map> invalidEntry) {
       emitter.emitError(new InvalidEntry<>(invalidEntry.getErrorCode(), invalidEntry.getErrorMsg(),
-                                           decode(invalidEntry.getInvalidRecord())));
+                                           decodeRecord(invalidEntry.getInvalidRecord(), errSchema)));
     }
 
     public void emitError(Map invalidEntry) {
-      emitter.emitError(getErrorObject(invalidEntry, decode((Map) invalidEntry.get("invalidRecord"))));
-    }
-
-    private StructuredRecord decode(Map nativeObject) {
-      return decodeRecord(nativeObject, schema);
+      emitter.emitError(getErrorObject(invalidEntry,
+                                       decodeRecord((Map) invalidEntry.get("invalidRecord"), errSchema)));
     }
   }
 
