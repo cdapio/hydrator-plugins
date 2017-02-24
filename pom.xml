@@ -32,14 +32,20 @@
     <module>cassandra-plugins</module>
     <module>database-plugins</module>
     <module>elasticsearch-plugins</module>
+    <module>hashing-tf-feature-generator</module>
     <module>hbase-plugins</module>
     <module>hdfs-plugins</module>
     <module>hive-plugins</module>
     <module>http-plugins</module>
     <module>kafka-plugins</module>
+    <module>logistic-regression-analytics</module>
     <module>mongodb-plugins</module>
+    <module>naive-bayes-analytics</module>
+    <module>realtime-stream-source</module>
+    <module>skipgram-analytics</module>
     <module>solrsearch-plugins</module>
     <module>spark-plugins</module>
+    <module>tokenizer-analytics</module>
     <module>transform-plugins</module>
     <module>wrangler-transform</module>
   </modules>
