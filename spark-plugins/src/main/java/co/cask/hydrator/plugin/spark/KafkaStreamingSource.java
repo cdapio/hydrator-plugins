@@ -81,7 +81,7 @@ public class KafkaStreamingSource extends ReferenceStreamingSource<StructuredRec
 
   @Override
   public JavaDStream<StructuredRecord> getStream(StreamingContext context) throws Exception {
-    registerUsage(context);
+    context.registerLineage(conf.referenceName);
 
     Map<String, String> kafkaParams = new HashMap<>();
     kafkaParams.put("metadata.broker.list", conf.getBrokers());

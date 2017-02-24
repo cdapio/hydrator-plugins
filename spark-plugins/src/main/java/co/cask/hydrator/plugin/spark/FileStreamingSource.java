@@ -77,7 +77,7 @@ public class FileStreamingSource extends ReferenceStreamingSource<StructuredReco
   @Override
   public JavaDStream<StructuredRecord> getStream(StreamingContext context) throws Exception {
     conf.validate();
-    registerUsage(context);
+    context.registerLineage(conf.referenceName);
 
     JavaStreamingContext jsc = context.getSparkStreamingContext();
 
