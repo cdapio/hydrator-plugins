@@ -14,14 +14,14 @@ to this plugin in order to store and later examine the error records.
 
 Properties
 ----------
-**messageField:** The name of the error message field to use in the output schema. Defaults to 'errMsg'.
-If this is not specified, the error message will be dropped.
+**messageField:** The name of the error message field to use in the output schema.
+The UI will default this to 'errMsg'. If no value is specified, the error message will be dropped.
 
-**codeField:** The name of the error code field to use in the output schema. Defaults to 'errCode'.
-If this is not specified, the error code will be dropped.
+**codeField:** The name of the error code field to use in the output schema.
+The UI will default this to 'errCode'. If no value is specified, the error code will be dropped.
 
-**stageField:** The name of the error stage field to use in the output schema. Defaults to 'errStage'.
-If this is not specified, the error stage will be dropped.
+**stageField:** The name of the error stage field to use in the output schema.
+The UI will default this to 'errStage'. If no value is specified, the error stage will be dropped.
 
 
 Example

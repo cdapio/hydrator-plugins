@@ -34,7 +34,7 @@ import javax.annotation.Nullable;
 import javax.ws.rs.Path;
 
 /**
- * Adds the error code and error message to each record, then emits it.
+ * Adds the error code, message, and stage to each record, then emits it.
  */
 @Plugin(type = ErrorTransform.PLUGIN_TYPE)
 @Name("ErrorCollector")
@@ -49,17 +49,17 @@ public class ErrorCollector extends ErrorTransform<StructuredRecord, StructuredR
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
     if (inputSchema != null) {
-      if (inputSchema.getField(config.messageField) != null) {
+      if (config.messageField != null && inputSchema.getField(config.messageField) != null) {
         throw new IllegalArgumentException(String.format(
           "Input schema already contains message field %s. Please set messageField to a different value.",
           config.messageField));
       }
-      if (inputSchema.getField(config.codeField) != null) {
+      if (config.codeField != null && inputSchema.getField(config.codeField) != null) {
         throw new IllegalArgumentException(String.format(
           "Input schema already contains code field %s. Please set codeField to a different value.",
           config.codeField));
       }
-      if (inputSchema.getField(config.stageField) != null) {
+      if (config.stageField != null && inputSchema.getField(config.stageField) != null) {
         throw new IllegalArgumentException(String.format(
           "Input schema already contains stage field %s. Please set stageField to a different value.",
           config.stageField));
