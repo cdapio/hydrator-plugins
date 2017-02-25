@@ -16,18 +16,12 @@
 
 package co.cask.hydrator.plugin.spark;
 
-import co.cask.cdap.api.Transactional;
-import co.cask.cdap.api.TxRunnable;
-import co.cask.cdap.api.data.DatasetContext;
 import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.streaming.StreamingSource;
 import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.common.IdUtils;
 import co.cask.hydrator.common.ReferencePluginConfig;
-import org.apache.tephra.TransactionFailureException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Base streaming source that adds an External Dataset for a reference name, and performs a single getDataset()
@@ -36,7 +30,6 @@ import org.slf4j.LoggerFactory;
  * @param <T> type of object read by the source.
  */
 public abstract class ReferenceStreamingSource<T> extends StreamingSource<T> {
-  private static final Logger LOG = LoggerFactory.getLogger(ReferenceStreamingSource.class);
   private final ReferencePluginConfig conf;
 
   public ReferenceStreamingSource(ReferencePluginConfig conf) {
@@ -50,14 +43,4 @@ public abstract class ReferenceStreamingSource<T> extends StreamingSource<T> {
     IdUtils.validateId(conf.referenceName);
     pipelineConfigurer.createDataset(conf.referenceName, Constants.EXTERNAL_DATASET_TYPE, DatasetProperties.EMPTY);
   }
-
-  protected void registerUsage(Transactional transactional) throws TransactionFailureException {
-    transactional.execute(new TxRunnable() {
-      @Override
-      public void run(DatasetContext datasetContext) throws Exception {
-        datasetContext.getDataset(conf.referenceName);
-      }
-    });
-  }
-
 }
