@@ -228,33 +228,38 @@ public class JavaScriptTransformTest {
 
   @Test
   public void testEmitErrors() throws Exception {
+    Schema inputSchema = Schema.recordOf(
+      "smallerSchema",
+      Schema.Field.of("x", Schema.of(Schema.Type.INT)));
     Schema outputSchema = Schema.recordOf(
       "smallerSchema",
       Schema.Field.of("x", Schema.of(Schema.Type.INT)),
-      Schema.Field.of("y", Schema.of(Schema.Type.LONG)));
+      Schema.Field.of("y", Schema.of(Schema.Type.INT)));
 
     JavaScriptTransform.Config config = new JavaScriptTransform.Config(
       "function transform(input, emitter, context) { " +
-        "emitter.emitError({\"errorCode\":31, \"errorMsg\":\"error!\", \"invalidRecord\": input}); }",
+        "emitter.emit({\"x\":input['x'], \"y\":input['x']+5});" +
+        "emitter.emitError({\"errorCode\":31, \"errorMsg\":\"error!\", \"invalidRecord\": input});" +
+        " }",
        outputSchema.toString(), null);
-    Transform<StructuredRecord, StructuredRecord> transform = new JavaScriptTransform(config);
+    JavaScriptTransform transform = new JavaScriptTransform(config);
     transform.initialize(new MockTransformContext());
+    transform.setErrorSchema(inputSchema);
 
-    StructuredRecord inputRecord = StructuredRecord.builder(outputSchema)
+    StructuredRecord inputRecord = StructuredRecord.builder(inputSchema)
       .set("x", 25)
-      .set("y", 28L)
       .build();
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(inputRecord, emitter);
-    Assert.assertEquals(0, emitter.getEmitted().size());
+    Assert.assertEquals(1, emitter.getEmitted().size());
     Assert.assertEquals(1, emitter.getErrors().size());
 
     InvalidEntry<StructuredRecord> invalidEntry = emitter.getErrors().get(0);
     Assert.assertEquals(31, invalidEntry.getErrorCode());
     Assert.assertEquals("error!", invalidEntry.getErrorMsg());
     Assert.assertEquals(25, invalidEntry.getInvalidRecord().get("x"));
-    Assert.assertEquals(28L, invalidEntry.getInvalidRecord().get("y"));
+    Assert.assertNull(invalidEntry.getInvalidRecord().get("y"));
   }
 
   @Test
