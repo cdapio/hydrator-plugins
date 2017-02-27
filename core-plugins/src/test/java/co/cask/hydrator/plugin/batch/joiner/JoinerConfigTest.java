@@ -220,6 +220,29 @@ public class JoinerConfigTest {
     Assert.assertEquals(outputSchema, joiner.getOutputSchema(getSchemaRequest));
   }
 
+  @Test(expected = IllegalArgumentException.class)
+  public void testOutputSchemaForInvalidKeys() {
+    Joiner.GetSchemaRequest getSchemaRequest = new Joiner.GetSchemaRequest();
+    // film_id is Long but it should be String, OutputSchema call should throw an exception
+    Schema filmCategorySchema = Schema.recordOf(
+      "filmCategory",
+      Schema.Field.of("film_id", Schema.of(Schema.Type.LONG)),
+      Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("category_name", Schema.of(Schema.Type.STRING)));
+
+    getSchemaRequest.inputSchemas = ImmutableMap.of("film", filmSchema, "filmActor", filmActorSchema,
+                                                    "filmCategory", filmCategorySchema);
+
+
+    getSchemaRequest.joinKeys = "film.film_id=filmActor.film_id=filmCategory.film_id";
+    getSchemaRequest.selectedFields = "film.film_id, film.film_name, filmActor.actor_name as renamed_actor, " +
+      "filmCategory.category_name as renamed_category";
+    getSchemaRequest.requiredInputs = "film,filmActor,filmCategory";
+    Joiner joiner = new Joiner(null);
+    // should throw IllegalArgumentException exception
+    joiner.getOutputSchema(getSchemaRequest);
+  }
+
   @Test
   public void testJoinerWithNullableSchema() {
     Schema filmCategorySchema = Schema.recordOf(
@@ -246,4 +269,5 @@ public class JoinerConfigTest {
     Joiner joiner = new Joiner(null);
     Assert.assertEquals(outputSchema, joiner.getOutputSchema(getSchemaRequest));
   }
+
 }

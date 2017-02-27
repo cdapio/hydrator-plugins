@@ -28,6 +28,7 @@ import co.cask.cdap.etl.api.MultiInputStageConfigurer;
 import co.cask.cdap.etl.api.batch.BatchJoiner;
 import co.cask.cdap.etl.api.batch.BatchJoinerContext;
 import co.cask.cdap.etl.api.batch.BatchJoinerRuntimeContext;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Table;
@@ -179,6 +180,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
   }
 
   @Path("outputSchema")
+  @VisibleForTesting
   public Schema getOutputSchema(GetSchemaRequest request) {
     validateJoinKeySchemas(request.inputSchemas, request.getPerStageJoinKeys());
     requiredInputs = request.getInputs();
