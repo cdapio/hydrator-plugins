@@ -24,6 +24,7 @@ import co.cask.cdap.proto.id.ArtifactId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.hydrator.common.KeystoreConf;
+import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.csv.CSVFormat;
 import org.junit.BeforeClass;
@@ -57,6 +58,6 @@ public class TransformPluginsTestBase extends HydratorTestBase {
     // This will make our plugins available to the ETL batch.
     addPluginArtifact(NamespaceId.DEFAULT.artifact("transform-plugins", "1.0.0"), BATCH_APP_ARTIFACT_ID,
                       ValueMapper.class, CSVFormat.class, Base64.class, JSONParser.class, XMLToJSON.class,
-                      KeystoreConf.class);
+                      KeystoreConf.class, Base32.class);
   }
 }
