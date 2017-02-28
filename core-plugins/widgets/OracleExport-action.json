@@ -1,0 +1,111 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Oracle Export Properties",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Oracle Server Hostname",
+          "name": "oracleServerHostname"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Oracle Server Port",
+          "name": "oracleServerSSHPort"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Oracle Server Username",
+          "name": "oracleServerSSHUsername"
+        },
+        {
+          "widget-type": "select",
+          "label": "Authentication Mechanism",
+          "name": "oracleServerSSHAuthMechanism",
+          "widget-attributes": {
+            "values": [
+              "Password",
+              "Private key"
+            ],
+            "default": "Password"
+          }
+        },
+        {
+          "widget-type": "password",
+          "label": "Oracle Server Password",
+          "name": "oracleServerSSHPassword"
+        },
+        {
+          "widget-type": "textarea",
+          "label": "Oracle Server Private Key",
+          "name": "oracleServerSSHPrivateKey"
+        },
+        {
+          "widget-type": "password",
+          "label": "Private Key Passphrase",
+          "name": "oracleServerSSHPassphrase"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Username to connect to Oracle DB",
+          "name": "dbUsername"
+        },
+        {
+          "widget-type": "password",
+          "label": "Password to connect to Oracle DB",
+          "name": "dbPassword"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Path of the ORACLE_HOME",
+          "name": "oracleHome"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "SID",
+          "name": "oracleSID"
+        },
+        {
+          "widget-type": "textarea",
+          "label": "Query to be executed for export",
+          "name": "queryToExecute",
+          "widget-attributes": {
+            "rows": "4"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Full path of the temporary SQL script file to be created",
+          "name": "tmpSQLScriptFile"
+        },
+        {
+          "widget-type": "textarea",
+          "label": "Oracle command to export the data",
+          "name": "commandToRun"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Path where output file to be exported",
+          "name": "outputPath"
+        },
+        {
+          "widget-type": "select",
+          "label": "Format",
+          "name": "format",
+          "widget-attributes": {
+            "values": [
+              "CSV",
+              "PSV",
+              "TSV"
+            ],
+            "default": "CSV"
+          }
+        }
+       ]
+    }
+  ],
+  "outputs": []
+}
