@@ -97,8 +97,9 @@ public class S3AvroBatchSink extends S3BatchSink<AvroKey<GenericRecord>, NullWri
 
     @SuppressWarnings("unused")
     public S3AvroSinkConfig(String referenceName, String basePath, String schema, String accessID, String accessKey,
-                            String pathFormat, String filesystemProperties, @Nullable String compressionCodec) {
-      super(referenceName, basePath, accessID, accessKey, pathFormat, filesystemProperties);
+                            String pathFormat, String filesystemProperties, @Nullable String compressionCodec,
+                            String authenticationMethod) {
+      super(referenceName, basePath, accessID, accessKey, pathFormat, filesystemProperties, authenticationMethod);
       this.schema = schema;
       this.compressionCodec = compressionCodec;
     }

@@ -22,6 +22,7 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.data.batch.Output;
 import co.cask.cdap.api.data.batch.OutputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.ReferencePluginConfig;
@@ -38,6 +39,7 @@ import javax.annotation.Nullable;
 
 /**
  * {@link S3BatchSink} that stores the data of the latest run of an adapter in S3.
+ *
  * @param <KEY_OUT> the type of key the sink outputs
  * @param <VAL_OUT> the type of value the sink outputs
  */
@@ -46,6 +48,9 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<S
   public static final String PATH_DESC = "The S3 path where the data is stored. Example: 's3n://logs'.";
   private static final String ACCESS_ID_DESCRIPTION = "Access ID of the Amazon S3 instance to connect to.";
   private static final String ACCESS_KEY_DESCRIPTION = "Access Key of the Amazon S3 instance to connect to.";
+  private static final String AUTHENTICATION_METHOD = "Authentication method to access S3. " +
+    "Defaults to Access Credentials.For Access Credentials, URI scheme should be s3n://.\n" +
+    "For IAM, URI scheme should be s3a://. (Macro-enabled)";
   private static final String PATH_FORMAT_DESCRIPTION = "The format for the path that will be suffixed to the " +
     "basePath; for example: the format 'yyyy-MM-dd-HH-mm' will create a file path ending in '2015-01-01-20-42'. " +
     "Default format used is 'yyyy-MM-dd-HH-mm'.";
@@ -53,9 +58,11 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<S
     "needed for the distributed file system.";
   private static final String DEFAULT_PATH_FORMAT = "yyyy-MM-dd-HH-mm";
   private static final Gson GSON = new Gson();
-  private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
+  private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() {
+  }.getType();
 
   private final S3BatchSinkConfig config;
+
   protected S3BatchSink(S3BatchSinkConfig config) {
     super(config);
     this.config = config;
@@ -63,10 +70,17 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<S
     // in configuration, and not deal with accessID and accessKey separately
     // do not create file system properties if macros were provided unless in a test case
     if (!this.config.containsMacro("fileSystemProperties") && !this.config.containsMacro("accessID") &&
-        !this.config.containsMacro("accessKey")) {
+      !this.config.containsMacro("accessKey")) {
       this.config.fileSystemProperties = updateFileSystemProperties(this.config.fileSystemProperties,
-                                                                    this.config.accessID, this.config.accessKey);
+                                                                    this.config.accessID, this.config.accessKey,
+                                                                    this.config.authenticationMethod);
     }
+  }
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    config.validate(config.authenticationMethod);
+    super.configurePipeline(pipelineConfigurer);
   }
 
   @Override
@@ -88,15 +102,17 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<S
   protected abstract OutputFormatProvider createOutputFormatProvider(BatchSinkContext context);
 
   private static String updateFileSystemProperties(@Nullable String fileSystemProperties, String accessID,
-                                                   String accessKey) {
+                                                   String accessKey, String authenticationMethod) {
     Map<String, String> providedProperties;
     if (fileSystemProperties == null) {
       providedProperties = new HashMap<>();
     } else {
       providedProperties = GSON.fromJson(fileSystemProperties, MAP_STRING_STRING_TYPE);
     }
-    providedProperties.put("fs.s3n.awsAccessKeyId", accessID);
-    providedProperties.put("fs.s3n.awsSecretAccessKey", accessKey);
+    if (authenticationMethod != null && authenticationMethod.equalsIgnoreCase("Access Credentials")) {
+      providedProperties.put("fs.s3n.awsAccessKeyId", accessID);
+      providedProperties.put("fs.s3n.awsSecretAccessKey", accessKey);
+    }
     return GSON.toJson(providedProperties);
   }
 
@@ -118,12 +134,19 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<S
     @Name(Properties.S3.ACCESS_ID)
     @Description(ACCESS_ID_DESCRIPTION)
     @Macro
+    @Nullable
     protected String accessID;
 
     @Name(Properties.S3.ACCESS_KEY)
     @Description(ACCESS_KEY_DESCRIPTION)
     @Macro
+    @Nullable
     protected String accessKey;
+
+    @Name(Properties.S3BatchSink.AUTHENTICATION_METHOD)
+    @Description(AUTHENTICATION_METHOD)
+    @Macro
+    protected String authenticationMethod;
 
     @Name(Properties.S3BatchSink.PATH_FORMAT)
     @Description(PATH_FORMAT_DESCRIPTION)
@@ -140,17 +163,33 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<S
       // Set default value for Nullable properties.
       super("");
       this.pathFormat = DEFAULT_PATH_FORMAT;
-      this.fileSystemProperties = updateFileSystemProperties(null, accessID, accessKey);
+      this.fileSystemProperties = updateFileSystemProperties(null, accessID, accessKey, authenticationMethod);
     }
 
     public S3BatchSinkConfig(String referenceName, String basePath, String accessID, String accessKey,
-                             @Nullable String pathFormat, @Nullable String fileSystemProperties) {
+                             @Nullable String pathFormat, @Nullable String fileSystemProperties,
+                             String authenticationMethod) {
       super(referenceName);
       this.basePath = basePath;
       this.pathFormat = pathFormat == null || pathFormat.isEmpty() ? DEFAULT_PATH_FORMAT : pathFormat;
       this.accessID = accessID;
       this.accessKey = accessKey;
-      this.fileSystemProperties = updateFileSystemProperties(fileSystemProperties, accessID, accessKey);
+      this.authenticationMethod = authenticationMethod;
+      this.fileSystemProperties = updateFileSystemProperties(fileSystemProperties, accessID, accessKey,
+                                                             authenticationMethod);
+    }
+
+    public void validate(String authenticationMethod) {
+      if (authenticationMethod.equalsIgnoreCase("Access Credentials")) {
+        if (!containsMacro("accessID") && (accessID == null || accessID.isEmpty())) {
+          throw new IllegalArgumentException("The Access ID must be specified if " +
+                                               "authentication method is Access Credentials.");
+        }
+        if (!containsMacro("accessKey") && (accessKey == null || accessKey.isEmpty())) {
+          throw new IllegalArgumentException("The Access Key must be specified if " +
+                                               "authentication method is Access Credentials.");
+        }
+      }
     }
   }
 }

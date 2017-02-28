@@ -29,7 +29,8 @@ import java.util.Map;
  */
 public class S3BatchSinkTest {
   private static final Gson GSON = new Gson();
-  private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
+  private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() {
+  }.getType();
 
   @Test
   public void testFileSystemProperties() {
@@ -37,9 +38,11 @@ public class S3BatchSinkTest {
     String accessKey = "accessKey";
     String path = "/path";
     String schema = "schema";
+    String authenticationMethod = "Access Credentials";
     // Test default properties
     S3AvroBatchSink.S3AvroSinkConfig s3AvroSinkConfig =
-      new S3AvroBatchSink.S3AvroSinkConfig("s3test", path, schema, accessID, accessKey, null, null, null);
+      new S3AvroBatchSink.S3AvroSinkConfig("s3test", path, schema, accessID, accessKey, null, null, null,
+                                           authenticationMethod);
     S3AvroBatchSink s3AvroBatchSink = new S3AvroBatchSink(s3AvroSinkConfig);
     S3BatchSink.S3BatchSinkConfig s3BatchSinkConfig = s3AvroBatchSink.getConfig();
     Map<String, String> fsProperties = GSON.fromJson(s3BatchSinkConfig.fileSystemProperties, MAP_STRING_STRING_TYPE);
@@ -49,4 +52,19 @@ public class S3BatchSinkTest {
     Assert.assertEquals(accessKey, fsProperties.get("fs.s3n.awsSecretAccessKey"));
   }
 
+  @Test
+  public void testFileSystemPropertiesForIAM() {
+    String accessID = null;
+    String accessKey = null;
+    String path = "/path";
+    String schema = "schema";
+    String authenticationMethod = "IAM";
+    S3AvroBatchSink.S3AvroSinkConfig s3AvroSinkConfig =
+      new S3AvroBatchSink.S3AvroSinkConfig("s3iamtest", path, schema, accessID, accessKey, null, null, null,
+                                           authenticationMethod);
+    S3AvroBatchSink s3AvroBatchSink = new S3AvroBatchSink(s3AvroSinkConfig);
+    S3BatchSink.S3BatchSinkConfig s3BatchSinkConfig = s3AvroBatchSink.getConfig();
+    Map<String, String> fsProperties = GSON.fromJson(s3BatchSinkConfig.fileSystemProperties, MAP_STRING_STRING_TYPE);
+    Assert.assertEquals(0, fsProperties.size());
+  }
 }

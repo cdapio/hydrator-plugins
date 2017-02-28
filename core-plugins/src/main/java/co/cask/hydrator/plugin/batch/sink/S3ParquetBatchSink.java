@@ -49,6 +49,7 @@ public class S3ParquetBatchSink extends S3BatchSink<Void, GenericRecord> {
 
   private static final String SCHEMA_DESC = "The Parquet schema of the record being written to the sink as a JSON " +
     "object.";
+  private static final String PARQUET_AVRO_SCHEMA = "parquet.avro.schema";
 
   public S3ParquetBatchSink(S3ParquetSinkConfig config) {
     super(config);
@@ -91,8 +92,9 @@ public class S3ParquetBatchSink extends S3BatchSink<Void, GenericRecord> {
 
     @SuppressWarnings("unused")
     public S3ParquetSinkConfig(String referenceName, String basePath, String schema, String accessID, String accessKey,
-                               String pathFormat, String fileSystemProperties, String compressionCodec) {
-      super(referenceName, basePath, accessID, accessKey, pathFormat, fileSystemProperties);
+                               String pathFormat, String fileSystemProperties, String compressionCodec,
+                               String authenticationMethod) {
+      super(referenceName, basePath, accessID, accessKey, pathFormat, fileSystemProperties, authenticationMethod);
       this.schema = schema;
       this.compressionCodec = compressionCodec;
     }
@@ -110,6 +112,7 @@ public class S3ParquetBatchSink extends S3BatchSink<Void, GenericRecord> {
       SimpleDateFormat format = new SimpleDateFormat(config.pathFormat);
 
       conf = Maps.newHashMap();
+      conf.put(PARQUET_AVRO_SCHEMA, config.schema);
       conf.putAll(FileSetUtil.getParquetCompressionConfiguration(config.compressionCodec, config.schema, true));
       conf.put(FileOutputFormat.OUTDIR,
                String.format("%s/%s", config.basePath, format.format(context.getLogicalStartTime())));
