@@ -24,7 +24,7 @@
   </parent>
 
   <properties>
-    <app.parents>system:cdap-data-pipeline[4.2.0-SNAPSHOT,4.3.0-SNAPSHOT),system:cdap-data-streams[4.2.0-SNAPSHOT,4.3.0-SNAPSHOT)</app.parents>
+    <app.parents>system:cdap-data-pipeline[4.1.0-SNAPSHOT,4.3.0-SNAPSHOT),system:cdap-data-streams[4.1.0-SNAPSHOT,4.3.0-SNAPSHOT)</app.parents>
     <spark.version>1.6.1</spark.version>
     <kafka.version>0.8.2.2</kafka.version>
   </properties>
@@ -48,6 +48,11 @@
     <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-etl-api-spark</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>co.cask.cdap</groupId>
+      <artifactId>cdap-api-spark</artifactId>
+      <version>${cdap.version}</version>
     </dependency>
     <dependency>
       <groupId>co.cask.cdap</groupId>
@@ -165,6 +170,40 @@
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+        <version>3.2.2</version>
+        <configuration>
+          <args>
+            <arg>-target:jvm-1.7</arg>
+          </args>
+        </configuration>
+        <executions>
+          <execution>
+            <id>scala-add-source</id>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>scala-compile</id>
+            <!-- Needs to be before the compile phase -->
+            <phase>process-resources</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>scala-test-compile</id>
+            <!-- Needs to be before the test-compile phase -->
+            <phase>process-test-resources</phase>
+            <goals>
+              <goal>testCompile</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>

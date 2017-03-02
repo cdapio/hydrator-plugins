@@ -1,0 +1,33 @@
+{
+  "metadata": {
+    "spec-version": "1.3"
+  },
+  "configuration-groups": [
+    {
+      "label": "Table Configuration",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Table Name",
+          "name": "name"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Row Field",
+          "name": "rowField"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Refresh Interval",
+          "name": "refreshInterval"
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "widget-type": "schema"
+    }
+  ]
+}
