@@ -51,6 +51,9 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<S
   private static final String AUTHENTICATION_METHOD = "Authentication method to access S3. " +
     "Defaults to Access Credentials.For Access Credentials, URI scheme should be s3n://.\n" +
     "For IAM, URI scheme should be s3a://. (Macro-enabled)";
+  private static final String ENABLE_ENCRYPTION = "Server side encryption. Defaults to True." +
+    "Sole supported algorithm is AES256.";
+  private static final String ENCRYPTION_VALUE = "AES256";
   private static final String PATH_FORMAT_DESCRIPTION = "The format for the path that will be suffixed to the " +
     "basePath; for example: the format 'yyyy-MM-dd-HH-mm' will create a file path ending in '2015-01-01-20-42'. " +
     "Default format used is 'yyyy-MM-dd-HH-mm'.";
@@ -73,7 +76,8 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<S
       !this.config.containsMacro("accessKey")) {
       this.config.fileSystemProperties = updateFileSystemProperties(this.config.fileSystemProperties,
                                                                     this.config.accessID, this.config.accessKey,
-                                                                    this.config.authenticationMethod);
+                                                                    this.config.authenticationMethod,
+                                                                    this.config.enableEncryption);
     }
   }
 
@@ -102,16 +106,25 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<S
   protected abstract OutputFormatProvider createOutputFormatProvider(BatchSinkContext context);
 
   private static String updateFileSystemProperties(@Nullable String fileSystemProperties, String accessID,
-                                                   String accessKey, String authenticationMethod) {
+                                                   String accessKey, String authenticationMethod,
+                                                   String enableEncryption) {
     Map<String, String> providedProperties;
     if (fileSystemProperties == null) {
       providedProperties = new HashMap<>();
     } else {
       providedProperties = GSON.fromJson(fileSystemProperties, MAP_STRING_STRING_TYPE);
     }
+    boolean encryptionEnabled = enableEncryption != null && enableEncryption.equalsIgnoreCase("True");
     if (authenticationMethod != null && authenticationMethod.equalsIgnoreCase("Access Credentials")) {
       providedProperties.put("fs.s3n.awsAccessKeyId", accessID);
       providedProperties.put("fs.s3n.awsSecretAccessKey", accessKey);
+      if (encryptionEnabled) {
+        providedProperties.put("fs.s3n.server-side-encryption-algorithm", ENCRYPTION_VALUE);
+      }
+    } else if (authenticationMethod != null && authenticationMethod.equalsIgnoreCase("IAM")) {
+      if (encryptionEnabled) {
+        providedProperties.put("fs.s3a.server-side-encryption-algorithm", ENCRYPTION_VALUE);
+      }
     }
     return GSON.toJson(providedProperties);
   }
@@ -148,6 +161,11 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<S
     @Macro
     protected String authenticationMethod;
 
+    @Name(Properties.S3BatchSink.ENABLE_ENCRYPTION)
+    @Description(ENABLE_ENCRYPTION)
+    @Macro
+    protected String enableEncryption;
+
     @Name(Properties.S3BatchSink.PATH_FORMAT)
     @Description(PATH_FORMAT_DESCRIPTION)
     @Nullable
@@ -163,20 +181,22 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<S
       // Set default value for Nullable properties.
       super("");
       this.pathFormat = DEFAULT_PATH_FORMAT;
-      this.fileSystemProperties = updateFileSystemProperties(null, accessID, accessKey, authenticationMethod);
+      this.fileSystemProperties = updateFileSystemProperties(null, accessID, accessKey, authenticationMethod,
+                                                             enableEncryption);
     }
 
     public S3BatchSinkConfig(String referenceName, String basePath, String accessID, String accessKey,
                              @Nullable String pathFormat, @Nullable String fileSystemProperties,
-                             String authenticationMethod) {
+                             String authenticationMethod, String enableEncryption) {
       super(referenceName);
       this.basePath = basePath;
       this.pathFormat = pathFormat == null || pathFormat.isEmpty() ? DEFAULT_PATH_FORMAT : pathFormat;
       this.accessID = accessID;
       this.accessKey = accessKey;
       this.authenticationMethod = authenticationMethod;
+      this.enableEncryption = enableEncryption;
       this.fileSystemProperties = updateFileSystemProperties(fileSystemProperties, accessID, accessKey,
-                                                             authenticationMethod);
+                                                             authenticationMethod, enableEncryption);
     }
 
     public void validate(String authenticationMethod) {

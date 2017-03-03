@@ -170,6 +170,7 @@ public final class Properties {
     public static final String SCHEMA = "schema";
     public static final String PATH_FORMAT = "pathFormat";
     public static final String AUTHENTICATION_METHOD = "authenticationMethod";
+    public static final String ENABLE_ENCRYPTION = "enableEncryption";
   }
 
   /**

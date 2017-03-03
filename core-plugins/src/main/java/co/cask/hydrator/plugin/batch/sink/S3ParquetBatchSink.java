@@ -93,8 +93,9 @@ public class S3ParquetBatchSink extends S3BatchSink<Void, GenericRecord> {
     @SuppressWarnings("unused")
     public S3ParquetSinkConfig(String referenceName, String basePath, String schema, String accessID, String accessKey,
                                String pathFormat, String fileSystemProperties, String compressionCodec,
-                               String authenticationMethod) {
-      super(referenceName, basePath, accessID, accessKey, pathFormat, fileSystemProperties, authenticationMethod);
+                               String authenticationMethod, String enableEncryption) {
+      super(referenceName, basePath, accessID, accessKey, pathFormat, fileSystemProperties, authenticationMethod,
+            enableEncryption);
       this.schema = schema;
       this.compressionCodec = compressionCodec;
     }

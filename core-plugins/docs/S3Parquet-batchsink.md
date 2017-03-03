@@ -29,6 +29,8 @@ Properties
 
 **basePath:** The S3 path where the data is stored. Example: 's3n://logs'. (Macro-enabled)
 
+**enableEncryption:** Server side encryption. Defaults to True. Sole supported algorithm is AES256. (Macro-enabled)
+
 **fileSystemProperties:** A JSON string representing a map of properties needed for the
 distributed file system. The property names needed for S3 (*accessID* and *accessKey*)
 will be included as ``'fs.s3n.awsSecretAccessKey'`` and ``'fs.s3n.awsAccessKeyId'``. (Macro-enabled)

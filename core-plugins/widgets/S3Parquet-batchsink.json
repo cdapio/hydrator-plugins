@@ -46,6 +46,18 @@
         },
         {
           "widget-type": "select",
+          "label": "Server Side Encryption",
+          "name": "enableEncryption",
+          "widget-attributes": {
+            "values": [
+              "True",
+              "False"
+            ],
+            "default": "True"
+          }
+        },
+        {
+          "widget-type": "select",
           "label": "Compression Codec",
           "name": "compressionCodec",
           "widget-attributes": {
