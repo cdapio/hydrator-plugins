@@ -51,17 +51,17 @@ public class ErrorCollector extends ErrorTransform<StructuredRecord, StructuredR
     if (inputSchema != null) {
       if (config.messageField != null && inputSchema.getField(config.messageField) != null) {
         throw new IllegalArgumentException(String.format(
-          "Input schema already contains message field %s. Please set messageField to a different value.",
+          "Input schema already contains message field '%s'. Please set message field to a different value.",
           config.messageField));
       }
       if (config.codeField != null && inputSchema.getField(config.codeField) != null) {
         throw new IllegalArgumentException(String.format(
-          "Input schema already contains code field %s. Please set codeField to a different value.",
+          "Input schema already contains code field '%s'. Please set code field to a different value.",
           config.codeField));
       }
       if (config.stageField != null && inputSchema.getField(config.stageField) != null) {
         throw new IllegalArgumentException(String.format(
-          "Input schema already contains stage field %s. Please set stageField to a different value.",
+          "Input schema already contains stage field '%s'. Please set stage field to a different value.",
           config.stageField));
       }
       Schema outputSchema = getOutputSchema(config, inputSchema);
