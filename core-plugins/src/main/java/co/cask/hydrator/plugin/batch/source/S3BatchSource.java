@@ -41,6 +41,10 @@ public class S3BatchSource extends FileBatchSource {
   private static final String ACCESS_KEY_DESCRIPTION = "Access Key of the Amazon S3 instance to connect to.";
   private static final String AUTHENTICATION_METHOD = "Authentication method to access S3. " +
     "Defaults to Access Credentials. For IAM, URI scheme should be s3a://. (Macro-enabled)";
+  private static final String ACCESS_KEY = "fs.s3n.awsAccessKeyId";
+  private static final String SECRET_KEY = "fs.s3n.awsSecretAccessKey";
+  private static final String ACCESS_CREDENTIALS = "Access Credentials";
+  private static final String IAM = "IAM";
   private static final Gson GSON = new Gson();
   private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() {
   }.getType();
@@ -71,9 +75,9 @@ public class S3BatchSource extends FileBatchSource {
     } else {
       providedProperties = GSON.fromJson(fileSystemProperties, MAP_STRING_STRING_TYPE);
     }
-    if (authenticationMethod.equalsIgnoreCase("Access Credentials")) {
-      providedProperties.put("fs.s3n.awsAccessKeyId", accessID);
-      providedProperties.put("fs.s3n.awsSecretAccessKey", accessKey);
+    if (authenticationMethod.equalsIgnoreCase(ACCESS_CREDENTIALS)) {
+      providedProperties.put(ACCESS_KEY, accessID);
+      providedProperties.put(SECRET_KEY, accessKey);
     }
     return GSON.toJson(providedProperties);
   }
@@ -115,7 +119,7 @@ public class S3BatchSource extends FileBatchSource {
     }
 
     private void validate(String authenticationMethod) {
-      if (authenticationMethod.equalsIgnoreCase("Access Credentials")) {
+      if (authenticationMethod.equalsIgnoreCase(ACCESS_CREDENTIALS)) {
         if (!containsMacro("accessID") && (accessID == null || accessID.isEmpty())) {
           throw new IllegalArgumentException("The Access ID must be specified if " +
                                                "authentication method is Access Credentials.");
@@ -123,6 +127,10 @@ public class S3BatchSource extends FileBatchSource {
         if (!containsMacro("accessKey") && (accessKey == null || accessKey.isEmpty())) {
           throw new IllegalArgumentException("The Access Key must be specified if " +
                                                "authentication method is Access Credentials.");
+        }
+      } else if (authenticationMethod.equalsIgnoreCase(IAM)) {
+        if (!path.startsWith("s3a://")) {
+          throw new IllegalArgumentException("Path must start with s3a:// for IAM based authentication.");
         }
       }
     }

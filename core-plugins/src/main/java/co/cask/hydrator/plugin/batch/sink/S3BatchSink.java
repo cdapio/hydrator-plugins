@@ -60,6 +60,12 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<S
   private static final String FILESYSTEM_PROPERTIES_DESCRIPTION = "A JSON string representing a map of properties " +
     "needed for the distributed file system.";
   private static final String DEFAULT_PATH_FORMAT = "yyyy-MM-dd-HH-mm";
+  private static final String ACCESS_KEY = "fs.s3n.awsAccessKeyId";
+  private static final String SECRET_KEY = "fs.s3n.awsSecretAccessKey";
+  private static final String S3N_ENCRYPTION = "fs.s3n.server-side-encryption-algorithm";
+  private static final String S3A_ENCRYPTION = "fs.s3a.server-side-encryption-algorithm";
+  private static final String ACCESS_CREDENTIALS = "Access Credentials";
+  private static final String IAM = "IAM";
   private static final Gson GSON = new Gson();
   private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() {
   }.getType();
@@ -115,16 +121,14 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<S
       providedProperties = GSON.fromJson(fileSystemProperties, MAP_STRING_STRING_TYPE);
     }
     boolean encryptionEnabled = enableEncryption != null && enableEncryption.equalsIgnoreCase("True");
-    if (authenticationMethod != null && authenticationMethod.equalsIgnoreCase("Access Credentials")) {
-      providedProperties.put("fs.s3n.awsAccessKeyId", accessID);
-      providedProperties.put("fs.s3n.awsSecretAccessKey", accessKey);
+    if (authenticationMethod != null && authenticationMethod.equalsIgnoreCase(ACCESS_CREDENTIALS)) {
+      providedProperties.put(ACCESS_KEY, accessID);
+      providedProperties.put(SECRET_KEY, accessKey);
       if (encryptionEnabled) {
-        providedProperties.put("fs.s3n.server-side-encryption-algorithm", ENCRYPTION_VALUE);
+        providedProperties.put(S3N_ENCRYPTION, ENCRYPTION_VALUE);
       }
-    } else if (authenticationMethod != null && authenticationMethod.equalsIgnoreCase("IAM")) {
-      if (encryptionEnabled) {
-        providedProperties.put("fs.s3a.server-side-encryption-algorithm", ENCRYPTION_VALUE);
-      }
+    } else if (authenticationMethod != null && authenticationMethod.equalsIgnoreCase(IAM) && encryptionEnabled) {
+      providedProperties.put(S3A_ENCRYPTION, ENCRYPTION_VALUE);
     }
     return GSON.toJson(providedProperties);
   }
@@ -200,7 +204,7 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<S
     }
 
     public void validate(String authenticationMethod) {
-      if (authenticationMethod.equalsIgnoreCase("Access Credentials")) {
+      if (authenticationMethod.equalsIgnoreCase(ACCESS_CREDENTIALS)) {
         if (!containsMacro("accessID") && (accessID == null || accessID.isEmpty())) {
           throw new IllegalArgumentException("The Access ID must be specified if " +
                                                "authentication method is Access Credentials.");
@@ -208,6 +212,10 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<S
         if (!containsMacro("accessKey") && (accessKey == null || accessKey.isEmpty())) {
           throw new IllegalArgumentException("The Access Key must be specified if " +
                                                "authentication method is Access Credentials.");
+        }
+      } else if (authenticationMethod.equalsIgnoreCase(IAM)) {
+        if (!basePath.startsWith("s3a://")) {
+          throw new IllegalArgumentException("Path must start with s3a:// for IAM based authentication.");
         }
       }
     }
