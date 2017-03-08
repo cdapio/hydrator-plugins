@@ -158,6 +158,12 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
       pluginContext.loadPluginClass(request.getJDBCPluginType(),
                                     request.jdbcPluginName, PluginProperties.builder().build());
 
+    if (driverClass == null) {
+      throw new InstantiationException(
+        String.format("Unable to load Driver class with plugin type %s and plugin name %s",
+                      request.getJDBCPluginType(), request.jdbcPluginName));
+    }
+
     try {
       return DBUtils.ensureJDBCDriverIsAvailable(driverClass, request.connectionString,
                                                  request.getJDBCPluginType(), request.jdbcPluginName);
