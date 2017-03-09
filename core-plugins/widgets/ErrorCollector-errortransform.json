@@ -8,7 +8,7 @@
       "properties": [
         {
           "widget-type": "textbox",
-          "label": "Message Field",
+          "label": "Error Message Column Name",
           "name": "messageField",
           "plugin-function": {
             "method": "POST",
@@ -16,23 +16,23 @@
             "plugin-method": "getSchema"
           },
           "widget-attributes": {
-            "default": "errMsg"
+            "default": "msg"
           }
         },
         {
           "widget-type": "textbox",
-          "label": "Code Field",
+          "label": "Error Code Column Name",
           "name": "codeField",
           "widget-attributes": {
-            "default": "errCode"
+            "default": "code"
           }
         },
         {
           "widget-type": "textbox",
-          "label": "Stage Field",
+          "label": "Error Emitter Node Name",
           "name": "stageField",
           "widget-attributes": {
-            "default": "errStage"
+            "default": "node"
           }
         }
       ]
