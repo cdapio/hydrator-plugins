@@ -78,7 +78,7 @@ public class KafkaConfig extends ReferencePluginConfig implements Serializable {
   @Macro
   private Long defaultInitialOffset;
 
-  @Description("Output schema of the source, including the timeField and keyField. " +
+  @Description("Output schema of the source, including the timeField, keyField, partitionField and offsetField. " +
     "The fields excluding the timeField and keyField are used in conjunction with the format " +
     "to parse Kafka payloads.")
   private String schema;

@@ -331,8 +331,6 @@ public class SparkPluginTest extends HydratorTestBase {
   }
 
   @Test
-  @Ignore
-  // TODO: https://issues.cask.co/browse/HYDRATOR-1194
   public void testKafkaStreamingSource() throws Exception {
     Schema schema = Schema.recordOf(
       "user",
