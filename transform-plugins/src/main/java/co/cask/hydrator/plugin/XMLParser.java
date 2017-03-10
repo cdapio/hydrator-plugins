@@ -36,10 +36,13 @@ import org.xml.sax.InputSource;
 
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.OutputKeys;
@@ -60,7 +63,6 @@ import javax.xml.xpath.XPathFactory;
 @Name("XMLParser")
 @Description("Parse XML events based on XPath")
 public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
-
   private static final String EXIT_ON_ERROR = "Exit on error";
   private static final String WRITE_ERROR_DATASET = "Write to error dataset";
   private final Config config;
@@ -76,7 +78,11 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
     outSchema = config.getOutputSchema();
-    validateXpathAndSchema();
+    try {
+      validateXpathAndSchema();
+    } catch (UnsupportedEncodingException e) {
+      throw new IllegalArgumentException("Failed to parse XPath mappings. Reason : " + e.getMessage());
+    }
     pipelineConfigurer.getStageConfigurer().setOutputSchema(outSchema);
   }
 
@@ -90,7 +96,7 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
   /**
    * Valid if xpathMappings and schema contain the same field names.
    */
-  private void validateXpathAndSchema() {
+  private void validateXpathAndSchema() throws UnsupportedEncodingException {
     xPathMapping = getXPathMapping();
     List<Schema.Field> outFields = outSchema.getFields();
     // Checks if all the fields in the XPath mapping are present in the output schema.
@@ -108,19 +114,28 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
     }
   }
 
-  private Map<String, String> getXPathMapping() {
+  private Map<String, String> getXPathMapping() throws UnsupportedEncodingException, IllegalArgumentException {
     Map<String, String> map = new HashMap<>();
     String[] xpaths = config.xPathFieldMapping.split(",");
     for (String xpath : xpaths) {
       String[] xpathmap = xpath.split(":"); //name:xpath[,name:xpath]*
-      String fieldName = xpathmap[0].trim();
-      if (Strings.isNullOrEmpty(fieldName)) {
-        throw new IllegalArgumentException("Field name cannot be null or empty.");
-      } else if (xpathmap.length < 2 || Strings.isNullOrEmpty(xpathmap[1])) {
-        throw new IllegalArgumentException(String.format("XPath for field name %s cannot be null or empty.",
-                                                         fieldName));
+
+      if (xpathmap.length != 2) {
+        throw new IllegalArgumentException("Invalid XPath mapping specified : '" + xpath + "'");
       }
-      map.put(fieldName, xpathmap[1].trim());
+
+      if (xpathmap[0] == null || xpathmap[0].trim().isEmpty()) {
+        throw new IllegalArgumentException("XPath mapping is missing a field name : '" + xpath + "'");
+      }
+
+      if (xpathmap[1] == null || xpathmap[1].trim().isEmpty()) {
+        throw new IllegalArgumentException("XPath mapping is missing xpath : '" + xpath + "'");
+      }
+
+
+      String fieldName = URLDecoder.decode(xpathmap[0].trim(), "UTF-8");
+      String path = URLDecoder.decode(xpathmap[1].trim(), "UTF-8");
+      map.put(fieldName, path);
     }
     return map;
   }
@@ -142,8 +157,9 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
         //Since, the type is not specified from user inputs, taking everything as NodeList and then evaluating.
         NodeList nodeList = (NodeList) xpath.compile(xPathMapping.get(fieldName)).evaluate(document,
                                                                                            XPathConstants.NODESET);
-        if (nodeList.getLength() > 1) {
-          throw new IllegalArgumentException("Cannot specify an XPath that is an array");
+        if (config.failOnArray && nodeList.getLength() > 1) {
+          throw new IllegalArgumentException("Field " + fieldName + " is an array. " +
+                                               "Cannot specify an XPath that is an array unless failOnArray is false.");
         }
         Node node = nodeList.item(0);
         //Since all columns have nullable schema extracting not nullable type.
@@ -186,7 +202,7 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
         != null && (firstChild.getNextSibling().getNodeType() == Node.ELEMENT_NODE)))) {
         if (!type.equals(Schema.Type.STRING)) {
           throw new IllegalArgumentException(String.format("The xpath returned node which contains child nodes. " +
-                                                             "Cannot convert %s  to type %s", fieldName, type));
+                                                             "Cannot convert %s to type %s", fieldName, type));
         } else {
           return nodeToString(node.cloneNode(true));
         }
@@ -249,6 +265,16 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
       "                     - \"Write to error dataset\" :  Writes the error record to an error dataset and continues")
     private final String processOnError;
 
+    @Nullable
+    @Description("Whether to fail when an xpath resolves to an array. When false, the first item will be taken. " +
+      "Defaults to false. ")
+    private final Boolean failOnArray;
+
+
+    public Config() {
+      this("", "", "", "", "");
+    }
+
     public Config(String inputField, String encoding, String xPathFieldMapping, String fieldTypeMapping,
                   String processOnError) {
       this.inputField = inputField;
@@ -256,6 +282,7 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
       this.xPathFieldMapping = xPathFieldMapping;
       this.fieldTypeMapping = fieldTypeMapping;
       this.processOnError = processOnError;
+      this.failOnArray = false;
     }
 
     /**

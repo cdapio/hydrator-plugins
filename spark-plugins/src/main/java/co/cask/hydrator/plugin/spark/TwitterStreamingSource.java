@@ -83,7 +83,7 @@ public class TwitterStreamingSource extends ReferenceStreamingSource<StructuredR
 
   @Override
   public JavaDStream<StructuredRecord> getStream(StreamingContext context) throws Exception {
-    registerUsage(context);
+    context.registerLineage(config.referenceName);
     JavaStreamingContext javaStreamingContext = context.getSparkStreamingContext();
 
     // Create authorization from user-provided properties
