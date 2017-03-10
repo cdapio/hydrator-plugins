@@ -207,7 +207,7 @@ public class KafkaStreamingSource extends ReferenceStreamingSource<StructuredRec
 
     @Override
     public StructuredRecord call(MessageAndMetadata in) throws Exception {
-      // first time this was called, initialize schema and time, key, and message fields.
+      // first time this was called, initialize schema and time, key, partition, offset and message fields.
       if (schema == null) {
         schema = conf.getSchema();
         timeField = conf.getTimeField();
@@ -216,7 +216,8 @@ public class KafkaStreamingSource extends ReferenceStreamingSource<StructuredRec
         offsetField = conf.getOffsetField();
         for (Schema.Field field : schema.getFields()) {
           String name = field.getName();
-          if (!name.equals(timeField) && !name.equals(keyField)) {
+          if (!name.equals(timeField) && !name.equals(keyField) && !name.equals(partitionField) &&
+            !name.equals(offsetField)) {
             messageField = name;
             break;
           }

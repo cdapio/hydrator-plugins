@@ -39,8 +39,8 @@ Offsets are inclusive. If an offset of 5 is used, the message at offset 5 will b
 Kafka message key, the schema must include a field of type bytes or nullable bytes, and you must set the
 keyField property to that field's name. Similarly, if you would like the output records to contain a field with
 the timestamp of when the record was read, the schema must include a field of type long or nullable long, and you
-must set the timeField property to that field's name. Any field that is not the timeField or keyField will be used
-in conjuction with the format to parse Kafka message payloads.
+must set the timeField property to that field's name. Any field that is not the timeField, keyField, partitionField or 
+offsetField will be used in conjuction with the format to parse Kafka message payloads.
 
 **format:** Optional format of the Kafka event message. Any format supported by CDAP is supported.
 For example, a value of 'csv' will attempt to parse Kafka payloads as comma-separated values.
