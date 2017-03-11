@@ -32,12 +32,13 @@ import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetAddress;
 import javax.annotation.Nullable;
 
 /**
@@ -85,14 +86,15 @@ public class RealtimeElasticsearchSink extends ReferenceRealtimeSink<StructuredR
     realtimeESSinkConfig.cluster = Strings.isNullOrEmpty(realtimeESSinkConfig.cluster) ?
       "elasticsearch" : realtimeESSinkConfig.cluster;
 
-    Settings settings = ImmutableSettings.settingsBuilder()
+    Settings settings = Settings.builder()
       .put("node.name", "cdap")
       .put("cluster.name", realtimeESSinkConfig.cluster)
       .put("client.transport.sniff", true).build();
-    client = new TransportClient(settings);
+
+    client = new PreBuiltTransportClient(settings);
 
     for (String address : realtimeESSinkConfig.transportAddresses.split(",")) {
-      client.addTransportAddress(new InetSocketTransportAddress(address.split(":")[0],
+      client.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(address.split(":")[0]),
                                                                 Integer.valueOf(address.split(":")[1])));
     }
   }
