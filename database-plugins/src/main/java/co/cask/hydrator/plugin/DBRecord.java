@@ -103,7 +103,7 @@ public class DBRecord implements Writable, DBWritable, Configurable {
     for (int i = 0; i < schemaFields.size(); i++) {
       Schema.Field field = schemaFields.get(i);
       int sqlColumnType = metadata.getColumnType(i + 1);
-      recordBuilder.set(field.getName(), transformValue(sqlColumnType, resultSet.getObject(field.getName())));
+      recordBuilder.set(field.getName(), transformValue(sqlColumnType, resultSet, field.getName()));
     }
     record = recordBuilder.build();
   }
@@ -151,7 +151,8 @@ public class DBRecord implements Writable, DBWritable, Configurable {
   }
 
   @Nullable
-  private Object transformValue(int sqlColumnType, Object original) throws SQLException {
+  private Object transformValue(int sqlColumnType, ResultSet resultSet, String fieldName) throws SQLException {
+    Object original = resultSet.getObject(fieldName);
     if (original != null) {
       switch (sqlColumnType) {
         case Types.SMALLINT:
@@ -161,11 +162,11 @@ public class DBRecord implements Writable, DBWritable, Configurable {
         case Types.DECIMAL:
           return ((BigDecimal) original).doubleValue();
         case Types.DATE:
-          return ((Date) original).getTime();
+          return resultSet.getDate(fieldName).getTime();
         case Types.TIME:
-          return ((Time) original).getTime();
+          return resultSet.getTime(fieldName).getTime();
         case Types.TIMESTAMP:
-          return ((Timestamp) original).getTime();
+          return resultSet.getTimestamp(fieldName).getTime();
         case Types.BLOB:
           Object toReturn;
           Blob blob = (Blob) original;
