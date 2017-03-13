@@ -133,8 +133,8 @@ public class JavaScriptTransformTest {
     // check record1
     Assert.assertEquals(SCHEMA, output.getSchema());
     Assert.assertTrue((Boolean) output.get("booleanField"));
-    Assert.assertEquals(28 * 1024, output.get("intField"));
-    Assert.assertEquals(99L, output.get("longField"));
+    Assert.assertEquals(28 * 1024, (int) output.get("intField"));
+    Assert.assertEquals(99L, (long) output.get("longField"));
     Assert.assertTrue(Math.abs(2.71f - (Float) output.get("floatField")) < 0.000001);
     Assert.assertTrue(Math.abs(3.14 - (Double) output.get("doubleField")) < 0.000001);
     Assert.assertArrayEquals(Bytes.toBytes("foo"), (byte[]) output.get("bytesField"));
@@ -152,14 +152,14 @@ public class JavaScriptTransformTest {
     output = emitter.getEmitted().get(0);
     Assert.assertEquals(SCHEMA, output.getSchema());
     Assert.assertFalse((Boolean) output.get("booleanField"));
-    Assert.assertEquals(-28 * 1024, output.get("intField"));
-    Assert.assertEquals(-99L, output.get("longField"));
+    Assert.assertEquals(-28 * 1024, (int) output.get("intField"));
+    Assert.assertEquals(-99L, (long) output.get("longField"));
     Assert.assertTrue(Math.abs(-2.71f - (Float) output.get("floatField")) < 0.000001);
     Assert.assertTrue(Math.abs(-3.14 - (Double) output.get("doubleField")) < 0.000001);
     Assert.assertArrayEquals(Bytes.toBytes("hello"), (byte[]) output.get("bytesField"));
     Assert.assertEquals("world", output.get("stringField"));
     Assert.assertNull(output.get("nullableField"));
-    Assert.assertEquals(3, output.get("unionField"));
+    Assert.assertEquals(3, (int) output.get("unionField"));
     expectedMapField = ImmutableMap.of();
     expectedListField = ImmutableList.of();
     Assert.assertEquals(expectedMapField, output.get("mapField"));
@@ -258,7 +258,7 @@ public class JavaScriptTransformTest {
     InvalidEntry<StructuredRecord> invalidEntry = emitter.getErrors().get(0);
     Assert.assertEquals(31, invalidEntry.getErrorCode());
     Assert.assertEquals("error!", invalidEntry.getErrorMsg());
-    Assert.assertEquals(25, invalidEntry.getInvalidRecord().get("x"));
+    Assert.assertEquals(25, (int) invalidEntry.getInvalidRecord().get("x"));
     Assert.assertNull(invalidEntry.getInvalidRecord().get("y"));
   }
 
@@ -281,8 +281,8 @@ public class JavaScriptTransformTest {
     transform.transform(RECORD1, emitter);
     StructuredRecord output = emitter.getEmitted().get(0);
     Assert.assertEquals(outputSchema, output.getSchema());
-    Assert.assertEquals(28, output.get("x"));
-    Assert.assertEquals(99L, output.get("y"));
+    Assert.assertEquals(28, (int) output.get("x"));
+    Assert.assertEquals(99L, (long) output.get("y"));
   }
 
   @Test

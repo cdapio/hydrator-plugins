@@ -177,7 +177,7 @@ public class ProjectionTransformTest {
 
     Schema expectedSchema = Schema.recordOf("three.projected", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
     Assert.assertEquals(expectedSchema, output.getSchema());
-    Assert.assertEquals(1, output.get("x"));
+    Assert.assertEquals(1, (int) output.get("x"));
   }
 
   @Test
@@ -203,7 +203,7 @@ public class ProjectionTransformTest {
 
     Schema expectedSchema = Schema.recordOf("three.projected", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
     Assert.assertEquals(expectedSchema, output.getSchema());
-    Assert.assertEquals(1, output.get("x"));
+    Assert.assertEquals(1, (int) output.get("x"));
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -251,7 +251,7 @@ public class ProjectionTransformTest {
                                             Schema.Field.of("z", Schema.of(Schema.Type.DOUBLE)),
                                             Schema.Field.of("x", Schema.arrayOf(Schema.of(Schema.Type.INT))));
     Assert.assertEquals(expectedSchema, output.getSchema());
-    Assert.assertEquals(1, output.get("y"));
+    Assert.assertEquals(1, (int) output.get("y"));
     Assert.assertTrue(Math.abs(3.14 - (Double) output.get("z")) < 0.000001);
     Assert.assertArrayEquals(new int[]{1, 2, 3}, (int[]) output.get("x"));
   }
@@ -346,8 +346,8 @@ public class ProjectionTransformTest {
 
     Assert.assertEquals(SIMPLE_TYPES_SCHEMA, output.getSchema());
     Assert.assertTrue((Boolean) output.get("booleanField"));
-    Assert.assertEquals(28, output.get("intField"));
-    Assert.assertEquals(99L, output.get("longField"));
+    Assert.assertEquals(28, (int) output.get("intField"));
+    Assert.assertEquals(99L, (long) output.get("longField"));
     Assert.assertTrue(Math.abs(2.71f - (Float) output.get("floatField")) < 0.000001);
     Assert.assertTrue(Math.abs(3.14 - (Double) output.get("doubleField")) < 0.000001);
     Assert.assertArrayEquals(Bytes.toBytes("foo"), (byte[]) output.get("bytesField"));
@@ -418,8 +418,8 @@ public class ProjectionTransformTest {
 
     Assert.assertEquals(SIMPLE_TYPES_SCHEMA, output.getSchema());
     Assert.assertTrue((Boolean) output.get("booleanField"));
-    Assert.assertEquals(28, output.get("intField"));
-    Assert.assertEquals(99L, output.get("longField"));
+    Assert.assertEquals(28, (int) output.get("intField"));
+    Assert.assertEquals(99L, (long) output.get("longField"));
     Assert.assertTrue(Math.abs(2.71f - (Float) output.get("floatField")) < 0.000001);
     Assert.assertTrue(Math.abs(3.14 - (Double) output.get("doubleField")) < 0.000001);
     Assert.assertArrayEquals(Bytes.toBytes("foo"), (byte[]) output.get("bytesField"));
@@ -449,8 +449,8 @@ public class ProjectionTransformTest {
 
     Assert.assertEquals(expectedSchema, output.getSchema());
     Assert.assertTrue((Boolean) output.get("booleanField"));
-    Assert.assertEquals(28L, output.get("intField"));
-    Assert.assertEquals(99L, output.get("longField"));
+    Assert.assertEquals(28L, (int) output.get("intField"));
+    Assert.assertEquals(99L, (long) output.get("longField"));
     Assert.assertTrue(Math.abs(2.71f - (Float) output.get("floatField")) < 0.000001);
     Assert.assertTrue(Math.abs(3.14 - (Double) output.get("doubleField")) < 0.000001);
     Assert.assertArrayEquals(Bytes.toBytes("foo"), (byte[]) output.get("bytesField"));
@@ -480,8 +480,8 @@ public class ProjectionTransformTest {
 
     Assert.assertEquals(expectedSchema, output.getSchema());
     Assert.assertTrue((Boolean) output.get("booleanField"));
-    Assert.assertEquals(28f, output.get("intField"));
-    Assert.assertEquals(99f, output.get("longField"));
+    Assert.assertEquals(28f, (float) output.get("intField"));
+    Assert.assertEquals(99f, (float) output.get("longField"));
     Assert.assertTrue(Math.abs(2.71f - (Float) output.get("floatField")) < 0.000001);
     Assert.assertTrue(Math.abs(3.14 - (Double) output.get("doubleField")) < 0.000001);
     Assert.assertArrayEquals(Bytes.toBytes("foo"), (byte[]) output.get("bytesField"));
@@ -511,8 +511,8 @@ public class ProjectionTransformTest {
 
     Assert.assertEquals(expectedSchema, output.getSchema());
     Assert.assertTrue((Boolean) output.get("booleanField"));
-    Assert.assertEquals(28d, output.get("intField"));
-    Assert.assertEquals(99d, output.get("longField"));
+    Assert.assertEquals(28d, (double) output.get("intField"));
+    Assert.assertEquals(99d, (double) output.get("longField"));
     Assert.assertTrue(Math.abs(2.71 - (Double) output.get("floatField")) < 0.000001);
     Assert.assertTrue(Math.abs(3.14 - (Double) output.get("doubleField")) < 0.000001);
     Assert.assertArrayEquals(Bytes.toBytes("foo"), (byte[]) output.get("bytesField"));

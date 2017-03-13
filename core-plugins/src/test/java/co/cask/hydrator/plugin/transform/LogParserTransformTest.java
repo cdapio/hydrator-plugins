@@ -146,8 +146,8 @@ public class LogParserTransformTest {
     Assert.assertEquals("122.122.111.11", output.get("ip"));
     Assert.assertEquals("unknown", output.get("browser"));
     Assert.assertEquals("", output.get("device"));
-    Assert.assertEquals(403, output.get("httpStatus"));
-    Assert.assertEquals(1421924601000L, output.get("ts"));
+    Assert.assertEquals(403, (int) output.get("httpStatus"));
+    Assert.assertEquals(1421924601000L, (long) output.get("ts"));
 
     S3_TRANSFORM.transform(browserRecord, emitter);
     output = emitter.getEmitted().get(1);
@@ -155,8 +155,8 @@ public class LogParserTransformTest {
     Assert.assertEquals("133.133.133.133", output.get("ip"));
     Assert.assertEquals("Firefox", output.get("browser"));
     Assert.assertEquals("Personal computer", output.get("device"));
-    Assert.assertEquals(304, output.get("httpStatus"));
-    Assert.assertEquals(1422741477000L, output.get("ts"));
+    Assert.assertEquals(304, (int) output.get("httpStatus"));
+    Assert.assertEquals(1422741477000L, (long) output.get("ts"));
   }
 
   @Test
@@ -185,8 +185,8 @@ public class LogParserTransformTest {
     Assert.assertEquals("11.111.111.11", output.get("ip"));
     Assert.assertEquals("unknown", output.get("browser"));
     Assert.assertEquals("", output.get("device"));
-    Assert.assertEquals(200, output.get("httpStatus"));
-    Assert.assertEquals(1429277748000L, output.get("ts"));
+    Assert.assertEquals(200, (int) output.get("httpStatus"));
+    Assert.assertEquals(1429277748000L, (long) output.get("ts"));
 
     CLOUDFRONT_TRANSFORM.transform(commentRecord, emitter);
     Assert.assertEquals(1, emitter.getEmitted().size());
@@ -209,8 +209,8 @@ public class LogParserTransformTest {
     Assert.assertEquals("127.0.0.1", output.get("ip"));
     Assert.assertEquals("Chrome", output.get("browser"));
     Assert.assertEquals("Personal computer", output.get("device"));
-    Assert.assertEquals(200, output.get("httpStatus"));
-    Assert.assertEquals(971211336000L, output.get("ts"));
+    Assert.assertEquals(200, (int) output.get("httpStatus"));
+    Assert.assertEquals(971211336000L, (long) output.get("ts"));
   }
 
   @Test
