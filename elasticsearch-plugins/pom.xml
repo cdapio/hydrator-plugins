@@ -80,18 +80,18 @@
       <groupId>org.elasticsearch</groupId>
       <artifactId>elasticsearch-hadoop-mr</artifactId>
     </dependency>
-    <!--<dependency>-->
-      <!--<groupId>org.apache.logging.log4j</groupId>-->
-      <!--<artifactId>log4j-to-slf4j</artifactId>-->
-    <!--</dependency>-->
-    <!--<dependency>-->
-      <!--<groupId>ch.qos.logback</groupId>-->
-      <!--<artifactId>logback-classic</artifactId>-->
-    <!--</dependency>-->
-    <!--<dependency>-->
-      <!--<groupId>org.slf4j</groupId>-->
-      <!--<artifactId>slf4j-api</artifactId>-->
-    <!--</dependency>-->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-to-slf4j</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
     <!-- elasticsearch-hadoop-mr includes a class, StringUtils, which requires commons-httpclient-->
     <dependency>
       <groupId>commons-httpclient</groupId>
@@ -100,6 +100,12 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>jcl-over-slf4j</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-all</artifactId>
+      <version>4.0.30.Final</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -123,7 +129,7 @@
           <instructions>
             <_exportcontents>co.cask.hydrator.plugin.batch.*;org.elasticsearch.hadoop.mr.*;
               org.apache.commons.lang;org.apache.commons.logging.*;
-              org.codehaus.jackson.*;co.cask.hydrator.plugin.realtime.*</_exportcontents>
+              org.codehaus.jackson.*;co.cask.hydrator.plugin.realtime.*;io.netty.*</_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
             <Embed-Directory>lib</Embed-Directory>

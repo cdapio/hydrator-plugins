@@ -456,21 +456,16 @@
         <artifactId>transport</artifactId>
         <version>${es.version}</version>
       </dependency>
-      <!--<dependency>-->
-        <!--<groupId>org.apache.logging.log4j</groupId>-->
-        <!--<artifactId>log4j-to-slf4j</artifactId>-->
-        <!--<version>2.7</version>-->
-      <!--</dependency>-->
-      <!--<dependency>-->
-        <!--<groupId>ch.qos.logback</groupId>-->
-        <!--<artifactId>logback-classic</artifactId>-->
-        <!--<version>1.1.7</version>-->
-      <!--</dependency>-->
-      <!--<dependency>-->
-        <!--<groupId>org.slf4j</groupId>-->
-        <!--<artifactId>slf4j-api</artifactId>-->
-        <!--<version>1.7.21</version>-->
-      <!--</dependency>-->
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-to-slf4j</artifactId>
+        <version>2.7</version>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-classic</artifactId>
+        <version>1.1.7</version>
+      </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>
         <artifactId>hadoop-common</artifactId>
@@ -666,8 +661,8 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.1</version>
         <configuration>
-          <source>1.7</source>
-          <target>1.7</target>
+          <source>1.8</source>
+          <target>1.8</target>
         </configuration>
       </plugin>
       <plugin>

@@ -63,10 +63,13 @@ import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.internal.InternalSettingsPreparer;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.transport.Netty3Plugin;
+import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -77,6 +80,7 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -121,7 +125,7 @@ public class ETLESTest extends HydratorTestBase {
                                                                               CURRENT_VERSION, true,
                                                                               CURRENT_VERSION, true);
   private Client client;
-  private Node node;
+//  private Node node;
   private int httpPort;
   private int transportPort;
 
@@ -144,23 +148,26 @@ public class ETLESTest extends HydratorTestBase {
   public void beforeTest() throws Exception {
     httpPort = Networks.getRandomPort();
     transportPort = Networks.getRandomPort();
-    System.out.println("port is: " + httpPort);
-    Settings settings = Settings.builder()
-      .put("path.data", temporaryFolder.newFolder("data"))
-      .put("cluster.name", "testcluster")
-      .put("http.port", httpPort)
-      .put("transport.tcp.port", transportPort)
-      .put("path.home", "target/elasticsearch")
-//      .put("transport.type", "local")
+//    System.out.println("port is: " + httpPort);
+//    Settings settings = Settings.builder()
+//      .put("path.data", temporaryFolder.newFolder("data"))
+//      .put("cluster.name", "testcluster")
+//      .put("http.port", httpPort)
+//      .put("transport.tcp.port", transportPort)
+//      .put("path.home", "target/elasticsearch")
+//      .put("transport.type", "http")
 //      .put("http.type", "netty3")
-      .build();
+//      .build();
 
 //    Collection plugins = Arrays.asList(Netty3Plugin.class);
 //    node = new PluginConfigurableNode(settings, plugins).start();
+//
+//    node = new Node(settings);
 
-    node = new Node(settings);
-
-    client = node.client();
+    Settings settings = Settings.builder()
+      .put("cluster.name", "elasticsearch").build();
+    client = new PreBuiltTransportClient(settings)
+      .addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName("162.222.179.217"), 9300));
   }
 
   public static class PluginConfigurableNode extends Node {
@@ -175,15 +182,15 @@ public class ETLESTest extends HydratorTestBase {
       DeleteIndexResponse delete = client.admin().indices().delete(new DeleteIndexRequest("batch")).actionGet();
       Assert.assertTrue(delete.isAcknowledged());
     } finally {
-      node.close();
+      client.close();
     }
   }
 
   @Test
   public void testES() throws Exception {
     testBatchESSink();
-    testESSource();
-    testRealtimeESSink();
+//    testESSource();
+//    testRealtimeESSink();
   }
 
   private void testBatchESSink() throws Exception {
@@ -194,7 +201,7 @@ public class ETLESTest extends HydratorTestBase {
       "Elasticsearch",
       BatchSink.PLUGIN_TYPE,
       ImmutableMap.of(ESProperties.HOST,
-                      InetAddress.getLocalHost().getHostName() + ":" + httpPort,
+                      "spark-cluster20070-1000.dev.continuuity.net" + ":9200",
                       ESProperties.INDEX_NAME, "batch",
                       ESProperties.TYPE_NAME, "testing",
                       ESProperties.ID_FIELD, "ticker",
@@ -242,7 +249,7 @@ public class ETLESTest extends HydratorTestBase {
       "Elasticsearch",
       BatchSource.PLUGIN_TYPE,
       ImmutableMap.<String, String>builder()
-        .put(ESProperties.HOST, InetAddress.getLocalHost().getHostName() + ":" + httpPort)
+        .put(ESProperties.HOST, "spark-cluster20070-1000.dev.continuuity.net" + ":9200")
         .put(ESProperties.INDEX_NAME, "batch")
         .put(ESProperties.TYPE_NAME, "testing")
         .put(ESProperties.QUERY, "?q=*")
@@ -303,7 +310,7 @@ public class ETLESTest extends HydratorTestBase {
       "Elasticsearch",
       RealtimeSink.PLUGIN_TYPE,
       ImmutableMap.<String, String>builder()
-        .put(ESProperties.TRANSPORT_ADDRESSES, InetAddress.getLocalHost().getHostName() + ":" + transportPort)
+        .put(ESProperties.TRANSPORT_ADDRESSES, "spark-cluster20070-1000.dev.continuuity.net" + ":" + 9300)
         .put(ESProperties.CLUSTER, "testcluster")
         .put(ESProperties.INDEX_NAME, "realtime")
         .put(ESProperties.TYPE_NAME, "testing")
