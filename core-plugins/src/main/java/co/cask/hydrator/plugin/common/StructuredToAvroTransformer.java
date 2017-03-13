@@ -27,6 +27,7 @@ import org.apache.avro.generic.GenericRecordBuilder;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * Creates GenericRecords from StructuredRecords
@@ -35,17 +36,14 @@ public class StructuredToAvroTransformer extends RecordConverter<StructuredRecor
 
   private final Map<Integer, Schema> schemaCache;
   private final co.cask.cdap.api.data.schema.Schema outputCDAPSchema;
-  private final Schema outputAvroSchema;
 
-  public StructuredToAvroTransformer(String outputSchema) {
+  public StructuredToAvroTransformer(@Nullable String outputSchema) {
+    this(outputSchema != null ? parseSchema(outputSchema) : null);
+  }
+
+  public StructuredToAvroTransformer(@Nullable co.cask.cdap.api.data.schema.Schema outputSchema) {
     this.schemaCache = Maps.newHashMap();
-    try {
-      this.outputCDAPSchema =
-        (outputSchema != null) ? co.cask.cdap.api.data.schema.Schema.parseJson(outputSchema) : null;
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Unable to parse schema: Reason: " + e.getMessage(), e);
-    }
-    this.outputAvroSchema = (outputSchema != null) ? new Schema.Parser().parse(outputSchema) : null;
+    this.outputCDAPSchema = outputSchema;
   }
 
   public GenericRecord transform(StructuredRecord structuredRecord) throws IOException {
@@ -88,6 +86,14 @@ public class StructuredToAvroTransformer extends RecordConverter<StructuredRecor
       Schema avroSchema = new Schema.Parser().parse(cdapSchema.toString());
       schemaCache.put(hashCode, avroSchema);
       return avroSchema;
+    }
+  }
+
+  private static co.cask.cdap.api.data.schema.Schema parseSchema(String schema) {
+    try {
+      return co.cask.cdap.api.data.schema.Schema.parseJson(schema);
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Unable to parse schema: Reason: " + e.getMessage(), e);
     }
   }
 }

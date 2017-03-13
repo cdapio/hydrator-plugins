@@ -17,9 +17,11 @@
 package co.cask.hydrator.plugin.batch.sink;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
@@ -32,6 +34,8 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.hadoop.io.NullWritable;
 
+import java.util.HashMap;
+import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -54,14 +58,28 @@ public class TimePartitionedFileSetDatasetAvroSink extends
 
   @Override
   protected void addFileSetProperties(FileSetProperties.Builder properties) {
-    FileSetUtil.configureAvroFileSet(config.schema, properties);
-    properties.addAll(FileSetUtil.getAvroCompressionConfiguration(config.compressionCodec, config.schema, true));
+    String schema = config.containsMacro("schema") ? null : config.schema;
+    FileSetUtil.configureAvroFileSet(properties, schema);
+    properties.addAll(FileSetUtil.getAvroCompressionConfiguration(config.compressionCodec, schema, true));
+  }
+
+  @Override
+  protected Map<String, String> getAdditionalTPFSArguments() {
+    FileSetProperties.Builder builder = FileSetProperties.builder();
+    addFileSetProperties(builder);
+    return new HashMap<>(builder.build().getProperties());
+  }
+
+  @Override
+  protected boolean createDatasetAtConfigure() {
+    return super.createDatasetAtConfigure() && !config.containsMacro("schema");
   }
 
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    recordTransformer = new StructuredToAvroTransformer(config.schema);
+    Schema schema = Schema.parseJson(config.schema);
+    recordTransformer = new StructuredToAvroTransformer(schema.getType() == Schema.Type.RECORD ? schema : null);
   }
 
   @Override
@@ -76,6 +94,7 @@ public class TimePartitionedFileSetDatasetAvroSink extends
   public static class TPFSAvroSinkConfig extends TPFSSinkConfig {
 
     @Description(SCHEMA_DESC)
+    @Macro
     private String schema;
 
     @Nullable

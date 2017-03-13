@@ -33,7 +33,7 @@ import org.apache.avro.generic.GenericRecord;
 @Name("StructuredRecordToGenericRecord")
 @Description("Transforms a StructuredRecord into an Avro GenericRecord.")
 public class StructuredRecordToGenericRecordTransform extends Transform<StructuredRecord, GenericRecord> {
-  private final StructuredToAvroTransformer transformer = new StructuredToAvroTransformer(null);
+  private final StructuredToAvroTransformer transformer = new StructuredToAvroTransformer((String) null);
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {

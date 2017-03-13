@@ -85,7 +85,7 @@ public class TimePartitionedFileSetDatasetAvroSource extends
 
   @Override
   protected void addFileSetProperties(FileSetProperties.Builder properties) {
-    FileSetUtil.configureAvroFileSet(tpfsAvroConfig.schema, properties);
+    FileSetUtil.configureAvroFileSet(properties, tpfsAvroConfig.schema);
   }
 
   @Override

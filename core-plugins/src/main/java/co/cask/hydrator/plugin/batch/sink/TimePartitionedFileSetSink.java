@@ -53,7 +53,7 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     tpfsSinkConfig.validate();
     // create the dataset at configure time if no macros were provided on necessary fields
-    if (!tpfsSinkConfig.containsMacro("name") && !tpfsSinkConfig.containsMacro("basePath")) {
+    if (createDatasetAtConfigure()) {
       String tpfsName = tpfsSinkConfig.name;
       FileSetProperties.Builder properties = FileSetProperties.builder();
       if (!Strings.isNullOrEmpty(tpfsSinkConfig.basePath)) {
@@ -101,6 +101,10 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
     // require when it creates the dataset, so it doesn't need to set those arguments at runtime. inorder to be
     // backward compatible to older versions of the plugins we need to set this at runtime.
     return new HashMap<>();
+  }
+
+  protected boolean createDatasetAtConfigure() {
+    return !tpfsSinkConfig.containsMacro("name") && !tpfsSinkConfig.containsMacro("basePath");
   }
 
   /**

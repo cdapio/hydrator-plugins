@@ -123,7 +123,7 @@ public final class HiveSchemaConverter {
   private static void appendField(StringBuilder builder, Schema.Field field, boolean inStruct)
     throws UnsupportedTypeException {
     String name = field.getName();
-    builder.append(name);
+    builder.append("`" + name + "`");
     // structs look like "struct<name1:string,name2:array<int>>"
     // outside a struct fields look like "name1 string, name2 array<int>"
     builder.append(inStruct ? ":" : " ");

@@ -38,6 +38,7 @@ import parquet.avro.AvroParquetOutputFormat;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * Utilities for configuring file sets during pipeline configuration.
@@ -143,36 +144,50 @@ public class FileSetUtil {
    *   <li>As the schema of the Hive table;</li>
    *   <li>As the schema to be used by the Avro serde (which is used by Hive).</li>
    * </ul>
-   * @param configuredSchema the original schema configured for the table
    * @param properties a builder for the file set properties
+   * @param configuredSchema the original schema configured for the table
    */
-  public static void configureAvroFileSet(String configuredSchema, FileSetProperties.Builder properties) {
+  public static void configureAvroFileSet(FileSetProperties.Builder properties, @Nullable String configuredSchema) {
     // validate and parse schema as Avro, and attempt to convert it into a Hive schema
-    Schema avroSchema = parseAvroSchema(configuredSchema, configuredSchema);
-    String hiveSchema = parseHiveSchema(configuredSchema, configuredSchema);
+    Schema avroSchema = configuredSchema == null ? null : parseAvroSchema(configuredSchema, configuredSchema);
+    String hiveSchema = (configuredSchema == null || avroSchema.getType() != Schema.Type.RECORD)
+      ? null
+      : parseHiveSchema(configuredSchema, configuredSchema);
 
     properties
       .setInputFormat(AvroKeyInputFormat.class)
-      .setOutputFormat(AvroKeyOutputFormat.class)
-      .setEnableExploreOnCreate(true)
-      .setSerDe("org.apache.hadoop.hive.serde2.avro.AvroSerDe")
-      .setExploreInputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat")
-      .setExploreOutputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat")
-      .setTableProperty("avro.schema.literal", configuredSchema)
-      .setExploreSchema(hiveSchema.substring(1, hiveSchema.length() - 1))
-      .add(DatasetProperties.SCHEMA, configuredSchema);
+      .setOutputFormat(AvroKeyOutputFormat.class);
 
-    Job job = createJobForConfiguration();
-    Configuration hConf = job.getConfiguration();
-    hConf.clear();
-    AvroJob.setInputKeySchema(job, avroSchema);
-    for (Map.Entry<String, String> entry : hConf) {
-      properties.setInputProperty(entry.getKey(), entry.getValue());
+    if (configuredSchema != null) {
+      properties
+        .setTableProperty("avro.schema.literal", configuredSchema)
+        .add(DatasetProperties.SCHEMA, configuredSchema);
     }
-    hConf.clear();
-    AvroJob.setOutputKeySchema(job, avroSchema);
-    for (Map.Entry<String, String> entry : hConf) {
-      properties.setOutputProperty(entry.getKey(), entry.getValue());
+
+    if (hiveSchema != null) {
+      properties
+        .setEnableExploreOnCreate(true)
+        .setSerDe("org.apache.hadoop.hive.serde2.avro.AvroSerDe")
+        .setExploreInputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat")
+        .setExploreOutputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat")
+        .setExploreSchema(hiveSchema.substring(1, hiveSchema.length() - 1));
+    } else {
+      properties.setEnableExploreOnCreate(false);
+    }
+
+    if (avroSchema != null) {
+      Job job = createJobForConfiguration();
+      Configuration hConf = job.getConfiguration();
+      hConf.clear();
+      AvroJob.setInputKeySchema(job, avroSchema);
+      for (Map.Entry<String, String> entry : hConf) {
+        properties.setInputProperty(entry.getKey(), entry.getValue());
+      }
+      hConf.clear();
+      AvroJob.setOutputKeySchema(job, avroSchema);
+      for (Map.Entry<String, String> entry : hConf) {
+        properties.setOutputProperty(entry.getKey(), entry.getValue());
+      }
     }
   }
 
@@ -234,14 +249,16 @@ public class FileSetUtil {
    *                         FilesetProperties.Builder
    * @return map of string to be set as configuration or output properties in FileSetProperties.Builder
    */
-  public static Map<String, String> getAvroCompressionConfiguration(String compressionCodec, String schema,
-                                                                    Boolean isOutputProperty) {
+  public static Map<String, String> getAvroCompressionConfiguration(String compressionCodec, @Nullable String schema,
+                                                                    boolean isOutputProperty) {
     Map<String, String> conf = new HashMap<>();
     String prefix = "";
     if (isOutputProperty) {
       prefix = FileSetProperties.OUTPUT_PROPERTIES_PREFIX;
     }
-    conf.put(prefix + AVRO_SCHEMA_OUTPUT_KEY, schema);
+    if (schema != null) {
+      conf.put(prefix + AVRO_SCHEMA_OUTPUT_KEY, schema);
+    }
     if (compressionCodec != null && !compressionCodec.equalsIgnoreCase("None")) {
       conf.put(prefix + MAPRED_OUTPUT_COMPRESS, "true");
       switch (compressionCodec.toLowerCase()) {
@@ -273,7 +290,7 @@ public class FileSetUtil {
    * @return map of string to be set as configuration or output properties in FileSetProperties.Builder
    */
   public static Map<String, String> getParquetCompressionConfiguration(String compressionCodec, String schema,
-                                                                       Boolean isOutputProperty) {
+                                                                       boolean isOutputProperty) {
     Map<String, String> conf = new HashMap<>();
     String prefix = "";
     if (isOutputProperty) {
