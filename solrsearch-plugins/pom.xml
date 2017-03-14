@@ -98,11 +98,6 @@
       <artifactId>hydrator-common</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>co.cask.hydrator</groupId>
-      <artifactId>core-plugins</artifactId>
-      <version>${version}</version>
-    </dependency>
   </dependencies>
 
   <build>
