@@ -32,6 +32,12 @@ in **filePath** input. (Macro-enabled)
 **memoryTableName:** KeyValue table name to keep the track of processed files. This can be
 a new table or existing one. (Macro-enabled)
 
+**memoryDatasetExplorer:** Name of the Explorer table corresponding to 'memoryTableName' dataset. If not mentioned,
+name will be same as the 'memoryTableName' dataset. (Macro-enabled)
+
+**memoryDatasetExplorerDatabase:** Existing Database name for the 'memoryDatasetExplorer' dataset.
+If left blank, table will be stored in default database. (Macro-enabled)
+
 **reprocess:** Specify whether the files mentioned in the memory table should be reprocessed or not.
 
 **sheet:** Specifies whether sheet has to be processed by sheet name or sheet number.
@@ -67,6 +73,12 @@ of that column will be **string**.
 
 **errorDatasetName:** Table name to keep the error record encountered while processing the excel file(s). (Macro-enabled)
 
+**errorDatasetExplorer:** Name of the Explorer table corresponding to 'errorDatasetName' dataset.  If not mentioned,
+name will be same as the 'errorDatasetName' dataset. (Macro-enabled)
+
+**errorDatasetExplorerDatabase:** Existing Database name for the 'Error Dataset for Explorer' dataset. If left blank,
+table will be stored in default database. (Macro-enabled)
+
 
 Condition
 ---------
@@ -92,7 +104,8 @@ The plugin JSON Representation will be:
       "properties": {
             "filePath": "hdfs://<namenode-hostname>:9000/cdap",
             "filePattern": ".*",
-            "memoryTableName": "inventory-memory-table",
+            "memoryTableName": "inventory_memory_table",
+            "memoryDatasetExplorer": "inventory_memory_table",
             "reprocess": "false",
             "sheet": "Sheet1",
             "sheetValue": "-1",
@@ -130,7 +143,7 @@ columns respectively:
     +======================================+
 
 
-The memory table **inventory-memory-table** will contain:
+The memory table **inventory_memory_table** will contain:
 
     +===========================================================================+
     |    key                                                 |   value          |

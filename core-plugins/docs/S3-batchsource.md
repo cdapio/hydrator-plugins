@@ -22,7 +22,6 @@ Properties
 **accessKey:** Access Key of the Amazon S3 instance to connect to. (Macro-enabled)
 
 **path:** Path to file(s) to be read. If a directory is specified,
-terminate the path name with a '/'. The path uses filename expansion (globbing) to read files. (Macro-enabled)
 
 **fileRegex:** Regex to filter out files in the path. It accepts regular expression which is applied to the complete
 path and returns the list of files that match the specified pattern.
@@ -35,6 +34,12 @@ present, then it will read in files that have not yet been read. (Macro-enabled)
 
 **timeTable:** Name of the Table that keeps track of the last time files
 were read in. (Macro-enabled)
+
+**timeTableExplorer:** Name of the Explorer table corresponding to 'Time Table' dataset. If not mentioned, name will
+be same as the 'Time Table' dataset. (Macro-enabled)
+
+**timeTableExplorerDatabase:** Database name for the 'Time Table for Explorer' dataset. If left blank, table will be
+stored in default database. (Macro-enabled)
 
 **inputFormatClass:** Name of the input format class, which must be a
 subclass of FileInputFormat. Defaults to TextInputFormat. (Macro-enabled)
@@ -65,6 +70,7 @@ configure Hadoop to use one mapper per MB:
             "path": "s3n://path/to/logs/",
             "fileRegex": "timefilter",
             "timeTable": "timeTable",
+            "timeTableExplorer": "timeTable",
             "maxSplitSize": "1048576",
             "ignoreNonExistingFolders": "false",
             "recursive": "false"

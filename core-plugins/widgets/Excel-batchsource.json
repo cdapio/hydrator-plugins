@@ -26,6 +26,16 @@
           "name": "memoryTableName"
         },
         {
+          "widget-type": "textbox",
+          "label": "File Tracking for Explorer",
+          "name": "memoryDatasetExplorer"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "File Tracking Dataset Explorer Database",
+          "name": "memoryDatasetExplorerDatabase"
+        },
+        {
           "widget-type": "number",
           "label": "Tracking Table Data Expiry Period (Days)",
           "name": "tableExpiryPeriod"
@@ -136,6 +146,16 @@
           "widget-type": "textbox",
           "label": "Error Dataset",
           "name": "errorDatasetName"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Error Dataset for Explorer",
+          "name": "errorDatasetExplorer"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Error Dataset Explorer Database",
+          "name": "errorDatasetExplorerDatabase"
         }
       ]
     }
