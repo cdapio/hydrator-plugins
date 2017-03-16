@@ -17,14 +17,16 @@
 package co.cask.hydrator.plugin.db.batch.action;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.etl.api.PipelineConfigurer;
+import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.action.Action;
 import co.cask.cdap.etl.api.action.ActionContext;
-import co.cask.cdap.etl.api.batch.PostAction;
-import co.cask.hydrator.plugin.DBManager;
+import com.vertica.jdbc.VerticaConnection;
+import com.vertica.jdbc.VerticaCopyStream;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
@@ -33,60 +35,124 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
-import java.sql.SQLException;
+import java.util.List;
+import javax.annotation.Nullable;
 
 /**
  * Runs a query after a pipeline run.
  */
-@SuppressWarnings("ConstantConditions")
-@Plugin(type = PostAction.PLUGIN_TYPE)
+@Plugin(type = Action.PLUGIN_TYPE)
 @Name("VerticaBulkLoadAction")
-@Description("Runs a query after a pipeline run.")
+@Description("Vertica bulk load plugin")
 public class VerticaBulkLoadAction extends Action {
   private static final Logger LOG = LoggerFactory.getLogger(VerticaBulkLoadAction.class);
-  private static final String JDBC_PLUGIN_ID = "driver";
-  private final VerticaBulkLoadConfig config;
+  private final VerticaConfig config;
 
-  public VerticaBulkLoadAction(VerticaBulkLoadConfig config) {
+  public VerticaBulkLoadAction(VerticaConfig config) {
     this.config = config;
   }
 
   @Override
   public void run(ActionContext context) throws Exception {
-    Class<? extends Driver> driverClass = context.loadPluginClass(JDBC_PLUGIN_ID);
-    Path path = new Path(config.path);
-    FileSystem fs = FileSystem.get(path.toUri(), new Configuration());
-    DBManager dbManager = new DBManager(config);
-
+    DriverManager.registerDriver((Driver) Class.forName("com.vertica.jdbc.Driver").newInstance());
 
     try {
-      dbManager.ensureJDBCDriverIsAvailable(driverClass);
-
-      try (Connection connection = getConnection()) {
-        if (!config.enableAutoCommit) {
-          connection.setAutoCommit(false);
-        }
+      try (Connection connection = DriverManager.getConnection(config.connectionString, config.user, config.password)) {
+        connection.setAutoCommit(false);
         // run Copy statement
-//        VerticaCopyStream stream = new VerticaCopyStream((VerticaConnection) conn, copyQuery);
+        VerticaCopyStream stream = new VerticaCopyStream((VerticaConnection) connection, config.copyStatement);
+        // Keep running count of the number of rejects
+        int totalRejects = 0;
+
+        // start() starts the stream process, and opens the COPY command.
+        stream.start();
+
+        for (String file : config.path.split(",")) {
+          LOG.info("File being loaded: {}", file);
+          Path path = new Path(file);
+          FileSystem fs = FileSystem.get(new Configuration());
+          FSDataInputStream inputStream = fs.open(path);
+          // Add stream to the VerticaCopyStream
+          stream.addStream(inputStream);
+
+          // call execute() to load the newly added stream. You could
+          // add many streams and call execute once to load them all.
+          // Which method you choose depends mainly on whether you want
+          // the ability to check the number of rejections as the load
+          // progresses so you can stop if the number of rejects gets too
+          // high. Also, high numbers of InputStreams could create a
+          // resource issue on your client system.
+          stream.execute();
+
+          // Show any rejects from this execution of the stream load
+          // getRejects() returns a List containing the
+          // row numbers of rejected rows.
+          List<Long> rejects = stream.getRejects();
+
+          // The size of the list gives you the number of rejected rows.
+          int numRejects = rejects.size();
+          totalRejects += numRejects;
+          LOG.info("Number of rows rejected: {}", numRejects);
+
+        }
+
+        // Finish closes the COPY command. It returns the number of
+        // rows inserted.
+        long results = stream.finish();
+
+        LOG.info("Finish returned {}", results);
+        LOG.info("Number of rows accepted: {}", stream.getRowCount());
+        LOG.info("Total number of rows rejected: {}", totalRejects);
+
+
+        // Commit the loaded data
+        connection.commit();
       }
     } catch (Exception e) {
       LOG.error("Error running query {}.", config.copyStatement, e);
-    } finally {
-      dbManager.destroy();
     }
   }
 
-  @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
-    DBManager dbManager = new DBManager(config);
-    dbManager.validateJDBCPluginPipeline(pipelineConfigurer, JDBC_PLUGIN_ID);
-  }
+  /**
+   *
+   */
+  public class VerticaConfig extends PluginConfig {
+    public static final String CONNECTION_STRING = "connectionString";
+    public static final String USER = "user";
+    public static final String PASSWORD = "password";
 
-  private Connection getConnection() throws SQLException {
-    if (config.user == null) {
-      return DriverManager.getConnection(config.connectionString);
-    } else {
-      return DriverManager.getConnection(config.connectionString, config.user, config.password);
+    @Name(CONNECTION_STRING)
+    @Description("JDBC connection string including database name.")
+    @Macro
+    public String connectionString;
+
+    @Name(USER)
+    @Description("User to use to connect to the specified database. Required for databases that " +
+      "need authentication. Optional for databases that do not require authentication.")
+    @Nullable
+    @Macro
+    public String user;
+
+    @Name(PASSWORD)
+    @Description("Password to use to connect to the specified database. Required for databases that " +
+      "need authentication. Optional for databases that do not require authentication.")
+    @Nullable
+    @Macro
+    public String password;
+
+    @Name("copyStatement")
+    @Description("Copy statement.")
+    @Macro
+    public String copyStatement;
+
+    @Name("path")
+    @Description("File Path.")
+    @Macro
+    public String path;
+
+    public VerticaConfig() {
+      super();
     }
+
   }
 }

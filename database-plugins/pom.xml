@@ -45,7 +45,11 @@
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-data-pipeline</artifactId>
     </dependency>
-
+    <dependency>
+      <groupId>vertica</groupId>
+      <artifactId>vertica-jdbc</artifactId>
+      <version>8.0.1</version>
+    </dependency>
     <dependency>
       <groupId>co.cask.hydrator</groupId>
       <artifactId>hydrator-common</artifactId>
@@ -67,6 +71,26 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-install-plugin</artifactId>
+        <version>2.5.2</version>
+        <executions>
+          <execution>
+            <phase>initialize</phase>
+            <goals>
+              <goal>install-file</goal>
+            </goals>
+            <configuration>
+              <groupId>vertica</groupId>
+              <artifactId>vertica-jdbc</artifactId>
+              <version>8.0.1</version>
+              <packaging>jar</packaging>
+              <file>${basedir}/lib/vertica-jdbc-8.0.1-0.jar</file>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.felix</groupId>
