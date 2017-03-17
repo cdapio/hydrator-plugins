@@ -27,6 +27,7 @@ import com.vertica.jdbc.VerticaConnection;
 import com.vertica.jdbc.VerticaCopyStream;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
@@ -35,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
+import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
 
@@ -67,10 +69,18 @@ public class VerticaBulkLoadAction extends Action {
         // start() starts the stream process, and opens the COPY command.
         stream.start();
 
-        for (String file : config.path.split(",")) {
+        FileSystem fs = FileSystem.get(new Configuration());
+
+        List<String> fileList = new ArrayList<>();
+        FileStatus[] fileStatus = fs.listStatus(new Path(config.path));
+        for (FileStatus fileStat : fileStatus) {
+          fileList.add(fileStat.getPath().toString());
+        }
+
+        for (String file : fileList) {
           LOG.info("File being loaded: {}", file);
           Path path = new Path(file);
-          FileSystem fs = FileSystem.get(new Configuration());
+
           FSDataInputStream inputStream = fs.open(path);
           // Add stream to the VerticaCopyStream
           stream.addStream(inputStream);
@@ -103,7 +113,6 @@ public class VerticaBulkLoadAction extends Action {
         LOG.info("Finish returned {}", results);
         LOG.info("Number of rows accepted: {}", stream.getRowCount());
         LOG.info("Total number of rows rejected: {}", totalRejects);
-
 
         // Commit the loaded data
         connection.commit();
@@ -141,12 +150,14 @@ public class VerticaBulkLoadAction extends Action {
     public String password;
 
     @Name("copyStatement")
-    @Description("Copy statement.")
+    @Description("Copy statement for vertica to bulk load. This query must use the COPY statement to load data from " +
+      "STDIN. Unlike copying from a file on the host, you do not need superuser privileges to copy a stream. All " +
+      "your user account needs is INSERT privileges on the target table.")
     @Macro
     public String copyStatement;
 
     @Name("path")
-    @Description("File Path.")
+    @Description("File dir from where the files needs to be loaded.")
     @Macro
     public String path;
 

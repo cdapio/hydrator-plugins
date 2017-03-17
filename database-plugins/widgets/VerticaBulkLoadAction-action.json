@@ -17,12 +17,12 @@
           "name": "password"
         },
         {
-          "widget-type": "textarea",
+          "widget-type": "textbox",
           "label": "Copy Statement",
           "name": "copyStatement"
         },
         {
-          "widget-type": "textarea",
+          "widget-type": "textbox",
           "label": "File Path",
           "name": "path"
         }
