@@ -22,9 +22,7 @@ import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
-import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
@@ -33,18 +31,22 @@ import co.cask.hydrator.common.ReferenceBatchSource;
 import co.cask.hydrator.common.SourceInputFormatProvider;
 import co.cask.hydrator.common.batch.JobUtils;
 import co.cask.hydrator.plugin.batch.commons.HiveSchemaConverter;
-import co.cask.hydrator.plugin.batch.commons.HiveSchemaStore;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hive.hcatalog.data.HCatRecord;
+import org.apache.hive.hcatalog.data.schema.HCatFieldSchema;
 import org.apache.hive.hcatalog.data.schema.HCatSchema;
 import org.apache.hive.hcatalog.mapreduce.HCatInputFormat;
 import org.apache.hive.service.auth.HiveAuthFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 
 /**
@@ -56,6 +58,7 @@ import org.slf4j.LoggerFactory;
 public class HiveBatchSource extends ReferenceBatchSource<WritableComparable, HCatRecord, StructuredRecord> {
 
   private static final Logger LOG = LoggerFactory.getLogger(HiveBatchSource.class);
+  private final Gson GSON = new Gson();
   private HiveSourceConfig config;
   private HCatRecordTransformer hCatRecordTransformer;
 
@@ -67,10 +70,6 @@ public class HiveBatchSource extends ReferenceBatchSource<WritableComparable, HC
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
-    //TODO CDAP-4132: remove this way of storing Hive schema once we can share info between prepareRun and initialize
-    // stage.
-    pipelineConfigurer.createDataset(HiveSchemaStore.HIVE_TABLE_SCHEMA_STORE, KeyValueTable.class,
-                                     DatasetProperties.EMPTY);
     if (config.schema != null) {
       try {
         pipelineConfigurer.getStageConfigurer().setOutputSchema(Schema.parseJson(config.schema));
@@ -104,7 +103,7 @@ public class HiveBatchSource extends ReferenceBatchSource<WritableComparable, HC
         hCatSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(config.schema), hCatSchema);
         HCatInputFormat.setOutputSchema(job, hCatSchema);
       }
-      HiveSchemaStore.storeHiveSchema(context, config.dbName, config.tableName, hCatSchema);
+      context.setRuntimeArgument("hiveSchema", GSON.toJson(hCatSchema.getFields()), false);
       context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(HCatInputFormat.class, conf)));
     } finally {
       Thread.currentThread().setContextClassLoader(classLoader);
@@ -114,7 +113,9 @@ public class HiveBatchSource extends ReferenceBatchSource<WritableComparable, HC
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    HCatSchema hCatSchema = HiveSchemaStore.readHiveSchema(context, config.dbName, config.tableName);
+    List<HCatFieldSchema> fields = GSON.fromJson(context.getRuntimeArguments().get("hiveSchema"),
+                                                 new TypeToken<List<HCatFieldSchema>>() { }.getType());
+    HCatSchema hCatSchema = new HCatSchema(fields);
     Schema schema;
     if (config.schema == null) {
       // if the user did not provide a schema then convert the hive table's schema to cdap schema

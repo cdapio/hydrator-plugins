@@ -110,6 +110,9 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
 
   @Override
   public void onRunFinish(boolean succeeded, BatchSinkContext context) {
+    if (context.isPreviewEnabled()) {
+      return;
+    }
     if (succeeded && tpfsSinkConfig.cleanPartitionsOlderThan != null) {
       long cutoffTime =
         context.getLogicalStartTime() - TimeParser.parseDuration(tpfsSinkConfig.cleanPartitionsOlderThan);
