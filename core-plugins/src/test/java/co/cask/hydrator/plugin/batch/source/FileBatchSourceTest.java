@@ -41,12 +41,19 @@ import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
+import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.mapreduce.lib.input.CombineTextInputFormat;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
+import java.io.File;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +72,12 @@ public class FileBatchSourceTest extends HydratorTestBase {
     NamespaceId.DEFAULT.artifact("data-pipeline", CURRENT_VERSION.getVersion());
   private static final ArtifactSummary BATCH_ARTIFACT =
     new ArtifactSummary(BATCH_APP_ARTIFACT_ID.getArtifact(), BATCH_APP_ARTIFACT_ID.getVersion());
+  @ClassRule
+  public static TemporaryFolder temporaryFolder = new TemporaryFolder();
+  private static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
+  private static String fileName = dateFormat.format(new Date(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1)));
+  private static File file1;
+  private static File file2;
 
   @BeforeClass
   public static void setupTest() throws Exception {
@@ -72,6 +85,22 @@ public class FileBatchSourceTest extends HydratorTestBase {
     // add artifact for batch sources and sinks
     addPluginArtifact(NamespaceId.DEFAULT.artifact("core-plugins", "4.0.0"), BATCH_APP_ARTIFACT_ID,
                       FileBatchSource.class);
+
+    file1 = temporaryFolder.newFolder("test").toPath().resolve(fileName + "-test1.txt").toFile();
+    FileUtils.writeStringToFile(file1, "Hello,World");
+    file2 = temporaryFolder.newFile(fileName + "-test2.txt");
+    FileUtils.writeStringToFile(file2, "CDAP,Platform");
+  }
+
+  @AfterClass
+  public static void tearDown() throws Exception {
+    if (file1.exists()) {
+      file1.delete();
+    }
+    if (file2.exists()) {
+      file2.delete();
+    }
+    temporaryFolder.delete();
   }
 
   @Test
@@ -338,6 +367,85 @@ public class FileBatchSourceTest extends HydratorTestBase {
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-path-globbing");
+
+    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
+
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
+
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> output = MockSink.readOutput(outputManager);
+
+    Assert.assertEquals("Expected records", 2, output.size());
+    Set<String> outputValue = new HashSet<>();
+    for (StructuredRecord record : output) {
+      outputValue.add((String) record.get("body"));
+    }
+    Assert.assertTrue(outputValue.contains("Hello,World"));
+    Assert.assertTrue(outputValue.contains("CDAP,Platform"));
+  }
+
+  @Test
+  public void testTimeFilterRegex() throws Exception {
+    Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
+      .put(Constants.Reference.REFERENCE_NAME, "TestCase")
+      .put(Properties.File.PATH, file1.getParent().replaceAll("\\\\", "/"))
+      .put(Properties.File.FILE_REGEX, "timefilter")
+      .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
+      .put(Properties.File.RECURSIVE, "false")
+      .build();
+
+    ETLStage source = new ETLStage("FileInput", new ETLPlugin("File", BatchSource.PLUGIN_TYPE, sourceProperties, null));
+
+    String outputDatasetName = "time-filter";
+    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
+
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-timefilter-regex");
+
+    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
+
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
+
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> output = MockSink.readOutput(outputManager);
+
+    Assert.assertEquals("Expected records", 1, output.size());
+    Assert.assertEquals("Hello,World", output.get(0).get("body"));
+  }
+
+  @Test
+  public void testRecursiveTimeFilterRegex() throws Exception {
+    Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
+      .put(Constants.Reference.REFERENCE_NAME, "TestCase")
+      .put(Properties.File.PATH, file1.getParentFile().getParent().replaceAll("\\\\", "/"))
+      .put(Properties.File.FILE_REGEX, "timefilter")
+      .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
+      .put(Properties.File.RECURSIVE, "true")
+      .build();
+
+    ETLStage source = new ETLStage("FileInput", new ETLPlugin("File", BatchSource.PLUGIN_TYPE, sourceProperties, null));
+
+    String outputDatasetName = "recursive-timefilter-regex";
+    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
+
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-recursive-timefilter-regex");
 
     ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
 

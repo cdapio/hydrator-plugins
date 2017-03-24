@@ -53,7 +53,7 @@ import java.util.regex.Pattern;
  */
 public class BatchFileFilter extends Configured implements PathFilter {
 
-  private static final Logger LOG = LoggerFactory.getLogger(FileBatchSource.class);
+  private static final Logger LOG = LoggerFactory.getLogger(BatchFileFilter.class);
   private static final Gson GSON = new Gson();
   private static final Type ARRAYLIST_DATE_TYPE  = new TypeToken<ArrayList<Date>>() { }.getType();
   private static final String DATE_FORMAT = "yyyy-MM-dd-HH";
@@ -84,7 +84,8 @@ public class BatchFileFilter extends Configured implements PathFilter {
         filePathName += "/";
       }
       if (fileStatus != null && fileSystem.isDirectory(path) &&
-        (fileSystem.getContentSummary(path).getDirectoryCount() > 1 || pattern.matcher(filePathName).find())) {
+        (fileSystem.getContentSummary(path).getDirectoryCount() > 1 || useTimeFilter ||
+          pattern.matcher(filePathName).find())) {
         return true;
       }
     } catch (IOException e) {
