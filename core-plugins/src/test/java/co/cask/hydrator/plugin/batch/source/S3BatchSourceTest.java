@@ -16,6 +16,7 @@
 
 package co.cask.hydrator.plugin.batch.source;
 
+import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
@@ -30,7 +31,8 @@ import java.util.Map;
  */
 public class S3BatchSourceTest {
   private static final Gson GSON = new Gson();
-  private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
+  private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() {
+  }.getType();
 
   @Test
   public void testFileSystemProperties() {
@@ -38,9 +40,10 @@ public class S3BatchSourceTest {
     String accessID = "accessID";
     String accessKey = "accessKey";
     String path = "/path";
+    String authenticationMethod = "Access Credentials";
     // Test default properties
     S3BatchSource.S3BatchConfig s3BatchConfig = new S3BatchSource.S3BatchConfig(referenceName, accessID, accessKey,
-                                                                                path);
+                                                                                path, authenticationMethod);
     S3BatchSource s3BatchSource = new S3BatchSource(s3BatchConfig);
     FileBatchSource.FileBatchConfig fileBatchConfig = s3BatchSource.getConfig();
     Map<String, String> fsProperties = GSON.fromJson(fileBatchConfig.fileSystemProperties, MAP_STRING_STRING_TYPE);
@@ -49,10 +52,11 @@ public class S3BatchSourceTest {
     Assert.assertEquals(accessID, fsProperties.get("fs.s3n.awsAccessKeyId"));
     Assert.assertEquals(accessKey, fsProperties.get("fs.s3n.awsSecretAccessKey"));
 
+
     // Test extra properties
     s3BatchConfig = new S3BatchSource.S3BatchConfig(referenceName, accessID, accessKey, path, null, null, null,
                                                     GSON.toJson(ImmutableMap.of("s3.compression", "gzip")), null,
-                                                    false, false);
+                                                    false, false, authenticationMethod);
     s3BatchSource = new S3BatchSource(s3BatchConfig);
     fileBatchConfig = s3BatchSource.getConfig();
     fsProperties = GSON.fromJson(fileBatchConfig.fileSystemProperties, MAP_STRING_STRING_TYPE);
@@ -61,5 +65,20 @@ public class S3BatchSourceTest {
     Assert.assertEquals(accessID, fsProperties.get("fs.s3n.awsAccessKeyId"));
     Assert.assertEquals(accessKey, fsProperties.get("fs.s3n.awsSecretAccessKey"));
     Assert.assertEquals("gzip", fsProperties.get("s3.compression"));
+  }
+
+  @Test
+  public void testFileSystemPropertiesForIAM() {
+    String referenceName = "s3sourceIAM";
+    String accessID = null;
+    String accessKey = null;
+    String path = "/path";
+    String authenticationMethod = "IAM";
+    S3BatchSource.S3BatchConfig s3BatchConfig = new S3BatchSource.S3BatchConfig(referenceName, accessID, accessKey,
+                                                                                path, authenticationMethod);
+    S3BatchSource s3BatchSource = new S3BatchSource(s3BatchConfig);
+    FileBatchSource.FileBatchConfig fileBatchConfig = s3BatchSource.getConfig();
+    Map<String, String> fsProperties = GSON.fromJson(fileBatchConfig.fileSystemProperties, MAP_STRING_STRING_TYPE);
+    Assert.assertEquals(0, fsProperties.size());
   }
 }

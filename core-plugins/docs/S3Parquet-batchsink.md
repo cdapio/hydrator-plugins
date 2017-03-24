@@ -19,11 +19,17 @@ Properties
 ----------
 **referenceName:** This will be used to uniquely identify this sink for lineage, annotating metadata, etc.
 
+**authenticationMethod:** Authentication method to access S3. Defaults to Access Credentials.
+ User need to have AWS environment only to use IAM role based authentication.
+ For IAM, URI scheme should be s3a://. (Macro-enabled)
+
 **accessID:** Access ID of the Amazon S3 instance to connect to. (Macro-enabled)
 
 **accessKey:** Access Key of the Amazon S3 instance to connect to. (Macro-enabled)
 
 **basePath:** The S3 path where the data is stored. Example: 's3n://logs'. (Macro-enabled)
+
+**enableEncryption:** Server side encryption. Defaults to True. Sole supported algorithm is AES256. (Macro-enabled)
 
 **fileSystemProperties:** A JSON string representing a map of properties needed for the
 distributed file system. The property names needed for S3 (*accessID* and *accessKey*)

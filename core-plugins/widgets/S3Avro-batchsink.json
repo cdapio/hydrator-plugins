@@ -13,6 +13,18 @@
           "name": "referenceName"
         },
         {
+          "widget-type": "select",
+          "label": "Authentication Method",
+          "name": "authenticationMethod",
+          "widget-attributes": {
+            "values": [
+              "Access Credentials",
+              "IAM"
+            ],
+            "default": "Access Credentials"
+          }
+        },
+        {
           "widget-type": "textbox",
           "label": "Access ID",
           "name": "accessID"
@@ -31,6 +43,18 @@
           "widget-type": "textbox",
           "label": "Path Format",
           "name": "pathFormat"
+        },
+        {
+          "widget-type": "select",
+          "label": "Server Side Encryption",
+          "name": "enableEncryption",
+          "widget-attributes": {
+            "values": [
+              "True",
+              "False"
+            ],
+            "default": "True"
+          }
         },
         {
           "widget-type": "select",

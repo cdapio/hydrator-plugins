@@ -17,9 +17,13 @@ Properties
 ----------
 **referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
 
-**accessID:** Access ID of the Amazon S3 instance to connect to. (Macro-enabled)
+**authenticationMethod:** Authentication method to access S3. Defaults to Access Credentials.
+ User need to have AWS environment only to use IAM role based authentication.
+ For IAM, URI scheme should be s3a://. (Macro-enabled)
 
-**accessKey:** Access Key of the Amazon S3 instance to connect to. (Macro-enabled)
+**accessID:** Access ID of the Amazon S3 instance to connect to. Mandatory if authentication method is Access credentials. (Macro-enabled)
+
+**accessKey:** Access Key of the Amazon S3 instance to connect to. Mandatory if authentication method is Access credentials. (Macro-enabled)
 
 **path:** Path to file(s) to be read. If a directory is specified,
 terminate the path name with a '/'. The path uses filename expansion (globbing) to read files. (Macro-enabled)
@@ -49,7 +53,7 @@ exists. If set to true it will treat the not present folder as 0 input and log a
 
 Example
 -------
-This example connects to Amazon S3 and reads in files found in the specified directory while
+This example connects to Amazon S3 using Access Credentials and reads in files found in the specified directory while
 using the stateful ``timefilter``, which ensures that each file is read only once. The ``timefilter``
 requires that files be named with either the convention "yy-MM-dd-HH..." (S3) or "...'.'yy-MM-dd-HH..."
 (Cloudfront). The stateful metadata is stored in a table named 'timeTable'. With the maxSplitSize
@@ -60,6 +64,7 @@ configure Hadoop to use one mapper per MB:
         "name": "S3",
         "type": "batchsource",
         "properties": {
+            "authenticationMethod": "Access Credentials",
             "accessKey": "key",
             "accessID": "ID",
             "path": "s3n://path/to/logs/",
