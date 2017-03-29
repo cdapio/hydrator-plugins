@@ -163,6 +163,7 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<S
     @Name(Properties.S3BatchSink.AUTHENTICATION_METHOD)
     @Description(AUTHENTICATION_METHOD)
     @Macro
+    @Nullable
     protected String authenticationMethod;
 
     @Name(Properties.S3BatchSink.ENABLE_ENCRYPTION)
@@ -185,6 +186,7 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<S
       // Set default value for Nullable properties.
       super("");
       this.pathFormat = DEFAULT_PATH_FORMAT;
+      this.authenticationMethod = ACCESS_CREDENTIALS;
       this.fileSystemProperties = updateFileSystemProperties(null, accessID, accessKey, authenticationMethod,
                                                              enableEncryption);
     }

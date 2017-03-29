@@ -98,7 +98,14 @@ public class S3BatchSource extends FileBatchSource {
 
     @Description(AUTHENTICATION_METHOD)
     @Macro
+    @Nullable
     private final String authenticationMethod;
+
+    public S3BatchConfig() {
+      accessID = null;
+      accessKey = null;
+      authenticationMethod = ACCESS_CREDENTIALS;
+    }
 
     public S3BatchConfig(String referenceName, String accessID, String accessKey, String path,
                          String authenticationMethod) {
