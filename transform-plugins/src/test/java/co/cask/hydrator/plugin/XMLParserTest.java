@@ -48,7 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public class XMLParserTest extends TransformPluginsTestBase {
+public class XMLParserTest {
   private static final Schema INPUT = Schema.recordOf("input", Schema.Field.of("offset", Schema.of(Schema.Type.INT)),
                                                       Schema.Field.of("body", Schema.of(Schema.Type.STRING)));
 
@@ -72,130 +72,96 @@ public class XMLParserTest extends TransformPluginsTestBase {
 
   @Test
   public void testXMLParserWithSimpleXPath() throws Exception {
-    String inputTable = "input-simple-xpath";
-    ETLStage source = new ETLStage("source", MockSource.getPlugin(inputTable));
+    Schema schema = Schema.recordOf("record",
+                                    Schema.Field.of("title", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                                    Schema.Field.of("author", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                                    Schema.Field.of("year", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
 
-    Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
-      .put("input", "body")
-      .put("encoding", "UTF-8")
-      .put("xPathMappings", "title:/book/title,author:/book/author,year:/book/year")
-      .put("fieldTypeMapping", "title:string,author:string,year:string")
-      .put("processOnError", "Write to error dataset")
-      .build();
+    XMLParser.Config config = new XMLParser.Config(
+      "body", "UTF-8",
+      "title:/book/title,author:/book/author,year:/book/year",
+      "title:string,author:string,year:string",
+      "Write to error dataset");
+    Transform<StructuredRecord, StructuredRecord> transform = new XMLParser(config);
+    transform.initialize(new MockTransformContext());
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
 
-    ETLStage transform = new ETLStage("transform",
-                                      new ETLPlugin("XMLParser", Transform.PLUGIN_TYPE, sourceProperties, null));
-    String sinkTable = "output-simple-xpath";
-
-    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(sinkTable));
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(source)
-      .addStage(transform)
-      .addStage(sink)
-      .addConnection(source.getName(), transform.getName())
-      .addConnection(transform.getName(), sink.getName())
-      .build();
-
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("XMLReaderTest");
-    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
-
-    DataSetManager<Table> inputManager = getDataset(inputTable);
-    List<StructuredRecord> input = ImmutableList.of(
+    StructuredRecord inputRecord =
       StructuredRecord.builder(INPUT)
         .set("offset", 1)
         .set("body", "<book category=\"COOKING\"><title lang=\"en\">Everyday Italian</title>" +
-          "<author>Giada De Laurentiis</author><year>2005</year><price>30.00</price></book>").build()
-    );
-    MockSource.writeInput(inputManager, input);
+          "<author>Giada De Laurentiis</author><year>2005</year><price>30.00</price></book>").build();
+    transform.transform(inputRecord, emitter);
 
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
-
-    DataSetManager<Table> outputManager = getDataset(sinkTable);
-    List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);
-    Assert.assertEquals("OutputRecords", 1, outputRecords.size());
-    StructuredRecord record = outputRecords.get(0);
-    Assert.assertEquals("Everyday Italian", record.get("title"));
-    Assert.assertEquals("Giada De Laurentiis", record.get("author"));
+    List<StructuredRecord> expected = ImmutableList.of(
+      StructuredRecord.builder(schema)
+        .set("title", "Everyday Italian")
+        .set("author", "Giada De Laurentiis")
+        .set("year", "2005").build());
+    Assert.assertEquals(expected, emitter.getEmitted());
   }
 
   @Test
   public void testXpathWithMultipleElements() throws Exception {
-    String inputTable = "input-xpath-with-multiple-elements";
-    ETLStage source = new ETLStage("source", MockSource.getPlugin(inputTable));
-    Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
-      .put("input", "body")
-      .put("encoding", "UTF-16 (Unicode with byte-order mark)")
-      .put("xPathMappings", "category://book/@category,title://book/title,year:/bookstore/book[price>35.00]/year," +
-        "price:/bookstore/book[price>35.00]/price,subcategory://book/subcategory")
-      .put("fieldTypeMapping", "category:string,title:string,price:double,year:int,subcategory:string")
-      .put("processOnError", "Ignore error and continue")
-      .build();
+    Schema schema = Schema.recordOf("record",
+                                    Schema.Field.of("category", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                                    Schema.Field.of("title", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                                    Schema.Field.of("price", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
+                                    Schema.Field.of("year", Schema.nullableOf(Schema.of(Schema.Type.INT))),
+                                    Schema.Field.of("subcategory", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
 
-    ETLStage transform = new ETLStage("transform",
-                                      new ETLPlugin("XMLParser", Transform.PLUGIN_TYPE, sourceProperties, null));
-    String sinkTable = "output-xpath-with-multiple-elements";
+    XMLParser.Config config = new XMLParser.Config(
+      "body", "UTF-16 (Unicode with byte-order mark)",
+      "category://book/@category,title://book/title,year:/bookstore/book[price>35.00]/year," +
+        "price:/bookstore/book[price>35.00]/price,subcategory://book/subcategory",
+      "category:string,title:string,price:double,year:int,subcategory:string",
+      "Write to error dataset");
+    Transform<StructuredRecord, StructuredRecord> transform = new XMLParser(config);
+    transform.initialize(new MockTransformContext());
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
 
-    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(sinkTable));
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(source)
-      .addStage(transform)
-      .addStage(sink)
-      .addConnection(source.getName(), transform.getName())
-      .addConnection(transform.getName(), sink.getName())
-      .build();
+    StructuredRecord inputRecord = StructuredRecord.builder(INPUT)
+      .set("offset", 1)
+      .set("body", "<bookstore><book category=\"cooking\"><subcategory><type>Continental</type></subcategory>" +
+        "<title lang=\"en\">Everyday Italian</title><author>Giada De Laurentiis</author><year>2005</year>" +
+        "<price>30.00</price></book></bookstore>").build();
+    transform.transform(inputRecord, emitter);
+    List<StructuredRecord> expected = ImmutableList.of(
+      StructuredRecord.builder(schema).set("category", "cooking")
+        .set("title", "Everyday Italian")
+        .set("subcategory", "<subcategory><type>Continental</type></subcategory>").build());
+    Assert.assertEquals(expected, emitter.getEmitted());
+    emitter.clear();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("XMLReaderTestWithMultipleElements");
-    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
+    inputRecord = StructuredRecord.builder(INPUT)
+      .set("offset", 2)
+      .set("body", "<bookstore><book category=\"children\"><subcategory><type>Series</type></subcategory>" +
+        "<title lang=\"en\">Harry Potter</title><author>J K. Rowling</author><year>2005</year><price>49.99</price>" +
+        "</book></bookstore>").build();
+    transform.transform(inputRecord, emitter);
+    expected = ImmutableList.of(
+      StructuredRecord.builder(schema).set("category", "children")
+        .set("title", "Harry Potter")
+        .set("price", 49.99d)
+        .set("year", 2005)
+        .set("subcategory", "<subcategory><type>Series</type></subcategory>").build());
+    Assert.assertEquals(expected, emitter.getEmitted());
+    emitter.clear();
 
-    DataSetManager<Table> inputManager = getDataset(inputTable);
-    List<StructuredRecord> input = ImmutableList.of(
-      StructuredRecord.builder(INPUT)
-        .set("offset", 1)
-        .set("body", "<bookstore><book category=\"cooking\"><subcategory><type>Continental</type></subcategory>" +
-          "<title lang=\"en\">Everyday Italian</title><author>Giada De Laurentiis</author><year>2005</year>" +
-          "<price>30.00</price></book></bookstore>").build(),
-      StructuredRecord.builder(INPUT)
-        .set("offset", 2)
-        .set("body", "<bookstore><book category=\"children\"><subcategory><type>Series</type></subcategory>" +
-          "<title lang=\"en\">Harry Potter</title><author>J K. Rowling</author><year>2005</year><price>49.99</price>" +
-          "</book></bookstore>").build(),
-      StructuredRecord.builder(INPUT)
-        .set("offset", 3)
-        .set("body", "<bookstore><book category=\"web\"><subcategory><type>Basics</type></subcategory>" +
-          "<title lang=\"en\">Learning XML</title><author>Erik T. Ray</author><year>2003</year><price>39.95</price>" +
-          "</book></bookstore>").build()
-    );
-    MockSource.writeInput(inputManager, input);
-
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
-
-    DataSetManager<Table> outputManager = getDataset(sinkTable);
-    List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);
-    Assert.assertEquals("OutputRecords", 3, outputRecords.size());
-    for (StructuredRecord record : outputRecords) {
-      if (record.get("category").equals("cooking")) {
-        Assert.assertEquals("Everyday Italian", record.get("title"));
-        Assert.assertEquals(null, record.get("price"));
-        Assert.assertEquals(null, record.get("year"));
-        Assert.assertEquals("<subcategory><type>Continental</type></subcategory>", record.get("subcategory"));
-      } else if (record.get("category").equals("children")) {
-        Assert.assertEquals("Harry Potter", record.get("title"));
-        Assert.assertEquals(49.99, (Double) record.get("price"), 0.0);
-        Assert.assertEquals(2005, record.get("year"));
-        Assert.assertEquals("<subcategory><type>Series</type></subcategory>", record.get("subcategory"));
-      } else if (record.get("category").equals("web")) {
-        Assert.assertEquals("Learning XML", record.get("title"));
-        Assert.assertEquals(39.95, (Double) record.get("price"), 0.01);
-        Assert.assertEquals(2003, record.get("year"));
-        Assert.assertEquals("<subcategory><type>Basics</type></subcategory>", record.get("subcategory"));
-      }
-    }
+    inputRecord = StructuredRecord.builder(INPUT)
+      .set("offset", 3)
+      .set("body", "<bookstore><book category=\"web\"><subcategory><type>Basics</type></subcategory>" +
+        "<title lang=\"en\">Learning XML</title><author>Erik T. Ray</author><year>2003</year><price>39.95</price>" +
+        "</book></bookstore>").build();
+    transform.transform(inputRecord, emitter);
+    expected = ImmutableList.of(
+      StructuredRecord.builder(schema).set("category", "web")
+        .set("title", "Learning XML")
+        .set("price", 39.95d)
+        .set("year", 2003)
+        .set("subcategory", "<subcategory><type>Basics</type></subcategory>").build());
+    Assert.assertEquals(expected, emitter.getEmitted());
+    emitter.clear();
   }
 
   @Test
@@ -274,45 +240,29 @@ public class XMLParserTest extends TransformPluginsTestBase {
 
   @Test
   public void testXpathArray() throws Exception {
-    String inputTable = "input-xpath-array";
-    ETLStage source = new ETLStage("source", MockSource.getPlugin(inputTable));
-    Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
-      .put("input", "body")
-      .put("encoding", "UTF-8")
-      .put("xPathMappings", "category://book/@category,title://book/title")
-      .put("fieldTypeMapping", "category:string,title:string")
-      .put("processOnError", "Exit on error")
-      .build();
+    Schema schema = Schema.recordOf("record",
+                                    Schema.Field.of("category", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                                    Schema.Field.of("title", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
 
-    ETLStage transform = new ETLStage("transform",
-                                      new ETLPlugin("XMLParser", Transform.PLUGIN_TYPE, sourceProperties, null));
-    String sinkTable = "output-xpath-array";
+    XMLParser.Config config = new XMLParser.Config(
+      "body", "UTF-8",
+      "category://book/@category,title://book/title",
+      "category:string,title:string",
+      "Exit on error");
+    Transform<StructuredRecord, StructuredRecord> transform = new XMLParser(config);
+    transform.initialize(new MockTransformContext());
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
 
-    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(sinkTable));
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(source)
-      .addStage(transform)
-      .addStage(sink)
-      .addConnection(source.getName(), transform.getName())
-      .addConnection(transform.getName(), sink.getName())
-      .build();
-
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("XMLReaderTestError");
-    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
-
-    DataSetManager<Table> inputManager = getDataset(inputTable);
-    List<StructuredRecord> input = ImmutableList.of(
+    StructuredRecord inputRecord =
       StructuredRecord.builder(INPUT)
         .set("offset", 1)
         .set("body", "<bookstore><book category=\"cooking\"><title lang=\"en\">Everyday Italian</title>" +
           "<author>Giada De Laurentiis</author><year>2005</year><price>30.00</price></book>" +
           "<book category=\"children\"><title lang=\"en\">Harry Potter</title><author>J K. Rowling</author>" +
-          "<year>2005</year><price>29.99</price></book></bookstore>").build()
-    );
-    MockSource.writeInput(inputManager, input);
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.FAILED, 1, 5, TimeUnit.MINUTES);
+          "<year>2005</year><price>29.99</price></book></bookstore>").build();
+    transform.transform(inputRecord, emitter);
+    List<StructuredRecord> expected = ImmutableList.of(
+      StructuredRecord.builder(schema).set("category", "cooking").set("title", "Everyday Italian").build());
+    Assert.assertEquals(expected, emitter.getEmitted());
   }
 }
