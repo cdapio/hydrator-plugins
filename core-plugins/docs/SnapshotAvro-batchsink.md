@@ -21,7 +21,7 @@ Properties
 **name:** Name of the PartitionedFileSet to which records are written.
 If it doesn't exist, it will be created. (Macro-enabled)
 
-**schema:** The Avro schema of the record being written to the sink as a JSON object.
+**schema:** The Avro schema of the record being written to the sink as a JSON object. (Macro-enabled)
 
 **basePath:** Base path for the PartitionedFileSet. Defaults to the name of the dataset. (Macro-enabled)
 

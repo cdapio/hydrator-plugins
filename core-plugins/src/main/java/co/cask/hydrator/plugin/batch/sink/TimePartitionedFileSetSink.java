@@ -53,7 +53,8 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     tpfsSinkConfig.validate();
     // create the dataset at configure time if no macros were provided on necessary fields
-    if (!tpfsSinkConfig.containsMacro("name") && !tpfsSinkConfig.containsMacro("basePath")) {
+    if (!tpfsSinkConfig.containsMacro("name") && !tpfsSinkConfig.containsMacro("basePath") &&
+      !tpfsSinkConfig.containsMacro("schema")) {
       String tpfsName = tpfsSinkConfig.name;
       FileSetProperties.Builder properties = FileSetProperties.builder();
       if (!Strings.isNullOrEmpty(tpfsSinkConfig.basePath)) {

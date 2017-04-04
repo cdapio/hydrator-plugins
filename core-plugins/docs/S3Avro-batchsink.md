@@ -39,7 +39,7 @@ will be included as ``'fs.s3n.awsSecretAccessKey'`` and ``'fs.s3n.awsAccessKeyId
 example: the format ``'yyyy-MM-dd-HH-mm'`` will create a file path ending in
 ``'2015-01-01-20-42'``. Default format used is ``'yyyy-MM-dd-HH-mm'``. (Macro-enabled)
 
-**schema:** The Avro schema of the record being written to the sink as a JSON object.
+**schema:** The Avro schema of the record being written to the sink as a JSON object. (Macro-enabled)
 
 **compressionCodec:** Optional parameter to determine the compression codec to use on the resulting data. 
 Valid values are None, Snappy, and Deflate.

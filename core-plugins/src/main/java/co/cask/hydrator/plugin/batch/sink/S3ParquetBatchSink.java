@@ -17,10 +17,12 @@
 package co.cask.hydrator.plugin.batch.sink;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.batch.OutputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
@@ -32,6 +34,7 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import parquet.avro.AvroParquetOutputFormat;
 
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -46,9 +49,6 @@ public class S3ParquetBatchSink extends S3BatchSink<Void, GenericRecord> {
 
   private StructuredToAvroTransformer recordTransformer;
   private final S3ParquetSinkConfig config;
-
-  private static final String SCHEMA_DESC = "The Parquet schema of the record being written to the sink as a JSON " +
-    "object.";
   private static final String PARQUET_AVRO_SCHEMA = "parquet.avro.schema";
 
   public S3ParquetBatchSink(S3ParquetSinkConfig config) {
@@ -78,9 +78,6 @@ public class S3ParquetBatchSink extends S3BatchSink<Void, GenericRecord> {
    */
   public static class S3ParquetSinkConfig extends S3BatchSinkConfig {
 
-    @Description(SCHEMA_DESC)
-    private String schema;
-
     @Nullable
     @Description("Used to specify the compression codec to be used for the final dataset.")
     private String compressionCodec;
@@ -91,12 +88,11 @@ public class S3ParquetBatchSink extends S3BatchSink<Void, GenericRecord> {
     }
 
     @SuppressWarnings("unused")
-    public S3ParquetSinkConfig(String referenceName, String basePath, String schema, String accessID, String accessKey,
+    public S3ParquetSinkConfig(String referenceName, String basePath, String accessID, String accessKey,
                                String pathFormat, String fileSystemProperties, String compressionCodec,
                                String authenticationMethod, String enableEncryption) {
       super(referenceName, basePath, accessID, accessKey, pathFormat, fileSystemProperties, authenticationMethod,
             enableEncryption);
-      this.schema = schema;
       this.compressionCodec = compressionCodec;
     }
   }
