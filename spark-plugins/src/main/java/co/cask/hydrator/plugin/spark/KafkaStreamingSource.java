@@ -180,7 +180,8 @@ public class KafkaStreamingSource extends ReferenceStreamingSource<StructuredRec
 
     @Override
     public JavaRDD<StructuredRecord> call(JavaRDD<MessageAndMetadata> input, Time batchTime) throws Exception {
-      Function<MessageAndMetadata, StructuredRecord> recordFunction = conf.getFormat() == null ?
+      Function<MessageAndMetadata, StructuredRecord> recordFunction =
+        (conf.getFormat() == null || "binary".equals(conf.getFormat())) ?
         new BytesFunction(batchTime.milliseconds(), conf) : new FormatFunction(batchTime.milliseconds(), conf);
       return input.map(recordFunction);
     }
@@ -216,7 +217,8 @@ public class KafkaStreamingSource extends ReferenceStreamingSource<StructuredRec
         offsetField = conf.getOffsetField();
         for (Schema.Field field : schema.getFields()) {
           String name = field.getName();
-          if (!name.equals(timeField) && !name.equals(keyField)) {
+          if (!name.equals(timeField) && !name.equals(keyField) &&
+            !name.equals(partitionField) && !name.equals(offsetField)) {
             messageField = name;
             break;
           }
