@@ -83,7 +83,7 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
       outputPartitionTime -= TimeParser.parseDuration(tpfsSinkConfig.partitionOffset);
     }
     Map<String, String> sinkArgs = getAdditionalTPFSArguments();
-    LOG.info("Writing to output partition of time {}.", outputPartitionTime);
+    LOG.debug("Writing to output partition of time {}.", outputPartitionTime);
     TimePartitionedFileSetArguments.setOutputPartitionTime(sinkArgs, outputPartitionTime);
     if (!Strings.isNullOrEmpty(tpfsSinkConfig.filePathFormat)) {
       TimePartitionedFileSetArguments.setOutputPathFormat(sinkArgs, tpfsSinkConfig.filePathFormat,
@@ -115,7 +115,7 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
         context.getLogicalStartTime() - TimeParser.parseDuration(tpfsSinkConfig.cleanPartitionsOlderThan);
       TimePartitionedFileSet tpfs = context.getDataset(tpfsSinkConfig.name);
       for (TimePartitionDetail timePartitionDetail : tpfs.getPartitionsByTime(0, cutoffTime)) {
-        LOG.info("Cleaning up old partition for timestamp {}", timePartitionDetail.getTime());
+        LOG.debug("Cleaning up old partition for timestamp {}", timePartitionDetail.getTime());
         tpfs.dropPartition(timePartitionDetail.getTime());
       }
     }
