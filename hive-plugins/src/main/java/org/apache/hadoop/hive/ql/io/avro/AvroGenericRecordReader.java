@@ -61,12 +61,10 @@ public class AvroGenericRecordReader implements
     } catch (AvroSerdeException e) {
       throw new IOException(e);
     }
-    LOG.info("Creating AvroGenericRecordReader", new RuntimeException());
 
     GenericDatumReader<GenericRecord> gdr = new GenericDatumReader<GenericRecord>();
 
     if(latest != null) {
-      LOG.info("AvroGenericRecordReader schema = " + latest.toString(true), new RuntimeException());
       gdr.setExpected(latest);
     }
 
