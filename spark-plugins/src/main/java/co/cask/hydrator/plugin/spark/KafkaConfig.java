@@ -339,7 +339,7 @@ public class KafkaConfig extends ReferencePluginConfig implements Serializable {
 
     Schema messageSchema = getMessageSchema();
     // if format is empty, there must be just a single message field of type bytes or nullable types.
-    if (Strings.isNullOrEmpty(format)) {
+    if (Strings.isNullOrEmpty(format) || "binary".equals(format)) {
       List<Schema.Field> messageFields = messageSchema.getFields();
       if (messageFields.size() > 1) {
         List<String> fieldNames = new ArrayList<>();
