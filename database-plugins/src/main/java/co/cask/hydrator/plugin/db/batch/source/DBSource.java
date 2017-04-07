@@ -217,7 +217,6 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
 
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
-    // System.setProperty("oracle.jdbc.J2EE13Compliant", "true");
     super.initialize(context);
     driverClass = context.loadPluginClass(getJDBCPluginId());
   }
