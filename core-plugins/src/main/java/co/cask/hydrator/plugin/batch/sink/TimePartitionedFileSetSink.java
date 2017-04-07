@@ -115,7 +115,7 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
         context.getLogicalStartTime() - TimeParser.parseDuration(tpfsSinkConfig.cleanPartitionsOlderThan);
       TimePartitionedFileSet tpfs = context.getDataset(tpfsSinkConfig.name);
       for (TimePartitionDetail timePartitionDetail : tpfs.getPartitionsByTime(0, cutoffTime)) {
-        LOG.debug("Cleaning up old partition for timestamp {}", timePartitionDetail.getTime());
+        LOG.info("Cleaning up partitions older than {}", tpfsSinkConfig.cleanPartitionsOlderThan);
         tpfs.dropPartition(timePartitionDetail.getTime());
       }
     }
