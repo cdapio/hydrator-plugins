@@ -46,7 +46,6 @@ import co.cask.http.HttpHandler;
 import co.cask.http.NettyHttpService;
 import co.cask.hydrator.common.http.HTTPPollConfig;
 import co.cask.hydrator.plugin.spark.HTTPPollerSource;
-import co.cask.hydrator.plugin.spark.KafkaStreamingSource;
 import co.cask.hydrator.plugin.spark.TwitterStreamingSource;
 import co.cask.hydrator.plugin.spark.mock.MockFeedHandler;
 import com.google.common.base.Charsets;
@@ -132,7 +131,7 @@ public class SparkPluginTest extends HydratorTestBase {
                         new ArtifactVersion(DATASTREAMS_ARTIFACT_ID.getVersion()), true)
     );
     addPluginArtifact(NamespaceId.DEFAULT.artifact("spark-plugins", "1.0.0"), parents,
-                      KafkaStreamingSource.class, KafkaUtils.class, DefaultDecoder.class, TopicAndPartition.class,
+                      KafkaUtils.class, DefaultDecoder.class, TopicAndPartition.class,
                       TwitterStreamingSource.class,
                       HTTPPollerSource.class, HTTPPollConfig.class);
 
