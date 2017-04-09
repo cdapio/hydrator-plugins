@@ -45,6 +45,7 @@ import co.cask.cdap.test.TestConfiguration;
 import co.cask.http.HttpHandler;
 import co.cask.http.NettyHttpService;
 import co.cask.hydrator.common.http.HTTPPollConfig;
+import co.cask.hydrator.plugin.spark.FileStreamingSource;
 import co.cask.hydrator.plugin.spark.HTTPPollerSource;
 import co.cask.hydrator.plugin.spark.TwitterStreamingSource;
 import co.cask.hydrator.plugin.spark.mock.MockFeedHandler;
@@ -112,7 +113,7 @@ public class SparkPluginTest extends HydratorTestBase {
                         new ArtifactVersion(DATASTREAMS_ARTIFACT_ID.getVersion()), true)
     );
     addPluginArtifact(NamespaceId.DEFAULT.artifact("spark-plugins", "1.0.0"), parents,
-                      TwitterStreamingSource.class,
+                      TwitterStreamingSource.class, FileStreamingSource.class,
                       HTTPPollerSource.class, HTTPPollConfig.class);
 
     List<HttpHandler> handlers = new ArrayList<>();
