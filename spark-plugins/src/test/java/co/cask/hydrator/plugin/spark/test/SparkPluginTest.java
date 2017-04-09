@@ -45,8 +45,8 @@ import co.cask.cdap.test.TestConfiguration;
 import co.cask.http.HttpHandler;
 import co.cask.http.NettyHttpService;
 import co.cask.hydrator.common.http.HTTPPollConfig;
+import co.cask.hydrator.plugin.spark.FileStreamingSource;
 import co.cask.hydrator.plugin.spark.HTTPPollerSource;
-import co.cask.hydrator.plugin.spark.KafkaStreamingSource;
 import co.cask.hydrator.plugin.spark.TwitterStreamingSource;
 import co.cask.hydrator.plugin.spark.mock.MockFeedHandler;
 import com.google.common.base.Charsets;
@@ -54,23 +54,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
-import com.google.common.util.concurrent.Uninterruptibles;
-import kafka.common.TopicAndPartition;
-import kafka.serializer.DefaultDecoder;
-import org.apache.spark.streaming.kafka.KafkaUtils;
-import org.apache.twill.internal.kafka.EmbeddedKafkaServer;
-import org.apache.twill.internal.kafka.client.ZKKafkaClientService;
-import org.apache.twill.internal.utils.Networks;
-import org.apache.twill.internal.zookeeper.InMemoryZKServer;
-import org.apache.twill.kafka.client.Compression;
-import org.apache.twill.kafka.client.KafkaClientService;
-import org.apache.twill.kafka.client.KafkaPublisher;
-import org.apache.twill.zookeeper.ZKClientService;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
@@ -83,7 +70,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -103,11 +89,6 @@ public class SparkPluginTest extends HydratorTestBase {
     NamespaceId.DEFAULT.artifact("data-streams", "3.2.0");
   protected static final ArtifactSummary DATASTREAMS_ARTIFACT = new ArtifactSummary("data-streams", "3.2.0");
 
-  private static ZKClientService zkClient;
-  private static KafkaClientService kafkaClient;
-  private static InMemoryZKServer zkServer;
-  private static EmbeddedKafkaServer kafkaServer;
-  private static int kafkaPort;
   private static NettyHttpService httpService;
   private static String httpBase;
 
@@ -132,24 +113,8 @@ public class SparkPluginTest extends HydratorTestBase {
                         new ArtifactVersion(DATASTREAMS_ARTIFACT_ID.getVersion()), true)
     );
     addPluginArtifact(NamespaceId.DEFAULT.artifact("spark-plugins", "1.0.0"), parents,
-                      KafkaStreamingSource.class, KafkaUtils.class, DefaultDecoder.class, TopicAndPartition.class,
-                      TwitterStreamingSource.class,
+                      TwitterStreamingSource.class, FileStreamingSource.class,
                       HTTPPollerSource.class, HTTPPollConfig.class);
-
-    zkServer = InMemoryZKServer.builder().setDataDir(TMP_FOLDER.newFolder()).build();
-    zkServer.startAndWait();
-
-    kafkaPort = Networks.getRandomPort();
-    kafkaServer = new EmbeddedKafkaServer(generateKafkaConfig(zkServer.getConnectionStr(),
-                                                              kafkaPort, TMP_FOLDER.newFolder()));
-    kafkaServer.startAndWait();
-
-    zkClient = ZKClientService.Builder.of(zkServer.getConnectionStr()).build();
-    zkClient.startAndWait();
-
-    kafkaClient = new ZKKafkaClientService(zkClient);
-    kafkaClient.startAndWait();
-
 
     List<HttpHandler> handlers = new ArrayList<>();
     handlers.add(new MockFeedHandler());
@@ -172,10 +137,6 @@ public class SparkPluginTest extends HydratorTestBase {
 
   @AfterClass
   public static void cleanup() {
-    kafkaClient.stopAndWait();
-    kafkaServer.stopAndWait();
-    zkClient.stopAndWait();
-    zkServer.stopAndWait();
     httpService.stopAndWait();
   }
 
@@ -328,148 +289,6 @@ public class SparkPluginTest extends HydratorTestBase {
       TimeUnit.MINUTES);
 
     sparkManager.stop();
-  }
-
-  @Test
-  @Ignore
-  // TODO: https://issues.cask.co/browse/HYDRATOR-1194
-  public void testKafkaStreamingSource() throws Exception {
-    Schema schema = Schema.recordOf(
-      "user",
-      Schema.Field.of("id", Schema.of(Schema.Type.LONG)),
-      Schema.Field.of("first", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("last", Schema.of(Schema.Type.STRING)));
-
-    Map<String, String> properties = new HashMap<>();
-    properties.put("referenceName", "kafkaPurchases");
-    properties.put("brokers", "localhost:" + kafkaPort);
-    properties.put("topic", "users");
-    properties.put("defaultInitialOffset", "-2");
-    properties.put("format", "csv");
-    properties.put("schema", schema.toString());
-
-    ETLStage source = new ETLStage("source", new ETLPlugin("Kafka", StreamingSource.PLUGIN_TYPE, properties, null));
-
-    DataStreamsConfig etlConfig = DataStreamsConfig.builder()
-      .addStage(source)
-      .addStage(new ETLStage("sink", MockSink.getPlugin("kafkaOutput")))
-      .addConnection("source", "sink")
-      .setBatchInterval("1s")
-      .build();
-
-    AppRequest<DataStreamsConfig> appRequest = new AppRequest<>(DATASTREAMS_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("KafkaSourceApp");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-
-    // write some messages to kafka
-    Map<String, String> messages = new HashMap<>();
-    messages.put("a", "1,samuel,jackson");
-    messages.put("b", "2,dwayne,johnson");
-    messages.put("c", "3,christopher,walken");
-    sendKafkaMessage("users", messages);
-
-    SparkManager sparkManager = appManager.getSparkManager(DataStreamsSparkLauncher.NAME);
-    sparkManager.start();
-    sparkManager.waitForStatus(true, 10, 1);
-
-    final Map<Long, String> expected = ImmutableMap.of(
-      1L, "samuel jackson",
-      2L, "dwayne johnson",
-      3L, "christopher walken"
-    );
-
-    final DataSetManager<Table> outputManager = getDataset("kafkaOutput");
-    Tasks.waitFor(
-      true,
-      new Callable<Boolean>() {
-        @Override
-        public Boolean call() throws Exception {
-          outputManager.flush();
-          Map<Long, String> actual = new HashMap<>();
-          for (StructuredRecord outputRecord : MockSink.readOutput(outputManager)) {
-            actual.put((Long) outputRecord.get("id"), outputRecord.get("first") + " " + outputRecord.get("last"));
-          }
-          return expected.equals(actual);
-        }
-      },
-      4,
-      TimeUnit.MINUTES);
-
-    sparkManager.stop();
-    sparkManager.waitForStatus(false, 10, 1);
-
-    // clear the output table
-    Table outputTable = outputManager.get();
-    Scanner scanner = outputTable.scan(null, null);
-    Row row;
-    while ((row = scanner.next()) != null) {
-      outputTable.delete(row.getRow());
-    }
-    outputManager.flush();
-
-    // now write some more messages to kafka and start the program again to make sure it picks up where it left off
-    messages = new HashMap<>();
-    messages.put("d", "4,terry,crews");
-    messages.put("e", "5,sylvester,stallone");
-    sendKafkaMessage("users", messages);
-
-    sparkManager.start();
-    sparkManager.waitForStatus(true, 10, 1);
-
-    final Map<Long, String> expected2 = ImmutableMap.of(
-      4L, "terry crews",
-      5L, "sylvester stallone"
-    );
-    Tasks.waitFor(
-      true,
-      new Callable<Boolean>() {
-        @Override
-        public Boolean call() throws Exception {
-          outputManager.flush();
-          Map<Long, String> actual = new HashMap<>();
-          for (StructuredRecord outputRecord : MockSink.readOutput(outputManager)) {
-            actual.put((Long) outputRecord.get("id"), outputRecord.get("first") + " " + outputRecord.get("last"));
-          }
-          return expected2.equals(actual);
-        }
-      },
-      4,
-      TimeUnit.MINUTES);
-
-    sparkManager.stop();
-  }
-
-  private static Properties generateKafkaConfig(String zkConnectStr, int port, File logDir) {
-    Properties prop = new Properties();
-    prop.setProperty("log.dir", logDir.getAbsolutePath());
-    prop.setProperty("port", Integer.toString(port));
-    prop.setProperty("broker.id", "1");
-    prop.setProperty("num.partitions", "1");
-    prop.setProperty("zookeeper.connect", zkConnectStr);
-    prop.setProperty("zookeeper.connection.timeout.ms", "1000000");
-    prop.setProperty("default.replication.factor", "1");
-    return prop;
-  }
-
-  private void sendKafkaMessage(String topic, Map<String, String> messages) {
-    KafkaPublisher publisher = kafkaClient.getPublisher(KafkaPublisher.Ack.ALL_RECEIVED, Compression.NONE);
-
-    // If publish failed, retry up to 20 times, with 100ms delay between each retry
-    // This is because leader election in Kafka 08 takes time when a topic is being created upon publish request.
-    int count = 0;
-    do {
-      KafkaPublisher.Preparer preparer = publisher.prepare(topic);
-      for (Map.Entry<String, String> entry : messages.entrySet()) {
-        preparer.add(Charsets.UTF_8.encode(entry.getValue()), entry.getKey());
-      }
-      try {
-        preparer.send().get();
-        break;
-      } catch (Exception e) {
-        // Backoff if send failed.
-        Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
-      }
-    } while (count++ < 20);
   }
 
 
