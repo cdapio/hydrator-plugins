@@ -136,7 +136,7 @@ public class S3BatchSource extends FileBatchSource {
                                                "authentication method is Access Credentials.");
         }
       } else if (authenticationMethod.equalsIgnoreCase(IAM)) {
-        if (!path.startsWith("s3a://")) {
+        if (!containsMacro("path") && !path.startsWith("s3a://")) {
           throw new IllegalArgumentException("Path must start with s3a:// for IAM based authentication.");
         }
       }
