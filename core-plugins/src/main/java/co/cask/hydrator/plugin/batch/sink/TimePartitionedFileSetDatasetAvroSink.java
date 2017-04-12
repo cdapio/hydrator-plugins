@@ -30,13 +30,15 @@ import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.hydrator.plugin.common.FileSetUtil;
 import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.hadoop.io.NullWritable;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.Nullable;
 
 /**
  * A {@link BatchSink} to write Avro record to {@link TimePartitionedFileSet}
@@ -88,6 +90,14 @@ public class TimePartitionedFileSetDatasetAvroSink extends
     emitter.emit(new KeyValue<>(new AvroKey<>(recordTransformer.transform(input)), NullWritable.get()));
   }
 
+  private String sanitizeSchema(String schema) {
+
+    Gson gson = new GsonBuilder().registerTypeAdapter(Schema.class, new FileSetUtil.SchemaTypeAdapter()).create();
+    return gson.toJson(schema, Schema.class);
+  }
+
+
+
   /**
    * Config for TimePartitionedFileSetAvroSink
    */
@@ -108,4 +118,6 @@ public class TimePartitionedFileSetDatasetAvroSink extends
       this.compressionCodec = compressionCodec;
     }
   }
+
+
 }
