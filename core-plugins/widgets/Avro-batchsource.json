@@ -4,7 +4,7 @@
   },
   "configuration-groups": [
     {
-      "label": "Parquet Batch Source Properties",
+      "label": "Avro Batch Source Properties",
       "properties": [
         {
           "widget-type": "textbox",
@@ -25,11 +25,6 @@
           "widget-type": "textbox",
           "label": "Time Table",
           "name": "timeTable"
-        },
-        {
-          "widget-type": "textbox",
-          "label": "Input Format Class",
-          "name": "inputFormatClass"
         },
         {
           "widget-type": "textbox",
