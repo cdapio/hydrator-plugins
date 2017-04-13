@@ -23,6 +23,7 @@ import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.batch.Output;
 import co.cask.cdap.api.data.batch.OutputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
@@ -41,7 +42,9 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -85,7 +88,7 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
         case "delimited":
           emitter.emit(new KeyValue<>(
             new Text(StructuredRecordStringConverter
-                       .toDelimitedString(input,
+                       .toDelimitedString(convertNulls(input),
                                           Strings.isNullOrEmpty(config.delimiter) ? DEFAULT_DELIMITER
                                                                                   : config.delimiter)),
                                       NullWritable.get()));
@@ -94,10 +97,21 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
           throw new IllegalArgumentException("output format must be one of json or delimited.");
       }
     } else {
-      emitter.emit(new KeyValue<>(new Text(StructuredRecordStringConverter.toDelimitedString(input,
+      emitter.emit(new KeyValue<>(new Text(StructuredRecordStringConverter.toDelimitedString(convertNulls(input),
                                                                                              DEFAULT_DELIMITER)),
                                   NullWritable.get()));
     }
+  }
+
+  // Required because StructuredRecordStringConverter.toDelimitedString doesn't handle nulls
+  private StructuredRecord convertNulls(StructuredRecord input) {
+    StructuredRecord.Builder newRecord = StructuredRecord.builder(input.getSchema());
+    for (Schema.Field field : input.getSchema().getFields()) {
+      Object fieldValue = input.get(field.getName());
+      Object data = (fieldValue != null) ? fieldValue : NULL_STRING;
+      newRecord.set(field.getName(), data);
+    }
+    return newRecord.build();
   }
 
   /**
