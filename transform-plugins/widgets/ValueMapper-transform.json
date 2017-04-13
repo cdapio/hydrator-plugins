@@ -4,8 +4,9 @@
   },
   "configuration-groups": [
     {
+      "label": "Mapping Configuration",
       "properties": [
-	{
+        {
           "name": "mapping",
           "label": "Mapping",
           "widget-type": "ds-multiplevalues",

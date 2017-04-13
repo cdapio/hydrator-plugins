@@ -4,6 +4,7 @@
   },
   "configuration-groups": [
     {
+      "label": "Python",
       "properties": [
         {
           "widget-type": "python-editor",
