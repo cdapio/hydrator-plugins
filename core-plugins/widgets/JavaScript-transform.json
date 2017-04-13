@@ -4,10 +4,11 @@
   },
   "configuration-groups": [
     {
+      "label": "Javascript",
       "properties": [
         {
           "widget-type": "javascript-editor",
-          "label": "JavaScript",
+          "label": "Javascript",
           "name": "script",
           "widget-attributes": {
             "default": "function transform(input, emitter, context) {\n  emitter.emit(input);\n}"

@@ -4,6 +4,7 @@
   },
   "configuration-groups": [
     {
+      "label": "Excel File Properties",
       "properties": [
         {
           "widget-type": "textbox",
@@ -41,10 +42,15 @@
             ],
             "default": "false"
           }
-        },
+        }
+      ]
+    },
+    {
+      "label": "Sheet Selection",
+      "properties": [
         {
           "widget-type": "select",
-          "label": "Sheet",
+          "label": "Select Sheet By",
           "name": "sheet",
           "widget-attributes": {
             "values": [
@@ -56,9 +62,14 @@
         },
         {
           "widget-type": "textbox",
-          "label": "Sheet Value",
+          "label": "Value",
           "name": "sheetValue"
-        },
+        }
+      ]
+    },
+    {
+      "label": "Filtering and Mapping",
+      "properties": [
         {
           "widget-type": "csv",
           "label": "Columns To Be Extracted",
@@ -118,7 +129,12 @@
             ],
             "key-placeholder": "Field Name"
           }
-        },
+        }
+      ]
+    },
+    {
+      "label": "Error Handling",
+      "properties": [
         {
           "widget-type": "select",
           "label": "On Error",
