@@ -23,15 +23,14 @@ import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.batch.Output;
 import co.cask.cdap.api.data.batch.OutputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
+import co.cask.cdap.format.StructuredRecordStringConverter;
 import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.ReferencePluginConfig;
-import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -42,9 +41,7 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -56,6 +53,7 @@ import javax.annotation.Nullable;
 @Description("Batch HDFS Sink")
 public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWritable> {
   public static final String NULL_STRING = "\0";
+  public static final String DEFAULT_DELIMITER = ",";
   private HDFSSinkConfig config;
 
   public HDFSSink(HDFSSinkConfig config) {
@@ -78,13 +76,28 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
 
   @Override
   public void transform(StructuredRecord input, Emitter<KeyValue<Text, NullWritable>> emitter) throws Exception {
-    List<String> dataArray = new ArrayList<>();
-    for (Schema.Field field : input.getSchema().getFields()) {
-      Object fieldValue = input.get(field.getName());
-      String data = (fieldValue != null) ? fieldValue.toString() : NULL_STRING;
-      dataArray.add(data);
+    if (!Strings.isNullOrEmpty(config.outputFormat)) {
+      switch (config.outputFormat) {
+        case "json":
+          emitter.emit(new KeyValue<>(new Text(StructuredRecordStringConverter.toJsonString(input)),
+                                      NullWritable.get()));
+          break;
+        case "delimited":
+          emitter.emit(new KeyValue<>(
+            new Text(StructuredRecordStringConverter
+                       .toDelimitedString(input,
+                                          Strings.isNullOrEmpty(config.delimiter) ? DEFAULT_DELIMITER
+                                                                                  : config.delimiter)),
+                                      NullWritable.get()));
+          break;
+        default:
+          throw new IllegalArgumentException("output format must be one of json or delimited.");
+      }
+    } else {
+      emitter.emit(new KeyValue<>(new Text(StructuredRecordStringConverter.toDelimitedString(input,
+                                                                                             DEFAULT_DELIMITER)),
+                                  NullWritable.get()));
     }
-    emitter.emit(new KeyValue<>(new Text(Joiner.on(",").join(dataArray)), NullWritable.get()));
   }
 
   /**
@@ -113,7 +126,7 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
 
     @Override
     public String getOutputFormatClassName() {
-      return outputFormatClassName("TEXT");
+      return outputFormatClassName(config.outputFormat);
     }
 
     @Override
@@ -133,7 +146,7 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
   public static class HDFSSinkConfig extends ReferencePluginConfig {
 
     @Name("path")
-    @Description("HDFS Destination Path Prefix. For example, 'hdfs://mycluster.net:8020/output")
+    @Description("HDFS Destination Path Prefix. For example, 'hdfs://example.net:8020/output")
     @Macro
     private String path;
 
@@ -144,6 +157,18 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
     @Macro
     private String timeSufix;
 
+    @Name("outputFormat")
+    @Description("The text format to write the record in the file.")
+    @Nullable
+    @Macro
+    private String outputFormat;
+
+    @Name("delimiter")
+    @Description("The optional delimiter for the delimited file. Defaults to '" + DEFAULT_DELIMITER + "'.")
+    @Nullable
+    @Macro
+    private String delimiter;
+
     @Name("jobProperties")
     @Nullable
     @Description("Advanced feature to specify any additional properties that should be used with the sink, " +
@@ -152,11 +177,14 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
     protected String jobProperties;
 
     public HDFSSinkConfig(String referenceName, String path, String suffix,
-                          @Nullable String jobProperties) {
+                          @Nullable String jobProperties, @Nullable String outputFormat,
+                          @Nullable String delimiter) {
       super(referenceName);
       this.path = path;
       this.timeSufix = suffix;
       this.jobProperties = jobProperties;
+      this.outputFormat = outputFormat;
+      this.delimiter = delimiter;
     }
 
     private void validate() {
@@ -167,6 +195,11 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
       if (!Strings.isNullOrEmpty(jobProperties)) {
         // Try to parse the JSON and propagate the error
         new Gson().fromJson(jobProperties, new TypeToken<Map<String, String>>() { }.getType());
+      }
+      if (!containsMacro("outputFormat") && !Strings.isNullOrEmpty(outputFormat)) {
+        if (!"json,delimited".contains(outputFormat)) {
+          throw new IllegalArgumentException("output format should be either json or delimited.");
+        }
       }
     }
   }

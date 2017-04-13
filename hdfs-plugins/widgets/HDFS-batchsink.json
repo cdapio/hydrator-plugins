@@ -1,7 +1,7 @@
 
 {
   "metadata": {
-    "spec-version": "1.0"
+    "spec-version": "1.4"
   },
   "configuration-groups": [
     {
@@ -26,6 +26,26 @@
           "widget-type": "textbox",
           "label": "Time Suffix Format",
           "name": "suffix"
+        },
+        {
+          "widget-type": "select",
+          "label": "Text Output Format",
+          "name": "outputFormat",
+          "widget-attributes": {
+            "values": [
+              "delimited",
+              "json"
+            ],
+            "default": "delimited"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Field Delimiter",
+          "name": "delimiter",
+          "widget-attributes": {
+            "placeholder" : "Required for delimited format. Common values are , or |"
+          }
         },
         {
           "widget-type": "json-editor",

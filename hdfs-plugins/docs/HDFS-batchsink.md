@@ -3,8 +3,8 @@
 
 Description
 -----------
-Batch sink that writes to the Hadoop FileSystem directly instead of through CDAP.
-Each record is written out as text by delimiting record fields with a comma.
+Batch sink that writes TEXT to the Hadoop FileSystem directly instead of through CDAP.
+Each record is written out as text, either in delimited or json text.
 It should be noted that this means that it may not be a good idea to use this sink
 if your fields contain commas. Non-string fields will be converted to strings
 using their ``toString()`` Java method, so fields should be limited to the
@@ -20,16 +20,20 @@ then dumps the contents onto a Hadoop FileSystem.
 
 Properties
 ----------
-**referenceName:** This will be used to uniquely identify this sink for lineage, annotating metadata, etc.
+**Reference Name:** This will be used to uniquely identify this sink for lineage, annotating metadata, etc.
 
-**path:** The directory to write to. For example, ``hdfs://mycluster.net:8020/my/desired/location``.
+**Path:** The directory to write to. For example, ``hdfs://mycluster.net:8020/my/desired/location``.
 
-**suffix:** Time suffix to append to the path for each run of the pipeline. For example,
+**Suffix:** Time suffix to append to the path for each run of the pipeline. For example,
 ``YYYY-MM-dd-HH-mm`` will take the start time of the pipeline run, convert it into
 year-month-day-hour-minute format, and append that to the path to get the final output directory.
 If not specified, no suffix is used.
 
-**jobProperties:** Advanced feature to specify any additional properties that should be used with the sink,
+**Output Format:** The output format to write the text in, either ``text`` or ``json``.
+
+**Delimiter:** The delimiter to use when writing as a delimited file. Defaults to comma if not specified.
+
+**Job Properties:** Advanced feature to specify any additional properties that should be used with the sink,
 specified as a JSON object of string to string. These properties are set on the job at runtime. (Macro-enabled)
 
 Example
