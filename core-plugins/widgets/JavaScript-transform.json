@@ -4,6 +4,7 @@
   },
   "configuration-groups": [
     {
+      "label": "JavaScript",
       "properties": [
         {
           "widget-type": "javascript-editor",

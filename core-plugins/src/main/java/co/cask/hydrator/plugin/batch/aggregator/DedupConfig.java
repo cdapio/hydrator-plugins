@@ -20,6 +20,7 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.plugin.batch.aggregator.function.First;
 import co.cask.hydrator.plugin.batch.aggregator.function.Last;
 import co.cask.hydrator.plugin.batch.aggregator.function.MaxSelection;
+import co.cask.hydrator.plugin.batch.aggregator.function.MinSelection;
 import co.cask.hydrator.plugin.batch.aggregator.function.SelectionFunction;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
@@ -127,6 +128,8 @@ public class DedupConfig extends AggregatorConfig {
           return new Last(field, fieldSchema);
         case MAX:
           return new MaxSelection(field, fieldSchema);
+        case MIN:
+          return new MinSelection(field, fieldSchema);
       }
       throw new IllegalStateException("Unknown function type " + function);
     }
