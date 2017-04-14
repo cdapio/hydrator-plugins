@@ -28,11 +28,6 @@
         },
         {
           "widget-type": "textbox",
-          "label": "Input Format Class",
-          "name": "inputFormatClass"
-        },
-        {
-          "widget-type": "textbox",
           "label": "Maximum Split Size",
           "name": "maxSplitSize"
         },

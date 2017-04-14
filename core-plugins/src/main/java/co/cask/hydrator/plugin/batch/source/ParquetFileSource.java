@@ -53,7 +53,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.lib.input.CombineTextInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,8 +94,6 @@ public class ParquetFileSource extends ReferenceBatchSource<NullWritable, Generi
     "filename expansion (globbing) to read files.";
   protected static final String TABLE_DESCRIPTION = "Name of the Table that keeps track of the last time files " +
     "were read in. If this is null or empty, the Regex is used to filter filenames.";
-  protected static final String INPUT_FORMAT_CLASS_DESCRIPTION = "Name of the input format class, which must be a " +
-    "subclass of FileInputFormat. Defaults to CombineTextInputFormat.";
   protected static final String REGEX_DESCRIPTION = "Regex to filter out files in the path. It accepts regular " +
     "expression which is applied to the complete path and returns the list of files that match the specified pattern." +
     "To use the TimeFilter, input \"timefilter\". The TimeFilter assumes that it " +
@@ -216,7 +213,8 @@ public class ParquetFileSource extends ReferenceBatchSource<NullWritable, Generi
     if (config.maxSplitSize != null) {
       FileInputFormat.setMaxInputSplitSize(job, config.maxSplitSize);
     }
-    context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(config.inputFormatClass, conf)));
+    context.setInput(Input.of(config.referenceName,
+                              new SourceInputFormatProvider(AvroParquetInputFormat.class.getName(), conf)));
   }
 
   @Override
@@ -279,11 +277,6 @@ public class ParquetFileSource extends ReferenceBatchSource<NullWritable, Generi
     public String timeTable;
 
     @Nullable
-    @Description(INPUT_FORMAT_CLASS_DESCRIPTION)
-    @Macro
-    public String inputFormatClass;
-
-    @Nullable
     @Description(MAX_SPLIT_SIZE_DESCRIPTION)
     @Macro
     public Long maxSplitSize;
@@ -301,7 +294,6 @@ public class ParquetFileSource extends ReferenceBatchSource<NullWritable, Generi
       super("");
       this.fileSystemProperties = GSON.toJson(ImmutableMap.<String, String>of());
       this.fileRegex = ".*";
-      this.inputFormatClass = AvroParquetInputFormat.class.getName();
       this.maxSplitSize = DEFAULT_MAX_SPLIT_SIZE;
       this.ignoreNonExistingFolders = false;
       this.recursive = false;
@@ -318,7 +310,6 @@ public class ParquetFileSource extends ReferenceBatchSource<NullWritable, Generi
       this.fileRegex = fileRegex == null ? ".*" : fileRegex;
       // There is no default for timeTable, the code handles nulls
       this.timeTable = timeTable;
-      this.inputFormatClass = inputFormatClass == null ? CombineTextInputFormat.class.getName() : inputFormatClass;
       this.maxSplitSize = maxSplitSize == null ? DEFAULT_MAX_SPLIT_SIZE : maxSplitSize;
       this.ignoreNonExistingFolders = ignoreNonExistingFolders == null ? false : ignoreNonExistingFolders;
       this.recursive = recursive == null ? false : recursive;
