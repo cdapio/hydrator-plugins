@@ -140,7 +140,7 @@ public class WindowsShareCopy extends Action {
           Future<String> fileWritten = completionService.take();
           String fileName = fileWritten.get();
           if (fileName != null) {
-            LOG.info("{} is copied", fileName);
+            LOG.debug("{} is copied", fileName);
           }
         } catch (Throwable t) {
           throw Throwables.propagate(t);

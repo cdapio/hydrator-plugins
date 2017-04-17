@@ -20,6 +20,8 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.plugin.PluginConfig;
+import co.cask.cdap.etl.api.PipelineConfigurer;
+import co.cask.cdap.etl.api.StageConfigurer;
 import co.cask.cdap.etl.api.streaming.Windower;
 
 /**
@@ -33,6 +35,12 @@ public class Window extends Windower {
 
   public Window(Conf conf) {
     this.conf = conf;
+  }
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
+    StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
+    stageConfigurer.setOutputSchema(stageConfigurer.getInputSchema());
   }
 
   @Override
