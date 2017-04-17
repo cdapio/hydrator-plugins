@@ -56,6 +56,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+
 
 /**
  * Sink that can be configured to export data to a database table.
@@ -148,8 +150,9 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
   }
 
   private void setResultSetMetadata() throws Exception {
+    Map<String, Integer> columnToType = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     dbManager.ensureJDBCDriverIsAvailable(driverClass);
-    Map<String, Integer> columnToType = new HashMap<>();
+
     Connection connection;
     if (dbSinkConfig.user == null) {
       connection = DriverManager.getConnection(dbSinkConfig.connectionString);
