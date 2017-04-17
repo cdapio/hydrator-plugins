@@ -121,7 +121,7 @@ public class StreamBatchSource extends BatchSource<Object, Object, StructuredRec
     long endTime = context.getLogicalStartTime() - delay;
     long startTime = endTime - duration;
 
-    LOG.info("Setting input to Stream : {}", streamBatchConfig.name);
+    LOG.debug("Setting input to Stream : {}", streamBatchConfig.name);
 
     FormatSpecification formatSpec = streamBatchConfig.getFormatSpec();
 

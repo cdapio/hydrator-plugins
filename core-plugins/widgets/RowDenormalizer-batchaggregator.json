@@ -5,7 +5,7 @@
   },
   "configuration-groups": [
     {
-      "label": "General",
+      "label": "Field Mapping",
       "properties": [
         {
           "widget-type": "textbox",

@@ -27,10 +27,15 @@ public class DedupConfigTest {
 
   @Test
   public void testParsing() {
-    DedupConfig config = new DedupConfig(" user, item, price ",
-                                         " price   : max   ");
-    Assert.assertEquals(ImmutableList.of("user", "item", "price"), config.getUniqueFields());
-    DedupConfig.DedupFunctionInfo expected = new DedupConfig.DedupFunctionInfo("price", DedupConfig.Function.MAX);
-    Assert.assertEquals(expected, config.getFilter());
+    for (DedupConfig.Function function : DedupConfig.Function.values()) {
+      DedupConfig config = new DedupConfig(" user, item, price ",
+                                           String.format(" price   : %s   ", function.name().toLowerCase()));
+      Assert.assertEquals(ImmutableList.of("user", "item", "price"), config.getUniqueFields());
+
+      DedupConfig.DedupFunctionInfo expected = new DedupConfig.DedupFunctionInfo("price", function);
+      DedupConfig.DedupFunctionInfo actual = config.getFilter();
+      Assert.assertEquals(expected, actual);
+      Assert.assertNotNull(actual.getSelectionFunction(null));
+    }
   }
 }
