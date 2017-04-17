@@ -4,6 +4,7 @@
   },
   "configuration-groups": [
     {
+      "label": "Data Format",
       "properties": [
         {
           "widget-type": "select",
@@ -22,6 +23,7 @@
       ]
     },
     {
+      "label": "Field Mapping",
       "properties": [
         {
           "widget-type": "csv",
