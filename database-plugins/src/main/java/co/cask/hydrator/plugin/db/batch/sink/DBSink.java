@@ -95,7 +95,7 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
   public void prepareRun(BatchSinkContext context) {
     LOG.debug("tableName = {}; pluginType = {}; pluginName = {}; connectionString = {}; columns = {}",
               dbSinkConfig.tableName, dbSinkConfig.jdbcPluginType, dbSinkConfig.jdbcPluginName,
-              dbSinkConfig.connectionString, dbSinkConfig.columns);
+              dbSinkConfig.getConnectionString(), dbSinkConfig.columns);
 
     // Load the plugin class to make sure it is available.
     Class<? extends Driver> driverClass = context.loadPluginClass(getJDBCPluginId());
@@ -105,7 +105,7 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
         dbManager.tableExists(driverClass, dbSinkConfig.tableName),
         "Table %s does not exist. Please check that the 'tableName' property " +
           "has been set correctly, and that the connection string %s points to a valid database.",
-        dbSinkConfig.tableName, dbSinkConfig.connectionString);
+        dbSinkConfig.tableName, dbSinkConfig.getConnectionString());
     } finally {
       DBUtils.cleanup(driverClass);
     }
@@ -154,9 +154,10 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
 
     Connection connection;
     if (dbSinkConfig.user == null) {
-      connection = DriverManager.getConnection(dbSinkConfig.connectionString);
+      connection = DriverManager.getConnection(dbSinkConfig.getConnectionString());
     } else {
-      connection = DriverManager.getConnection(dbSinkConfig.connectionString, dbSinkConfig.user, dbSinkConfig.password);
+      connection = DriverManager.getConnection(dbSinkConfig.getConnectionString(),
+                                               dbSinkConfig.user, dbSinkConfig.password);
     }
 
     try {
@@ -209,6 +210,15 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
     @Macro
     public String tableName;
 
+    @Override
+    public String getConnectionString() {
+      return connectionString;
+    }
+
+    @Override
+    public String getBaseConnectionString() {
+      return connectionString.substring(0, connectionString.lastIndexOf("/") + 1); // include the last "/"
+    }
   }
 
   private static class DBOutputFormatProvider implements OutputFormatProvider {
@@ -219,7 +229,7 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
 
       conf.put(ETLDBOutputFormat.AUTO_COMMIT_ENABLED, String.valueOf(dbSinkConfig.getEnableAutoCommit()));
       conf.put(DBConfiguration.DRIVER_CLASS_PROPERTY, driverClass.getName());
-      conf.put(DBConfiguration.URL_PROPERTY, dbSinkConfig.connectionString);
+      conf.put(DBConfiguration.URL_PROPERTY, dbSinkConfig.getConnectionString());
       if (dbSinkConfig.user != null) {
         conf.put(DBConfiguration.USERNAME_PROPERTY, dbSinkConfig.user);
       }

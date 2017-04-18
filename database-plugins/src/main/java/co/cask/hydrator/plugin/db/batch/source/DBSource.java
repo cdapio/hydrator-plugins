@@ -53,9 +53,12 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.Nullable;
 import javax.ws.rs.Path;
 
@@ -140,6 +143,43 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     }
   }
 
+  /**
+   * Endpoint method to get the output schema of a query.
+   *
+   * @param request {@link GetSchemaRequest} containing information required for connection and query to execute.
+   * @param pluginContext context to create plugins
+   * @return schema of fields
+   * @throws SQLException
+   * @throws InstantiationException
+   * @throws IllegalAccessException
+   */
+  @Path("getDatabases")
+  public List<String> getDatabases(GetSchemaRequest request,
+                                   EndpointPluginContext pluginContext) throws IllegalAccessException,
+    SQLException, InstantiationException {
+    DriverCleanup driverCleanup;
+    try {
+      driverCleanup = loadPluginClassAndGetDriver(request, pluginContext);
+      try (Connection connection = getConnection(request.connectionString, request.user, request.password)) {
+        PreparedStatement ps = connection
+          .prepareStatement("SELECT datname FROM pg_database WHERE datistemplate = false;");
+        ResultSet rs = ps.executeQuery();
+        List<String> databases = new ArrayList<>();
+        while (rs.next()) {
+          databases.add(rs.getString(1));
+        }
+        rs.close();
+        ps.close();
+        return databases;
+      } finally {
+        driverCleanup.destroy();
+      }
+    } catch (Exception e) {
+      LOG.error("Exception while performing getDatabases", e);
+      throw e;
+    }
+  }
+
   private static String removeConditionsClause(String importQuerySring) {
     importQuerySring = importQuerySring.replaceAll("\\s{2,}", " ").toUpperCase();
     if (importQuerySring.contains("WHERE $CONDITIONS AND")) {
@@ -152,7 +192,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     return importQuerySring;
   }
 
-  private DriverCleanup loadPluginClassAndGetDriver(GetSchemaRequest request, EndpointPluginContext pluginContext)
+  DriverCleanup loadPluginClassAndGetDriver(GetSchemaRequest request, EndpointPluginContext pluginContext)
     throws IllegalAccessException, InstantiationException, SQLException {
     Class<? extends Driver> driverClass =
       pluginContext.loadPluginClass(request.getJDBCPluginType(),
@@ -167,8 +207,8 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     }
   }
 
-  private Connection getConnection(String connectionString,
-                                   @Nullable String user, @Nullable String password) throws SQLException {
+  Connection getConnection(String connectionString,
+                           @Nullable String user, @Nullable String password) throws SQLException {
     if (user == null) {
       return DriverManager.getConnection(connectionString);
     } else {
@@ -183,16 +223,16 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     LOG.debug("pluginType = {}; pluginName = {}; connectionString = {}; importQuery = {}; " +
                 "boundingQuery = {}",
               sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName,
-              sourceConfig.connectionString, sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery());
+              sourceConfig.getConnectionString(), sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery());
     Configuration hConf = new Configuration();
     hConf.clear();
 
     // Load the plugin class to make sure it is available.
     Class<? extends Driver> driverClass = context.loadPluginClass(getJDBCPluginId());
     if (sourceConfig.user == null && sourceConfig.password == null) {
-      DBConfiguration.configureDB(hConf, driverClass.getName(), sourceConfig.connectionString);
+      DBConfiguration.configureDB(hConf, driverClass.getName(), sourceConfig.getConnectionString());
     } else {
-      DBConfiguration.configureDB(hConf, driverClass.getName(), sourceConfig.connectionString,
+      DBConfiguration.configureDB(hConf, driverClass.getName(), sourceConfig.getConnectionString(),
                                   sourceConfig.user, sourceConfig.password);
     }
     DataDrivenETLDBInputFormat.setInput(hConf, DBRecord.class,
@@ -330,6 +370,16 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
         throw new IllegalArgumentException(String.format("Unable to parse schema '%s'. Reason: %s",
                                                          schema, e.getMessage()), e);
       }
+    }
+
+    @Override
+    public String getConnectionString() {
+      return connectionString;
+    }
+
+    @Override
+    public String getBaseConnectionString() {
+      return connectionString.substring(0, connectionString.lastIndexOf("/") + 1); // include the last "/"
     }
   }
 }

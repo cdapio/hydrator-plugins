@@ -26,7 +26,7 @@ import javax.annotation.Nullable;
 /**
  * Defines a base {@link PluginConfig} that Database source and sink can re-use
  */
-public class DBConfig extends ConnectionConfig {
+public abstract class DBConfig extends ConnectionConfig {
   @Name(Constants.Reference.REFERENCE_NAME)
   @Description(Constants.Reference.REFERENCE_NAME_DESCRIPTION)
   public String referenceName;

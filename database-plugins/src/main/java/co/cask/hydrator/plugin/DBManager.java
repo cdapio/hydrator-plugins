@@ -69,9 +69,9 @@ public class DBManager implements Destroyable {
     Connection connection;
     try {
       if (config.user == null) {
-        connection = DriverManager.getConnection(config.connectionString);
+        connection = DriverManager.getConnection(config.getConnectionString());
       } else {
-        connection = DriverManager.getConnection(config.connectionString, config.user, config.password);
+        connection = DriverManager.getConnection(config.getConnectionString(), config.user, config.password);
       }
 
       try {
@@ -84,7 +84,7 @@ public class DBManager implements Destroyable {
       }
     } catch (SQLException e) {
       LOG.error("Exception while trying to check the existence of database table {} for connection {}.",
-                tableName, config.connectionString, e);
+                tableName, config.getConnectionString(), e);
       throw Throwables.propagate(e);
     }
   }
@@ -95,7 +95,7 @@ public class DBManager implements Destroyable {
    */
   public void ensureJDBCDriverIsAvailable(Class<? extends Driver> jdbcDriverClass)
     throws IllegalAccessException, InstantiationException, SQLException {
-    driverCleanup = DBUtils.ensureJDBCDriverIsAvailable(jdbcDriverClass, config.connectionString,
+    driverCleanup = DBUtils.ensureJDBCDriverIsAvailable(jdbcDriverClass, config.getConnectionString(),
                                                         config.jdbcPluginType, config.jdbcPluginName);
   }
 

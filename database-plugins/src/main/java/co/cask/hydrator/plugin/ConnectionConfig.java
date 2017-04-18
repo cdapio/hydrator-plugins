@@ -26,8 +26,11 @@ import javax.annotation.Nullable;
 /**
  * Defines a base {@link PluginConfig} that Database source, sink, and action can all re-use.
  */
-public class ConnectionConfig extends PluginConfig {
+public abstract class ConnectionConfig extends PluginConfig {
   public static final String CONNECTION_STRING = "connectionString";
+  public static final String HOSTNAME = "hostname";
+  public static final String PORT = "port";
+  public static final String DATABASE_NAME = "databaseName";
   public static final String USER = "user";
   public static final String PASSWORD = "password";
   public static final String JDBC_PLUGIN_NAME = "jdbcPluginName";
@@ -37,8 +40,24 @@ public class ConnectionConfig extends PluginConfig {
 
   @Name(CONNECTION_STRING)
   @Description("JDBC connection string including database name.")
+  @Nullable
   @Macro
   public String connectionString;
+
+  @Name(HOSTNAME)
+  @Description("Hostname to form JDBC connection string.")
+  @Macro
+  public String hostname;
+
+  @Name(PORT)
+  @Description("Port to form JDBC connection string.")
+  @Macro
+  public String port;
+
+  @Name(DATABASE_NAME)
+  @Description("Database name to form JDBC connection string.")
+  @Macro
+  public String databaseName;
 
   @Name(USER)
   @Description("User to use to connect to the specified database. Required for databases that " +
@@ -77,4 +96,14 @@ public class ConnectionConfig extends PluginConfig {
     jdbcPluginType = "jdbc";
     enableAutoCommit = false;
   }
+
+  /**
+   * Get JDBC connection string including database name
+   */
+  public abstract String getConnectionString();
+
+  /**
+   * Get JDBC connection string without database name
+   */
+  public abstract String getBaseConnectionString();
 }

@@ -32,4 +32,14 @@ public class QueryConfig extends ConnectionConfig {
   public QueryConfig() {
     super();
   }
+
+  @Override
+  public String getConnectionString() {
+    return connectionString;
+  }
+
+  @Override
+  public String getBaseConnectionString() {
+    return connectionString.substring(0, connectionString.lastIndexOf("/") + 1); // include the last "/"
+  }
 }

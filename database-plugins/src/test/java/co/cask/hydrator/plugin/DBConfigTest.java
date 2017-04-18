@@ -49,5 +49,15 @@ public class DBConfigTest {
     TestDBConfig(String query) {
       this.query = cleanQuery(query);
     }
+
+    @Override
+    public String getConnectionString() {
+      return connectionString;
+    }
+
+    @Override
+    public String getBaseConnectionString() {
+      return connectionString.substring(0, connectionString.lastIndexOf("/") + 1); // include the last "/"
+    }
   }
 }

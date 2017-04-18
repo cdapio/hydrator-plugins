@@ -70,6 +70,12 @@
             "widget": "getSchema",
             "output-property": "schema",
             "plugin-method": "getSchema"
+          },
+          "plugin-function": {
+            "method": "POST",
+            "widget": "getSchema",
+            "output-property": "schema",
+            "plugin-method": "getSchema"
           }
         },
         {
