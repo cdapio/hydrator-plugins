@@ -20,6 +20,8 @@ import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.api.dataset.table.Put;
+import co.cask.cdap.api.dataset.table.Row;
+import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.batch.BatchAggregator;
@@ -61,6 +63,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
   public void testDenormalizerWithMultipleKeyFieldValues() throws Exception {
     String inputDatasetName = "denormalizer_multiple_key_input";
     String outputDatasetName = "denormalizer_multiple_key_output";
+    String errorDatasetName = "dropped-records";
 
     ETLStage sourceStage = new ETLStage(
       "records", new ETLPlugin("Table", BatchSource.PLUGIN_TYPE,
@@ -82,6 +85,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
       .put("valueField", "ValueField")
       .put("outputFields", "Firstname,Address")
       .put("fieldAliases", "Address:Addr")
+      .put("errorDataset", errorDatasetName)
       .build();
 
     ETLStage aggregateStage = new ETLStage(
@@ -160,12 +164,15 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
         Assert.assertEquals("PQR1 place near XYZ1", record.get("Addr").toString());
       }
     }
+
+    Assert.assertEquals("Expected dropped records", 0, getErrorDatasetSize(errorDatasetName));
   }
 
   @Test
   public void testDenormalizerWithNullValues() throws Exception {
     String inputDatasetName = "denormalizer_null_values_input";
     String outputDatasetName = "denormalizer_null_values_output";
+    String errorDatasetName = "dropped-records-dataset";
 
     ETLStage sourceStage = new ETLStage(
       "records", new ETLPlugin("Table", BatchSource.PLUGIN_TYPE,
@@ -187,6 +194,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
       .put("nameField", "NameField")
       .put("valueField", "ValueField")
       .put("outputFields", "Firstname,Lastname,Address")
+      .put("errorDataset", errorDatasetName)
       .build();
 
     ETLStage aggregateStage = new ETLStage(
@@ -282,12 +290,22 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
         Assert.assertEquals("ABC2", record.get("Firstname").toString());
       }
     }
+
+    Assert.assertEquals("Expected dropped records", 1, getErrorDatasetSize(errorDatasetName));
+
+    String expectedErrorRecord = "{\"NameField\":\"Lastname\",\"ValueField\":\"XYZ2\"}";
+    DataSetManager<Table> recordsManager = getDataset(errorDatasetName);
+    Table dropRecordsTable = recordsManager.get();
+    Row droppedRecord = dropRecordsTable.get(Bytes.toBytes(expectedErrorRecord));
+
+    Assert.assertNotNull("Expected dropped record", droppedRecord);
   }
 
   @Test
   public void testDenormalizerWithWrongOutputField() throws Exception {
     String inputDatasetName = "denormalizer_wrong_field_input";
     String outputDatasetName = "denormalizer_wrong_field_output";
+    String errorDatasetName = "dropped-records-table";
 
     ETLStage sourceStage = new ETLStage(
       "records", new ETLPlugin("Table", BatchSource.PLUGIN_TYPE,
@@ -310,6 +328,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
       .put("nameField", "NameField")
       .put("valueField", "ValueField")
       .put("outputFields", "Firstname,Lastname,Address,Salary")
+      .put("errorDataset", errorDatasetName)
       .build();
 
     ETLStage aggregateStage = new ETLStage(
@@ -367,5 +386,25 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
     Assert.assertEquals("ABC", outputRecords.get(0).get("Firstname").toString());
     Assert.assertEquals("XYZ", outputRecords.get(0).get("Lastname").toString());
     Assert.assertEquals("PQR place near XYZ", outputRecords.get(0).get("Address").toString());
+
+    Assert.assertEquals("Expected dropped records", 0, getErrorDatasetSize(errorDatasetName));
+  }
+
+  /**
+   * Returns the count of records present in the error dataset.
+   *
+   * @param errorDatasetName
+   * @return size of the error dataset
+   * @throws Exception
+   */
+  private int getErrorDatasetSize(String errorDatasetName) throws Exception {
+    DataSetManager<Table> recordsManager = getDataset(errorDatasetName);
+    Table dropRecordsTable = recordsManager.get();
+    Scanner scanner = dropRecordsTable.scan(null, null);
+    int counter = 0;
+    while (scanner.next() != null) {
+      counter++;
+    }
+    return counter;
   }
 }

@@ -3,11 +3,14 @@
 
 Description
 -----------
-Converts raw data into denormalized data based on a key column. User is able to specify the list of fields that should be used in the denormalized record, with an option to use an alias for the output field name. For example, 'ADDRESS' in the input is mapped to 'addr' in the output schema. 
+Converts raw data into denormalized data based on a key column. User is able to specify the list of fields that should
+be used in the denormalized record, with an option to use an alias for the output field name.
+For example, 'ADDRESS' in the input is mapped to 'addr' in the output schema.
 
 Use Case
 --------
-The transform takes input record that stores a variable set of custom attributes for an entity, denormalizes it on the basis of the key field, and then returns a denormalized table according to the output schema specified by the user.
+The transform takes input record that stores a variable set of custom attributes for an entity, denormalizes it on
+the basis of the key field, and then returns a denormalized table according to the output schema specified by the user.
 The denormalized data is easier to query.
 
 Properties
@@ -21,11 +24,15 @@ Properties
 
 **valueField:** Name of the column in the input record which contains the values for output schema columns. For
 example, input records have columns 'id', 'attribute', 'value' and the 'value' column contains 'John',
-'Wagh', 'NE Lakeside'. So the output record will have values for columns 'FirstName', 'LastName', 'Address' as 'John', 'Wagh', 'NE Lakeside' respectively.
+'Wagh', 'NE Lakeside'. So the output record will have values for columns 'FirstName', 'LastName', 'Address'
+as 'John', 'Wagh', 'NE Lakeside' respectively.
 
 **outputFields:** List of the output fields to be included in denormalized output.
 
-**fieldAliases:** List of the output fields to rename. The key specifies the name of the field to rename, with its corresponding value specifying the new name for that field.
+**fieldAliases:** List of the output fields to rename. The key specifies the name of the field to rename, with its
+corresponding value specifying the new name for that field.
+
+**errorDataset:** Name of the dataset that collects dropped records, when value for the 'Key Field' is null.
 
 **numPartitions:** Number of partitions to use when grouping data. If not specified, the execution framework will
 decide on the number to use.
@@ -56,7 +63,8 @@ id, and then returns a denormalized table according to the output schema specifi
          "fieldAliases": "Address:Office Address",
          "keyField": "id",
          "nameField": "attribute",
-         "valueField": "value"
+         "valueField": "value",
+         "errorDataset": "dropped-records-table"
        }
     }
 
@@ -77,7 +85,6 @@ Output records will contain all the output fields specified by user:
     +=========================================================+
     | joltie    | John        | Wagh       |  NE Lakeside     |
     +=========================================================+
-
 
 Now, let's suppose the aggregator receives the input record with NULL values:
 
@@ -104,3 +111,11 @@ Output records will contain all the output fields specified by user:
     | brett     | Brett       |            |  SE Lakeside     |
     | bob       | Bob         |            |                  |
     +=========================================================+
+
+The dropped records will be collected by error dataset 'dropped-records-table'.
+
+    +========================================================+
+    | ts             | record                                |
+    +========================================================+
+    | 1472560903383  | {attribute":"Lastname","value":"Lee"} |
+    +========================================================+

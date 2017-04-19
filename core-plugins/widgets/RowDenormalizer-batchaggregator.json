@@ -12,17 +12,17 @@
           "label": "Key Field",
           "name": "keyField"
         },
-		    {
+        {
           "widget-type": "textbox",
           "label": "Input Name Field",
           "name": "nameField"
         },
-		    {
+        {
           "widget-type": "textbox",
           "label": "Input Value Field",
           "name": "valueField"
         },
-		    {
+        {
           "widget-type": "csv",
           "label": "Output fields to include",
           "name": "outputFields",
@@ -40,6 +40,11 @@
             "key-placeholder": "Field Name",
             "value-placeholder": "New Field Name"
           }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Error Dataset",
+          "name": "errorDataset"
         }
       ]
     }
