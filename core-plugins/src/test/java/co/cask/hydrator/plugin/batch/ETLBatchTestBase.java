@@ -18,6 +18,8 @@ package co.cask.hydrator.plugin.batch;
 
 import co.cask.cdap.api.artifact.ArtifactVersion;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.lib.PartitionKey;
+import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.datapipeline.DataPipelineApp;
 import co.cask.cdap.etl.mock.test.HydratorTestBase;
@@ -32,7 +34,9 @@ import co.cask.hydrator.plugin.batch.aggregator.DedupAggregator;
 import co.cask.hydrator.plugin.batch.aggregator.GroupByAggregator;
 import co.cask.hydrator.plugin.batch.joiner.Joiner;
 import co.cask.hydrator.plugin.batch.sink.BatchCubeSink;
+import co.cask.hydrator.plugin.batch.sink.DynamicPartitionFileSetParquetSink;
 import co.cask.hydrator.plugin.batch.sink.KVTableSink;
+import co.cask.hydrator.plugin.batch.sink.PartitionedFileSetSink;
 import co.cask.hydrator.plugin.batch.sink.S3AvroBatchSink;
 import co.cask.hydrator.plugin.batch.sink.S3ParquetBatchSink;
 import co.cask.hydrator.plugin.batch.sink.SnapshotFileBatchAvroSink;
@@ -115,6 +119,7 @@ public class ETLBatchTestBase extends HydratorTestBase {
                       TimePartitionedFileSetDatasetAvroSource.class,
                       TimePartitionedFileSetDatasetParquetSource.class, AvroParquetInputFormat.class,
                       BatchCubeSink.class, KVTableSink.class, TableSink.class,
+                      DynamicPartitionFileSetParquetSink.class, PartitionedFileSetSink.class,
                       TimePartitionedFileSetDatasetAvroSink.class, AvroKeyOutputFormat.class, AvroKey.class,
                       TimePartitionedFileSetDatasetParquetSink.class, AvroParquetOutputFormat.class,
                       TimePartitionedFileSetDataSetORCSink.class, OrcStruct.class,
@@ -150,6 +155,13 @@ public class ETLBatchTestBase extends HydratorTestBase {
         records.addAll(readOutput(timeLoc, schema));
       }
     }
+    return records;
+  }
+
+  protected List<GenericRecord> readOutput(PartitionedFileSet fileSet, Schema schema, PartitionKey partitionKey)
+    throws IOException {
+    List<GenericRecord> records = Lists.newArrayList();
+    records.addAll(readOutput(fileSet.getPartition(partitionKey).getLocation(), schema));
     return records;
   }
 
