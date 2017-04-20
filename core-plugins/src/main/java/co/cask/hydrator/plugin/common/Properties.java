@@ -159,6 +159,7 @@ public final class Properties {
     public static final String ACCESS_ID = "accessID";
     public static final String ACCESS_KEY = "accessKey";
     public static final String PARTITION_KEY = "partitionKey";
+    public static final String DISTRIBUTE = "distribute";
     public static final String SHARD_COUNT = "shardCount";
   }
 
