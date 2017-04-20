@@ -229,7 +229,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
         .set("floatTest", 3.6f)
         .set("doubleTest", 4.2)
         .set("boolTest", true)
-        .set("longTest", 23456789)
+        .set("longTest", 23456789L)
         .set("intTest", 12)
         .set("byteTest", Bytes.toBytes("abcd"))
         .set("unionStrTest", "testUnion")
