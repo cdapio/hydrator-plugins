@@ -32,6 +32,8 @@ quorum is required.
 have special meanings in Kafka. Default value is ``'kafka.api.OffsetRequest.EarliestTime'`` 
 (-2L); a value of -1L corresponds to ``'kafka.api.OffsetRequest.LatestTime'``.
 
+**fetchSizeBytes:** Message fetch size in bytes when making Kafka fetch request. Defaults to 1048576 bytes (1M).
+
 **schema:** Optional schema for the body of Kafka events.
 The schema is used in conjunction with the format to parse Kafka payloads.
 Some formats (such as the 'avro' format) require schema while others do not.

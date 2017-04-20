@@ -50,6 +50,7 @@ import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import org.junit.Assert;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -102,7 +103,11 @@ public class ETLWorkerTest extends ETLRealtimeTestBase {
     workerManager.waitForStatus(false, 10, 1);
   }
 
+  /**
+   * Ignoring until we fix https://issues.cask.co/browse/CDAP-7247
+   */
   @Test
+  @Ignore
   public void testStreamSinks() throws Exception {
     ETLPlugin sourceConfig = new ETLPlugin(
       "DataGenerator", RealtimeSource.PLUGIN_TYPE,

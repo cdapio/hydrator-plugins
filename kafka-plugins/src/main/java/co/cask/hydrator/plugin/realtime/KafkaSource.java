@@ -69,6 +69,7 @@ public class KafkaSource extends ReferenceRealtimeSource<StructuredRecord> {
   public static final String KAFKA_ZOOKEEPER = "kafka.zookeeper";
   public static final String KAFKA_BROKERS = "kafka.brokers";
   public static final String KAFKA_INITIAL_OFFSET = "kafka.initial.offset";
+  public static final String FETCH_SIZE = "fetchSizeBytes";
   public static final String SCHEMA = "schema";
   public static final String FORMAT = "format";
 
@@ -113,6 +114,8 @@ public class KafkaSource extends ReferenceRealtimeSource<StructuredRecord> {
     super.initialize(context);
 
     kafkaConsumer = new Kafka08SimpleApiConsumer(this);
+
+    LOG.info("Batch size: " + config.fetchSizeBytes);
     kafkaConsumer.initialize(context);
     if (!Strings.isNullOrEmpty(config.format)) {
       FormatSpecification spec = config.getFormatSpec();
@@ -219,6 +222,12 @@ public class KafkaSource extends ReferenceRealtimeSource<StructuredRecord> {
     @Macro
     private final Long defaultOffset;
 
+    @Name(FETCH_SIZE)
+    @Description("Message fetch size in bytes when making Kafka fetch request. Defaults to 1048576 bytes (1M).")
+    @Nullable
+    @Macro
+    private final Integer fetchSizeBytes;
+
     @Name(SCHEMA)
     @Description("Optional schema for the body of Kafka events. The schema is used in conjunction with the format " +
       "to parse Kafka payloads. Some formats (such as the 'avro' format) require schema while others do not. " +
@@ -236,13 +245,15 @@ public class KafkaSource extends ReferenceRealtimeSource<StructuredRecord> {
     private final String format;
 
     public KafkaPluginConfig(String zkConnect, String brokers, Integer partitions, String topic,
-                             Long defaultOffset, @Nullable String format, @Nullable String schema) {
+                             Long defaultOffset, Integer fetchSizeBytes, @Nullable String format,
+                             @Nullable String schema) {
       super(String.format("Kafka_%s", topic));
       this.zkConnect = zkConnect;
       this.kafkaBrokers = brokers;
       this.partitions = partitions;
       this.topic = topic;
       this.defaultOffset = defaultOffset;
+      this.fetchSizeBytes = fetchSizeBytes;
       this.schema = schema;
       this.format = format;
     }
@@ -270,6 +281,11 @@ public class KafkaSource extends ReferenceRealtimeSource<StructuredRecord> {
     @Nullable
     public Long getDefaultOffset() {
       return defaultOffset;
+    }
+
+    @Nullable
+    public Integer getFetchSizeBytes() {
+      return fetchSizeBytes;
     }
 
     @Nullable

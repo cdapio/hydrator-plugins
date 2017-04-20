@@ -20,6 +20,11 @@
           "widget-type": "textbox",
           "label": "Header Field Name",
           "name": "headers.field"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Content Type",
+          "name": "body.contentType"
         }
       ]
     }
