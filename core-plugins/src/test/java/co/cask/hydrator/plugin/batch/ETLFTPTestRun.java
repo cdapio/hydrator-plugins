@@ -38,7 +38,6 @@ import org.apache.avro.generic.GenericRecord;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockftpserver.fake.FakeFtpServer;
 import org.mockftpserver.fake.UserAccount;
@@ -97,10 +96,6 @@ public class ETLFTPTestRun extends ETLBatchTestBase {
     }
   }
 
-  // TODO: https://issues.cask.co/browse/CDAP-5480
-  // In unit-test, the classpath has hadoop-common jar ahead of cdap-app-fabric and hence the modified
-  // FTPInputStream.java in cdap-app-fabric is not getting picked up. Hence ignoring the test.
-  @Ignore
   @Test
   public void testFTPBatchSource() throws Exception {
     ETLStage source = new ETLStage("source", new ETLPlugin(
@@ -110,6 +105,7 @@ public class ETLFTPTestRun extends ETLBatchTestBase {
         .put(Properties.File.PATH, String.format("ftp://%s:%s@localhost:%d%s",
                                                  USER, PWD, port, folder.getAbsolutePath()))
         .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
+        .put("referenceName", "ftp")
         .build(),
       null));
     ETLStage sink = new ETLStage("sink", new ETLPlugin(
