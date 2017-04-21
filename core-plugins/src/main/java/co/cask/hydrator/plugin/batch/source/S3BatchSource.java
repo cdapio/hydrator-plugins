@@ -20,12 +20,10 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
-import com.google.common.reflect.TypeToken;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.Gson;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -45,47 +43,21 @@ public class S3BatchSource extends FileBatchSource {
   private static final String SECRET_KEY = "fs.s3n.awsSecretAccessKey";
   private static final String ACCESS_CREDENTIALS = "Access Credentials";
   private static final String IAM = "IAM";
-  private static final Gson GSON = new Gson();
-  private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() {
-  }.getType();
 
   @SuppressWarnings("unused")
   private final S3BatchConfig config;
 
   public S3BatchSource(S3BatchConfig config) {
-    // update fileSystemProperties with S3 properties, so FileBatchSource.prepareRun can use them
-    super(new FileBatchConfig(config.referenceName, config.path, config.fileRegex, config.timeTable,
-                              config.inputFormatClass, updateFileSystemProperties(
-      config.fileSystemProperties, config.accessID, config.accessKey, config.authenticationMethod),
-                              config.maxSplitSize, config.ignoreNonExistingFolders, config.recursive));
+    super(config);
     this.config = config;
-  }
-
-  @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    config.validate(config.authenticationMethod);
-    super.configurePipeline(pipelineConfigurer);
-  }
-
-  private static String updateFileSystemProperties(@Nullable String fileSystemProperties, String accessID,
-                                                   String accessKey, String authenticationMethod) {
-    Map<String, String> providedProperties;
-    if (fileSystemProperties == null) {
-      providedProperties = new HashMap<>();
-    } else {
-      providedProperties = GSON.fromJson(fileSystemProperties, MAP_STRING_STRING_TYPE);
-    }
-    if (authenticationMethod.equalsIgnoreCase(ACCESS_CREDENTIALS)) {
-      providedProperties.put(ACCESS_KEY, accessID);
-      providedProperties.put(SECRET_KEY, accessKey);
-    }
-    return GSON.toJson(providedProperties);
   }
 
   /**
    * Config class that contains properties needed for the S3 source.
    */
   public static class S3BatchConfig extends FileBatchConfig {
+    private static final Gson GSON = new Gson();
+
     @Description(ACCESS_ID_DESCRIPTION)
     @Macro
     @Nullable
@@ -102,30 +74,27 @@ public class S3BatchSource extends FileBatchSource {
     private final String authenticationMethod;
 
     public S3BatchConfig() {
-      accessID = null;
-      accessKey = null;
-      authenticationMethod = ACCESS_CREDENTIALS;
+      this(null, null, ACCESS_CREDENTIALS);
     }
 
-    public S3BatchConfig(String referenceName, String accessID, String accessKey, String path,
-                         String authenticationMethod) {
-      this(referenceName, accessID, accessKey, path, null, null, null, null, null, false, false, authenticationMethod);
+    @VisibleForTesting
+    public S3BatchConfig(String accessID, String accessKey, String authenticationMethod) {
+      this(accessID, accessKey, authenticationMethod, new HashMap<String, String>());
     }
 
-    public S3BatchConfig(String referenceName, String accessID, String accessKey, String path, @Nullable String regex,
-                         @Nullable String timeTable, @Nullable String inputFormatClass,
-                         @Nullable String fileSystemProperties, @Nullable Long maxSplitSize,
-                         @Nullable Boolean ignoreNonExistingFolders, @Nullable Boolean recursive,
-                         String authenticationMethod) {
-      super(referenceName, path, regex, timeTable, inputFormatClass,
-            updateFileSystemProperties(fileSystemProperties, accessID, accessKey, authenticationMethod), maxSplitSize,
-            ignoreNonExistingFolders, recursive);
+    @VisibleForTesting
+    public S3BatchConfig(String accessID, String accessKey, String authenticationMethod,
+                         Map<String, String> fileSystemProperties) {
+      super();
       this.accessID = accessID;
       this.accessKey = accessKey;
       this.authenticationMethod = authenticationMethod;
+      this.fileSystemProperties = GSON.toJson(fileSystemProperties);
     }
 
-    private void validate(String authenticationMethod) {
+    @Override
+    protected void validate() {
+      super.validate();
       if (authenticationMethod.equalsIgnoreCase(ACCESS_CREDENTIALS)) {
         if (!containsMacro("accessID") && (accessID == null || accessID.isEmpty())) {
           throw new IllegalArgumentException("The Access ID must be specified if " +
@@ -140,6 +109,16 @@ public class S3BatchSource extends FileBatchSource {
           throw new IllegalArgumentException("Path must start with s3a:// for IAM based authentication.");
         }
       }
+    }
+
+    @Override
+    protected Map<String, String> getFileSystemProperties() {
+      Map<String, String> properties = new HashMap<>(super.getFileSystemProperties());
+      if (authenticationMethod.equalsIgnoreCase(ACCESS_CREDENTIALS)) {
+        properties.put(ACCESS_KEY, accessID);
+        properties.put(SECRET_KEY, accessKey);
+      }
+      return properties;
     }
   }
 }

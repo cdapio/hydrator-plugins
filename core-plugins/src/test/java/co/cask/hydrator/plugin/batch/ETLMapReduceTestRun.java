@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch;
 
 import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
@@ -27,6 +28,7 @@ import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
+import co.cask.cdap.etl.mock.batch.MockSink;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
@@ -39,8 +41,10 @@ import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.batch.source.FileBatchSource;
+import co.cask.hydrator.plugin.batch.source.PathTrackingInputFormat;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -52,7 +56,9 @@ import org.junit.Test;
 
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -385,14 +391,10 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
                       .put(Properties.S3.PATH, testPath)
                       .put(Properties.S3.FILE_REGEX, ".*abc.*")
                       .put(Properties.S3.IGNORE_NON_EXISTING_FOLDERS, "false")
+                      .put("pathField", "path")
                       .build(),
                     null));
-    ETLStage sink = new ETLStage(
-      "sink", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
-                            ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA,
-                                            FileBatchSource.DEFAULT_SCHEMA.toString(),
-                                            Properties.TimePartitionedFileSetDataset.TPFS_NAME, "TPFSsink"),
-                            null));
+    ETLStage sink = new ETLStage("sink", MockSink.getPlugin("s3Output"));
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
       .addStage(source)
       .addStage(sink)
@@ -407,14 +409,18 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     workflowManager.start();
     workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 2, TimeUnit.MINUTES);
 
-    DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset("TPFSsink");
-    try (TimePartitionedFileSet fileSet = fileSetManager.get()) {
-      List<GenericRecord> records = readOutput(fileSet, FileBatchSource.DEFAULT_SCHEMA);
-      // Two input files, each with one input record were specified. However, only one file matches the regex,
-      // so only one record should be found in the output.
-      Assert.assertEquals(1, records.size());
-      Assert.assertEquals(testData1, records.get(0).get("body").toString());
-    }
+    DataSetManager<Table> outputManager = getDataset("s3Output");
+    Set<StructuredRecord> actual = new HashSet<>();
+    actual.addAll(MockSink.readOutput(outputManager));
+
+    Schema schema = PathTrackingInputFormat.getOutputSchema("path");
+    // Two input files, each with one input record were specified. However, only one file matches the regex,
+    // so only one record should be found in the output.
+    Set<StructuredRecord> expected = ImmutableSet.of(
+      StructuredRecord.builder(schema).set("offset", 0L)
+        .set("body", "Sample data for testing.")
+        .set("path", "s3n://test/abc.txt").build());
+    Assert.assertEquals(expected, actual);
   }
 
   @Test

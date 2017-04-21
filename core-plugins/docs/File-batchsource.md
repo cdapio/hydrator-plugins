@@ -36,11 +36,18 @@ left blank. If it's currently *2015-06-16-15* (June 16th 2015, 3pm), it will rea
 in files that contain *2015-06-16-14* in the filename. If the field ``timeTable`` is
 present, then it will read in files that have not yet been read. (Macro-enabled)
 
+**pathField:** If specified, each output record will include a field with this name that contains the file URI
+that the record was read from. Requires a customized version of CombineFileInputFormat, so it cannot be used if
+an inputFormatClass is given.
+
+**filenameOnly:** If true and a pathField is specified, only the filename will be used.
+If false, the full URI will be used. Defaults to false.
+
 **timeTable:** Name of the Table that keeps track of the last time files
 were read in. (Macro-enabled)
 
-**inputFormatClass:** Name of the input format class, which must be a
-subclass of FileInputFormat. Defaults to CombineTextInputFormat. (Macro-enabled)
+**inputFormatClass:** Name of the input format class, which must be a subclass of FileInputFormat.
+Cannot be used if pathField is set. (Macro-enabled)
 
 **maxSplitSize:** Maximum split-size for each mapper in the MapReduce Job. Defaults to 128MB. (Macro-enabled)
 
