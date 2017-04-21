@@ -1,0 +1,64 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Date Transform Configuration",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Source Field Name",
+          "name": "sourceField",
+          "widget-attributes": {
+            "width": "large"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Source Field Date Format",
+          "name": "sourceFormat",
+          "widget-attributes": {
+            "width": "large"
+          }
+        },
+        {
+          "widget-type": "select",
+          "label": "Source in Seconds or Milliseconds?",
+          "name": "secondsOrMilliseconds",
+          "widget-attributes": {
+            "width": "large",
+            "values": [
+              "Seconds",
+              "Milliseconds"
+            ],
+            "default" : "Milliseconds"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Target Field Name",
+          "name": "targetField",
+          "widget-attributes": {
+            "width": "large"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Target Field Date Format",
+          "name": "targetFormat",
+          "widget-attributes": {
+            "width": "large"
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "label": "schema",
+      "widget-type": "schema"
+    }
+  ]
+}
