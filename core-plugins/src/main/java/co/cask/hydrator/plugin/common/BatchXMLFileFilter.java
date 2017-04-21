@@ -23,9 +23,11 @@ import com.google.gson.reflect.TypeToken;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,8 +50,14 @@ public class BatchXMLFileFilter extends Configured implements PathFilter {
   public boolean accept(Path path) {
     String filePathName = path.toString();
     //The path filter will first check the directory if a directory is given
-    if (filePathName.equals(pathName)) {
-      return true;
+    try {
+      FileSystem fileSystem = path.getFileSystem(new Configuration());
+      //check if the path exists and is a directory
+      if (fileSystem.exists(path) && fileSystem.isDirectory(path)) {
+        return true;
+      }
+    } catch (IOException e) {
+      throw new IllegalArgumentException(String.format("Input path: %s does not exists.", path), e);
     }
     Matcher matcher = regex.matcher(path.getName());
     boolean patternMatch = matcher.find();

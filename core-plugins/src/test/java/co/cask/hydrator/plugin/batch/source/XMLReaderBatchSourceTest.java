@@ -76,6 +76,7 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
     new ArtifactSummary(BATCH_APP_ARTIFACT_ID.getArtifact(), BATCH_APP_ARTIFACT_ID.getVersion());
   private static final String CATALOG_LARGE_XML_FILE_NAME = "catalogLarge.xml";
   private static final String CATALOG_SMALL_XML_FILE_NAME = "catalogSmall.xml";
+  private static final String CATALOG_XML_FILE_NAME = "catalog.xml";
 
   @ClassRule
   public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
@@ -107,8 +108,15 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
   public void copyFiles() throws IOException {
     URL largeXMLUrl = this.getClass().getResource("/" + CATALOG_LARGE_XML_FILE_NAME);
     URL smallXMLUrl = this.getClass().getResource("/" + CATALOG_SMALL_XML_FILE_NAME);
+    URL xmlUrl = this.getClass().getResource("/" + CATALOG_XML_FILE_NAME);
     FileUtils.copyFile(new File(largeXMLUrl.getFile()), new File(sourceFolder, CATALOG_LARGE_XML_FILE_NAME));
     FileUtils.copyFile(new File(smallXMLUrl.getFile()), new File(sourceFolder, CATALOG_SMALL_XML_FILE_NAME));
+    File destinationDirectory = new File(sourceFolder, "sub-dir");
+    destinationDirectory.mkdir();
+    File sourceDirectory = new File("sub-dir");
+    sourceDirectory.mkdir();
+    FileUtils.copyDirectory(sourceDirectory, destinationDirectory);
+    FileUtils.copyFile(new File(xmlUrl.getFile()), new File(destinationDirectory, CATALOG_XML_FILE_NAME));
   }
 
   /**
@@ -233,17 +241,17 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
 
     startWorkflow(appManager, ProgramRunStatus.COMPLETED);
 
-    //Nmber of files processed
+    //Number of files processed
     List<String> processedFileList = getProcessedFileList(processedFileTable, preProcessedDate);
-    Assert.assertEquals(1, processedFileList.size());
+    Assert.assertEquals(2, processedFileList.size());
 
     //Number of record derived.
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
-    Assert.assertEquals(3, output.size());
-    //Source folder left with one pre-processed file
+    Assert.assertEquals(4, output.size());
+    //Source folder left with two pre-processed file(including sub folder)
     File[] sourceFiles = sourceFolder.listFiles();
-    Assert.assertEquals(1, sourceFiles.length);
+    Assert.assertEquals(2, sourceFiles.length);
   }
 
   @Test
@@ -277,11 +285,11 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
     startWorkflow(appManager, ProgramRunStatus.COMPLETED);
 
     List<String> processedFileList = getProcessedFileList(processedFileTable, preProcessedDate);
-    Assert.assertEquals(2, processedFileList.size());
+    Assert.assertEquals(3, processedFileList.size());
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
-    Assert.assertEquals(12, output.size());
+    Assert.assertEquals(13, output.size());
   }
 
   @Test
@@ -309,13 +317,13 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
     Assert.assertEquals(0, output.size());
 
-    //Source folder must have 0 files after archive
+    //Source folder must have 1 files(sub folder) after archive
     File[] sourceFiles = sourceFolder.listFiles();
-    Assert.assertEquals(0, sourceFiles.length);
+    Assert.assertEquals(1, sourceFiles.length);
 
-    //Target folder must have 2 archived zip and 2 corresponding .crc files
+    //Target folder must have 3 archived zip and 3 corresponding .crc files
     File[] targetFiles = targetFolder.listFiles();
-    Assert.assertEquals(4, targetFiles.length);
+    Assert.assertEquals(6, targetFiles.length);
   }
 
   @Test
@@ -344,9 +352,9 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
     Assert.assertEquals(9, output.size());
 
-    //Source folder must have 1 unprocessed file
+    //Source folder must have 2 unprocessed files(including sub folder)
     File[] sourceFiles = sourceFolder.listFiles();
-    Assert.assertEquals(1, sourceFiles.length);
+    Assert.assertEquals(2, sourceFiles.length);
 
     //Sarget folder must have 1 moved file
     File[] targetFiles = targetFolder.listFiles();
@@ -379,8 +387,39 @@ public class XMLReaderBatchSourceTest extends HydratorTestBase {
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
     Assert.assertEquals(0, output.size());
 
-    //Source folder must have 2 files, no file archived and deleted
+    //Source folder must have 3 files(including sub folder), no file archived and deleted
     File[] sourceFiles = sourceFolder.listFiles();
-    Assert.assertEquals(2, sourceFiles.length);
+    Assert.assertEquals(3, sourceFiles.length);
+  }
+
+  @Test
+  public void testXMLReaderWithPattern() throws Exception {
+    String processedFileTable = "XMLTrackingTableWithPatternTest";
+    Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
+      .put(Constants.Reference.REFERENCE_NAME, "XMLReaderWithPatternTest")
+      .put("path", sourceFolderUri)
+      .put("pattern", ".*log.xml") // file ends with log.xml
+      .put("nodePath", "/catalog/book/price")
+      .put("targetFolder", targetFolderUri)
+      .put("reprocessingRequired", "No")
+      .put("tableName", processedFileTable)
+      .put("actionAfterProcess", "None")
+      .put("tableExpiryPeriod", "30")
+      .put("temporaryFolder", "/tmp")
+      .build();
+
+    String outputDatasetName = "output-batchsink-test-pattern";
+    ApplicationManager appManager = deployApplication(sourceProperties, outputDatasetName,
+                                                      "XMLReaderWithPatternTest");
+    startMapReduceJob(appManager);
+
+    //Number of record derived from XML.
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> output = MockSink.readOutput(outputManager);
+    Assert.assertEquals(1, output.size());
+
+    //Source folder must have 3 unprocessed files(including sub folder)
+    File[] sourceFiles = sourceFolder.listFiles();
+    Assert.assertEquals(3, sourceFiles.length);
   }
 }
