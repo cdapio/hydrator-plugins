@@ -150,7 +150,7 @@ public class DBSinkTestRun extends DatabasePluginTestBase {
       inputRecords.add(StructuredRecord.builder(schema)
         .set("ID", i)
         .set("NAME", name)
-        .set("SCORE", 3.451)
+        .set("SCORE", 3.451f)
         .set("GRADUATED", (i % 2 == 0))
         .set("TINY", i + 1)
         .set("SMALL", i + 2)
