@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.nio.ByteBuffer;
 import java.sql.Date;
 import java.sql.Time;
 import java.text.SimpleDateFormat;
@@ -165,14 +166,14 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     Assert.assertEquals(CURRENT_TS, (long) row1.get("TIMESTAMP_COL"));
     Assert.assertEquals(CURRENT_TS, (long) row2.get("TIMESTAMP_COL"));
     // verify binary columns
-    Assert.assertEquals("user1", Bytes.toString((byte[]) row1.get("BINARY_COL"), 0, 5));
-    Assert.assertEquals("user2", Bytes.toString((byte[]) row2.get("BINARY_COL"), 0, 5));
-    Assert.assertEquals("user1", Bytes.toString((byte[]) row1.get("LONGVARBINARY_COL"), 0, 5));
-    Assert.assertEquals("user2", Bytes.toString((byte[]) row2.get("LONGVARBINARY_COL"), 0, 5));
-    Assert.assertEquals("user1", Bytes.toString((byte[]) row1.get("VARBINARY_COL"), 0, 5));
-    Assert.assertEquals("user2", Bytes.toString((byte[]) row2.get("VARBINARY_COL"), 0, 5));
-    Assert.assertEquals("user1", Bytes.toString((byte[]) row1.get("BLOB_COL"), 0, 5));
-    Assert.assertEquals("user2", Bytes.toString((byte[]) row2.get("BLOB_COL"), 0, 5));
+    Assert.assertEquals("user1", Bytes.toString(((ByteBuffer) row1.get("BINARY_COL")).array(), 0, 5));
+    Assert.assertEquals("user2", Bytes.toString(((ByteBuffer) row2.get("BINARY_COL")).array(), 0, 5));
+    Assert.assertEquals("user1", Bytes.toString(((ByteBuffer) row1.get("LONGVARBINARY_COL")).array(), 0, 5));
+    Assert.assertEquals("user2", Bytes.toString(((ByteBuffer) row2.get("LONGVARBINARY_COL")).array(), 0, 5));
+    Assert.assertEquals("user1", Bytes.toString(((ByteBuffer) row1.get("VARBINARY_COL")).array(), 0, 5));
+    Assert.assertEquals("user2", Bytes.toString(((ByteBuffer) row2.get("VARBINARY_COL")).array(), 0, 5));
+    Assert.assertEquals("user1", Bytes.toString(((ByteBuffer) row1.get("BLOB_COL")).array(), 0, 5));
+    Assert.assertEquals("user2", Bytes.toString(((ByteBuffer) row2.get("BLOB_COL")).array(), 0, 5));
     Assert.assertEquals(CLOB_DATA, row1.get("CLOB_COL"));
     Assert.assertEquals(CLOB_DATA, row2.get("CLOB_COL"));
   }
