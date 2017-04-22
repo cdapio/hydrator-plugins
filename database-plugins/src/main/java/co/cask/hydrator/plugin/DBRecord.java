@@ -16,6 +16,7 @@
 
 package co.cask.hydrator.plugin;
 
+import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import com.google.common.base.Preconditions;
@@ -29,6 +30,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Date;
@@ -280,14 +282,14 @@ public class DBRecord implements Writable, DBWritable, Configurable {
   }
 
   private void writeBytes(PreparedStatement stmt, int fieldIndex, int sqlIndex, Object fieldValue) throws SQLException {
-    byte [] byteValue = (byte []) fieldValue;
+    byte[] byteValue = fieldValue instanceof ByteBuffer ? Bytes.toBytes((ByteBuffer) fieldValue) : (byte[]) fieldValue;
     int parameterType = columnTypes[fieldIndex];
     if (Types.BLOB == parameterType) {
       stmt.setBlob(sqlIndex, new SerialBlob(byteValue));
       return;
     }
     // handles BINARY, VARBINARY and LOGVARBINARY
-    stmt.setBytes(sqlIndex, (byte []) fieldValue);
+    stmt.setBytes(sqlIndex, byteValue);
   }
 
   private void writeInt(PreparedStatement stmt, int fieldIndex, int sqlIndex, Object fieldValue) throws SQLException {
