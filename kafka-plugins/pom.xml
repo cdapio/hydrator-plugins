@@ -19,7 +19,7 @@
   <parent>
     <artifactId>hydrator-plugins</artifactId>
     <groupId>co.cask.hydrator</groupId>
-    <version>1.6.1</version>
+    <version>1.6.2-SNAPSHOT</version>
   </parent>
 
   <properties>
