@@ -26,6 +26,7 @@
   <properties>
     <app.parents>system:cdap-data-pipeline[4.2.0-SNAPSHOT,4.3.0-SNAPSHOT),system:cdap-data-streams[4.2.0-SNAPSHOT,4.3.0-SNAPSHOT)</app.parents>
     <spark.version>1.6.1</spark.version>
+    <kafka.version>0.8.2.2</kafka.version>
   </properties>
 
   <name>Spark Hydrator Plugins</name>
@@ -130,6 +131,16 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>org.apache.spark</groupId>
+      <artifactId>spark-streaming-kafka_2.10</artifactId>
+      <version>${spark.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka_2.10</artifactId>
+      <version>${kafka.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-common</artifactId>
     </dependency>
@@ -172,7 +183,10 @@
           <instructions>
             <_exportcontents>
               co.cask.hydrator.plugin.spark.*;
+              org.apache.spark.streaming.kafka.*;
+              kafka.common;
               org.apache.spark.streaming.scheduler.*;
+              kafka.serializer.*;
               org.apache.spark.streaming.twitter.*;
               twitter4j.*;
               co.cask.hydrator.common.http
