@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.sink;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -94,6 +95,7 @@ public class SnapshotFileBatchParquetSink extends SnapshotFileBatchSink<Void, Ge
    */
   public static class SnapshotParquetConfig extends SnapshotFileSetBatchSinkConfig {
     @Description("The Parquet schema of the record being written to the Sink as a JSON Object.")
+    @Macro
     private String schema;
 
     @Nullable
@@ -105,6 +107,18 @@ public class SnapshotFileBatchParquetSink extends SnapshotFileBatchSink<Void, Ge
       super(name, basePath, null);
       this.schema = schema;
       this.compressionCodec = compressionCodec;
+    }
+
+    @Override
+    public void validate() {
+      super.validate();
+      try {
+        if (schema != null) {
+          co.cask.cdap.api.data.schema.Schema.parseJson(schema);
+        }
+      } catch (IOException e) {
+        throw new IllegalArgumentException("Unable to parse schema: " + e.getMessage());
+      }
     }
   }
 }

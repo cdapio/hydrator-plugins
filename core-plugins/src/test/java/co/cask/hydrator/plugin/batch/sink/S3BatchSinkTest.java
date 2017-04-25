@@ -37,13 +37,12 @@ public class S3BatchSinkTest {
     String accessID = "accessID";
     String accessKey = "accessKey";
     String path = "/path";
-    String schema = "schema";
     String authenticationMethod = "Access Credentials";
     String enableEncryption = "True";
     String encryptionValue = "AES256";
     // Test default properties
     S3AvroBatchSink.S3AvroSinkConfig s3AvroSinkConfig =
-      new S3AvroBatchSink.S3AvroSinkConfig("s3test", path, schema, accessID, accessKey, null, null, null,
+      new S3AvroBatchSink.S3AvroSinkConfig("s3test", path, accessID, accessKey, null, null, null,
                                            authenticationMethod, enableEncryption);
     S3AvroBatchSink s3AvroBatchSink = new S3AvroBatchSink(s3AvroSinkConfig);
     S3BatchSink.S3BatchSinkConfig s3BatchSinkConfig = s3AvroBatchSink.getConfig();
@@ -60,12 +59,11 @@ public class S3BatchSinkTest {
     String accessID = null;
     String accessKey = null;
     String path = "/path";
-    String schema = "schema";
     String authenticationMethod = "IAM";
     String enableEncryption = "True";
     String encryptionValue = "AES256";
     S3AvroBatchSink.S3AvroSinkConfig s3AvroSinkConfig =
-      new S3AvroBatchSink.S3AvroSinkConfig("s3iamtest", path, schema, accessID, accessKey, null, null, null,
+      new S3AvroBatchSink.S3AvroSinkConfig("s3iamtest", path, accessID, accessKey, null, null, null,
                                            authenticationMethod, enableEncryption);
     S3AvroBatchSink s3AvroBatchSink = new S3AvroBatchSink(s3AvroSinkConfig);
     S3BatchSink.S3BatchSinkConfig s3BatchSinkConfig = s3AvroBatchSink.getConfig();
@@ -79,11 +77,10 @@ public class S3BatchSinkTest {
     String accessID = null;
     String accessKey = null;
     String path = "/path";
-    String schema = "schema";
     String authenticationMethod = "IAM";
     String enableEncryption = "False";
     S3AvroBatchSink.S3AvroSinkConfig s3AvroSinkConfig =
-      new S3AvroBatchSink.S3AvroSinkConfig("s3iamtest", path, schema, accessID, accessKey, null, null, null,
+      new S3AvroBatchSink.S3AvroSinkConfig("s3iamtest", path, accessID, accessKey, null, null, null,
                                            authenticationMethod, enableEncryption);
     S3AvroBatchSink s3AvroBatchSink = new S3AvroBatchSink(s3AvroSinkConfig);
     S3BatchSink.S3BatchSinkConfig s3BatchSinkConfig = s3AvroBatchSink.getConfig();

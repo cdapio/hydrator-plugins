@@ -21,7 +21,7 @@ Properties
 **name:** Name of the ``TimePartitionedFileSet`` to which records are written.
 If it doesn't exist, it will be created. (Macro-enabled)
 
-**schema:** The Avro schema of the record being written to the sink as a JSON Object.
+**schema:** The Avro schema of the record being written to the sink as a JSON Object. (Macro-enabled)
 
 **basePath:** Base path for the ``TimePartitionedFileSet``. Defaults to the name of the dataset. (Macro-enabled)
 

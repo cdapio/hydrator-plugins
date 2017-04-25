@@ -27,7 +27,6 @@ import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.plugin.common.FileSetUtil;
-import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroKey;
@@ -51,9 +50,6 @@ public class S3AvroBatchSink extends S3BatchSink<AvroKey<GenericRecord>, NullWri
 
   private StructuredToAvroTransformer recordTransformer;
   private final S3AvroSinkConfig config;
-
-  private static final String SCHEMA_DESC = "The Avro schema of the record being written to the sink as a JSON " +
-    "object.";
 
   public S3AvroBatchSink(S3AvroSinkConfig config) {
     super(config);
@@ -82,10 +78,6 @@ public class S3AvroBatchSink extends S3BatchSink<AvroKey<GenericRecord>, NullWri
    */
   public static class S3AvroSinkConfig extends S3BatchSinkConfig {
 
-    @Name(Properties.S3BatchSink.SCHEMA)
-    @Description(SCHEMA_DESC)
-    private String schema;
-
     @Nullable
     @Description("Used to specify the compression codec to be used for the final dataset.")
     private String compressionCodec;
@@ -96,12 +88,11 @@ public class S3AvroBatchSink extends S3BatchSink<AvroKey<GenericRecord>, NullWri
     }
 
     @SuppressWarnings("unused")
-    public S3AvroSinkConfig(String referenceName, String basePath, String schema, String accessID, String accessKey,
+    public S3AvroSinkConfig(String referenceName, String basePath, String accessID, String accessKey,
                             String pathFormat, String filesystemProperties, @Nullable String compressionCodec,
                             String authenticationMethod, String enableEncryption) {
       super(referenceName, basePath, accessID, accessKey, pathFormat, filesystemProperties, authenticationMethod,
             enableEncryption);
-      this.schema = schema;
       this.compressionCodec = compressionCodec;
     }
   }

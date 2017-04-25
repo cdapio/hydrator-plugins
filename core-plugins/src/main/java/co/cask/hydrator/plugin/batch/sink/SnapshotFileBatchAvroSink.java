@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.sink;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -35,6 +36,7 @@ import org.apache.avro.mapreduce.AvroKeyInputFormat;
 import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.apache.hadoop.io.NullWritable;
 
+import java.io.IOException;
 import javax.annotation.Nullable;
 
 
@@ -92,6 +94,7 @@ public class SnapshotFileBatchAvroSink extends SnapshotFileBatchSink<AvroKey<Gen
    */
   public static class SnapshotAvroConfig extends SnapshotFileSetBatchSinkConfig {
     @Description("The Avro schema of the record being written to the Sink as a JSON Object.")
+    @Macro
     private String schema;
 
     @Nullable
@@ -103,6 +106,18 @@ public class SnapshotFileBatchAvroSink extends SnapshotFileBatchSink<AvroKey<Gen
       super(name, basePath, null);
       this.schema = schema;
       this.compressionCodec = compressionCodec;
+    }
+
+    @Override
+    public void validate() {
+      super.validate();
+      try {
+        if (schema != null) {
+          co.cask.cdap.api.data.schema.Schema.parseJson(schema);
+        }
+      } catch (IOException e) {
+        throw new IllegalArgumentException("Unable to parse schema: " + e.getMessage());
+      }
     }
   }
 }

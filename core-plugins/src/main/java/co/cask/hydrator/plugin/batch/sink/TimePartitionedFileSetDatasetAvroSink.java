@@ -42,8 +42,6 @@ import javax.annotation.Nullable;
 @Description("Sink for a TimePartitionedFileSet that writes data in Avro format.")
 public class TimePartitionedFileSetDatasetAvroSink extends
   TimePartitionedFileSetSink<AvroKey<GenericRecord>, NullWritable> {
-  private static final String SCHEMA_DESC = "The Avro schema of the record being written to the Sink as a JSON " +
-    "Object.";
   private StructuredToAvroTransformer recordTransformer;
   private final TPFSAvroSinkConfig config;
 
@@ -75,17 +73,13 @@ public class TimePartitionedFileSetDatasetAvroSink extends
    */
   public static class TPFSAvroSinkConfig extends TPFSSinkConfig {
 
-    @Description(SCHEMA_DESC)
-    private String schema;
-
     @Nullable
     @Description("Used to specify the compression codec to be used for the final dataset.")
     private String compressionCodec;
 
-    public TPFSAvroSinkConfig(String name, String schema, @Nullable String basePath, @Nullable String pathFormat,
+    public TPFSAvroSinkConfig(String name, @Nullable String basePath, @Nullable String pathFormat,
                               @Nullable String timeZone, @Nullable String compressionCodec) {
       super(name, basePath, pathFormat, timeZone);
-      this.schema = schema;
       this.compressionCodec = compressionCodec;
     }
   }

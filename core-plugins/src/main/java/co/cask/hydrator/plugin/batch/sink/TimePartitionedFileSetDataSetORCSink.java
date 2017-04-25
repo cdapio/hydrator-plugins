@@ -46,8 +46,6 @@ public class TimePartitionedFileSetDataSetORCSink extends TimePartitionedFileSet
   private static final String COMPRESS_SIZE = "orc.compress.size";
   private static final String ROW_INDEX_STRIDE = "orc.row.index.stride";
   private static final String CREATE_INDEX = "orc.create.index";
-
-  private static final String SCHEMA_DESC = "The ORC schema of the record being written to the Sink.";
   private final TPFSOrcSinkConfig config;
   private StructuredToOrcTransformer recordTransformer;
 
@@ -102,9 +100,6 @@ public class TimePartitionedFileSetDataSetORCSink extends TimePartitionedFileSet
    */
   public static class TPFSOrcSinkConfig extends TPFSSinkConfig {
 
-    @Description(SCHEMA_DESC)
-    private String schema;
-
     @Nullable
     @Description("Used to specify the compression codec to be used for the final dataset.")
     private String compressionCodec;
@@ -125,12 +120,11 @@ public class TimePartitionedFileSetDataSetORCSink extends TimePartitionedFileSet
     @Description("Whether to create inline indexes")
     private Boolean createIndex;
 
-    public TPFSOrcSinkConfig(String name, String schema, @Nullable String basePath, @Nullable String pathFormat,
+    public TPFSOrcSinkConfig(String name, @Nullable String basePath, @Nullable String pathFormat,
                              @Nullable String timeZone, @Nullable String compressionCodec,
                              @Nullable Long compressionChunkSize, @Nullable Long stripeSize, @Nullable Long indexStride,
                              @Nullable String createIndex) {
       super(name, basePath, pathFormat, timeZone);
-      this.schema = schema;
       this.compressionCodec = compressionCodec;
       this.compressionChunkSize = compressionChunkSize;
       this.stripeSize = stripeSize;

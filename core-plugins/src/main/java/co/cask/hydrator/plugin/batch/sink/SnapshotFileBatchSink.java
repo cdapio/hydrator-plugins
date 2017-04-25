@@ -60,21 +60,18 @@ public abstract class SnapshotFileBatchSink<KEY_OUT, VAL_OUT> extends BatchSink<
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    config.validate();
     if (!config.containsMacro("name") && !config.containsMacro("basePath") && !config.containsMacro("fileProperties")) {
       FileSetProperties.Builder fileProperties = SnapshotFileSet.getBaseProperties(config);
       addFileProperties(fileProperties);
       pipelineConfigurer.createDataset(config.getName(), PartitionedFileSet.class, fileProperties.build());
-    }
-
-    // throw an exception on badly formatted time string
-    if (config.getCleanPartitionsOlderThan() != null) {
-      TimeParser.parseDuration(config.getCleanPartitionsOlderThan());
     }
   }
 
   @Override
   public void prepareRun(BatchSinkContext context) throws DatasetManagementException {
     // if macros were provided, the dataset still needs to be created
+    config.validate();
     if (!context.datasetExists(config.getName())) {
       FileSetProperties.Builder fileProperties = SnapshotFileSet.getBaseProperties(config);
       addFileProperties(fileProperties);
@@ -148,6 +145,12 @@ public abstract class SnapshotFileBatchSink<KEY_OUT, VAL_OUT> extends BatchSink<
 
     public String getCleanPartitionsOlderThan() {
       return cleanPartitionsOlderThan;
+    }
+
+    public void validate() {
+      if (cleanPartitionsOlderThan != null) {
+        TimeParser.parseDuration(cleanPartitionsOlderThan);
+      }
     }
   }
 }

@@ -22,6 +22,7 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.data.batch.Output;
 import co.cask.cdap.api.data.batch.OutputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.common.ReferenceBatchSink;
@@ -32,6 +33,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
@@ -89,12 +91,13 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<S
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    config.validate(config.authenticationMethod);
+    config.validate();
     super.configurePipeline(pipelineConfigurer);
   }
 
   @Override
   public final void prepareRun(BatchSinkContext context) {
+    config.validate();
     OutputFormatProvider outputFormatProvider = createOutputFormatProvider(context);
     Map<String, String> outputConfig = new HashMap<>(outputFormatProvider.getOutputFormatConfiguration());
 
@@ -142,6 +145,10 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<S
    * S3 Sink configuration.
    */
   public static class S3BatchSinkConfig extends ReferencePluginConfig {
+
+    @Description("The schema of the FileSet")
+    @Macro
+    protected String schema;
 
     @Name(Properties.S3BatchSink.BASE_PATH)
     @Description(PATH_DESC)
@@ -205,7 +212,7 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<S
                                                              authenticationMethod, enableEncryption);
     }
 
-    public void validate(String authenticationMethod) {
+    public void validate() {
       if (authenticationMethod.equalsIgnoreCase(ACCESS_CREDENTIALS)) {
         if (!containsMacro("accessID") && (accessID == null || accessID.isEmpty())) {
           throw new IllegalArgumentException("The Access ID must be specified if " +
@@ -218,6 +225,13 @@ public abstract class S3BatchSink<KEY_OUT, VAL_OUT> extends ReferenceBatchSink<S
       } else if (authenticationMethod.equalsIgnoreCase(IAM)) {
         if (!basePath.startsWith("s3a://")) {
           throw new IllegalArgumentException("Path must start with s3a:// for IAM based authentication.");
+        }
+      }
+      if (schema != null) {
+        try {
+          Schema.parseJson(schema);
+        } catch (IOException e) {
+          throw new IllegalArgumentException("Unable to parse schema: " + e.getMessage());
         }
       }
     }

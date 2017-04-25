@@ -40,8 +40,6 @@ import javax.annotation.Nullable;
 @Description("Sink for a TimePartitionedFileSet that writes data in Parquet format.")
 public class TimePartitionedFileSetDatasetParquetSink extends TimePartitionedFileSetSink<Void, GenericRecord> {
 
-  private static final String SCHEMA_DESC = "The Parquet schema of the record being written to the Sink as a JSON " +
-    "Object.";
   private StructuredToAvroTransformer recordTransformer;
   private final TPFSParquetSinkConfig config;
 
@@ -72,17 +70,13 @@ public class TimePartitionedFileSetDatasetParquetSink extends TimePartitionedFil
    */
   public static class TPFSParquetSinkConfig extends TPFSSinkConfig {
 
-    @Description(SCHEMA_DESC)
-    private String schema;
-
     @Nullable
     @Description("Used to specify the compression codec to be used for the final dataset.")
     private String compressionCodec;
 
-    public TPFSParquetSinkConfig(String name, String schema, @Nullable String basePath, @Nullable String pathFormat,
+    public TPFSParquetSinkConfig(String name, @Nullable String basePath, @Nullable String pathFormat,
                                  @Nullable String timeZone, @Nullable String compressionCodec) {
       super(name, basePath, pathFormat, timeZone);
-      this.schema = schema;
       this.compressionCodec = compressionCodec;
     }
   }
