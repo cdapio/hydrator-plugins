@@ -56,6 +56,8 @@ Normally this setting does not matter. It only matters if you are using a jdbc d
 driver -- that will error when the commit operation is run, or a driver that will error when auto-commit is
 set to false. For drivers like those, you will need to set this to 'true'.
 
+**transactionIsolationLevel:** The transaction isolation level at which operations will be made. See
+[Wikipedia](https://en.wikipedia.org/wiki/Isolation_(database_systems)#Isolation_levels) for a detailed explanation.
 
 Example
 -------
@@ -75,7 +77,8 @@ The column types will be used to derive the record field types output by the sou
             "user": "user123",
             "password": "password-abc",
             "jdbcPluginName": "postgres",
-            "jdbcPluginType": "jdbc"
+            "jdbcPluginType": "jdbc",
+            "transactionIsolationLevel": "Serializable"
         }
     }
 

@@ -217,6 +217,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     if (sourceConfig.schema != null) {
       hConf.set(DBUtils.OVERRIDE_SCHEMA, sourceConfig.schema);
     }
+    hConf.setEnum(DBConfig.TRANSACTION_ISOLATION_LEVEL, sourceConfig.getTransactionIsolationLevel());
     context.setInput(Input.of(sourceConfig.referenceName,
                               new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf)));
   }
