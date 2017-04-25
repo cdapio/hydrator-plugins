@@ -90,6 +90,7 @@
     <dependency>
       <groupId>org.python</groupId>
       <artifactId>jython-standalone</artifactId>
+      <version>2.5.2</version>
     </dependency>
     <!-- Start for JMS Source -->
     <dependency>
@@ -244,36 +245,6 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <version>3.0.0</version>
-        <configuration>
-          <createDependencyReducedPom>false</createDependencyReducedPom>
-        </configuration>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <configuration>
-              <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer">
-                </transformer>
-              </transformers>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-          </archive>
-        </configuration>
-      </plugin>
-      <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <version>2.5.4</version>
@@ -294,13 +265,16 @@
               <!-- Used by S3 source/sink -->
               org.apache.http.*
             </_exportcontents>
+            <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
+            <Embed-Transitive>true</Embed-Transitive>
+            <Embed-Directory>lib</Embed-Directory>
           </instructions>
         </configuration>
         <executions>
           <execution>
-            <phase>process-classes</phase>
+            <phase>package</phase>
             <goals>
-              <goal>manifest</goal>
+              <goal>bundle</goal>
             </goals>
           </execution>
         </executions>

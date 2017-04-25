@@ -46,7 +46,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import javax.annotation.Nullable;
 
 /**
@@ -347,12 +346,6 @@ public class PythonEvaluator extends Transform<StructuredRecord, StructuredRecor
   }
 
   private void init() {
-
-    // This is necessary to prevent 'ImportError' being thrown by Jython
-    Properties properties = new Properties();
-    properties.put("python.import.site", "false");
-    PythonInterpreter.initialize(System.getProperties(), properties, new String[0]);
-
     interpreter = new PythonInterpreter();
     interpreter.set(CONTEXT_NAME, new ScriptContext(
       logger, metrics,
