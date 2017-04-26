@@ -37,4 +37,16 @@ public enum FieldCase {
       return FieldCase.NONE;
     }
   }
+
+  public String convertCase(String input) {
+    switch (this) {
+      case LOWER:
+        return input.toLowerCase();
+      case UPPER:
+        return input.toUpperCase();
+      case NONE:
+      default: // Fallthrough to make the compiler happy
+        return input;
+    }
+  }
 }

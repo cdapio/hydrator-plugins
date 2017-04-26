@@ -45,7 +45,7 @@ public class StructuredRecordUtils {
     Map<String, String> fieldNameMap = new HashMap<>();
     List<Schema.Field> newFields = new ArrayList<>();
     for (Schema.Field field : oldSchema.getFields()) {
-      String newName = changeName(field.getName(), fieldCase);
+      String newName = fieldCase.convertCase(field.getName());
       if (fieldNameMap.containsValue(newName)) {
         // field name used already. indication of field names conflict. can't do anything.
         throw new IllegalStateException(String.format(
@@ -63,16 +63,5 @@ public class StructuredRecordUtils {
   }
 
   private StructuredRecordUtils() {
-  }
-
-  private static String changeName(String oldName, FieldCase fieldCase) {
-    switch (fieldCase) {
-      case LOWER:
-        return oldName.toLowerCase();
-      case UPPER:
-        return oldName.toUpperCase();
-      default:
-        return oldName;
-    }
   }
 }

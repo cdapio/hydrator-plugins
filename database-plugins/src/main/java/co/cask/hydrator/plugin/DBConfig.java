@@ -70,4 +70,8 @@ public class DBConfig extends ConnectionConfig {
     }
     return query.substring(0, idx + 1);
   }
+
+  public FieldCase getFieldCase() {
+    return FieldCase.toFieldCase(columnNameCase);
+  }
 }
