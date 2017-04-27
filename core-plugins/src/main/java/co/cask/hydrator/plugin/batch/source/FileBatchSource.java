@@ -29,6 +29,7 @@ import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
+import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.common.ReferenceBatchSource;
@@ -160,7 +161,7 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
 
     conf.set(INPUT_REGEX_CONFIG, config.fileRegex);
 
-    if (config.timeTable != null) {
+    if (!context.isPreviewEnabled() && config.timeTable != null) {
       table = context.getDataset(config.timeTable);
       datesToRead = Bytes.toString(table.read(LAST_TIME_READ));
       if (datesToRead == null) {

@@ -92,6 +92,9 @@ public abstract class SnapshotFileBatchSink<KEY_OUT, VAL_OUT> extends BatchSink<
 
   @Override
   public void onRunFinish(boolean succeeded, BatchSinkContext context) {
+    if (context.isPreviewEnabled()) {
+      return;
+    }
     super.onRunFinish(succeeded, context);
     if (succeeded) {
       try {

@@ -130,7 +130,7 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       conf.set(XMLInputFormat.XML_INPUTFORMAT_TARGET_FOLDER, config.targetFolder);
     }
 
-    if (!config.containsMacro("tableName") && !Strings.isNullOrEmpty(config.tableName)) {
+    if (!context.isPreviewEnabled() &&!config.containsMacro("tableName") && !Strings.isNullOrEmpty(config.tableName)) {
       setFileTrackingInfo(context, conf);
       //Create a temporary directory, in which XMLRecordReader will add file tracking information.
       fileSystem = FileSystem.get(conf);
