@@ -313,6 +313,11 @@ public class FileBatchSource extends ReferenceBatchSource<Object, Object, Struct
       "URI will be used. Defaults to false.")
     public Boolean filenameOnly;
 
+    // TODO: remove once CDAP-11371 is fixed
+    // This is only here because the UI requires a property otherwise a default schema cannot be set.
+    @Nullable
+    public String schema;
+
     public FileBatchConfig() {
       this(null, null, null, null, null, null, null, null, null);
     }
