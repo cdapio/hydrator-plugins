@@ -21,13 +21,9 @@ import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.etl.api.batch.BatchSource;
-import com.google.common.reflect.TypeToken;
-import com.google.gson.Gson;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.Nullable;
 
 /**
  * {@link BatchSource} for Azure Blob Store.
@@ -36,33 +32,13 @@ import javax.annotation.Nullable;
 @Name("AzureBlobStore")
 @Description("Batch source to read from Azure Blob Storage.")
 public class AzureBatchSource extends FileBatchSource {
-  private static final Gson GSON = new Gson();
-  private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
 
   @SuppressWarnings("unused")
   private final AzureBatchConfig config;
 
   public AzureBatchSource(AzureBatchConfig config) {
-    super(new FileBatchConfig(config.referenceName, config.path, config.fileRegex, config.timeTable,
-                              config.inputFormatClass, updateFileSystemProperties(
-                                config.fileSystemProperties, config.account, config.container, config.storageKey),
-                              config.maxSplitSize, config.ignoreNonExistingFolders, config.recursive));
+    super(config);
     this.config = config;
-  }
-
-  private static String updateFileSystemProperties(@Nullable String fileSystemProperties, String account,
-                                                   String container, String storageKey) {
-    Map<String, String> providedProperties;
-    if (fileSystemProperties == null) {
-      providedProperties = new HashMap<>();
-    } else {
-      providedProperties = GSON.fromJson(fileSystemProperties, MAP_STRING_STRING_TYPE);
-    }
-    providedProperties.put("fs.defaultFS", String.format("wasb://%s@%s/", container, account));
-    providedProperties.put("fs.wasb.impl", "org.apache.hadoop.fs.azure.NativeAzureFileSystem");
-    providedProperties.put("fs.AbstractFileSystem.wasb.impl", "org.apache.hadoop.fs.azure.Wasb");
-    providedProperties.put(String.format("fs.azure.account.key.%s", account), storageKey);
-    return GSON.toJson(providedProperties);
   }
 
   /**
@@ -71,34 +47,25 @@ public class AzureBatchSource extends FileBatchSource {
   public static class AzureBatchConfig extends FileBatchConfig {
     @Description("The Microsoft Azure Storage account to use.")
     @Macro
-    private final String account;
+    private String account;
 
     @Description("The container to use on the specified Microsoft Azure Storage account.")
     @Macro
-    private final String container;
+    private String container;
 
     @Description("The storage key for the specified container on the specified Azure Storage account. Must be a " +
       "valid base64 encoded storage key provided by Microsoft Azure.")
     @Macro
-    private final String storageKey;
+    private String storageKey;
 
-    public AzureBatchConfig(String referenceName, String path, String account, String container, String storageKey) {
-      this(referenceName, path, account, container, storageKey, null, null, null, null, null, false, false);
-    }
-
-    public AzureBatchConfig(String referenceName, String path, String account, String container, String storageKey,
-                            @Nullable String regex, @Nullable String timeTable, @Nullable String inputFormatClass,
-                            @Nullable String fileSystemProperties, @Nullable Long maxSplitSize,
-                            @Nullable Boolean ignoreNonExistingFolders, @Nullable Boolean recursive) {
-      super(referenceName, path, regex, timeTable, inputFormatClass,
-            updateFileSystemProperties(fileSystemProperties, account, container, storageKey),
-            maxSplitSize, ignoreNonExistingFolders, recursive);
-      this.account = account;
-      this.container = container;
-      this.storageKey = storageKey;
-      this.path = path;
-      this.ignoreNonExistingFolders = ignoreNonExistingFolders == null ? false : ignoreNonExistingFolders;
-      this.recursive = recursive == null ? false : recursive;
+    @Override
+    protected Map<String, String> getFileSystemProperties() {
+      Map<String, String> properties = new HashMap<>(super.getFileSystemProperties());
+      properties.put("fs.defaultFS", String.format("wasb://%s@%s/", container, account));
+      properties.put("fs.wasb.impl", "org.apache.hadoop.fs.azure.NativeAzureFileSystem");
+      properties.put("fs.AbstractFileSystem.wasb.impl", "org.apache.hadoop.fs.azure.Wasb");
+      properties.put(String.format("fs.azure.account.key.%s", account), storageKey);
+      return properties;
     }
   }
 }

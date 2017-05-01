@@ -18,6 +18,7 @@ package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.artifact.ArtifactVersion;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.datapipeline.DataPipelineApp;
 import co.cask.cdap.datapipeline.SmartWorkflow;
@@ -40,9 +41,8 @@ import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
-import com.google.gson.Gson;
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.FileUtils;
-import org.apache.hadoop.mapreduce.lib.input.CombineTextInputFormat;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -105,12 +105,10 @@ public class FileBatchSourceTest extends HydratorTestBase {
 
   @Test
   public void testDefaults() {
-    FileBatchSource.FileBatchConfig config = new FileBatchSource.FileBatchConfig();
-    FileBatchSource fileBatchSource = new FileBatchSource(config);
-    FileBatchSource.FileBatchConfig fileBatchConfig = fileBatchSource.getConfig();
-    Assert.assertEquals(new Gson().toJson(ImmutableMap.<String, String>of()), fileBatchConfig.fileSystemProperties);
+    FileBatchSource.FileBatchConfig fileBatchConfig = new FileBatchSource.FileBatchConfig();
+    Assert.assertEquals(ImmutableMap.<String, String>of(), fileBatchConfig.getFileSystemProperties());
     Assert.assertEquals(".*", fileBatchConfig.fileRegex);
-    Assert.assertEquals(CombineTextInputFormat.class.getName(), fileBatchConfig.inputFormatClass);
+    Assert.assertEquals(CombinePathTrackingInputFormat.class.getName(), fileBatchConfig.inputFormatClass);
     Assert.assertNotNull(fileBatchConfig.maxSplitSize);
     Assert.assertEquals(FileBatchSource.DEFAULT_MAX_SPLIT_SIZE, (long) fileBatchConfig.maxSplitSize);
   }
@@ -186,6 +184,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
       .put(Properties.File.FILE_REGEX, "[a-zA-Z0-9\\-:/_]*/x/[a-z0-9]*.txt$")
       .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
       .put(Properties.File.RECURSIVE, "true")
+      .put("pathField", "file")
+      .put("filenameOnly", "true")
       .build();
 
     ETLStage source = new ETLStage("FileInput", new ETLPlugin("File", BatchSource.PLUGIN_TYPE, sourceProperties, null));
@@ -209,15 +209,14 @@ public class FileBatchSourceTest extends HydratorTestBase {
     workflowManager.waitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
-    List<StructuredRecord> output = MockSink.readOutput(outputManager);
 
-    Assert.assertEquals("Expected records", 2, output.size());
-    Set<String> outputValue = new HashSet<>();
-    for (StructuredRecord record : output) {
-      outputValue.add((String) record.get("body"));
-    }
-    Assert.assertTrue(outputValue.contains("Hello,World"));
-    Assert.assertTrue(outputValue.contains("CDAP,Platform"));
+    Schema schema = PathTrackingInputFormat.getOutputSchema("file");
+    Set<StructuredRecord> expected = ImmutableSet.of(
+      StructuredRecord.builder(schema).set("offset", 0L).set("body", "Hello,World").set("file", "test1.txt").build(),
+      StructuredRecord.builder(schema).set("offset", 0L).set("body", "CDAP,Platform").set("file", "test3.txt").build());
+    Set<StructuredRecord> actual = new HashSet<>();
+    actual.addAll(MockSink.readOutput(outputManager));
+    Assert.assertEquals(expected, actual);
   }
 
   @Test

@@ -27,6 +27,7 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
+import co.cask.cdap.api.plugin.EndpointPluginContext;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
@@ -48,7 +49,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.lib.input.CombineTextInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +59,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -70,7 +71,7 @@ import javax.annotation.Nullable;
 @Plugin(type = "batchsource")
 @Name("File")
 @Description("Batch source for File Systems")
-public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, StructuredRecord> {
+public class FileBatchSource extends ReferenceBatchSource<Object, Object, StructuredRecord> {
   public static final String INPUT_NAME_CONFIG = "input.path.name";
   public static final String INPUT_REGEX_CONFIG = "input.path.regex";
   public static final String LAST_TIME_READ = "last.time.read";
@@ -91,7 +92,8 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
   protected static final String TABLE_DESCRIPTION = "Name of the Table that keeps track of the last time files " +
     "were read in. If this is null or empty, the Regex is used to filter filenames.";
   protected static final String INPUT_FORMAT_CLASS_DESCRIPTION = "Name of the input format class, which must be a " +
-    "subclass of FileInputFormat. Defaults to CombineTextInputFormat.";
+    "subclass of FileInputFormat. Defaults to a CombinePathTrackingInputFormat, which is a customized version of " +
+    "CombineTextInputFormat that records the file path each record was read from.";
   protected static final String REGEX_DESCRIPTION = "Regex to filter out files in the path. It accepts regular " +
     "expression which is applied to the complete path and returns the list of files that match the specified pattern." +
     "To use the TimeFilter, input \"timefilter\". The TimeFilter assumes that it " +
@@ -124,6 +126,7 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
+    config.validate();
     if (!config.containsMacro("timeTable") && config.timeTable != null) {
       pipelineConfigurer.createDataset(config.timeTable, KeyValueTable.class, DatasetProperties.EMPTY);
     }
@@ -152,8 +155,7 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
     Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();
 
-    Map<String, String> properties = GSON.fromJson(config.fileSystemProperties, MAP_STRING_STRING_TYPE);
-    //noinspection ConstantConditions
+    Map<String, String> properties = config.getFileSystemProperties();
     for (Map.Entry<String, String> entry : properties.entrySet()) {
       conf.set(entry.getKey(), entry.getValue());
     }
@@ -198,16 +200,25 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
     if (config.maxSplitSize != null) {
       FileInputFormat.setMaxInputSplitSize(job, config.maxSplitSize);
     }
+    if (CombinePathTrackingInputFormat.class.getName().equals(config.inputFormatClass)) {
+      PathTrackingInputFormat.configure(conf, config.pathField, config.filenameOnly);
+    }
     context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(config.inputFormatClass, conf)));
   }
 
   @Override
-  public void transform(KeyValue<LongWritable, Object> input, Emitter<StructuredRecord> emitter) throws Exception {
-    StructuredRecord output = StructuredRecord.builder(DEFAULT_SCHEMA)
-      .set("offset", input.getKey().get())
-      .set("body", input.getValue().toString())
-      .build();
-    emitter.emit(output);
+  public void transform(KeyValue<Object, Object> input, Emitter<StructuredRecord> emitter) throws Exception {
+    // this plugin should never have (among other things) allowed specifying a custom input format class.
+    // this nasty casting is here for backwards compatibility.
+    if (CombinePathTrackingInputFormat.class.getName().equals(config.inputFormatClass)) {
+      emitter.emit((StructuredRecord) input.getValue());
+    } else {
+      StructuredRecord output = StructuredRecord.builder(DEFAULT_SCHEMA)
+        .set("offset", ((LongWritable) input.getKey()).get())
+        .set("body", input.getValue().toString())
+        .build();
+      emitter.emit(output);
+    }
   }
 
   @Override
@@ -230,6 +241,18 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
     } catch (IOException e) {
       throw new IllegalArgumentException(String.format("Error deleting temporary file. %s.", e.getMessage()), e);
     }
+  }
+
+  /**
+   * Endpoint method to get the output schema of a query.
+   *
+   * @param request {@link FileBatchConfig} for the plugin.
+   * @param pluginContext context to create plugins
+   * @return output schema
+   */
+  @javax.ws.rs.Path("getSchema")
+  public Schema getSchema(FileBatchConfig request, EndpointPluginContext pluginContext) {
+    return PathTrackingInputFormat.getOutputSchema(request.pathField);
   }
 
   @VisibleForTesting
@@ -279,14 +302,19 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
     @Description("Boolean value to determine if files are to be read recursively from the path. Default is false.")
     public Boolean recursive;
 
+    @Nullable
+    @Description("If specified, each output record will include a field with this name that contains the file URI " +
+      "that the record was read from. Requires a customized version of CombineFileInputFormat, so it cannot be used " +
+      "if an inputFormatClass is given.")
+    public String pathField;
+
+    @Nullable
+    @Description("If true and a pathField is specified, only the filename will be used. If false, the full " +
+      "URI will be used. Defaults to false.")
+    public Boolean filenameOnly;
+
     public FileBatchConfig() {
-      super("");
-      this.fileSystemProperties = GSON.toJson(ImmutableMap.<String, String>of());
-      this.fileRegex = ".*";
-      this.inputFormatClass = CombineTextInputFormat.class.getName();
-      this.maxSplitSize = DEFAULT_MAX_SPLIT_SIZE;
-      this.ignoreNonExistingFolders = false;
-      this.recursive = false;
+      this(null, null, null, null, null, null, null, null, null);
     }
 
     public FileBatchConfig(String referenceName, String path, @Nullable String fileRegex, @Nullable String timeTable,
@@ -300,10 +328,31 @@ public class FileBatchSource extends ReferenceBatchSource<LongWritable, Object, 
       this.fileRegex = fileRegex == null ? ".*" : fileRegex;
       // There is no default for timeTable, the code handles nulls
       this.timeTable = timeTable;
-      this.inputFormatClass = inputFormatClass == null ? CombineTextInputFormat.class.getName() : inputFormatClass;
+      this.inputFormatClass = inputFormatClass == null ?
+        CombinePathTrackingInputFormat.class.getName() : inputFormatClass;
       this.maxSplitSize = maxSplitSize == null ? DEFAULT_MAX_SPLIT_SIZE : maxSplitSize;
       this.ignoreNonExistingFolders = ignoreNonExistingFolders == null ? false : ignoreNonExistingFolders;
       this.recursive = recursive == null ? false : recursive;
+      this.filenameOnly = false;
+    }
+
+    protected void validate() {
+      getFileSystemProperties();
+      if (!CombinePathTrackingInputFormat.class.getName().equals(inputFormatClass) && pathField != null) {
+        throw new IllegalArgumentException("pathField can only be used if inputFormatClass is " +
+                                             CombinePathTrackingInputFormat.class.getName());
+      }
+    }
+
+    protected Map<String, String> getFileSystemProperties() {
+      if (fileSystemProperties == null) {
+        return new HashMap<>();
+      }
+      try {
+        return GSON.fromJson(fileSystemProperties, MAP_STRING_STRING_TYPE);
+      } catch (Exception e) {
+        throw new IllegalArgumentException("Unable to parse fileSystemProperties: " + e.getMessage());
+      }
     }
   }
 }
