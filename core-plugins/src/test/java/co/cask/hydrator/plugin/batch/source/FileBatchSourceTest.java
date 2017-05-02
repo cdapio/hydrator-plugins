@@ -110,7 +110,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(".*", fileBatchConfig.fileRegex);
     Assert.assertEquals(CombinePathTrackingInputFormat.class.getName(), fileBatchConfig.inputFormatClass);
     Assert.assertNotNull(fileBatchConfig.maxSplitSize);
-    Assert.assertEquals(FileBatchSource.DEFAULT_MAX_SPLIT_SIZE, (long) fileBatchConfig.maxSplitSize);
+    Assert.assertEquals(FileSourceConfig.DEFAULT_MAX_SPLIT_SIZE, (long) fileBatchConfig.maxSplitSize);
   }
 
   @Test

@@ -34,7 +34,7 @@ import javax.annotation.Nullable;
 @Plugin(type = "batchsource")
 @Name("S3")
 @Description("Batch source to use Amazon S3 as a source.")
-public class S3BatchSource extends FileBatchSource {
+public class S3BatchSource extends AbstractFileBatchSource {
   private static final String ACCESS_ID_DESCRIPTION = "Access ID of the Amazon S3 instance to connect to.";
   private static final String ACCESS_KEY_DESCRIPTION = "Access Key of the Amazon S3 instance to connect to.";
   private static final String AUTHENTICATION_METHOD = "Authentication method to access S3. " +
@@ -55,8 +55,13 @@ public class S3BatchSource extends FileBatchSource {
   /**
    * Config class that contains properties needed for the S3 source.
    */
-  public static class S3BatchConfig extends FileBatchConfig {
+  public static class S3BatchConfig extends FileSourceConfig {
     private static final Gson GSON = new Gson();
+
+    @Description("Path to file(s) to be read. If a directory is specified, terminate the path name with a '/'. " +
+      "The path must start with s3a:// for IAM based authentication.")
+    @Macro
+    public String path;
 
     @Description(ACCESS_ID_DESCRIPTION)
     @Macro
@@ -119,6 +124,11 @@ public class S3BatchSource extends FileBatchSource {
         properties.put(SECRET_KEY, accessKey);
       }
       return properties;
+    }
+
+    @Override
+    protected String getPath() {
+      return path;
     }
   }
 }

@@ -31,8 +31,7 @@ import java.util.Map;
 @Plugin(type = "batchsource")
 @Name("AzureBlobStore")
 @Description("Batch source to read from Azure Blob Storage.")
-public class AzureBatchSource extends FileBatchSource {
-
+public class AzureBatchSource extends AbstractFileBatchSource {
   @SuppressWarnings("unused")
   private final AzureBatchConfig config;
 
@@ -44,14 +43,15 @@ public class AzureBatchSource extends FileBatchSource {
   /**
    * Plugin config for {@link AzureBatchSource}.
    */
-  public static class AzureBatchConfig extends FileBatchConfig {
+  public static class AzureBatchConfig extends FileSourceConfig {
+    @Description("Path to file(s) to be read. If a directory is specified,terminate the path name with a '/'. " +
+      "The path must start with `wasb://` or `wasbs://`.")
+    @Macro
+    public String path;
+
     @Description("The Microsoft Azure Storage account to use.")
     @Macro
     private String account;
-
-    @Description("The container to use on the specified Microsoft Azure Storage account.")
-    @Macro
-    private String container;
 
     @Description("The storage key for the specified container on the specified Azure Storage account. Must be a " +
       "valid base64 encoded storage key provided by Microsoft Azure.")
@@ -61,11 +61,15 @@ public class AzureBatchSource extends FileBatchSource {
     @Override
     protected Map<String, String> getFileSystemProperties() {
       Map<String, String> properties = new HashMap<>(super.getFileSystemProperties());
-      properties.put("fs.defaultFS", String.format("wasb://%s@%s/", container, account));
       properties.put("fs.wasb.impl", "org.apache.hadoop.fs.azure.NativeAzureFileSystem");
       properties.put("fs.AbstractFileSystem.wasb.impl", "org.apache.hadoop.fs.azure.Wasb");
       properties.put(String.format("fs.azure.account.key.%s", account), storageKey);
       return properties;
+    }
+
+    @Override
+    protected String getPath() {
+      return path;
     }
   }
 }
