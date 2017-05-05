@@ -76,28 +76,39 @@ public class StructuredtoAvroTest {
 
   @Test
   public void testByteArrayConversionToByteBuffer() throws Exception {
-    Schema outputSchema = Schema.recordOf("output",
-                                          Schema.Field.of("testForBytes", Schema.of(Schema.Type.BYTES)));
-    Schema inputSchema = Schema.recordOf("input",
-                                         Schema.Field.of("testForBytes", Schema.of(Schema.Type.BYTES)));
-    StructuredRecord record = StructuredRecord.builder(inputSchema).set("testForBytes", new byte[1234]).build();
-    StructuredToAvroTransformer avroTransformer = new StructuredToAvroTransformer(outputSchema.toString());
+    Schema schema = Schema.recordOf("output",
+                                    Schema.Field.of("byteArray", Schema.of(Schema.Type.BYTES)),
+                                    Schema.Field.of("byteBuffer", Schema.of(Schema.Type.BYTES)));
+    byte[] bytes = new byte[]{ 1, 2, 3, 4 };
+    StructuredRecord record = StructuredRecord.builder(schema)
+      .set("byteArray", bytes)
+      .set("byteBuffer", ByteBuffer.wrap(bytes))
+      .build();
+    StructuredToAvroTransformer avroTransformer = new StructuredToAvroTransformer(schema.toString());
     GenericRecord result = avroTransformer.transform(record);
-    Assert.assertEquals(ByteBuffer.wrap(new byte[1234]), result.get("testForBytes"));
+    Assert.assertEquals(ByteBuffer.wrap(bytes), result.get("byteBuffer"));
+    Assert.assertEquals(ByteBuffer.wrap(bytes), result.get("byteArray"));
   }
 
   @Test
   public void testByteArrayConversionToByteBufferForNullableField() throws Exception {
-    Schema outputSchema = Schema.recordOf("output",
-                                          Schema.Field.of("testForBytes",
-                                                          Schema.nullableOf(Schema.of(Schema.Type.BYTES))));
-    Schema inputSchema = Schema.recordOf("input",
-                                         Schema.Field.of("testForBytes",
-                                                         Schema.nullableOf(Schema.of(Schema.Type.BYTES))));
-    StructuredRecord record = StructuredRecord.builder(inputSchema).set("testForBytes", new byte[1234]).build();
-    StructuredToAvroTransformer avroTransformer = new StructuredToAvroTransformer(outputSchema.toString());
+    Schema schema = Schema.recordOf("output",
+                                    Schema.Field.of("byteArray", Schema.nullableOf(Schema.of(Schema.Type.BYTES))),
+                                    Schema.Field.of("byteBuffer", Schema.nullableOf(Schema.of(Schema.Type.BYTES))));
+    byte[] bytes = new byte[]{ 1, 2, 3, 4 };
+    StructuredRecord record = StructuredRecord.builder(schema)
+      .set("byteArray", bytes)
+      .set("byteBuffer", ByteBuffer.wrap(bytes))
+      .build();
+    StructuredToAvroTransformer avroTransformer = new StructuredToAvroTransformer(schema.toString());
     GenericRecord result = avroTransformer.transform(record);
-    Assert.assertEquals(ByteBuffer.wrap(new byte[1234]), result.get("testForBytes"));
-  }
+    Assert.assertEquals(ByteBuffer.wrap(bytes), result.get("byteBuffer"));
+    Assert.assertEquals(ByteBuffer.wrap(bytes), result.get("byteArray"));
 
+    // test nulls
+    record = StructuredRecord.builder(schema).build();
+    result = avroTransformer.transform(record);
+    Assert.assertNull(result.get("byteBuffer"));
+    Assert.assertNull(result.get("byteArray"));
+  }
 }

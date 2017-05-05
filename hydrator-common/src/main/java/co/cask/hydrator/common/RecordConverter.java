@@ -104,6 +104,7 @@ public abstract class RecordConverter<INPUT, OUTPUT> {
       case STRING:
         return field.toString();
       case BYTES:
+        return convertBytes(field);
       case INT:
       case LONG:
       case FLOAT:
@@ -113,5 +114,9 @@ public abstract class RecordConverter<INPUT, OUTPUT> {
       default:
         throw new UnexpectedFormatException("field type " + fieldType + " is not supported.");
     }
+  }
+
+  protected Object convertBytes(Object field) {
+    return field;
   }
 }
