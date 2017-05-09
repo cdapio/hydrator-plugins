@@ -20,49 +20,9 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.common.Bytes;
-import co.cask.cdap.api.data.batch.Input;
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.DatasetProperties;
-import co.cask.cdap.api.dataset.lib.KeyValue;
-import co.cask.cdap.api.dataset.lib.KeyValueTable;
-import co.cask.cdap.api.plugin.EndpointPluginContext;
-import co.cask.cdap.etl.api.Emitter;
-import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
-import co.cask.cdap.etl.api.batch.BatchSourceContext;
-import co.cask.hydrator.common.ReferenceBatchSource;
-import co.cask.hydrator.common.ReferencePluginConfig;
-import co.cask.hydrator.common.SourceInputFormatProvider;
-import co.cask.hydrator.common.batch.JobUtils;
-import co.cask.hydrator.plugin.common.BatchFileFilter;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.lang.reflect.Type;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 /**
@@ -71,188 +31,18 @@ import javax.annotation.Nullable;
 @Plugin(type = "batchsource")
 @Name("File")
 @Description("Batch source for File Systems")
-public class FileBatchSource extends ReferenceBatchSource<Object, Object, StructuredRecord> {
-  public static final String INPUT_NAME_CONFIG = "input.path.name";
-  public static final String INPUT_REGEX_CONFIG = "input.path.regex";
-  public static final String LAST_TIME_READ = "last.time.read";
-  public static final String CUTOFF_READ_TIME = "cutoff.read.time";
-  public static final String USE_TIMEFILTER = "timefilter";
-  public static final Schema DEFAULT_SCHEMA = Schema.recordOf(
-    "event",
-    Schema.Field.of("offset", Schema.of(Schema.Type.LONG)),
-    Schema.Field.of("body", Schema.of(Schema.Type.STRING))
-  );
-  protected static final String MAX_SPLIT_SIZE_DESCRIPTION = "Maximum split-size for each mapper in the MapReduce " +
-    "Job. Defaults to 128MB.";
+public class FileBatchSource extends AbstractFileBatchSource {
   protected static final String PATH_DESCRIPTION = "Path to file(s) to be read. If a directory is specified, " +
     "terminate the path name with a \'/\'. For distributed file system such as HDFS, file system name should come" +
     " from 'fs.DefaultFS' property in the 'core-site.xml'. For example, 'hdfs://mycluster.net:8020/input', where" +
     " value of the property 'fs.DefaultFS' in the 'core-site.xml' is 'hdfs://mycluster.net:8020'. The path uses " +
     "filename expansion (globbing) to read files.";
-  protected static final String TABLE_DESCRIPTION = "Name of the Table that keeps track of the last time files " +
-    "were read in. If this is null or empty, the Regex is used to filter filenames.";
-  protected static final String INPUT_FORMAT_CLASS_DESCRIPTION = "Name of the input format class, which must be a " +
-    "subclass of FileInputFormat. Defaults to a CombinePathTrackingInputFormat, which is a customized version of " +
-    "CombineTextInputFormat that records the file path each record was read from.";
-  protected static final String REGEX_DESCRIPTION = "Regex to filter out files in the path. It accepts regular " +
-    "expression which is applied to the complete path and returns the list of files that match the specified pattern." +
-    "To use the TimeFilter, input \"timefilter\". The TimeFilter assumes that it " +
-    "is reading in files with the File log naming convention of 'YYYY-MM-DD-HH-mm-SS-Tag'. The TimeFilter " +
-    "reads in files from the previous hour if the field 'timeTable' is left blank. If it's currently " +
-    "2015-06-16-15 (June 16th 2015, 3pm), it will read in files that contain '2015-06-16-14' in the filename. " +
-    "If the field 'timeTable' is present, then it will read in files that have not yet been read. Defaults to '.*', " +
-    "which indicates that no files will be filtered.";
-  protected static final String FILESYSTEM_PROPERTIES_DESCRIPTION = "A JSON string representing a map of properties " +
-    "needed for the distributed file system.";
-  private static final Gson GSON = new Gson();
-  private static final Type ARRAYLIST_DATE_TYPE = new TypeToken<ArrayList<Date>>() { }.getType();
-  private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
-  @VisibleForTesting
-  static final long DEFAULT_MAX_SPLIT_SIZE = 134217728;
 
-  private static final Logger LOG = LoggerFactory.getLogger(FileBatchSource.class);
   private final FileBatchConfig config;
-  private KeyValueTable table;
-  private Date prevHour;
-  private String datesToRead;
-  private Path path;
-  private FileSystem fs;
 
   public FileBatchSource(FileBatchConfig config) {
     super(config);
     this.config = config;
-  }
-
-  @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    super.configurePipeline(pipelineConfigurer);
-    config.validate();
-    if (!config.containsMacro("timeTable") && config.timeTable != null) {
-      pipelineConfigurer.createDataset(config.timeTable, KeyValueTable.class, DatasetProperties.EMPTY);
-    }
-    pipelineConfigurer.getStageConfigurer().setOutputSchema(DEFAULT_SCHEMA);
-  }
-
-  @Override
-  public void prepareRun(BatchSourceContext context) throws Exception {
-    // Need to create dataset now if macro was provided at configure time
-    if (config.timeTable != null && !context.datasetExists(config.timeTable)) {
-      context.createDataset(config.timeTable, KeyValueTable.class.getName(), DatasetProperties.EMPTY);
-    }
-
-    //SimpleDateFormat needs to be local because it is not threadsafe
-    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH");
-
-    //calculate date one hour ago, rounded down to the nearest hour
-    prevHour = new Date(context.getLogicalStartTime() - TimeUnit.HOURS.toMillis(1));
-    Calendar cal = Calendar.getInstance();
-    cal.setTime(prevHour);
-    cal.set(Calendar.MINUTE, 0);
-    cal.set(Calendar.SECOND, 0);
-    cal.set(Calendar.MILLISECOND, 0);
-    prevHour = cal.getTime();
-
-    Job job = JobUtils.createInstance();
-    Configuration conf = job.getConfiguration();
-
-    Map<String, String> properties = config.getFileSystemProperties();
-    for (Map.Entry<String, String> entry : properties.entrySet()) {
-      conf.set(entry.getKey(), entry.getValue());
-    }
-
-    conf.set(INPUT_REGEX_CONFIG, config.fileRegex);
-
-    if (config.timeTable != null) {
-      table = context.getDataset(config.timeTable);
-      datesToRead = Bytes.toString(table.read(LAST_TIME_READ));
-      if (datesToRead == null) {
-        List<Date> firstRun = Lists.newArrayList(new Date(0));
-        datesToRead = GSON.toJson(firstRun, ARRAYLIST_DATE_TYPE);
-      }
-      List<Date> attempted = Lists.newArrayList(prevHour);
-      String updatedDatesToRead = GSON.toJson(attempted, ARRAYLIST_DATE_TYPE);
-      if (!updatedDatesToRead.equals(datesToRead)) {
-        table.write(LAST_TIME_READ, updatedDatesToRead);
-      }
-      conf.set(LAST_TIME_READ, datesToRead);
-    }
-
-    conf.set(CUTOFF_READ_TIME, dateFormat.format(prevHour));
-    FileInputFormat.setInputPathFilter(job, BatchFileFilter.class);
-    FileInputFormat.setInputDirRecursive(job, config.recursive);
-
-    FileSystem pathFileSystem = FileSystem.get(new Path(config.path).toUri(), conf);
-    FileStatus[] fileStatus = pathFileSystem.globStatus(new Path(config.path));
-    fs = FileSystem.get(conf);
-
-    if (fileStatus == null && config.ignoreNonExistingFolders) {
-      path = fs.getWorkingDirectory().suffix("/tmp/tmp.txt");
-      LOG.warn(String.format("File/Folder specified in %s does not exists. Setting input path to %s.", config.path,
-                             path));
-      fs.createNewFile(path);
-      conf.set(INPUT_NAME_CONFIG, path.toUri().getPath());
-      FileInputFormat.addInputPath(job, path);
-    } else {
-      conf.set(INPUT_NAME_CONFIG, new Path(config.path).toString());
-      FileInputFormat.addInputPath(job, new Path(config.path));
-    }
-
-    if (config.maxSplitSize != null) {
-      FileInputFormat.setMaxInputSplitSize(job, config.maxSplitSize);
-    }
-    if (CombinePathTrackingInputFormat.class.getName().equals(config.inputFormatClass)) {
-      PathTrackingInputFormat.configure(conf, config.pathField, config.filenameOnly);
-    }
-    context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(config.inputFormatClass, conf)));
-  }
-
-  @Override
-  public void transform(KeyValue<Object, Object> input, Emitter<StructuredRecord> emitter) throws Exception {
-    // this plugin should never have (among other things) allowed specifying a custom input format class.
-    // this nasty casting is here for backwards compatibility.
-    if (CombinePathTrackingInputFormat.class.getName().equals(config.inputFormatClass)) {
-      emitter.emit((StructuredRecord) input.getValue());
-    } else {
-      StructuredRecord output = StructuredRecord.builder(DEFAULT_SCHEMA)
-        .set("offset", ((LongWritable) input.getKey()).get())
-        .set("body", input.getValue().toString())
-        .build();
-      emitter.emit(output);
-    }
-  }
-
-  @Override
-  public void onRunFinish(boolean succeeded, BatchSourceContext context) {
-    if (!succeeded && table != null && USE_TIMEFILTER.equals(config.fileRegex)) {
-      String lastTimeRead = Bytes.toString(table.read(LAST_TIME_READ));
-      List<Date> existing = ImmutableList.of();
-      if (lastTimeRead != null) {
-        existing = GSON.fromJson(lastTimeRead, ARRAYLIST_DATE_TYPE);
-      }
-      List<Date> failed = GSON.fromJson(datesToRead, ARRAYLIST_DATE_TYPE);
-      failed.add(prevHour);
-      failed.addAll(existing);
-      table.write(LAST_TIME_READ, GSON.toJson(failed, ARRAYLIST_DATE_TYPE));
-    }
-    try {
-      if (path != null && fs.exists(path.getParent())) {
-        fs.delete(path.getParent(), true);
-      }
-    } catch (IOException e) {
-      throw new IllegalArgumentException(String.format("Error deleting temporary file. %s.", e.getMessage()), e);
-    }
-  }
-
-  /**
-   * Endpoint method to get the output schema of a query.
-   *
-   * @param request {@link FileBatchConfig} for the plugin.
-   * @param pluginContext context to create plugins
-   * @return output schema
-   */
-  @javax.ws.rs.Path("getSchema")
-  public Schema getSchema(FileBatchConfig request, EndpointPluginContext pluginContext) {
-    return PathTrackingInputFormat.getOutputSchema(request.pathField);
   }
 
   @VisibleForTesting
@@ -263,101 +53,29 @@ public class FileBatchSource extends ReferenceBatchSource<Object, Object, Struct
   /**
    * Config class that contains all the properties needed for the file source.
    */
-  public static class FileBatchConfig extends ReferencePluginConfig {
+  public static class FileBatchConfig extends FileSourceConfig {
     @Description(PATH_DESCRIPTION)
     @Macro
     public String path;
 
-    @Nullable
-    @Description(FILESYSTEM_PROPERTIES_DESCRIPTION)
-    @Macro
-    public String fileSystemProperties;
-
-    @Nullable
-    @Description(REGEX_DESCRIPTION)
-    @Macro
-    public String fileRegex;
-
-    @Nullable
-    @Description(TABLE_DESCRIPTION)
-    @Macro
-    public String timeTable;
-
-    @Nullable
-    @Description(INPUT_FORMAT_CLASS_DESCRIPTION)
-    @Macro
-    public String inputFormatClass;
-
-    @Nullable
-    @Description(MAX_SPLIT_SIZE_DESCRIPTION)
-    @Macro
-    public Long maxSplitSize;
-
-    @Nullable
-    @Description("Identify if path needs to be ignored or not, for case when directory or file does not exists. If " +
-      "set to true it will treat the not present folder as zero input and log a warning. Default is false.")
-    public Boolean ignoreNonExistingFolders;
-
-    @Nullable
-    @Description("Boolean value to determine if files are to be read recursively from the path. Default is false.")
-    public Boolean recursive;
-
-    @Nullable
-    @Description("If specified, each output record will include a field with this name that contains the file URI " +
-      "that the record was read from. Requires a customized version of CombineFileInputFormat, so it cannot be used " +
-      "if an inputFormatClass is given.")
-    public String pathField;
-
-    @Nullable
-    @Description("If true and a pathField is specified, only the filename will be used. If false, the full " +
-      "URI will be used. Defaults to false.")
-    public Boolean filenameOnly;
-
-    // TODO: remove once CDAP-11371 is fixed
-    // This is only here because the UI requires a property otherwise a default schema cannot be set.
-    @Nullable
-    public String schema;
-
+    @VisibleForTesting
     public FileBatchConfig() {
-      this(null, null, null, null, null, null, null, null, null);
+      this(null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
-    public FileBatchConfig(String referenceName, String path, @Nullable String fileRegex, @Nullable String timeTable,
+    public FileBatchConfig(String referenceName, @Nullable String fileRegex, @Nullable String timeTable,
                            @Nullable String inputFormatClass, @Nullable String fileSystemProperties,
                            @Nullable Long maxSplitSize, @Nullable Boolean ignoreNonExistingFolders,
-                           @Nullable Boolean recursive) {
-      super(referenceName);
+                           @Nullable Boolean recursive, String path, @Nullable String pathField,
+                           @Nullable Boolean fileNameOnly, @Nullable String schema) {
+      super(referenceName, fileRegex, timeTable, inputFormatClass, fileSystemProperties, maxSplitSize,
+            ignoreNonExistingFolders, recursive, pathField, fileNameOnly, schema);
       this.path = path;
-      this.fileSystemProperties = fileSystemProperties == null ? GSON.toJson(ImmutableMap.<String, String>of()) :
-        fileSystemProperties;
-      this.fileRegex = fileRegex == null ? ".*" : fileRegex;
-      // There is no default for timeTable, the code handles nulls
-      this.timeTable = timeTable;
-      this.inputFormatClass = inputFormatClass == null ?
-        CombinePathTrackingInputFormat.class.getName() : inputFormatClass;
-      this.maxSplitSize = maxSplitSize == null ? DEFAULT_MAX_SPLIT_SIZE : maxSplitSize;
-      this.ignoreNonExistingFolders = ignoreNonExistingFolders == null ? false : ignoreNonExistingFolders;
-      this.recursive = recursive == null ? false : recursive;
-      this.filenameOnly = false;
     }
 
-    protected void validate() {
-      getFileSystemProperties();
-      if (!CombinePathTrackingInputFormat.class.getName().equals(inputFormatClass) && pathField != null) {
-        throw new IllegalArgumentException("pathField can only be used if inputFormatClass is " +
-                                             CombinePathTrackingInputFormat.class.getName());
-      }
-    }
-
-    protected Map<String, String> getFileSystemProperties() {
-      if (fileSystemProperties == null) {
-        return new HashMap<>();
-      }
-      try {
-        return GSON.fromJson(fileSystemProperties, MAP_STRING_STRING_TYPE);
-      } catch (Exception e) {
-        throw new IllegalArgumentException("Unable to parse fileSystemProperties: " + e.getMessage());
-      }
+    @Override
+    protected String getPath() {
+      return path;
     }
   }
 }

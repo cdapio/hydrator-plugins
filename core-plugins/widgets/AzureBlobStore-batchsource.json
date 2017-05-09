@@ -23,11 +23,6 @@
         },
         {
           "widget-type": "textbox",
-          "label": "Azure Blob Store Container",
-          "name": "container"
-        },
-        {
-          "widget-type": "textbox",
           "label": "Azure Blob Store Storage Key",
           "name": "storageKey"
         },
@@ -37,36 +32,9 @@
           "name": "maxSplitSize"
         },
         {
-          "widget-type": "json-editor",
-          "label": "File System Properties",
-          "name": "fileSystemProperties"
-        },
-        {
           "widget-type": "textbox",
           "label": "Regex Path Filter",
           "name": "fileRegex"
-        },
-        {
-          "widget-type": "textbox",
-          "label": "Input Format Class",
-          "name": "inputFormatClass"
-        },
-        {
-          "widget-type": "textbox",
-          "label": "Time Table",
-          "name": "timeTable"
-        },
-        {
-          "widget-type": "select",
-          "label": "Ignore Non-Existing Folders",
-          "name": "ignoreNonExistingFolders",
-          "widget-attributes": {
-            "values": [
-              "true",
-              "false"
-            ],
-            "default": "false"
-          }
         },
         {
           "widget-type": "select",
@@ -79,26 +47,89 @@
             ],
             "default": "false"
           }
+        },
+        {
+          "label": "Output Schema Properties",
+          "properties": [
+            {
+              "widget-type": "textbox",
+              "label": "Path Field",
+              "name": "pathField",
+              "plugin-function": {
+                "method": "POST",
+                "widget": "outputSchema",
+                "output-property": "schema",
+                "plugin-method": "getSchema"
+              }
+            },
+            {
+              "widget-type": "select",
+              "label": "Use File Name as Path Field",
+              "name": "filenameOnly",
+              "widget-attributes": {
+                "values": [
+                  "true",
+                  "false"
+                ],
+                "default": "false"
+              }
+            }
+          ]
+        },
+        {
+          "label": "Advanced Properties",
+          "properties": [
+            {
+              "widget-type": "textbox",
+              "label": "Input Format Class",
+              "name": "inputFormatClass"
+            },
+            {
+              "widget-type": "json-editor",
+              "label": "File System Properties",
+              "name": "fileSystemProperties"
+            },
+            {
+              "widget-type": "select",
+              "label": "Ignore Non-Existing Folders",
+              "name": "ignoreNonExistingFolders",
+              "widget-attributes": {
+                "values": [
+                  "true",
+                  "false"
+                ],
+                "default": "false"
+              }
+            },
+            {
+              "widget-type": "textbox",
+              "label": "Time Table",
+              "name": "timeTable"
+            }
+          ]
         }
       ]
     }
   ],
   "outputs": [
     {
-      "widget-type": "non-editable-schema-editor",
-      "schema": {
-        "name": "etlSchemaBody",
-        "type": "record",
-        "fields": [
-          {
-            "name": "offset",
-            "type": "long"
-          },
-          {
-            "name": "body",
-            "type": "string"
-          }
-        ]
+      "name": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "default-schema": {
+          "name": "fileRecord",
+          "type": "record",
+          "fields": [
+            {
+              "name": "offset",
+              "type": "long"
+            },
+            {
+              "name": "body",
+              "type": "string"
+            }
+          ]
+        }
       }
     }
   ]

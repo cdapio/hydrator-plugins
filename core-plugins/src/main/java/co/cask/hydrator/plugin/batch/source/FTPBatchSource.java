@@ -48,9 +48,9 @@ public class FTPBatchSource extends FileBatchSource {
   private final FTPBatchSourceConfig config;
 
   public FTPBatchSource(FTPBatchSourceConfig config) {
-    super(new FileBatchConfig(config.referenceName, config.path, config.fileRegex, null, config.inputFormatClassName,
+    super(new FileBatchConfig(config.referenceName, config.fileRegex, null, config.inputFormatClassName,
                               limitSplits(config.fileSystemProperties), Long.MAX_VALUE,
-                              config.ignoreNonExistingFolders, config.recursive));
+                              config.ignoreNonExistingFolders, config.recursive, config.path, null, false, null));
     this.config = config;
   }
 
@@ -74,7 +74,7 @@ public class FTPBatchSource extends FileBatchSource {
     @Macro
     public String path;
 
-    @Description(FileBatchSource.FILESYSTEM_PROPERTIES_DESCRIPTION)
+    @Description("A JSON string representing a map of properties needed for the distributed file system.")
     @Nullable
     @Macro
     public String fileSystemProperties;
@@ -84,7 +84,9 @@ public class FTPBatchSource extends FileBatchSource {
     @Macro
     public String fileRegex;
 
-    @Description(FileBatchSource.INPUT_FORMAT_CLASS_DESCRIPTION)
+    @Description("Name of the input format class, which must be a subclass of FileInputFormat. " +
+      "Defaults to a CombinePathTrackingInputFormat, which is a customized version of CombineTextInputFormat " +
+      "that records the file path each record was read from.")
     @Nullable
     @Macro
     public String inputFormatClassName;
