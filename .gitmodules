@@ -18,7 +18,7 @@
 [submodule "wrangler-transform"]
 	path = wrangler-transform
 	url = https://github.com/hydrator/wrangler-transform.git
-	branch = release/1.3 
+	branch = develop
 [submodule "realtime-stream-source"]
 	path = realtime-stream-source
 	url = https://github.com/hydrator/realtime-stream-source.git
