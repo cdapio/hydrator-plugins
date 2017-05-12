@@ -16,41 +16,29 @@ This reader emits one XML event, specified by the node path property, for each f
 
 Properties
 ----------
-**referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
+| Configuration | Required | Default | Description |
+| :------------ | :------: | :------ | :---------- |
+| **Reference Name** | **Y** | None | This will be used to uniquely identify this source for lineage, annotating metadata, etc. |
+| **Path** | **Y** | None | Path to file(s) to be read. If a directory is specified, terminate the path name with a '/'. This leverages glob syntax as described in the [Java Documentation](https://docs.oracle.com/javase/tutorial/essential/io/fileOps.html#glob). |
+| **Pattern** | **N** | None | The Rrgular expression pattern used to select specific file(s). This should be used in cases when the glob syntax in the ``Path`` is not precise enough. See examples in the Usage Notes. |
+| **Node Path** | **Y** | None | Node path (XPath) to emit as an individual event from the XML schema. Example: '/book/price' to read only the price from under the book node. For more information about XPaths, see the [Java Documentation](https://docs.oracle.com/javase/tutorial/jaxp/xslt/xpath.html). |
+| **Action After Process** | **Y** | None | Action to be taken after processing of the XML file. Possible actions are: 1. Delete from the HDFS; 2. Archived to the target location; and 3. Moved to the target location. |
+| **Target Folder** | **N** | None | Target folder path if user select action after process, either ARCHIVE or MOVE. Target folder must be an existing directory. |
+| **Reprocessing Required?** | **Y** | Yes | Specifies whether the file(s) should be reprocessed. If set to No, the files are tracked and will not be processed again on future runs of the pipeline. |
+| **Table Name** | **N** | None | When keeping track of processed files, this is the name of the Table dataset used to store the data. This is required when Reprocessing is set to No. |
+| **Table Expiry Period** | **N** | None | The amount of time (in days) to wait before clearing the table used to track processed filed. If omitted, data will not expire in the tracking table. Example: For tableExpiryPeriod = 30, data before 30 days get deleted from the table. |
+| **Temporary Folder** | **Y** | None | An existing folder path with read and write access for the current user. This is required for storing temporary files containing paths of the processed XML files. These temporary files will be read at the end of the job to update the file track table. Defaults to /tmp. |
 
-**path:** Path to file(s) to be read. If a directory is specified, terminate the path name with a '/'. (Macro-enabled)
+Usage Notes
+-----------
 
-**nodePath:** Node path to emit as an individual event from the XML schema.
-Example: '/book/price' to read only the price from under the book node. (Macro-enabled)
+When specifying a Regular Expression for filtering files, you must use glob syntax in the folder path. This usually just means ending the path with a /*.
 
-**pattern:** Pattern to select specific file(s). (Optional) (Macro-enabled)
-Examples:
-
+When using a Regular Expression pattern, here are some examples:
 1. Use '^' to select files with names starting with 'catalog', such as '^catalog'.
 2. Use '$' to select files with names ending with 'catalog.xml', such as 'catalog.xml$'.
-3. Use '\*' to select file with name contains 'catalogBook', such as 'catalogBook*'.
+3. Use '.\*' to select file with name contains 'catalogBook', such as 'catalogBook.*'.
 
-**actionAfterProcess:** Action to be taken after processing of the XML file.
-Possible actions are:
-
-1. Delete from the HDFS;
-2. Archived to the target location; and
-3. Moved to the target location.
-
-**targetFolder:** Target folder path if user select action after process, either ARCHIVE or MOVE.
-Target folder must be an existing directory. (Optional) (Macro-enabled)
-
-**reprocessingRequired:** Specifies whether the file(s) should be reprocessed.
-
-**tableName:** Table name to be used to keep track of processed file(s). (Macro-enabled)
-
-**tableExpiryPeriod:** Expiry period (days) for data in the table. Data will be persisted in the table if no expiry
-period is provided. Example: For tableExpiryPeriod = 30, data before 30 days get deleted from the table. (Macro-enabled)
-
-**temporaryFolder:** An existing HDFS folder path with read and write access for the current user;
-required for storing temporary files containing paths of the processed XML files.
-These temporary files will be read at the end of the job to update the file track table.
-Default to /tmp. (Macro-enabled)
 
 Example
 -------
@@ -66,8 +54,8 @@ in the table named "trackingTable".
                     "type": "batchsource",
                     "properties":{
                                   "referenceName": "referenceName""
-                                  "path": "hdfs:/cask/source/xmls/",
-                                  "Pattern": "^catalog"
+                                  "path": "hdfs:/cask/source/xmls/*",
+                                  "Pattern": "^catalog.*"
                                   "nodePath": "/catalog/book/title"
                                   "actionAfterProcess" : "Move",
                                   "targetFolder":"hdfs:/cask/target/xmls/",
