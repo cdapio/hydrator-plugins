@@ -159,7 +159,7 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
       }
       DBConfig.TransactionIsolationLevel isolationLevel =
         conf.getEnum(DBConfig.TRANSACTION_ISOLATION_LEVEL, DBConfig.TransactionIsolationLevel.SERIALIZABLE);
-      LOG.debug("Setting database isolation level to {}", isolationLevel);
+      LOG.debug("Setting transaction isolation level to {}", isolationLevel);
       connection.setTransactionIsolation(isolationLevel.getConnectionIsolationLevel());
     } catch (Exception e) {
       throw Throwables.propagate(e);
