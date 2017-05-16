@@ -63,6 +63,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -336,6 +337,22 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
         actionAfterProcess.equalsIgnoreCase("MOVE")) && Strings.isNullOrEmpty(targetFolder);
       Preconditions.checkArgument(!targetFolderEmpty, "Target folder cannot be empty for Action = '" +
         actionAfterProcess + "'.");
+
+      if (!Strings.isNullOrEmpty(pattern)) {
+        try {
+          Pattern.compile(pattern);
+        } catch (Exception e) {
+          throw new IllegalArgumentException(String.format("The regular expression '%s' is not valid.", pattern), e);
+        }
+        // By default, the Hadoop FileInputFormat won't return any files when using a regex pattern unless the path
+        // has globs in it. Checking for that scenario.
+        if (path.endsWith("/") ||
+          !(path.contains("*") || path.contains("?") || path.contains("{") || path.contains("["))) {
+          throw new IllegalArgumentException("When filtering with regular expressions, " +
+                                               "the path must be a directory and leverage glob syntax. Usually " +
+                                               "the folder path needs to end with '/*'.");
+        }
+      }
     }
   }
 }
