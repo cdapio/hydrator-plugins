@@ -349,8 +349,8 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
         if (path.endsWith("/") ||
           !(path.contains("*") || path.contains("?") || path.contains("{") || path.contains("["))) {
           throw new IllegalArgumentException("When filtering with regular expressions, " +
-                                               "the Path must be a directory and leverage glob syntax. Most likely, " +
-                                               "you just need to end your folder path with a /*");
+                                               "the path must be a directory and leverage glob syntax. Usually " +
+                                               "the folder path needs to end with '/*'.");
         }
       }
     }
