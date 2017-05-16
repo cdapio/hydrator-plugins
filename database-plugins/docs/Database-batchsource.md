@@ -32,7 +32,7 @@ For example, 'SELECT MIN(id),MAX(id) FROM table'. Not required if numSplits is s
 **numSplits:** Number of splits to generate. (Macro-enabled)
 
 **columnCase:** Sets the case of the column names returned from the query.
-Possible options are ``upper`` or ``lower``. By default or for any other input, the column names are not modified and
+Possible options are ``upper`` or ``lower``. By default, or for any other input, the column names are not modified and
 the names returned from the database are used as-is. Note that setting this property provides predictability
 of column name cases across different databases but might result in column name conflicts if multiple column
 names are the same when the case is ignored (optional).
@@ -52,9 +52,9 @@ defined in the JSON file for the JDBC plugin.
 defined in the JSON file for the JDBC plugin. Defaults to 'jdbc'.
 
 **enableAutoCommit:** Whether to enable auto-commit for queries run by this source. Defaults to 'false'.
-Normally this setting does not matter. It only matters if you are using a jdbc driver -- like the Hive
-driver -- that will error when the commit operation is run, or a driver that will error when auto-commit is
-set to false. For drivers like those, you will need to set this to 'true'.
+This setting only matters if you are using a JDBC driver -- such as the Hive driver -- 
+that will error when the commit operation is run, or a driver that will error when auto-commit is
+set to `false`. For drivers like these, you will need to set this to `true`.
 
 **transactionIsolationLevel:** The transaction isolation level at which operations will be made. See
 [Wikipedia](https://en.wikipedia.org/wiki/Isolation_(database_systems)#Isolation_levels) for a detailed explanation.
@@ -78,7 +78,7 @@ The column types will be used to derive the record field types output by the sou
             "password": "password-abc",
             "jdbcPluginName": "postgres",
             "jdbcPluginType": "jdbc",
-            "transactionIsolationLevel": "Serializable"
+            "transactionIsolationLevel": "serializable"
         }
     }
 
