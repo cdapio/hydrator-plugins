@@ -74,6 +74,6 @@ the record will be written to the 'id' column of that row.
             "password": "",
             "jdbcPluginName": "postgres",
             "jdbcPluginType": "jdbc",
-            "transactionIsolationLevel": "Serializable"
+            "transactionIsolationLevel": "serializable"
         }
     }
