@@ -38,7 +38,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
-import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
@@ -46,10 +45,8 @@ import scala.Tuple2;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import javax.annotation.Nullable;
 
@@ -87,7 +84,7 @@ public class FileStreamingSource extends ReferenceStreamingSource<StructuredReco
     jsc.ssc().conf().set("spark.streaming.fileStream.minRememberDuration", conf.ignoreThreshold + "s");
     return jsc.fileStream(conf.path, LongWritable.class, Text.class,
                           TextInputFormat.class, filter, false)
-      .flatMap(new FormatFunction(conf.format, conf.schema));
+      .map(new FormatFunction(conf.format, conf.schema));
   }
 
   /**
@@ -121,7 +118,7 @@ public class FileStreamingSource extends ReferenceStreamingSource<StructuredReco
    * Transforms kafka key and message into a structured record when message format and schema are given.
    * Everything here should be serializable, as Spark Streaming will serialize all functions.
    */
-  private static class FormatFunction implements FlatMapFunction<Tuple2<LongWritable, Text>, StructuredRecord> {
+  private static class FormatFunction implements Function<Tuple2<LongWritable, Text>, StructuredRecord> {
     private final String format;
     private final String schemaStr;
     private transient Schema schema;
@@ -133,7 +130,7 @@ public class FileStreamingSource extends ReferenceStreamingSource<StructuredReco
     }
 
     @Override
-    public Iterable<StructuredRecord> call(Tuple2<LongWritable, Text> in) throws Exception {
+    public StructuredRecord call(Tuple2<LongWritable, Text> in) throws Exception {
       // first time this was called, initialize schema and time, key, and message fields.
       if (recordFormat == null) {
         schema = Schema.parseJson(schemaStr);
@@ -147,9 +144,7 @@ public class FileStreamingSource extends ReferenceStreamingSource<StructuredReco
         String fieldName = messageField.getName();
         builder.set(fieldName, messageRecord.get(fieldName));
       }
-      List<StructuredRecord> output = new ArrayList<>(1);
-      output.add(builder.build());
-      return output;
+      return builder.build();
     }
   }
 
