@@ -21,6 +21,7 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.ExploreProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Table;
@@ -34,6 +35,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -54,10 +56,11 @@ public class TableSource extends BatchReadableSource<byte[], Row, StructuredReco
 
   @Override
   protected Map<String, String> getProperties() {
-    Map<String, String> properties = Maps.newHashMap(tableConfig.getProperties().getProperties());
-    properties.put(Properties.BatchReadableWritable.NAME, tableConfig.getName());
-    properties.put(Properties.BatchReadableWritable.TYPE, Table.class.getName());
-    return properties;
+    ExploreProperties.Builder builder = ExploreProperties.builder();
+    builder.addAll(Maps.newHashMap(tableConfig.getProperties().getProperties()));
+    builder.setExploreTableName(tableConfig.getName());
+    builder.add(Properties.BatchReadableWritable.TYPE, Table.class.getName());
+    return builder.build().getProperties();
   }
 
   @Override
