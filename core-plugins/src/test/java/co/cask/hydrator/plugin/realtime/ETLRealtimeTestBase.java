@@ -16,10 +16,10 @@
 
 package co.cask.hydrator.plugin.realtime;
 
+import co.cask.cdap.api.artifact.ArtifactSummary;
 import co.cask.cdap.etl.api.PipelineConfigurable;
 import co.cask.cdap.etl.api.realtime.RealtimeSource;
 import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
-import co.cask.cdap.proto.artifact.ArtifactSummary;
 import co.cask.cdap.proto.id.ArtifactId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.TestBase;
