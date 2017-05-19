@@ -27,11 +27,12 @@ import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.table.Put;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
-import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
-import co.cask.cdap.etl.api.batch.BatchSink;
-import co.cask.cdap.etl.api.batch.BatchSinkContext;
+import co.cask.cdap.etl.api.PipelineConfigurer;
+import co.cask.cdap.etl.api.realtime.DataWriter;
+import co.cask.cdap.etl.api.realtime.RealtimeContext;
+import co.cask.cdap.etl.api.realtime.RealtimeSink;
 import co.cask.cdap.format.RecordPutTransformer;
-import co.cask.hydrator.common.ReferenceBatchSink;
+import co.cask.hydrator.common.ReferenceRealtimeSink;
 import co.cask.hydrator.common.SchemaValidator;
 import co.cask.hydrator.common.batch.JobUtils;
 import co.cask.hydrator.plugin.HBaseConfig;
@@ -55,21 +56,20 @@ import javax.annotation.Nullable;
 /**
  * Sink to write to HBase tables.
  */
-@Plugin(type = BatchSink.PLUGIN_TYPE)
+@Plugin(type = RealtimeSink.PLUGIN_TYPE)
 @Name("HBase")
 @Description("HBase Batch Sink")
-public class RealtimeHBaseSink extends ReferenceBatchSink<StructuredRecord, NullWritable, Mutation> {
+public class RealtimeHBaseSink extends ReferenceRealtimeSink<StructuredRecord> {
 
-  private HBaseSinkConfig config;
+  private RealtimeHBaseSinkConfig config;
   private RecordPutTransformer recordPutTransformer;
 
-  public RealtimeHBaseSink(HBaseSinkConfig config) {
+  public RealtimeHBaseSink(RealtimeHBaseSinkConfig config) {
     super(config);
     this.config = config;
   }
 
-  @Override
-  public void prepareRun(BatchSinkContext context) throws Exception {
+ /* public void prepareRun(RealtimeContext context) throws Exception {
     Job job;
     ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
     // Switch the context classloader to plugin class' classloader (PluginClassLoader) so that
@@ -88,7 +88,7 @@ public class RealtimeHBaseSink extends ReferenceBatchSink<StructuredRecord, Null
     HBaseConfiguration.addHbaseResources(conf);
 
     context.addOutput(Output.of(config.referenceName, new HBaseOutputFormatProvider(config, conf)));
-  }
+  }*/
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
@@ -106,7 +106,7 @@ public class RealtimeHBaseSink extends ReferenceBatchSink<StructuredRecord, Null
 
     private final Map<String, String> conf;
 
-    HBaseOutputFormatProvider(HBaseSinkConfig config, Configuration configuration) {
+    HBaseOutputFormatProvider(RealtimeHBaseSinkConfig config, Configuration configuration) {
       this.conf = new HashMap<>();
       conf.put(TableOutputFormat.OUTPUT_TABLE, config.tableName);
       String zkQuorum = !Strings.isNullOrEmpty(config.zkQuorum) ? config.zkQuorum : "localhost";
@@ -133,7 +133,7 @@ public class RealtimeHBaseSink extends ReferenceBatchSink<StructuredRecord, Null
   }
 
   @Override
-  public void initialize(BatchRuntimeContext context) throws Exception {
+  public void initialize(RealtimeContext context) throws Exception {
     super.initialize(context);
     Schema outputSchema = null;
     // If a schema string is present in the properties, use that to construct the outputSchema and pass it to the
@@ -146,6 +146,18 @@ public class RealtimeHBaseSink extends ReferenceBatchSink<StructuredRecord, Null
   }
 
   @Override
+  public int write(Iterable<StructuredRecord> structuredRecords, DataWriter dataWriter) throws Exception {
+    int count = 0;
+    for (StructuredRecord record : structuredRecords) {
+      Put put = recordPutTransformer.toPut(record);
+      org.apache.hadoop.hbase.client.Put hbasePut = new org.apache.hadoop.hbase.client.Put(put.getRow());
+      for (Map.Entry<byte[], byte[]> entry : put.getValues().entrySet()) {
+        hbasePut.add(config.columnFamily.getBytes(), entry.getKey(), entry.getValue());
+      }
+    }
+    return count;
+  }
+
   public void transform(StructuredRecord input, Emitter<KeyValue<NullWritable, Mutation>> emitter) throws Exception {
     Put put = recordPutTransformer.toPut(input);
     org.apache.hadoop.hbase.client.Put hbasePut = new org.apache.hadoop.hbase.client.Put(put.getRow());
@@ -158,16 +170,16 @@ public class RealtimeHBaseSink extends ReferenceBatchSink<StructuredRecord, Null
   /**
    * HBaseSink plugin.
    */
-  public static class HBaseSinkConfig extends HBaseConfig {
+  public static class RealtimeHBaseSinkConfig extends HBaseConfig {
     @Description("Parent Node of HBase in Zookeeper. Defaults to '/hbase'")
     @Nullable
     private String zkNodeParent;
 
-    public HBaseSinkConfig(String tableName, String rowField, @Nullable String schema) {
+    public RealtimeHBaseSinkConfig(String tableName, String rowField, @Nullable String schema) {
       super(String.format("HBase_%s", tableName), tableName, rowField, schema);
     }
 
-    public HBaseSinkConfig(String referenceName, String tableName, String rowField, @Nullable String schema) {
+    public RealtimeHBaseSinkConfig(String referenceName, String tableName, String rowField, @Nullable String schema) {
       super(referenceName, tableName, rowField, schema);
     }
   }
