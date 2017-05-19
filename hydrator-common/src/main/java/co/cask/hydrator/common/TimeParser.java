@@ -62,7 +62,14 @@ public class TimeParser {
     durationStr = durationStr.trim().toLowerCase();
 
     String value = durationStr.substring(0, durationStr.length() - 1);
-    long parsedValue = Long.parseLong(value);
+    long parsedValue;
+    try {
+      parsedValue = Long.parseLong(value);
+    } catch (NumberFormatException e) {
+      throw new IllegalArgumentException(
+        String.format("Error parsing the duration string %s. Cannot parse %s as a long",
+                      durationStr, value));
+    }
 
     char lastChar = durationStr.charAt(durationStr.length() - 1);
     switch (lastChar) {
