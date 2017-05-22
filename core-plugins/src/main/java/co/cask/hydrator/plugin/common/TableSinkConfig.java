@@ -39,6 +39,12 @@ public class TableSinkConfig extends BatchReadableWritableConfig {
   @Description("The name of the record field that should be used as the row key when writing to the table.")
   private String rowField;
 
+  @Name(Properties.Table.EXPLORE_NAME)
+  @Description("Defaults to the name of the table but allows the user to set it to something else if they want.")
+  @Nullable
+  public String exploreName;
+
+
   public TableSinkConfig(String name, String rowField, @Nullable String schemaStr) {
     super(name);
     this.rowField = rowField;

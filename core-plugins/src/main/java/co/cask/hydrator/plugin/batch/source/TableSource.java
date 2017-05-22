@@ -57,7 +57,11 @@ public class TableSource extends BatchReadableSource<byte[], Row, StructuredReco
   protected Map<String, String> getProperties() {
     ExploreProperties.Builder builder = ExploreProperties.builder();
     builder.addAll(Maps.newHashMap(tableConfig.getProperties().getProperties()));
-    builder.setExploreTableName(tableConfig.getName());
+    if ((tableConfig.exploreName != null) && (tableConfig.exploreName.length() != 0)) {
+      builder.setExploreTableName(tableConfig.exploreName);
+    } else {
+      builder.setExploreTableName(tableConfig.getName());
+    }
     builder.add(Properties.BatchReadableWritable.TYPE, Table.class.getName());
     return builder.build().getProperties();
   }

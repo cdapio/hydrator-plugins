@@ -127,6 +127,7 @@ public final class Properties {
    */
   public static class Table {
     public static final String NAME = "name";
+    public static final String EXPLORE_NAME = "exploreName";
     public static final String PROPERTY_SCHEMA = co.cask.cdap.api.dataset.table.Table.PROPERTY_SCHEMA;
     public static final String PROPERTY_SCHEMA_ROW_FIELD =
       co.cask.cdap.api.dataset.table.Table.PROPERTY_SCHEMA_ROW_FIELD;

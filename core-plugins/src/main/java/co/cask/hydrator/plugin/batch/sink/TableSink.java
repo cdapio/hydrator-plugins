@@ -35,7 +35,6 @@ import co.cask.hydrator.plugin.common.TableSinkConfig;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -90,10 +89,15 @@ public class TableSink extends BatchWritableSink<StructuredRecord, byte[], Put> 
   @Override
   protected Map<String, String> getProperties() {
     ExploreProperties.Builder builder = ExploreProperties.builder();
-    builder.addAll(new HashMap<>(tableSinkConfig.getProperties().getProperties()));
-    builder.setExploreTableName(tableSinkConfig.getName());
+    builder.addAll(tableSinkConfig.getProperties().getProperties());
+    if ((tableSinkConfig.exploreName != null) && (tableSinkConfig.exploreName.length() != 0)) {
+      builder.setExploreTableName(tableSinkConfig.exploreName);
+    } else {
+      builder.setExploreTableName(tableSinkConfig.getName());
+    }
     builder.add(Properties.BatchReadableWritable.TYPE, Table.class.getName());
     return builder.build().getProperties();
+
   }
 
   @Override
