@@ -24,7 +24,6 @@ import co.cask.cdap.api.data.batch.OutputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
-import co.cask.cdap.api.dataset.table.Put;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
@@ -35,6 +34,8 @@ import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.SchemaValidator;
 import co.cask.hydrator.common.batch.JobUtils;
 import co.cask.hydrator.plugin.HBaseConfig;
+import co.cask.cdap.api.dataset.table.Put;
+//import co.cask.hydrator.plugin.
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import org.apache.hadoop.conf.Configuration;
@@ -148,9 +149,15 @@ public class CDCHBaseSink extends ReferenceBatchSink<StructuredRecord, NullWrita
   @Override
   public void transform(StructuredRecord input, Emitter<KeyValue<NullWritable, Mutation>> emitter) throws Exception {
     Put put = recordPutTransformer.toPut(input);
+
     org.apache.hadoop.hbase.client.Put hbasePut = new org.apache.hadoop.hbase.client.Put(put.getRow());
+    org.apache.hadoop.hbase.client.Delete hbaseDelete = new org.apache.hadoop.hbase.client.Delete(put.getRow());
     for (Map.Entry<byte[], byte[]> entry : put.getValues().entrySet()) {
-      hbasePut.add(config.columnFamily.getBytes(), entry.getKey(), entry.getValue());
+      if (entry.getValue() != null) {
+        hbasePut.add(config.columnFamily.getBytes(), entry.getKey(), entry.getValue());
+      } else {
+        hbaseDelete.deleteColumn(config.columnFamily.getBytes(), entry.getKey());
+      }
     }
     emitter.emit(new KeyValue<NullWritable, Mutation>(NullWritable.get(), hbasePut));
   }
