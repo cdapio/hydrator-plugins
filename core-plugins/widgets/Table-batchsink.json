@@ -13,6 +13,11 @@
         },
         {
           "widget-type": "textbox",
+          "label": "Explore Name",
+          "name": "explore.table.name"
+        },
+        {
+          "widget-type": "textbox",
           "label": "Row Field",
           "name": "schema.row.field"
         }

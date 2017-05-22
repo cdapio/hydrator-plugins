@@ -90,7 +90,7 @@ public class TableSink extends BatchWritableSink<StructuredRecord, byte[], Put> 
   protected Map<String, String> getProperties() {
     ExploreProperties.Builder builder = ExploreProperties.builder();
     builder.addAll(tableSinkConfig.getProperties().getProperties());
-    if ((tableSinkConfig.exploreName != null) && (tableSinkConfig.exploreName.length() != 0)) {
+    if ((tableSinkConfig.exploreName != null) && (!tableSinkConfig.exploreName.isEmpty())) {
       builder.setExploreTableName(tableSinkConfig.exploreName);
     } else {
       builder.setExploreTableName(tableSinkConfig.getName());

@@ -45,7 +45,7 @@ public class TableSourceConfig extends BatchReadableWritableConfig {
   private String rowField;
 
   @Name(Properties.Table.EXPLORE_NAME)
-  @Description("Defaults to the name of the table but allows the user to set it to something else if they want.")
+  @Description("Tha name of the explore table. It defaults to the name of the dataset but allows the user to set it to something else.")
   @Nullable
   public String exploreName;
 

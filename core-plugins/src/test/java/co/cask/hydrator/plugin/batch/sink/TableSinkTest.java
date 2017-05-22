@@ -235,7 +235,7 @@ public class TableSinkTest extends ETLBatchTestBase {
                                          ImmutableMap.of(Properties.Table.NAME, "${name}",
                                                          Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "rowkey"),
                                          null);
-    ETLStage sink = new ETLStage("tableSink", sinkConfig);
+    ETLStage sink = new ETLStage("tableSinkUnique", sinkConfig);
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
       .addStage(source)
       .addStage(sink)
@@ -323,16 +323,17 @@ public class TableSinkTest extends ETLBatchTestBase {
     Connection connection = getQueryClient();
 
     ResultSet resultsSource = connection.prepareStatement("select * from exploreTableSource").executeQuery();
-    resultsSource.next();
+    Assert.assertEquals(true, resultsSource.next());
     Assert.assertEquals("row1", resultsSource.getString(1));
     Assert.assertEquals("samuel", resultsSource.getString(2));
     Assert.assertEquals(5, resultsSource.getInt(3));
+    Assert.assertEquals(false, resultsSource.next());
 
     ResultSet resultsSink = connection.prepareStatement("select * from exploreTableSink").executeQuery();
-    resultsSink.next();
+    Assert.assertEquals(true, resultsSink.next());
     Assert.assertEquals("row1", resultsSink.getString(1));
     Assert.assertEquals("samuel", resultsSink.getString(2));
     Assert.assertEquals(5, resultsSink.getInt(3));
-
+    Assert.assertEquals(false, resultsSink.next());
   }
 }
