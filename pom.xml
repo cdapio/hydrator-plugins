@@ -106,7 +106,7 @@
     <cassandraunit.version>2.0.2.2</cassandraunit.version>
     <commons-codec.version>1.10</commons-codec.version>
     <commons-httpclient.version>3.1</commons-httpclient.version>
-    <cdap.version>4.2.0-SNAPSHOT</cdap.version>
+    <cdap.version>4.3.0-SNAPSHOT</cdap.version>
     <datastax.version>2.0.5</datastax.version>
     <dumbster.version>1.6</dumbster.version>
     <es.version>1.6.0</es.version>
