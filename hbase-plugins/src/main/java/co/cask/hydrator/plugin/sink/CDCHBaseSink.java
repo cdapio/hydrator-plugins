@@ -21,7 +21,6 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.batch.Output;
 import co.cask.cdap.api.data.batch.OutputFormatProvider;
-import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
@@ -29,15 +28,13 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
-import co.cask.cdap.format.RecordPutTransformer;
 import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.SchemaValidator;
 import co.cask.hydrator.common.batch.JobUtils;
 import co.cask.hydrator.plugin.HBaseConfig;
-import co.cask.cdap.api.dataset.table.Put;
-//import co.cask.hydrator.plugin.
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Mutation;
@@ -59,10 +56,10 @@ import javax.annotation.Nullable;
 @Plugin(type = BatchSink.PLUGIN_TYPE)
 @Name("HBase")
 @Description("HBase Batch Sink")
-public class CDCHBaseSink extends ReferenceBatchSink<StructuredRecord, NullWritable, Mutation> {
+public class CDCHBaseSink extends ReferenceBatchSink<GenericRecord, NullWritable, Mutation> {
 
   private HBaseSinkConfig config;
-  private RecordPutTransformer recordPutTransformer;
+  //private StructuredToAvroTransformer avroTransformer;
 
   public CDCHBaseSink(HBaseSinkConfig config) {
     super(config);
@@ -136,30 +133,18 @@ public class CDCHBaseSink extends ReferenceBatchSink<StructuredRecord, NullWrita
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    Schema outputSchema = null;
-    // If a schema string is present in the properties, use that to construct the outputSchema and pass it to the
-    // recordPutTransformer
-    String schemaString = config.schema;
-    if (schemaString != null) {
-      outputSchema = Schema.parseJson(schemaString);
-    }
-    recordPutTransformer = new RecordPutTransformer(config.rowField, outputSchema);
   }
 
   @Override
-  public void transform(StructuredRecord input, Emitter<KeyValue<NullWritable, Mutation>> emitter) throws Exception {
-    Put put = recordPutTransformer.toPut(input);
+  public void transform(GenericRecord input, Emitter<KeyValue<NullWritable, Mutation>> emitter) throws Exception {
+    String table_name = (String) input.get("table_name");
+    int schema_hash = (int) input.get("schema_hash");
+    byte[] payload = (byte[]) input.get("payload");
+    org.apache.avro.Schema schema = input.getSchema();
+    Preconditions.checkArgument(schema.getType().equals(org.apache.avro.Schema.Type.RECORD),
+                                "input is not an Avro record");
 
-    org.apache.hadoop.hbase.client.Put hbasePut = new org.apache.hadoop.hbase.client.Put(put.getRow());
-    org.apache.hadoop.hbase.client.Delete hbaseDelete = new org.apache.hadoop.hbase.client.Delete(put.getRow());
-    for (Map.Entry<byte[], byte[]> entry : put.getValues().entrySet()) {
-      if (entry.getValue() != null) {
-        hbasePut.add(config.columnFamily.getBytes(), entry.getKey(), entry.getValue());
-      } else {
-        hbaseDelete.deleteColumn(config.columnFamily.getBytes(), entry.getKey());
-      }
-    }
-    emitter.emit(new KeyValue<NullWritable, Mutation>(NullWritable.get(), hbasePut));
+
   }
 
   /**
