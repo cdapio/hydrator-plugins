@@ -242,7 +242,7 @@ public class TableSinkTest extends ETLBatchTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("TestTableSink");
+    ApplicationId appId = NamespaceId.DEFAULT.app("testTableSink");
     ApplicationManager appManager = deployApplication(appId, appRequest);
     // add some data to the input table
     DataSetManager<Table> inputManager = getDataset("TableSinkInputTable");

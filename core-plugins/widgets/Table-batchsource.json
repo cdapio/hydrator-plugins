@@ -20,7 +20,7 @@
           "widget-type": "textbox",
           "label": "Row Field",
           "name": "schema.row.field"
-        },
+        }
       ]
     }
   ],
