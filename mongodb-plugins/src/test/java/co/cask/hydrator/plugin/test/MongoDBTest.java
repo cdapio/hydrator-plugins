@@ -205,21 +205,33 @@ public class MongoDBTest extends HydratorTestBase {
   @Test
   public void testMongoDBSink() throws Exception {
     String inputDatasetName = "input-batchsinktest";
+    String secondCollectionName = MONGO_SINK_COLLECTIONS + "second";
     ETLStage source = new ETLStage("source", MockSource.getPlugin(inputDatasetName));
 
-    ETLStage sink = new ETLStage("MongoDB", new ETLPlugin(
+    ETLStage sink1 = new ETLStage("MongoDB1", new ETLPlugin(
       "MongoDB",
       BatchSink.PLUGIN_TYPE,
       new ImmutableMap.Builder<String, String>()
         .put(MongoDBBatchSink.Properties.CONNECTION_STRING,
              String.format("mongodb://localhost:%d/%s.%s",
                            mongoPort, MONGO_DB, MONGO_SINK_COLLECTIONS))
-        .put(Constants.Reference.REFERENCE_NAME, "MongoTestDBSink").build(),
+        .put(Constants.Reference.REFERENCE_NAME, "MongoTestDBSink1").build(),
+      null));
+    ETLStage sink2 = new ETLStage("MongoDB2", new ETLPlugin(
+      "MongoDB",
+      BatchSink.PLUGIN_TYPE,
+      new ImmutableMap.Builder<String, String>()
+        .put(MongoDBBatchSink.Properties.CONNECTION_STRING,
+             String.format("mongodb://localhost:%d/%s.%s",
+                           mongoPort, MONGO_DB, secondCollectionName))
+        .put(Constants.Reference.REFERENCE_NAME, "MongoTestDBSink2").build(),
       null));
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
       .addStage(source)
-      .addStage(sink)
-      .addConnection(source.getName(), sink.getName())
+      .addStage(sink1)
+      .addStage(sink2)
+      .addConnection(source.getName(), sink1.getName())
+      .addConnection(source.getName(), sink2.getName())
       .build();
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app("MongoSinkTest");
@@ -236,23 +248,8 @@ public class MongoDBTest extends HydratorTestBase {
     workflowManager.start();
     workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
-    MongoClient mongoClient = factory.newMongo();
-    MongoDatabase mongoDatabase = mongoClient.getDatabase(MONGO_DB);
-    MongoCollection<Document> documents = mongoDatabase.getCollection(MONGO_SINK_COLLECTIONS);
-    Assert.assertEquals(2, documents.count());
-    Iterable<Document> docs = documents.find(new BasicDBObject("ticker", "AAPL"));
-    Assert.assertTrue(docs.iterator().hasNext());
-    for (Document document : docs) {
-      Assert.assertEquals(10, (int) document.getInteger("num"));
-      Assert.assertEquals(500.32, document.getDouble("price"), 0.0001);
-    }
-
-    docs = documents.find(new BasicDBObject("ticker", "CDAP"));
-    Assert.assertTrue(docs.iterator().hasNext());
-    for (Document document : docs) {
-      Assert.assertEquals(13, (int) document.getInteger("num"));
-      Assert.assertEquals(212.36, document.getDouble("price"), 0.0001);
-    }
+    verifyMongoSinkData(MONGO_SINK_COLLECTIONS);
+    verifyMongoSinkData(secondCollectionName);
   }
 
   @Test
@@ -357,5 +354,25 @@ public class MongoDBTest extends HydratorTestBase {
     Assert.assertEquals("ORCL", row2.get("ticker"));
     Assert.assertEquals(12, (int) row2.get("num"));
     Assert.assertEquals(10.10, (double) row2.get("price"), 0.00001);
+  }
+
+  private void verifyMongoSinkData(String collectionName) throws Exception {
+    MongoClient mongoClient = factory.newMongo();
+    MongoDatabase mongoDatabase = mongoClient.getDatabase(MONGO_DB);
+    MongoCollection<Document> documents = mongoDatabase.getCollection(collectionName);
+    Assert.assertEquals(2, documents.count());
+    Iterable<Document> docs = documents.find(new BasicDBObject("ticker", "AAPL"));
+    Assert.assertTrue(docs.iterator().hasNext());
+    for (Document document : docs) {
+      Assert.assertEquals(10, (int) document.getInteger("num"));
+      Assert.assertEquals(500.32, document.getDouble("price"), 0.0001);
+    }
+
+    docs = documents.find(new BasicDBObject("ticker", "CDAP"));
+    Assert.assertTrue(docs.iterator().hasNext());
+    for (Document document : docs) {
+      Assert.assertEquals(13, (int) document.getInteger("num"));
+      Assert.assertEquals(212.36, document.getDouble("price"), 0.0001);
+    }
   }
 }
