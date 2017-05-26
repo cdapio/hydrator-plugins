@@ -58,9 +58,15 @@ public abstract class BatchWritableSink<IN, KEY_OUT, VAL_OUT> extends BatchSink<
       properties.remove(Properties.BatchReadableWritable.NAME);
       properties.remove(Properties.BatchReadableWritable.TYPE);
 
-      pipelineConfigurer.createDataset(datasetName, datasetType,
-                                       DatasetProperties.builder().addAll(properties).build());
+      if (!shouldSkipCreateAtConfigure()) {
+        pipelineConfigurer.createDataset(datasetName, datasetType,
+                                         DatasetProperties.builder().addAll(properties).build());
+      }
     }
+  }
+
+  protected boolean shouldSkipCreateAtConfigure() {
+    return false;
   }
 
   /**

@@ -30,8 +30,6 @@ import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.hydrator.common.RowRecordTransformer;
 import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.common.TableSourceConfig;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 
 import java.util.Map;
@@ -53,6 +51,12 @@ public class TableSource extends BatchReadableSource<byte[], Row, StructuredReco
   }
 
   @Override
+  protected boolean shouldSkipCreateAtConfigure() {
+    return tableConfig.containsMacro(Properties.Table.PROPERTY_SCHEMA) ||
+      tableConfig.containsMacro(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD);
+  }
+
+  @Override
   protected Map<String, String> getProperties() {
     Map<String, String> properties = Maps.newHashMap(tableConfig.getProperties().getProperties());
     properties.put(Properties.BatchReadableWritable.NAME, tableConfig.getName());
@@ -63,19 +67,16 @@ public class TableSource extends BatchReadableSource<byte[], Row, StructuredReco
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
-    Preconditions.checkArgument(!Strings.isNullOrEmpty(tableConfig.getSchemaStr()), "Schema must be specified.");
-    try {
-      Schema schema = Schema.parseJson(tableConfig.getSchemaStr());
+    Schema schema = tableConfig.getSchema();
+    if (schema != null) {
       pipelineConfigurer.getStageConfigurer().setOutputSchema(schema);
-    } catch (Exception e) {
-      throw new IllegalArgumentException("Invalid output schema: " + e.getMessage(), e);
     }
   }
 
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    Schema schema = Schema.parseJson(tableConfig.getSchemaStr());
+    Schema schema = tableConfig.getSchema();
     rowRecordTransformer = new RowRecordTransformer(schema, tableConfig.getRowField());
   }
 
