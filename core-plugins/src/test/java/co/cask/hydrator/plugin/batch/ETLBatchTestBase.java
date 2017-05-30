@@ -33,8 +33,6 @@ import co.cask.hydrator.plugin.batch.aggregator.GroupByAggregator;
 import co.cask.hydrator.plugin.batch.joiner.Joiner;
 import co.cask.hydrator.plugin.batch.sink.BatchCubeSink;
 import co.cask.hydrator.plugin.batch.sink.KVTableSink;
-import co.cask.hydrator.plugin.batch.sink.S3AvroBatchSink;
-import co.cask.hydrator.plugin.batch.sink.S3ParquetBatchSink;
 import co.cask.hydrator.plugin.batch.sink.SnapshotFileBatchAvroSink;
 import co.cask.hydrator.plugin.batch.sink.SnapshotFileBatchParquetSink;
 import co.cask.hydrator.plugin.batch.sink.TableSink;
@@ -121,7 +119,6 @@ public class ETLBatchTestBase extends HydratorTestBase {
                       OrcMapreduceRecordWriter.class, TimestampColumnVector.class,
                       SnapshotFileBatchAvroSink.class, SnapshotFileBatchParquetSink.class,
                       SnapshotFileBatchAvroSource.class, SnapshotFileBatchParquetSource.class,
-                      S3AvroBatchSink.class, S3ParquetBatchSink.class,
                       FTPBatchSource.class,
                       ProjectionTransform.class,
                       ValidatorTransform.class, CoreValidator.class,

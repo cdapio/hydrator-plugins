@@ -17,7 +17,6 @@
 package co.cask.hydrator.plugin.batch;
 
 import co.cask.cdap.api.common.Bytes;
-import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
@@ -28,7 +27,6 @@ import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
-import co.cask.cdap.etl.mock.batch.MockSink;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
@@ -41,24 +39,17 @@ import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.batch.source.FileBatchSource;
-import co.cask.hydrator.plugin.batch.source.PathTrackingInputFormat;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.s3native.S3NInMemoryFileSystem;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.lang.reflect.Method;
-import java.net.URI;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -350,77 +341,6 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
       List<GenericRecord> records = readOutput(fileSet, ERROR_SCHEMA);
       Assert.assertEquals(1, records.size());
     }
-  }
-
-  @Test
-  public void testS3toTPFS() throws Exception {
-    String testPath = "s3n://test/";
-    String testFile1 = "2015-06-17-00-00-00.txt";
-    String testData1 = "Sample data for testing.";
-
-    String testFile2 = "abc.txt";
-    String testData2 = "Sample data for testing.";
-
-    S3NInMemoryFileSystem fs = new S3NInMemoryFileSystem();
-    Configuration conf = new Configuration();
-    conf.set("fs.s3n.impl", S3NInMemoryFileSystem.class.getName());
-    fs.initialize(URI.create("s3n://test/"), conf);
-    fs.createNewFile(new Path(testPath));
-
-    try (FSDataOutputStream fos1 = fs.create(new Path(testPath + testFile1))) {
-      fos1.write(testData1.getBytes());
-      fos1.flush();
-    }
-
-    try (FSDataOutputStream fos2 = fs.create(new Path(testPath + testFile2))) {
-      fos2.write(testData2.getBytes());
-      fos2.flush();
-    }
-
-    Method method = FileSystem.class.getDeclaredMethod("addFileSystemForTesting",
-                                                       URI.class, Configuration.class, FileSystem.class);
-    method.setAccessible(true);
-    method.invoke(FileSystem.class, URI.create("s3n://test/"), conf, fs);
-    ETLStage source = new ETLStage(
-      "source",
-      new ETLPlugin("S3", BatchSource.PLUGIN_TYPE,
-                    ImmutableMap.<String, String>builder()
-                      .put(Constants.Reference.REFERENCE_NAME, "S3TestSource")
-                      .put(Properties.S3.ACCESS_KEY, "key")
-                      .put(Properties.S3.ACCESS_ID, "ID")
-                      .put(Properties.S3.PATH, testPath)
-                      .put(Properties.S3.FILE_REGEX, ".*abc.*")
-                      .put(Properties.S3.IGNORE_NON_EXISTING_FOLDERS, "false")
-                      .put("pathField", "path")
-                      .build(),
-                    null));
-    ETLStage sink = new ETLStage("sink", MockSink.getPlugin("s3Output"));
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(source)
-      .addStage(sink)
-      .addConnection(source.getName(), sink.getName())
-      .build();
-
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("S3ToTPFS");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 2, TimeUnit.MINUTES);
-
-    DataSetManager<Table> outputManager = getDataset("s3Output");
-    Set<StructuredRecord> actual = new HashSet<>();
-    actual.addAll(MockSink.readOutput(outputManager));
-
-    Schema schema = PathTrackingInputFormat.getOutputSchema("path");
-    // Two input files, each with one input record were specified. However, only one file matches the regex,
-    // so only one record should be found in the output.
-    Set<StructuredRecord> expected = ImmutableSet.of(
-      StructuredRecord.builder(schema).set("offset", 0L)
-        .set("body", "Sample data for testing.")
-        .set("path", "s3n://test/abc.txt").build());
-    Assert.assertEquals(expected, actual);
   }
 
   @Test
