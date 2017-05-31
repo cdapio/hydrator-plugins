@@ -57,12 +57,14 @@ public class ConnectionConfig extends PluginConfig {
   @Name(JDBC_PLUGIN_NAME)
   @Description("Name of the JDBC plugin to use. This is the value of the 'name' key defined in the JSON file " +
     "for the JDBC plugin.")
+  @Macro
   public String jdbcPluginName;
 
   @Name(JDBC_PLUGIN_TYPE)
   @Description("Type of the JDBC plugin to use. This is the value of the 'type' key defined in the JSON file " +
     "for the JDBC plugin. Defaults to 'jdbc'.")
   @Nullable
+  @Macro
   public String jdbcPluginType;
 
   @Name(ENABLE_AUTO_COMMIT)

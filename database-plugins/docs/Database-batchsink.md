@@ -37,10 +37,10 @@ authentication. Optional for databases that do not require authentication. (Macr
 that need authentication. Optional for databases that do not require authentication. (Macro-enabled)
 
 **jdbcPluginName:** Name of the JDBC plugin to use. This is the value of the 'name' key
-defined in the JSON file for the JDBC plugin.
+defined in the JSON file for the JDBC plugin. (Macro-enabled)
 
 **jdbcPluginType:** Type of the JDBC plugin to use. This is the value of the 'type' key
-defined in the JSON file for the JDBC plugin. Defaults to 'jdbc'.
+defined in the JSON file for the JDBC plugin. Defaults to 'jdbc'. (Macro-enabled)
 
 **enableAutoCommit:** Whether to enable auto-commit for queries run by this sink. Defaults to 'false'.
 Normally this setting does not matter. It only matters if you are using a jdbc driver -- like the Hive
