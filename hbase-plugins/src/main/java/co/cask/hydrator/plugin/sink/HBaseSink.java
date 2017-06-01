@@ -49,6 +49,7 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.StringUtils;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -108,6 +109,12 @@ public class HBaseSink extends ReferenceBatchSink<StructuredRecord, NullWritable
 
     HBaseOutputFormatProvider(HBaseSinkConfig config, Configuration configuration) {
       this.conf = new HashMap<>();
+      Iterator<Map.Entry<String, String>> cConfIterator = configuration.iterator();
+      while (cConfIterator.hasNext()) {
+        Map.Entry<String, String> entry = cConfIterator.next();
+        conf.put(entry.getKey(), entry.getValue());
+      }
+      
       conf.put(TableOutputFormat.OUTPUT_TABLE, config.tableName);
       String zkQuorum = !Strings.isNullOrEmpty(config.zkQuorum) ? config.zkQuorum : "localhost";
       String zkClientPort = !Strings.isNullOrEmpty(config.zkClientPort) ? config.zkClientPort : "2181";
