@@ -23,7 +23,6 @@ import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
@@ -252,34 +251,19 @@ public final class DBUtils {
         case Types.TIMESTAMP:
           return resultSet.getTimestamp(fieldName).getTime();
         case Types.BLOB:
-          Object toReturn;
           Blob blob = (Blob) original;
           try {
-            toReturn = blob.getBytes(1, (int) blob.length());
+            return blob.getBytes(1, (int) blob.length());
           } finally {
             blob.free();
           }
-          return toReturn;
         case Types.CLOB:
-          String s;
-          StringBuilder sbf = new StringBuilder();
           Clob clob = (Clob) original;
           try {
-            try (BufferedReader br = new BufferedReader(clob.getCharacterStream(1, (int) clob.length()))) {
-              if ((s = br.readLine()) != null) {
-                sbf.append(s);
-              }
-              while ((s = br.readLine()) != null) {
-                sbf.append(System.getProperty("line.separator"));
-                sbf.append(s);
-              }
-            }
-          } catch (IOException e) {
-            throw new SQLException(e);
+            return clob.getSubString(1, (int) clob.length());
           } finally {
             clob.free();
           }
-          return sbf.toString();
       }
     }
     return original;
