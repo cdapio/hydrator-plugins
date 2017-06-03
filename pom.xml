@@ -169,6 +169,12 @@
       </dependency>
       <dependency>
         <groupId>co.cask.cdap</groupId>
+        <artifactId>cdap-api-spark</artifactId>
+        <version>${cdap.version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>co.cask.cdap</groupId>
         <artifactId>cdap-etl-proto</artifactId>
         <version>${cdap.version}</version>
         <scope>provided</scope>
