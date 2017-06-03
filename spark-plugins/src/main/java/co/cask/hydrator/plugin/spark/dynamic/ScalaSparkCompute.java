@@ -85,8 +85,8 @@ public class ScalaSparkCompute extends SparkCompute<StructuredRecord, Structured
       try {
         Settings settings = (Settings) SparkInterpreter.class.getClassLoader()
           .loadClass("co.cask.cdap.app.runtime.spark.dynamic.AbstractSparkCompiler")
-          .getDeclaredMethod("setClassPath", Settings.class, ClassLoader.class)
-          .invoke(null, new Settings(), getClass().getClassLoader());
+          .getDeclaredMethod("setClassPath", Settings.class)
+          .invoke(null, new Settings());
 
         StringWriter writer = new StringWriter();
         IMain imain = new IMain(settings, new PrintWriter(writer, true));
