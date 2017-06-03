@@ -39,5 +39,18 @@ For example:
 The will perform a word count on the input field ``'body'``, 
 and produces records of two fields, ``'word'`` and ``'count'``.
 
+The following imports are included automatically and are ready for the user code to use:
+
+      import co.cask.cdap.api.data.format._
+      import co.cask.cdap.api.data.schema._;
+      import co.cask.cdap.etl.api.batch._
+      import org.apache.spark._
+      import org.apache.spark.api.java._
+      import org.apache.spark.rdd._
+      import org.apache.spark.sql._
+      import org.apache.spark.SparkContext._
+      import scala.collection.JavaConversions._
+
+
 **schema:** The schema of output objects. If no schema is given, it is assumed that the output
 schema is the same as the input schema.

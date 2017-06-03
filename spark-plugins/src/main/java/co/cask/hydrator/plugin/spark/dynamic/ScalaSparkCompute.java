@@ -106,13 +106,16 @@ public class ScalaSparkCompute extends SparkCompute<StructuredRecord, Structured
 
     try (PrintWriter sourceWriter = new PrintWriter(writer, false)) {
       sourceWriter.println("package " + PACKAGE_NAME);
+      // Includes some commonly used imports.
       sourceWriter.println("import co.cask.cdap.api.data.format._");
       sourceWriter.println("import co.cask.cdap.api.data.schema._");
       sourceWriter.println("import co.cask.cdap.etl.api.batch._");
       sourceWriter.println("import org.apache.spark._");
       sourceWriter.println("import org.apache.spark.api.java._");
       sourceWriter.println("import org.apache.spark.rdd._");
+      sourceWriter.println("import org.apache.spark.sql._");
       sourceWriter.println("import org.apache.spark.SparkContext._");
+      sourceWriter.println("import scala.collection.JavaConversions._");
       sourceWriter.println("object " + CLASS_NAME + " {");
       sourceWriter.println(config.getScalaCode());
       sourceWriter.println("}");
