@@ -42,6 +42,10 @@
   <dependencies>
     <dependency>
       <groupId>co.cask.cdap</groupId>
+      <artifactId>cdap-api-spark</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-etl-api</artifactId>
     </dependency>
     <dependency>
@@ -75,6 +79,15 @@
       <version>${spark.version}</version>
       <scope>provided</scope>
       <exclusions>
+        <!-- excludes scala-compiler and scala-reflect to avoid conflicting with the one from spark-repl -->
+        <exclusion>
+          <groupId>org.scala-lang</groupId>
+          <artifactId>scala-compiler</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.scala-lang</groupId>
+          <artifactId>scala-reflect</artifactId>
+        </exclusion>
         <exclusion>
           <groupId>org.slf4j</groupId>
           <artifactId>slf4j-log4j12</artifactId>
@@ -126,6 +139,12 @@
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-streaming_2.10</artifactId>
+      <version>${spark.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.spark</groupId>
+      <artifactId>spark-repl_2.10</artifactId>
       <version>${spark.version}</version>
       <scope>provided</scope>
     </dependency>
