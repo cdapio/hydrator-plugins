@@ -41,7 +41,9 @@ import co.cask.hydrator.plugin.DBUtils;
 import co.cask.hydrator.plugin.DriverCleanup;
 import co.cask.hydrator.plugin.FieldCase;
 import co.cask.hydrator.plugin.StructuredRecordUtils;
+import com.google.common.base.Function;
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.MRJobConfig;
@@ -56,6 +58,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 import javax.annotation.Nullable;
 import javax.ws.rs.Path;
 
@@ -99,6 +102,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     @Nullable
     public String jdbcPluginType;
     public String query;
+    public String columnNameCase;
 
     private String getJDBCPluginType() {
       return jdbcPluginType == null ? "jdbc" : jdbcPluginType;
@@ -116,7 +120,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
    * @throws IllegalAccessException
    */
   @Path("getSchema")
-  public Schema getSchema(GetSchemaRequest request,
+  public Schema getSchema(final GetSchemaRequest request,
                           EndpointPluginContext pluginContext) throws IllegalAccessException,
     SQLException, InstantiationException {
     DriverCleanup driverCleanup;
@@ -130,7 +134,20 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
           query = removeConditionsClause(query);
         }
         ResultSet resultSet = statement.executeQuery(query);
-        return Schema.recordOf("outputSchema", DBUtils.getSchemaFields(resultSet));
+        List<Schema.Field> fields =
+          Lists.transform(DBUtils.getSchemaFields(resultSet), new Function<Schema.Field, Schema.Field>() {
+            @Nullable
+            @Override
+            public Schema.Field apply(@Nullable Schema.Field field) {
+              if (field == null) {
+                return null;
+              }
+              FieldCase fieldCase = FieldCase.toFieldCase(request.columnNameCase);
+              return Schema.Field.of(fieldCase.convertCase(field.getName()),
+                                     field.getSchema());
+            }
+          });
+        return Schema.recordOf("outputSchema", fields);
       } finally {
         driverCleanup.destroy();
       }
@@ -230,7 +247,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
   @Override
   public void transform(KeyValue<LongWritable, DBRecord> input, Emitter<StructuredRecord> emitter) throws Exception {
     emitter.emit(StructuredRecordUtils.convertCase(
-      input.getValue().getRecord(), FieldCase.toFieldCase(sourceConfig.columnNameCase)));
+      input.getValue().getRecord(), sourceConfig.getFieldCase()));
   }
 
   @Override

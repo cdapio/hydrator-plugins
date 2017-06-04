@@ -72,7 +72,7 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
   private final DBSinkConfig dbSinkConfig;
   private final DBManager dbManager;
   private Class<? extends Driver> driverClass;
-  private int [] columnTypes;
+  private int[] columnTypes;
   private List<String> columns;
 
   public DBSink(DBSinkConfig dbSinkConfig) {
@@ -167,16 +167,12 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
                                                                dbSinkConfig.columns, dbSinkConfig.tableName))
       ) {
         ResultSetMetaData resultSetMetadata = rs.getMetaData();
-        FieldCase fieldCase = FieldCase.toFieldCase(dbSinkConfig.columnNameCase);
+        FieldCase fieldCase = dbSinkConfig.getFieldCase();
         // JDBC driver column indices start with 1
         for (int i = 0; i < rs.getMetaData().getColumnCount(); i++) {
           String name = resultSetMetadata.getColumnName(i + 1);
           int type = resultSetMetadata.getColumnType(i + 1);
-          if (fieldCase == FieldCase.LOWER) {
-            name = name.toLowerCase();
-          } else if (fieldCase == FieldCase.UPPER) {
-            name = name.toUpperCase();
-          }
+          name = fieldCase.convertCase(name);
           columnToType.put(name, type);
         }
       }
