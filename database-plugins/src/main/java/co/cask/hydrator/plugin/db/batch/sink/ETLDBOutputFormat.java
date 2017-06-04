@@ -16,6 +16,7 @@
 
 package co.cask.hydrator.plugin.db.batch.sink;
 
+import co.cask.hydrator.plugin.DBConfig;
 import co.cask.hydrator.plugin.DBUtils;
 import co.cask.hydrator.plugin.JDBCDriverShim;
 import co.cask.hydrator.plugin.db.batch.NoOpCommitConnection;
@@ -156,7 +157,10 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
       } else {
         connection.setAutoCommit(false);
       }
-      connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+      DBConfig.TransactionIsolationLevel isolationLevel =
+        conf.getEnum(DBConfig.TRANSACTION_ISOLATION_LEVEL, DBConfig.TransactionIsolationLevel.SERIALIZABLE);
+      LOG.debug("Setting transaction isolation level to {}", isolationLevel);
+      connection.setTransactionIsolation(isolationLevel.getConnectionIsolationLevel());
     } catch (Exception e) {
       throw Throwables.propagate(e);
     }

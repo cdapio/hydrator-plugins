@@ -59,11 +59,14 @@ public class DBSinkTestRun extends DatabasePluginTestBase {
     ETLPlugin sourceConfig = MockSource.getPlugin(inputDatasetName);
     ETLPlugin sinkConfig = new ETLPlugin("Database",
                                          BatchSink.PLUGIN_TYPE,
-                                         ImmutableMap.of(DBConfig.CONNECTION_STRING, getConnectionURL(),
-                                                         DBSink.DBSinkConfig.TABLE_NAME, "MY_DEST_TABLE",
-                                                         DBSink.DBSinkConfig.COLUMNS, cols,
-                                                         DBConfig.JDBC_PLUGIN_NAME, "hypersql",
-                                                         Constants.Reference.REFERENCE_NAME, "DBTest"),
+                                         ImmutableMap.<String, String>builder()
+                                           .put(DBConfig.CONNECTION_STRING, getConnectionURL())
+                                           .put(DBSink.DBSinkConfig.TABLE_NAME, "MY_DEST_TABLE")
+                                           .put(DBSink.DBSinkConfig.COLUMNS, cols)
+                                           .put(DBConfig.JDBC_PLUGIN_NAME, "hypersql")
+                                           .put(Constants.Reference.REFERENCE_NAME, "DBTest")
+                                           .put(DBConfig.TRANSACTION_ISOLATION_LEVEL, "Serializable")
+                                           .build(),
                                          null);
     ApplicationManager appManager = deployETL(sourceConfig, sinkConfig, "testDBSink");
     createInputData(inputDatasetName);
@@ -101,18 +104,21 @@ public class DBSinkTestRun extends DatabasePluginTestBase {
         .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
         .put(DBConfig.JDBC_PLUGIN_NAME, "hypersql")
         .put(Constants.Reference.REFERENCE_NAME, "DBTestSource")
+        .put(DBConfig.TRANSACTION_ISOLATION_LEVEL, "Serializable")
         .build(),
       null
     );
     ETLPlugin sinkConfig = new ETLPlugin(
       "Database",
       BatchSink.PLUGIN_TYPE,
-      ImmutableMap.of(
-        DBConfig.CONNECTION_STRING, getConnectionURL(),
-        DBSink.DBSinkConfig.TABLE_NAME, "OUTPUT",
-        DBSink.DBSinkConfig.COLUMNS, "A, B, C",
-        DBConfig.JDBC_PLUGIN_NAME, "hypersql",
-        Constants.Reference.REFERENCE_NAME, "DBTestSink"),
+      ImmutableMap.<String, String>builder()
+        .put(DBConfig.CONNECTION_STRING, getConnectionURL())
+        .put(DBSink.DBSinkConfig.TABLE_NAME, "OUTPUT")
+        .put(DBSink.DBSinkConfig.COLUMNS, "A, B, C")
+        .put(DBConfig.JDBC_PLUGIN_NAME, "hypersql")
+        .put(Constants.Reference.REFERENCE_NAME, "DBTestSink")
+        .put(DBConfig.TRANSACTION_ISOLATION_LEVEL, "Serializable")
+        .build(),
       null
     );
     ApplicationManager appManager = deployETL(sourceConfig, sinkConfig, "testNullFields");

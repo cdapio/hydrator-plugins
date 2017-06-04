@@ -68,6 +68,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
         .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
         .put(ConnectionConfig.JDBC_PLUGIN_NAME, "hypersql")
         .put(Constants.Reference.REFERENCE_NAME, "DBMacroTest")
+        .put(DBConfig.TRANSACTION_ISOLATION_LEVEL, "Serializable")
         .build(),
       null
     );
@@ -103,6 +104,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
         .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
         .put(DBConfig.JDBC_PLUGIN_NAME, "hypersql")
         .put(Constants.Reference.REFERENCE_NAME, "DBSourceTest")
+        .put(DBConfig.TRANSACTION_ISOLATION_LEVEL, "Serializable")
         .build(),
       null
     );
@@ -194,6 +196,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
         .put(DBConfig.JDBC_PLUGIN_NAME, "hypersql")
         .put(DBConfig.COLUMN_NAME_CASE, "lower")
         .put(Constants.Reference.REFERENCE_NAME, "DBLowerCaseTest")
+        .put(DBConfig.TRANSACTION_ISOLATION_LEVEL, "Serializable")
         .build(),
       null
     );
@@ -237,6 +240,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
         .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
         .put(DBConfig.JDBC_PLUGIN_NAME, "hypersql")
         .put(Constants.Reference.REFERENCE_NAME, "DBMultipleTest")
+        .put(DBConfig.TRANSACTION_ISOLATION_LEVEL, "Serializable")
         .build(),
       null
     );
@@ -276,6 +280,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
       .put(DBSource.DBSourceConfig.BOUNDING_QUERY, boundingQuery)
       .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
       .put(Constants.Reference.REFERENCE_NAME, "UserPassDBTest")
+      .put(DBConfig.TRANSACTION_ISOLATION_LEVEL, "Serializable")
       .build();
 
     ApplicationId appId = NamespaceId.DEFAULT.app("dbTest");
@@ -339,6 +344,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
         .put(DBConfig.JDBC_PLUGIN_NAME, "hypersql")
         .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
         .put(Constants.Reference.REFERENCE_NAME, "DBNonExistentTest")
+        .put(DBConfig.TRANSACTION_ISOLATION_LEVEL, "Serializable")
         .build(),
       null);
     ETLStage sink = new ETLStage("sink", sinkConfig);
@@ -365,6 +371,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
         .put(DBConfig.JDBC_PLUGIN_NAME, "hypersql")
         .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
         .put(Constants.Reference.REFERENCE_NAME, "HSQLDBTest")
+        .put(DBConfig.TRANSACTION_ISOLATION_LEVEL, "Serializable")
         .build(),
       null);
     ETLStage sourceBadConn = new ETLStage("sourceBadConn", sourceBadConnConfig);

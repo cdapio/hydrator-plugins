@@ -33,6 +33,7 @@ import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.ReferencePluginConfig;
+import co.cask.hydrator.common.batch.ConfigurationUtils;
 import co.cask.hydrator.plugin.DBConfig;
 import co.cask.hydrator.plugin.DBManager;
 import co.cask.hydrator.plugin.DBRecord;
@@ -42,6 +43,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapred.lib.db.DBConfiguration;
 import org.slf4j.Logger;
@@ -215,7 +217,11 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
     private final Map<String, String> conf;
 
     DBOutputFormatProvider(DBSinkConfig dbSinkConfig, Class<? extends Driver> driverClass) {
-      this.conf = new HashMap<>();
+      Configuration hConf = new Configuration();
+      hConf.clear();
+      hConf.setEnum(DBConfig.TRANSACTION_ISOLATION_LEVEL, dbSinkConfig.getTransactionIsolationLevel());
+
+      this.conf = new HashMap<>(ConfigurationUtils.getNonDefaultConfigurations(hConf));
 
       conf.put(ETLDBOutputFormat.AUTO_COMMIT_ENABLED, String.valueOf(dbSinkConfig.getEnableAutoCommit()));
       conf.put(DBConfiguration.DRIVER_CLASS_PROPERTY, driverClass.getName());

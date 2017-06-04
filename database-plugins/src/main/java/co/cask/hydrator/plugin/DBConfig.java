@@ -21,12 +21,36 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.hydrator.common.Constants;
 
+import java.sql.Connection;
 import javax.annotation.Nullable;
 
 /**
  * Defines a base {@link PluginConfig} that Database source and sink can re-use
  */
 public class DBConfig extends ConnectionConfig {
+  public static final String TRANSACTION_ISOLATION_LEVEL = "transactionIsolationLevel";
+
+  /**
+   * This class holds the possible transaction isolation settings.
+   */
+  public enum TransactionIsolationLevel {
+    NONE(Connection.TRANSACTION_NONE),
+    READ_UNCOMMITTED(Connection.TRANSACTION_READ_UNCOMMITTED),
+    READ_COMMITTED(Connection.TRANSACTION_READ_COMMITTED),
+    REPEATABLE_READ(Connection.TRANSACTION_REPEATABLE_READ),
+    SERIALIZABLE(Connection.TRANSACTION_SERIALIZABLE);
+
+    private final int connectionIsolationLevel;
+
+    TransactionIsolationLevel(int connectionIsolationLevel) {
+      this.connectionIsolationLevel = connectionIsolationLevel;
+    }
+
+    public int getConnectionIsolationLevel() {
+      return this.connectionIsolationLevel;
+    }
+  }
+
   @Name(Constants.Reference.REFERENCE_NAME)
   @Description(Constants.Reference.REFERENCE_NAME_DESCRIPTION)
   public String referenceName;
@@ -39,6 +63,10 @@ public class DBConfig extends ConnectionConfig {
     "names are the same when the case is ignored.")
   @Nullable
   public String columnNameCase;
+
+  @Name(TRANSACTION_ISOLATION_LEVEL)
+  @Description("The transaction isolation level at which operations will be made.")
+  public String transactionIsolationLevel;
 
   public DBConfig() {
     jdbcPluginType = "jdbc";
@@ -69,5 +97,9 @@ public class DBConfig extends ConnectionConfig {
       return "";
     }
     return query.substring(0, idx + 1);
+  }
+
+  public TransactionIsolationLevel getTransactionIsolationLevel() {
+    return TransactionIsolationLevel.valueOf(transactionIsolationLevel.replace(' ', '_').toUpperCase());
   }
 }

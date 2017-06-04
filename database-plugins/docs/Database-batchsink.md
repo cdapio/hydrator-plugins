@@ -9,8 +9,8 @@ Writes records to a database table. Each record will be written to a row in the 
 Use Case
 --------
 This sink is used whenever you need to write to a database table.
-Suppose you periodically build a recommendation model for products on your online store.
-The model is stored in a FileSet and you want to export the contents
+For example, perhaps you periodically build a recommendation model for products on your online store.
+The model could be stored in a FileSet and you may want to export the contents
 of the FileSet to a database table where it can be served to your users.
 
 
@@ -23,7 +23,7 @@ Properties
 **columns:** Comma-separated list of columns in the specified table to export to.
 
 **columnCase:** Sets the case of the column names returned by the column check query.
-Possible options are ``upper`` or ``lower``. By default or for any other input, the column names are not modified and
+Possible options are ``upper`` or ``lower``. By default, or for any other input, the column names are not modified and
 the names returned from the database are used as-is. Note that setting this property provides predictability
 of column name cases across different databases but might result in column name conflicts if multiple column
 names are the same when the case is ignored (optional).
@@ -43,13 +43,17 @@ defined in the JSON file for the JDBC plugin.
 defined in the JSON file for the JDBC plugin. Defaults to 'jdbc'.
 
 **enableAutoCommit:** Whether to enable auto-commit for queries run by this sink. Defaults to 'false'.
-Normally this setting does not matter. It only matters if you are using a jdbc driver -- like the Hive
-driver -- that will error when the commit operation is run, or a driver that will error when auto-commit is
-set to false. For drivers like those, you will need to set this to 'true'.
+This setting only matters if you are using a JDBC driver -- such as the Hive driver -- 
+that will error when the commit operation is run, or a driver that will error when auto-commit is
+set to `false`. For drivers like these, you will need to set this to `true`.
 
-**schema:** The schema of records output by the source. This will be used in place of whatever schema comes 
-back from the query. However, it must match the schema that comes back from the query, 
-except it can mark fields as nullable and can contain a subset of the fields. 
+**schema:** The schema of records output by the source. This will be used in place of the schema that comes
+back from the query. However, it must match the schema that comes back from the query,
+except that it can mark fields as nullable and can contain a subset of the fields.
+
+**transactionIsolationLevel:** The transaction isolation level at which operations will be made. See
+[Wikipedia](https://en.wikipedia.org/wiki/Isolation_(database_systems)#Isolation_levels) for a detailed explanation.
+
 
 Example
 -------
@@ -69,6 +73,7 @@ the record will be written to the 'id' column of that row.
             "user": "postgres",
             "password": "",
             "jdbcPluginName": "postgres",
-            "jdbcPluginType": "jdbc"
+            "jdbcPluginType": "jdbc",
+            "transactionIsolationLevel": "serializable"
         }
     }
