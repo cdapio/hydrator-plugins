@@ -23,6 +23,8 @@ import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.plugin.PluginConfig;
+import co.cask.cdap.api.spark.dynamic.CompilationFailureException;
+import co.cask.cdap.api.spark.dynamic.SparkCompiler;
 import co.cask.cdap.api.spark.dynamic.SparkInterpreter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.StageConfigurer;
@@ -31,13 +33,10 @@ import co.cask.cdap.etl.api.batch.SparkExecutionPluginContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.rdd.RDD;
 import scala.reflect.ClassTag$;
-import scala.tools.nsc.Settings;
-import scala.tools.nsc.interpreter.IMain;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -82,19 +81,13 @@ public class ScalaSparkCompute extends SparkCompute<StructuredRecord, Structured
     // This is a Hack to new the IMain directly.
     // It uses the AbstractSparkCompiler.setClassPath method to create the Settings
     if (!config.containsMacro("scalaCode")) {
-      try {
-        Settings settings = (Settings) SparkInterpreter.class.getClassLoader()
-          .loadClass("co.cask.cdap.app.runtime.spark.dynamic.AbstractSparkCompiler")
-          .getDeclaredMethod("setClassPath", Settings.class)
-          .invoke(null, new Settings());
-
-        StringWriter writer = new StringWriter();
-        IMain imain = new IMain(settings, new PrintWriter(writer, true));
-        if (!imain.compileString(generateSourceClass())) {
-          throw new IllegalArgumentException("Compilation error: " + writer.toString());
+      SparkCompiler compiler = SparkCompilers.createCompiler();
+      if (compiler != null) {
+        try {
+          compiler.compile(generateSourceClass());
+        } catch (CompilationFailureException e) {
+          throw new IllegalArgumentException(e.getMessage(), e);
         }
-      } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-        // don't fail if the hack failed. The side effect is it won't be doing configure time compilation.
       }
     }
   }
