@@ -16,7 +16,7 @@
 
 package co.cask.hydrator.plugin.spark.dynamic;
 
-import co.cask.cdap.api.spark.dynamic.SparkCompiler;
+import co.cask.cdap.api.spark.dynamic.SparkInterpreter;
 import scala.Function0;
 import scala.Option$;
 import scala.reflect.io.VirtualDirectory;
@@ -37,19 +37,19 @@ import javax.annotation.Nullable;
 public final class SparkCompilers {
 
   @Nullable
-  public static SparkCompiler createCompiler() {
+  public static SparkInterpreter createInterpreter() {
     try {
-      ClassLoader classLoader = SparkCompiler.class.getClassLoader();
+      ClassLoader classLoader = SparkInterpreter.class.getClassLoader();
       Settings settings = (Settings) classLoader
         .loadClass("co.cask.cdap.app.runtime.spark.dynamic.AbstractSparkCompiler")
         .getDeclaredMethod("setClassPath", Settings.class)
         .invoke(null, new Settings());
 
-      Class<?> compilerClass = classLoader
-        .loadClass("co.cask.cdap.app.runtime.spark.dynamic.DefaultSparkCompiler");
+      Class<?> interpreterClass = classLoader
+        .loadClass("co.cask.cdap.app.runtime.spark.dynamic.DefaultSparkInterpreter");
 
       // There should be a constructor
-      Constructor<?>[] constructors = compilerClass.getDeclaredConstructors();
+      Constructor<?>[] constructors = interpreterClass.getDeclaredConstructors();
       if (constructors.length != 1) {
         return null;
       }
@@ -73,18 +73,19 @@ public final class SparkCompilers {
       };
 
       // For Spark 1, the constructor has 4 parameters. For Spark 2, it has 3 parameters
-      SparkCompiler sparkCompiler = null;
+      SparkInterpreter sparkInterpreter = null;
       if (constructor.getParameterTypes().length == 4) {
         // Spark 1
         VirtualDirectory virtualDirectory = new VirtualDirectory("memory", Option$.MODULE$.<VirtualDirectory>empty());
-        sparkCompiler = (SparkCompiler) constructor.newInstance(settings, virtualDirectory, urlAdder, onCloseFunc);
+        sparkInterpreter = (SparkInterpreter) constructor.newInstance(settings, virtualDirectory,
+                                                                      urlAdder, onCloseFunc);
 
       } else if (constructor.getParameterTypes().length == 3) {
         // spark 2
-        sparkCompiler = (SparkCompiler) constructor.newInstance(settings, urlAdder, onCloseFunc);
+        sparkInterpreter = (SparkInterpreter) constructor.newInstance(settings, urlAdder, onCloseFunc);
       }
 
-      return sparkCompiler;
+      return sparkInterpreter;
     } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException
                                     | IllegalAccessException | InstantiationException e) {
       return null;

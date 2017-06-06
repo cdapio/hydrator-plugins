@@ -27,7 +27,6 @@ import co.cask.cdap.api.spark.JavaSparkMain;
 import co.cask.cdap.api.spark.SparkExecutionContext;
 import co.cask.cdap.api.spark.SparkMain;
 import co.cask.cdap.api.spark.dynamic.CompilationFailureException;
-import co.cask.cdap.api.spark.dynamic.SparkCompiler;
 import co.cask.cdap.api.spark.dynamic.SparkInterpreter;
 
 import java.lang.reflect.Method;
@@ -50,15 +49,15 @@ public class ScalaSparkProgram implements JavaSparkMain {
 
     if (!config.containsMacro("scalaCode")) {
       // Since we don't really be able to distinguish whether it is configure time or runtime,
-      // we have to compile here using an explicitly constructed SparkCompiler and then compile again
-      // using SparkInterpreter.
-      SparkCompiler compiler = SparkCompilers.createCompiler();
-      if (compiler != null) {
-        compiler.compile(config.getScalaCode());
+      // we have to compile here using an explicitly constructed SparkInterpreter and then compile again
+      // using SparkInterpreter in the run method
+      SparkInterpreter interpreter = SparkCompilers.createInterpreter();
+      if (interpreter != null) {
+        interpreter.compile(config.getScalaCode());
 
         // Just create the callable without calling it for validating the class and method needed exists.
         if (!config.containsMacro("mainClass")) {
-          getMethodCallable(compiler.getIMain().getInterpreterClassLoader(), config.getMainClass(), null);
+          getMethodCallable(interpreter.getClassLoader(), config.getMainClass(), null);
         }
       }
     }

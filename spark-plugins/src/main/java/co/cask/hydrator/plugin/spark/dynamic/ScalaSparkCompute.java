@@ -78,13 +78,11 @@ public class ScalaSparkCompute extends SparkCompute<StructuredRecord, Structured
       throw new IllegalArgumentException("Unable to parse output schema " + config.getSchema(), e);
     }
 
-    // This is a Hack to new the IMain directly.
-    // It uses the AbstractSparkCompiler.setClassPath method to create the Settings
     if (!config.containsMacro("scalaCode")) {
-      SparkCompiler compiler = SparkCompilers.createCompiler();
-      if (compiler != null) {
+      SparkInterpreter interpreter = SparkCompilers.createInterpreter();
+      if (interpreter != null) {
         try {
-          compiler.compile(generateSourceClass());
+          interpreter.compile(generateSourceClass());
         } catch (CompilationFailureException e) {
           throw new IllegalArgumentException(e.getMessage(), e);
         }
