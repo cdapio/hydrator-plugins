@@ -218,7 +218,18 @@ public abstract class AbstractFileBatchSource<T extends FileSourceConfig>
    * @return output schema
    */
   @javax.ws.rs.Path("getSchema")
-  public Schema getSchema(T request, EndpointPluginContext pluginContext) {
+  public Schema getSchema(SchemaRequest request, EndpointPluginContext pluginContext) {
     return PathTrackingInputFormat.getOutputSchema(request.pathField);
+  }
+
+  /**
+   * Concrete class used to get schema by the UI.
+   */
+  public static class SchemaRequest extends FileSourceConfig {
+
+    @Override
+    protected String getPath() {
+      return null;
+    }
   }
 }
