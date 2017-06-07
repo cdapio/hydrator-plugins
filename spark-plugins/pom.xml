@@ -20,11 +20,11 @@
   <parent>
     <artifactId>hydrator-plugins</artifactId>
     <groupId>co.cask.hydrator</groupId>
-    <version>1.7.0-SNAPSHOT</version>
+    <version>1.7.0</version>
   </parent>
 
   <properties>
-    <app.parents>system:cdap-data-pipeline[4.2.0-SNAPSHOT,4.3.0-SNAPSHOT),system:cdap-data-streams[4.2.0-SNAPSHOT,4.3.0-SNAPSHOT)</app.parents>
+    <app.parents>system:cdap-data-pipeline[4.2.0,4.3.0-SNAPSHOT),system:cdap-data-streams[4.2.0,4.3.0-SNAPSHOT)</app.parents>
     <spark.version>1.6.1</spark.version>
   </properties>
 
