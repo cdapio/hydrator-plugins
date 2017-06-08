@@ -17,6 +17,9 @@ Properties
 ----------
 **name:** Table name. If the table does not already exist, it will be created. (Macro-enabled)
 
+**explore.table.name:** Optional record field for the name of the explore table. It will default to the name of the
+dataset if the user doesn't set it to anything.
+
 **schema:** Schema of records read from the table. Row columns map to record
 fields. For example, if the schema contains a field named 'user' of type string, the value
 of that field will be taken from the value stored in the 'user' column. Only simple types
@@ -28,13 +31,14 @@ The field name specified must be present in the schema, and must not be nullable
 
 Example
 -------
-This example reads from a Table named 'users':
+This example reads from a Table named 'users' and with explore name 'exploreUsers':
 
     {
         "name": "Table",
         "type": "batchsource",
         "properties": {
             "name": "users",
+            "exploreName": "exploreUsers",
             "schema": "{
                 \"type\":\"record\",
                 \"name\":\"user\",

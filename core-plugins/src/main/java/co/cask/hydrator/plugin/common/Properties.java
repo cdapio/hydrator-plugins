@@ -16,6 +16,8 @@
 
 package co.cask.hydrator.plugin.common;
 
+import co.cask.cdap.api.dataset.ExploreProperties;
+
 /**
  * Class to define property names for source and sinks
  */
@@ -112,6 +114,7 @@ public final class Properties {
    */
   public static class Table {
     public static final String NAME = "name";
+    public static final String EXPLORE_NAME = ExploreProperties.PROPERTY_EXPLORE_TABLE_NAME;
     public static final String PROPERTY_SCHEMA = co.cask.cdap.api.dataset.table.Table.PROPERTY_SCHEMA;
     public static final String PROPERTY_SCHEMA_ROW_FIELD =
       co.cask.cdap.api.dataset.table.Table.PROPERTY_SCHEMA_ROW_FIELD;

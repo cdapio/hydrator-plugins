@@ -17,6 +17,9 @@ Properties
 ----------
 **name:** Name of the table dataset. If it does not already exist, one will be created. (Macro-enabled)
 
+**explore.table.name:** Optional record field for the name of the explore table. It will default to the name of the
+dataset if the user doesn't set it to anything.
+
 **schema:** Optional schema of the table as a JSON Object. If the table does not
 already exist, one will be created with this schema, which will allow the table to be
 explored through Hive. Output schema should have columns other than rowkey. (Macro-enabled)
@@ -29,13 +32,14 @@ key when writing to the table. (Macro-enabled)
 
 Example
 -------
-This example writes to a Table named 'users':
+This example writes to a Table named 'users' and with explore name 'exploreUsers':
 
     {
         "name": "Table",
         "type": "batchsink",
         "properties": {
             "name": "users",
+            "exploreName": "exploreUsers",
             "schema": "{
                 \"type\":\"record\",
                 \"name\":\"user\",

@@ -33,16 +33,16 @@ import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
-import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
 import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.common.TableSinkConfig;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
-import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -264,5 +264,76 @@ public class TableSinkTest extends ETLBatchTestBase {
     DataSetManager<Table> tableManager = getDataset("tableSinkName");
     Table table = tableManager.get();
     Assert.assertEquals("samuel", table.get(Bytes.toBytes("row1")).getString("user"));
+  }
+
+  @Test
+  public void testTableSourceSinkWithExploreNameProperty() throws Exception {
+    Schema outputSchema = Schema.recordOf(
+      "purchase",
+      Schema.Field.of("rowkey", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("user", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("count", Schema.of(Schema.Type.INT))
+    );
+
+    Schema inputSchema = Schema.recordOf(
+      "action",
+      Schema.Field.of("rowkey", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("user", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("count", Schema.of(Schema.Type.INT))
+    );
+    ETLPlugin sourceConfig = new ETLPlugin("Table",
+                                           BatchSource.PLUGIN_TYPE,
+                                           ImmutableMap.of(
+                                             Properties.BatchReadableWritable.NAME, "tableSourceName",
+                                             Properties.Table.EXPLORE_NAME, "exploreTableSource",
+                                             Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "rowkey",
+                                             Properties.Table.PROPERTY_SCHEMA, inputSchema.toString()),
+                                           null);
+    ETLStage source = new ETLStage("tableSource", sourceConfig);
+    ETLPlugin sinkConfig = new ETLPlugin("Table",
+                                         BatchSink.PLUGIN_TYPE,
+                                         ImmutableMap.of(
+                                           Properties.Table.NAME, "tableSinkName",
+                                           Properties.Table.EXPLORE_NAME, "exploreTableSink",
+                                           Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "rowkey",
+                                           Properties.Table.PROPERTY_SCHEMA, outputSchema.toString()),
+                                         null);
+    ETLStage sink = new ETLStage("tableSink", sinkConfig);
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app("testTableSourceSinkExploreName");
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+    DataSetManager<Table> inputManager = getDataset("tableSourceName");
+
+    Table inputTable = inputManager.get();
+    Put put = new Put(Bytes.toBytes("row1"));
+    put.add("user", "samuel");
+    put.add("count", 5);
+    inputTable.put(put);
+    inputManager.flush();
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
+
+    Connection connection = getQueryClient();
+
+    ResultSet resultsSource = connection.prepareStatement("select * from exploreTableSource").executeQuery();
+    Assert.assertEquals(true, resultsSource.next());
+    Assert.assertEquals("row1", resultsSource.getString(1));
+    Assert.assertEquals("samuel", resultsSource.getString(2));
+    Assert.assertEquals(5, resultsSource.getInt(3));
+    Assert.assertEquals(false, resultsSource.next());
+
+    ResultSet resultsSink = connection.prepareStatement("select * from exploreTableSink").executeQuery();
+    Assert.assertEquals(true, resultsSink.next());
+    Assert.assertEquals("row1", resultsSink.getString(1));
+    Assert.assertEquals("samuel", resultsSink.getString(2));
+    Assert.assertEquals(5, resultsSink.getInt(3));
+    Assert.assertEquals(false, resultsSink.next());
   }
 }

@@ -21,6 +21,7 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.ExploreProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.table.Put;
 import co.cask.cdap.api.dataset.table.Table;
@@ -34,7 +35,6 @@ import co.cask.hydrator.plugin.common.TableSinkConfig;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -95,12 +95,16 @@ public class TableSink extends BatchWritableSink<StructuredRecord, byte[], Put> 
 
   @Override
   protected Map<String, String> getProperties() {
-    Map<String, String> properties;
-    properties = new HashMap<>(tableSinkConfig.getProperties().getProperties());
+    ExploreProperties.Builder builder = ExploreProperties.builder();
+    builder.addAll(tableSinkConfig.getProperties().getProperties());
+    if ((tableSinkConfig.exploreName != null) && (!tableSinkConfig.exploreName.isEmpty())) {
+      builder.setExploreTableName(tableSinkConfig.exploreName);
+    } else {
+      builder.setExploreTableName(tableSinkConfig.getName());
+    }
+    builder.add(Properties.BatchReadableWritable.TYPE, Table.class.getName());
+    return builder.build().getProperties();
 
-    properties.put(Properties.BatchReadableWritable.NAME, tableSinkConfig.getName());
-    properties.put(Properties.BatchReadableWritable.TYPE, Table.class.getName());
-    return properties;
   }
 
   @Override

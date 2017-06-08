@@ -21,6 +21,7 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.ExploreProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Table;
@@ -58,10 +59,15 @@ public class TableSource extends BatchReadableSource<byte[], Row, StructuredReco
 
   @Override
   protected Map<String, String> getProperties() {
-    Map<String, String> properties = Maps.newHashMap(tableConfig.getProperties().getProperties());
-    properties.put(Properties.BatchReadableWritable.NAME, tableConfig.getName());
-    properties.put(Properties.BatchReadableWritable.TYPE, Table.class.getName());
-    return properties;
+    ExploreProperties.Builder builder = ExploreProperties.builder();
+    builder.addAll(Maps.newHashMap(tableConfig.getProperties().getProperties()));
+    if ((tableConfig.exploreName != null) && (!tableConfig.exploreName.isEmpty())) {
+      builder.setExploreTableName(tableConfig.exploreName);
+    } else {
+      builder.setExploreTableName(tableConfig.getName());
+    }
+    builder.add(Properties.BatchReadableWritable.TYPE, Table.class.getName());
+    return builder.build().getProperties();
   }
 
   @Override
