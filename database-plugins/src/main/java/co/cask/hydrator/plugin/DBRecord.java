@@ -25,14 +25,10 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.lib.db.DBWritable;
 
-import java.io.BufferedReader;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.nio.ByteBuffer;
-import java.sql.Blob;
-import java.sql.Clob;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -105,7 +101,7 @@ public class DBRecord implements Writable, DBWritable, Configurable {
     for (int i = 0; i < schemaFields.size(); i++) {
       Schema.Field field = schemaFields.get(i);
       int sqlColumnType = metadata.getColumnType(i + 1);
-      recordBuilder.set(field.getName(), transformValue(sqlColumnType, resultSet, field.getName()));
+      recordBuilder.set(field.getName(), DBUtils.transformValue(sqlColumnType, resultSet, field.getName()));
     }
     record = recordBuilder.build();
   }
@@ -150,57 +146,6 @@ public class DBRecord implements Writable, DBWritable, Configurable {
                                   "for writing a DBRecord, but found '%s' as the type for column '%s'. Please " +
                                   "remove this column or transform it to a simple type.", type, field.getName());
     return type;
-  }
-
-  @Nullable
-  private Object transformValue(int sqlColumnType, ResultSet resultSet, String fieldName) throws SQLException {
-    Object original = resultSet.getObject(fieldName);
-    if (original != null) {
-      switch (sqlColumnType) {
-        case Types.SMALLINT:
-        case Types.TINYINT:
-          return ((Number) original).intValue();
-        case Types.NUMERIC:
-        case Types.DECIMAL:
-          return ((BigDecimal) original).doubleValue();
-        case Types.DATE:
-          return resultSet.getDate(fieldName).getTime();
-        case Types.TIME:
-          return resultSet.getTime(fieldName).getTime();
-        case Types.TIMESTAMP:
-          return resultSet.getTimestamp(fieldName).getTime();
-        case Types.BLOB:
-          Object toReturn;
-          Blob blob = (Blob) original;
-          try {
-            toReturn = blob.getBytes(1, (int) blob.length());
-          } finally {
-            blob.free();
-          }
-          return toReturn;
-        case Types.CLOB:
-          String s;
-          StringBuilder sbf = new StringBuilder();
-          Clob clob = (Clob) original;
-          try {
-            try (BufferedReader br = new BufferedReader(clob.getCharacterStream(1, (int) clob.length()))) {
-              if ((s = br.readLine()) != null) {
-                sbf.append(s);
-              }
-              while ((s = br.readLine()) != null) {
-                sbf.append(System.getProperty("line.separator"));
-                sbf.append(s);
-              }
-            }
-          } catch (IOException e) {
-            throw new SQLException(e);
-          } finally {
-            clob.free();
-          }
-          return sbf.toString();
-      }
-    }
-    return original;
   }
 
   private void writeToDataOut(DataOutput out, Schema.Type fieldType, @Nullable Object fieldValue) throws IOException {

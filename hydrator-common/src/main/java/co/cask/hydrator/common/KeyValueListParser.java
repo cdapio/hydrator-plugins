@@ -82,11 +82,15 @@ public class KeyValueListParser {
       Iterator<String> keyValIter = Splitter.on(keyValDelimiter).trimResults().split(pair).iterator();
       String key = keyValIter.next();
       if (!keyValIter.hasNext()) {
-        throw new IllegalArgumentException("Invalid syntax for key-value pair in list: " + pair);
+        throw new IllegalArgumentException(String.format("Invalid syntax for key-value pair in list: %s. " +
+                                                           "It is expected to be a string separated " +
+                                                           "by exactly one %s", pair, keyValDelimiter));
       }
       String val = keyValIter.next();
       if (keyValIter.hasNext()) {
-        throw new IllegalArgumentException("Invalid syntax for key-value pair in list: " + pair);
+        throw new IllegalArgumentException(String.format("Invalid syntax for key-value pair in list: %s. " +
+                                                           "It is expected to be a string separated " +
+                                                           "by exactly one %s", pair, keyValDelimiter));
       }
       return new KeyValue<>(key, val);
     }

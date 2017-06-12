@@ -57,7 +57,8 @@ public class TableSink extends BatchWritableSink<StructuredRecord, byte[], Put> 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
-    Preconditions.checkArgument(!Strings.isNullOrEmpty(tableSinkConfig.getRowField()),
+    Preconditions.checkArgument(tableSinkConfig.containsMacro(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD) ||
+                                  !Strings.isNullOrEmpty(tableSinkConfig.getRowField()),
                                 "Row field must be given as a property.");
     Schema outputSchema =
       SchemaValidator.validateOutputSchemaAndInputSchemaIfPresent(tableSinkConfig.getSchemaStr(),
@@ -71,6 +72,12 @@ public class TableSink extends BatchWritableSink<StructuredRecord, byte[], Put> 
     }
     // NOTE: this is done only for testing, once CDAP-4575 is implemented, we can use this schema in initialize
     pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
+  }
+
+  @Override
+  protected boolean shouldSkipCreateAtConfigure() {
+    return tableSinkConfig.containsMacro(Properties.Table.PROPERTY_SCHEMA) ||
+      tableSinkConfig.containsMacro(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD);
   }
 
   @Override
