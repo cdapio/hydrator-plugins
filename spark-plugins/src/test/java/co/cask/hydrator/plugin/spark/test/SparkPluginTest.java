@@ -24,10 +24,12 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
+import co.cask.cdap.app.runtime.spark.SparkCompat;
 import co.cask.cdap.common.utils.Tasks;
 import co.cask.cdap.datapipeline.DataPipelineApp;
 import co.cask.cdap.datastreams.DataStreamsApp;
 import co.cask.cdap.datastreams.DataStreamsSparkLauncher;
+import co.cask.cdap.etl.api.batch.SparkCompute;
 import co.cask.cdap.etl.api.streaming.StreamingSource;
 import co.cask.cdap.etl.mock.batch.MockSink;
 import co.cask.cdap.etl.mock.test.HydratorTestBase;
@@ -48,6 +50,7 @@ import co.cask.hydrator.common.http.HTTPPollConfig;
 import co.cask.hydrator.plugin.spark.FileStreamingSource;
 import co.cask.hydrator.plugin.spark.HTTPPollerSource;
 import co.cask.hydrator.plugin.spark.TwitterStreamingSource;
+import co.cask.hydrator.plugin.spark.dynamic.ScalaSparkCompute;
 import co.cask.hydrator.plugin.spark.mock.MockFeedHandler;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
@@ -66,6 +69,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -114,7 +118,7 @@ public class SparkPluginTest extends HydratorTestBase {
     );
     addPluginArtifact(NamespaceId.DEFAULT.artifact("spark-plugins", "1.0.0"), parents,
                       TwitterStreamingSource.class, FileStreamingSource.class,
-                      HTTPPollerSource.class, HTTPPollConfig.class);
+                      HTTPPollerSource.class, HTTPPollConfig.class, ScalaSparkCompute.class);
 
     List<HttpHandler> handlers = new ArrayList<>();
     handlers.add(new MockFeedHandler());
@@ -215,10 +219,17 @@ public class SparkPluginTest extends HydratorTestBase {
       .put("extensions", "txt,csv")
       .build();
 
+    Map<String, String> sparkComputeProperties = Collections.singletonMap(
+      "scalaCode", "def transform(rdd: RDD[StructuredRecord]) : RDD[StructuredRecord] = { rdd }"
+    );
+
     DataStreamsConfig pipelineCfg = DataStreamsConfig.builder()
       .addStage(new ETLStage("source", new ETLPlugin("File", StreamingSource.PLUGIN_TYPE, properties, null)))
+      .addStage(new ETLStage("sparkcompute", new ETLPlugin("ScalaSparkCompute",
+                                                           SparkCompute.PLUGIN_TYPE, sparkComputeProperties)))
       .addStage(new ETLStage("sink", MockSink.getPlugin("fileOutput")))
-      .addConnection("source", "sink")
+      .addConnection("source", "sparkcompute")
+      .addConnection("sparkcompute", "sink")
       .setBatchInterval("1s")
       .build();
 

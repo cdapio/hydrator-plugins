@@ -53,21 +53,6 @@ public final class Properties {
   }
 
   /**
-   * Class to hold properties for S3BatchSource
-   */
-  public static class S3 {
-    public static final String ACCESS_ID = "accessID";
-    public static final String ACCESS_KEY = "accessKey";
-    public static final String PATH = "path";
-    public static final String FILE_REGEX = "fileRegex";
-    public static final String TIME_TABLE = "timeTable";
-    public static final String INPUT_FORMAT_CLASS = "inputFormatClass";
-    public static final String MAX_SPLIT_SIZE = "maxSplitSize";
-    public static final String IGNORE_NON_EXISTING_FOLDERS = "ignoreNonExistingFolders";
-    public static final String RECURSIVE = "recursive";
-  }
-
-  /**
    * Properties for the StreamBatchSource as well as the real-time StreamSink
    */
   public static class Stream {
@@ -160,17 +145,6 @@ public final class Properties {
     public static final String ACCESS_KEY = "accessKey";
     public static final String PARTITION_KEY = "partitionKey";
     public static final String SHARD_COUNT = "shardCount";
-  }
-
-  /**
-   * Configuration for S3BatchSink
-   */
-  public static class S3BatchSink {
-    public static final String BASE_PATH = "basePath";
-    public static final String SCHEMA = "schema";
-    public static final String PATH_FORMAT = "pathFormat";
-    public static final String AUTHENTICATION_METHOD = "authenticationMethod";
-    public static final String ENABLE_ENCRYPTION = "enableEncryption";
   }
 
   /**

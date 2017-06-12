@@ -15,14 +15,14 @@ you may want to periodically dump the contents of a relational database into a C
 
 Properties
 ----------
-**name:** Name of the table dataset. If it does not already exist, one will be created.
+**name:** Name of the table dataset. If it does not already exist, one will be created. (Macro-enabled)
 
 **schema:** Optional schema of the table as a JSON Object. If the table does not
 already exist, one will be created with this schema, which will allow the table to be
-explored through Hive. Output schema should have columns other than rowkey.
+explored through Hive. Output schema should have columns other than rowkey. (Macro-enabled)
 
 **schema.row.field:** The name of the record field that should be used as the row
-key when writing to the table.
+key when writing to the table. (Macro-enabled)
 
 **case.sensitive.row.field:** Whether 'schema.row.field' is case sensitive; defaults to true.
 

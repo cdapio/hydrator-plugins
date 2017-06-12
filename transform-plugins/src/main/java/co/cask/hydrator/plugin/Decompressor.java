@@ -114,7 +114,8 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
           deCompMap.containsKey(field.getName()) && deCompMap.get(field.getName()) != DecompressorType.NONE &&
           !Schema.Type.BYTES.equals(field.getSchema().getType())) {
           throw new IllegalArgumentException(
-            String.format("Input field  %s should be of type bytes or string. It is currently of type %s",
+            String.format("Decompression is selected for the input field %s, but the field is of type %s. " +
+                            "Decompression is supported only for the type Bytes.",
                           field.getName(), field.getSchema().getType().toString()));
         }
       }

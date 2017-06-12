@@ -33,10 +33,12 @@ import co.cask.hydrator.common.ReferencePluginConfig;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.hadoop.MongoOutputFormat;
 import com.mongodb.hadoop.io.BSONWritable;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * A {@link BatchSink} that writes data to MongoDB.
@@ -57,7 +59,13 @@ public class MongoDBBatchSink extends ReferenceBatchSink<StructuredRecord, NullW
 
   @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
-    context.addOutput(Output.of(config.referenceName, new MongoDBOutputFormatProvider(config)));
+    Configuration conf = new Configuration();
+    String path = conf.get(
+      "mapreduce.task.tmp.dir",
+      conf.get(
+        "mapred.child.tmp",
+        conf.get("hadoop.tmp.dir", System.getProperty("java.io.tmpdir")))) + "/" + UUID.randomUUID().toString();
+    context.addOutput(Output.of(config.referenceName, new MongoDBOutputFormatProvider(config, path)));
   }
 
   @Override
@@ -73,9 +81,10 @@ public class MongoDBBatchSink extends ReferenceBatchSink<StructuredRecord, NullW
   private static class MongoDBOutputFormatProvider implements OutputFormatProvider {
     private final Map<String, String> conf;
 
-    MongoDBOutputFormatProvider(MongoDBSinkConfig config) {
+    MongoDBOutputFormatProvider(MongoDBSinkConfig config, String path) {
       this.conf = new HashMap<>();
       conf.put("mongo.output.uri", config.connectionString);
+      conf.put("mapreduce.task.tmp.dir", path);
     }
 
     @Override
