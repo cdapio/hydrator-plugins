@@ -16,40 +16,41 @@
 
 package co.cask.hydrator.plugin.batch.sink;
 
-  import co.cask.cdap.api.annotation.Description;
-  import co.cask.cdap.api.annotation.Name;
-  import co.cask.cdap.api.annotation.Plugin;
-  import co.cask.cdap.api.data.batch.Output;
-  import co.cask.cdap.api.data.format.StructuredRecord;
-  import co.cask.cdap.api.data.schema.Schema;
-  import co.cask.cdap.api.data.schema.UnsupportedTypeException;
-  import co.cask.cdap.api.dataset.DatasetProperties;
-  import co.cask.cdap.api.dataset.lib.DynamicPartitioner;
-  import co.cask.cdap.api.dataset.lib.FileSetProperties;
-  import co.cask.cdap.api.dataset.lib.KeyValue;
-  import co.cask.cdap.api.dataset.lib.PartitionKey;
-  import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
-  import co.cask.cdap.api.dataset.lib.PartitionedFileSetArguments;
-  import co.cask.cdap.api.dataset.lib.PartitionedFileSetProperties;
-  import co.cask.cdap.api.dataset.lib.Partitioning;
-  import co.cask.cdap.api.mapreduce.MapReduceTaskContext;
-  import co.cask.cdap.etl.api.Emitter;
-  import co.cask.cdap.etl.api.PipelineConfigurer;
-  import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
-  import co.cask.cdap.etl.api.batch.BatchSink;
-  import co.cask.cdap.etl.api.batch.BatchSinkContext;
-  import co.cask.hydrator.common.HiveSchemaConverter;
-  import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
-  import org.apache.avro.generic.GenericRecord;
-  import org.slf4j.Logger;
-  import org.slf4j.LoggerFactory;
-  import parquet.avro.AvroParquetInputFormat;
-  import parquet.avro.AvroParquetOutputFormat;
+import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Name;
+import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.data.batch.Output;
+import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.data.schema.UnsupportedTypeException;
+import co.cask.cdap.api.dataset.DatasetProperties;
+import co.cask.cdap.api.dataset.lib.DynamicPartitioner;
+import co.cask.cdap.api.dataset.lib.FileSetProperties;
+import co.cask.cdap.api.dataset.lib.KeyValue;
+import co.cask.cdap.api.dataset.lib.PartitionKey;
+import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
+import co.cask.cdap.api.dataset.lib.PartitionedFileSetArguments;
+import co.cask.cdap.api.dataset.lib.PartitionedFileSetProperties;
+import co.cask.cdap.api.dataset.lib.Partitioning;
+import co.cask.cdap.api.mapreduce.MapReduceTaskContext;
+import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.PipelineConfigurer;
+import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
+import co.cask.cdap.etl.api.batch.BatchSink;
+import co.cask.cdap.etl.api.batch.BatchSinkContext;
+import co.cask.hydrator.common.HiveSchemaConverter;
+import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
+import org.apache.avro.generic.GenericRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import parquet.avro.AvroParquetInputFormat;
+import parquet.avro.AvroParquetOutputFormat;
 
-  import java.io.IOException;
-  import java.util.HashMap;
-  import java.util.Map;
-  import javax.annotation.Nullable;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * A {@link BatchSink} to write Parquet records to a {@link PartitionedFileSet}.
@@ -87,7 +88,7 @@ public class DynamicPartitionFileSetParquetSink extends
     super.configurePipeline(pipelineConfigurer);
     String pfsName = config.name;
     String basePath = config.basePath == null ? pfsName : config.basePath;
-
+    
     String schema = config.schema.toLowerCase();
     // parse to make sure it's valid
     new org.apache.avro.Schema.Parser().parse(schema);
@@ -186,13 +187,15 @@ public class DynamicPartitionFileSetParquetSink extends
     public PartitionKey getPartitionKey(Void key, GenericRecord value) {
       PartitionKey.Builder keyBuilder = PartitionKey.builder();
       for (int i = 0; i < fieldNames.length; i++) {
-        if (value.get(fieldNames[i]) == null) {
+        Object fieldValue = value.get(fieldNames[i]);
+        String fieldKey = DynamicPartitionFileSetParquetSink.PARTITION_COL_PREFIX + fieldNames[i];
+        if (fieldValue == null) {
           // This call will result in an exception but there's nothing else I can do. [CDAP-7053]
-          keyBuilder.addStringField(DynamicPartitionFileSetParquetSink.PARTITION_COL_PREFIX + fieldNames[i],
-                                    null);
+          keyBuilder.addStringField(fieldKey, null);
+        } else if (fieldValue instanceof ByteBuffer) {
+          keyBuilder.addStringField(fieldKey, new String(((ByteBuffer) fieldValue).array()));
         } else {
-          keyBuilder.addStringField(DynamicPartitionFileSetParquetSink.PARTITION_COL_PREFIX + fieldNames[i],
-                                    String.valueOf(value.get(fieldNames[i])));
+          keyBuilder.addStringField(fieldKey, String.valueOf(fieldValue));
         }
       }
       return keyBuilder.build();
