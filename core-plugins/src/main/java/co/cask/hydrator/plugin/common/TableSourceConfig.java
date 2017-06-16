@@ -43,7 +43,6 @@ public class TableSourceConfig extends BatchReadableWritableConfig {
   @Name(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD)
   @Description("Optional record field for which row key will be considered as value instead of row column. " +
     "The field name specified must be present in the schema, and must not be nullable.")
-  @Nullable
   @Macro
   private String rowField;
 
