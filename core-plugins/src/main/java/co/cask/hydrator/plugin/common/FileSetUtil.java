@@ -30,10 +30,10 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.orc.mapreduce.OrcInputFormat;
 import org.apache.orc.mapreduce.OrcOutputFormat;
+import org.apache.parquet.avro.AvroParquetInputFormat;
+import org.apache.parquet.avro.AvroParquetOutputFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import parquet.avro.AvroParquetInputFormat;
-import parquet.avro.AvroParquetOutputFormat;
 
 import java.io.IOException;
 import java.util.HashMap;
