@@ -66,13 +66,13 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.ql.exec.vector.TimestampColumnVector;
 import org.apache.orc.mapred.OrcStruct;
 import org.apache.orc.mapreduce.OrcMapreduceRecordWriter;
+import org.apache.parquet.avro.AvroParquetInputFormat;
+import org.apache.parquet.avro.AvroParquetOutputFormat;
+import org.apache.parquet.avro.AvroParquetReader;
+import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.twill.filesystem.Location;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import parquet.avro.AvroParquetInputFormat;
-import parquet.avro.AvroParquetOutputFormat;
-import parquet.avro.AvroParquetReader;
-import parquet.hadoop.ParquetReader;
 
 import java.io.IOException;
 import java.util.List;
