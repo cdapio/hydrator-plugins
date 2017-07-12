@@ -21,20 +21,15 @@ import co.cask.cdap.api.artifact.ArtifactVersion;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.common.utils.Tasks;
 import co.cask.cdap.datapipeline.DataPipelineApp;
 import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.batch.BatchSink;
-import co.cask.cdap.etl.api.realtime.RealtimeSink;
 import co.cask.cdap.etl.mock.batch.MockSource;
 import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
 import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
-import co.cask.cdap.etl.proto.v2.ETLRealtimeConfig;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
-import co.cask.cdap.etl.realtime.ETLWorker;
 import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.id.ApplicationId;
@@ -43,12 +38,10 @@ import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.TestConfiguration;
-import co.cask.cdap.test.WorkerManager;
 import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.batch.SolrSearchSink;
 import co.cask.hydrator.plugin.common.SolrSearchSinkConfig;
-import co.cask.hydrator.plugin.realtime.RealtimeSolrSearchSink;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -69,11 +62,10 @@ import org.junit.rules.TemporaryFolder;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Test cases for {@link SolrSearchSink} and {@link RealtimeSolrSearchSink} classes.
+ * Test cases for {@link SolrSearchSink}.
  */
 public class SolrSearchSinkTest extends HydratorTestBase {
   @ClassRule
@@ -91,13 +83,6 @@ public class SolrSearchSinkTest extends HydratorTestBase {
   private static final ArtifactId BATCH_APP_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("data-pipeline", VERSION);
   private static final ArtifactSummary ETLBATCH_ARTIFACT =
     new ArtifactSummary(BATCH_APP_ARTIFACT_ID.getArtifact(), BATCH_APP_ARTIFACT_ID.getVersion());
-  private static final ArtifactId REALTIME_APP_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("etlrealtime", VERSION);
-  private static final ArtifactSummary REALTIME_APP_ARTIFACT =
-    new ArtifactSummary(REALTIME_APP_ARTIFACT_ID.getArtifact(), REALTIME_APP_ARTIFACT_ID.getVersion());
-  private static final ArtifactRange REALTIME_ARTIFACT_RANGE = new ArtifactRange(NamespaceId.DEFAULT.getNamespace(),
-                                                                                 "etlrealtime",
-                                                                                 CURRENT_VERSION, true,
-                                                                                 CURRENT_VERSION, true);
   private static final ArtifactRange BATCH_ARTIFACT_RANGE = new ArtifactRange(NamespaceId.DEFAULT.getNamespace(),
                                                                               "data-pipeline",
                                                                               CURRENT_VERSION, true,
@@ -112,13 +97,11 @@ public class SolrSearchSinkTest extends HydratorTestBase {
   public static void setupTest() throws Exception {
     setupBatchArtifacts(BATCH_APP_ARTIFACT_ID, DataPipelineApp.class);
 
-    setupRealtimeArtifacts(REALTIME_APP_ARTIFACT_ID, ETLRealtimeApplication.class);
-
-    Set<ArtifactRange> parents = ImmutableSet.of(BATCH_ARTIFACT_RANGE, REALTIME_ARTIFACT_RANGE);
+    Set<ArtifactRange> parents = ImmutableSet.of(BATCH_ARTIFACT_RANGE);
 
     // add Solr search plugins
     addPluginArtifact(NamespaceId.DEFAULT.artifact("solrsearch-plugins", "1.0.0"), parents,
-                      SolrSearchSink.class, SolrSearchSinkConfig.class, RealtimeSolrSearchSink.class);
+                      SolrSearchSink.class, SolrSearchSinkConfig.class);
   }
 
   @Ignore
@@ -178,74 +161,6 @@ public class SolrSearchSinkTest extends HydratorTestBase {
         Assert.assertEquals("Ray", document.get("lastname"));
         Assert.assertEquals("SE lake side", document.get("address"));
         Assert.assertEquals(480002, document.get("pincode"));
-      }
-    }
-    // Clean the indexes
-    client.deleteByQuery("*:*");
-    client.commit();
-    client.shutdown();
-  }
-
-  @Ignore
-  public void testRealTimeSolrSearchSink() throws Exception {
-    client = new HttpSolrClient("http://localhost:8983/solr/collection1");
-
-    List<StructuredRecord> input = ImmutableList.of(
-      StructuredRecord.builder(inputSchema).set("id", "3").set("firstname", "Brett").set("lastname", "Lee").set
-        ("office address", "NE lake side").set("pincode", 480003).build(),
-      StructuredRecord.builder(inputSchema).set("id", "4").set("firstname", "John").set("lastname", "Ray").set
-        ("office address", "SE lake side").set("pincode", 480004).build()
-    );
-    ETLStage source = new ETLStage("RealtimeSolrSource", co.cask.cdap.etl.mock.realtime.MockSource.getPlugin(input));
-
-    Map<String, String> sinkConfigproperties = new ImmutableMap.Builder<String, String>()
-      .put(Constants.Reference.REFERENCE_NAME, "RealtimeSolrSink")
-      .put("solrMode", SolrSearchSinkConfig.SINGLE_NODE_MODE)
-      .put("solrHost", "localhost:8983")
-      .put("collectionName", "collection1")
-      .put("keyField", "id")
-      .put("outputFieldMappings", "office address:address")
-      .build();
-
-    ETLStage sink = new ETLStage("SolrSink", new ETLPlugin("SolrSearch", RealtimeSink.PLUGIN_TYPE, sinkConfigproperties,
-                                                           null));
-
-    ETLRealtimeConfig etlConfig = ETLRealtimeConfig.builder()
-      .addStage(source)
-      .addStage(sink)
-      .addConnection(source.getName(), sink.getName())
-      .build();
-
-    ApplicationId appId = NamespaceId.DEFAULT.app("testRealTimeSolrSink");
-    AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(REALTIME_APP_ARTIFACT, etlConfig);
-    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
-
-    WorkerManager workerManager = appManager.getWorkerManager(ETLWorker.NAME);
-    workerManager.start();
-    Tasks.waitFor(true, new Callable<Boolean>() {
-      @Override
-      public Boolean call() throws Exception {
-        QueryResponse queryResponse = client.query(new SolrQuery("*:*"));
-        return queryResponse.getResults().size() > 0;
-      }
-    }, 30, TimeUnit.SECONDS, 50, TimeUnit.MILLISECONDS);
-    workerManager.stop();
-
-    QueryResponse queryResponse = client.query(new SolrQuery("*:*"));
-    SolrDocumentList resultList = queryResponse.getResults();
-
-    Assert.assertEquals(2, resultList.size());
-    for (SolrDocument document : resultList) {
-      if (document.get("id").equals("3")) {
-        Assert.assertEquals("Brett", document.get("firstname"));
-        Assert.assertEquals("Lee", document.get("lastname"));
-        Assert.assertEquals("NE lake side", document.get("address"));
-        Assert.assertEquals(480003, document.get("pincode"));
-      } else {
-        Assert.assertEquals("John", document.get("firstname"));
-        Assert.assertEquals("Ray", document.get("lastname"));
-        Assert.assertEquals("SE lake side", document.get("address"));
-        Assert.assertEquals(480004, document.get("pincode"));
       }
     }
     // Clean the indexes

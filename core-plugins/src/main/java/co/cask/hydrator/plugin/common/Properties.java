@@ -22,22 +22,6 @@ package co.cask.hydrator.plugin.common;
 public final class Properties {
 
   /**
-   * Class to hold properties for DBSource and DBSink
-   */
-  public static class DB {
-    public static final String CONNECTION_STRING = "connectionString";
-    public static final String TABLE_NAME = "tableName";
-    public static final String USER = "user";
-    public static final String PASSWORD = "password";
-    public static final String COLUMNS = "columns";
-    public static final String JDBC_PLUGIN_NAME = "jdbcPluginName";
-    public static final String JDBC_PLUGIN_TYPE = "jdbcPluginType";
-    public static final String IMPORT_QUERY = "importQuery";
-    public static final String COUNT_QUERY = "countQuery";
-    public static final String COLUMN_NAME_CASE = "columnNameCase";
-  }
-
-  /**
    * Class to hold properties for FileBatchSource
    */
   public static class File {
@@ -118,33 +102,12 @@ public final class Properties {
   }
 
   /**
-   * Properties for ProjectionTransform
-   */
-  public static class ProjectionTransform {
-    public static final String DROP = "drop";
-    public static final String RENAME = "rename";
-    public static final String CONVERT = "convert";
-  }
-
-  /**
    * Properties for SnapshotFileSets
    */
   public static class SnapshotFileSetSink {
     public static final String NAME = "name";
     public static final String BASE_PATH = "basePath";
     public static final String FILE_PROPERTIES = "fileProperties";
-  }
-
-  /**
-   * Configuration for KinesisSink
-   */
-  public static class KinesisRealtimeSink {
-    public static final String NAME = "name";
-    public static final String BODY_FIELD = "bodyField";
-    public static final String ACCESS_ID = "accessID";
-    public static final String ACCESS_KEY = "accessKey";
-    public static final String PARTITION_KEY = "partitionKey";
-    public static final String SHARD_COUNT = "shardCount";
   }
 
   /**

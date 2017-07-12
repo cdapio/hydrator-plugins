@@ -22,21 +22,16 @@ import co.cask.cdap.api.artifact.ArtifactVersion;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.common.utils.Tasks;
 import co.cask.cdap.datapipeline.DataPipelineApp;
 import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
-import co.cask.cdap.etl.api.realtime.RealtimeSink;
 import co.cask.cdap.etl.mock.batch.MockSink;
 import co.cask.cdap.etl.mock.batch.MockSource;
 import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
-import co.cask.cdap.etl.proto.v2.ETLRealtimeConfig;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
-import co.cask.cdap.etl.realtime.ETLWorker;
 import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.id.ApplicationId;
@@ -44,12 +39,10 @@ import co.cask.cdap.proto.id.ArtifactId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
-import co.cask.cdap.test.WorkerManager;
 import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.batch.sink.MongoDBBatchSink;
 import co.cask.hydrator.plugin.batch.source.MongoDBBatchSource;
-import co.cask.hydrator.plugin.realtime.sink.MongoDBRealtimeSink;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -75,7 +68,6 @@ import org.junit.Test;
 
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -89,14 +81,6 @@ public class MongoDBTest extends HydratorTestBase {
   private static final ArtifactSummary ETLBATCH_ARTIFACT =
     new ArtifactSummary(BATCH_APP_ARTIFACT_ID.getArtifact(), BATCH_APP_ARTIFACT_ID.getVersion());
 
-  private static final ArtifactId REALTIME_APP_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("etlrealtime", VERSION);
-  private static final ArtifactSummary REALTIME_APP_ARTIFACT =
-    new ArtifactSummary(REALTIME_APP_ARTIFACT_ID.getArtifact(), REALTIME_APP_ARTIFACT_ID.getVersion());
-
-  private static final ArtifactRange REALTIME_ARTIFACT_RANGE = new ArtifactRange(NamespaceId.DEFAULT.getNamespace(),
-                                                                                 "etlrealtime",
-                                                                                 CURRENT_VERSION, true,
-                                                                                 CURRENT_VERSION, true);
   private static final ArtifactRange BATCH_ARTIFACT_RANGE = new ArtifactRange(NamespaceId.DEFAULT.getNamespace(),
                                                                               "data-pipeline",
                                                                               CURRENT_VERSION, true,
@@ -125,14 +109,12 @@ public class MongoDBTest extends HydratorTestBase {
   @BeforeClass
   public static void setup() throws Exception {
     setupBatchArtifacts(BATCH_APP_ARTIFACT_ID, DataPipelineApp.class);
-    setupRealtimeArtifacts(REALTIME_APP_ARTIFACT_ID, ETLRealtimeApplication.class);
 
-    Set<ArtifactRange> parents = ImmutableSet.of(REALTIME_ARTIFACT_RANGE, BATCH_ARTIFACT_RANGE);
+    Set<ArtifactRange> parents = ImmutableSet.of(BATCH_ARTIFACT_RANGE);
 
     addPluginArtifact(NamespaceId.DEFAULT.artifact("mongo-plugins", "1.0.0"), parents,
                       MongoDBBatchSource.class, MongoInputFormat.class, MongoSplitter.class, MongoInputSplit.class,
-                      MongoDBBatchSink.class,
-                      MongoDBRealtimeSink.class);
+                      MongoDBBatchSink.class);
   }
 
   @Before
@@ -163,43 +145,6 @@ public class MongoDBTest extends HydratorTestBase {
     if (factory != null) {
       factory.shutdown();
     }
-  }
-
-  @Test
-  public void testMongoDBRealtimeSink() throws Exception {
-    Schema schema = Schema.recordOf("dummy", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
-    List<StructuredRecord> input = ImmutableList.of(StructuredRecord.builder(schema).set("x", 0).build());
-    ETLStage source = new ETLStage("source", co.cask.cdap.etl.mock.realtime.MockSource.getPlugin(input));
-    ETLStage sink = new ETLStage("MongoDB", new ETLPlugin(
-      "MongoDB",
-      RealtimeSink.PLUGIN_TYPE,
-      ImmutableMap.of(MongoDBRealtimeSink.Properties.CONNECTION_STRING,
-                      String.format("mongodb://localhost:%d", mongoPort),
-                      MongoDBRealtimeSink.Properties.DB_NAME, "cdap",
-                      MongoDBRealtimeSink.Properties.COLLECTION_NAME, "real",
-                      Constants.Reference.REFERENCE_NAME, "MongoDBTest"),
-      null));
-    ETLRealtimeConfig etlConfig = ETLRealtimeConfig.builder()
-      .addStage(source)
-      .addStage(sink)
-      .addConnection(source.getName(), sink.getName())
-      .build();
-    ApplicationId appId = NamespaceId.DEFAULT.app("MongoDBRealtimeSinkTest");
-    AppRequest<ETLRealtimeConfig> appRequest = new AppRequest<>(REALTIME_APP_ARTIFACT, etlConfig);
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-    WorkerManager workerManager = appManager.getWorkerManager(ETLWorker.class.getSimpleName());
-    workerManager.start();
-
-    final MongoClient mongoClient = factory.newMongo();
-    Tasks.waitFor(true, new Callable<Boolean>() {
-      @Override
-      public Boolean call() throws Exception {
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("cdap");
-        MongoCollection<Document> documents = mongoDatabase.getCollection("real");
-        return documents.count() > 0;
-      }
-    }, 30, TimeUnit.SECONDS, 50, TimeUnit.MILLISECONDS);
-    workerManager.stop();
   }
 
   @Test

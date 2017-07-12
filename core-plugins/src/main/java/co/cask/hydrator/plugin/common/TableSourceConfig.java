@@ -23,15 +23,12 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.hydrator.plugin.batch.sink.TableSink;
 import co.cask.hydrator.plugin.batch.source.TableSource;
-import co.cask.hydrator.plugin.realtime.sink.RealtimeTableSink;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 
 import java.io.IOException;
 import javax.annotation.Nullable;
 
 /**
- * {@link PluginConfig} for {@link TableSource}, {@link TableSink} and {@link RealtimeTableSink}
+ * {@link PluginConfig} for {@link TableSource}, {@link TableSink}
  */
 public class TableSourceConfig extends BatchReadableWritableConfig {
   @Macro

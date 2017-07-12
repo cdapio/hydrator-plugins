@@ -81,10 +81,6 @@
       <artifactId>hydrator-test</artifactId>
     </dependency>
     <dependency>
-      <groupId>co.cask.cdap</groupId>
-      <artifactId>cdap-etl-realtime</artifactId>
-    </dependency>
-    <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
     </dependency>

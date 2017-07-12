@@ -58,20 +58,8 @@
       <artifactId>cdap-data-pipeline</artifactId>
     </dependency>
     <dependency>
-      <groupId>co.cask.cdap</groupId>
-      <artifactId>cdap-etl-realtime</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-minicluster</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.twitter4j</groupId>
-      <artifactId>twitter4j-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.twitter4j</groupId>
-      <artifactId>twitter4j-stream</artifactId>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -92,77 +80,6 @@
       <artifactId>jython-standalone</artifactId>
       <version>2.5.2</version>
     </dependency>
-    <!-- Start for JMS Source -->
-    <dependency>
-      <groupId>org.apache.geronimo.specs</groupId>
-      <artifactId>geronimo-jms_1.1_spec</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.activemq</groupId>
-      <artifactId>activemq-core</artifactId>
-      <version>5.5.1</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>log4j</groupId>
-          <artifactId>log4j</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <!-- End for JMS Source -->
-    <!-- Start for SQS -->
-    <dependency>
-      <groupId>com.amazonaws</groupId>
-      <artifactId>amazon-sqs-java-messaging-lib</artifactId>
-      <version>1.0.0</version>
-      <exclusions>
-        <exclusion>
-          <groupId>com.fasterxml.jackson.core</groupId>
-          <artifactId>jackson-databind</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <!-- https://mvnrepository.com/artifact/com.amazonaws/amazon-kinesis-connectors -->
-    <dependency>
-      <groupId>com.amazonaws</groupId>
-      <artifactId>amazon-kinesis-connectors</artifactId>
-      <version>1.1.1</version>
-      <exclusions>
-        <exclusion>
-          <groupId>com.fasterxml.jackson.core</groupId>
-          <artifactId>jackson-core</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.fasterxml.jackson.core</groupId>
-          <artifactId>jackson-databind</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpclient</artifactId>
-      <version>4.3.4</version>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-      <version>2.3.2</version>
-    </dependency>
-    <dependency>
-      <groupId>org.elasticmq</groupId>
-      <artifactId>elasticmq-core_2.10</artifactId>
-      <version>0.6.3</version>
-    </dependency>
-    <dependency>
-      <groupId>org.elasticmq</groupId>
-      <artifactId>elasticmq-rest-sqs_2.10</artifactId>
-      <version>0.6.3</version>
-    </dependency>
-    <!-- End for SQS -->
     <!-- Windows share copy action -->
     <dependency>
       <groupId>jcifs</groupId>
@@ -245,7 +162,6 @@
         </exclusion>
       </exclusions>
     </dependency>
-
   </dependencies>
 
   <build>
