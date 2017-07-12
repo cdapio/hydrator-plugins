@@ -28,7 +28,6 @@ import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.etl.realtime.ETLRealtimeApplication;
 import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.id.ApplicationId;
@@ -41,7 +40,6 @@ import co.cask.cdap.test.WorkflowManager;
 import co.cask.http.HttpHandler;
 import co.cask.http.NettyHttpService;
 import co.cask.hydrator.plugin.mock.MockFeedHandler;
-import co.cask.hydrator.plugin.realtime.HTTPPollerRealtimeSource;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
@@ -73,8 +71,6 @@ public class HttpCallbackActionTest extends HydratorTestBase {
 
   protected static final ArtifactId BATCH_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("data-pipeline", "3.2.0");
   protected static final ArtifactSummary BATCH_ARTIFACT = new ArtifactSummary("data-pipeline", "3.2.0");
-  protected static final ArtifactId REALTIME_ARTIFACT_ID = NamespaceId.DEFAULT.artifact("etlrealtime", "3.2.0");
-  protected static final ArtifactSummary REALTIME_ARTIFACT = new ArtifactSummary("etlrealtime", "3.2.0");
 
   private static int startCount;
   private static NettyHttpService httpService;
@@ -87,19 +83,13 @@ public class HttpCallbackActionTest extends HydratorTestBase {
     }
 
     setupBatchArtifacts(BATCH_ARTIFACT_ID, DataPipelineApp.class);
-    setupRealtimeArtifacts(REALTIME_ARTIFACT_ID, ETLRealtimeApplication.class);
 
     Set<ArtifactRange> parents = new HashSet<>();
     parents.add(new ArtifactRange(NamespaceId.DEFAULT.getNamespace(),
                                   BATCH_ARTIFACT_ID.getArtifact(),
                                   new ArtifactVersion(BATCH_ARTIFACT.getVersion()), true,
                                   new ArtifactVersion(BATCH_ARTIFACT.getVersion()), true));
-    parents.add(new ArtifactRange(NamespaceId.DEFAULT.getNamespace(),
-                                  REALTIME_ARTIFACT_ID.getArtifact(),
-                                  new ArtifactVersion(REALTIME_ARTIFACT.getVersion()), true,
-                                  new ArtifactVersion(REALTIME_ARTIFACT.getVersion()), true));
     addPluginArtifact(NamespaceId.DEFAULT.artifact("http-plugins", "1.0.0"), parents,
-                      HTTPPollerRealtimeSource.class,
                       HTTPCallbackAction.class);
 
 

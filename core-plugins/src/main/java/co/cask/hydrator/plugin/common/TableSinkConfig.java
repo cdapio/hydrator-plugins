@@ -21,12 +21,11 @@ import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.hydrator.plugin.batch.sink.TableSink;
-import co.cask.hydrator.plugin.realtime.sink.RealtimeTableSink;
 
 import javax.annotation.Nullable;
 
 /**
- * {@link PluginConfig} for {@link TableSink} and {@link RealtimeTableSink}
+ * {@link PluginConfig} for {@link TableSink}
  */
 public class TableSinkConfig extends BatchReadableWritableConfig {
   @Macro
