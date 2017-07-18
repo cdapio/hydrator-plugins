@@ -50,6 +50,7 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
     "which indicates that no files will be filtered.";
   protected static final String FILESYSTEM_PROPERTIES_DESCRIPTION = "A JSON string representing a map of properties " +
     "needed for the distributed file system.";
+  protected static final String FILE_SOURCE_FORMAT_DESCRIPTION = "Format of the file source. Defaults to text.";
 
   private static final Gson GSON = new Gson();
   private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
@@ -75,6 +76,10 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
   @Description(INPUT_FORMAT_CLASS_DESCRIPTION)
   @Macro
   public String inputFormatClass;
+
+  @Nullable
+  @Description(FILE_SOURCE_FORMAT_DESCRIPTION)
+  public String fileSourceFormat;
 
   @Nullable
   @Description(MAX_SPLIT_SIZE_DESCRIPTION)
@@ -107,14 +112,14 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
   public String schema;
 
   public FileSourceConfig() {
-    this(null, null, null, null, null, null, null, null, null, null, null);
+    this(null, null, null, null, null, null, null, null, null, null, null, null);
   }
 
   public FileSourceConfig(String referenceName, @Nullable String fileRegex, @Nullable String timeTable,
                           @Nullable String inputFormatClass, @Nullable String fileSystemProperties,
-                          @Nullable Long maxSplitSize, @Nullable Boolean ignoreNonExistingFolders,
-                          @Nullable Boolean recursive, @Nullable String pathField, @Nullable Boolean fileNameOnly,
-                          @Nullable String schema) {
+                          @Nullable String fileSourceFormat, @Nullable Long maxSplitSize,
+                          @Nullable Boolean ignoreNonExistingFolders, @Nullable Boolean recursive,
+                          @Nullable String pathField, @Nullable Boolean fileNameOnly, @Nullable String schema) {
     super(referenceName);
     this.fileSystemProperties = fileSystemProperties == null ? GSON.toJson(ImmutableMap.<String, String>of()) :
       fileSystemProperties;
@@ -123,6 +128,7 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
     this.timeTable = timeTable;
     this.inputFormatClass = inputFormatClass == null ?
       CombinePathTrackingInputFormat.class.getName() : inputFormatClass;
+    this.fileSourceFormat = fileSourceFormat == null ? "text" : fileSourceFormat;
     this.maxSplitSize = maxSplitSize == null ? DEFAULT_MAX_SPLIT_SIZE : maxSplitSize;
     this.ignoreNonExistingFolders = ignoreNonExistingFolders == null ? false : ignoreNonExistingFolders;
     this.recursive = recursive == null ? false : recursive;
