@@ -20,6 +20,7 @@ import co.cask.cdap.api.artifact.ArtifactSummary;
 import co.cask.cdap.api.artifact.ArtifactVersion;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.datapipeline.DataPipelineApp;
 import co.cask.cdap.datapipeline.SmartWorkflow;
@@ -40,9 +41,18 @@ import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.common.Properties;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import org.apache.avro.file.DataFileWriter;
+import org.apache.avro.generic.GenericDatumWriter;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.generic.GenericRecordBuilder;
+import org.apache.avro.io.DatumWriter;
 import org.apache.commons.io.FileUtils;
+import org.apache.hadoop.fs.Path;
+import org.apache.parquet.avro.AvroParquetWriter;
+import org.apache.parquet.hadoop.ParquetWriter;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -72,6 +82,11 @@ public class FileBatchSourceTest extends HydratorTestBase {
     NamespaceId.DEFAULT.artifact("data-pipeline", CURRENT_VERSION.getVersion());
   private static final ArtifactSummary BATCH_ARTIFACT =
     new ArtifactSummary(BATCH_APP_ARTIFACT_ID.getArtifact(), BATCH_APP_ARTIFACT_ID.getVersion());
+  private static final Schema RECORD_SCHEMA = Schema.recordOf("record",
+                                                              Schema.Field.of("i", Schema.of(Schema.Type.INT)),
+                                                              Schema.Field.of("l", Schema.of(Schema.Type.LONG)),
+                                                              Schema.Field.of("file",
+                                                                              Schema.of(Schema.Type.STRING)));
   @ClassRule
   public static TemporaryFolder temporaryFolder = new TemporaryFolder();
   private static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
@@ -210,7 +225,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
 
-    Schema schema = PathTrackingInputFormat.getOutputSchema("file");
+    Schema schema = PathTrackingInputFormat.getTextOutputSchema("file");
     Set<StructuredRecord> expected = ImmutableSet.of(
       StructuredRecord.builder(schema).set("offset", 0L).set("body", "Hello,World").set("file", "test1.txt").build(),
       StructuredRecord.builder(schema).set("offset", 0L).set("body", "CDAP,Platform").set("file", "test3.txt").build());
@@ -462,5 +477,240 @@ public class FileBatchSourceTest extends HydratorTestBase {
     }
     Assert.assertTrue(outputValue.contains("Hello,World"));
     Assert.assertTrue(outputValue.contains("CDAP,Platform"));
+  }
+
+  @Test
+  public void testFileBatchInputFormatText() throws Exception {
+    File fileText = new File(temporaryFolder.newFolder(), "test.txt");
+    String outputDatasetName = "test-filesource-text";
+
+    Schema textSchema = Schema.recordOf("file.record",
+                                        Schema.Field.of("offset", Schema.of(Schema.Type.LONG)),
+                                        Schema.Field.of("body", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                                        Schema.Field.of("file", Schema.nullableOf(Schema.of(
+                                          Schema.Type.STRING))));
+
+    String appName = "FileSourceText";
+    ApplicationManager appManager = createSourceAndDeployApp(appName, fileText, "text", outputDatasetName, textSchema);
+
+    FileUtils.writeStringToFile(fileText, "Hello,World!");
+
+    workflowStartAndWait(appManager);
+
+    List<StructuredRecord> expected = ImmutableList.of(
+      StructuredRecord.builder(textSchema)
+        .set("offset", (long) 0)
+        .set("body", "Hello,World!")
+        .set("file", fileText.toURI().toString())
+        .build()
+    );
+
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> output = MockSink.readOutput(outputManager);
+
+    Assert.assertEquals(output, expected);
+  }
+
+  @Test
+  public void testFileBatchInputFormatAvro() throws Exception {
+    File fileAvro = new File(temporaryFolder.newFolder(), "test.avro");
+    String outputDatasetName = "test-filesource-avro";
+
+    String appName = "FileSourceAvro";
+    ApplicationManager appManager = createSourceAndDeployApp(appName, fileAvro, "avro", outputDatasetName, RECORD_SCHEMA);
+
+    org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(RECORD_SCHEMA.toString());
+    GenericRecord record = new GenericRecordBuilder(avroSchema)
+      .set("i", Integer.MAX_VALUE)
+      .set("l", Long.MAX_VALUE)
+      .set("file", fileAvro.getAbsolutePath())
+      .build();
+
+    DataSetManager<TimePartitionedFileSet> inputManager = getDataset("TestFile");
+
+    DatumWriter<GenericRecord> datumWriter = new GenericDatumWriter<>(avroSchema);
+    DataFileWriter<GenericRecord> dataFileWriter = new DataFileWriter<>(datumWriter);
+    dataFileWriter.create(avroSchema, fileAvro);
+    dataFileWriter.append(record);
+    dataFileWriter.close();
+    inputManager.flush();
+
+    workflowStartAndWait(appManager);
+
+    List<StructuredRecord> expected = ImmutableList.of(
+      StructuredRecord.builder(RECORD_SCHEMA)
+        .set("i", Integer.MAX_VALUE)
+        .set("l", Long.MAX_VALUE)
+        .set("file", fileAvro.toURI().toString())
+        .build()
+    );
+
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> output = MockSink.readOutput(outputManager);
+    Assert.assertEquals(output, expected);
+  }
+
+  @Test
+  public void testFileBatchInputFormatParquet() throws Exception {
+    File fileParquet = new File(temporaryFolder.newFolder(), "test.parquet");
+    String outputDatasetName = "test-filesource-parquet";
+
+    String appName = "FileSourceParquet";
+    ApplicationManager appManager = createSourceAndDeployApp(appName, fileParquet, "parquet", outputDatasetName,
+                                                             RECORD_SCHEMA);
+
+    org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(RECORD_SCHEMA.toString());
+    GenericRecord record = new GenericRecordBuilder(avroSchema)
+      .set("i", Integer.MAX_VALUE)
+      .set("l", Long.MAX_VALUE)
+      .set("file", fileParquet.getAbsolutePath())
+      .build();
+
+    DataSetManager<TimePartitionedFileSet> inputManager = getDataset("TestFile");
+    ParquetWriter<GenericRecord> parquetWriter = new AvroParquetWriter<>(new Path(fileParquet.getAbsolutePath()),
+                                                                         avroSchema);
+    parquetWriter.write(record);
+    parquetWriter.close();
+    inputManager.flush();
+
+    workflowStartAndWait(appManager);
+
+    List<StructuredRecord> expected = ImmutableList.of(
+      StructuredRecord.builder(RECORD_SCHEMA)
+        .set("i", Integer.MAX_VALUE)
+        .set("l", Long.MAX_VALUE)
+        .set("file", fileParquet.toURI().toString())
+        .build()
+    );
+
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> output = MockSink.readOutput(outputManager);
+    Assert.assertEquals(expected, output);
+  }
+
+  @Test
+  public void testFileBatchInputFormatAvroMissingField() throws Exception {
+    File fileAvro = new File(temporaryFolder.newFolder(), "test.avro");
+    String outputDatasetName = "test-filesource-avro-missing-field";
+
+    Schema recordSchemaWithMissingField = Schema.recordOf("record",
+                                                          Schema.Field.of("i", Schema.of(Schema.Type.INT)),
+                                                          Schema.Field.of("file",
+                                                                          Schema.of(Schema.Type.STRING)));
+
+    String appName = "FileSourceAvroMissingField";
+    ApplicationManager appManager = createSourceAndDeployApp(appName, fileAvro, "avro", outputDatasetName,
+                                                             recordSchemaWithMissingField);
+
+    org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(RECORD_SCHEMA.toString());
+    GenericRecord record = new GenericRecordBuilder(avroSchema)
+      .set("i", Integer.MAX_VALUE)
+      .set("l", Long.MAX_VALUE)
+      .set("file", fileAvro.getAbsolutePath())
+      .build();
+
+    DataSetManager<TimePartitionedFileSet> inputManager = getDataset("TestFile");
+
+    DatumWriter<GenericRecord> datumWriter = new GenericDatumWriter<>(avroSchema);
+    DataFileWriter<GenericRecord> dataFileWriter = new DataFileWriter<>(datumWriter);
+    dataFileWriter.create(avroSchema, fileAvro);
+    dataFileWriter.append(record);
+    dataFileWriter.close();
+    inputManager.flush();
+
+    workflowStartAndWait(appManager);
+
+    List<StructuredRecord> expected = ImmutableList.of(
+      StructuredRecord.builder(recordSchemaWithMissingField)
+        .set("i", Integer.MAX_VALUE)
+        .set("file", fileAvro.toURI().toString())
+        .build()
+    );
+
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> output = MockSink.readOutput(outputManager);
+    Assert.assertEquals(output, expected);
+  }
+
+  @Test
+  public void testFileBatchInputFormatParquetMissingField() throws Exception {
+    File fileParquet = new File(temporaryFolder.newFolder(), "test.parquet");
+    String outputDatasetName = "test-filesource-parquet-missing-field";
+
+    Schema recordSchemaWithMissingField = Schema.recordOf("record",
+                                                          Schema.Field.of("i", Schema.of(Schema.Type.INT)),
+                                                          Schema.Field.of("file",
+                                                                          Schema.of(Schema.Type.STRING)));
+
+    String appName = "FileSourceParquetMissingField";
+    ApplicationManager appManager = createSourceAndDeployApp(appName, fileParquet, "parquet", outputDatasetName,
+                                                             recordSchemaWithMissingField);
+
+    org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(RECORD_SCHEMA.toString());
+    GenericRecord record = new GenericRecordBuilder(avroSchema)
+      .set("i", Integer.MAX_VALUE)
+      .set("l", Long.MAX_VALUE)
+      .set("file", fileParquet.getAbsolutePath())
+      .build();
+
+    DataSetManager<TimePartitionedFileSet> inputManager = getDataset("TestFile");
+    ParquetWriter<GenericRecord> parquetWriter = new AvroParquetWriter<>(new Path(fileParquet.getAbsolutePath()),
+                                                                         avroSchema);
+    parquetWriter.write(record);
+    parquetWriter.close();
+    inputManager.flush();
+
+    workflowStartAndWait(appManager);
+
+    List<StructuredRecord> expected = ImmutableList.of(
+      StructuredRecord.builder(recordSchemaWithMissingField)
+        .set("i", Integer.MAX_VALUE)
+        .set("file", fileParquet.toURI().toString())
+        .build()
+    );
+
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> output = MockSink.readOutput(outputManager);
+    Assert.assertEquals(expected, output);
+  }
+
+  private ApplicationManager createSourceAndDeployApp(String appName, File file, String format,
+                                                      String outputDatasetName, Schema schema) throws Exception {
+    String schemaString = null;
+    if (schema != null) {
+      schemaString = schema.toString();
+    }
+    ETLStage source = new ETLStage(
+      "source", new ETLPlugin("File", BatchSource.PLUGIN_TYPE,
+                              ImmutableMap.<String, String>builder()
+                                .put(Constants.Reference.REFERENCE_NAME, "TestFile")
+                                .put(Properties.File.FILESYSTEM, "Text")
+                                .put(Properties.File.PATH, file.getAbsolutePath())
+                                .put(Properties.File.FORMAT, format)
+                                .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
+                                .put("pathField", "file")
+                                .put(Properties.File.SCHEMA, schemaString)
+                                .build(),
+                              null));
+
+    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
+
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app(appName);
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+
+    return appManager;
+  }
+
+  private void workflowStartAndWait(ApplicationManager appManager) throws Exception {
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start();
+    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 2, TimeUnit.MINUTES);
   }
 }
