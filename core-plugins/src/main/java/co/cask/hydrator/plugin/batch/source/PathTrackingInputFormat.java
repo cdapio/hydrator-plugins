@@ -18,6 +18,10 @@ package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.hydrator.plugin.common.AvroToStructuredTransformer;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.mapred.AvroKey;
+import org.apache.avro.mapreduce.AvroKeyInputFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -28,10 +32,12 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import parquet.avro.AvroParquetInputFormat;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import javax.annotation.Nullable;
 
 /**
@@ -41,14 +47,20 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
   private static final String PATH_FIELD = "path.tracking.path.field";
   private static final String FILENAME_ONLY = "path.tracking.filename.only";
 
+  private static String fileSourceFormat = "text";
+
   /**
    * Configure the input format to use the specified schema and optional path field.
    */
-  public static void configure(Configuration conf, @Nullable String pathField, boolean filenameOnly) {
+  public static void configure(Configuration conf, @Nullable String pathField, boolean filenameOnly,
+                               String format) {
     if (pathField != null) {
       conf.set(PATH_FIELD, pathField);
     }
     conf.setBoolean(FILENAME_ONLY, filenameOnly);
+    if (format != null) {
+      fileSourceFormat = format;
+    }
   }
 
   public static Schema getOutputSchema(@Nullable String pathField) {
@@ -70,14 +82,23 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
       // should never happen
       throw new IllegalStateException("Input split is not a FileSplit.");
     }
-
-    RecordReader<LongWritable, Text> delegate = (new TextInputFormat()).createRecordReader(split, context);
     FileSplit fileSplit = (FileSplit) split;
     String pathField = context.getConfiguration().get(PATH_FIELD);
     boolean filenameOnly = context.getConfiguration().getBoolean(FILENAME_ONLY, false);
     String path = filenameOnly ? fileSplit.getPath().getName() : fileSplit.getPath().toUri().toString();
-
-    return new TrackingTextRecordReader(delegate, pathField, path);
+    fileSourceFormat = fileSourceFormat.toLowerCase();
+    if (Objects.equals(fileSourceFormat, "avro")) {
+      RecordReader<AvroKey<GenericRecord>, NullWritable> delegate = (new AvroKeyInputFormat<GenericRecord>())
+        .createRecordReader(split, context);
+      return new TrackingAvroRecordReader(delegate, pathField, path);
+    } else if (Objects.equals(fileSourceFormat, "parquet")) {
+      RecordReader<Void, GenericRecord> delegate = (new AvroParquetInputFormat<GenericRecord>())
+        .createRecordReader(split, context);
+      return new TrackingParquetRecordReader(delegate, pathField, path);
+    } else {
+      RecordReader<LongWritable, Text> delegate = (new TextInputFormat()).createRecordReader(split, context);
+      return new TrackingTextRecordReader(delegate, pathField, path);
+    }
   }
 
   private static class TrackingTextRecordReader extends RecordReader<NullWritable, StructuredRecord> {
@@ -100,11 +121,6 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
     }
 
     @Override
-    public boolean nextKeyValue() throws IOException, InterruptedException {
-      return delegate.nextKeyValue();
-    }
-
-    @Override
     public NullWritable getCurrentKey() throws IOException, InterruptedException {
       return NullWritable.get();
     }
@@ -121,6 +137,103 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
         recordBuilder.set(pathField, path);
       }
       return recordBuilder.build();
+    }
+
+    @Override
+    public boolean nextKeyValue() throws IOException, InterruptedException {
+      return delegate.nextKeyValue();
+    }
+
+    @Override
+    public float getProgress() throws IOException, InterruptedException {
+      return delegate.getProgress();
+    }
+
+    @Override
+    public void close() throws IOException {
+      delegate.close();
+    }
+  }
+
+  private static class TrackingAvroRecordReader extends RecordReader<NullWritable, StructuredRecord> {
+    private final RecordReader<AvroKey<GenericRecord>, NullWritable> delegate;
+    private final Schema schema;
+    private final String pathField;
+    private final String path;
+
+    private TrackingAvroRecordReader(RecordReader<AvroKey<GenericRecord>, NullWritable> delegate,
+                                     @Nullable String pathField, String path) {
+      this.delegate = delegate;
+      this.pathField = pathField;
+      this.path = path;
+      schema = getOutputSchema(pathField);
+    }
+
+    @Override
+    public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
+      delegate.initialize(split, context);
+    }
+
+    @Override
+    public NullWritable getCurrentKey() throws IOException, InterruptedException {
+      return NullWritable.get();
+    }
+
+    @Override
+    public StructuredRecord getCurrentValue() throws IOException, InterruptedException {
+      AvroToStructuredTransformer recordTransformer = new AvroToStructuredTransformer();
+      return recordTransformer.transform(delegate.getCurrentKey().datum());
+    }
+
+    @Override
+    public boolean nextKeyValue() throws IOException, InterruptedException {
+      return delegate.nextKeyValue();
+    }
+
+    @Override
+    public float getProgress() throws IOException, InterruptedException {
+      return delegate.getProgress();
+    }
+
+    @Override
+    public void close() throws IOException {
+      delegate.close();
+    }
+  }
+
+  private static class TrackingParquetRecordReader extends RecordReader<NullWritable, StructuredRecord> {
+    private final RecordReader<Void, GenericRecord> delegate;
+    private final Schema schema;
+    private final String pathField;
+    private final String path;
+
+    private TrackingParquetRecordReader(RecordReader<Void, GenericRecord> delegate,
+                                     @Nullable String pathField, String path) {
+      this.delegate = delegate;
+      this.pathField = pathField;
+      this.path = path;
+      schema = getOutputSchema(pathField);
+    }
+
+    @Override
+    public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
+      delegate.initialize(split, context);
+    }
+
+    @Override
+    public NullWritable getCurrentKey() throws IOException, InterruptedException {
+      return NullWritable.get();
+    }
+
+    @Override
+    public StructuredRecord getCurrentValue() throws IOException, InterruptedException {
+      AvroToStructuredTransformer recordTransformer = new AvroToStructuredTransformer();
+      return recordTransformer.transform(delegate.getCurrentValue());
+    }
+
+    @Override
+    public boolean nextKeyValue() throws IOException, InterruptedException {
+      return delegate.nextKeyValue();
     }
 
     @Override
