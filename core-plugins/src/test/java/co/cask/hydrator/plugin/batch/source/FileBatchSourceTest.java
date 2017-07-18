@@ -41,7 +41,6 @@ import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.common.Properties;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.apache.avro.file.DataFileWriter;
