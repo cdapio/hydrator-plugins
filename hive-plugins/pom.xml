@@ -29,7 +29,7 @@
 
   <properties>
     <!-- properties for script build step that creates the config files for the artifacts -->
-    <app.parents>system:cdap-data-pipeline[4.2.0,4.3.0-SNAPSHOT)</app.parents>
+    <app.parents>system:cdap-data-pipeline[4.3.0-SNAPSHOT,4.4.0-SNAPSHOT)</app.parents>
   </properties>
 
   <repositories>
