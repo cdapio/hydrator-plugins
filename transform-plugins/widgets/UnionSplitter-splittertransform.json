@@ -1,0 +1,30 @@
+{
+  "metadata": {
+    "spec-version": "1.4"
+  },
+  "configuration-groups": [
+    {
+      "label": "Union Splitter",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Union field to split on",
+          "name": "unionField"
+        },
+        {
+          "widget-type": "select",
+          "label": "Modify Schema",
+          "name": "modifySchema",
+          "widget-attributes": {
+            "values": [
+              "true",
+              "false"
+            ],
+            "default": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": [ ]
+}
