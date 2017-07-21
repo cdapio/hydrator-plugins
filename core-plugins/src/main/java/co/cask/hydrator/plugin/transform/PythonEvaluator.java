@@ -135,6 +135,11 @@ public class PythonEvaluator extends Transform<StructuredRecord, StructuredRecor
     }
 
     @Override
+    public void emitAlert(Map<String, String> payload) {
+      emitter.emitAlert(payload);
+    }
+
+    @Override
     public void emitError(InvalidEntry<Map> invalidEntry) {
       emitter.emitError(new InvalidEntry<>(invalidEntry.getErrorCode(), invalidEntry.getErrorMsg(),
                                            decode(invalidEntry.getInvalidRecord())));
