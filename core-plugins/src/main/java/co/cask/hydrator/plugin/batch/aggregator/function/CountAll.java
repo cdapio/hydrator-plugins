@@ -31,8 +31,9 @@ public class CountAll implements AggregateFunction<Long> {
   }
 
   @Override
-  public void operateOn(StructuredRecord record) {
+  public StructuredRecord operateOn(StructuredRecord record) {
     count++;
+    return null;
   }
 
   @Override

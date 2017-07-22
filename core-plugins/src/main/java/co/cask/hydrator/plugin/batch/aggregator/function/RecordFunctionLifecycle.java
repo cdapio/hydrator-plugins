@@ -18,6 +18,8 @@ package co.cask.hydrator.plugin.batch.aggregator.function;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.etl.api.Aggregator;
+import co.cask.cdap.etl.api.Emitter;
+import com.sun.istack.Nullable;
 
 /**
  * Methods to manage lifecycle functions performed on group of {@link StructuredRecord}, typically used in the
@@ -34,6 +36,8 @@ public interface RecordFunctionLifecycle {
    * Called once for each {@link StructuredRecord} to operate up on. Calls to this method are made after the call to
    * {@link #beginFunction}
    * @param record {@link StructuredRecord} input record
+   * @return returns a StructuredRecord that is deduped. returns null if input record is not being deduped
    */
-  void operateOn(StructuredRecord record);
+  @Nullable
+  StructuredRecord operateOn(StructuredRecord record);
 }

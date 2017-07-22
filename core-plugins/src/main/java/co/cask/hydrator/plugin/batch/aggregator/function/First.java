@@ -47,11 +47,15 @@ public class First<T> implements SelectionFunction, AggregateFunction<T> {
   }
 
   @Override
-  public void operateOn(StructuredRecord record) {
+  public StructuredRecord operateOn(StructuredRecord record) {
     if (isFirst) {
       first = record.get(fieldName);
       firstRecord = record;
       isFirst = false;
+      return null;
+    } else {
+      // since first is stored other records are filtered out.
+      return record;
     }
   }
 

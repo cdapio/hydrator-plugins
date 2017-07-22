@@ -40,11 +40,12 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
         }
 
         @Override
-        public void operateOn(StructuredRecord record) {
+        public StructuredRecord operateOn(StructuredRecord record) {
           Number val = record.get(fieldName);
           if (val != null) {
             updateDouble(val.doubleValue());
           }
+          return null;
         }
 
         @Override
@@ -71,11 +72,12 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
           }
 
           @Override
-          public void operateOn(StructuredRecord record) {
+          public StructuredRecord operateOn(StructuredRecord record) {
             Integer val = record.get(fieldName);
             if (val != null) {
               updateInt(val);
             }
+            return null;
           }
 
           @Override
@@ -97,11 +99,12 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
           }
 
           @Override
-          public void operateOn(StructuredRecord record) {
+          public StructuredRecord operateOn(StructuredRecord record) {
             Long val = record.get(fieldName);
             if (val != null) {
               updateLong(val);
             }
+            return null;
           }
 
           @Override
@@ -123,11 +126,12 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
           }
 
           @Override
-          public void operateOn(StructuredRecord record) {
+          public StructuredRecord operateOn(StructuredRecord record) {
             Float val = record.get(fieldName);
             if (val != null) {
               updateFloat(val);
             }
+            return null;
           }
 
           @Override
@@ -149,11 +153,12 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
           }
 
           @Override
-          public void operateOn(StructuredRecord record) {
+          public StructuredRecord operateOn(StructuredRecord record) {
             Double val = record.get(fieldName);
             if (val != null) {
               updateDouble(val);
             }
+            return null;
           }
 
           @Override
@@ -179,8 +184,9 @@ public abstract class NumberFunction implements AggregateFunction<Number> {
   }
 
   @Override
-  public void operateOn(StructuredRecord record) {
+  public StructuredRecord operateOn(StructuredRecord record) {
     typedDelegate.operateOn(record);
+    return null;
   }
 
   @Override

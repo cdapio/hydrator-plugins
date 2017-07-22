@@ -36,10 +36,11 @@ public class Count implements AggregateFunction<Long> {
   }
 
   @Override
-  public void operateOn(StructuredRecord record) {
+  public StructuredRecord operateOn(StructuredRecord record) {
     if (record.get(fieldName) != null) {
       count++;
     }
+    return null;
   }
 
   @Override

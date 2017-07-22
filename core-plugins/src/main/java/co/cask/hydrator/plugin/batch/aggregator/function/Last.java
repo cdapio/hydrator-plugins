@@ -45,9 +45,11 @@ public class Last<T> implements SelectionFunction, AggregateFunction<T> {
   }
 
   @Override
-  public void operateOn(StructuredRecord record) {
+  public StructuredRecord operateOn(StructuredRecord record) {
+    StructuredRecord retVal = lastRecord == null ? null : lastRecord;
     last = record.get(fieldName);
     lastRecord = record;
+    return retVal;
   }
 
   @Override

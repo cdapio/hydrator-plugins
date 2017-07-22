@@ -45,13 +45,14 @@ public class Variance implements AggregateFunction<Double> {
   }
 
   @Override
-  public void operateOn(StructuredRecord record) {
+  public StructuredRecord operateOn(StructuredRecord record) {
     Object val = record.get(fieldName);
     if (val == null) {
-      return;
+      return null;
     }
     double value = ((Number) val).doubleValue();
     stats.push(value);
+    return null;
   }
 
   @Override

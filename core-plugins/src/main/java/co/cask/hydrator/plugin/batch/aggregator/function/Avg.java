@@ -48,13 +48,14 @@ public class Avg implements AggregateFunction<Double> {
   }
 
   @Override
-  public void operateOn(StructuredRecord record) {
+  public StructuredRecord operateOn(StructuredRecord record) {
     Object val = record.get(fieldName);
     if (val == null) {
-      return;
+      return null;
     }
     count++;
     avg = avg + (((Number) val).doubleValue() - avg) / count;
+    return null;
   }
 
   @Override

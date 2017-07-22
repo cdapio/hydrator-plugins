@@ -22,6 +22,7 @@ import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.InvalidEntry;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.StageConfigurer;
 import co.cask.cdap.etl.api.batch.BatchAggregator;
@@ -111,7 +112,10 @@ public class DedupAggregator extends RecordAggregator {
       selectionFunction.operateOn(firstRecord);
 
       while (iterator.hasNext()) {
-        selectionFunction.operateOn(iterator.next());
+        StructuredRecord record = selectionFunction.operateOn(iterator.next());
+        if (record != null) {
+          emitter.emitError(new InvalidEntry<StructuredRecord>(1, "Deduped record", record));
+        }
       }
 
       List<StructuredRecord> outputRecords = selectionFunction.getSelectedRecords();

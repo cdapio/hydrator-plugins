@@ -48,11 +48,12 @@ public abstract class NumberSelection implements SelectionFunction {
         }
 
         @Override
-        public void operateOn(StructuredRecord record) {
+        public StructuredRecord operateOn(StructuredRecord record) {
           Number number = record.get(fieldName);
           if (number != null) {
             operateOnDouble(number.doubleValue(), record);
           }
+          return null;
         }
       };
       return;
@@ -74,11 +75,12 @@ public abstract class NumberSelection implements SelectionFunction {
           }
 
           @Override
-          public void operateOn(StructuredRecord record) {
+          public StructuredRecord operateOn(StructuredRecord record) {
             Integer value = record.get(fieldName);
             if (value != null) {
               operateOnInt(value, record);
             }
+            return null;
           }
         };
         break;
@@ -95,11 +97,12 @@ public abstract class NumberSelection implements SelectionFunction {
           }
 
           @Override
-          public void operateOn(StructuredRecord record) {
+          public StructuredRecord operateOn(StructuredRecord record) {
             Long value = record.get(fieldName);
             if (value != null) {
               operateOnLong(value, record);
             }
+            return null;
           }
         };
         break;
@@ -116,11 +119,12 @@ public abstract class NumberSelection implements SelectionFunction {
           }
 
           @Override
-          public void operateOn(StructuredRecord record) {
+          public StructuredRecord operateOn(StructuredRecord record) {
             Float value = record.get(fieldName);
             if (value != null) {
               operateOnFloat(value, record);
             }
+            return null;
           }
         };
         break;
@@ -137,11 +141,12 @@ public abstract class NumberSelection implements SelectionFunction {
           }
 
           @Override
-          public void operateOn(StructuredRecord record) {
+          public StructuredRecord operateOn(StructuredRecord record) {
             Double value = record.get(fieldName);
             if (value != null) {
               operateOnDouble(value, record);
             }
+            return null;
           }
         };
         break;
@@ -157,8 +162,9 @@ public abstract class NumberSelection implements SelectionFunction {
   }
 
   @Override
-  public void operateOn(StructuredRecord record) {
+  public StructuredRecord operateOn(StructuredRecord record) {
     delegate.operateOn(record);
+    return null;
   }
 
   @Override
