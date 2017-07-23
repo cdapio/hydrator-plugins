@@ -54,22 +54,22 @@ public class DedupConfig extends AggregatorConfig {
   @Nullable
   private String filterOperation;
 
-  @Description("Optional property that can be enabled to emit deduped records as error records. By default deduped " +
-          "records will not be emitted as error records.")
-  @Nullable
-  private Boolean emitDuplicates;
+//  @Description("Optional property that can be enabled to emit deduped records as error records. By default deduped " +
+//          "records will not be emitted as error records.")
+//  @Nullable
+//  private Boolean emitDuplicates;
 
   public DedupConfig() {
     this.uniqueFields = "";
     this.filterOperation = "";
-    this.emitDuplicates = false;
+//    this.emitDuplicates = false;
   }
 
   @VisibleForTesting
   DedupConfig(String uniqueFields, String filterOperation) {
     this.uniqueFields = uniqueFields;
     this.filterOperation = filterOperation;
-    this.emitDuplicates = false;
+//    this.emitDuplicates = false;
   }
 
   List<String> getUniqueFields() {
@@ -82,9 +82,9 @@ public class DedupConfig extends AggregatorConfig {
     return uniqueFieldList;
   }
 
-  Boolean getEmitDuplicates() {
-    return emitDuplicates;
-  }
+//  Boolean getEmitDuplicates() {
+//    return emitDuplicates;
+//  }
   @Nullable
   DedupFunctionInfo getFilter() {
     if (Strings.isNullOrEmpty(filterOperation)) {

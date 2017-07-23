@@ -45,7 +45,7 @@ public class DedupAggregator extends RecordAggregator {
   private final DedupConfig dedupConfig;
   private List<String> uniqueFields;
   private DedupConfig.DedupFunctionInfo filterFunction;
-  private Boolean emitDedupeRecords;
+//  private Boolean emitDedupeRecords;
 
   public DedupAggregator(DedupConfig dedupConfig) {
     super(dedupConfig.numPartitions);
@@ -55,7 +55,7 @@ public class DedupAggregator extends RecordAggregator {
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     List<String> uniqueFields = dedupConfig.getUniqueFields();
-    emitDedupeRecords = dedupConfig.getEmitDuplicates();
+//    emitDedupeRecords = dedupConfig.getEmitDuplicates();
     DedupConfig.DedupFunctionInfo functionInfo = dedupConfig.getFilter();
     if (functionInfo != null) {
       // Invoke to validate whether the function used is supported
@@ -115,7 +115,7 @@ public class DedupAggregator extends RecordAggregator {
 
       while (iterator.hasNext()) {
         StructuredRecord record = selectionFunction.operateOn(iterator.next());
-        if (emitDedupeRecords && record != null) {
+        if (record != null) {
           emitter.emitError(new InvalidEntry<StructuredRecord>(1, "Deduped record", record));
         }
       }
