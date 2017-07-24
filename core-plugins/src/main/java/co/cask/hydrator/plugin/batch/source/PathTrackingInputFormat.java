@@ -145,6 +145,7 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
 
     @Override
     public void close() throws IOException {
+      System.out.println("* * * ** * * * * " + schema.toString());
       delegate.close();
     }
 
