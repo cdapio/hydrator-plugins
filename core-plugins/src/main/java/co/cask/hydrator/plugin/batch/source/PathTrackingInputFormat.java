@@ -37,7 +37,6 @@ import parquet.avro.AvroParquetInputFormat;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import javax.annotation.Nullable;
 
 /**
@@ -46,8 +45,7 @@ import javax.annotation.Nullable;
 public class PathTrackingInputFormat extends FileInputFormat<NullWritable, StructuredRecord> {
   private static final String PATH_FIELD = "path.tracking.path.field";
   private static final String FILENAME_ONLY = "path.tracking.filename.only";
-
-  private static String fileSourceFormat = "text";
+  private static final String FORMAT = "path.tracking.format";
 
   /**
    * Configure the input format to use the specified schema and optional path field.
@@ -58,9 +56,7 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
       conf.set(PATH_FIELD, pathField);
     }
     conf.setBoolean(FILENAME_ONLY, filenameOnly);
-    if (format != null) {
-      fileSourceFormat = format;
-    }
+    conf.set(FORMAT, format);
   }
 
   public static Schema getOutputSchema(@Nullable String pathField) {
@@ -85,13 +81,13 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
     FileSplit fileSplit = (FileSplit) split;
     String pathField = context.getConfiguration().get(PATH_FIELD);
     boolean filenameOnly = context.getConfiguration().getBoolean(FILENAME_ONLY, false);
+    String format = context.getConfiguration().get(FORMAT);
     String path = filenameOnly ? fileSplit.getPath().getName() : fileSplit.getPath().toUri().toString();
-    fileSourceFormat = fileSourceFormat.toLowerCase();
-    if (Objects.equals(fileSourceFormat, "avro")) {
+    if ("avro".equalsIgnoreCase(format)) {
       RecordReader<AvroKey<GenericRecord>, NullWritable> delegate = (new AvroKeyInputFormat<GenericRecord>())
         .createRecordReader(split, context);
       return new TrackingAvroRecordReader(delegate, pathField, path);
-    } else if (Objects.equals(fileSourceFormat, "parquet")) {
+    } else if ("parquet".equalsIgnoreCase(format)) {
       RecordReader<Void, GenericRecord> delegate = (new AvroParquetInputFormat<GenericRecord>())
         .createRecordReader(split, context);
       return new TrackingParquetRecordReader(delegate, pathField, path);
@@ -101,14 +97,14 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
     }
   }
 
-  private static class TrackingTextRecordReader extends RecordReader<NullWritable, StructuredRecord> {
-    private final RecordReader<LongWritable, Text> delegate;
-    private final Schema schema;
-    private final String pathField;
-    private final String path;
+  private abstract static class TrackingRecordReader<K, V> extends RecordReader<NullWritable, StructuredRecord> {
+    protected final RecordReader<K, V> delegate;
+    protected final Schema schema;
+    protected final String pathField;
+    protected final String path;
 
-    private TrackingTextRecordReader(RecordReader<LongWritable, Text> delegate, @Nullable String pathField,
-                                     String path) {
+    protected TrackingRecordReader(RecordReader<K, V> delegate, @Nullable String pathField,
+                                   String path) {
       this.delegate = delegate;
       this.pathField = pathField;
       this.path = path;
@@ -125,125 +121,88 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
       return NullWritable.get();
     }
 
+    protected abstract StructuredRecord getCurrentValue(StructuredRecord.Builder recordBuilder)
+      throws IOException, InterruptedException;
+
     @Override
     public StructuredRecord getCurrentValue() throws IOException, InterruptedException {
-      LongWritable key = delegate.getCurrentKey();
-      Text text = delegate.getCurrentValue();
-
-      StructuredRecord.Builder recordBuilder = StructuredRecord.builder(schema)
-        .set("offset", key.get())
-        .set("body", text.toString());
+      StructuredRecord.Builder recordBuilder = StructuredRecord.builder(schema);
       if (pathField != null) {
         recordBuilder.set(pathField, path);
       }
+      return getCurrentValue(recordBuilder);
+    }
+
+    @Override
+    public float getProgress() throws IOException, InterruptedException {
+      return delegate.getProgress();
+    }
+
+    @Override
+    public boolean nextKeyValue() throws IOException, InterruptedException {
+      return delegate.nextKeyValue();
+    }
+
+    @Override
+    public void close() throws IOException {
+      System.out.println("* * * ** * * * * " + schema.toString());
+      delegate.close();
+    }
+
+  }
+
+  private static class TrackingTextRecordReader extends TrackingRecordReader<LongWritable, Text> {
+
+    private TrackingTextRecordReader(RecordReader<LongWritable, Text> delegate, @Nullable String pathField,
+                                     String path) {
+      super(delegate, pathField, path);
+    }
+
+    public StructuredRecord getCurrentValue(StructuredRecord.Builder recordBuilder) throws IOException, InterruptedException {
+      LongWritable key = delegate.getCurrentKey();
+      Text text = delegate.getCurrentValue();
+
+      recordBuilder.set("offset", key.get());
+      recordBuilder.set("body", text.toString());
       return recordBuilder.build();
     }
-
-    @Override
-    public boolean nextKeyValue() throws IOException, InterruptedException {
-      return delegate.nextKeyValue();
-    }
-
-    @Override
-    public float getProgress() throws IOException, InterruptedException {
-      return delegate.getProgress();
-    }
-
-    @Override
-    public void close() throws IOException {
-      delegate.close();
-    }
   }
 
-  private static class TrackingAvroRecordReader extends RecordReader<NullWritable, StructuredRecord> {
-    private final RecordReader<AvroKey<GenericRecord>, NullWritable> delegate;
-    private final Schema schema;
-    private final String pathField;
-    private final String path;
+  private static class TrackingAvroRecordReader extends TrackingRecordReader<AvroKey<GenericRecord>, NullWritable> {
+    private static AvroToStructuredTransformer recordTransformer;
 
     private TrackingAvroRecordReader(RecordReader<AvroKey<GenericRecord>, NullWritable> delegate,
-                                     @Nullable String pathField, String path) {
-      this.delegate = delegate;
-      this.pathField = pathField;
-      this.path = path;
-      schema = getOutputSchema(pathField);
+                                 @Nullable String pathField, String path) {
+      super(delegate, pathField, path);
     }
 
     @Override
     public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
-      delegate.initialize(split, context);
+      super.initialize(split, context);
+      recordTransformer = new AvroToStructuredTransformer();
     }
 
-    @Override
-    public NullWritable getCurrentKey() throws IOException, InterruptedException {
-      return NullWritable.get();
-    }
-
-    @Override
-    public StructuredRecord getCurrentValue() throws IOException, InterruptedException {
-      AvroToStructuredTransformer recordTransformer = new AvroToStructuredTransformer();
+    public StructuredRecord getCurrentValue(StructuredRecord.Builder recordBuilder) throws IOException, InterruptedException {
       return recordTransformer.transform(delegate.getCurrentKey().datum());
-    }
-
-    @Override
-    public boolean nextKeyValue() throws IOException, InterruptedException {
-      return delegate.nextKeyValue();
-    }
-
-    @Override
-    public float getProgress() throws IOException, InterruptedException {
-      return delegate.getProgress();
-    }
-
-    @Override
-    public void close() throws IOException {
-      delegate.close();
     }
   }
 
-  private static class TrackingParquetRecordReader extends RecordReader<NullWritable, StructuredRecord> {
-    private final RecordReader<Void, GenericRecord> delegate;
-    private final Schema schema;
-    private final String pathField;
-    private final String path;
+  private static class TrackingParquetRecordReader extends TrackingRecordReader<Void, GenericRecord> {
+    private AvroToStructuredTransformer recordTransformer;
 
     private TrackingParquetRecordReader(RecordReader<Void, GenericRecord> delegate,
-                                     @Nullable String pathField, String path) {
-      this.delegate = delegate;
-      this.pathField = pathField;
-      this.path = path;
-      schema = getOutputSchema(pathField);
+                                        @Nullable String pathField, String path) {
+      super(delegate, pathField, path);
     }
 
     @Override
     public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
-      delegate.initialize(split, context);
+      super.initialize(split, context);
+      recordTransformer = new AvroToStructuredTransformer();
     }
 
-    @Override
-    public NullWritable getCurrentKey() throws IOException, InterruptedException {
-      return NullWritable.get();
-    }
-
-    @Override
-    public StructuredRecord getCurrentValue() throws IOException, InterruptedException {
-      AvroToStructuredTransformer recordTransformer = new AvroToStructuredTransformer();
+    public StructuredRecord getCurrentValue(StructuredRecord.Builder recordBuilder) throws IOException, InterruptedException {
       return recordTransformer.transform(delegate.getCurrentValue());
-    }
-
-    @Override
-    public boolean nextKeyValue() throws IOException, InterruptedException {
-      return delegate.nextKeyValue();
-    }
-
-    @Override
-    public float getProgress() throws IOException, InterruptedException {
-      return delegate.getProgress();
-    }
-
-    @Override
-    public void close() throws IOException {
-      delegate.close();
     }
   }
 }

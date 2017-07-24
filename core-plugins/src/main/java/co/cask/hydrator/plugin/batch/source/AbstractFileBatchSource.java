@@ -168,7 +168,7 @@ public abstract class AbstractFileBatchSource<T extends FileSourceConfig>
       FileInputFormat.setMaxInputSplitSize(job, config.maxSplitSize);
     }
     if (CombinePathTrackingInputFormat.class.getName().equals(config.inputFormatClass)) {
-      PathTrackingInputFormat.configure(conf, config.pathField, config.filenameOnly, config.fileSourceFormat);
+      PathTrackingInputFormat.configure(conf, config.pathField, config.filenameOnly, config.format);
     }
     context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(config.inputFormatClass, conf)));
   }
