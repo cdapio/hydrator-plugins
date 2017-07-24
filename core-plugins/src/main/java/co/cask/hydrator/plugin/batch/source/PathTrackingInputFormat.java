@@ -145,7 +145,6 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
 
     @Override
     public void close() throws IOException {
-      System.out.println("* * * ** * * * * " + schema.toString());
       delegate.close();
     }
 
@@ -172,7 +171,7 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
     private static AvroToStructuredTransformer recordTransformer;
 
     private TrackingAvroRecordReader(RecordReader<AvroKey<GenericRecord>, NullWritable> delegate,
-                                 @Nullable String pathField, String path) {
+                                     @Nullable String pathField, String path) {
       super(delegate, pathField, path);
     }
 
