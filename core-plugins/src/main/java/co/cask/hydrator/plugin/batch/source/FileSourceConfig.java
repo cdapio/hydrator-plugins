@@ -144,9 +144,9 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
       throw new IllegalArgumentException("pathField can only be used if inputFormatClass is " +
                                            CombinePathTrackingInputFormat.class.getName());
     }
-    if (!format.matches("[a-zA-Z]+") && !(format.equalsIgnoreCase("text") || (format.equalsIgnoreCase("avro")) ||
+    if (!(format.equalsIgnoreCase("text") || (format.equalsIgnoreCase("avro")) ||
         format.equalsIgnoreCase("parquet"))) {
-      throw new IllegalArgumentException("format can only be 'text', 'avro' or 'parquet'");
+      throw new IllegalArgumentException("Format can only be 'text', 'avro' or 'parquet'");
     }
   }
 
