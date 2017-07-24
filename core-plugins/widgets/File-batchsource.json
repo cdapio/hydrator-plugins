@@ -22,9 +22,17 @@
           "name": "fileRegex"
         },
         {
-          "widget-type": "textbox",
+          "widget-type": "select",
           "label": "Format",
-          "name": "format"
+          "name": "format",
+          "widget-attributes": {
+            "values": [
+              "avro",
+              "parquet",
+              "text"
+            ],
+            "default": "text"
+          }
         },
         {
           "widget-type": "textbox",
