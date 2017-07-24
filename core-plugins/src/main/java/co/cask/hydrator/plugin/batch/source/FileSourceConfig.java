@@ -50,7 +50,8 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
     "which indicates that no files will be filtered.";
   protected static final String FILESYSTEM_PROPERTIES_DESCRIPTION = "A JSON string representing a map of properties " +
     "needed for the distributed file system.";
-  protected static final String FILE_SOURCE_FORMAT_DESCRIPTION = "Format of the file source. Defaults to text.";
+  protected static final String FORMAT_DESCRIPTION = "Format of the file. Must be 'text', 'avro' or " +
+    "'parquet'. Defaults to 'text'.";
 
   private static final Gson GSON = new Gson();
   private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
@@ -78,8 +79,8 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
   public String inputFormatClass;
 
   @Nullable
-  @Description(FILE_SOURCE_FORMAT_DESCRIPTION)
-  public String fileSourceFormat;
+  @Description(FORMAT_DESCRIPTION)
+  public String format;
 
   @Nullable
   @Description(MAX_SPLIT_SIZE_DESCRIPTION)
@@ -117,7 +118,7 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
 
   public FileSourceConfig(String referenceName, @Nullable String fileRegex, @Nullable String timeTable,
                           @Nullable String inputFormatClass, @Nullable String fileSystemProperties,
-                          @Nullable String fileSourceFormat, @Nullable Long maxSplitSize,
+                          @Nullable String format, @Nullable Long maxSplitSize,
                           @Nullable Boolean ignoreNonExistingFolders, @Nullable Boolean recursive,
                           @Nullable String pathField, @Nullable Boolean fileNameOnly, @Nullable String schema) {
     super(referenceName);
@@ -128,7 +129,7 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
     this.timeTable = timeTable;
     this.inputFormatClass = inputFormatClass == null ?
       CombinePathTrackingInputFormat.class.getName() : inputFormatClass;
-    this.fileSourceFormat = fileSourceFormat == null ? "text" : fileSourceFormat;
+    this.format = format == null ? "text" : format;
     this.maxSplitSize = maxSplitSize == null ? DEFAULT_MAX_SPLIT_SIZE : maxSplitSize;
     this.ignoreNonExistingFolders = ignoreNonExistingFolders == null ? false : ignoreNonExistingFolders;
     this.recursive = recursive == null ? false : recursive;
@@ -142,6 +143,10 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
     if (!CombinePathTrackingInputFormat.class.getName().equals(inputFormatClass) && pathField != null) {
       throw new IllegalArgumentException("pathField can only be used if inputFormatClass is " +
                                            CombinePathTrackingInputFormat.class.getName());
+    }
+    if (!format.matches("[a-zA-Z]+") && !(format.equalsIgnoreCase("text") || (format.equalsIgnoreCase("avro")) ||
+        format.equalsIgnoreCase("parquet"))) {
+      throw new IllegalArgumentException("format can only be 'text', 'avro' or 'parquet'");
     }
   }
 
