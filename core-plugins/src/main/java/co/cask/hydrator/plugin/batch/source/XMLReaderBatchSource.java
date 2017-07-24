@@ -338,6 +338,7 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       Preconditions.checkArgument(!targetFolderEmpty, "Target folder cannot be empty for Action = '" +
         actionAfterProcess + "'.");
 
+      /*
       if (!Strings.isNullOrEmpty(pattern)) {
         try {
           Pattern.compile(pattern);
@@ -352,7 +353,7 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
                                                "the path must be a directory and leverage glob syntax. Usually " +
                                                "the folder path needs to end with '/*'.");
         }
-      }
+      }*/
     }
   }
 }

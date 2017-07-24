@@ -47,6 +47,9 @@ public class BatchXMLFileFilter extends Configured implements PathFilter {
   @Override
   public boolean accept(Path path) {
     String filePathName = path.toString();
+    if (!pathName.startsWith("file:")) {
+      pathName = "file:" + pathName;
+    }
     //The path filter will first check the directory if a directory is given
     if (filePathName.equals(pathName)) {
       return true;
@@ -65,7 +68,6 @@ public class BatchXMLFileFilter extends Configured implements PathFilter {
       return;
     }
     pathName = conf.get(XMLInputFormat.XML_INPUTFORMAT_PATH_NAME, "/");
-
     //path is a directory so remove trailing '/'
     if (pathName.endsWith("/")) {
       pathName = pathName.substring(0, pathName.length() - 1);
