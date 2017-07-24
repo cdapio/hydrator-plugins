@@ -36,11 +36,6 @@
         },
         {
           "widget-type": "textbox",
-          "label": "Format",
-          "name": "format"
-        },
-        {
-          "widget-type": "textbox",
           "label": "Maximum Split Size",
           "name": "maxSplitSize"
         },
