@@ -32,6 +32,7 @@ public final class Properties {
     public static final String TIME_TABLE = "timeTable";
     public static final String INPUT_FORMAT_CLASS = "inputFormatClass";
     public static final String FORMAT = "format";
+    public static final String SCHEMA = "schema";
     public static final String MAX_SPLIT_SIZE = "maxSplitSize";
     public static final String IGNORE_NON_EXISTING_FOLDERS = "ignoreNonExistingFolders";
     public static final String RECURSIVE = "recursive";

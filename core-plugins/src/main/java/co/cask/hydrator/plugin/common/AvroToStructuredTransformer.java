@@ -58,4 +58,17 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
 
     return builder.build();
   }
+
+  public StructuredRecord transform(StructuredRecord.Builder builder, GenericRecord genericRecord,
+                                    Schema structuredSchema, String skipField)
+    throws IOException {
+    for (Schema.Field field : structuredSchema.getFields()) {
+      String fieldName = field.getName();
+      if (!fieldName.equals(skipField)) {
+        builder.set(fieldName, convertField(genericRecord.get(fieldName), field.getSchema()));
+      }
+    }
+
+    return builder.build();
+  }
 }
