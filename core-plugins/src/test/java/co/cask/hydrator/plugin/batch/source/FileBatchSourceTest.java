@@ -51,14 +51,14 @@ import org.apache.avro.generic.GenericRecordBuilder;
 import org.apache.avro.io.DatumWriter;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.Path;
+import org.apache.parquet.avro.AvroParquetWriter;
+import org.apache.parquet.hadoop.ParquetWriter;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import parquet.avro.AvroParquetWriter;
-import parquet.hadoop.ParquetWriter;
 
 import java.io.File;
 import java.text.DateFormat;
@@ -223,7 +223,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
 
-    Schema schema = PathTrackingInputFormat.getOutputSchema("file");
+    Schema schema = PathTrackingInputFormat.getTextOutputSchema("file");
     Set<StructuredRecord> expected = ImmutableSet.of(
       StructuredRecord.builder(schema).set("offset", 0L).set("body", "Hello,World").set("file", "test1.txt").build(),
       StructuredRecord.builder(schema).set("offset", 0L).set("body", "CDAP,Platform").set("file", "test3.txt").build());
@@ -517,7 +517,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
 
     workflowStartAndWait(appManager);
 
-    List<StructuredRecord> input = ImmutableList.of(
+    List<StructuredRecord> expected = ImmutableList.of(
       StructuredRecord.builder(RECORD_SCHEMA)
         .set("i", Integer.MAX_VALUE)
         .set("l", Long.MAX_VALUE)
@@ -526,7 +526,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
-    Assert.assertEquals(input, output);
+    Assert.assertEquals(expected, output);
   }
 
   @Test
@@ -540,17 +540,19 @@ public class FileBatchSourceTest extends HydratorTestBase {
     GenericRecord record = new GenericRecordBuilder(avroSchema)
       .set("i", Integer.MAX_VALUE)
       .set("l", Long.MAX_VALUE)
+//      .set("file", fileParquet)
       .build();
 
     DataSetManager<TimePartitionedFileSet> inputManager = getDataset("TestFile");
-    ParquetWriter<GenericRecord> parquetWriter = new AvroParquetWriter<>(new Path(fileParquet.getAbsolutePath()), avroSchema);
+    ParquetWriter<GenericRecord> parquetWriter = new AvroParquetWriter<>(new Path(fileParquet.getAbsolutePath()),
+                                                                         avroSchema);
     parquetWriter.write(record);
     parquetWriter.close();
     inputManager.flush();
 
     workflowStartAndWait(appManager);
 
-    List<StructuredRecord> input = ImmutableList.of(
+    List<StructuredRecord> expected = ImmutableList.of(
       StructuredRecord.builder(RECORD_SCHEMA)
         .set("i", Integer.MAX_VALUE)
         .set("l", Long.MAX_VALUE)
@@ -559,7 +561,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
-    Assert.assertEquals(input, output);
+    Assert.assertEquals(expected, output);
   }
 
   private ApplicationManager createSourceAndDeployApp(File file, String format, String outputDatasetName)
