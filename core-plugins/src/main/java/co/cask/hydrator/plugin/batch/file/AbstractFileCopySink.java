@@ -18,14 +18,16 @@ package co.cask.hydrator.plugin.batch.file;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Macro;
+import co.cask.cdap.api.data.batch.Output;
 import co.cask.cdap.api.data.batch.OutputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
+import co.cask.cdap.etl.api.PipelineConfigurer;
+import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.plugin.batch.file.s3.S3FileMetadata;
-import co.cask.hydrator.plugin.batch.file.s3.S3FileMetadata.S3Credentials;
 import com.sun.istack.Nullable;
 import org.apache.hadoop.io.NullWritable;
 import org.slf4j.Logger;
@@ -48,6 +50,12 @@ public abstract class AbstractFileCopySink
     this.config = config;
   }
 
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
+    config.validate();
+  }
+
   /**
    * Converts input StructuredRecord to AbstractFileMetadata class. Loads credentials and
    * file metadata from the input.
@@ -60,22 +68,9 @@ public abstract class AbstractFileCopySink
                         Emitter<KeyValue<NullWritable, AbstractFileMetadata>> emitter)
     throws Exception {
     AbstractFileMetadata output;
-    switch ((String) input.get(AbstractFileMetadata.Credentials.DATA_BASE_TYPE)) {
-      case S3FileMetadata.DATA_BASE_NAME :
-        output = new S3FileMetadata((String) input.get(AbstractFileMetadata.FILE_NAME),
-                                    (String) input.get(AbstractFileMetadata.FULL_PATH),
-                                    (long) input.get(AbstractFileMetadata.TIMESTAMP),
-                                    (String) input.get(AbstractFileMetadata.OWNER),
-                                    (long) input.get(AbstractFileMetadata.FILE_SIZE),
-                                    (Boolean) input.get(AbstractFileMetadata.IS_FOLDER),
-                                    (String) input.get(AbstractFileMetadata.BASE_PATH),
-                                    (short) input.get(AbstractFileMetadata.PERMISSION),
-                                    new S3FileMetadata.S3Credentials((String) input.get(S3Credentials.ACCESS_KEY_ID),
-                                                                     (String) input.get(S3Credentials.SECRET_KEY_ID),
-                                                                     (String) input.get(S3Credentials.REGION),
-                                                                     (String) input.get(S3Credentials.BUCKET_NAME))
-
-          );
+    switch ((String) input.get(AbstractFileMetadata.FILESYSTEM)) {
+      case S3FileMetadata.FILESYSTEM_NAME :
+        output = new S3FileMetadata(input);
         break;
 
       default:
@@ -85,11 +80,16 @@ public abstract class AbstractFileCopySink
     emitter.emit(new KeyValue<NullWritable, AbstractFileMetadata>(null, output));
   }
 
+  @Override
+  public void prepareRun(BatchSinkContext context) throws Exception {
+    config.validate();
+    context.addOutput(Output.of(config.referenceName, new FileCopyOutputFormatProvider(config)));
+  }
+
   /**
    * Abstract class for the configuration of FileCopySink
    */
   public abstract class AbstractFileCopySinkConfig extends ReferencePluginConfig {
-
     @Macro
     @Description("The destination path. Will be created if it doesn't exist.")
     public String basePath;
@@ -97,20 +97,43 @@ public abstract class AbstractFileCopySink
     @Description("Whether or not to overwrite if the file already exists.")
     public Boolean enableOverwrite;
 
+    @Description("Whether or not for splits to use cached connections to the filesystems.")
+    public Boolean filesystemCaching;
+
+    @Description("Whether or not to preserve the owner of the file from source filesystem.")
+    public Boolean preserveFileOwner;
+
+    // TODO: figure out why this still shows up as required in configuration UI
     @Macro
     @Nullable
     @Description("The size of the buffer that temporarily stores data from file input stream.")
-    public int bufferSize;
+    public Integer bufferSize;
 
-    public AbstractFileCopySinkConfig(String name, String basePath, Boolean enableOverwrite, @Nullable int bufferSize) {
+    public AbstractFileCopySinkConfig(String name, String basePath, Boolean enableOverwrite, Boolean filesystemCaching,
+                                      Boolean preserveFileOwner, @Nullable Integer bufferSize) {
       super(name);
       this.basePath = basePath;
       this.enableOverwrite = enableOverwrite;
+      this.preserveFileOwner = preserveFileOwner;
+      this.filesystemCaching = filesystemCaching;
       this.bufferSize = bufferSize;
     }
+
+    public void validate() {
+      if (!this.containsMacro("bufferSize")) {
+        if (bufferSize <= 0) {
+          throw new IllegalArgumentException("Buffer size must be a positive integer.");
+        }
+      }
+    }
+
     /*
      * Additional configurations for the file sink should be implemented in the extended class
      */
+
+    public abstract String getScheme();
+
+    public abstract String getHostUri();
   }
 
   /**
@@ -119,15 +142,18 @@ public abstract class AbstractFileCopySink
   public class FileCopyOutputFormatProvider implements OutputFormatProvider {
     private final Map<String, String> conf;
 
-    /**
-     *
-     * @param config
-     */
     public FileCopyOutputFormatProvider(AbstractFileCopySink.AbstractFileCopySinkConfig config) {
       this.conf = new HashMap<>();
       FileCopyOutputFormat.setBasePath(conf, config.basePath);
       FileCopyOutputFormat.setEnableOverwrite(conf, config.enableOverwrite.toString());
+      FileCopyOutputFormat.setPreserveFileOwner(conf, config.preserveFileOwner.toString());
       FileCopyOutputFormat.setBufferSize(conf, String.valueOf(config.bufferSize));
+      FileCopyOutputFormat.setFilesystemCaching(conf, config.filesystemCaching, config.getScheme());
+
+      // set the URI for the destination filesystem if it's provided
+      if (config.getHostUri() != null) {
+        FileCopyOutputFormat.setFilesystemHostUri(conf, config.getHostUri());
+      }
     }
 
     @Override

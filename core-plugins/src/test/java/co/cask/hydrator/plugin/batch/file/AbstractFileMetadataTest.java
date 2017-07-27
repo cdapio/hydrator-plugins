@@ -23,36 +23,81 @@ import org.apache.hadoop.fs.Path;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class AbstractFileMetadataTest {
+import java.io.IOException;
 
+public class AbstractFileMetadataTest {
   @Test
-  public void testConvertFileStatusToFileMetaData() {
+  public void testConvertFileStatusToFileMetaData() throws IOException {
     FileStatus fileStatus = new FileStatus();
     fileStatus.setPath(new Path("s3a://abc.def.bucket/source/path/directory/123.txt"));
 
     // Copy a file that is part of a whole directory copy
     String sourcePath = "/source/path/directory";
-    S3FileMetadata.S3Credentials credentials = new S3FileMetadata.S3Credentials(null, null, null, null);
-    S3FileMetadata metadata = new S3FileMetadata(fileStatus, sourcePath, credentials);
+    S3FileMetadata metadata = new S3FileMetadata(fileStatus, sourcePath, null, null, null);
     Assert.assertEquals(metadata.getFileName(), "123.txt");
     Assert.assertEquals(metadata.getFullPath(), "s3a://abc.def.bucket/source/path/directory/123.txt");
     Assert.assertEquals(metadata.getBasePath(), "directory/123.txt");
+    Assert.assertEquals(metadata.getHostURI(), "s3a://abc.def.bucket");
 
     // Copy a file that is part of a whole directory copy without including the directory
     sourcePath = "/source/path/";
-    credentials = new S3FileMetadata.S3Credentials(null, null, null, null);
-    metadata = new S3FileMetadata(fileStatus, sourcePath, credentials);
+    metadata = new S3FileMetadata(fileStatus, sourcePath, null, null, null);
     Assert.assertEquals(metadata.getFileName(), "123.txt");
     Assert.assertEquals(metadata.getFullPath(), "s3a://abc.def.bucket/source/path/directory/123.txt");
     Assert.assertEquals(metadata.getBasePath(), "directory/123.txt");
+    Assert.assertEquals(metadata.getHostURI(), "s3a://abc.def.bucket");
 
     // Copy a single file
     sourcePath = "";
-    credentials = new S3FileMetadata.S3Credentials(null, null, null, null);
-    metadata = new S3FileMetadata(fileStatus, sourcePath, credentials);
+    metadata = new S3FileMetadata(fileStatus, sourcePath, null, null, null);
     Assert.assertEquals(metadata.getFileName(), "123.txt");
     Assert.assertEquals(metadata.getFullPath(), "s3a://abc.def.bucket/source/path/directory/123.txt");
     Assert.assertEquals(metadata.getBasePath(), "123.txt");
+    Assert.assertEquals(metadata.getHostURI(), "s3a://abc.def.bucket");
+
+    // more tests with single directory copy
+    fileStatus.setPath(new Path("s3a://abc.def.bucket/redshift/"));
+    sourcePath = "/redshift/";
+    metadata = new S3FileMetadata(fileStatus, sourcePath, null, null, null);
+    Assert.assertEquals(metadata.getBasePath().isEmpty(), true);
+
+    fileStatus.setPath(new Path("s3a://abc.def.bucket/redshift"));
+    sourcePath = "/redshift/";
+    metadata = new S3FileMetadata(fileStatus, sourcePath, null, null, null);
+    Assert.assertEquals(metadata.getBasePath().isEmpty(), true);
+
+    fileStatus.setPath(new Path("s3a://abc.def.bucket/"));
+    sourcePath = "/";
+    metadata = new S3FileMetadata(fileStatus, sourcePath, null, null, null);
+    Assert.assertEquals(metadata.getBasePath().isEmpty(), true);
+
+    fileStatus.setPath(new Path("s3a://abc.def.bucket"));
+    sourcePath = "/";
+    metadata = new S3FileMetadata(fileStatus, sourcePath, null, null, null);
+    Assert.assertEquals(metadata.getBasePath().isEmpty(), true);
+
+    fileStatus.setPath(new Path("s3a://abc.def.bucket/abc.txt"));
+    sourcePath = "/";
+    metadata = new S3FileMetadata(fileStatus, sourcePath, null, null, null);
+    Assert.assertEquals(metadata.getBasePath(), "abc.txt");
   }
 
+  @Test
+  public void testCompare() throws IOException {
+    final FileStatus statusA = new FileStatus(1, false, 0, 0, 0, new Path("s3a://hello.com/abc/fileA"));
+    final FileStatus statusB = new FileStatus(3, false, 0, 0, 0, new Path("s3a://hello.com/abc/fileB"));
+    final FileStatus statusC = new FileStatus(3, false, 0, 0, 0, new Path("s3a://hello.com/abc/fileC"));
+    final String basePath = "/abc";
+
+    // generate 3 files with different file sizes
+    S3FileMetadata file1 = new S3FileMetadata(statusA, basePath, null, null, null);
+
+    S3FileMetadata file2 = new S3FileMetadata(statusB, basePath, null, null, null);
+
+    S3FileMetadata file3 = new S3FileMetadata(statusC, basePath, null, null, null);
+
+    Assert.assertEquals(file1.compareTo(file2), -1);
+    Assert.assertEquals(file3.compareTo(file2), 0);
+    Assert.assertEquals(file3.compareTo(file1), 1);
+  }
 }

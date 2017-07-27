@@ -52,56 +52,24 @@ public abstract class AbstractMetadataInputSplit extends InputSplit implements W
     try {
       // write obj summaries
       dataOutput.writeLong(this.getLength());
-      for (int i = 0; i < this.getLength(); i++) {
+      for (AbstractFileMetadata fileMetaData : fileMetaDataList) {
         // convert each filestatus (serializable) to byte array
-        AbstractFileMetadata fileMetaData = fileMetaDataList.get(i);
-
-        dataOutput.writeUTF(fileMetaData.getFileName());
-        dataOutput.writeUTF(fileMetaData.getFullPath());
-        dataOutput.writeLong(fileMetaData.getTimeStamp());
-        dataOutput.writeUTF(fileMetaData.getOwner());
-        dataOutput.writeLong(fileMetaData.getFileSize());
-        dataOutput.writeBoolean(fileMetaData.getIsFolder());
-        dataOutput.writeUTF(fileMetaData.getBasePath());
-        dataOutput.writeShort(fileMetaData.getPermission());
-
-        writeCredentials(dataOutput, fileMetaData.getCredentials());
+        fileMetaData.write(dataOutput);
       }
 
-    } catch (Exception e) {
-      LOG.error("serialization failed");
+    } catch (IOException e) {
+      throw new IOException(e);
+    } catch (InterruptedException interruptedException) {
+      throw new IOException("Failed to get length for InputSplit");
     }
   }
 
   @Override
   public void readFields(DataInput dataInput) throws IOException {
-    try {
-      long numObjects = dataInput.readLong();
-      fileMetaDataList = new ArrayList<>();
-      for (long i = 0; i < numObjects; i++) {
-        String fileName = dataInput.readUTF();
-        String fileFolder = dataInput.readUTF();
-        long timeStamp = dataInput.readLong();
-        String owner = dataInput.readUTF();
-        long fileSize = dataInput.readLong();
-        Boolean isFolder = dataInput.readBoolean();
-        String baseFolder = dataInput.readUTF();
-        short permission = dataInput.readShort();
-
-        AbstractFileMetadata.Credentials credentials = readCredentials(dataInput);
-
-        fileMetaDataList.add(getFileMetaData(fileName,
-                                             fileFolder,
-                                             timeStamp,
-                                             owner,
-                                             fileSize,
-                                             isFolder,
-                                             baseFolder,
-                                             permission,
-                                             credentials));
-      }
-    } catch (Exception e) {
-      LOG.error("deserialization failed");
+    long numObjects = dataInput.readLong();
+    fileMetaDataList = new ArrayList<>();
+    for (long i = 0; i < numObjects; i++) {
+      fileMetaDataList.add(readFileMetaData(dataInput));
     }
   }
 
@@ -130,33 +98,10 @@ public abstract class AbstractMetadataInputSplit extends InputSplit implements W
 
   @Override
   public int compareTo(Object o) {
-    AbstractMetadataInputSplit other = (AbstractMetadataInputSplit) o;
-    long myLength = getTotalSize();
-    long otherLength = other.getTotalSize();
-    if (myLength < otherLength) {
-      return -1;
-    } else if (myLength == otherLength) {
-      return 0;
-    } else {
-      return 1;
-    }
+    return Long.compare(getTotalSize(), ((AbstractMetadataInputSplit) o).getTotalSize());
   }
 
-  protected abstract void writeCredentials(DataOutput dataOutput,
-                                           AbstractFileMetadata.Credentials credentials) throws Exception;
-
-  protected abstract AbstractFileMetadata.Credentials readCredentials(DataInput dataInput)
-    throws Exception;
-
-  protected abstract AbstractFileMetadata getFileMetaData(String fileName,
-                                                          String fileFolder,
-                                                          long timeStamp,
-                                                          String owner,
-                                                          long fileSize,
-                                                          Boolean isFolder,
-                                                          String baseFolder,
-                                                          short permission,
-                                                          AbstractFileMetadata.Credentials credentials);
+  protected abstract AbstractFileMetadata readFileMetaData(DataInput dataInput) throws IOException;
 }
 
 

@@ -16,114 +16,185 @@
 
 package co.cask.hydrator.plugin.batch.file;
 
+import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
 import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.WritableComparable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Abstract class that contains file metadata fields.
  * Extend from this class to add credentials specific to different filesystems.
  */
-public abstract class AbstractFileMetadata {
+public abstract class AbstractFileMetadata implements WritableComparable {
+
   public static final String FILE_NAME = "fileName";
   public static final String FILE_SIZE = "fileSize";
-  public static final String TIMESTAMP = "timeStamp";
+  public static final String MODIFICATION_TIME = "modificationTime";
   public static final String OWNER = "owner";
+  public static final String GROUP = "group";
   public static final String FULL_PATH = "fullPath";
   public static final String IS_FOLDER = "isFolder";
   public static final String BASE_PATH = "basePath";
   public static final String PERMISSION = "permission";
+  public static final String FILESYSTEM = "filesystem";
+  public static final String HOST_URI = "hostURI";
+
+  public static final Schema DEFAULT_SCHEMA = Schema.recordOf(
+    "metadata",
+    Schema.Field.of(FILE_NAME, Schema.of(Schema.Type.STRING)),
+    Schema.Field.of(FULL_PATH, Schema.of(Schema.Type.STRING)),
+    Schema.Field.of(FILE_SIZE, Schema.of(Schema.Type.LONG)),
+    Schema.Field.of(MODIFICATION_TIME, Schema.of(Schema.Type.LONG)),
+    Schema.Field.of(GROUP, Schema.of(Schema.Type.LONG)),
+    Schema.Field.of(OWNER, Schema.of(Schema.Type.STRING)),
+    Schema.Field.of(IS_FOLDER, Schema.of(Schema.Type.BOOLEAN)),
+    Schema.Field.of(BASE_PATH, Schema.of(Schema.Type.STRING)),
+    Schema.Field.of(PERMISSION, Schema.of(Schema.Type.INT)),
+    Schema.Field.of(FILESYSTEM, Schema.of(Schema.Type.STRING)),
+    Schema.Field.of(HOST_URI, Schema.of(Schema.Type.STRING))
+  );
+
 
   // contains only the name of the file
-  protected String fileName;
+  private final String fileName;
 
   // full path of the file in the source filesystem
-  protected String fullPath;
+  private final String fullPath;
 
   // file size
-  protected long fileSize;
+  private final long fileSize;
 
   // modification time of file
-  protected long timeStamp;
+  private final long modificationTime;
 
-  // owner of file
-  protected String owner;
+  // file owner's group
+  private final String group;
+
+  // file owner
+  private final String owner;
 
   // whether or not the file is a folder
-  protected Boolean isFolder;
+  private final boolean isFolder;
 
-  // the base path that will be appended to the path the sink is writing to
-  protected String basePath;
+  /*
+   * the base path that will be appended to the path the sink is writing to
+   * For example, given full path http://example.com/foo/bar/baz/index.html
+   *              and source path /foo/bar
+   *              the base path will be bar/baz/index.html
+   * Also note if the source path is an empty string, the base path will default to file name (index.html)
+   * in the case above
+   */
+  private final String basePath;
 
-  // perission of file, encoded in short
-  protected short permission;
+  // file permission, encoded in short
+  private final short permission;
 
-  // Credentials needed to connect to the filesystem that contains this file
-  protected final Credentials credentials;
+  // AbstractCredentials needed to connect to the filesystem that contains this file
+  private final String filesystem;
+
+  /*
+   * URI for the Filesystem
+   * For instance, the hostURI for http://abc.def.ghi/new/index.html is http://abc.def.ghi
+   */
+  private final String hostURI;
 
   private static final Logger LOG = LoggerFactory.getLogger(AbstractFileMetadata.class);
 
-  public AbstractFileMetadata(FileStatus fileStatus, String sourcePath, Credentials credentials) {
-    String fullPath = fileStatus.getPath().toString();
-    String[] paths = fullPath.split("/");
-    this.fileName = paths[paths.length - 1];
-    this.timeStamp = fileStatus.getModificationTime();
-    this.owner = fileStatus.getOwner();
-    this.fileSize = fileStatus.getLen();
-    this.credentials = credentials;
-    this.permission = fileStatus.getPermission().toShort();
+  protected AbstractFileMetadata(FileStatus fileStatus, String sourcePath) throws IOException {
+    fileName = fileStatus.getPath().getName();
+    fullPath = fileStatus.getPath().toString();
+    isFolder = fileStatus.isDirectory();
+    modificationTime = fileStatus.getModificationTime();
+    owner = fileStatus.getOwner();
+    group = fileStatus.getGroup();
+    fileSize = fileStatus.getLen();
+    filesystem = getFSName();
+    permission = fileStatus.getPermission().toShort();
+    try {
+      hostURI = new URI(fileStatus.getPath().toUri().getScheme(), fileStatus.getPath().toUri().getHost(), null, null)
+        .toString();
+    } catch (URISyntaxException e) {
+      throw new IOException(e.getMessage());
+    }
 
-    // generate file folder
-    this.fullPath = fullPath;
-
-    // check if file is a folder
-    this.isFolder = fileStatus.isDirectory();
-
+    String pathSeparator = String.valueOf(Path.SEPARATOR_CHAR);
     // TODO: investigate how to cleanly set basePath
-    if (sourcePath.equals("")) {
+    if (sourcePath.isEmpty()) {
       basePath = this.fileName;
     } else {
       /*
-       * this block of code calculates how many folders (separated by "/")
-       * should be dropped from the prefix
+       * this block of code calculates how many path components (separated by "/")
+       * should be dropped from the full path prefix
        */
-      int numSourcePaths = sourcePath.split("/").length;
+      int numSourcePaths = sourcePath.split(pathSeparator).length;
       int numStrip;
-      if (sourcePath.endsWith("/")) {
+      if (sourcePath.equals(String.valueOf(pathSeparator))) {
+        numStrip = 1;
+      } else if (sourcePath.endsWith(pathSeparator)) {
         numStrip = numSourcePaths;
-        sourcePath = sourcePath.substring(0, sourcePath.length() - 1);
       } else {
         numStrip = numSourcePaths - 1;
       }
 
       /*
-       * this block of code drops the URI and reconstructs basePath by
+       * this block of code drops the host name and reconstructs basePath by
        * concatenating the folders with "/"
        */
-      String pathWithoutURI = fullPath.substring(fullPath.indexOf(sourcePath));
-      String[] pathsWithoutURI = pathWithoutURI.split("/");
-      basePath = "";
-      for (int i = numStrip; i < pathsWithoutURI.length; i++) {
-        basePath = basePath.concat(pathsWithoutURI[i] + "/");
-      }
-      if (basePath.length() > 0) {
-        basePath = basePath.substring(0, basePath.length() - 1);
+      String pathWithoutHostName = fullPath.substring(hostURI.length());
+      String[] pathComponents = pathWithoutHostName.split(pathSeparator);
+      if (numStrip >= pathComponents.length) {
+        basePath = "";
+      } else {
+        Path tempBasePath = new Path(pathComponents[numStrip]);
+        for (int i = numStrip + 1; i < pathComponents.length; i++) {
+          tempBasePath = new Path(tempBasePath, pathComponents[i]);
+        }
+        basePath = tempBasePath.toString();
       }
     }
   }
 
-  public AbstractFileMetadata(String fileName, String fullPath, long timeStamp, String owner,
-                              Long fileSize, Boolean isFolder, String basePath,
-                              short permission, Credentials credentials) {
-    this.fileName = fileName;
-    this.fullPath = fullPath;
-    this.timeStamp = timeStamp;
-    this.owner = owner;
-    this.fileSize = fileSize;
-    this.credentials = credentials;
-    this.isFolder = isFolder;
-    this.basePath = basePath;
-    this.permission = permission;
+  protected AbstractFileMetadata(StructuredRecord record) {
+    this.fileName = record.get(FILE_NAME);
+    this.fullPath = record.get(FULL_PATH);
+    this.modificationTime = record.get(MODIFICATION_TIME);
+    this.group = record.get(GROUP);
+    this.owner = record.get(OWNER);
+    this.fileSize = record.get(FILE_SIZE);
+    this.isFolder = record.get(IS_FOLDER);
+    this.basePath = record.get(BASE_PATH);
+    this.permission = record.get(PERMISSION);
+    this.filesystem = getFSName();
+    this.hostURI = record.get(HOST_URI);
+  }
+
+  /**
+   * use this constructor to deserialize from DataInput
+   * @param dataInput
+   */
+  protected AbstractFileMetadata(DataInput dataInput) throws IOException {
+    this.fileName = dataInput.readUTF();
+    this.fullPath = dataInput.readUTF();
+    this.modificationTime = dataInput.readLong();
+    this.group = dataInput.readUTF();
+    this.owner = dataInput.readUTF();
+    this.fileSize = dataInput.readLong();
+    this.isFolder = dataInput.readBoolean();
+    this.basePath = dataInput.readUTF();
+    this.permission = dataInput.readShort();
+    this.filesystem = dataInput.readUTF();
+    this.hostURI = dataInput.readUTF();
   }
 
   public String getFullPath() {
@@ -138,18 +209,20 @@ public abstract class AbstractFileMetadata {
     return fileSize;
   }
 
-  public long getTimeStamp() {
-    return timeStamp;
+  public long getModificationTime() {
+    return modificationTime;
+  }
+
+  public String getGroup() {
+    return group;
   }
 
   public String getOwner() {
     return owner;
   }
 
-  public abstract Credentials getCredentials();
-
-  public Boolean getIsFolder() {
-    return this.isFolder;
+  public boolean isFolder() {
+    return isFolder;
   }
 
   public String getBasePath() {
@@ -160,11 +233,78 @@ public abstract class AbstractFileMetadata {
     return permission;
   }
 
-  /**
-   * extend from this class to create a credential class for each filesystem
-   */
-  public abstract static class Credentials {
-    public String databaseType;
-    public static final String DATA_BASE_TYPE = "databaseType";
+  public String getHostURI() {
+    return hostURI;
   }
+
+  public String getFilesystem() {
+    return filesystem;
+  }
+
+  /**
+   * Converts to StructuredRecord
+   */
+  public StructuredRecord toRecord() {
+
+    // initialize output schema
+    Schema outputSchema;
+    List<Schema.Field> fieldList = new ArrayList<>(DEFAULT_SCHEMA.getFields());
+    fieldList.addAll(getCredentialSchema().getFields());
+    outputSchema = Schema.recordOf("metadata", fieldList);
+
+    StructuredRecord.Builder outputBuilder = StructuredRecord.builder(outputSchema)
+      .set(FILE_NAME, fileName)
+      .set(FULL_PATH, fullPath)
+      .set(FILE_SIZE, fileSize)
+      .set(MODIFICATION_TIME, modificationTime)
+      .set(GROUP, group)
+      .set(OWNER, owner)
+      .set(IS_FOLDER, isFolder)
+      .set(BASE_PATH, basePath)
+      .set(PERMISSION, permission)
+      .set(HOST_URI, hostURI);
+    addCredentialsToBuilder(outputBuilder);
+
+    return outputBuilder.build();
+  }
+
+  @Override
+  public int compareTo(Object o) {
+    return Long.compare(fileSize, ((AbstractFileMetadata) o).getFileSize());
+  }
+
+  @Override
+  public void write(DataOutput dataOutput) throws IOException {
+    dataOutput.writeUTF(getFileName());
+    dataOutput.writeUTF(getFullPath());
+    dataOutput.writeLong(getModificationTime());
+    dataOutput.writeUTF(getGroup());
+    dataOutput.writeUTF(getOwner());
+    dataOutput.writeLong(getFileSize());
+    dataOutput.writeBoolean(isFolder());
+    dataOutput.writeUTF(getBasePath());
+    dataOutput.writeShort(getPermission());
+    dataOutput.writeUTF(getFilesystem());
+    dataOutput.writeUTF(getHostURI());
+  }
+
+  /**
+   * Don't use this to deserialize AbstractFileMetadata. Use the constructor
+   * that takes DataInput as an input instead.
+   * @param dataInput
+   * @throws IOException
+   */
+  @Override
+  @Deprecated
+  public void readFields(DataInput dataInput) throws IOException {
+  }
+
+  /**
+   * @return Credential schema for different filesystems
+   */
+  protected abstract Schema getCredentialSchema();
+
+  protected abstract void addCredentialsToBuilder(StructuredRecord.Builder builder);
+
+  protected abstract String getFSName();
 }

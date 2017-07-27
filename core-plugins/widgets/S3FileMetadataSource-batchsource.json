@@ -12,6 +12,11 @@
           "name": "referenceName"
         },
         {
+          "widget-type": "textbox",
+          "label": "URI",
+          "name": "filesystemURI"
+        },
+        {
           "widget-type": "csv",
           "label": "Source Paths",
           "name": "sourcePaths"
@@ -44,11 +49,6 @@
           "name": "secretKeyId"
         },
         {
-          "widget-type": "textbox",
-          "label": "Bucket Name",
-          "name": "bucketName"
-        },
-        {
           "widget-type": "select",
           "label": "Amazon Region",
           "name": "region",
@@ -75,6 +75,73 @@
           }
         }
       ]
+    }
+  ],
+  "outputs": [
+    {
+      "widget-type": "non-editable-schema-editor",
+      "schema": {
+        "name": "etlSchemaBody",
+        "type": "record",
+        "fields": [
+          {
+            "name": "fileName",
+            "type": "string"
+          },
+          {
+            "name": "fullPath",
+            "type": "string"
+          },
+          {
+            "name": "fileSize",
+            "type": "long"
+          },
+          {
+            "name": "modificationTime",
+            "type": "long"
+          },
+          {
+            "name": "group",
+            "type": "string"
+          },
+          {
+            "name": "owner",
+            "type": "string"
+          },
+          {
+            "name": "isFolder",
+            "type": "boolean"
+          },
+          {
+            "name": "basePath",
+            "type": "string"
+          },
+          {
+            "name": "permission",
+            "type": "int"
+          },
+          {
+            "name": "filesystem",
+            "type": "string"
+          },
+          {
+            "name": "hostURI",
+            "type": "string"
+          },
+          {
+            "name": "accessKeyID",
+            "type": "string"
+          },
+          {
+            "name": "secretKeyID",
+            "type": "string"
+          },
+          {
+            "name": "region",
+            "type": "string"
+          }
+        ]
+      }
     }
   ]
 }

@@ -18,6 +18,9 @@ package co.cask.hydrator.plugin.batch.file;
 
 import co.cask.hydrator.plugin.batch.file.s3.S3FileMetadata;
 import co.cask.hydrator.plugin.batch.file.s3.S3MetadataInputSplit;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.permission.FsPermission;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -25,22 +28,34 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 
 public class AbstractMetadataInputSplitTest {
   @Test
   public void testSerializeAndDeserialize() throws Exception {
     S3MetadataInputSplit metadataInputSplit = new S3MetadataInputSplit();
 
-    S3FileMetadata.S3Credentials credentials = new S3FileMetadata.S3Credentials("akey", "skey", "region", "bname");
-    S3FileMetadata originalMetadata = new S3FileMetadata("fileName",
-                                                         "fullPath",
-                                                         123456,
-                                                         "owner",
-                                                         (long) 678910,
-                                                         false,
-                                                         "basePath",
-                                                         (short) 166,
-                                                         credentials);
+    // required for abstract metadata
+    final long length = 101;
+    final boolean isdir = false;
+    final int blockReplication = 0;
+    final long blocksize = 0;
+    final long modificationTime = 12345678;
+    final long accessTime = 87654321;
+    final FsPermission permission = new FsPermission((short) 166);
+    final String owner  = "someOwner";
+    final String group = "someGroup";
+    final Path path = new Path("s3a://abc.def.ghi/foo/bar/baz/123.txt");
+    final String sourcePath = "/foo/bar";
+
+    // required for s3metadata
+    final String accessKeyId = "akey";
+    final String secretKeyId = "skey";
+    final String region = "us-east-1";
+
+    FileStatus fileStatus = new FileStatus(length, isdir, blockReplication, blocksize,
+                                           modificationTime, accessTime, permission, owner, group, path);
+    S3FileMetadata originalMetadata = new S3FileMetadata(fileStatus, sourcePath, accessKeyId, secretKeyId, region);
     metadataInputSplit.addFileMetadata(originalMetadata);
 
     // serialize input split
@@ -59,33 +74,32 @@ public class AbstractMetadataInputSplitTest {
     inputStream.close();
 
     // compare if fields are right
-    S3FileMetadata recoveredMetadata = (S3FileMetadata) recoveredInputSplit.getFileMetaDataList().get(0);
-    Assert.assertEquals(recoveredMetadata.getFileName(), "fileName");
-    Assert.assertEquals(recoveredMetadata.getFullPath(), "fullPath");
-    Assert.assertEquals(recoveredMetadata.getTimeStamp(), 123456);
-    Assert.assertEquals(recoveredMetadata.getOwner(), "owner");
-    Assert.assertEquals(recoveredMetadata.getFileSize(), (long) 678910);
-    Assert.assertEquals(recoveredMetadata.getIsFolder(), false);
-    Assert.assertEquals(recoveredMetadata.getBasePath(), "basePath");
-    Assert.assertEquals(recoveredMetadata.getPermission(), (short) 166);
-    Assert.assertEquals(recoveredMetadata.getCredentials().accessKeyId, "akey");
-    Assert.assertEquals(recoveredMetadata.getCredentials().secretKeyId, "skey");
-    Assert.assertEquals(recoveredMetadata.getCredentials().region, "region");
-    Assert.assertEquals(recoveredMetadata.getCredentials().bucketName, "bname");
+    Assert.assertEquals(recoveredInputSplit.getFileMetaDataList().get(0).toRecord(),
+                        metadataInputSplit.getFileMetaDataList().get(0).toRecord());
   }
 
   @Test
-  public void testCompare() {
+  public void testCompare() throws IOException {
     S3MetadataInputSplit metadataInputSplita = new S3MetadataInputSplit();
     S3MetadataInputSplit metadataInputSplitb = new S3MetadataInputSplit();
     S3MetadataInputSplit metadataInputSplitc = new S3MetadataInputSplit();
 
+    final FileStatus statusA = new FileStatus(1, false, 0, 0, 0, new Path("s3a://hello.com/abc/fileA"));
+    final FileStatus statusB = new FileStatus(2, false, 0, 0, 0, new Path("s3a://hello.com/abc/fileB"));
+    final FileStatus statusC = new FileStatus(3, false, 0, 0, 0, new Path("s3a://hello.com/abc/fileC"));
+    final String basePath = "/abc";
+
+    // required for s3metadata
+    final String accessKeyId = "akey";
+    final String secretKeyId = "skey";
+    final String region = "us-east-1";
+
     // generate 3 files with different file sizes
-    S3FileMetadata file1 = new S3FileMetadata(null, null, 0, null, (long) 1, false, null, (short) 0, null);
+    S3FileMetadata file1 = new S3FileMetadata(statusA, basePath, accessKeyId, secretKeyId, region);
 
-    S3FileMetadata file2 = new S3FileMetadata(null, null, 0, null, (long) 2, false, null, (short) 0, null);
+    S3FileMetadata file2 = new S3FileMetadata(statusB, basePath, accessKeyId, secretKeyId, region);
 
-    S3FileMetadata file3 = new S3FileMetadata(null, null, 0, null, (long) 3, false, null, (short) 0, null);
+    S3FileMetadata file3 = new S3FileMetadata(statusC, basePath, accessKeyId, secretKeyId, region);
 
     // a has 3 bytes
     metadataInputSplita.addFileMetadata(file1);

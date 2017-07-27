@@ -29,6 +29,30 @@
           }
         },
         {
+          "widget-type": "select",
+          "label": "Preserve File Owner",
+          "name": "preserveFileOwner",
+          "widget-attributes": {
+            "values": [
+              "true",
+              "false"
+            ],
+            "default": "false"
+          }
+        },
+        {
+          "widget-type": "select",
+          "label": "Enable Filesystem Connection Caching",
+          "name": "filesystemCaching",
+          "widget-attributes": {
+            "values": [
+              "true",
+              "false"
+            ],
+            "default": "true"
+          }
+        },
+        {
           "widget-type": "textbox",
           "label": "Buffer Size",
           "name": "bufferSize",
