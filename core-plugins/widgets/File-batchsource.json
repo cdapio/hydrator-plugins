@@ -36,6 +36,19 @@
         },
         {
           "widget-type": "textbox",
+          "label": "Format",
+          "name": "format",
+          "widget-attributes": {
+            "values": [
+              "avro",
+              "parquet",
+              "text"
+            ],
+            "default": "text"
+          }
+        },
+        {
+          "widget-type": "textbox",
           "label": "Maximum Split Size",
           "name": "maxSplitSize"
         },

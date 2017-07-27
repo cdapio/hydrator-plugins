@@ -23,6 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import org.apache.avro.Schema;
 
 import java.lang.reflect.Type;
 import java.util.HashMap;
@@ -107,20 +108,24 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
     "URI will be used. Defaults to false.")
   public Boolean filenameOnly;
 
+  @Description("Schema for the source")
+  public String inputSchema;
+
   // TODO: remove once CDAP-11371 is fixed
   // This is only here because the UI requires a property otherwise a default schema cannot be set.
   @Nullable
   public String schema;
 
   public FileSourceConfig() {
-    this(null, null, null, null, null, null, null, null, null, null, null, null);
+    this(null, null, null, null, null, null, null, null, null, null, null, null, null);
   }
 
   public FileSourceConfig(String referenceName, @Nullable String fileRegex, @Nullable String timeTable,
                           @Nullable String inputFormatClass, @Nullable String fileSystemProperties,
                           @Nullable String format, @Nullable Long maxSplitSize,
                           @Nullable Boolean ignoreNonExistingFolders, @Nullable Boolean recursive,
-                          @Nullable String pathField, @Nullable Boolean fileNameOnly, @Nullable String schema) {
+                          @Nullable String pathField, @Nullable Boolean fileNameOnly, String inputSchema,
+                          @Nullable String schema) {
     super(referenceName);
     this.fileSystemProperties = fileSystemProperties == null ? GSON.toJson(ImmutableMap.<String, String>of()) :
       fileSystemProperties;
@@ -130,6 +135,7 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
     this.inputFormatClass = inputFormatClass == null ?
       CombinePathTrackingInputFormat.class.getName() : inputFormatClass;
     this.format = format == null ? "text" : format;
+    this.inputSchema = inputSchema;
     this.maxSplitSize = maxSplitSize == null ? DEFAULT_MAX_SPLIT_SIZE : maxSplitSize;
     this.ignoreNonExistingFolders = ignoreNonExistingFolders == null ? false : ignoreNonExistingFolders;
     this.recursive = recursive == null ? false : recursive;
@@ -144,9 +150,16 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
       throw new IllegalArgumentException("pathField can only be used if inputFormatClass is " +
                                            CombinePathTrackingInputFormat.class.getName());
     }
-    if (!(format.equalsIgnoreCase("text") || (format.equalsIgnoreCase("avro")) ||
-        format.equalsIgnoreCase("parquet"))) {
+    if (format == null || !(format.equalsIgnoreCase("text") ||
+      (format.equalsIgnoreCase("avro")) || format.equalsIgnoreCase("parquet"))) {
       throw new IllegalArgumentException("Format can only be 'text', 'avro' or 'parquet'");
+    }
+    if (!format.equalsIgnoreCase("text")) {
+      try {
+        new Schema.Parser().parse(inputSchema);
+      } catch (Exception e){
+        throw new IllegalArgumentException("Unable to parse schema with error: " + e.getMessage(), e);
+      }
     }
   }
 

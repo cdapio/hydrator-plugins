@@ -168,7 +168,8 @@ public abstract class AbstractFileBatchSource<T extends FileSourceConfig>
       FileInputFormat.setMaxInputSplitSize(job, config.maxSplitSize);
     }
     if (CombinePathTrackingInputFormat.class.getName().equals(config.inputFormatClass)) {
-      PathTrackingInputFormat.configure(conf, config.pathField, config.filenameOnly, config.format);
+      PathTrackingInputFormat.setJob(job);
+      PathTrackingInputFormat.configure(conf, config.pathField, config.filenameOnly, config.format, config.inputSchema);
     }
     context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(config.inputFormatClass, conf)));
   }
@@ -219,7 +220,7 @@ public abstract class AbstractFileBatchSource<T extends FileSourceConfig>
    */
   @javax.ws.rs.Path("getSchema")
   public Schema getSchema(SchemaRequest request, EndpointPluginContext pluginContext) {
-    return PathTrackingInputFormat.getOutputSchema(request.pathField);
+    return PathTrackingInputFormat.getTextOutputSchema(request.pathField);
   }
 
   /**
