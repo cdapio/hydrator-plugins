@@ -22,6 +22,19 @@
           "name": "fileRegex"
         },
         {
+          "widget-type": "select",
+          "label": "Format",
+          "name": "format",
+          "widget-attributes": {
+            "values": [
+              "avro",
+              "parquet",
+              "text"
+            ],
+            "default": "text"
+          }
+        },
+        {
           "widget-type": "textbox",
           "label": "Maximum Split Size",
           "name": "maxSplitSize"
@@ -106,20 +119,17 @@
       "name": "schema",
       "widget-type": "schema",
       "widget-attributes": {
-        "default-schema": {
-          "name": "fileRecord",
-          "type": "record",
-          "fields": [
-            {
-              "name": "offset",
-              "type": "long"
-            },
-            {
-              "name": "body",
-              "type": "string"
-            }
-          ]
-        }
+        "schema-types": [
+          "boolean",
+          "int",
+          "long",
+          "float",
+          "double",
+          "bytes",
+          "string",
+          "map<string, string>"
+        ],
+        "schema-default-type": "string"
       }
     }
   ]

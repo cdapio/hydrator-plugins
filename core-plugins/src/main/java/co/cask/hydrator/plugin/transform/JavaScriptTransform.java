@@ -194,11 +194,6 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
     }
 
     @Override
-    public void emitAlert(Map<String, String> payload) {
-      emitter.emitAlert(payload);
-    }
-
-    @Override
     public void emitError(InvalidEntry<Map> invalidEntry) {
       emitter.emitError(new InvalidEntry<>(invalidEntry.getErrorCode(), invalidEntry.getErrorMsg(),
                                            decodeRecord(invalidEntry.getInvalidRecord(), errSchema)));

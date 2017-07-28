@@ -23,6 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import org.apache.avro.Schema;
 
 import java.lang.reflect.Type;
 import java.util.HashMap;
@@ -50,6 +51,8 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
     "which indicates that no files will be filtered.";
   protected static final String FILESYSTEM_PROPERTIES_DESCRIPTION = "A JSON string representing a map of properties " +
     "needed for the distributed file system.";
+  protected static final String FORMAT_DESCRIPTION = "Format of the file. Must be 'text', 'avro' or " +
+    "'parquet'. Defaults to 'text'.";
 
   private static final Gson GSON = new Gson();
   private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
@@ -77,6 +80,10 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
   public String inputFormatClass;
 
   @Nullable
+  @Description(FORMAT_DESCRIPTION)
+  public String format;
+
+  @Nullable
   @Description(MAX_SPLIT_SIZE_DESCRIPTION)
   @Macro
   public Long maxSplitSize;
@@ -101,19 +108,23 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
     "URI will be used. Defaults to false.")
   public Boolean filenameOnly;
 
+  @Description("Schema for the source")
+  public String inputSchema;
+
   // TODO: remove once CDAP-11371 is fixed
   // This is only here because the UI requires a property otherwise a default schema cannot be set.
   @Nullable
   public String schema;
 
   public FileSourceConfig() {
-    this(null, null, null, null, null, null, null, null, null, null, null);
+    this(null, null, null, null, null, null, null, null, null, null, null, null, null);
   }
 
   public FileSourceConfig(String referenceName, @Nullable String fileRegex, @Nullable String timeTable,
                           @Nullable String inputFormatClass, @Nullable String fileSystemProperties,
-                          @Nullable Long maxSplitSize, @Nullable Boolean ignoreNonExistingFolders,
-                          @Nullable Boolean recursive, @Nullable String pathField, @Nullable Boolean fileNameOnly,
+                          @Nullable String format, @Nullable Long maxSplitSize,
+                          @Nullable Boolean ignoreNonExistingFolders, @Nullable Boolean recursive,
+                          @Nullable String pathField, @Nullable Boolean fileNameOnly, String inputSchema,
                           @Nullable String schema) {
     super(referenceName);
     this.fileSystemProperties = fileSystemProperties == null ? GSON.toJson(ImmutableMap.<String, String>of()) :
@@ -123,6 +134,8 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
     this.timeTable = timeTable;
     this.inputFormatClass = inputFormatClass == null ?
       CombinePathTrackingInputFormat.class.getName() : inputFormatClass;
+    this.format = format == null ? "text" : format;
+    this.inputSchema = inputSchema;
     this.maxSplitSize = maxSplitSize == null ? DEFAULT_MAX_SPLIT_SIZE : maxSplitSize;
     this.ignoreNonExistingFolders = ignoreNonExistingFolders == null ? false : ignoreNonExistingFolders;
     this.recursive = recursive == null ? false : recursive;
@@ -136,6 +149,17 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
     if (!CombinePathTrackingInputFormat.class.getName().equals(inputFormatClass) && pathField != null) {
       throw new IllegalArgumentException("pathField can only be used if inputFormatClass is " +
                                            CombinePathTrackingInputFormat.class.getName());
+    }
+    if (format == null || !(format.equalsIgnoreCase("text") ||
+      (format.equalsIgnoreCase("avro")) || format.equalsIgnoreCase("parquet"))) {
+      throw new IllegalArgumentException("Format can only be 'text', 'avro' or 'parquet'");
+    }
+    if (!format.equalsIgnoreCase("text")) {
+      try {
+        new Schema.Parser().parse(inputSchema);
+      } catch (Exception e){
+        throw new IllegalArgumentException("Unable to parse schema with error: " + e.getMessage(), e);
+      }
     }
   }
 

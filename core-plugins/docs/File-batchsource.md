@@ -49,6 +49,10 @@ were read in. (Macro-enabled)
 **inputFormatClass:** Name of the input format class, which must be a subclass of FileInputFormat.
 Cannot be used if pathField is set. (Macro-enabled)
 
+**format:** Format of the file. Must be "text", "avro" or "parquet". Defaults to "text".
+
+**schema:** Schema for the source.
+
 **maxSplitSize:** Maximum split-size for each mapper in the MapReduce Job. Defaults to 128MB. (Macro-enabled)
 
 **ignoreNonExistingFolders:** Identify if path needs to be ignored or not, for case when directory or file does not
@@ -77,6 +81,16 @@ configure Hadoop to use more than one mapper:
             "path": "s3n://path/to/logs/",
             "fileRegex": "timefilter",
             "timeTable": "timeTable",
+            "format": "text",
+            "inputSchema": "{
+                \"type\":\"file.record\",
+                \"name\":\"webactivity\",
+                \"fields\":[
+                    {\"name\":\"offset\",\"type\":\"long\"},
+                    {\"name\":\"body\",\"type\":\"long\"},
+                    {\"name\":\"file\",\"type\":\"string\"},
+                ]
+            }"
             "maxSplitSize": "1048576",
             "ignoreNonExistingFolders": "false",
             "recursive": "false"
