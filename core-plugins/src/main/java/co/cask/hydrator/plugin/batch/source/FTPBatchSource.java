@@ -50,7 +50,7 @@ public class FTPBatchSource extends FileBatchSource {
   public FTPBatchSource(FTPBatchSourceConfig config) {
     super(new FileBatchConfig(config.referenceName, config.fileRegex, null, config.inputFormatClassName,
                               limitSplits(config.fileSystemProperties), null, Long.MAX_VALUE,
-                              config.ignoreNonExistingFolders, config.recursive, config.path, null, false, null, null));
+                              config.ignoreNonExistingFolders, config.recursive, config.path, null, false, null));
     this.config = config;
   }
 

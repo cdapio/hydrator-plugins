@@ -25,7 +25,6 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
-import co.cask.cdap.api.plugin.EndpointPluginContext;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
@@ -168,8 +167,7 @@ public abstract class AbstractFileBatchSource<T extends FileSourceConfig>
       FileInputFormat.setMaxInputSplitSize(job, config.maxSplitSize);
     }
     if (CombinePathTrackingInputFormat.class.getName().equals(config.inputFormatClass)) {
-      PathTrackingInputFormat.setJob(job);
-      PathTrackingInputFormat.configure(conf, config.pathField, config.filenameOnly, config.format, config.inputSchema);
+      PathTrackingInputFormat.configure(job, conf, config.pathField, config.filenameOnly, config.format, config.schema);
     }
     context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(config.inputFormatClass, conf)));
   }
@@ -208,29 +206,6 @@ public abstract class AbstractFileBatchSource<T extends FileSourceConfig>
       }
     } catch (IOException e) {
       throw new IllegalArgumentException(String.format("Error deleting temporary file. %s.", e.getMessage()), e);
-    }
-  }
-
-  /**
-   * Endpoint method to get the output schema of a query.
-   *
-   * @param request Config for the plugin.
-   * @param pluginContext context to create plugins
-   * @return output schema
-   */
-  @javax.ws.rs.Path("getSchema")
-  public Schema getSchema(SchemaRequest request, EndpointPluginContext pluginContext) {
-    return PathTrackingInputFormat.getTextOutputSchema(request.pathField);
-  }
-
-  /**
-   * Concrete class used to get schema by the UI.
-   */
-  public static class SchemaRequest extends FileSourceConfig {
-
-    @Override
-    protected String getPath() {
-      return null;
     }
   }
 }

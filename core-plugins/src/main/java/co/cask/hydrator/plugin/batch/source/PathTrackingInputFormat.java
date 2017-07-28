@@ -35,7 +35,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.parquet.avro.AvroParquetInputFormat;
-import org.apache.parquet.avro.AvroReadSupport;
+import org.apache.parquet.avro.AvroWriteSupport;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -49,26 +49,28 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
   private static final String PATH_FIELD = "path.tracking.path.field";
   private static final String FILENAME_ONLY = "path.tracking.filename.only";
   private static final String FORMAT = "path.tracking.format";
-  private static final String SCHEMA = "path.tracking.inputSchema";
-  private static final String AVRO_SCHEMA_KEY = "avro.schema.input.key";
-  private static final String PARQUET_SCHEMA_KEY = "parquet.avro.read.schema";
-  private static Job job;
+  private static final String SCHEMA = "path.tracking.schema";
 
   /**
    * Configure the input format to use the specified schema and optional path field.
    */
-  public static void configure(Configuration conf, @Nullable String pathField, boolean filenameOnly,
-                               String format, String schema) {
+  public static void configure(Job job, Configuration conf, @Nullable String pathField, boolean filenameOnly,
+                               String format, @Nullable String schema) {
     if (pathField != null) {
       conf.set(PATH_FIELD, pathField);
     }
     conf.setBoolean(FILENAME_ONLY, filenameOnly);
     conf.set(FORMAT, format);
-    conf.set(SCHEMA, schema);
-  }
-
-  public static void setJob(Job currentJob) {
-    job = currentJob;
+    if (schema != null) {
+      conf.set(SCHEMA, schema);
+    } else if (format.equalsIgnoreCase("text")) {
+      conf.set(SCHEMA, getTextOutputSchema(pathField).toString());
+    }
+    if (format.equalsIgnoreCase("avro")) {
+      AvroJob.setOutputKeySchema(job, new org.apache.avro.Schema.Parser().parse(schema));
+    } else if (format.equalsIgnoreCase("parquet")) {
+      AvroWriteSupport.setSchema(conf, new org.apache.avro.Schema.Parser().parse(schema));
+    }
   }
 
   public static Schema getTextOutputSchema(@Nullable String pathField) {
@@ -96,17 +98,18 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
     String format = context.getConfiguration().get(FORMAT);
     String path = filenameOnly ? fileSplit.getPath().getName() : fileSplit.getPath().toUri().toString();
     String schema = context.getConfiguration().get(SCHEMA);
+    Schema parsedSchema = Schema.parseJson(schema);
     if ("avro".equalsIgnoreCase(format)) {
       RecordReader<AvroKey<GenericRecord>, NullWritable> delegate = (new AvroKeyInputFormat<GenericRecord>())
         .createRecordReader(split, context);
-      return new TrackingAvroRecordReader(delegate, pathField, path, schema, job);
+      return new TrackingAvroRecordReader(delegate, pathField, path, parsedSchema);
     } else if ("parquet".equalsIgnoreCase(format)) {
       RecordReader<Void, GenericRecord> delegate = (new AvroParquetInputFormat<GenericRecord>())
         .createRecordReader(split, context);
-      return new TrackingParquetRecordReader(delegate, pathField, path, schema, job);
+      return new TrackingParquetRecordReader(delegate, pathField, path, parsedSchema);
     } else {
       RecordReader<LongWritable, Text> delegate = (new TextInputFormat()).createRecordReader(split, context);
-      return new TrackingTextRecordReader(delegate, pathField, path);
+      return new TrackingTextRecordReader(delegate, pathField, path, parsedSchema);
     }
   }
 
@@ -165,8 +168,8 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
   private static class TrackingTextRecordReader extends TrackingRecordReader<LongWritable, Text> {
 
     private TrackingTextRecordReader(RecordReader<LongWritable, Text> delegate, @Nullable String pathField,
-                                     String path) {
-      super(delegate, pathField, path, getTextOutputSchema(pathField));
+                                     String path, Schema schema) {
+      super(delegate, pathField, path, schema);
     }
 
     public StructuredRecord getCurrentValue(StructuredRecord.Builder recordBuilder) throws IOException,
@@ -182,13 +185,11 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
 
   private static class TrackingAvroRecordReader extends TrackingRecordReader<AvroKey<GenericRecord>, NullWritable> {
     private static AvroToStructuredTransformer recordTransformer;
-    private Job job;
 
     private TrackingAvroRecordReader(RecordReader<AvroKey<GenericRecord>, NullWritable> delegate,
-                                     @Nullable String pathField, String path, String schema, Job job)
+                                     @Nullable String pathField, String path, Schema schema)
       throws IOException {
-      super(delegate, pathField, path, Schema.parseJson(schema));
-      this.job = job;
+      super(delegate, pathField, path, schema);
     }
 
     @Override
@@ -200,21 +201,16 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
 
     public StructuredRecord getCurrentValue(StructuredRecord.Builder recordBuilder) throws IOException,
       InterruptedException {
-      AvroJob.setOutputKeySchema(job, new org.apache.avro.Schema.Parser().parse(schema.toString()));
-      StructuredRecord ret = recordTransformer.transform(recordBuilder, delegate.getCurrentKey().datum(), schema,
-                                                         pathField);
-      return ret;
+      return recordTransformer.transform(recordBuilder, delegate.getCurrentKey().datum(), schema, pathField);
     }
   }
 
   private static class TrackingParquetRecordReader extends TrackingRecordReader<Void, GenericRecord> {
     private AvroToStructuredTransformer recordTransformer;
-    private Job job;
 
     private TrackingParquetRecordReader(RecordReader<Void, GenericRecord> delegate, @Nullable String pathField,
-                                        String path, String schema, Job job) throws IOException {
-      super(delegate, pathField, path, Schema.parseJson(schema));
-      this.job = job;
+                                        String path, Schema schema) throws IOException {
+      super(delegate, pathField, path, schema);
     }
 
     @Override
@@ -225,10 +221,7 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
 
     public StructuredRecord getCurrentValue(StructuredRecord.Builder recordBuilder) throws IOException,
       InterruptedException {
-      StructuredRecord ret = recordTransformer.transform(recordBuilder, delegate.getCurrentValue(), schema, pathField);
-      AvroReadSupport.setAvroReadSchema(job.getConfiguration(), new org.apache.avro.Schema.Parser().parse
-        (ret.getSchema().toString()));
-      return ret;
+      return recordTransformer.transform(recordBuilder, delegate.getCurrentValue(), schema, pathField);
     }
   }
 }

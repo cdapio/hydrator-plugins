@@ -18,12 +18,12 @@ package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Macro;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import org.apache.avro.Schema;
 
 import java.lang.reflect.Type;
 import java.util.HashMap;
@@ -108,23 +108,19 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
     "URI will be used. Defaults to false.")
   public Boolean filenameOnly;
 
-  @Description("Schema for the source")
-  public String inputSchema;
-
-  // TODO: remove once CDAP-11371 is fixed
-  // This is only here because the UI requires a property otherwise a default schema cannot be set.
   @Nullable
+  @Description("Schema for the source")
   public String schema;
 
   public FileSourceConfig() {
-    this(null, null, null, null, null, null, null, null, null, null, null, null, null);
+    this(null, null, null, null, null, null, null, null, null, null, null, null);
   }
 
   public FileSourceConfig(String referenceName, @Nullable String fileRegex, @Nullable String timeTable,
                           @Nullable String inputFormatClass, @Nullable String fileSystemProperties,
                           @Nullable String format, @Nullable Long maxSplitSize,
                           @Nullable Boolean ignoreNonExistingFolders, @Nullable Boolean recursive,
-                          @Nullable String pathField, @Nullable Boolean fileNameOnly, String inputSchema,
+                          @Nullable String pathField, @Nullable Boolean fileNameOnly,
                           @Nullable String schema) {
     super(referenceName);
     this.fileSystemProperties = fileSystemProperties == null ? GSON.toJson(ImmutableMap.<String, String>of()) :
@@ -135,7 +131,6 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
     this.inputFormatClass = inputFormatClass == null ?
       CombinePathTrackingInputFormat.class.getName() : inputFormatClass;
     this.format = format == null ? "text" : format;
-    this.inputSchema = inputSchema;
     this.maxSplitSize = maxSplitSize == null ? DEFAULT_MAX_SPLIT_SIZE : maxSplitSize;
     this.ignoreNonExistingFolders = ignoreNonExistingFolders == null ? false : ignoreNonExistingFolders;
     this.recursive = recursive == null ? false : recursive;
@@ -154,11 +149,50 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
       (format.equalsIgnoreCase("avro")) || format.equalsIgnoreCase("parquet"))) {
       throw new IllegalArgumentException("Format can only be 'text', 'avro' or 'parquet'");
     }
-    if (!format.equalsIgnoreCase("text")) {
-      try {
-        new Schema.Parser().parse(inputSchema);
-      } catch (Exception e){
-        throw new IllegalArgumentException("Unable to parse schema with error: " + e.getMessage(), e);
+    if (format.equalsIgnoreCase("text") && schema == null) {
+      return;
+    }
+    Schema parsedSchema;
+    try {
+      parsedSchema = Schema.parseJson(schema);
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Unable to parse schema with error: " + e.getMessage(), e);
+    }
+
+    if (format.equalsIgnoreCase("text")) {
+      Schema.Field offsetField = parsedSchema.getField("offset");
+      if (offsetField == null) {
+        throw new IllegalArgumentException("Schema for text format must have a field named 'offset'");
+      }
+      Schema offsetSchema = offsetField.getSchema();
+      Schema.Type offsetType = offsetSchema.isNullable() ? offsetSchema.getNonNullable().getType() :
+        offsetSchema.getType();
+      if (offsetType != Schema.Type.LONG) {
+        throw new IllegalArgumentException("Type of 'offset' field must be 'long', but found " + offsetType);
+      }
+
+      Schema.Field bodyField = parsedSchema.getField("body");
+      if (bodyField == null) {
+        throw new IllegalArgumentException("Schema for text format must have a field named 'body'");
+      }
+      Schema bodySchema = bodyField.getSchema();
+      Schema.Type bodyType = bodySchema.isNullable() ? bodySchema.getNonNullable().getType() : bodySchema.getType();
+      if (bodyType != Schema.Type.STRING) {
+        throw new IllegalArgumentException("Type of 'body' field must be 'string', but found + " + bodyType);
+      }
+    }
+
+    if (pathField != null) {
+      Schema.Field schemaPathField = parsedSchema.getField(pathField);
+      if (schemaPathField == null) {
+        throw new IllegalArgumentException("No value specified for " + pathField);
+      }
+      Schema pathFieldSchema = schemaPathField.getSchema();
+      Schema.Type pathFieldType = pathFieldSchema.isNullable() ? pathFieldSchema.getNonNullable().getType() :
+        pathFieldSchema.getType();
+      if (pathFieldType != Schema.Type.STRING) {
+        throw new IllegalArgumentException("Path field " + pathField + " must be of type 'string', but found " +
+                                           pathFieldType);
       }
     }
   }

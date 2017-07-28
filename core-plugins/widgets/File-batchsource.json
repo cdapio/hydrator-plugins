@@ -59,13 +59,7 @@
         {
           "widget-type": "textbox",
           "label": "Path Field",
-          "name": "pathField",
-          "plugin-function": {
-            "method": "POST",
-            "widget": "outputSchema",
-            "output-property": "schema",
-            "plugin-method": "getSchema"
-          }
+          "name": "pathField"
         },
         {
           "widget-type": "select",
@@ -119,17 +113,20 @@
       "name": "schema",
       "widget-type": "schema",
       "widget-attributes": {
-        "schema-types": [
-          "boolean",
-          "int",
-          "long",
-          "float",
-          "double",
-          "bytes",
-          "string",
-          "map<string, string>"
-        ],
-        "schema-default-type": "string"
+        "default-schema": {
+          "name": "fileRecord",
+          "type": "record",
+          "fields": [
+            {
+              "name": "offset",
+              "type": "long"
+            },
+            {
+              "name": "body",
+              "type": "string"
+            }
+          ]
+        }
       }
     }
   ]

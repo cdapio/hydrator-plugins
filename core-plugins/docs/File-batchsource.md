@@ -82,7 +82,7 @@ configure Hadoop to use more than one mapper:
             "fileRegex": "timefilter",
             "timeTable": "timeTable",
             "format": "text",
-            "inputSchema": "{
+            "schema": "{
                 \"type\":\"file.record\",
                 \"name\":\"webactivity\",
                 \"fields\":[
@@ -93,6 +93,6 @@ configure Hadoop to use more than one mapper:
             }"
             "maxSplitSize": "1048576",
             "ignoreNonExistingFolders": "false",
-            "recursive": "false",
+            "recursive": "false"
         }
     }

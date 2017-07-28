@@ -59,7 +59,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import sun.net.www.content.text.Generic;
 
 import java.io.File;
 import java.text.DateFormat;
@@ -490,7 +489,9 @@ public class FileBatchSourceTest extends HydratorTestBase {
                                         Schema.Field.of("body", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
                                         Schema.Field.of("file", Schema.nullableOf(Schema.of(
                                           Schema.Type.STRING))));
-    ApplicationManager appManager = createSourceAndDeployApp(fileText, "text", outputDatasetName, textSchema);
+
+    String appName = "FileSourceText";
+    ApplicationManager appManager = createSourceAndDeployApp(appName, fileText, "text", outputDatasetName, textSchema);
 
     FileUtils.writeStringToFile(fileText, "Hello,World!");
 
@@ -498,7 +499,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
 
     List<StructuredRecord> expected = ImmutableList.of(
       StructuredRecord.builder(textSchema)
-        .set("offset", (long)0)
+        .set("offset", (long) 0)
         .set("body", "Hello,World!")
         .set("file", fileText.toURI().toString())
         .build()
@@ -515,7 +516,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
     File fileAvro = new File(temporaryFolder.newFolder(), "test.avro");
     String outputDatasetName = "test-filesource-avro";
 
-    ApplicationManager appManager = createSourceAndDeployApp(fileAvro, "avro", outputDatasetName, RECORD_SCHEMA);
+    String appName = "FileSourceAvro";
+    ApplicationManager appManager = createSourceAndDeployApp(appName, fileAvro, "avro", outputDatasetName, RECORD_SCHEMA);
 
     org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(RECORD_SCHEMA.toString());
     GenericRecord record = new GenericRecordBuilder(avroSchema)
@@ -553,7 +555,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
     File fileParquet = new File(temporaryFolder.newFolder(), "test.parquet");
     String outputDatasetName = "test-filesource-parquet";
 
-    ApplicationManager appManager = createSourceAndDeployApp(fileParquet, "parquet", outputDatasetName,
+    String appName = "FileSourceParquet";
+    ApplicationManager appManager = createSourceAndDeployApp(appName, fileParquet, "parquet", outputDatasetName,
                                                              RECORD_SCHEMA);
 
     org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(RECORD_SCHEMA.toString());
@@ -585,8 +588,98 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(expected, output);
   }
 
-  private ApplicationManager createSourceAndDeployApp(File file, String format, String outputDatasetName, Schema schema)
-    throws Exception {
+  @Test
+  public void testFileBatchInputFormatAvroMissingField() throws Exception {
+    File fileAvro = new File(temporaryFolder.newFolder(), "test.avro");
+    String outputDatasetName = "test-filesource-avro-missing-field";
+
+    Schema recordSchemaWithMissingField = Schema.recordOf("record",
+                                                          Schema.Field.of("i", Schema.of(Schema.Type.INT)),
+                                                          Schema.Field.of("file",
+                                                                          Schema.of(Schema.Type.STRING)));
+
+    String appName = "FileSourceAvroMissingField";
+    ApplicationManager appManager = createSourceAndDeployApp(appName, fileAvro, "avro", outputDatasetName,
+                                                             recordSchemaWithMissingField);
+
+    org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(RECORD_SCHEMA.toString());
+    GenericRecord record = new GenericRecordBuilder(avroSchema)
+      .set("i", Integer.MAX_VALUE)
+      .set("l", Long.MAX_VALUE)
+      .set("file", fileAvro.getAbsolutePath())
+      .build();
+
+    DataSetManager<TimePartitionedFileSet> inputManager = getDataset("TestFile");
+
+    DatumWriter<GenericRecord> datumWriter = new GenericDatumWriter<>(avroSchema);
+    DataFileWriter<GenericRecord> dataFileWriter = new DataFileWriter<>(datumWriter);
+    dataFileWriter.create(avroSchema, fileAvro);
+    dataFileWriter.append(record);
+    dataFileWriter.close();
+    inputManager.flush();
+
+    workflowStartAndWait(appManager);
+
+    List<StructuredRecord> expected = ImmutableList.of(
+      StructuredRecord.builder(recordSchemaWithMissingField)
+        .set("i", Integer.MAX_VALUE)
+        .set("file", fileAvro.toURI().toString())
+        .build()
+    );
+
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> output = MockSink.readOutput(outputManager);
+    Assert.assertEquals(output, expected);
+  }
+
+  @Test
+  public void testFileBatchInputFormatParquetMissingField() throws Exception {
+    File fileParquet = new File(temporaryFolder.newFolder(), "test.parquet");
+    String outputDatasetName = "test-filesource-parquet-missing-field";
+
+    Schema recordSchemaWithMissingField = Schema.recordOf("record",
+                                                          Schema.Field.of("i", Schema.of(Schema.Type.INT)),
+                                                          Schema.Field.of("file",
+                                                                          Schema.of(Schema.Type.STRING)));
+
+    String appName = "FileSourceParquetMissingField";
+    ApplicationManager appManager = createSourceAndDeployApp(appName, fileParquet, "parquet", outputDatasetName,
+                                                             recordSchemaWithMissingField);
+
+    org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(RECORD_SCHEMA.toString());
+    GenericRecord record = new GenericRecordBuilder(avroSchema)
+      .set("i", Integer.MAX_VALUE)
+      .set("l", Long.MAX_VALUE)
+      .set("file", fileParquet.getAbsolutePath())
+      .build();
+
+    DataSetManager<TimePartitionedFileSet> inputManager = getDataset("TestFile");
+    ParquetWriter<GenericRecord> parquetWriter = new AvroParquetWriter<>(new Path(fileParquet.getAbsolutePath()),
+                                                                         avroSchema);
+    parquetWriter.write(record);
+    parquetWriter.close();
+    inputManager.flush();
+
+    workflowStartAndWait(appManager);
+
+    List<StructuredRecord> expected = ImmutableList.of(
+      StructuredRecord.builder(recordSchemaWithMissingField)
+        .set("i", Integer.MAX_VALUE)
+        .set("file", fileParquet.toURI().toString())
+        .build()
+    );
+
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> output = MockSink.readOutput(outputManager);
+    Assert.assertEquals(expected, output);
+  }
+
+  private ApplicationManager createSourceAndDeployApp(String appName, File file, String format,
+                                                      String outputDatasetName, Schema schema) throws Exception {
+    String schemaString = null;
+    if (schema != null) {
+      schemaString = schema.toString();
+    }
     ETLStage source = new ETLStage(
       "source", new ETLPlugin("File", BatchSource.PLUGIN_TYPE,
                               ImmutableMap.<String, String>builder()
@@ -596,7 +689,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
                                 .put(Properties.File.FORMAT, format)
                                 .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
                                 .put("pathField", "file")
-                                .put(Properties.File.INPUT_SCHEMA, schema.toString())
+                                .put(Properties.File.SCHEMA, schemaString)
                                 .build(),
                               null));
 
@@ -609,7 +702,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
       .build();
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("FileSource" + format + "Format");
+    ApplicationId appId = NamespaceId.DEFAULT.app(appName);
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     return appManager;
