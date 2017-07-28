@@ -59,7 +59,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import sun.net.www.content.text.Generic;
 
 import java.io.File;
 import java.text.DateFormat;
