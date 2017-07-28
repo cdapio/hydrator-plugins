@@ -93,6 +93,6 @@ configure Hadoop to use more than one mapper:
             }"
             "maxSplitSize": "1048576",
             "ignoreNonExistingFolders": "false",
-            "recursive": "false",
+            "recursive": "false"
         }
     }
