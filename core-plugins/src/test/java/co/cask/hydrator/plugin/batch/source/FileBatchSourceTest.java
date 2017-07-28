@@ -59,6 +59,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import sun.net.www.content.text.Generic;
 
 import java.io.File;
 import java.text.DateFormat;
@@ -84,7 +85,9 @@ public class FileBatchSourceTest extends HydratorTestBase {
     new ArtifactSummary(BATCH_APP_ARTIFACT_ID.getArtifact(), BATCH_APP_ARTIFACT_ID.getVersion());
   private static final Schema RECORD_SCHEMA = Schema.recordOf("record",
                                                               Schema.Field.of("i", Schema.of(Schema.Type.INT)),
-                                                              Schema.Field.of("l", Schema.of(Schema.Type.LONG)));
+                                                              Schema.Field.of("l", Schema.of(Schema.Type.LONG)),
+                                                              Schema.Field.of("file",
+                                                                              Schema.of(Schema.Type.STRING)));
   @ClassRule
   public static TemporaryFolder temporaryFolder = new TemporaryFolder();
   private static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
@@ -479,31 +482,46 @@ public class FileBatchSourceTest extends HydratorTestBase {
 
   @Test
   public void testFileBatchInputFormatText() throws Exception {
-    File fileText = temporaryFolder.newFolder("test2").toPath().resolve(fileName + "-test5.txt").toFile();
-    FileUtils.writeStringToFile(fileText, "Hello,World");
+    File fileText = new File(temporaryFolder.newFolder(), "test.txt");
     String outputDatasetName = "test-filesource-text";
 
-    ApplicationManager appManager = createSourceAndDeployApp(fileText, "text", outputDatasetName);
+    Schema textSchema = Schema.recordOf("file.record",
+                                        Schema.Field.of("offset", Schema.of(Schema.Type.LONG)),
+                                        Schema.Field.of("body", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                                        Schema.Field.of("file", Schema.nullableOf(Schema.of(
+                                          Schema.Type.STRING))));
+    ApplicationManager appManager = createSourceAndDeployApp(fileText, "text", outputDatasetName, textSchema);
+
+    FileUtils.writeStringToFile(fileText, "Hello,World!");
 
     workflowStartAndWait(appManager);
+
+    List<StructuredRecord> expected = ImmutableList.of(
+      StructuredRecord.builder(textSchema)
+        .set("offset", (long)0)
+        .set("body", "Hello,World!")
+        .set("file", fileText.toURI().toString())
+        .build()
+    );
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
 
-    Assert.assertEquals("Hello,World", output.get(0).get("body"));
+    Assert.assertEquals(output, expected);
   }
 
   @Test
   public void testFileBatchInputFormatAvro() throws Exception {
-    File fileAvro = temporaryFolder.newFolder("test2").toPath().resolve(fileName + "-test6.avro").toFile();
+    File fileAvro = new File(temporaryFolder.newFolder(), "test.avro");
     String outputDatasetName = "test-filesource-avro";
 
-    ApplicationManager appManager = createSourceAndDeployApp(fileAvro, "avro", outputDatasetName);
+    ApplicationManager appManager = createSourceAndDeployApp(fileAvro, "avro", outputDatasetName, RECORD_SCHEMA);
 
     org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(RECORD_SCHEMA.toString());
     GenericRecord record = new GenericRecordBuilder(avroSchema)
       .set("i", Integer.MAX_VALUE)
       .set("l", Long.MAX_VALUE)
+      .set("file", fileAvro.getAbsolutePath())
       .build();
 
     DataSetManager<TimePartitionedFileSet> inputManager = getDataset("TestFile");
@@ -521,26 +539,28 @@ public class FileBatchSourceTest extends HydratorTestBase {
       StructuredRecord.builder(RECORD_SCHEMA)
         .set("i", Integer.MAX_VALUE)
         .set("l", Long.MAX_VALUE)
+        .set("file", fileAvro.toURI().toString())
         .build()
     );
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
-    Assert.assertEquals(expected, output);
+    Assert.assertEquals(output, expected);
   }
 
   @Test
   public void testFileBatchInputFormatParquet() throws Exception {
-    File fileParquet = temporaryFolder.newFolder("test2").toPath().resolve(fileName + "-test7.parquet").toFile();
+    File fileParquet = new File(temporaryFolder.newFolder(), "test.parquet");
     String outputDatasetName = "test-filesource-parquet";
 
-    ApplicationManager appManager = createSourceAndDeployApp(fileParquet, "parquet", outputDatasetName);
+    ApplicationManager appManager = createSourceAndDeployApp(fileParquet, "parquet", outputDatasetName,
+                                                             RECORD_SCHEMA);
 
     org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(RECORD_SCHEMA.toString());
     GenericRecord record = new GenericRecordBuilder(avroSchema)
       .set("i", Integer.MAX_VALUE)
       .set("l", Long.MAX_VALUE)
-//      .set("file", fileParquet)
+      .set("file", fileParquet.getAbsolutePath())
       .build();
 
     DataSetManager<TimePartitionedFileSet> inputManager = getDataset("TestFile");
@@ -556,6 +576,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
       StructuredRecord.builder(RECORD_SCHEMA)
         .set("i", Integer.MAX_VALUE)
         .set("l", Long.MAX_VALUE)
+        .set("file", fileParquet.toURI().toString())
         .build()
     );
 
@@ -564,7 +585,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(expected, output);
   }
 
-  private ApplicationManager createSourceAndDeployApp(File file, String format, String outputDatasetName)
+  private ApplicationManager createSourceAndDeployApp(File file, String format, String outputDatasetName, Schema schema)
     throws Exception {
     ETLStage source = new ETLStage(
       "source", new ETLPlugin("File", BatchSource.PLUGIN_TYPE,
@@ -575,6 +596,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
                                 .put(Properties.File.FORMAT, format)
                                 .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
                                 .put("pathField", "file")
+                                .put(Properties.File.INPUT_SCHEMA, schema.toString())
                                 .build(),
                               null));
 

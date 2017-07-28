@@ -49,7 +49,7 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
   private static final String PATH_FIELD = "path.tracking.path.field";
   private static final String FILENAME_ONLY = "path.tracking.filename.only";
   private static final String FORMAT = "path.tracking.format";
-  private static final String SCHEMA = "path.tracking.schema";
+  private static final String SCHEMA = "path.tracking.inputSchema";
   private static final String AVRO_SCHEMA_KEY = "avro.schema.input.key";
   private static final String PARQUET_SCHEMA_KEY = "parquet.avro.read.schema";
   private static Job job;
@@ -160,7 +160,6 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
     public void close() throws IOException {
       delegate.close();
     }
-
   }
 
   private static class TrackingTextRecordReader extends TrackingRecordReader<LongWritable, Text> {
