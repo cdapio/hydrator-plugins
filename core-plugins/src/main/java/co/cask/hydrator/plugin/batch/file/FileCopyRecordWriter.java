@@ -17,14 +17,13 @@
 package co.cask.hydrator.plugin.batch.file;
 
 import co.cask.hydrator.plugin.batch.file.s3.S3FileMetadata;
+import co.cask.hydrator.plugin.batch.file.s3.S3MetadataInputFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.fs.s3a.S3AFileSystem;
-import org.apache.hadoop.fs.s3native.NativeS3FileSystem;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
@@ -34,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -45,17 +45,16 @@ public class FileCopyRecordWriter extends RecordWriter<NullWritable, AbstractFil
   private final String basePath;
   private final boolean enableOverwrite;
   private final boolean preserveOwner;
-  private final boolean fsCache;
   private final int bufferSize;
 
   // buffer size defaults to 1 MB
-  private static final int defaultBufferSize = 2 << 20;
+  public static final int DEFAULT_BUFFER_SIZE = 1 << 20;
   private static final Logger LOG = LoggerFactory.getLogger(FileCopyRecordWriter.class);
 
   // source filesystems
   private Map<String, FileSystem> sourceFilesystemMap;
 
-  public FileCopyRecordWriter(Configuration conf) throws Exception {
+  public FileCopyRecordWriter(Configuration conf) throws IOException {
     // connect to destination filesystem using uri if it is provided
     String uriString;
     if ((uriString = conf.get(FileCopyOutputFormat.FS_HOST_URI, null)) != null) {
@@ -66,22 +65,21 @@ public class FileCopyRecordWriter extends RecordWriter<NullWritable, AbstractFil
     basePath = conf.get(FileCopyOutputFormat.BASE_PATH);
     enableOverwrite = conf.getBoolean(FileCopyOutputFormat.ENABLE_OVERWRITE, false);
     preserveOwner = conf.getBoolean(FileCopyOutputFormat.PRESERVE_OWNER, false);
-    fsCache = conf.getBoolean(FileCopyOutputFormat.FS_CACHE, true);
-    bufferSize = conf.getInt(FileCopyOutputFormat.BUFFER_SIZE, defaultBufferSize);
+    bufferSize = conf.getInt(FileCopyOutputFormat.BUFFER_SIZE, DEFAULT_BUFFER_SIZE);
     sourceFilesystemMap = new HashMap<>();
   }
 
   @Override
   public void write(NullWritable key, AbstractFileMetadata fileMetadata) throws IOException, InterruptedException {
-    // construct file paths for source and destination
-    Path srcPath = new Path(fileMetadata.getFullPath());
-    Path destPath;
-    if (fileMetadata.getBasePath().isEmpty()) {
+
+    if (fileMetadata.getRelativePath().isEmpty()) {
       // nothing to create
       return;
-    } else {
-      destPath = new Path(basePath, fileMetadata.getBasePath());
     }
+
+    // construct file paths for source and destination
+    Path srcPath = new Path(fileMetadata.getFullPath());
+    Path destPath = new Path(basePath, fileMetadata.getRelativePath());
     FsPermission permission = new FsPermission(fileMetadata.getPermission());
 
     // immediately return if we don't want to overwrite and file exists in destination
@@ -92,10 +90,11 @@ public class FileCopyRecordWriter extends RecordWriter<NullWritable, AbstractFil
     // get source database connection
     String uriString = fileMetadata.getHostURI();
     if (!sourceFilesystemMap.containsKey(uriString)) {
-      sourceFilesystemMap.put(uriString, getSourceFilesystemConnection(fileMetadata, fsCache));
+      sourceFilesystemMap.put(uriString, getSourceFilesystemConnection(fileMetadata));
     }
     FileSystem sourceFilesystem = sourceFilesystemMap.get(uriString);
 
+    // do some checks to see if we need to copy the file
     if (fileMetadata.isFolder()) {
       // create an empty folder and return
       if (!destFileSystem.exists(destPath) && sourceFilesystem.isDirectory(srcPath)) {
@@ -121,50 +120,72 @@ public class FileCopyRecordWriter extends RecordWriter<NullWritable, AbstractFil
         outputStream.write(buf, 0, len);
       }
     } finally {
-      if (preserveOwner) {
-        destFileSystem.setOwner(destPath, fileMetadata.getOwner(), fileMetadata.getGroup());
+      // we have to do this to make sure even if one stream fails to close, it
+      // still attempts to close the other stream
+      try {
+        inputStream.close();
+      } finally {
+        outputStream.close();
+        // the owner is set only if the output stream is sucessfully closed
+        if (preserveOwner) {
+          destFileSystem.setOwner(destPath, fileMetadata.getOwner(), fileMetadata.getGroup());
+        }
       }
-      inputStream.close();
-      outputStream.close();
     }
   }
 
   @Override
   public void close(TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
-    /*
-     * TODO: investigate when to close the destination filesystem and the source filesystems
-     * if we use cached connections
-     * We can't close the filesystems here because the filesystem cache is shared across
-     * multiple splits. If one split closes the connection, other splits will fail to transfer.
-     */
-    if (!fsCache) {
+    // attempts to close the other even if one fails
+    try {
       destFileSystem.close();
-      for (Map.Entry<String, FileSystem> fs : sourceFilesystemMap.entrySet()) {
-        fs.getValue().close();
+    } finally {
+      safelyCloseSourceFilesystems(sourceFilesystemMap.entrySet().iterator());
+    }
+  }
+
+  /**
+   * this method attempts to close every filesystem in the list
+   * @param fs The iterator over all the filesystems we wish to close.
+   * @throws IOException
+   */
+  private void safelyCloseSourceFilesystems(Iterator<Map.Entry<String, FileSystem>> fs) throws IOException {
+    if (fs.hasNext()) {
+      try {
+        fs.next().getValue().close();
+      } finally {
+        safelyCloseSourceFilesystems(fs);
       }
     }
   }
 
-  private FileSystem getSourceFilesystemConnection(AbstractFileMetadata metadata, boolean cache)
+  private FileSystem getSourceFilesystemConnection(AbstractFileMetadata metadata)
     throws IOException {
     Configuration conf = new Configuration(false);
     conf.clear();
 
-    // turn filesystem caching off
+    // always disable caching for source filesystem connections
     URI uri = URI.create(metadata.getHostURI());
-
-    // whether or not to disable caching for source filesystems
     String disableCacheName = String.format("fs.%s.impl.disable.cache", uri.getScheme());
-    conf.set(disableCacheName, String.valueOf(!cache));
+    conf.set(disableCacheName, String.valueOf(true));
 
-    switch (metadata.getFilesystem()) {
-      case S3FileMetadata.FILESYSTEM_NAME :
-        S3FileMetadata s3FileMetadata = (S3FileMetadata) metadata;
-        conf.set("fs.s3a.access.key", s3FileMetadata.getAccessKeyId());
-        conf.set("fs.s3a.secret.key", s3FileMetadata.getSecretKeyId());
-        conf.set("fs.s3a.impl", S3AFileSystem.class.getName());
-        return NativeS3FileSystem.get(uri, conf);
+    switch (uri.getScheme()) {
+      case "s3a":
+        S3FileMetadata s3aFileMetadata = (S3FileMetadata) metadata;
+        S3MetadataInputFormat.setS3aAccessKeyId(conf, s3aFileMetadata.getAccessKeyId());
+        S3MetadataInputFormat.setS3aSecretKeyId(conf, s3aFileMetadata.getSecretKeyId());
+        S3MetadataInputFormat.setS3aFsClass(conf);
+        break;
+      case "s3n":
+        S3FileMetadata s3nFileMetadata = (S3FileMetadata) metadata;
+        S3MetadataInputFormat.setS3nAccessKeyId(conf, s3nFileMetadata.getAccessKeyId());
+        S3MetadataInputFormat.setS3nSecretKeyId(conf, s3nFileMetadata.getSecretKeyId());
+        S3MetadataInputFormat.setS3nFsClass(conf);
+        break;
+      default:
+        throw new IOException(uri.getScheme() + " is not supported.");
     }
-    return null;
+
+    return FileSystem.get(uri, conf);
   }
 }

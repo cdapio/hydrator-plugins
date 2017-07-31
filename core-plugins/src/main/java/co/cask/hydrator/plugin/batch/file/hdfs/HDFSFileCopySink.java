@@ -45,9 +45,9 @@ public class HDFSFileCopySink extends AbstractFileCopySink {
    * Configurations required for connecting to HDFS.
    */
   public class HDFSFileCopySinkConfig extends AbstractFileCopySinkConfig {
-    public HDFSFileCopySinkConfig(String name, String basePath, Boolean enableOverwrite, Boolean filesystemCaching,
+    public HDFSFileCopySinkConfig(String name, String basePath, Boolean enableOverwrite,
                                   Boolean preserveFileOwner, @Nullable Integer bufferSize) {
-      super(name, basePath, enableOverwrite, filesystemCaching, preserveFileOwner, bufferSize);
+      super(name, basePath, enableOverwrite, preserveFileOwner, bufferSize);
     }
 
     @Override

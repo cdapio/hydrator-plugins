@@ -39,7 +39,7 @@ A structured record with the following schema is emitted for each file it reads.
 | **group**              | String | The group that the of the file belongs to.                                                                                                     |
 | **owner**              | String | The owner of the file.                                                                                                                         |
 | **isFolder**           | Boolean| Whether or not the file is a folder.                                                                                                           |
-| **basePath**           | String | The base path of the file. This path will be appended to the base path specified in the FileCopySink to create the file in the destination.    |
+| **relativePath**       | String | The relavite path is constructed by deleting the portion of the source path that comes before the last path separator ("/") from the full path.|
 | **filesystem**         | String | Contains the string "amazons3". Used to identify the type of filesystem this record originated from.                                           |
 | **permission**         | int    | The file's access permission                                                                                                                   |
 | **accessKeyID**        | String | Access Key ID for the source Filesystem.                                                                                                       |

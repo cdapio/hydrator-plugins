@@ -41,20 +41,8 @@
           }
         },
         {
-          "widget-type": "select",
-          "label": "Enable Filesystem Connection Caching",
-          "name": "filesystemCaching",
-          "widget-attributes": {
-            "values": [
-              "true",
-              "false"
-            ],
-            "default": "true"
-          }
-        },
-        {
           "widget-type": "textbox",
-          "label": "Buffer Size",
+          "label": "Buffer Size (MB)",
           "name": "bufferSize",
           "default": "4096"
         }

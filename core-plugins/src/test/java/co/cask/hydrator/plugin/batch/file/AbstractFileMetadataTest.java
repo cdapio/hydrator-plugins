@@ -36,7 +36,7 @@ public class AbstractFileMetadataTest {
     S3FileMetadata metadata = new S3FileMetadata(fileStatus, sourcePath, null, null, null);
     Assert.assertEquals(metadata.getFileName(), "123.txt");
     Assert.assertEquals(metadata.getFullPath(), "s3a://abc.def.bucket/source/path/directory/123.txt");
-    Assert.assertEquals(metadata.getBasePath(), "directory/123.txt");
+    Assert.assertEquals(metadata.getRelativePath(), "directory/123.txt");
     Assert.assertEquals(metadata.getHostURI(), "s3a://abc.def.bucket");
 
     // Copy a file that is part of a whole directory copy without including the directory
@@ -44,42 +44,18 @@ public class AbstractFileMetadataTest {
     metadata = new S3FileMetadata(fileStatus, sourcePath, null, null, null);
     Assert.assertEquals(metadata.getFileName(), "123.txt");
     Assert.assertEquals(metadata.getFullPath(), "s3a://abc.def.bucket/source/path/directory/123.txt");
-    Assert.assertEquals(metadata.getBasePath(), "directory/123.txt");
+    Assert.assertEquals(metadata.getRelativePath(), "directory/123.txt");
     Assert.assertEquals(metadata.getHostURI(), "s3a://abc.def.bucket");
-
-    // Copy a single file
-    sourcePath = "";
-    metadata = new S3FileMetadata(fileStatus, sourcePath, null, null, null);
-    Assert.assertEquals(metadata.getFileName(), "123.txt");
-    Assert.assertEquals(metadata.getFullPath(), "s3a://abc.def.bucket/source/path/directory/123.txt");
-    Assert.assertEquals(metadata.getBasePath(), "123.txt");
-    Assert.assertEquals(metadata.getHostURI(), "s3a://abc.def.bucket");
-
-    // more tests with single directory copy
-    fileStatus.setPath(new Path("s3a://abc.def.bucket/redshift/"));
-    sourcePath = "/redshift/";
-    metadata = new S3FileMetadata(fileStatus, sourcePath, null, null, null);
-    Assert.assertEquals(metadata.getBasePath().isEmpty(), true);
-
-    fileStatus.setPath(new Path("s3a://abc.def.bucket/redshift"));
-    sourcePath = "/redshift/";
-    metadata = new S3FileMetadata(fileStatus, sourcePath, null, null, null);
-    Assert.assertEquals(metadata.getBasePath().isEmpty(), true);
 
     fileStatus.setPath(new Path("s3a://abc.def.bucket/"));
     sourcePath = "/";
     metadata = new S3FileMetadata(fileStatus, sourcePath, null, null, null);
-    Assert.assertEquals(metadata.getBasePath().isEmpty(), true);
-
-    fileStatus.setPath(new Path("s3a://abc.def.bucket"));
-    sourcePath = "/";
-    metadata = new S3FileMetadata(fileStatus, sourcePath, null, null, null);
-    Assert.assertEquals(metadata.getBasePath().isEmpty(), true);
+    Assert.assertEquals(metadata.getRelativePath().isEmpty(), true);
 
     fileStatus.setPath(new Path("s3a://abc.def.bucket/abc.txt"));
     sourcePath = "/";
     metadata = new S3FileMetadata(fileStatus, sourcePath, null, null, null);
-    Assert.assertEquals(metadata.getBasePath(), "abc.txt");
+    Assert.assertEquals(metadata.getRelativePath(), "abc.txt");
   }
 
   @Test

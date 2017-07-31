@@ -22,6 +22,7 @@ import co.cask.hydrator.plugin.batch.file.AbstractMetadataInputSplit;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.s3a.S3AFileSystem;
+import org.apache.hadoop.fs.s3native.NativeS3FileSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,27 +34,46 @@ import java.io.IOException;
  */
 public class S3MetadataInputFormat extends AbstractMetadataInputFormat {
 
-  private static final String ACCESS_KEY_ID = "fs.s3a.access.key";
-  private static final String SECRET_KEY_ID = "fs.s3a.secret.key";
-  private static final String FS_CLASS = "fs.s3a.impl";
-  private static final String REGION = "amazons3.region";
-  private static final Logger LOG = LoggerFactory.getLogger(S3MetadataInputFormat.class);
+  // configs for s3a
+  public static final String S3A_ACCESS_KEY_ID = "fs.s3a.access.key";
+  public static final String S3A_SECRET_KEY_ID = "fs.s3a.secret.key";
+  public static final String S3A_FS_CLASS = "fs.s3a.impl";
+
+  // configs for s3n
+  public static final String S3N_ACCESS_KEY_ID = "fs.s3n.awsAccessKeyId";
+  public static final String S3N_SECRET_KEY_ID = "fs.s3n.awsSecretAccessKey";
+  public static final String S3N_FS_CLASS = "fs.s3n.impl";
+
+  public static final String REGION = "amazons3.region";
+  public static final Logger LOG = LoggerFactory.getLogger(S3MetadataInputFormat.class);
 
 
-  public static void setAccessKeyId(Configuration conf, String value) {
-    conf.set(ACCESS_KEY_ID, value);
+  public static void setS3aAccessKeyId(Configuration conf, String value) {
+    conf.set(S3A_ACCESS_KEY_ID, value);
   }
 
-  public static void setSecretKeyId(Configuration conf, String value) {
-    conf.set(SECRET_KEY_ID, value);
+  public static void setS3aSecretKeyId(Configuration conf, String value) {
+    conf.set(S3A_SECRET_KEY_ID, value);
+  }
+
+  public static void setS3aFsClass(Configuration conf) {
+    conf.set(S3A_FS_CLASS, S3AFileSystem.class.getName());
+  }
+
+  public static void setS3nAccessKeyId(Configuration conf, String value) {
+    conf.set(S3N_ACCESS_KEY_ID, value);
+  }
+
+  public static void setS3nSecretKeyId(Configuration conf, String value) {
+    conf.set(S3N_SECRET_KEY_ID, value);
+  }
+
+  public static void setS3nFsClass(Configuration conf) {
+    conf.set(S3N_FS_CLASS, NativeS3FileSystem.class.getName());
   }
 
   public static void setRegion(Configuration conf, String value) {
     conf.set(REGION, value);
-  }
-
-  public static void setFsClass(Configuration conf) {
-    conf.set(FS_CLASS, S3AFileSystem.class.getName());
   }
 
   @Override
@@ -62,9 +82,17 @@ public class S3MetadataInputFormat extends AbstractMetadataInputFormat {
   }
 
   @Override
-  protected AbstractFileMetadata getFileMetaData(FileStatus fileStatus, String sourcePath, Configuration conf)
+  protected AbstractFileMetadata getFileMetadata(FileStatus fileStatus, String sourcePath, Configuration conf)
     throws IOException {
-    return new S3FileMetadata(fileStatus, sourcePath,
-                              conf.get(ACCESS_KEY_ID), conf.get(SECRET_KEY_ID), conf.get(REGION));
+    switch (fileStatus.getPath().toUri().getScheme()) {
+      case "s3a":
+        return new S3FileMetadata(fileStatus, sourcePath,
+                                  conf.get(S3A_ACCESS_KEY_ID), conf.get(S3A_SECRET_KEY_ID), conf.get(REGION));
+      case "s3n":
+        return new S3FileMetadata(fileStatus, sourcePath,
+                                  conf.get(S3N_ACCESS_KEY_ID), conf.get(S3N_SECRET_KEY_ID), conf.get(REGION));
+      default:
+        throw new IOException("Scheme must be either s3a or s3n.");
+    }
   }
 }

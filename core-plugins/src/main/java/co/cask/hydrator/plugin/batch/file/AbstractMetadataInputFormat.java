@@ -64,27 +64,19 @@ public abstract class AbstractMetadataInputFormat<KEY, VALUE> extends InputForma
     Configuration conf = jobContext.getConfiguration();
     URI uri = URI.create(conf.get(FS_URI));
     String[] sourcePaths = conf.get(SOURCE_PATHS).split(",");
-    boolean recursiveCopy = conf.getBoolean(RECURSIVE_COPY, true);
+    boolean recursive = conf.getBoolean(RECURSIVE_COPY, true);
     FileSystem fileSystem = FileSystem.get(uri, conf);
     int maxSplitSize = conf.getInt(MAX_SPLIT_SIZE, DEFAULT_MAX_SPLIT_SIZE);
 
+    // scan the directories specified by the user
     List<AbstractFileMetadata> fileMetaDataList = new ArrayList<>();
-    try {
-      for (String prefix : sourcePaths) {
-        FileStatus fileStatus = fileSystem.getFileStatus(new Path(prefix));
-        if (fileStatus.isFile()) {
-          prefix = "";
-        }
-        recursivelyAddFileStatus(fileMetaDataList, prefix, fileStatus, recursiveCopy, fileSystem, conf);
-      }
-    } catch (FileNotFoundException e) {
-      LOG.warn(e.getMessage());
-    } finally {
-      fileSystem.close();
+    for (String prefix : sourcePaths) {
+      recursivelyAddFileStatus(fileMetaDataList, prefix, new Path(prefix), recursive, fileSystem, conf);
     }
 
-    // sort fileMetadataList such that total number of bytes can be more evenly distributed
+    // sort fileMetadataList in descending order such that total number of bytes can be more evenly distributed
     Collections.sort(fileMetaDataList);
+    Collections.reverse(fileMetaDataList);
 
     // compute number of splits and instantiate the splits
     int numSplits = (fileMetaDataList.size() - 1) / maxSplitSize + 1;
@@ -107,7 +99,7 @@ public abstract class AbstractMetadataInputFormat<KEY, VALUE> extends InputForma
       }
     }
 
-    // cast from AbstractMetadataInputSplit to InputSplit
+    // add the rest of the splits still on the PriorityQueue into the return list
     inputSplits.addAll(abstractInputSplits);
 
     return inputSplits;
@@ -122,22 +114,39 @@ public abstract class AbstractMetadataInputFormat<KEY, VALUE> extends InputForma
     return recordReader;
   }
 
+  /**
+   * Because the existing Filesystem.listFiles(Path, Boolean) doesn't list empty directories, we
+   * added our own method to recrusively traverse the file directories. If the path doesn't exist
+   * in the source filesystem, it logs a warning and skips the path.
+   * @param fileMetadataList The list that contains all the files under fileStatus.getPath
+   * @param prefix The user-set path that was used to get this group of files
+   * @param path The path of the file that will be inserted into fileMetadataList.
+   * @param recursive Whether or not to recursively scan the directories.
+   * @param filesystem The filesystem that contains the files.
+   * @param conf The configuration that contains credential information needed to connect to the filesystem.
+   * @throws IOException
+   */
   private void recursivelyAddFileStatus(List<AbstractFileMetadata> fileMetadataList,
-                                         String prefix, FileStatus fileStatus, Boolean enable,
-                                         FileSystem fileSystem, Configuration conf) throws IOException {
-    fileMetadataList.add(getFileMetaData(fileStatus, prefix, conf));
-    if (enable && fileStatus.isDirectory()) {
-      RemoteIterator<LocatedFileStatus> iter = fileSystem.listLocatedStatus(fileStatus.getPath());
+                                         String prefix, Path path, Boolean recursive,
+                                         FileSystem filesystem, Configuration conf) throws IOException {
+    try {
+      RemoteIterator<LocatedFileStatus> iter = filesystem.listLocatedStatus(path);
       while (iter.hasNext()) {
-        LocatedFileStatus fStatus = iter.next();
-        recursivelyAddFileStatus(fileMetadataList, prefix, fStatus, enable, fileSystem, conf);
+        LocatedFileStatus fileStatus = iter.next();
+        fileMetadataList.add(getFileMetadata(fileStatus, prefix, conf));
+        if (fileStatus.isDirectory() && recursive) {
+          recursivelyAddFileStatus(fileMetadataList, prefix, fileStatus.getPath(), recursive, filesystem, conf);
+        }
       }
+    } catch (FileNotFoundException e) {
+      // log a warning and skip if the path doesn't exist
+      LOG.warn(e.getMessage());
     }
   }
 
   protected abstract AbstractMetadataInputSplit getInputSplit();
 
-  protected abstract AbstractFileMetadata getFileMetaData(FileStatus fileStatus, String sourcePath, Configuration conf)
+  protected abstract AbstractFileMetadata getFileMetadata(FileStatus fileStatus, String sourcePath, Configuration conf)
     throws IOException;
 
   public static void setSourcePaths(Configuration conf, String value) {

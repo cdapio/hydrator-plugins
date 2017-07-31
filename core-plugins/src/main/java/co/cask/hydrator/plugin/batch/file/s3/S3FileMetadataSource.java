@@ -37,6 +37,7 @@ import org.apache.hadoop.mapreduce.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import javax.annotation.Nullable;
 
 /**
@@ -62,12 +63,21 @@ public class S3FileMetadataSource extends AbstractFileMetadataSource<S3FileMetad
 
     S3MetadataInputFormat.setSourcePaths(conf, config.sourcePaths);
     S3MetadataInputFormat.setMaxSplitSize(conf, config.maxSplitSize);
-    S3MetadataInputFormat.setAccessKeyId(conf, config.accessKeyId);
     S3MetadataInputFormat.setRecursiveCopy(conf, config.recursiveCopy.toString());
-    S3MetadataInputFormat.setSecretKeyId(conf, config.secretKeyId);
     S3MetadataInputFormat.setRegion(conf, config.region);
     S3MetadataInputFormat.setURI(conf, config.filesystemURI);
-    S3MetadataInputFormat.setFsClass(conf);
+
+    if (config.filesystemURI.startsWith("s3a")) {
+      S3MetadataInputFormat.setS3aAccessKeyId(conf, config.accessKeyId);
+      S3MetadataInputFormat.setS3aSecretKeyId(conf, config.secretKeyId);
+      S3MetadataInputFormat.setS3aFsClass(conf);
+    } else if (config.filesystemURI.startsWith("s3n")) {
+      S3MetadataInputFormat.setS3nAccessKeyId(conf, config.accessKeyId);
+      S3MetadataInputFormat.setS3nSecretKeyId(conf, config.secretKeyId);
+      S3MetadataInputFormat.setS3nFsClass(conf);
+    } else {
+      throw new IllegalArgumentException("Scheme must be either s3a or s3n.");
+    }
 
     context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(S3MetadataInputFormat.class, conf)));
   }
@@ -113,8 +123,9 @@ public class S3FileMetadataSource extends AbstractFileMetadataSource<S3FileMetad
     public void validate() {
       super.validate();
       if (!this.containsMacro("filesystemURI")) {
-        if (!filesystemURI.startsWith("s3a://")) {
-          throw new IllegalArgumentException("URI for S3 source must start with s3a://");
+        URI fsUri = URI.create(filesystemURI);
+        if (!fsUri.getScheme().equals("s3a") && !fsUri.getScheme().equals("s3n")) {
+          throw new IllegalArgumentException("URI scheme for S3 source must be s3a or s3n");
         }
       }
     }

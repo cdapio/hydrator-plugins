@@ -20,7 +20,6 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.WritableComparable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +35,7 @@ import java.util.List;
  * Abstract class that contains file metadata fields.
  * Extend from this class to add credentials specific to different filesystems.
  */
-public abstract class AbstractFileMetadata implements WritableComparable {
+public abstract class AbstractFileMetadata implements Comparable {
 
   public static final String FILE_NAME = "fileName";
   public static final String FILE_SIZE = "fileSize";
@@ -45,9 +44,8 @@ public abstract class AbstractFileMetadata implements WritableComparable {
   public static final String GROUP = "group";
   public static final String FULL_PATH = "fullPath";
   public static final String IS_FOLDER = "isFolder";
-  public static final String BASE_PATH = "basePath";
+  public static final String RELATIVE_PATH = "relativePath";
   public static final String PERMISSION = "permission";
-  public static final String FILESYSTEM = "filesystem";
   public static final String HOST_URI = "hostURI";
 
   public static final Schema DEFAULT_SCHEMA = Schema.recordOf(
@@ -59,9 +57,8 @@ public abstract class AbstractFileMetadata implements WritableComparable {
     Schema.Field.of(GROUP, Schema.of(Schema.Type.LONG)),
     Schema.Field.of(OWNER, Schema.of(Schema.Type.STRING)),
     Schema.Field.of(IS_FOLDER, Schema.of(Schema.Type.BOOLEAN)),
-    Schema.Field.of(BASE_PATH, Schema.of(Schema.Type.STRING)),
+    Schema.Field.of(RELATIVE_PATH, Schema.of(Schema.Type.STRING)),
     Schema.Field.of(PERMISSION, Schema.of(Schema.Type.INT)),
-    Schema.Field.of(FILESYSTEM, Schema.of(Schema.Type.STRING)),
     Schema.Field.of(HOST_URI, Schema.of(Schema.Type.STRING))
   );
 
@@ -88,20 +85,19 @@ public abstract class AbstractFileMetadata implements WritableComparable {
   private final boolean isFolder;
 
   /*
-   * the base path that will be appended to the path the sink is writing to
+   * The relavite path is constructed by deleting the portion of the source
+   * path that comes before the last path separator ("/") from the full path.
+   * It is assumed here that the source path is always a prefix of the full
+   * path.
+   *
    * For example, given full path http://example.com/foo/bar/baz/index.html
    *              and source path /foo/bar
-   *              the base path will be bar/baz/index.html
-   * Also note if the source path is an empty string, the base path will default to file name (index.html)
-   * in the case above
+   *              the relative path will be bar/baz/index.html
    */
-  private final String basePath;
+  private final String relativePath;
 
   // file permission, encoded in short
   private final short permission;
-
-  // AbstractCredentials needed to connect to the filesystem that contains this file
-  private final String filesystem;
 
   /*
    * URI for the Filesystem
@@ -113,55 +109,27 @@ public abstract class AbstractFileMetadata implements WritableComparable {
 
   protected AbstractFileMetadata(FileStatus fileStatus, String sourcePath) throws IOException {
     fileName = fileStatus.getPath().getName();
-    fullPath = fileStatus.getPath().toString();
+    fullPath = fileStatus.getPath().toUri().getPath();
     isFolder = fileStatus.isDirectory();
     modificationTime = fileStatus.getModificationTime();
     owner = fileStatus.getOwner();
     group = fileStatus.getGroup();
     fileSize = fileStatus.getLen();
-    filesystem = getFSName();
     permission = fileStatus.getPermission().toShort();
+
+    // check if sourcePath is a valid prefix of fullPath
+    if (fullPath.startsWith(sourcePath)) {
+      relativePath = fullPath.substring(sourcePath.lastIndexOf(Path.SEPARATOR) + 1);
+    } else {
+      throw new IOException("sourcePath should be a valid prefix of fullPath");
+    }
+
+    // construct host URI given the full path from filestatus
     try {
       hostURI = new URI(fileStatus.getPath().toUri().getScheme(), fileStatus.getPath().toUri().getHost(), null, null)
         .toString();
     } catch (URISyntaxException e) {
       throw new IOException(e.getMessage());
-    }
-
-    String pathSeparator = String.valueOf(Path.SEPARATOR_CHAR);
-    // TODO: investigate how to cleanly set basePath
-    if (sourcePath.isEmpty()) {
-      basePath = this.fileName;
-    } else {
-      /*
-       * this block of code calculates how many path components (separated by "/")
-       * should be dropped from the full path prefix
-       */
-      int numSourcePaths = sourcePath.split(pathSeparator).length;
-      int numStrip;
-      if (sourcePath.equals(String.valueOf(pathSeparator))) {
-        numStrip = 1;
-      } else if (sourcePath.endsWith(pathSeparator)) {
-        numStrip = numSourcePaths;
-      } else {
-        numStrip = numSourcePaths - 1;
-      }
-
-      /*
-       * this block of code drops the host name and reconstructs basePath by
-       * concatenating the folders with "/"
-       */
-      String pathWithoutHostName = fullPath.substring(hostURI.length());
-      String[] pathComponents = pathWithoutHostName.split(pathSeparator);
-      if (numStrip >= pathComponents.length) {
-        basePath = "";
-      } else {
-        Path tempBasePath = new Path(pathComponents[numStrip]);
-        for (int i = numStrip + 1; i < pathComponents.length; i++) {
-          tempBasePath = new Path(tempBasePath, pathComponents[i]);
-        }
-        basePath = tempBasePath.toString();
-      }
     }
   }
 
@@ -173,9 +141,8 @@ public abstract class AbstractFileMetadata implements WritableComparable {
     this.owner = record.get(OWNER);
     this.fileSize = record.get(FILE_SIZE);
     this.isFolder = record.get(IS_FOLDER);
-    this.basePath = record.get(BASE_PATH);
+    this.relativePath = record.get(RELATIVE_PATH);
     this.permission = record.get(PERMISSION);
-    this.filesystem = getFSName();
     this.hostURI = record.get(HOST_URI);
   }
 
@@ -191,9 +158,8 @@ public abstract class AbstractFileMetadata implements WritableComparable {
     this.owner = dataInput.readUTF();
     this.fileSize = dataInput.readLong();
     this.isFolder = dataInput.readBoolean();
-    this.basePath = dataInput.readUTF();
+    this.relativePath = dataInput.readUTF();
     this.permission = dataInput.readShort();
-    this.filesystem = dataInput.readUTF();
     this.hostURI = dataInput.readUTF();
   }
 
@@ -225,8 +191,8 @@ public abstract class AbstractFileMetadata implements WritableComparable {
     return isFolder;
   }
 
-  public String getBasePath() {
-    return basePath;
+  public String getRelativePath() {
+    return relativePath;
   }
 
   public short getPermission() {
@@ -235,10 +201,6 @@ public abstract class AbstractFileMetadata implements WritableComparable {
 
   public String getHostURI() {
     return hostURI;
-  }
-
-  public String getFilesystem() {
-    return filesystem;
   }
 
   /**
@@ -260,7 +222,7 @@ public abstract class AbstractFileMetadata implements WritableComparable {
       .set(GROUP, group)
       .set(OWNER, owner)
       .set(IS_FOLDER, isFolder)
-      .set(BASE_PATH, basePath)
+      .set(RELATIVE_PATH, relativePath)
       .set(PERMISSION, permission)
       .set(HOST_URI, hostURI);
     addCredentialsToBuilder(outputBuilder);
@@ -273,7 +235,6 @@ public abstract class AbstractFileMetadata implements WritableComparable {
     return Long.compare(fileSize, ((AbstractFileMetadata) o).getFileSize());
   }
 
-  @Override
   public void write(DataOutput dataOutput) throws IOException {
     dataOutput.writeUTF(getFileName());
     dataOutput.writeUTF(getFullPath());
@@ -282,21 +243,9 @@ public abstract class AbstractFileMetadata implements WritableComparable {
     dataOutput.writeUTF(getOwner());
     dataOutput.writeLong(getFileSize());
     dataOutput.writeBoolean(isFolder());
-    dataOutput.writeUTF(getBasePath());
+    dataOutput.writeUTF(getRelativePath());
     dataOutput.writeShort(getPermission());
-    dataOutput.writeUTF(getFilesystem());
     dataOutput.writeUTF(getHostURI());
-  }
-
-  /**
-   * Don't use this to deserialize AbstractFileMetadata. Use the constructor
-   * that takes DataInput as an input instead.
-   * @param dataInput
-   * @throws IOException
-   */
-  @Override
-  @Deprecated
-  public void readFields(DataInput dataInput) throws IOException {
   }
 
   /**
@@ -305,6 +254,4 @@ public abstract class AbstractFileMetadata implements WritableComparable {
   protected abstract Schema getCredentialSchema();
 
   protected abstract void addCredentialsToBuilder(StructuredRecord.Builder builder);
-
-  protected abstract String getFSName();
 }

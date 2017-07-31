@@ -32,15 +32,21 @@ import java.util.List;
  * Contains a list of fileMetadata that is assigned to the specific split.
  */
 public abstract class AbstractMetadataInputSplit extends InputSplit implements Writable, Comparable {
-  protected List<AbstractFileMetadata> fileMetaDataList;
+  private List<AbstractFileMetadata> fileMetaDataList;
   private static final Logger LOG = LoggerFactory.getLogger(AbstractMetadataInputSplit.class);
+  private long totalBytes;
 
   public AbstractMetadataInputSplit(List<AbstractFileMetadata> fileMetaDataList) {
     this.fileMetaDataList = fileMetaDataList;
+    this.totalBytes = 0;
+    for (AbstractFileMetadata fileMetaData : fileMetaDataList) {
+      this.totalBytes += fileMetaData.getFileSize();
+    }
   }
 
   public AbstractMetadataInputSplit() {
     this.fileMetaDataList = new ArrayList<>();
+    this.totalBytes = 0;
   }
 
   public List<AbstractFileMetadata> getFileMetaDataList() {
@@ -50,15 +56,17 @@ public abstract class AbstractMetadataInputSplit extends InputSplit implements W
   @Override
   public void write(DataOutput dataOutput) throws IOException {
     try {
-      // write obj summaries
+      // write number of files
       dataOutput.writeLong(this.getLength());
+
+      // write total number of file bytes
+      dataOutput.writeLong(this.getTotalBytes());
+
       for (AbstractFileMetadata fileMetaData : fileMetaDataList) {
         // convert each filestatus (serializable) to byte array
         fileMetaData.write(dataOutput);
       }
 
-    } catch (IOException e) {
-      throw new IOException(e);
     } catch (InterruptedException interruptedException) {
       throw new IOException("Failed to get length for InputSplit");
     }
@@ -66,25 +74,35 @@ public abstract class AbstractMetadataInputSplit extends InputSplit implements W
 
   @Override
   public void readFields(DataInput dataInput) throws IOException {
+    // read number of files
     long numObjects = dataInput.readLong();
+
+    // get total number of bytes
+    totalBytes = dataInput.readLong();
+
     fileMetaDataList = new ArrayList<>();
     for (long i = 0; i < numObjects; i++) {
-      fileMetaDataList.add(readFileMetaData(dataInput));
+      AbstractFileMetadata metadata = readFileMetaData(dataInput);
+      fileMetaDataList.add(metadata);
+      totalBytes += metadata.getFileSize();
     }
   }
 
+  /**
+   * @return the number of files in this split
+   * @throws IOException
+   * @throws InterruptedException
+   */
   @Override
   public long getLength() throws IOException, InterruptedException {
     return fileMetaDataList.size();
   }
 
-  public long getTotalSize() {
-    long size = 0;
-    for (AbstractFileMetadata fileMetaData : fileMetaDataList) {
-      size += fileMetaData.getFileSize();
-    }
-
-    return size;
+  /**
+   * @return the total number of file bytes in this split
+   */
+  public long getTotalBytes() {
+    return this.totalBytes;
   }
 
   @Override
@@ -94,11 +112,15 @@ public abstract class AbstractMetadataInputSplit extends InputSplit implements W
 
   public void addFileMetadata(AbstractFileMetadata fileMetaData) {
     fileMetaDataList.add(fileMetaData);
+    totalBytes += fileMetaData.getFileSize();
   }
 
   @Override
+  /**
+   * Compares the total number of bytes contained in the split
+   */
   public int compareTo(Object o) {
-    return Long.compare(getTotalSize(), ((AbstractMetadataInputSplit) o).getTotalSize());
+    return Long.compare(getTotalBytes(), ((AbstractMetadataInputSplit) o).getTotalBytes());
   }
 
   protected abstract AbstractFileMetadata readFileMetaData(DataInput dataInput) throws IOException;

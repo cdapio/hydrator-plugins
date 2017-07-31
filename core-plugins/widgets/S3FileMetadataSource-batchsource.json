@@ -113,16 +113,12 @@
             "type": "boolean"
           },
           {
-            "name": "basePath",
+            "name": "relativePath",
             "type": "string"
           },
           {
             "name": "permission",
             "type": "int"
-          },
-          {
-            "name": "filesystem",
-            "type": "string"
           },
           {
             "name": "hostURI",

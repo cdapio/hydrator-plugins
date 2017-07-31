@@ -33,13 +33,11 @@ import java.io.IOException;
  */
 public class S3FileMetadata extends AbstractFileMetadata {
 
-  public static final String FILESYSTEM_NAME = "amazons3";
   public static final String ACCESS_KEY_ID = "accessKeyID";
   public static final String SECRET_KEY_ID = "secretKeyID";
   public static final String REGION = "region";
   public static final Schema CREDENTIAL_SCHEMA = Schema.recordOf(
     "metadata",
-    Schema.Field.of(FILESYSTEM, Schema.of(Schema.Type.STRING)),
     Schema.Field.of(ACCESS_KEY_ID, Schema.of(Schema.Type.STRING)),
     Schema.Field.of(SECRET_KEY_ID, Schema.of(Schema.Type.STRING)),
     Schema.Field.of(REGION, Schema.of(Schema.Type.STRING))
@@ -93,7 +91,6 @@ public class S3FileMetadata extends AbstractFileMetadata {
   @Override
   protected void addCredentialsToBuilder(StructuredRecord.Builder builder) {
     builder
-      .set(FILESYSTEM, FILESYSTEM_NAME)
       .set(ACCESS_KEY_ID, accessKeyId)
       .set(SECRET_KEY_ID, secretKeyId)
       .set(REGION, region);
@@ -105,10 +102,5 @@ public class S3FileMetadata extends AbstractFileMetadata {
     dataOutput.writeUTF(accessKeyId);
     dataOutput.writeUTF(secretKeyId);
     dataOutput.writeUTF(region);
-  }
-
-  @Override
-  protected String getFSName() {
-    return FILESYSTEM_NAME;
   }
 }
