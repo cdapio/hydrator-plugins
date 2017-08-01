@@ -35,7 +35,7 @@ This sink plugin only reads StructuredRecords with the following schema. Each re
 | **group**              | String | The group that the of the file belongs to.                                                                                                     |
 | **owner**              | String | The owner of the file.                                                                                                                         |
 | **isFolder**           | Boolean| Whether or not the file is a folder.                                                                                                           |
-| **relativePath**       | String | The relavite path is constructed by deleting the portion of the source path that comes before the last path separator ("/") from the full path.|
+| **relativePath**       | String | The relative path is constructed by deleting the portion of the source path that comes before the last path separator ("/") from the full path.|
 | **filesystem**         | String | Contains the string "amazons3". Used to identify the type of filesystem this record originated from.                                           |
 | **permission**         | int    | The file's access permission                                                                                                                   |
 | **Credentials**        | Record | Additional information required to connect to the source Filesystem.                                                                           |

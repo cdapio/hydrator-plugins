@@ -147,6 +147,7 @@ public abstract class AbstractFileCopySink
       FileCopyOutputFormat.setBasePath(conf, config.basePath);
       FileCopyOutputFormat.setEnableOverwrite(conf, config.enableOverwrite.toString());
       FileCopyOutputFormat.setPreserveFileOwner(conf, config.preserveFileOwner.toString());
+      FileCopyOutputFormat.setFilesystemScheme(conf, config.getScheme());
 
       if (config.bufferSize != null) {
         // bufferSize is in megabytes
@@ -154,9 +155,6 @@ public abstract class AbstractFileCopySink
       } else {
         FileCopyOutputFormat.setBufferSize(conf, String.valueOf(FileCopyRecordWriter.DEFAULT_BUFFER_SIZE));
       }
-
-      // always disable caching
-      conf.put(String.format("fs.%s.impl.disable.cache", config.getScheme()), String.valueOf(true));
 
       // set the URI for the destination filesystem if it's provided
       if (config.getHostUri() != null) {

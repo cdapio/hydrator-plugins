@@ -37,6 +37,7 @@ public class FileCopyOutputFormat extends OutputFormat {
   public static final String PRESERVE_OWNER = "preserve.owner";
   public static final String BUFFER_SIZE = "buffer.size";
   public static final String FS_HOST_URI = "filesystem.host.uri";
+  public static final String FS_SCHEME = "filesystem.scheme";
 
   private static final Logger LOG = LoggerFactory.getLogger(FileCopyOutputFormat.class);
 
@@ -60,6 +61,9 @@ public class FileCopyOutputFormat extends OutputFormat {
     conf.put(FS_HOST_URI, value);
   }
 
+  public static void setFilesystemScheme(Map<String, String> conf, String value) {
+    conf.put(FS_SCHEME, value);
+  }
 
   @Override
   public void checkOutputSpecs(JobContext jobContext) throws IOException, InterruptedException {

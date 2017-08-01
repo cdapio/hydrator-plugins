@@ -51,17 +51,22 @@ public class FileCopyRecordWriter extends RecordWriter<NullWritable, AbstractFil
   public static final int DEFAULT_BUFFER_SIZE = 1 << 20;
   private static final Logger LOG = LoggerFactory.getLogger(FileCopyRecordWriter.class);
 
-  // source filesystems
+  // a Key-Value map from host uri to Filesystem object
   private Map<String, FileSystem> sourceFilesystemMap;
 
   public FileCopyRecordWriter(Configuration conf) throws IOException {
-    // connect to destination filesystem using uri if it is provided
-    String uriString;
-    if ((uriString = conf.get(FileCopyOutputFormat.FS_HOST_URI, null)) != null) {
+    // always disable caching when obtaining destination filesystem
+    conf.set(String.format("fs.%s.impl.disable.cache", conf.get(FileCopyOutputFormat.FS_SCHEME)), String.valueOf(true));
+
+    // connect to destination filesystem with uri if it is provided
+    String uriString = conf.get(FileCopyOutputFormat.FS_HOST_URI, null);
+    if (uriString != null) {
       destFileSystem = FileSystem.get(URI.create(uriString), conf);
     } else {
       destFileSystem = FileSystem.get(conf);
     }
+
+    // initialize other properties for writing to destination filesystem
     basePath = conf.get(FileCopyOutputFormat.BASE_PATH);
     enableOverwrite = conf.getBoolean(FileCopyOutputFormat.ENABLE_OVERWRITE, false);
     preserveOwner = conf.getBoolean(FileCopyOutputFormat.PRESERVE_OWNER, false);
@@ -111,7 +116,7 @@ public class FileCopyRecordWriter extends RecordWriter<NullWritable, AbstractFil
     }
 
     // data streaming
-    FSDataInputStream inputStream = sourceFilesystem.open(srcPath);
+    FSDataInputStream inputStream = sourceFilesystem.open(srcPath, bufferSize);
     FSDataOutputStream outputStream = FileSystem.create(destFileSystem, destPath, permission);
     try {
       byte[] buf = new byte[bufferSize];
@@ -140,21 +145,21 @@ public class FileCopyRecordWriter extends RecordWriter<NullWritable, AbstractFil
     try {
       destFileSystem.close();
     } finally {
-      safelyCloseSourceFilesystems(sourceFilesystemMap.entrySet().iterator());
+      safelyCloseSourceFilesystems(sourceFilesystemMap.values().iterator());
     }
   }
 
   /**
-   * this method attempts to close every filesystem in the list
-   * @param fs The iterator over all the filesystems we wish to close.
-   * @throws IOException
+   * this method attempts to close every Filesystem object in the list, logs a warning
+   * for each object that fails to close
+   * @param fs The iterator over all the Filesystems we wish to close.
    */
-  private void safelyCloseSourceFilesystems(Iterator<Map.Entry<String, FileSystem>> fs) throws IOException {
-    if (fs.hasNext()) {
+  private void safelyCloseSourceFilesystems(Iterator<FileSystem> fs) {
+    while (fs.hasNext()) {
       try {
-        fs.next().getValue().close();
-      } finally {
-        safelyCloseSourceFilesystems(fs);
+        fs.next().close();
+      } catch (IOException e) {
+        LOG.warn(e.getMessage());
       }
     }
   }
@@ -164,7 +169,7 @@ public class FileCopyRecordWriter extends RecordWriter<NullWritable, AbstractFil
     Configuration conf = new Configuration(false);
     conf.clear();
 
-    // always disable caching for source filesystem connections
+    // always disable caching for source Filesystem objects
     URI uri = URI.create(metadata.getHostURI());
     String disableCacheName = String.format("fs.%s.impl.disable.cache", uri.getScheme());
     conf.set(disableCacheName, String.valueOf(true));

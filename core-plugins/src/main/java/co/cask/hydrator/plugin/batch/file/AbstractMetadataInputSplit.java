@@ -56,11 +56,11 @@ public abstract class AbstractMetadataInputSplit extends InputSplit implements W
   @Override
   public void write(DataOutput dataOutput) throws IOException {
     try {
-      // write number of files
-      dataOutput.writeLong(this.getLength());
-
       // write total number of file bytes
       dataOutput.writeLong(this.getTotalBytes());
+
+      // write number of files
+      dataOutput.writeLong(this.getLength());
 
       for (AbstractFileMetadata fileMetaData : fileMetaDataList) {
         // convert each filestatus (serializable) to byte array
@@ -74,17 +74,16 @@ public abstract class AbstractMetadataInputSplit extends InputSplit implements W
 
   @Override
   public void readFields(DataInput dataInput) throws IOException {
-    // read number of files
-    long numObjects = dataInput.readLong();
-
     // get total number of bytes
     totalBytes = dataInput.readLong();
+
+    // read number of files
+    long numObjects = dataInput.readLong();
 
     fileMetaDataList = new ArrayList<>();
     for (long i = 0; i < numObjects; i++) {
       AbstractFileMetadata metadata = readFileMetaData(dataInput);
       fileMetaDataList.add(metadata);
-      totalBytes += metadata.getFileSize();
     }
   }
 

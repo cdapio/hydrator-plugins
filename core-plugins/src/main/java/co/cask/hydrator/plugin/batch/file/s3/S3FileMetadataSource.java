@@ -67,11 +67,12 @@ public class S3FileMetadataSource extends AbstractFileMetadataSource<S3FileMetad
     S3MetadataInputFormat.setRegion(conf, config.region);
     S3MetadataInputFormat.setURI(conf, config.filesystemURI);
 
-    if (config.filesystemURI.startsWith("s3a")) {
+    String fsScheme = URI.create(config.filesystemURI).getScheme();
+    if (fsScheme.equals("s3a")) {
       S3MetadataInputFormat.setS3aAccessKeyId(conf, config.accessKeyId);
       S3MetadataInputFormat.setS3aSecretKeyId(conf, config.secretKeyId);
       S3MetadataInputFormat.setS3aFsClass(conf);
-    } else if (config.filesystemURI.startsWith("s3n")) {
+    } else if (fsScheme.equals("s3n")) {
       S3MetadataInputFormat.setS3nAccessKeyId(conf, config.accessKeyId);
       S3MetadataInputFormat.setS3nSecretKeyId(conf, config.secretKeyId);
       S3MetadataInputFormat.setS3nFsClass(conf);

@@ -79,6 +79,7 @@ public abstract class AbstractMetadataInputFormat<KEY, VALUE> extends InputForma
     Collections.reverse(fileMetaDataList);
 
     // compute number of splits and instantiate the splits
+    // We use a priority queue to keep track of the smallest split (fewest bytes assigned to it)
     int numSplits = (fileMetaDataList.size() - 1) / maxSplitSize + 1;
     PriorityQueue<AbstractMetadataInputSplit> abstractInputSplits = new PriorityQueue<>(numSplits);
     for (int i = 0; i < numSplits; i++) {
@@ -87,11 +88,13 @@ public abstract class AbstractMetadataInputFormat<KEY, VALUE> extends InputForma
 
     // assign each split approximately the same number of bytes (2-approx)
     List<InputSplit> inputSplits = new ArrayList<>();
-    for (int i = 0; i < fileMetaDataList.size(); i++) {
+    for (AbstractFileMetadata fileMetadata : fileMetaDataList) {
+      // remove the smallest split from the priority queue and add a new file to it
       AbstractMetadataInputSplit minInputSplit = abstractInputSplits.poll();
-      minInputSplit.addFileMetadata(fileMetaDataList.get(i));
+      minInputSplit.addFileMetadata(fileMetadata);
 
       // if the inputsplit has number files more than maxSplitSize, we stop adding files to it
+      // otherwise we put it back into the priority queue
       if (minInputSplit.getLength() < maxSplitSize) {
         abstractInputSplits.add(minInputSplit);
       } else {
@@ -116,7 +119,7 @@ public abstract class AbstractMetadataInputFormat<KEY, VALUE> extends InputForma
 
   /**
    * Because the existing Filesystem.listFiles(Path, Boolean) doesn't list empty directories, we
-   * added our own method to recrusively traverse the file directories. If the path doesn't exist
+   * added our own method to recursively traverse the file directories. If the path doesn't exist
    * in the source filesystem, it logs a warning and skips the path.
    * @param fileMetadataList The list that contains all the files under fileStatus.getPath
    * @param prefix The user-set path that was used to get this group of files

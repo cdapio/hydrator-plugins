@@ -44,7 +44,7 @@
           "name": "accessKeyId"
         },
         {
-          "widget-type": "textbox",
+          "widget-type": "password",
           "label": "Secret Key ID",
           "name": "secretKeyId"
         },

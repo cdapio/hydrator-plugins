@@ -33,10 +33,9 @@ import java.io.IOException;
 public class AbstractMetadataInputSplitTest {
   @Test
   public void testSerializeAndDeserialize() throws Exception {
-    S3MetadataInputSplit metadataInputSplit = new S3MetadataInputSplit();
-
     // required for abstract metadata
-    final long length = 101;
+    final long lengthA = 101;
+    final long lengthB = 202;
     final boolean isdir = false;
     final int blockReplication = 0;
     final long blocksize = 0;
@@ -53,10 +52,16 @@ public class AbstractMetadataInputSplitTest {
     final String secretKeyId = "skey";
     final String region = "us-east-1";
 
-    FileStatus fileStatus = new FileStatus(length, isdir, blockReplication, blocksize,
+    // initialize an inputSplit
+    FileStatus fileStatusA = new FileStatus(lengthA, isdir, blockReplication, blocksize,
                                            modificationTime, accessTime, permission, owner, group, path);
-    S3FileMetadata originalMetadata = new S3FileMetadata(fileStatus, sourcePath, accessKeyId, secretKeyId, region);
-    metadataInputSplit.addFileMetadata(originalMetadata);
+    FileStatus fileStatusB = new FileStatus(lengthB, isdir, blockReplication, blocksize,
+                                            modificationTime, accessTime, permission, owner, group, path);
+    S3FileMetadata originalMetadataA = new S3FileMetadata(fileStatusA, sourcePath, accessKeyId, secretKeyId, region);
+    S3FileMetadata originalMetadataB = new S3FileMetadata(fileStatusB, sourcePath, accessKeyId, secretKeyId, region);
+    S3MetadataInputSplit metadataInputSplit = new S3MetadataInputSplit();
+    metadataInputSplit.addFileMetadata(originalMetadataA);
+    metadataInputSplit.addFileMetadata(originalMetadataB);
 
     // serialize input split
     ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -73,9 +78,15 @@ public class AbstractMetadataInputSplitTest {
     recoveredInputSplit.readFields(inputStream);
     inputStream.close();
 
-    // compare if fields are right
+    // compare if split size is right
+    Assert.assertEquals(metadataInputSplit.getLength(), recoveredInputSplit.getLength());
+    Assert.assertEquals(metadataInputSplit.getTotalBytes(), recoveredInputSplit.getTotalBytes());
+
+    // compare if recovered fileMetadata is right
     Assert.assertEquals(recoveredInputSplit.getFileMetaDataList().get(0).toRecord(),
                         metadataInputSplit.getFileMetaDataList().get(0).toRecord());
+    Assert.assertEquals(recoveredInputSplit.getFileMetaDataList().get(1).toRecord(),
+                        metadataInputSplit.getFileMetaDataList().get(1).toRecord());
   }
 
   @Test
@@ -110,7 +121,6 @@ public class AbstractMetadataInputSplitTest {
 
     // c only has 1 byte
     metadataInputSplitc.addFileMetadata(file1);
-
 
     Assert.assertEquals(metadataInputSplita.compareTo(metadataInputSplitb), 0);
     Assert.assertEquals(metadataInputSplita.compareTo(metadataInputSplitc), 1);
