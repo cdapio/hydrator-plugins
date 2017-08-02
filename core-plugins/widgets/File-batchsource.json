@@ -22,6 +22,19 @@
           "name": "fileRegex"
         },
         {
+          "widget-type": "select",
+          "label": "Format",
+          "name": "format",
+          "widget-attributes": {
+            "values": [
+              "avro",
+              "parquet",
+              "text"
+            ],
+            "default": "text"
+          }
+        },
+        {
           "widget-type": "textbox",
           "label": "Maximum Split Size",
           "name": "maxSplitSize"
@@ -46,13 +59,7 @@
         {
           "widget-type": "textbox",
           "label": "Path Field",
-          "name": "pathField",
-          "plugin-function": {
-            "method": "POST",
-            "widget": "outputSchema",
-            "output-property": "schema",
-            "plugin-method": "getSchema"
-          }
+          "name": "pathField"
         },
         {
           "widget-type": "select",
