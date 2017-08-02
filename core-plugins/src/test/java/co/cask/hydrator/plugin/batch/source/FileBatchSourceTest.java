@@ -517,7 +517,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
     String outputDatasetName = "test-filesource-avro";
 
     String appName = "FileSourceAvro";
-    ApplicationManager appManager = createSourceAndDeployApp(appName, fileAvro, "avro", outputDatasetName, RECORD_SCHEMA);
+    ApplicationManager appManager = createSourceAndDeployApp(appName, fileAvro, "avro", outputDatasetName,
+                                                             RECORD_SCHEMA);
 
     org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(RECORD_SCHEMA.toString());
     GenericRecord record = new GenericRecordBuilder(avroSchema)
