@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -34,6 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
+import javax.ws.rs.Path;
 
 /**
  * Splits input data into two outputs based on whether a configurable field is null or not.
@@ -58,8 +60,8 @@ public class NullFieldSplitter extends SplitterTransform<StructuredRecord, Struc
   public void configurePipeline(MultiOutputPipelineConfigurer multiOutputPipelineConfigurer) {
     MultiOutputStageConfigurer stageConfigurer = multiOutputPipelineConfigurer.getMultiOutputStageConfigurer();
     Schema inputSchema = stageConfigurer.getInputSchema();
-    if (inputSchema != null) {
-      stageConfigurer.setOutputSchemas(getOutputSchemas(inputSchema));
+    if (inputSchema != null && !conf.containsMacro("field")) {
+      stageConfigurer.setOutputSchemas(getOutputSchemas(inputSchema, conf));
     }
   }
 
@@ -96,7 +98,12 @@ public class NullFieldSplitter extends SplitterTransform<StructuredRecord, Struc
     }
   }
 
-  private Map<String, Schema> getOutputSchemas(Schema inputSchema) {
+  @Path("outputSchema")
+  public Map<String, Schema> getOutputSchemas(GetSchemaRequest request) {
+    return getOutputSchemas(request.inputSchema, request);
+  }
+
+  private static Map<String, Schema> getOutputSchemas(Schema inputSchema, Conf conf) {
     Map<String, Schema> outputs = new HashMap<>();
     if (inputSchema.getField(conf.field) == null) {
       throw new IllegalArgumentException("Field " + conf.field + " does not exist in input schema.");
@@ -139,9 +146,17 @@ public class NullFieldSplitter extends SplitterTransform<StructuredRecord, Struc
   }
 
   /**
+   * Request to get output schemas
+   */
+  public static class GetSchemaRequest extends Conf {
+    private Schema inputSchema;
+  }
+
+  /**
    * Configuration for the plugin.
    */
   public static class Conf extends PluginConfig {
+    @Macro
     @Description("Which field should be checked for null values.")
     private final String field;
 

@@ -9,7 +9,7 @@ value are sent to the ``nonnull`` port.
 
 Properties
 ----------
-**field:** Specifies which field should be checked for null values.
+**field:** Specifies which field should be checked for null values. (Macro-enabled)
 
 **modifySchema:** Whether to modify the schema for non-null output.
 If set to true, the schema for non-null output will be modified so that the field is no longer nullable.
