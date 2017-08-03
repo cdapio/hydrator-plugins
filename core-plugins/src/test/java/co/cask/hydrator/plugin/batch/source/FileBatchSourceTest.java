@@ -193,6 +193,10 @@ public class FileBatchSourceTest extends HydratorTestBase {
 
   @Test
   public void testRecursiveFolders() throws Exception {
+    Schema outputSchema = Schema.recordOf("file.record",
+                                          Schema.Field.of("offset", Schema.of(Schema.Type.LONG)),
+                                          Schema.Field.of("body", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                                          Schema.Field.of("file", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put(Properties.File.PATH, "src/test/resources/")
@@ -201,6 +205,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
       .put(Properties.File.RECURSIVE, "true")
       .put("pathField", "file")
       .put("filenameOnly", "true")
+      .put(Properties.File.SCHEMA, outputSchema.toString())
       .build();
 
     ETLStage source = new ETLStage("FileInput", new ETLPlugin("File", BatchSource.PLUGIN_TYPE, sourceProperties, null));

@@ -96,7 +96,7 @@ public abstract class AbstractFileBatchSource<T extends FileSourceConfig>
     if (!config.containsMacro("timeTable") && config.timeTable != null) {
       pipelineConfigurer.createDataset(config.timeTable, KeyValueTable.class, DatasetProperties.EMPTY);
     }
-    pipelineConfigurer.getStageConfigurer().setOutputSchema(DEFAULT_SCHEMA);
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(config.getSchema());
   }
 
   @Override

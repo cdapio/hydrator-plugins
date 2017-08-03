@@ -152,12 +152,7 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
     if (format.equalsIgnoreCase("text") && schema == null) {
       return;
     }
-    Schema parsedSchema;
-    try {
-      parsedSchema = Schema.parseJson(schema);
-    } catch (Exception e) {
-      throw new IllegalArgumentException("Unable to parse schema with error: " + e.getMessage(), e);
-    }
+    Schema parsedSchema = getSchema();
 
     if (format.equalsIgnoreCase("text")) {
       Schema.Field offsetField = parsedSchema.getField("offset");
@@ -205,6 +200,14 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
       return GSON.fromJson(fileSystemProperties, MAP_STRING_STRING_TYPE);
     } catch (Exception e) {
       throw new IllegalArgumentException("Unable to parse fileSystemProperties: " + e.getMessage());
+    }
+  }
+
+  protected Schema getSchema() {
+    try {
+      return Schema.parseJson(schema);
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Unable to parse schema with error: " + e.getMessage(), e);
     }
   }
 
