@@ -72,6 +72,7 @@ public class FileBatchSource extends AbstractFileBatchSource {
       super(referenceName, fileRegex, timeTable, inputFormatClass, fileSystemProperties, format,
             maxSplitSize, ignoreNonExistingFolders, recursive, pathField, fileNameOnly, schema);
       this.path = path;
+      this.schema = schema == null ? DEFAULT_SCHEMA.toString() : schema;
     }
 
     @Override
