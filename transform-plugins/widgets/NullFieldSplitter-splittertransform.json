@@ -1,0 +1,29 @@
+{
+  "metadata": {
+    "spec-version": "1.3"
+  },
+  "configuration-groups": [
+    {
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Field to Split on",
+          "name": "field"
+        },
+        {
+          "widget-type": "select",
+          "label": "Modify Schema",
+          "name": "modifySchema",
+          "widget-attributes": {
+            "values": [
+              "true",
+              "false"
+            ],
+            "default": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": [ ]
+}
