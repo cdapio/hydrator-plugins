@@ -1,0 +1,40 @@
+{
+  "metadata": {
+    "spec-version": "1.3"
+  },
+  "configuration-groups": [
+    {
+      "label": "Properties",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Topic",
+          "name": "topic"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Namespace",
+          "name": "namespace"
+        },
+        {
+          "widget-type": "select",
+          "label": "Auto-Create Topic",
+          "name": "autoCreateTopic",
+          "widget-attributes": {
+            "values": [
+              "false",
+              "true"
+            ],
+            "default": "false"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Rate Limit (alerts per second)",
+          "name": "maxAlertsPerSecond"
+        }
+      ]
+    }
+  ],
+  "outputs": [ ]
+}

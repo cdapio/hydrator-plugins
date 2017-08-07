@@ -174,6 +174,7 @@
         <configuration>
           <instructions>
             <_exportcontents>
+              co.cask.hydrator.plugin.alert.*;
               co.cask.hydrator.plugin.batch.*;
               co.cask.hydrator.plugin.common;
               co.cask.hydrator.plugin.realtime.*;
