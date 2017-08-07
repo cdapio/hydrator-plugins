@@ -149,7 +149,7 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
       (format.equalsIgnoreCase("avro")) || format.equalsIgnoreCase("parquet"))) {
       throw new IllegalArgumentException("Format can only be 'text', 'avro' or 'parquet'");
     }
-    if (format.equalsIgnoreCase("text") && schema == null) {
+    if (schema == null) {
       return;
     }
     Schema parsedSchema = getSchema();
@@ -205,6 +205,9 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
 
   protected Schema getSchema() {
     try {
+      if (schema == null) {
+        return null;
+      }
       return Schema.parseJson(schema);
     } catch (Exception e) {
       throw new IllegalArgumentException("Unable to parse schema with error: " + e.getMessage(), e);

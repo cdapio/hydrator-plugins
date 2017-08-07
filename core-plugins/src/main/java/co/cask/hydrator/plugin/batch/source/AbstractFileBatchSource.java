@@ -96,7 +96,14 @@ public abstract class AbstractFileBatchSource<T extends FileSourceConfig>
     if (!config.containsMacro("timeTable") && config.timeTable != null) {
       pipelineConfigurer.createDataset(config.timeTable, KeyValueTable.class, DatasetProperties.EMPTY);
     }
-    pipelineConfigurer.getStageConfigurer().setOutputSchema(config.getSchema());
+    if (config.getSchema() != null) {
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(config.getSchema());
+    } else if ("text".equalsIgnoreCase(config.format)) {
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(PathTrackingInputFormat.getTextOutputSchema
+        (config.pathField));
+    } else {
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(null);
+    }
   }
 
   @Override

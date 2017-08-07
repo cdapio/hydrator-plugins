@@ -24,6 +24,7 @@ import org.apache.avro.generic.GenericRecord;
 
 import java.io.IOException;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * Create StructuredRecords from GenericRecords
@@ -34,18 +35,7 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
 
   public StructuredRecord transform(GenericRecord genericRecord) throws IOException {
     org.apache.avro.Schema genericRecordSchema = genericRecord.getSchema();
-
-    int hashCode = genericRecordSchema.hashCode();
-    Schema structuredSchema;
-
-    if (schemaCache.containsKey(hashCode)) {
-      structuredSchema = schemaCache.get(hashCode);
-    } else {
-      structuredSchema = Schema.parseJson(genericRecordSchema.toString());
-      schemaCache.put(hashCode, structuredSchema);
-    }
-
-    return transform(genericRecord, structuredSchema);
+    return transform(genericRecord, convertSchema(genericRecordSchema));
   }
 
   @Override
@@ -55,13 +45,12 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
       String fieldName = field.getName();
       builder.set(fieldName, convertField(genericRecord.get(fieldName), field.getSchema()));
     }
-
     return builder.build();
   }
 
-  public StructuredRecord transform(StructuredRecord.Builder builder, GenericRecord genericRecord,
-                                    Schema structuredSchema, String skipField)
-    throws IOException {
+  public StructuredRecord.Builder transform(GenericRecord genericRecord, Schema structuredSchema,
+                                            @Nullable String skipField) throws IOException {
+    StructuredRecord.Builder builder = StructuredRecord.builder(structuredSchema);
     for (Schema.Field field : structuredSchema.getFields()) {
       String fieldName = field.getName();
       if (!fieldName.equals(skipField)) {
@@ -69,6 +58,19 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
       }
     }
 
-    return builder.build();
+    return builder;
+  }
+
+  public Schema convertSchema(org.apache.avro.Schema schema) throws IOException {
+    int hashCode = schema.hashCode();
+    Schema structuredSchema;
+
+    if (schemaCache.containsKey(hashCode)) {
+      structuredSchema = schemaCache.get(hashCode);
+    } else {
+      structuredSchema = Schema.parseJson(schema.toString());
+      schemaCache.put(hashCode, structuredSchema);
+    }
+    return structuredSchema;
   }
 }

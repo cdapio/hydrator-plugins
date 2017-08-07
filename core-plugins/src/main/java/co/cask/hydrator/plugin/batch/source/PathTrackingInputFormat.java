@@ -63,13 +63,13 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
     conf.set(FORMAT, format);
     if (schema != null) {
       conf.set(SCHEMA, schema);
+      if (format.equalsIgnoreCase("avro")) {
+        AvroJob.setInputKeySchema(job, new org.apache.avro.Schema.Parser().parse(schema));
+      } else if (format.equalsIgnoreCase("parquet")) {
+        AvroWriteSupport.setSchema(conf, new org.apache.avro.Schema.Parser().parse(schema));
+      }
     } else if (format.equalsIgnoreCase("text")) {
       conf.set(SCHEMA, getTextOutputSchema(pathField).toString());
-    }
-    if (format.equalsIgnoreCase("avro")) {
-      AvroJob.setOutputKeySchema(job, new org.apache.avro.Schema.Parser().parse(schema));
-    } else if (format.equalsIgnoreCase("parquet")) {
-      AvroWriteSupport.setSchema(conf, new org.apache.avro.Schema.Parser().parse(schema));
     }
   }
 
@@ -81,6 +81,14 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
       fields.add(Schema.Field.of(pathField, Schema.nullableOf(Schema.of(Schema.Type.STRING))));
     }
     return Schema.recordOf("file.record", fields);
+  }
+
+  public static Schema addFieldToSchema(Schema schema, String addFieldKey) {
+    List<Schema.Field> newFields = new ArrayList<>(schema.getFields().size() + 1);
+    newFields.addAll(schema.getFields());
+    Schema.Field newField = Schema.Field.of(addFieldKey, Schema.of(Schema.Type.STRING));
+    newFields.add(newField);
+    return Schema.recordOf(schema.getRecordName(), newFields);
   }
 
   @Override
@@ -98,7 +106,7 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
     String format = context.getConfiguration().get(FORMAT);
     String path = filenameOnly ? fileSplit.getPath().getName() : fileSplit.getPath().toUri().toString();
     String schema = context.getConfiguration().get(SCHEMA);
-    Schema parsedSchema = Schema.parseJson(schema);
+    Schema parsedSchema = schema == null ? null : Schema.parseJson(schema);
     if ("avro".equalsIgnoreCase(format)) {
       RecordReader<AvroKey<GenericRecord>, NullWritable> delegate = (new AvroKeyInputFormat<GenericRecord>())
         .createRecordReader(split, context);
@@ -137,16 +145,15 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
       return NullWritable.get();
     }
 
-    protected abstract StructuredRecord getCurrentValue(StructuredRecord.Builder recordBuilder)
-      throws IOException, InterruptedException;
+    protected abstract StructuredRecord.Builder startCurrentValue() throws IOException, InterruptedException;
 
     @Override
     public StructuredRecord getCurrentValue() throws IOException, InterruptedException {
-      StructuredRecord.Builder recordBuilder = StructuredRecord.builder(schema);
+      StructuredRecord.Builder recordBuilder = startCurrentValue();
       if (pathField != null) {
         recordBuilder.set(pathField, path);
       }
-      return getCurrentValue(recordBuilder);
+      return recordBuilder.build();
     }
 
     @Override
@@ -172,14 +179,14 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
       super(delegate, pathField, path, schema);
     }
 
-    public StructuredRecord getCurrentValue(StructuredRecord.Builder recordBuilder) throws IOException,
-      InterruptedException {
+    public StructuredRecord.Builder startCurrentValue() throws IOException, InterruptedException {
+      StructuredRecord.Builder recordBuilder = StructuredRecord.builder(schema);
       LongWritable key = delegate.getCurrentKey();
       Text text = delegate.getCurrentValue();
 
       recordBuilder.set("offset", key.get());
       recordBuilder.set("body", text.toString());
-      return recordBuilder.build();
+      return recordBuilder;
     }
   }
 
@@ -199,9 +206,16 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
       recordTransformer = new AvroToStructuredTransformer();
     }
 
-    public StructuredRecord getCurrentValue(StructuredRecord.Builder recordBuilder) throws IOException,
-      InterruptedException {
-      return recordTransformer.transform(recordBuilder, delegate.getCurrentKey().datum(), schema, pathField);
+    public StructuredRecord.Builder startCurrentValue() throws IOException, InterruptedException {
+      GenericRecord genericRecord = delegate.getCurrentKey().datum();
+      Schema recordSchema = schema;
+      if (recordSchema == null) {
+        recordSchema = recordTransformer.convertSchema(genericRecord.getSchema());
+        if (pathField != null) {
+          recordSchema = addFieldToSchema(recordSchema, pathField);
+        }
+      }
+      return recordTransformer.transform(genericRecord, recordSchema, pathField);
     }
   }
 
@@ -219,9 +233,16 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
       recordTransformer = new AvroToStructuredTransformer();
     }
 
-    public StructuredRecord getCurrentValue(StructuredRecord.Builder recordBuilder) throws IOException,
-      InterruptedException {
-      return recordTransformer.transform(recordBuilder, delegate.getCurrentValue(), schema, pathField);
+    public StructuredRecord.Builder startCurrentValue() throws IOException, InterruptedException {
+      GenericRecord genericRecord = delegate.getCurrentValue();
+      Schema recordSchema = schema;
+      if (recordSchema == null) {
+        recordSchema = recordTransformer.convertSchema(genericRecord.getSchema());
+        if (pathField != null) {
+          recordSchema = addFieldToSchema(recordSchema, pathField);
+        }
+      }
+      return recordTransformer.transform(genericRecord, recordSchema, pathField);
     }
   }
 }
