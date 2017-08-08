@@ -43,7 +43,8 @@ as a Python dictionary containing those three fields, with the error records wri
                          'invalidRecord': record,
                        })
                      else:
-                       tax = record['subtotal'] * 0.0975
+                       taxrate = float(context.getArguments().get('taxrate'))
+                       tax = record['subtotal'] * taxrate
                        if (tax > 1000.0):
                          context.getMetrics().count('tax.above.1000', 1)
                        emitter.emit({

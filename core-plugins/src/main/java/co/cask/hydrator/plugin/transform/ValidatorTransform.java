@@ -22,10 +22,10 @@ import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.api.plugin.PluginProperties;
+import co.cask.cdap.etl.api.Arguments;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.InvalidEntry;
 import co.cask.cdap.etl.api.LookupConfig;
-import co.cask.cdap.etl.api.LookupProvider;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.StageMetrics;
 import co.cask.cdap.etl.api.Transform;
@@ -191,7 +191,7 @@ public class ValidatorTransform extends Transform<StructuredRecord, StructuredRe
     return new InvalidEntry<>(errorCodeInt, (String) result.get("errorMsg"), input);
   }
 
-  private void init(List<Validator> validators, LookupProvider lookup) throws ScriptException {
+  private void init(List<Validator> validators, @Nullable TransformContext context) throws ScriptException {
     ScriptEngineManager manager = new ScriptEngineManager();
     engine = manager.getEngineByName("JavaScript");
     try {
@@ -221,7 +221,9 @@ public class ValidatorTransform extends Transform<StructuredRecord, StructuredRe
       throw new IllegalArgumentException("Invalid lookup config. Expected map of string to string", e);
     }
 
-    engine.put(CONTEXT_NAME, new ValidatorScriptContext(LOG, metrics, lookup, lookupConfig, js, validatorMap));
+    Arguments arguments = context == null ? null : context.getArguments();
+    engine.put(CONTEXT_NAME,
+               new ValidatorScriptContext(LOG, metrics, context, lookupConfig, js, validatorMap, arguments));
 
     // this is pretty ugly, but doing this so that we can pass the 'input' json into the isValid function.
     // that is, we want people to implement

@@ -16,6 +16,7 @@
 
 package co.cask.hydrator.plugin.transform;
 
+import co.cask.cdap.etl.api.Arguments;
 import co.cask.cdap.etl.api.LookupConfig;
 import co.cask.cdap.etl.api.LookupProvider;
 import co.cask.cdap.etl.api.StageMetrics;
@@ -32,15 +33,15 @@ public class ScriptContext {
   private final StageMetrics metrics;
   private final ScriptLookupProvider lookup;
   private final JavaTypeConverters js;
+  private final Arguments arguments;
 
-  public ScriptContext(
-    Logger logger, StageMetrics metrics, LookupProvider lookup, @Nullable LookupConfig lookupConfig,
-    JavaTypeConverters js) {
-
+  public ScriptContext(Logger logger, StageMetrics metrics, LookupProvider lookup, @Nullable LookupConfig lookupConfig,
+                       JavaTypeConverters js, Arguments arguments) {
     this.logger = logger;
     this.metrics = metrics;
     this.lookup = new ScriptLookupProvider(lookup, lookupConfig);
     this.js = js;
+    this.arguments = arguments;
   }
 
   public Logger getLogger() {
@@ -53,5 +54,9 @@ public class ScriptContext {
 
   public ScriptLookup getLookup(String table) {
     return lookup.provide(table, js);
+  }
+
+  public Arguments getArguments() {
+    return arguments;
   }
 }
