@@ -23,11 +23,8 @@ import co.cask.cdap.api.data.batch.Output;
 import co.cask.cdap.api.data.batch.OutputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
-import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.etl.api.Emitter;
-import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
@@ -35,7 +32,6 @@ import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.batch.ConfigurationUtils;
 import co.cask.hydrator.common.batch.JobUtils;
 import co.cask.hydrator.plugin.batch.commons.HiveSchemaConverter;
-import co.cask.hydrator.plugin.batch.commons.HiveSchemaStore;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.hadoop.conf.Configuration;
@@ -80,27 +76,19 @@ public class HiveBatchSink extends ReferenceBatchSink<StructuredRecord, NullWrit
   }
 
   @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    super.configurePipeline(pipelineConfigurer);
-    //TODO CDAP-4132: remove this way of storing Hive schema once we can share info between prepareRun and initialize
-    // stage.
-    pipelineConfigurer.createDataset(HiveSchemaStore.HIVE_TABLE_SCHEMA_STORE, KeyValueTable.class,
-                                     DatasetProperties.EMPTY);
-  }
-
-  @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
     Job job = JobUtils.createInstance();
 
     HiveSinkOutputFormatProvider sinkOutputFormatProvider = new HiveSinkOutputFormatProvider(job, config);
     HCatSchema hiveSchema = sinkOutputFormatProvider.getHiveSchema();
-    HiveSchemaStore.storeHiveSchema(context, config.dbName, config.tableName, hiveSchema);
+
+    context.getArguments().set(config.getDBTable(), GSON.toJson(hiveSchema));
     context.addOutput(Output.of(config.referenceName, sinkOutputFormatProvider));
   }
 
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    HCatSchema hCatSchema = HiveSchemaStore.readHiveSchema(context, config.dbName, config.tableName);
+    HCatSchema hCatSchema = GSON.fromJson(context.getArguments().get(config.getDBTable()), HCatSchema.class);
     Schema schema;
     // if the user did not provide a source schema then get the schema from the hive's schema
     if (config.schema == null) {
