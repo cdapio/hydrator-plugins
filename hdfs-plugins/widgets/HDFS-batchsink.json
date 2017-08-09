@@ -28,6 +28,11 @@
           "name": "suffix"
         },
         {
+          "widget-type": "textbox",
+          "label": "Delimiter",
+          "name": "delimiter"
+        },
+        {
           "widget-type": "json-editor",
           "label": "Job Properties",
           "name": "jobProperties"

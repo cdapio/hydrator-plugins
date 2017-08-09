@@ -41,8 +41,8 @@ import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.common.Constants;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
@@ -54,22 +54,20 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Unit test for {@link HDFSSink}.
  */
 public class HDFSSinkTest extends HydratorTestBase {
-  private static final Logger LOG = LoggerFactory.getLogger(HDFSSinkTest.class);
 
   private static final Schema SCHEMA = Schema.recordOf(
     "event",
@@ -91,7 +89,6 @@ public class HDFSSinkTest extends HydratorTestBase {
     new ArtifactSummary(BATCH_APP_ARTIFACT_ID.getArtifact(), BATCH_APP_ARTIFACT_ID.getVersion());
 
   private MiniDFSCluster dfsCluster;
-  private FileSystem fileSystem;
 
   @BeforeClass
   public static void setupTest() throws Exception {
@@ -113,7 +110,6 @@ public class HDFSSinkTest extends HydratorTestBase {
     MiniDFSCluster.Builder builder = new MiniDFSCluster.Builder(conf);
     dfsCluster = builder.build();
     dfsCluster.waitActive();
-    fileSystem = FileSystem.get(conf);
   }
 
   @After
@@ -136,6 +132,7 @@ public class HDFSSinkTest extends HydratorTestBase {
       ImmutableMap.<String, String>builder()
         .put("path", outputDir.toUri().toString())
         .put(Constants.Reference.REFERENCE_NAME, "HDFSinkTest")
+        .put("delimiter", "|")
         .build(),
       null));
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
@@ -163,26 +160,17 @@ public class HDFSSinkTest extends HydratorTestBase {
       outputDir, new Utils.OutputFileUtils.OutputFilesFilter()));
     Assert.assertNotNull(outputFiles);
     Assert.assertTrue(outputFiles.length > 0);
-    int count = 0;
-    List<String> lines = new ArrayList<>();
+    Set<String> lines = new HashSet<>();
     for (Path path : outputFiles) {
       InputStream in = dfsCluster.getFileSystem().open(path);
       BufferedReader reader = new BufferedReader(new InputStreamReader(in));
       String line;
       while ((line = reader.readLine()) != null) {
         lines.add(line);
-        if (line.contains("CDAP") && line.contains("123.23")) {
-          count++;
-        }
-
-        if (line.contains("400.23") && line.startsWith(HDFSSink.NULL_STRING)) {
-          count++;
-        }
       }
       reader.close();
     }
-    Assert.assertEquals(2, lines.size());
-    Assert.assertEquals(2, count);
+    Assert.assertEquals(ImmutableSet.of("\0|10|400.23", "CDAP|13|123.23"), lines);
   }
 
   @Test
