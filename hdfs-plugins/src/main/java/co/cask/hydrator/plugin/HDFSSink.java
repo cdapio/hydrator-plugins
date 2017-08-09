@@ -84,7 +84,7 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
       String data = (fieldValue != null) ? fieldValue.toString() : NULL_STRING;
       dataArray.add(data);
     }
-    emitter.emit(new KeyValue<>(new Text(Joiner.on(",").join(dataArray)), NullWritable.get()));
+    emitter.emit(new KeyValue<>(new Text(Joiner.on(config.delimiter).join(dataArray)), NullWritable.get()));
   }
 
   /**
@@ -95,11 +95,9 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
     private static final Type MAP_TYPE = new TypeToken<Map<String, String>>() { }.getType();
 
     private final Map<String, String> conf;
-    private final HDFSSinkConfig config;
 
     public SinkOutputFormatProvider(HDFSSinkConfig config, BatchSinkContext context) {
       this.conf = new HashMap<>();
-      this.config = config;
       String timeSuffix = !Strings.isNullOrEmpty(config.timeSufix) ?
         new SimpleDateFormat(config.timeSufix).format(context.getLogicalStartTime()) : "";
       conf.put(FileOutputFormat.OUTDIR, String.format("%s/%s", config.path, timeSuffix));
@@ -113,18 +111,13 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
 
     @Override
     public String getOutputFormatClassName() {
-      return outputFormatClassName("TEXT");
+      return TextOutputFormat.class.getName();
     }
 
     @Override
     public Map<String, String> getOutputFormatConfiguration() {
       return conf;
     }
-  }
-
-  private static String outputFormatClassName(String option) {
-    // Use option to extend it to more output formats
-    return TextOutputFormat.class.getName();
   }
 
   /**
@@ -149,14 +142,17 @@ public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWri
     @Description("Advanced feature to specify any additional properties that should be used with the sink, " +
       "specified as a JSON object of string to string. These properties are set on the job.")
     @Macro
-    protected String jobProperties;
+    private String jobProperties;
 
-    public HDFSSinkConfig(String referenceName, String path, String suffix,
-                          @Nullable String jobProperties) {
-      super(referenceName);
-      this.path = path;
-      this.timeSufix = suffix;
-      this.jobProperties = jobProperties;
+    @Nullable
+    @Description("The delimiter to use when concatenating record fields. Defaults to a comma (',').")
+    @Macro
+    private String delimiter;
+
+    private HDFSSinkConfig() {
+      super("");
+      jobProperties = "{}";
+      delimiter = ",";
     }
 
     private void validate() {

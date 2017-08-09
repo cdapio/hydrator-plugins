@@ -29,6 +29,8 @@ Properties
 year-month-day-hour-minute format, and append that to the path to get the final output directory.
 If not specified, no suffix is used.
 
+**delimiter:** Delimiter used to concatenate record fields. Defaults to a comma ','. (Macro-enabled)
+
 **jobProperties:** Advanced feature to specify any additional properties that should be used with the sink,
 specified as a JSON object of string to string. These properties are set on the job at runtime. (Macro-enabled)
 
