@@ -26,6 +26,7 @@ import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.proto.id.ArtifactId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.TestConfiguration;
+import co.cask.hydrator.plugin.alert.TMSAlertPublisher;
 import co.cask.hydrator.plugin.batch.action.EmailAction;
 import co.cask.hydrator.plugin.batch.action.SSHAction;
 import co.cask.hydrator.plugin.batch.aggregator.DedupAggregator;
@@ -129,7 +130,8 @@ public class ETLBatchTestBase extends HydratorTestBase {
                       DedupAggregator.class,
                       Joiner.class,
                       EmailAction.class,
-                      SSHAction.class);
+                      SSHAction.class,
+                      TMSAlertPublisher.class);
   }
 
   protected void cleanPartitions(TimePartitionedFileSet fileSet) throws IOException {
