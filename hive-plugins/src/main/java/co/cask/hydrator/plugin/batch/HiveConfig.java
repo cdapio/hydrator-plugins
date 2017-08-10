@@ -50,6 +50,10 @@ public class HiveConfig extends ReferencePluginConfig {
     dbName = "default";
   }
 
+  public String getDBTable() {
+    return dbName + ":" + tableName;
+  }
+
   /**
    * Hive config variables
    */
