@@ -38,7 +38,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -67,6 +69,52 @@ public class EmailActionTestRun extends ETLBatchTestBase {
                                     "subject", "Test",
                                     "port", Integer.toString(port)),
                     null));
+
+    ETLStage source = new ETLStage("source",
+                                   new ETLPlugin("KVTable", BatchSource.PLUGIN_TYPE,
+                                                 ImmutableMap.of("name", "emailTestSource"), null));
+    ETLStage sink = new ETLStage("sink", new ETLPlugin("KVTable", BatchSink.PLUGIN_TYPE,
+                                                       ImmutableMap.of("name", "emailTestSink"), null));
+
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+      .addStage(source)
+      .addStage(sink)
+      .addPostAction(action)
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app("actionTest");
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+
+    WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    manager.start(ImmutableMap.of("logical.start.time", "0"));
+    manager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
+
+    server.stop();
+
+    Assert.assertEquals(1, server.getReceivedEmailSize());
+    Iterator emailIter = server.getReceivedEmail();
+    SmtpMessage email = (SmtpMessage) emailIter.next();
+    Assert.assertEquals("Test", email.getHeaderValue("Subject"));
+    Assert.assertTrue(email.getBody().startsWith("Run for 1970-01-01 completed."));
+    Assert.assertFalse(emailIter.hasNext());
+  }
+
+  @Test
+  public void testEmailActionCapitalProtocol() throws Exception {
+
+    Map<String, String> props = new HashMap<>();
+    props.put("recipients", "to@test.com");
+    props.put("sender", "from@test.com");
+    props.put("message", "Run for ${logicalStartTime(yyyy-MM-dd,0m,UTC)} completed.");
+    props.put("subject", "Test");
+    props.put("port", Integer.toString(port));
+    props.put("protocol", "SMTP");
+
+    ETLStage action = new ETLStage(
+      "email",
+      new ETLPlugin("Email", PostAction.PLUGIN_TYPE, props, null));
 
     ETLStage source = new ETLStage("source",
                                    new ETLPlugin("KVTable", BatchSource.PLUGIN_TYPE,
