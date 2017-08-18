@@ -50,11 +50,12 @@ public class EmailActionTestRun extends ETLBatchTestBase {
   private SimpleSmtpServer server;
   private int port;
 
-  @Before
+  // TODO: CDAP-12368 Uncomment the @Before method while fixing CDAP-12368. Commenting out because the setup causes OOM
+  /*@Before
   public void beforeTest() {
     port = Networks.getRandomPort();
     server = SimpleSmtpServer.start(port);
-  }
+  }*/
 
   @Ignore
   @Test
