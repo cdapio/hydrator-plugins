@@ -36,6 +36,7 @@ import com.dumbster.smtp.SmtpMessage;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Iterator;
@@ -55,6 +56,7 @@ public class EmailActionTestRun extends ETLBatchTestBase {
     server = SimpleSmtpServer.start(port);
   }
 
+  @Ignore
   @Test
   public void testEmailAction() throws Exception {
 
