@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Test;
+import org.python.antlr.ast.Str;
 
 import java.util.List;
 import java.util.Map;
@@ -131,6 +132,23 @@ public class PythonEvaluatorTest {
     expectedListField = ImmutableList.of();
     Assert.assertEquals(expectedMapField, output.get("mapField"));
     Assert.assertEquals(expectedListField, output.get("arrayField"));
+  }
+
+  @Test
+  public void testArguments() throws Exception {
+    PythonEvaluator.Config config = new PythonEvaluator.Config(
+      "def transform(input, emitter, context):\n" +
+        "  multiplier = int(context.getArguments().get('multiplier'))\n" +
+        "  emitter.emit({ 'x': input['x'] * multiplier })",
+      null);
+    Transform<StructuredRecord, StructuredRecord> transform = new PythonEvaluator(config);
+    transform.initialize(new MockTransformContext("stage", ImmutableMap.of("multiplier", "5")));
+
+    Schema schema = Schema.recordOf("x", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    transform.transform(StructuredRecord.builder(schema).set("x", 2).build(), emitter);
+    Assert.assertEquals(ImmutableList.of(StructuredRecord.builder(schema).set("x", 10).build()),
+                        emitter.getEmitted());
   }
 
   @Test
