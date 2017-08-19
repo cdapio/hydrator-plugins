@@ -17,7 +17,6 @@
 package co.cask.hydrator.plugin.batch;
 
 import co.cask.cdap.common.test.TestSuite;
-import co.cask.hydrator.plugin.batch.action.EmailActionTestRun;
 import co.cask.hydrator.plugin.batch.action.HDFSActionTestRun;
 import co.cask.hydrator.plugin.batch.aggregator.DedupTestRun;
 import co.cask.hydrator.plugin.batch.aggregator.GroupByTestRun;
@@ -37,7 +36,8 @@ import org.junit.runners.Suite;
   GroupByTestRun.class,
   DedupTestRun.class,
   ETLFTPTestRun.class,
-  EmailActionTestRun.class,
+// TODO: CDAP-12368
+//  EmailActionTestRun.class,
   HDFSActionTestRun.class
 })
 public class BatchPluginsTestSuite extends ETLBatchTestBase {
