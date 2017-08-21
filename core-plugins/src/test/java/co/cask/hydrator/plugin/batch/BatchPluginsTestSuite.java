@@ -34,11 +34,11 @@ import org.junit.runners.Suite;
   ETLTPFSTestRun.class,
   ETLMapReduceTestRun.class,
   GroupByTestRun.class,
-  DedupTestRun.class,
-  ETLFTPTestRun.class,
+  DedupTestRun.class
 // TODO: CDAP-12368
+//  ETLFTPTestRun.class,
 //  EmailActionTestRun.class,
-  HDFSActionTestRun.class
+//  HDFSActionTestRun.class
 })
 public class BatchPluginsTestSuite extends ETLBatchTestBase {
 }
