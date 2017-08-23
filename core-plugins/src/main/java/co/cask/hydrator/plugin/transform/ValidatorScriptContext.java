@@ -16,6 +16,7 @@
 
 package co.cask.hydrator.plugin.transform;
 
+import co.cask.cdap.etl.api.Arguments;
 import co.cask.cdap.etl.api.LookupConfig;
 import co.cask.cdap.etl.api.LookupProvider;
 import co.cask.cdap.etl.api.StageMetrics;
@@ -33,8 +34,8 @@ public class ValidatorScriptContext extends ScriptContext {
 
   public ValidatorScriptContext(Logger logger, StageMetrics metrics, LookupProvider lookup,
                                 @Nullable LookupConfig lookupConfig, JavaTypeConverters js,
-                                Map<String, Object> validators) {
-    super(logger, metrics, lookup, lookupConfig, js);
+                                Map<String, Object> validators, Arguments arguments) {
+    super(logger, metrics, lookup, lookupConfig, js, arguments);
     this.validators = validators;
   }
 

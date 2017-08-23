@@ -11,7 +11,7 @@
           "label": "JavaScript",
           "name": "script",
           "widget-attributes": {
-            "default": "function transform(input, emitter, context) {\n  emitter.emit(input);\n}"
+            "default": "/**\n * @summary Transforms the provided input record into zero or more output records or errors.\n\n * Input records are available in JavaScript code as JSON objects. \n\n * @param input an object that contains the input record as a JSON.   e.g. to access a field called 'total' from the input record, use input.total.\n * @param emitter an object that can be used to emit zero or more records (using the emitter.emit() method) or errors (using the emitter.emitError() method) \n * @param context an object that provides access to:\n *            1. CDAP Metrics - context.getMetrics().count('output', 1);\n *            2. CDAP Logs - context.getLogger().debug('Received a record');\n *            3. Lookups - context.getLookup('blacklist').lookup(input.id); or\n *            4. Runtime Arguments - context.getArguments.get('priceThreshold') \n */ \nfunction transform(input, emitter, context) {\n  emitter.emit(input);\n}"
           }
         },
         {
