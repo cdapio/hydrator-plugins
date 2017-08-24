@@ -2,6 +2,7 @@
   "metadata": {
     "spec-version": "1.3"
   },
+  "display-name": "CDAP Stream",
   "configuration-groups": [
     {
       "label": "Stream Configuration",

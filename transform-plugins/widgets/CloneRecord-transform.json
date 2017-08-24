@@ -2,6 +2,7 @@
   "metadata": {
     "spec-version": "1.0"
   },
+  "display-name": "Record Duplicator",
   "configuration-groups": [
     {
       "label": "Clone Rows",

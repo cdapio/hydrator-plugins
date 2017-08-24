@@ -2,6 +2,7 @@
   "metadata": {
     "spec-version": "1.0"
   },
+  "display-name": "Field Decrypter",
   "configuration-groups": [
     {
       "label": "Encode",

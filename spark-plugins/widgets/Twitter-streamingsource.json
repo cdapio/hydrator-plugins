@@ -2,6 +2,7 @@
   "metadata": {
     "spec-version": "1.0"
   },
+  "display-name": "Twitter Tweet Stream",
   "configuration-groups": [
     {
       "label": "OAuth Access Tokens",

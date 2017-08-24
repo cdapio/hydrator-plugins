@@ -2,6 +2,7 @@
   "metadata": {
     "spec-version": "1.0"
   },
+  "display-name": "MD5/SHA Field Dataset",
   "configuration-groups": [
     {
       "label": "Hasher Configuration",
