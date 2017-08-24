@@ -2,7 +2,7 @@
   "metadata": {
     "spec-version": "1.5"
   },
-  "display-name": "Avro Parquet Dataset",
+  "display-name": "Parquet Snapshot Dataset",
   "configuration-groups": [
     {
       "label": "Snapshot Fileset - Parquet",
