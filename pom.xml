@@ -861,6 +861,21 @@
 
   <!-- Profile for release. Includes signing of jars. -->
   <profiles>
+    <profile> 
+      <id>skipTests</id>
+      <build>
+       <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.14.1</version>
+          <configuration>
+            <skipTests>true</skipTests>
+          </configuration>
+        </plugin>
+       </plugins>
+      </build>
+    </profile>
     <profile>
       <id>release</id>
       <build>
