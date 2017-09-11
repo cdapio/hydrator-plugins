@@ -36,6 +36,7 @@ import com.dumbster.smtp.SmtpMessage;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Iterator;
@@ -49,12 +50,14 @@ public class EmailActionTestRun extends ETLBatchTestBase {
   private SimpleSmtpServer server;
   private int port;
 
-  @Before
+  // TODO: CDAP-12368 Uncomment the @Before method while fixing CDAP-12368. Commenting out because the setup causes OOM
+  /*@Before
   public void beforeTest() {
     port = Networks.getRandomPort();
     server = SimpleSmtpServer.start(port);
-  }
+  }*/
 
+  @Ignore
   @Test
   public void testEmailAction() throws Exception {
 

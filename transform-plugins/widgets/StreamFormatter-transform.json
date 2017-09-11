@@ -1,7 +1,8 @@
 {
   "metadata": {
-    "spec-version": "1.0"
+    "spec-version": "1.5"
   },
+  "display-name" : "CDAP Stream Formatter",
   "configuration-groups": [
     {
       "label": "Data Format",

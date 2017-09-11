@@ -22,10 +22,10 @@ import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.plugin.PluginConfig;
+import co.cask.cdap.etl.api.Arguments;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.InvalidEntry;
 import co.cask.cdap.etl.api.LookupConfig;
-import co.cask.cdap.etl.api.LookupProvider;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.StageMetrics;
 import co.cask.cdap.etl.api.Transform;
@@ -348,7 +348,7 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
     throw new RuntimeException("Unable decode union with schema " + schemas);
   }
 
-  private void init(LookupProvider lookup) {
+  private void init(@Nullable TransformContext context) {
     ScriptEngineManager manager = new ScriptEngineManager();
     engine = manager.getEngineByName("JavaScript");
     try {
@@ -368,7 +368,8 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
       throw new IllegalArgumentException("Invalid lookup config. Expected map of string to string", e);
     }
 
-    engine.put(CONTEXT_NAME, new ScriptContext(LOG, metrics, lookup, lookupConfig, js));
+    Arguments arguments = context == null ? null : context.getArguments();
+    engine.put(CONTEXT_NAME, new ScriptContext(LOG, metrics, context, lookupConfig, js, arguments));
 
     try {
       // this is pretty ugly, but doing this so that we can pass the 'input' json into the transform function.

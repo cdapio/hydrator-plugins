@@ -1,7 +1,8 @@
 {
   "metadata": {
-    "spec-version": "1.0"
+    "spec-version": "1.5"
   },
+  "display-name" : "Python",
   "configuration-groups": [
     {
       "label": "Python",
@@ -11,7 +12,7 @@
           "label": "Script",
           "name": "script",
           "widget-attributes": {
-            "default": "def transform(record, emitter, context):\n  emitter.emit(record)\n"
+            "default": "def transform(record, emitter, context):\n    \"\"\"Transforms the provided input record into zero or more output records (as dictionaries) or errors (as an error dictionary).\n\n    Input records are available as a dictionary.\n\n    Args:\n        record (dict): The input record as a dictionary. e.g. to access a field called 'total' from the input record, use record['total'].\n        emitter (Emitter): an object that can be used to emit zero or more records (using the emitter.emit() method) or errors (using the emitter.emitError() method).\n        context (Context): an object that provides access to:\n                           1. CDAP Metrics - context.getMetrics().count('output', 1);\n                           2. CDAP Logs - context.getLogger().debug('Received a record');\n                           3. Lookups - context.getLookup('blacklist').lookup(input.id); or\n                           4. Runtime Arguments - context.getArguments.get('priceThreshold')\n\n    \"\"\"\n\n    emitter.emit(record)\n"
           }
         }
       ]
