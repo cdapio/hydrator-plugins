@@ -21,8 +21,10 @@ Properties
 **script:** JavaScript defining how to transform input record into zero or more records. The script must
 implement a function called ``'transform'``, which takes as input a JSON object (representing
 the input record), an emitter object (to emit zero or more output records), 
-and a context object (which encapsulates CDAP metrics, logger, and lookup).
-For example:
+and a context object (which encapsulates CDAP metrics, logger, arguments, and lookup).
+Arguments contain any preferences stored for the pipeline, overridden by runtime arguments for the pipeline
+run, overridden by any arguments set by stages earlier in the pipeline.
+Consider the following example:
 
     function transform(input, emitter, context) {
         if (context.getLookup('blacklist').lookup(input.id) != null) {
@@ -31,17 +33,28 @@ For example:
                 'errorMsg': 'blacklisted id',
                 'invalidRecord': input
             });
-        } else {
-            if (input.count < 0) {
-                context.getMetrics().count('negative.count', 1);
-                context.getLogger().debug('Received record with negative count');
-            }
-            input.count = input.count * 1024;
-            emitter.emit(input);
+            return;
         }
+
+        var threshold = context.getArguments.get('priceThreshold');
+        if (input.price > threshold) {
+            emitter.emitAlert({
+                'price': '' + input.price
+            });
+            return;
+        }
+
+        if (input.count < 0) {
+            context.getMetrics().count('negative.count', 1);
+            context.getLogger().debug('Received record with negative count');
+        }
+        input.count = input.count * 1024;
+        emitter.emit(input);
     }
 
-will emit an error if the ``id`` field is present in blacklist table, else scale the ``count`` field by 1024.
+This script will emit an error if the ``id`` field is present in blacklist table, read a price threshold from
+the pipeline arguments and emit an alert if the input price is greater than the threshold,
+or else scale the ``count`` field by 1024.
 
 **schema:** The schema of output objects. If no schema is given, it is assumed that the output
 schema is the same as the input schema.

@@ -106,7 +106,7 @@ public class PythonEvaluator extends Transform<StructuredRecord, StructuredRecor
   public void initialize(TransformContext context) {
     metrics = context.getMetrics();
     logger = LoggerFactory.getLogger(PythonEvaluator.class.getName() + " - Stage:" + context.getStageName());
-    init();
+    init(context);
   }
 
   @Override
@@ -165,7 +165,7 @@ public class PythonEvaluator extends Transform<StructuredRecord, StructuredRecor
       pipelineConfigurer.getStageConfigurer().setOutputSchema(pipelineConfigurer.getStageConfigurer().getInputSchema());
     }
     // try evaluating the script to fail application creation if the script is invalid
-    init();
+    init(null);
   }
 
   @Override
@@ -350,7 +350,7 @@ public class PythonEvaluator extends Transform<StructuredRecord, StructuredRecor
     throw new RuntimeException("Unable to decode union with schema " + schemas);
   }
 
-  private void init() {
+  private void init(@Nullable TransformContext context) {
     interpreter = new PythonInterpreter();
     interpreter.set(CONTEXT_NAME, new ScriptContext(
       logger, metrics,
@@ -366,7 +366,8 @@ public class PythonEvaluator extends Transform<StructuredRecord, StructuredRecor
         public Object mapToJSObject(Map<?, ?> map) {
           return null;
         }
-      }));
+      },
+      context == null ? null : context.getArguments()));
 
     // this is pretty ugly, but doing this so that we can pass the 'input' record into the transform function.
     // that is, we want people to implement

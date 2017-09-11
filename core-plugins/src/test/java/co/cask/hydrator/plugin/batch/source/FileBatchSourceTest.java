@@ -57,6 +57,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
@@ -516,6 +517,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(expected, output);
   }
 
+  @Ignore // TODO: CDAP-12491
   @Test
   public void testFileBatchInputFormatAvro() throws Exception {
     File fileAvro = new File(temporaryFolder.newFolder(), "test.avro");
@@ -556,6 +558,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(expected, output);
   }
 
+  @Ignore //TODO: CDAP-12491
   @Test
   public void testFileBatchInputFormatAvroNullSchema() throws Exception {
     File fileAvro = new File(temporaryFolder.newFolder(), "test.avro");
@@ -600,6 +603,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(expected, output);
   }
 
+  @Ignore //TODO: CDAP-12491
   @Test
   public void testFileBatchInputFormatAvroMissingField() throws Exception {
     File fileAvro = new File(temporaryFolder.newFolder(), "test.avro");

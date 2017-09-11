@@ -227,6 +227,43 @@ public class JavaScriptTransformTest {
   }
 
   @Test
+  public void testArguments() throws Exception {
+    Schema schema = Schema.recordOf("x", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
+    JavaScriptTransform.Config config = new JavaScriptTransform.Config(
+      "function transform(input, emitter, context) { " +
+        "var multiplier = context.getArguments().get('multiplier');" +
+        "emitter.emit({\"x\": input.x * multiplier});" +
+        " }",
+      schema.toString(), null);
+    JavaScriptTransform transform = new JavaScriptTransform(config);
+    MockTransformContext transformContext = new MockTransformContext("stage", ImmutableMap.of("multiplier", "5"));
+    transform.initialize(transformContext);
+
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    transform.transform(StructuredRecord.builder(schema).set("x", 2).build(), emitter);
+
+    Assert.assertEquals(ImmutableList.of(StructuredRecord.builder(schema).set("x", 10).build()), emitter.getEmitted());
+  }
+
+  @Test
+  public void testEmitAlerts() throws Exception {
+    JavaScriptTransform.Config config = new JavaScriptTransform.Config(
+      "function transform(input, emitter, context) { " +
+        "emitter.emitAlert({'x': input.x + ''});" +
+        " }",
+      null, null);
+    JavaScriptTransform transform = new JavaScriptTransform(config);
+    MockTransformContext transformContext = new MockTransformContext();
+    transform.initialize(transformContext);
+
+    Schema schema = Schema.recordOf("x", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    transform.transform(StructuredRecord.builder(schema).set("x", 2).build(), emitter);
+
+    Assert.assertEquals(ImmutableList.of(ImmutableMap.of("x", "2")), emitter.getAlerts());
+  }
+
+  @Test
   public void testEmitErrors() throws Exception {
     Schema inputSchema = Schema.recordOf(
       "smallerSchema",
