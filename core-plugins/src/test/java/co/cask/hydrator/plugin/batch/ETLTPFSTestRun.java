@@ -54,9 +54,6 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.avro.AvroParquetWriter;
 import org.apache.parquet.hadoop.ParquetWriter;
-import org.apache.tephra.Transaction;
-import org.apache.tephra.TransactionAware;
-import org.apache.tephra.TransactionManager;
 import org.apache.twill.filesystem.Location;
 import org.junit.Assert;
 import org.junit.Test;
@@ -294,25 +291,17 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset(filesetName);
     TimePartitionedFileSet tpfs = fileSetManager.get();
 
-    TransactionManager txService = getTxService();
-    Transaction tx1 = txService.startShort(100);
-    TransactionAware txTpfs = (TransactionAware) tpfs;
-    txTpfs.startTx(tx1);
-
     long timeInMillis = System.currentTimeMillis();
     fileSetManager.get().addPartition(timeInMillis, "directory", ImmutableMap.of("key1", "value1"));
     Location location = fileSetManager.get().getPartitionByTime(timeInMillis).getLocation();
+    fileSetManager.flush();
+
     location = location.append("file.avro");
     FSDataOutputStream outputStream = new FSDataOutputStream(location.getOutputStream(), null);
     DataFileWriter dataFileWriter = new DataFileWriter<>(new GenericDatumWriter<GenericRecord>(avroSchema));
     dataFileWriter.create(avroSchema, outputStream);
     dataFileWriter.append(record);
     dataFileWriter.flush();
-
-    txTpfs.commitTx();
-    txService.canCommit(tx1, txTpfs.getTxChanges());
-    txService.commit(tx1);
-    txTpfs.postTxCommit();
 
     String newFilesetName = filesetName + "_op";
     ETLBatchConfig etlBatchConfig = constructTPFSETLConfig(filesetName, newFilesetName, eventSchema, "Snappy");
@@ -412,25 +401,17 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset(filesetName);
     TimePartitionedFileSet tpfs = fileSetManager.get();
 
-    TransactionManager txService = getTxService();
-    Transaction tx1 = txService.startShort(100);
-    TransactionAware txTpfs = (TransactionAware) tpfs;
-    txTpfs.startTx(tx1);
-
     long timeInMillis = System.currentTimeMillis();
     fileSetManager.get().addPartition(timeInMillis, "directory", ImmutableMap.of("key1", "value1"));
     Location location = fileSetManager.get().getPartitionByTime(timeInMillis).getLocation();
+    fileSetManager.flush();
+
     location = location.append("file.avro");
     FSDataOutputStream outputStream = new FSDataOutputStream(location.getOutputStream(), null);
     DataFileWriter dataFileWriter = new DataFileWriter<>(new GenericDatumWriter<GenericRecord>(avroSchema));
     dataFileWriter.create(avroSchema, outputStream);
     dataFileWriter.append(record);
     dataFileWriter.flush();
-
-    txTpfs.commitTx();
-    txService.canCommit(tx1, txTpfs.getTxChanges());
-    txService.commit(tx1);
-    txTpfs.postTxCommit();
 
     String newFilesetName = filesetName + "_op";
     ETLBatchConfig etlBatchConfig = constructTPFSETLConfig(filesetName, newFilesetName, eventSchema, "Deflate");
