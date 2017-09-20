@@ -179,6 +179,9 @@ public final class DBUtils {
         type = Schema.Type.NULL;
         break;
 
+      case Types.ROWID:
+        break;
+
       case Types.BOOLEAN:
       case Types.BIT:
         type = Schema.Type.BOOLEAN;
@@ -224,7 +227,6 @@ public final class DBUtils {
       case Types.JAVA_OBJECT:
       case Types.OTHER:
       case Types.REF:
-      case Types.ROWID:
       case Types.SQLXML:
       case Types.STRUCT:
         throw new SQLException(new UnsupportedTypeException("Unsupported SQL Type: " + sqlType));
@@ -250,6 +252,8 @@ public final class DBUtils {
           return resultSet.getTime(fieldName).getTime();
         case Types.TIMESTAMP:
           return resultSet.getTimestamp(fieldName).getTime();
+        case Types.ROWID:
+          return resultSet.getString(fieldName);
         case Types.BLOB:
           Blob blob = (Blob) original;
           try {
