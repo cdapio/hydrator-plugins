@@ -21,6 +21,7 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.InvalidEntry;
 import co.cask.cdap.etl.api.MultiOutputEmitter;
 import co.cask.cdap.etl.api.MultiOutputPipelineConfigurer;
@@ -230,7 +231,7 @@ public class UnionSplitter extends SplitterTransform<StructuredRecord, Structure
   /**
    * Plugin conf
    */
-  public static class Conf {
+  public static class Conf extends PluginConfig {
     @Nullable
     @Description("The union field to split on. Each possible schema in the union will be emitted to a different " +
       "port. Only unions of records and simple types are supported. In other words, " +
