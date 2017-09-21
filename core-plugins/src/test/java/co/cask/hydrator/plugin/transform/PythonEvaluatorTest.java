@@ -30,7 +30,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Test;
-import org.python.antlr.ast.Str;
 
 import java.util.List;
 import java.util.Map;

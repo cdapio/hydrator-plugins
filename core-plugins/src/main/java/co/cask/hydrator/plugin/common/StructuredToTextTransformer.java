@@ -22,7 +22,6 @@ import co.cask.cdap.api.data.schema.Schema;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.List;
 
 /**
  * Creates Single String from StructuredRecord

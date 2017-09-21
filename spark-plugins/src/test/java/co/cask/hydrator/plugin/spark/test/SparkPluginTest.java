@@ -24,7 +24,6 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.app.runtime.spark.SparkCompat;
 import co.cask.cdap.common.utils.Tasks;
 import co.cask.cdap.datapipeline.DataPipelineApp;
 import co.cask.cdap.datastreams.DataStreamsApp;

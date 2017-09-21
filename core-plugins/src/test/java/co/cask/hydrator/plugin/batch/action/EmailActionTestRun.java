@@ -16,7 +16,6 @@
 
 package co.cask.hydrator.plugin.batch.action;
 
-import co.cask.cdap.common.utils.Networks;
 import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
@@ -35,7 +34,6 @@ import com.dumbster.smtp.SimpleSmtpServer;
 import com.dumbster.smtp.SmtpMessage;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 

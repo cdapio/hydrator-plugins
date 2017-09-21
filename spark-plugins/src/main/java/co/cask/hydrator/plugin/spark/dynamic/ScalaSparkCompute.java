@@ -24,7 +24,6 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.api.spark.dynamic.CompilationFailureException;
-import co.cask.cdap.api.spark.dynamic.SparkCompiler;
 import co.cask.cdap.api.spark.dynamic.SparkInterpreter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.StageConfigurer;
