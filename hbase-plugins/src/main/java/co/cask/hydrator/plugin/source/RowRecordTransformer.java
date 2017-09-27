@@ -37,7 +37,7 @@ public class RowRecordTransformer {
       rowField = schema.getField(rowFieldName);
       // if row field was given, it must be present in the schema and it must be a simple type
       Preconditions.checkArgument(rowField != null, "Row field must be present in the schema.");
-      Preconditions.checkArgument(rowField.getSchema().getType().isSimpleType(), "Row field must be a simple type.");
+      Preconditions.checkArgument(rowField.getSchema().isNullableSimple(), "Row field must be a simple type.");
     } else {
       rowField = null;
     }
