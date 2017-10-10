@@ -8,7 +8,16 @@
         {
           "widget-type": "textbox",
           "label": "Field to Split on",
-          "name": "field"
+          "name": "field",
+          "plugin-function": {
+            "method": "POST",
+            "label": "Generate Schema",
+            "widget": "outputSchema",
+            "output-property": "schema",
+            "plugin-method": "outputSchema",
+            "position": "bottom",
+            "button-class": "btn-hydrator"
+          }
         },
         {
           "widget-type": "select",
