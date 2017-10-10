@@ -9,7 +9,16 @@
         {
           "widget-type": "textbox",
           "label": "Union field to split on",
-          "name": "unionField"
+          "name": "unionField",
+          "plugin-function": {
+            "method": "POST",
+            "label": "Generate Schema",
+            "widget": "outputSchema",
+            "output-property": "schema",
+            "plugin-method": "outputSchema",
+            "position": "bottom",
+            "button-class": "btn-hydrator"
+          }
         },
         {
           "widget-type": "select",
