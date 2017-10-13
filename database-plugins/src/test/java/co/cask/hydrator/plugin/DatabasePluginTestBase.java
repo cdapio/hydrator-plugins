@@ -42,6 +42,7 @@ import co.cask.hydrator.plugin.db.batch.source.DBSource;
 import co.cask.hydrator.plugin.db.batch.source.DataDrivenETLDBInputFormat;
 import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.hsqldb.Server;
 import org.hsqldb.jdbc.JDBCDriver;
@@ -277,12 +278,12 @@ public class DatabasePluginTestBase extends HydratorTestBase {
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app(appName);
-    return deployApplication(appId.toId(), appRequest);
+    return deployApplication(appId, appRequest);
   }
 
   protected void runETLOnce(ApplicationManager appManager) throws TimeoutException,
                                                                   InterruptedException, ExecutionException {
-    runETLOnce(appManager, new HashMap<String, String>());
+    runETLOnce(appManager, ImmutableMap.<String, String>of());
   }
 
   protected void runETLOnce(ApplicationManager appManager,

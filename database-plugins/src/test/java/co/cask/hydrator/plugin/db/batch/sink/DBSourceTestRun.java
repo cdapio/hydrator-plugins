@@ -75,10 +75,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     ETLPlugin sinkConfig = MockSink.getPlugin("macroOutputTable");
 
     ApplicationManager appManager = deployETL(sourceConfig, sinkConfig, "testDBMacro");
-
-    Map<String, String> arguments = new HashMap<>();
-    arguments.put("logical.start.time", String.valueOf(CURRENT_TS));
-    runETLOnce(appManager, arguments);
+    runETLOnce(appManager, ImmutableMap.of("logical.start.time", String.valueOf(CURRENT_TS)));
 
     DataSetManager<Table> outputManager = getDataset("macroOutputTable");
     Assert.assertTrue(MockSink.readOutput(outputManager).isEmpty());
@@ -111,7 +108,6 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     ETLPlugin sinkConfig = MockSink.getPlugin(outputDatasetName);
 
     ApplicationManager appManager = deployETL(sourceConfig, sinkConfig, "testDBSource");
-
     runETLOnce(appManager);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
