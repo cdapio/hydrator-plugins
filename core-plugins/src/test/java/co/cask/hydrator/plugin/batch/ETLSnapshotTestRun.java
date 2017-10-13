@@ -20,16 +20,12 @@ import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
 import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.proto.ProgramRunStatus;
-import co.cask.cdap.proto.artifact.AppRequest;
-import co.cask.cdap.proto.id.ApplicationId;
-import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.WorkflowManager;
@@ -108,9 +104,7 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
       .addConnection(source.getName(), sink2.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("snapshotSinkTest-multisnapshot");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
+    ApplicationManager appManager = deployETL(etlConfig, "snapshotSinkTest-multisnapshot");
 
     // run the pipeline once with some state in the table
     DataSetManager<Table> inputManager = getDataset(tableName);
@@ -121,9 +115,7 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
     DataSetManager<PartitionedFileSet> parquetFiles = getDataset("testParquet");
     List<DataSetManager<PartitionedFileSet>> fileSetManagers = ImmutableList.of(avroFiles, parquetFiles);
 
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
+    WorkflowManager workflowManager = runETLOnce(appManager);
 
     Map<String, Integer> expected = new HashMap<>();
     expected.put("id123", 777);
@@ -187,9 +179,7 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
       .addConnection(source.getName(), sink1.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("snapshotSinkTest-snapshottext");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
+    ApplicationManager appManager = deployETL(etlConfig, "snapshotSinkTest-snapshottext");
 
     // run the pipeline once with some state in the table
     DataSetManager<Table> inputManager = getDataset(tableName);
@@ -201,9 +191,7 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
     DataSetManager<PartitionedFileSet> textFiles = getDataset("testText");
     List<DataSetManager<PartitionedFileSet>> fileSetManagers = ImmutableList.of(textFiles);
 
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
+    runETLOnce(appManager);
 
     Set<String> expected = new HashSet<>();
     expected.add("id123\t777");
@@ -247,14 +235,10 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app(String.format("snapshotSinkTest_%s_%s", sourceETLPlugin, sourceName));
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-
+    ApplicationManager appManager = deployETL(etlConfig,
+                                              String.format("snapshotSinkTest_%s_%s", sourceETLPlugin, sourceName));
     // run the pipeline, should see the 2nd state of the table
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
+    runETLOnce(appManager);
 
     DataSetManager<PartitionedFileSet> output = getDataset(outputName);
     Location partitionLocation = new SnapshotFileSet(output.get()).getLocation();

@@ -85,9 +85,7 @@ public class DedupTestRun extends ETLBatchTestBase {
       .addConnection(dedupStage.getName(), sinkStage.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> request = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
-    ApplicationId appId = NamespaceId.DEFAULT.app("dedup-test");
-    ApplicationManager appManager = deployApplication(appId, request);
+    ApplicationManager appManager = deployETL(config, "dedup-test");
 
     // write input data
     // 1: samuel, goel, 10, 100.31
@@ -124,9 +122,7 @@ public class DedupTestRun extends ETLBatchTestBase {
     purchaseTable.put(put);
     purchaseManager.flush();
 
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
+    runETLOnce(appManager);
 
     DataSetManager<Table> sinkManager = getDataset(sinkDatasetName);
     try (Table sinkTable = sinkManager.get()) {

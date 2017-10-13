@@ -20,20 +20,14 @@ import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Put;
 import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.ProgramRunStatus;
-import co.cask.cdap.proto.artifact.AppRequest;
-import co.cask.cdap.proto.id.ApplicationId;
-import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
-import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
 import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.common.TableSinkConfig;
@@ -43,7 +37,6 @@ import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Test configuring Table sink with valid and invalid scenarios based on input and output schemas.
@@ -239,9 +232,7 @@ public class TableSinkTest extends ETLBatchTestBase {
       .addStage(sink)
       .addConnection(source.getName(), sink.getName())
       .build();
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("testTableSink");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
+    ApplicationManager appManager = deployETL(etlConfig, "testTableSink");
     // add some data to the input table
     DataSetManager<Table> inputManager = getDataset("TableSinkInputTable");
     Table inputTable = inputManager.get();
@@ -254,10 +245,7 @@ public class TableSinkTest extends ETLBatchTestBase {
     inputManager.flush();
     Map<String, String> runTimeProperties = new HashMap<String, String>();
     runTimeProperties.put("name", "tableSinkName");
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.setRuntimeArgs(runTimeProperties);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
+    runETLOnce(appManager, runTimeProperties);
     // verify
     DataSetManager<Table> tableManager = getDataset("tableSinkName");
     Table table = tableManager.get();

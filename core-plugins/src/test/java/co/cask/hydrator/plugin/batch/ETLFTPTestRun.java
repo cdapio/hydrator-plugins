@@ -18,19 +18,13 @@ package co.cask.hydrator.plugin.batch;
 
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.common.utils.Tasks;
-import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.ProgramRunStatus;
-import co.cask.cdap.proto.artifact.AppRequest;
-import co.cask.cdap.proto.id.ApplicationId;
-import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
-import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.batch.source.FileBatchSource;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
@@ -122,13 +116,8 @@ public class ETLFTPTestRun extends ETLBatchTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("FTPToTPFS");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 2, TimeUnit.MINUTES);
+    ApplicationManager appManager = deployETL(etlConfig, "FTPToTPFS");
+    runETLOnce(appManager);
 
     DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset("fileSink");
     try (TimePartitionedFileSet fileSet = fileSetManager.get()) {

@@ -19,7 +19,6 @@ package co.cask.hydrator.plugin.batch;
 import co.cask.cdap.api.data.format.Formats;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
-import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
@@ -28,14 +27,10 @@ import co.cask.cdap.etl.proto.Engine;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.ProgramRunStatus;
-import co.cask.cdap.proto.artifact.AppRequest;
-import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.StreamManager;
-import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
@@ -46,7 +41,6 @@ import org.junit.Test;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Tests for {@link ETLBatchApplication} for Stream conversion from stream to avro format for writing to
@@ -90,13 +84,8 @@ public class ETLStreamConversionTestRun extends ETLBatchTestBase {
 
     ETLBatchConfig etlConfig = constructETLBatchConfig(engine, streamName, filesetName, sinkType);
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app(String.format("app_%s_%s", engine, sinkType));
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-
-    final WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 4, TimeUnit.MINUTES);
+    ApplicationManager appManager = deployETL(etlConfig, String.format("app_%s_%s", engine, sinkType));
+    runETLOnce(appManager);
 
     // get the output fileset, and read the parquet/avro files it output.
     DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset(filesetName);
@@ -105,7 +94,7 @@ public class ETLStreamConversionTestRun extends ETLBatchTestBase {
     List<GenericRecord> records = readOutput(fileSet, EVENT_SCHEMA);
     Assert.assertEquals(1, records.size());
 
-    try (Connection sqlConn = getQueryClient(appId.getParent());
+    try (Connection sqlConn = getQueryClient(NamespaceId.DEFAULT);
          ResultSet resultSet = sqlConn.prepareStatement(String.format("select * from dataset_%s", filesetName))
            .executeQuery()) {
       Assert.assertTrue(resultSet.next());

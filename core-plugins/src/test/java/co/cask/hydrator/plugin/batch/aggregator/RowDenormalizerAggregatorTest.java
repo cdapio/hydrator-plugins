@@ -21,20 +21,14 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.api.dataset.table.Put;
 import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.batch.BatchAggregator;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.ProgramRunStatus;
-import co.cask.cdap.proto.artifact.AppRequest;
-import co.cask.cdap.proto.id.ApplicationId;
-import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
-import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
@@ -44,7 +38,6 @@ import org.junit.Test;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Test cases for {@link RowDenormalizerAggregator}.
@@ -101,9 +94,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
       .addConnection(sourceStage.getName(), aggregateStage.getName())
       .addConnection(aggregateStage.getName(), sinkStage.getName())
       .build();
-    AppRequest<ETLBatchConfig> request = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
-    ApplicationId appId = NamespaceId.DEFAULT.app("denormalize-test");
-    ApplicationManager appManager = deployApplication(appId, request);
+    ApplicationManager appManager = deployETL(config, "denormalize-test");
 
     // write input data
     DataSetManager<Table> inputManager = getDataset(inputDatasetName);
@@ -142,9 +133,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
     inputManager.flush();
 
     // run the pipeline
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
+    runETLOnce(appManager);
 
     DataSetManager<TimePartitionedFileSet> outputManager = getDataset(outputDatasetName);
     TimePartitionedFileSet fileSet = outputManager.get();
@@ -206,9 +195,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
       .addConnection(sourceStage.getName(), aggregateStage.getName())
       .addConnection(aggregateStage.getName(), sinkStage.getName())
       .build();
-    AppRequest<ETLBatchConfig> request = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
-    ApplicationId appId = NamespaceId.DEFAULT.app("denormalize-test-with-null");
-    ApplicationManager appManager = deployApplication(appId, request);
+    ApplicationManager appManager = deployETL(config, "denormalize-test-with-null");
 
     // write input data
     DataSetManager<Table> inputManager = getDataset(inputDatasetName);
@@ -262,9 +249,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
     inputManager.flush();
 
     // run the pipeline
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
+    runETLOnce(appManager);
 
     DataSetManager<TimePartitionedFileSet> outputManager = getDataset(outputDatasetName);
     TimePartitionedFileSet fileSet = outputManager.get();
@@ -329,9 +314,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
       .addConnection(sourceStage.getName(), aggregateStage.getName())
       .addConnection(aggregateStage.getName(), sinkStage.getName())
       .build();
-    AppRequest<ETLBatchConfig> request = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
-    ApplicationId appId = NamespaceId.DEFAULT.app("denormalize-test-with-wrong-output");
-    ApplicationManager appManager = deployApplication(appId, request);
+    ApplicationManager appManager = deployETL(config, "denormalize-test-with-wrong-output");
 
     // write input data
     DataSetManager<Table> inputManager = getDataset(inputDatasetName);
@@ -354,9 +337,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
     inputManager.flush();
 
     // run the pipeline
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
+    runETLOnce(appManager);
 
     DataSetManager<TimePartitionedFileSet> outputManager = getDataset(outputDatasetName);
     TimePartitionedFileSet fileSet = outputManager.get();
