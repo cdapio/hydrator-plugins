@@ -24,7 +24,6 @@ import co.cask.cdap.api.dataset.lib.TimePartitionDetail;
 import co.cask.cdap.api.dataset.lib.TimePartitionOutput;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
@@ -32,13 +31,11 @@ import co.cask.cdap.etl.mock.batch.MockSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
-import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -102,9 +99,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("offsetCleanupTest");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
+    ApplicationManager appManager = deployETL(etlConfig, "offsetCleanupTest");
 
     // write input to read
     org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(RECORD_SCHEMA.toString());
@@ -139,9 +134,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     inputManager.flush();
 
     // run the pipeline
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start(ImmutableMap.of("logical.start.time", String.valueOf(runtime)));
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 4, TimeUnit.MINUTES);
+    runETLOnce(appManager, ImmutableMap.of("logical.start.time", String.valueOf(runtime)));
 
     outputManager.flush();
     // check old partition was cleaned up
@@ -214,9 +207,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("TPFSOrcSinkTest");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
+    ApplicationManager appManager = deployETL(etlConfig, "TPFSOrcSinkTest");
     DataSetManager<Table> inputManager = getDataset(inputDatasetName);
 
     // write input data
@@ -242,9 +233,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     MockSource.writeInput(inputManager, input);
 
     // run the pipeline
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 4, TimeUnit.MINUTES);
+    runETLOnce(appManager);
 
     Connection connection = getQueryClient();
     ResultSet results = connection.prepareStatement("select * from dataset_outputOrc").executeQuery();
@@ -306,14 +295,10 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     String newFilesetName = filesetName + "_op";
     ETLBatchConfig etlBatchConfig = constructTPFSETLConfig(filesetName, newFilesetName, eventSchema, "Snappy");
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlBatchConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("sconversion1");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
+    ApplicationManager appManager = deployETL(etlBatchConfig, "sconversion1");
 
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     // add a minute to the end time to make sure the newly added partition is included in the run.
-    workflowManager.start(ImmutableMap.of("logical.start.time", String.valueOf(timeInMillis + 60 * 1000)));
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 4, TimeUnit.MINUTES);
+    runETLOnce(appManager, ImmutableMap.of("logical.start.time", String.valueOf(timeInMillis + 60 * 1000)));
 
     DataSetManager<TimePartitionedFileSet> newFileSetManager = getDataset(newFilesetName);
     TimePartitionedFileSet newFileSet = newFileSetManager.get();
@@ -327,16 +312,11 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
   public void testParquet() throws Exception {
     ETLBatchConfig etlConfig = buildBatchConfig(null);
     long timeInMillis = System.currentTimeMillis();
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("parquetTest");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
+    ApplicationManager appManager = deployETL(etlConfig, "parquetTest");
     writeDataToPipeline(timeInMillis);
 
-    // run the pipeline
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    // add a minute to the end time to make sure the newly added partition is included in the run.
-    workflowManager.start(ImmutableMap.of("logical.start.time", String.valueOf(timeInMillis + 60 * 1000)));
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 4, TimeUnit.MINUTES);
+    // Run the pipeline. Add a minute to the end time to make sure the newly added partition is included in the run.
+    runETLOnce(appManager, ImmutableMap.of("logical.start.time", String.valueOf(timeInMillis + 60 * 1000)));
 
     DataSetManager<TimePartitionedFileSet> outputManager = getDataset("outputParquet");
     TimePartitionedFileSet newFileSet = outputManager.get();
@@ -353,17 +333,12 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
   public void testParquetSnappy() throws Exception {
    ETLBatchConfig etlConfig = buildBatchConfig("Snappy");
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("parquetTestSnappy");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
+    ApplicationManager appManager = deployETL(etlConfig, "parquetTestSnappy");
     long timeInMillis = System.currentTimeMillis();
     writeDataToPipeline(timeInMillis);
 
-    // run the pipeline
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    // add a minute to the end time to make sure the newly added partition is included in the run.
-    workflowManager.start(ImmutableMap.of("logical.start.time", String.valueOf(timeInMillis + 60 * 1000)));
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 4, TimeUnit.MINUTES);
+    // Run the pipeline. Add a minute to the end time to make sure the newly added partition is included in the run.
+    runETLOnce(appManager, ImmutableMap.of("logical.start.time", String.valueOf(timeInMillis + 60 * 1000)));
 
     DataSetManager<TimePartitionedFileSet> outputManager = getDataset("outputParquet");
     TimePartitionedFileSet newFileSet = outputManager.get();
@@ -416,14 +391,10 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     String newFilesetName = filesetName + "_op";
     ETLBatchConfig etlBatchConfig = constructTPFSETLConfig(filesetName, newFilesetName, eventSchema, "Deflate");
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlBatchConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("AvroDeflateCodecTest");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
+    ApplicationManager appManager = deployETL(etlBatchConfig, "AvroDeflateCodecTest");
 
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     // add a minute to the end time to make sure the newly added partition is included in the run.
-    workflowManager.start(ImmutableMap.of("logical.start.time", String.valueOf(timeInMillis + 60 * 1000)));
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 4, TimeUnit.MINUTES);
+    runETLOnce(appManager, ImmutableMap.of("logical.start.time", String.valueOf(timeInMillis + 60 * 1000)));
 
     DataSetManager<TimePartitionedFileSet> newFileSetManager = getDataset(newFilesetName);
     TimePartitionedFileSet newFileSet = newFileSetManager.get();

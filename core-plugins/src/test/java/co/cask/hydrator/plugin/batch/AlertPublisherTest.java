@@ -22,7 +22,6 @@ import co.cask.cdap.api.dataset.lib.CloseableIterator;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.api.messaging.Message;
 import co.cask.cdap.api.messaging.MessageFetcher;
-import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.Alert;
 import co.cask.cdap.etl.api.AlertPublisher;
 import co.cask.cdap.etl.mock.alert.NullAlertTransform;
@@ -32,13 +31,9 @@ import co.cask.cdap.etl.proto.ArtifactSelectorConfig;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.ProgramRunStatus;
-import co.cask.cdap.proto.artifact.AppRequest;
-import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
-import co.cask.cdap.test.WorkflowManager;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -49,7 +44,6 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Tests AlertPublisher plugins
@@ -83,9 +77,7 @@ public class AlertPublisherTest extends ETLBatchTestBase {
       .addConnection("nullAlert", "tms")
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
-    ApplicationId appId = NamespaceId.DEFAULT.app("AlertTest");
-    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
+    ApplicationManager appManager = deployETL(config, "AlertTest");
 
     Schema schema = Schema.recordOf("x", Schema.Field.of("id", Schema.nullableOf(Schema.of(Schema.Type.LONG))));
     StructuredRecord record1 = StructuredRecord.builder(schema).set("id", 1L).build();
@@ -95,9 +87,7 @@ public class AlertPublisherTest extends ETLBatchTestBase {
     DataSetManager<Table> sourceTable = getDataset(sourceName);
     MockSource.writeInput(sourceTable, ImmutableList.of(record1, record2, alertRecord));
 
-    WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    manager.start();
-    manager.waitForRun(ProgramRunStatus.COMPLETED, 3, TimeUnit.MINUTES);
+    runETLOnce(appManager);
 
     DataSetManager<Table> sinkTable = getDataset(sinkName);
     Set<StructuredRecord> actual = new HashSet<>(MockSink.readOutput(sinkTable));

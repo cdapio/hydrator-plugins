@@ -16,19 +16,13 @@
 
 package co.cask.hydrator.plugin.batch.action;
 
-import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.PostAction;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.ProgramRunStatus;
-import co.cask.cdap.proto.artifact.AppRequest;
-import co.cask.cdap.proto.id.ApplicationId;
-import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
-import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
 import com.dumbster.smtp.SimpleSmtpServer;
 import com.dumbster.smtp.SmtpMessage;
@@ -38,7 +32,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Iterator;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Test for {@link EmailAction}
@@ -82,13 +75,8 @@ public class EmailActionTestRun extends ETLBatchTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("actionTest");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-
-    WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    manager.start(ImmutableMap.of("logical.start.time", "0"));
-    manager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
+    ApplicationManager appManager = deployETL(etlConfig, "actionTest");
+    runETLOnce(appManager, ImmutableMap.of("logical.start.time", "0"));
 
     server.stop();
 

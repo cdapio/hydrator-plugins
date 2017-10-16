@@ -16,19 +16,13 @@
 
 package co.cask.hydrator.plugin.batch.action;
 
-import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.action.Action;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.ProgramRunStatus;
-import co.cask.cdap.proto.artifact.AppRequest;
-import co.cask.cdap.proto.id.ApplicationId;
-import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
-import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
 import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.fs.FileSystem;
@@ -42,7 +36,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Test for HDFSAction.
@@ -104,12 +97,8 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("hdfsFailedActionTest");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-    WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    manager.start();
-    manager.waitForRuns(ProgramRunStatus.FAILED, 1, 3, TimeUnit.MINUTES);
+    ApplicationManager appManager = deployETL(etlConfig, "hdfsFailedActionTest");
+    runETLOnce(appManager);
 
     Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/source/test.txt")));
     Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/source/test.json")));
@@ -146,12 +135,8 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("hdfsSuccessActionTest");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-    WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    manager.start();
-    manager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 3, TimeUnit.MINUTES);
+    ApplicationManager appManager = deployETL(etlConfig, "hdfsSuccessActionTest");
+    runETLOnce(appManager);
 
     Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/dest/test.txt")));
     Assert.assertFalse(fileSystem.exists(new Path(outputDir.toUri().toString() + "/dest/test.json")));
@@ -190,12 +175,8 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("hdfsInvalidActionTest");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-    WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    manager.start();
-    manager.waitForRuns(ProgramRunStatus.FAILED, 1, 3, TimeUnit.MINUTES);
+    ApplicationManager appManager = deployETL(etlConfig, "hdfsInvalidActionTest");
+    runETLOnce(appManager);
 
     Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/source/test.txt")));
     Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/source/test2.txt")));
@@ -235,12 +216,8 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("hdfsDeleteActionTest");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-    WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    manager.start();
-    manager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 3, TimeUnit.MINUTES);
+    ApplicationManager appManager = deployETL(etlConfig, "hdfsDeleteActionTest");
+    runETLOnce(appManager);
 
     Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/basicDir/test.json")));
     Assert.assertFalse(fileSystem.exists(new Path(outputDir.toUri().toString() + "/basicDir/test.txt")));
@@ -276,12 +253,8 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("hdfsDeleteSingleFileNoRegexActionTest");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-    WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    manager.start();
-    manager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
+    ApplicationManager appManager = deployETL(etlConfig, "hdfsDeleteSingleFileNoRegexActionTest");
+    runETLOnce(appManager);
 
     Assert.assertFalse(fileSystem.exists(new Path(outputDir.toUri().toString() + "/dir/test.txt")));
   }
@@ -316,12 +289,8 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("hdfsDeleteSingleFileActionTest");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-    WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    manager.start();
-    manager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 3, TimeUnit.MINUTES);
+    ApplicationManager appManager = deployETL(etlConfig, "hdfsDeleteSingleFileActionTest");
+    runETLOnce(appManager);
 
     Assert.assertFalse(fileSystem.exists(new Path(outputDir.toUri().toString() + "/singleDir/test.txt")));
     Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/singleDir/test2.txt")));
@@ -359,15 +328,9 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("hdfsDeleteDirectoryActionTest");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-    WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    manager.start();
-    manager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 3, TimeUnit.MINUTES);
+    ApplicationManager appManager = deployETL(etlConfig, "hdfsDeleteDirectoryActionTest");
+    runETLOnce(appManager);
 
     Assert.assertFalse(fileSystem.isDirectory(new Path(outputDir.toUri().toString() + "/dir1/source")));
-
-
   }
 }

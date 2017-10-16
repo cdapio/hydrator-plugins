@@ -21,20 +21,14 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.api.dataset.table.Put;
 import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.batch.BatchJoiner;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.ProgramRunStatus;
-import co.cask.cdap.proto.artifact.AppRequest;
-import co.cask.cdap.proto.id.ApplicationId;
-import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
-import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
@@ -47,7 +41,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Tests for Joiner.
@@ -152,9 +145,7 @@ public class JoinerTestRun extends ETLBatchTestBase {
       .addConnection(filmCategoryStage.getName(), joinStage.getName())
       .addConnection(joinStage.getName(), joinSinkStage.getName())
       .build();
-    AppRequest<ETLBatchConfig> request = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
-    ApplicationId appId = NamespaceId.DEFAULT.app("inner-joiner-test");
-    ApplicationManager appManager = deployApplication(appId, request);
+    ApplicationManager appManager = deployETL(config, "inner-joiner-test");
 
     // ingest data
     ingestToFilmTable(filmDatasetName);
@@ -162,9 +153,7 @@ public class JoinerTestRun extends ETLBatchTestBase {
     ingestToFilmCategoryTable(filmCategoryDatasetName);
 
     // run the pipeline
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
+    runETLOnce(appManager);
 
     DataSetManager<TimePartitionedFileSet> outputManager = getDataset(joinedDatasetName);
     TimePartitionedFileSet fileSet = outputManager.get();
@@ -252,9 +241,7 @@ public class JoinerTestRun extends ETLBatchTestBase {
       .addConnection(filmCategoryStage.getName(), joinStage.getName())
       .addConnection(joinStage.getName(), joinSinkStage.getName())
       .build();
-    AppRequest<ETLBatchConfig> request = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
-    ApplicationId appId = NamespaceId.DEFAULT.app("outer-joiner-test");
-    ApplicationManager appManager = deployApplication(appId, request);
+    ApplicationManager appManager = deployETL(config, "outer-joiner-test");
 
     // ingest data
     ingestToFilmTable(filmDatasetName);
@@ -262,9 +249,7 @@ public class JoinerTestRun extends ETLBatchTestBase {
     ingestToFilmCategoryTable(filmCategoryDatasetName);
 
     // run the pipeline
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
+    runETLOnce(appManager);
 
     DataSetManager<TimePartitionedFileSet> outputManager = getDataset(joinedDatasetName);
     TimePartitionedFileSet fileSet = outputManager.get();
@@ -352,9 +337,7 @@ public class JoinerTestRun extends ETLBatchTestBase {
       .addConnection(filmCategoryStage.getName(), joinStage.getName())
       .addConnection(joinStage.getName(), joinSinkStage.getName())
       .build();
-    AppRequest<ETLBatchConfig> request = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
-    ApplicationId appId = NamespaceId.DEFAULT.app("outer-joiner-without-required-inputs-test");
-    ApplicationManager appManager = deployApplication(appId, request);
+    ApplicationManager appManager = deployETL(config, "outer-joiner-without-required-inputs-test");
 
     // ingest data
     ingestToFilmTable(filmDatasetName);
@@ -362,9 +345,7 @@ public class JoinerTestRun extends ETLBatchTestBase {
     ingestToFilmCategoryTable(filmCategoryDatasetName);
 
     // run the pipeline
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
+    runETLOnce(appManager);
 
     DataSetManager<TimePartitionedFileSet> outputManager = getDataset(joinedDatasetName);
     TimePartitionedFileSet fileSet = outputManager.get();

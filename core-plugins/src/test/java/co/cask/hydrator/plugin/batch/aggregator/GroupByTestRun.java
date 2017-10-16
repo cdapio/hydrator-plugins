@@ -21,27 +21,19 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Put;
 import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.batch.BatchAggregator;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.ProgramRunStatus;
-import co.cask.cdap.proto.artifact.AppRequest;
-import co.cask.cdap.proto.id.ApplicationId;
-import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
-import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * Tests for GroupBy Aggregator.
@@ -133,9 +125,7 @@ public class GroupByTestRun extends ETLBatchTestBase {
       .addConnection(userGroupStage.getName(), userSinkStage.getName())
       .addConnection(itemGroupStage.getName(), itemSinkStage.getName())
       .build();
-    AppRequest<ETLBatchConfig> request = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
-    ApplicationId appId = NamespaceId.DEFAULT.app("groupby-test");
-    ApplicationManager appManager = deployApplication(appId, request);
+    ApplicationManager appManager = deployETL(config, "groupby-test");
 
     // write input data
     // 1: 1234567890000, samuel, island, 1000000
@@ -179,9 +169,7 @@ public class GroupByTestRun extends ETLBatchTestBase {
     purchaseManager.flush();
 
     // run the pipeline
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
+    runETLOnce(appManager);
 
     DataSetManager<Table> usersManager = getDataset(usersDatasetName);
     Table usersTable = usersManager.get();
@@ -211,5 +199,4 @@ public class GroupByTestRun extends ETLBatchTestBase {
     Assert.assertEquals(row.getLong("totalPurchases").longValue(), 2L);
     Assert.assertEquals(row.getLong("latestPurchase").longValue(), 1234567890003L);
   }
-
 }
