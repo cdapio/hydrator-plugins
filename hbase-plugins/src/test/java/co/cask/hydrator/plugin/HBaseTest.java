@@ -43,7 +43,9 @@ import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.sink.HBaseSink;
+import co.cask.hydrator.plugin.sink.mapreduce.HBaseTableOutputFormat;
 import co.cask.hydrator.plugin.source.HBaseSource;
+import co.cask.hydrator.plugin.source.mapreduce.HBaseTableInputFormat;
 import com.google.common.collect.ImmutableList;
 import org.apache.hadoop.hbase.HBaseTestingUtility;
 import org.apache.hadoop.hbase.MiniHBaseCluster;
@@ -56,7 +58,6 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
-import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -114,7 +115,7 @@ public class HBaseTest extends HydratorTestBase {
     // add artifact for batch sources and sinks
     addPluginArtifact(NamespaceId.DEFAULT.artifact("batch-plugins", "1.0.0"), BATCH_APP_ARTIFACT_ID,
                       HBaseSource.class, HBaseSink.class,
-                      TableInputFormat.class, TableOutputFormat.class,
+                      HBaseTableInputFormat.class, TableInputFormat.class, HBaseTableOutputFormat.class,
                       Result.class, ImmutableBytesWritable.class,
                       Put.class, Mutation.class);
   }

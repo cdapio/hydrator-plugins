@@ -31,6 +31,7 @@ import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.common.ReferenceBatchSource;
 import co.cask.hydrator.common.SourceInputFormatProvider;
 import co.cask.hydrator.plugin.HBaseConfig;
+import co.cask.hydrator.plugin.source.mapreduce.HBaseTableInputFormat;
 import com.google.common.base.Strings;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Result;
@@ -70,7 +71,7 @@ public class HBaseSource extends ReferenceBatchSource<ImmutableBytesWritable, Re
     conf.setStrings(ioSerializations,
                     MutationSerialization.class.getName(), ResultSerialization.class.getName(),
                     KeyValueSerialization.class.getName());
-    context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(TableInputFormat.class, conf)));
+    context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(HBaseTableInputFormat.class, conf)));
   }
 
   @Override
