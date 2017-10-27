@@ -145,9 +145,7 @@
             <_exportcontents>
               co.cask.hydrator.plugin.*;
               org.apache.commons.lang;
-              org.apache.hadoop.hbase.mapreduce.*;
-              org.apache.hadoop.hbase.client.*;
-              org.apache.hadoop.hbase.io.*;
+              org.apache.hadoop.hbase.mapreduce;
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
