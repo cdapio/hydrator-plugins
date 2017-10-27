@@ -35,6 +35,7 @@ import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.SchemaValidator;
 import co.cask.hydrator.common.batch.JobUtils;
 import co.cask.hydrator.plugin.HBaseConfig;
+import co.cask.hydrator.plugin.sink.mapreduce.HBaseTableOutputFormat;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import org.apache.hadoop.conf.Configuration;
@@ -123,7 +124,7 @@ public class HBaseSink extends ReferenceBatchSink<StructuredRecord, NullWritable
 
     @Override
     public String getOutputFormatClassName() {
-      return TableOutputFormat.class.getName();
+      return HBaseTableOutputFormat.class.getName();
     }
 
     @Override
