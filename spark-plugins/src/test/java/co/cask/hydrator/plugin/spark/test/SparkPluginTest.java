@@ -122,9 +122,9 @@ public class SparkPluginTest extends HydratorTestBase {
     List<HttpHandler> handlers = new ArrayList<>();
     handlers.add(new MockFeedHandler());
     httpService = NettyHttpService.builder("MockService")
-      .addHttpHandlers(handlers)
+      .setHttpHandlers(handlers)
       .build();
-    httpService.startAndWait();
+    httpService.start();
 
     int port = httpService.getBindAddress().getPort();
     httpBase = "http://localhost:" + port;
@@ -139,8 +139,8 @@ public class SparkPluginTest extends HydratorTestBase {
   }
 
   @AfterClass
-  public static void cleanup() {
-    httpService.stopAndWait();
+  public static void cleanup() throws Exception {
+    httpService.stop();
   }
 
   @Test
