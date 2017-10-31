@@ -20,8 +20,9 @@ import co.cask.http.HandlerContext;
 import co.cask.http.HttpHandler;
 import co.cask.http.HttpResponder;
 import com.google.common.base.Charsets;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpResponseStatus;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -60,8 +61,8 @@ public class MockFeedHandler implements HttpHandler {
   // so adding a method to set it.
   @PUT
   @Path("port")
-  public void setPort(HttpRequest request, HttpResponder responder) {
-    port = Integer.parseInt(request.getContent().toString(Charsets.UTF_8));
+  public void setPort(FullHttpRequest request, HttpResponder responder) {
+    port = Integer.parseInt(request.content().toString(Charsets.UTF_8));
     responder.sendStatus(HttpResponseStatus.OK);
   }
 
@@ -69,9 +70,9 @@ public class MockFeedHandler implements HttpHandler {
   // so adding a method to set it.
   @PUT
   @Path("feeds/{feed-id}")
-  public void setBasePath(HttpRequest request, HttpResponder responder,
+  public void setBasePath(FullHttpRequest request, HttpResponder responder,
                           @PathParam("feed-id") String feedId) {
-    String content = request.getContent().toString(Charsets.UTF_8);
+    String content = request.content().toString(Charsets.UTF_8);
     feeds.put(feedId, content);
     responder.sendStatus(HttpResponseStatus.OK);
   }

@@ -122,6 +122,8 @@
     <jython.version>2.5.2</jython.version>
     <json-path.version>2.2.0</json-path.version>
     <json.version>20160212</json.version>
+    <netty.version>4.1.16.Final</netty.version>
+    <netty-http.version>1.0.0-SNAPSHOT</netty-http.version>
     <!-- properties for script build step that creates the config files for the artifacts -->
     <widgets.dir>widgets</widgets.dir>
     <docs.dir>docs</docs.dir>
@@ -630,6 +632,18 @@
         <groupId>org.apache.spark</groupId>
         <artifactId>spark-streaming-twitter_2.10</artifactId>
         <version>1.6.2</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-all</artifactId>
+        <version>${netty.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>co.cask.http</groupId>
+        <artifactId>netty-http</artifactId>
+        <version>${netty-http.version}</version>
+        <scope>test</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
