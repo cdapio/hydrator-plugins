@@ -76,7 +76,7 @@ public class StructuredToOrcTransformer extends RecordConverter<StructuredRecord
       try {
         HiveSchemaConverter.appendType(builder, inputSchema);
       } catch (UnsupportedTypeException e) {
-        throw new IllegalArgumentException(String.format("Not a valid Schema %s", inputSchema.toString()), e);
+        throw new IllegalArgumentException(String.format("Not a valid Schema %s", inputSchema), e);
       }
       TypeDescription schema = TypeDescription.fromString(builder.toString());
       orcRecord = (OrcStruct) OrcStruct.createValue(schema);
