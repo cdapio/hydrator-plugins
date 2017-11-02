@@ -67,7 +67,7 @@ public class HDFSMoveAction extends Action {
       try {
         if (!fileSystem.rename(source, dest)) {
           if (!config.continueOnError) {
-            throw new IOException(String.format("Failed to rename file {} to {}", source.toString(), dest.toString()));
+            throw new IOException(String.format("Failed to rename file %s to %s", source.toString(), dest.toString()));
           }
           LOG.error("Failed to move file {} to {}", source.toString(), dest.toString());
         }
@@ -117,7 +117,7 @@ public class HDFSMoveAction extends Action {
       try {
         if (!fileSystem.rename(source, dest)) {
           if (!config.continueOnError) {
-            throw new IOException(String.format("Failed to rename file {} to {}", source.toString(), dest.toString()));
+            throw new IOException(String.format("Failed to rename file %s to %s", source.toString(), dest.toString()));
           }
           LOG.error("Failed to move file {} to {}", source.toString(), dest.toString());
         }
