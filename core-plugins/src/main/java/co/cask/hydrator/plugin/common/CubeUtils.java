@@ -41,15 +41,15 @@ public final class CubeUtils {
       if (split.length != 2) {
         //should not happen
         throw new IllegalArgumentException(
-          String.format("For Property %s Parameter {}, name or value is empty, please check config", property, group));
+          String.format("For Property %s Parameter %s, name or value is empty, please check config", property, group));
       }
       if (Strings.isNullOrEmpty(split[0])) {
         throw new IllegalArgumentException(
-          String.format("Empty key/value is not allowed in %s", property));
+          String.format("Empty key/value is not allowed in property %s, group %s", property, group));
       }
       if (Strings.isNullOrEmpty(split[1])) {
         throw new IllegalArgumentException(
-          String.format("Empty key/value is not allowed in %s", property));
+          String.format("Empty key/value is not allowed in property %s, group %s", property, group));
       }
       result.put(keyFunction.apply(split[0]), split[1]);
     }

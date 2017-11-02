@@ -59,7 +59,6 @@ public class StructuredToOrcTransformer extends RecordConverter<StructuredRecord
         WritableComparable writable = convertToWritable(field, input);
         orcRecord.setFieldValue(fields.get(i).getName(), writable);
       } catch (UnsupportedTypeException e) {
-        LOG.debug("{} is not a supported type", field.getName(), e);
         throw new IllegalArgumentException(String.format("%s is not a supported type", field.getName()), e);
       }
     }
@@ -120,8 +119,8 @@ public class StructuredToOrcTransformer extends RecordConverter<StructuredRecord
           return new BytesWritable(Bytes.getBytes((ByteBuffer) fieldVal));
         }
       default:
-        throw new UnsupportedTypeException(String.format("%s type is currently not supported in ORC",
-                                                         field.getSchema().getType().name()));
+        throw new UnsupportedTypeException(String.format("Type '%s' of field '%s' is currently not supported in ORC",
+                                                         fieldType.name(), field.getName()));
     }
   }
 

@@ -203,7 +203,6 @@ public class FileSetUtil {
       HiveSchemaConverter.appendType(builder, schemaObj);
       return builder.toString();
     } catch (IOException e) {
-      LOG.debug("{} is not a valid schema", configuredSchema, e);
       throw new IllegalArgumentException(String.format("%s is not a valid schema", configuredSchema), e);
     } catch (UnsupportedTypeException e) {
       throw new IllegalArgumentException(String.format("Could not create hive schema from %s", configuredSchema), e);
