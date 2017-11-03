@@ -166,7 +166,7 @@ public class XMLParserTest {
 
     InvalidEntry<StructuredRecord> invalidEntry = emitter.getErrors().get(0);
     Assert.assertEquals(31, invalidEntry.getErrorCode());
-    Assert.assertEquals("offset", 1, invalidEntry.getInvalidRecord().get("offset"));
+    Assert.assertEquals("offset", 1, invalidEntry.getInvalidRecord().<Integer>get("offset").intValue());
     Assert.assertEquals("body", "<book category=\"COOKING\"><title lang=\"en\">Everyday Italian</title><author>Giada " +
       "De Laurentiis</author><year>2005</year><price>30.00</price>" +
       "</book>", invalidEntry.getInvalidRecord().get("body"));
@@ -197,7 +197,7 @@ public class XMLParserTest {
     StructuredRecord record = emitter.getEmitted().get(0);
     Assert.assertEquals("Harry Potter", record.get("title"));
     Assert.assertEquals("J K. Rowling", record.get("author"));
-    Assert.assertEquals(2005, record.get("year"));
+    Assert.assertEquals(2005, record.<Integer>get("year").intValue());
   }
 
   @Test

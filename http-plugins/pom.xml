@@ -33,6 +33,14 @@
       <artifactId>cdap-etl-api</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-all</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>co.cask.http</groupId>
+      <artifactId>netty-http</artifactId>
+    </dependency>
+    <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>cdap-unit-test</artifactId>
     </dependency>
@@ -52,14 +60,6 @@
     <dependency>
       <groupId>co.cask.cdap</groupId>
       <artifactId>hydrator-test</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-all</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>co.cask.http</groupId>
-      <artifactId>netty-http</artifactId>
     </dependency>
   </dependencies>
 

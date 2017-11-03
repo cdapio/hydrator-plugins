@@ -35,21 +35,21 @@ public class StructuredRecordUtilsTest {
     StructuredRecord upperCaseRecord = StructuredRecordUtils.convertCase(
       record, FieldCase.toFieldCase("upPer"));
     Assert.assertEquals("Abcd", upperCaseRecord.get("NAME"));
-    Assert.assertEquals(10, upperCaseRecord.get("AGE"));
+    Assert.assertEquals(10, upperCaseRecord.<Integer>get("AGE").intValue());
     Assert.assertNull(upperCaseRecord.get("Age"));
     Assert.assertNull(upperCaseRecord.get("Name"));
 
     StructuredRecord lowerCaseRecord = StructuredRecordUtils.convertCase(
       record, FieldCase.toFieldCase("lowEr"));
     Assert.assertEquals("Abcd", lowerCaseRecord.get("name"));
-    Assert.assertEquals(10, lowerCaseRecord.get("age"));
+    Assert.assertEquals(10, lowerCaseRecord.<Integer>get("age").intValue());
     Assert.assertNull(upperCaseRecord.get("Age"));
     Assert.assertNull(upperCaseRecord.get("Name"));
 
     StructuredRecord noChangeRecord = StructuredRecordUtils.convertCase(
       record, FieldCase.toFieldCase("no change"));
     Assert.assertEquals("Abcd", noChangeRecord.get("Name"));
-    Assert.assertEquals(10, noChangeRecord.get("Age"));
+    Assert.assertEquals(10, noChangeRecord.<Integer>get("Age").intValue());
   }
 
   @Test

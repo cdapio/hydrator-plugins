@@ -55,7 +55,7 @@ public class HasherTest {
     Assert.assertEquals(DigestUtils.md2Hex("Field A"), emitter.getEmitted().get(0).get("a"));
     Assert.assertEquals(DigestUtils.md2Hex("Field B"), emitter.getEmitted().get(0).get("b"));
     Assert.assertEquals("Field C", emitter.getEmitted().get(0).get("c"));
-    Assert.assertEquals(4, emitter.getEmitted().get(0).get("d"));
+    Assert.assertEquals(4, emitter.getEmitted().get(0).<Integer>get("d").intValue());
     Assert.assertEquals(DigestUtils.md2Hex("Field E"), emitter.getEmitted().get(0).get("e"));
   }
 
@@ -78,7 +78,7 @@ public class HasherTest {
     Assert.assertEquals(DigestUtils.md5Hex("Field A"), emitter.getEmitted().get(0).get("a"));
     Assert.assertEquals(DigestUtils.md5Hex("Field B"), emitter.getEmitted().get(0).get("b"));
     Assert.assertEquals("Field C", emitter.getEmitted().get(0).get("c"));
-    Assert.assertEquals(4, emitter.getEmitted().get(0).get("d"));
+    Assert.assertEquals(4, emitter.getEmitted().get(0).<Integer>get("d").intValue());
     Assert.assertEquals(DigestUtils.md5Hex("Field E"), emitter.getEmitted().get(0).get("e"));
   }
 
@@ -101,7 +101,7 @@ public class HasherTest {
     Assert.assertEquals(DigestUtils.sha1Hex("Field A"), emitter.getEmitted().get(0).get("a"));
     Assert.assertEquals(DigestUtils.sha1Hex("Field B"), emitter.getEmitted().get(0).get("b"));
     Assert.assertEquals("Field C", emitter.getEmitted().get(0).get("c"));
-    Assert.assertEquals(4, emitter.getEmitted().get(0).get("d"));
+    Assert.assertEquals(4, emitter.getEmitted().get(0).<Integer>get("d").intValue());
     Assert.assertEquals(DigestUtils.sha1Hex("Field E"), emitter.getEmitted().get(0).get("e"));
   }
 
@@ -124,7 +124,7 @@ public class HasherTest {
     Assert.assertEquals(DigestUtils.sha256Hex("Field A"), emitter.getEmitted().get(0).get("a"));
     Assert.assertEquals(DigestUtils.sha256Hex("Field B"), emitter.getEmitted().get(0).get("b"));
     Assert.assertEquals("Field C", emitter.getEmitted().get(0).get("c"));
-    Assert.assertEquals(4, emitter.getEmitted().get(0).get("d"));
+    Assert.assertEquals(4, emitter.getEmitted().get(0).<Integer>get("d").intValue());
     Assert.assertEquals(DigestUtils.sha256Hex("Field E"), emitter.getEmitted().get(0).get("e"));
   }
 
@@ -147,7 +147,7 @@ public class HasherTest {
     Assert.assertEquals(DigestUtils.sha384Hex("Field A"), emitter.getEmitted().get(0).get("a"));
     Assert.assertEquals(DigestUtils.sha384Hex("Field B"), emitter.getEmitted().get(0).get("b"));
     Assert.assertEquals("Field C", emitter.getEmitted().get(0).get("c"));
-    Assert.assertEquals(4, emitter.getEmitted().get(0).get("d"));
+    Assert.assertEquals(4, emitter.getEmitted().get(0).<Integer>get("d").intValue());
     Assert.assertEquals(DigestUtils.sha384Hex("Field E"), emitter.getEmitted().get(0).get("e"));
   }
 
@@ -170,7 +170,7 @@ public class HasherTest {
     Assert.assertEquals(DigestUtils.sha512Hex("Field A"), emitter.getEmitted().get(0).get("a"));
     Assert.assertEquals(DigestUtils.sha512Hex("Field B"), emitter.getEmitted().get(0).get("b"));
     Assert.assertEquals("Field C", emitter.getEmitted().get(0).get("c"));
-    Assert.assertEquals(4, emitter.getEmitted().get(0).get("d"));
+    Assert.assertEquals(4, emitter.getEmitted().get(0).<Integer>get("d").intValue());
     Assert.assertEquals(DigestUtils.sha512Hex("Field E"), emitter.getEmitted().get(0).get("e"));
   }
 

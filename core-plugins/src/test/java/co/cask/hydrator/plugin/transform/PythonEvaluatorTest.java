@@ -95,12 +95,12 @@ public class PythonEvaluatorTest {
 
     // check record1
     Assert.assertEquals(SCHEMA, output.getSchema());
-    Assert.assertTrue((Boolean) output.get("booleanField"));
-    Assert.assertEquals(28 * 1024, output.get("intField"));
-    Assert.assertEquals(99L, output.get("longField"));
+    Assert.assertTrue(output.get("booleanField"));
+    Assert.assertEquals(28 * 1024, output.<Integer>get("intField").intValue());
+    Assert.assertEquals(99L, output.<Long>get("longField").longValue());
     Assert.assertTrue(Math.abs(2.71f - (Float) output.get("floatField")) < 0.000001);
     Assert.assertTrue(Math.abs(3.14 - (Double) output.get("doubleField")) < 0.000001);
-    Assert.assertArrayEquals(Bytes.toBytes("foo"), (byte[]) output.get("bytesField"));
+    Assert.assertArrayEquals(Bytes.toBytes("foo"), output.get("bytesField"));
     Assert.assertEquals("bar", output.get("stringField"));
     Assert.assertEquals("baz", output.get("nullableField"));
     Assert.assertEquals("hello", output.get("unionField"));
@@ -118,15 +118,15 @@ public class PythonEvaluatorTest {
     Assert.assertEquals(output, emitter.getEmitted().get(1));
 
     Assert.assertEquals(SCHEMA, output.getSchema());
-    Assert.assertFalse((Boolean) output.get("booleanField"));
-    Assert.assertEquals(-28 * 1024, output.get("intField"));
-    Assert.assertEquals(-99L, output.get("longField"));
+    Assert.assertFalse(output.get("booleanField"));
+    Assert.assertEquals(-28 * 1024, output.<Integer>get("intField").intValue());
+    Assert.assertEquals(-99L, output.<Long>get("longField").longValue());
     Assert.assertTrue(Math.abs(-2.71f - (Float) output.get("floatField")) < 0.000001);
     Assert.assertTrue(Math.abs(-3.14 - (Double) output.get("doubleField")) < 0.000001);
-    Assert.assertArrayEquals(Bytes.toBytes("hello"), (byte[]) output.get("bytesField"));
+    Assert.assertArrayEquals(Bytes.toBytes("hello"), output.get("bytesField"));
     Assert.assertEquals("world", output.get("stringField"));
     Assert.assertNull(output.get("nullableField"));
-    Assert.assertEquals(3, output.get("unionField"));
+    Assert.assertEquals(3, output.<Integer>get("unionField").intValue());
     expectedMapField = ImmutableMap.of();
     expectedListField = ImmutableList.of();
     Assert.assertEquals(expectedMapField, output.get("mapField"));
@@ -168,7 +168,7 @@ public class PythonEvaluatorTest {
 
     // check simple types are decoded properly
     Assert.assertEquals(SCHEMA, output.getSchema());
-    Assert.assertEquals(198L, output.get("longField"));
+    Assert.assertEquals(198L, output.<Long>get("longField").longValue());
     Assert.assertTrue(Math.abs(2.71f - (Float) output.get("floatField")) < 0.03);
     Assert.assertTrue(Math.abs(3.14 - (Double) output.get("doubleField")) < 0.032);
     emitter.clear();
@@ -192,7 +192,7 @@ public class PythonEvaluatorTest {
 
     // check that output is correct
     Assert.assertEquals(floatSchema, output.getSchema());
-    Assert.assertEquals(2.71f, (Float) output.get("body"), 0.000001f);
+    Assert.assertEquals(2.71f, output.get("body"), 0.000001f);
     emitter.clear();
   }
 
@@ -218,7 +218,7 @@ public class PythonEvaluatorTest {
       Schema.Field.of("doubleField", Schema.of(Schema.Type.DOUBLE)));
 
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema,
-                                                                   ImmutableMap.<String, Object>of(
+                                                                   ImmutableMap.of(
                                                                      CoreValidator.ID, new CoreValidator()));
     new PythonEvaluator(config).configurePipeline(configurer);
   }
@@ -293,8 +293,8 @@ public class PythonEvaluatorTest {
     transform.transform(RECORD1, emitter);
     StructuredRecord output = emitter.getEmitted().get(0);
     Assert.assertEquals(outputSchema, output.getSchema());
-    Assert.assertEquals(28, output.get("x"));
-    Assert.assertEquals(99L, output.get("y"));
+    Assert.assertEquals(28, output.<Integer>get("x").intValue());
+    Assert.assertEquals(99L, output.<Long>get("y").longValue());
   }
 
   @Test
