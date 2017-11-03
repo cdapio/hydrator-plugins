@@ -178,9 +178,9 @@ public class JSONParserTest {
     transform.transform(StructuredRecord.builder(INPUT1)
                           .set("body", json)
                           .build(), emitter);
-    Assert.assertEquals(10, emitter.getEmitted().get(0).get("expensive"));
+    Assert.assertEquals(10, emitter.getEmitted().get(0).<Integer>get("expensive").intValue());
     Assert.assertEquals("red", emitter.getEmitted().get(0).get("bicycle_color"));
-    Assert.assertEquals(19.95, emitter.getEmitted().get(0).get("bicycle_price"));
+    Assert.assertEquals(19.95d, emitter.getEmitted().get(0).get("bicycle_price"), 0.0001d);
   }
 
   @Test
@@ -226,9 +226,9 @@ public class JSONParserTest {
     transform.transform(StructuredRecord.builder(INPUT1)
                           .set("body", json)
                           .build(), emitter);
-    Assert.assertEquals(10, emitter.getEmitted().get(0).get("expensive"));
+    Assert.assertEquals(10, emitter.getEmitted().get(0).<Integer>get("expensive").intValue());
     Assert.assertEquals("red", emitter.getEmitted().get(0).get("bicycle_color"));
-    Assert.assertEquals(19.95, emitter.getEmitted().get(0).get("bicycle_price"));
+    Assert.assertEquals(19.95d, emitter.getEmitted().get(0).get("bicycle_price"), 0.0001d);
     Assert.assertEquals(null, emitter.getEmitted().get(0).get("window"));
 
     final String[] jsonPaths2 = {
@@ -248,9 +248,9 @@ public class JSONParserTest {
     transform.transform(StructuredRecord.builder(INPUT1)
                           .set("body", json)
                           .build(), emitter);
-    Assert.assertEquals(10, emitter.getEmitted().get(0).get("expensive"));
+    Assert.assertEquals(10, emitter.getEmitted().get(0).<Integer>get("expensive").intValue());
     Assert.assertEquals("red", emitter.getEmitted().get(0).get("bicycle_color"));
-    Assert.assertEquals(19.95, emitter.getEmitted().get(0).get("bicycle_price"));
+    Assert.assertEquals(19.95d, emitter.getEmitted().get(0).get("bicycle_price"), 0.0001d);
     Assert.assertEquals(null, emitter.getEmitted().get(0).get("window"));
   }
 }

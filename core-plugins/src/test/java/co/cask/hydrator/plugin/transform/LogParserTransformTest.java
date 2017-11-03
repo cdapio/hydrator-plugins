@@ -69,7 +69,7 @@ public class LogParserTransformTest {
 
 
     MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(inputSchemaString,
-                                                                       ImmutableMap.<String, Object>of(
+                                                                       ImmutableMap.of(
                                                                          CoreValidator.ID, new CoreValidator()));
     S3_TRANSFORM.configurePipeline(mockConfigurer);
     Assert.assertEquals(LOG_SCHEMA, mockConfigurer.getOutputSchema());
@@ -81,7 +81,7 @@ public class LogParserTransformTest {
 
 
     mockConfigurer = new MockPipelineConfigurer(inputSchemaBytes,
-                                                ImmutableMap.<String, Object>of(CoreValidator.ID, new CoreValidator()));
+                                                ImmutableMap.of(CoreValidator.ID, new CoreValidator()));
     CLF_TRANSFORM.configurePipeline(mockConfigurer);
     Assert.assertEquals(LOG_SCHEMA, mockConfigurer.getOutputSchema());
   }
@@ -89,7 +89,7 @@ public class LogParserTransformTest {
   @Test(expected = IllegalArgumentException.class)
   public void testConfigurePipelineSchemaValidationError() throws Exception {
     MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(Schema.of(Schema.Type.BYTES),
-                                                                       ImmutableMap.<String, Object>of(
+                                                                       ImmutableMap.of(
                                                                          CoreValidator.ID, new CoreValidator()));
     S3_TRANSFORM.configurePipeline(mockConfigurer);
     Assert.assertEquals(LOG_SCHEMA, mockConfigurer.getOutputSchema());
@@ -103,7 +103,7 @@ public class LogParserTransformTest {
       // "body" is config.inputName and that should be of only type String or Bytes
       Schema.Field.of("body", Schema.of(Schema.Type.INT)));
     MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(inputSchemaString,
-                                                                       ImmutableMap.<String, Object>of(
+                                                                       ImmutableMap.of(
                                                                          CoreValidator.ID, new CoreValidator()));
     S3_TRANSFORM.configurePipeline(mockConfigurer);
   }
@@ -116,7 +116,7 @@ public class LogParserTransformTest {
       // "body" is config.inputName and we skip that, causing that field to be null
     );
     MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(inputSchemaString,
-                                                                       ImmutableMap.<String, Object>of(
+                                                                       ImmutableMap.of(
                                                                          CoreValidator.ID, new CoreValidator()));
     S3_TRANSFORM.configurePipeline(mockConfigurer);
   }
@@ -146,8 +146,8 @@ public class LogParserTransformTest {
     Assert.assertEquals("122.122.111.11", output.get("ip"));
     Assert.assertEquals("unknown", output.get("browser"));
     Assert.assertEquals("", output.get("device"));
-    Assert.assertEquals(403, output.get("httpStatus"));
-    Assert.assertEquals(1421924601000L, output.get("ts"));
+    Assert.assertEquals(403, output.<Integer>get("httpStatus").intValue());
+    Assert.assertEquals(1421924601000L, output.<Long>get("ts").longValue());
 
     S3_TRANSFORM.transform(browserRecord, emitter);
     output = emitter.getEmitted().get(1);
@@ -155,8 +155,8 @@ public class LogParserTransformTest {
     Assert.assertEquals("133.133.133.133", output.get("ip"));
     Assert.assertEquals("Firefox", output.get("browser"));
     Assert.assertEquals("Personal computer", output.get("device"));
-    Assert.assertEquals(304, output.get("httpStatus"));
-    Assert.assertEquals(1422741477000L, output.get("ts"));
+    Assert.assertEquals(304, output.<Integer>get("httpStatus").intValue());
+    Assert.assertEquals(1422741477000L, output.<Long>get("ts").longValue());
   }
 
   @Test
@@ -185,8 +185,8 @@ public class LogParserTransformTest {
     Assert.assertEquals("11.111.111.11", output.get("ip"));
     Assert.assertEquals("unknown", output.get("browser"));
     Assert.assertEquals("", output.get("device"));
-    Assert.assertEquals(200, output.get("httpStatus"));
-    Assert.assertEquals(1429277748000L, output.get("ts"));
+    Assert.assertEquals(200, output.<Integer>get("httpStatus").intValue());
+    Assert.assertEquals(1429277748000L, output.<Long>get("ts").longValue());
 
     CLOUDFRONT_TRANSFORM.transform(commentRecord, emitter);
     Assert.assertEquals(1, emitter.getEmitted().size());
@@ -209,8 +209,8 @@ public class LogParserTransformTest {
     Assert.assertEquals("127.0.0.1", output.get("ip"));
     Assert.assertEquals("Chrome", output.get("browser"));
     Assert.assertEquals("Personal computer", output.get("device"));
-    Assert.assertEquals(200, output.get("httpStatus"));
-    Assert.assertEquals(971211336000L, output.get("ts"));
+    Assert.assertEquals(200, output.<Integer>get("httpStatus").intValue());
+    Assert.assertEquals(971211336000L, output.<Long>get("ts").longValue());
   }
 
   @Test
