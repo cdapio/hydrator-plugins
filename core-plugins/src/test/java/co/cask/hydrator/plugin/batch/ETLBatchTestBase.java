@@ -47,6 +47,7 @@ import co.cask.hydrator.plugin.batch.source.SnapshotFileBatchParquetSource;
 import co.cask.hydrator.plugin.batch.source.StreamBatchSource;
 import co.cask.hydrator.plugin.batch.source.TableSource;
 import co.cask.hydrator.plugin.batch.source.TimePartitionedFileSetDatasetAvroSource;
+import co.cask.hydrator.plugin.batch.source.TimePartitionedFileSetDatasetORCSource;
 import co.cask.hydrator.plugin.batch.source.TimePartitionedFileSetDatasetParquetSource;
 import co.cask.hydrator.plugin.transform.JavaScriptTransform;
 import co.cask.hydrator.plugin.transform.ProjectionTransform;
@@ -113,6 +114,7 @@ public class ETLBatchTestBase extends HydratorTestBase {
                       TableSource.class,
                       TimePartitionedFileSetDatasetAvroSource.class,
                       TimePartitionedFileSetDatasetParquetSource.class, AvroParquetInputFormat.class,
+                      TimePartitionedFileSetDatasetORCSource.class,
                       BatchCubeSink.class, KVTableSink.class, TableSink.class,
                       TimePartitionedFileSetDatasetAvroSink.class, AvroKeyOutputFormat.class, AvroKey.class,
                       TimePartitionedFileSetDatasetParquetSink.class, AvroParquetOutputFormat.class,
