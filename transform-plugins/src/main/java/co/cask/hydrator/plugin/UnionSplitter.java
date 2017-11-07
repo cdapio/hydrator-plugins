@@ -232,12 +232,9 @@ public class UnionSplitter extends SplitterTransform<StructuredRecord, Structure
    * Plugin conf
    */
   public static class Conf extends PluginConfig {
-    @Nullable
     @Description("The union field to split on. Each possible schema in the union will be emitted to a different " +
       "port. Only unions of records and simple types are supported. In other words, " +
-      "enums, maps, and arrays in the union are not supported. If no union field is specified, " +
-      "it is assumed that the records with multiple schemas can be input to this stage. " +
-      "In that scenario, each record will be emitted to a port based on its schema. ")
+      "enums, maps, and arrays in the union are not supported.")
     protected String unionField;
 
     @Nullable
