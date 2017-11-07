@@ -7,7 +7,7 @@
       "label": "Union Splitter",
       "properties": [
         {
-          "widget-type": "textbox",
+          "widget-type": "input-field-selector",
           "label": "Union field to split on",
           "name": "unionField",
           "plugin-function": {

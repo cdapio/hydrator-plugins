@@ -6,7 +6,7 @@
     {
       "properties": [
         {
-          "widget-type": "textbox",
+          "widget-type": "input-field-selector",
           "label": "Field to Split on",
           "name": "field",
           "plugin-function": {
