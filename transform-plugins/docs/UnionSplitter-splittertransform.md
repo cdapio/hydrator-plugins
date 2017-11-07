@@ -17,8 +17,8 @@ be the schema type in lowercase ('null', 'bool', 'bytes', 'int', 'long', 'float'
 
 Properties
 ----------
-**unionField:** The union field to split on. If specified, the schema for the field must be a union of
-supported schemas. All schemas except maps, arrays, unions, and enums are supported. Note that nulls are supported,
+**unionField:** The union field to split on. The schema for the field must be a union of supported schemas.
+All schemas except maps, arrays, unions, and enums are supported. Note that nulls are supported,
 which means all nulls will get sent to the 'null' port.
 
 **modifySchema:** Whether to modify the output schema to remove the union. For example, suppose the field 'x'
@@ -27,46 +27,8 @@ the 'int' port and just a long for the 'long' port. If modifySchema is false, th
 will be the same as the input schema. Defaults to true.
 
 
-Example 1: Splitting on the entire record
------------------------------------------
-Suppose the union splitter is configured to split on the entire record:
-
-    {
-        "name": "UnionSplitter",
-        "type": "splittertransform",
-        "properties": { }
-    }
-
-Suppose the splitter receives records with two possible schemas.
-The first possible schema is 'itemMeta':
-
-    +================+
-    | name  | type   |
-    +================+
-    | id    | long   |
-    | desc  | string |
-    +================+
-
-The second possible schema is 'itemDetail', which includes a couple additional fields:
-
-
-    +================+
-    | name  | type   |
-    +================+
-    | id    | long   |
-    | desc  | string |
-    | label | string |
-    | price | double |
-    +================+
-
-If the union splitter receives a record with the 'itemMeta' schema, that record will be emitted to port 'itemMeta'.
-If it receives a record with the 'itemDetail' schema, that record will be emitted to port 'itemDetail'.
-This allows the pipeline to send each type of record to different stages to be handled differently.
-Note that since the schema name is used as the output port, this means that if the plugin receives records
-that have the same schema name, but different schemas, those records will all still go to the same output port.
-
-Example 2: Splitting on a field
--------------------------------
+Example
+-------
 Suppose the union splitter is configured to split on the 'item' field:
 
     {

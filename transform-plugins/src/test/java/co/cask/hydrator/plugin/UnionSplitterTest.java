@@ -293,33 +293,4 @@ public class UnionSplitterTest {
     Map<String, List<Object>> actual = mockEmitter.getEmitted();
     Assert.assertEquals(expected, actual);
   }
-
-  @Test
-  public void testSplitOnRecord() throws Exception {
-    Schema schema1 = Schema.recordOf("s1",
-                                     Schema.Field.of("x", Schema.of(Schema.Type.LONG)),
-                                     Schema.Field.of("y", Schema.of(Schema.Type.INT)));
-    Schema schema2 = Schema.recordOf("s2",
-                                     Schema.Field.of("y", Schema.of(Schema.Type.STRING)),
-                                     Schema.Field.of("z", Schema.of(Schema.Type.STRING)));
-
-    StructuredRecord r1 = StructuredRecord.builder(schema1).set("x", 1L).set("y", 5).build();
-    StructuredRecord r2 = StructuredRecord.builder(schema1).set("x", 2L).set("y", 3).build();
-    StructuredRecord r3 = StructuredRecord.builder(schema2).set("y", "why").set("z", "zee").build();
-    StructuredRecord r4 = StructuredRecord.builder(schema2).set("y", "wye").set("z", "zea").build();
-
-    UnionSplitter unionSplitter = new UnionSplitter(new UnionSplitter.Conf(null, true));
-    unionSplitter.initialize(new MockTransformContext());
-    MockMultiOutputEmitter<StructuredRecord> mockEmitter = new MockMultiOutputEmitter<>();
-
-    unionSplitter.transform(r1, mockEmitter);
-    unionSplitter.transform(r2, mockEmitter);
-    unionSplitter.transform(r3, mockEmitter);
-    unionSplitter.transform(r4, mockEmitter);
-
-    Map<String, List<StructuredRecord>> expected = ImmutableMap.<String, List<StructuredRecord>>of(
-      "s1", ImmutableList.of(r1, r2), "s2", ImmutableList.of(r3, r4));
-    Map<String, List<Object>> actual = mockEmitter.getEmitted();
-    Assert.assertEquals(expected, actual);
-  }
 }
