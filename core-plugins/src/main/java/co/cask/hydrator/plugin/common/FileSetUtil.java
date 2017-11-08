@@ -129,6 +129,7 @@ public class FileSetUtil {
       .setEnableExploreOnCreate(true)
       .setInputProperty("orc.mapred.output.schema", orcSchema)
       .setOutputProperty("orc.mapred.output.schema", orcSchema)
+      .add(DatasetProperties.SCHEMA, configuredSchema)
       .build();
   }
 
