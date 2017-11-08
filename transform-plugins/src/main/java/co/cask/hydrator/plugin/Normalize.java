@@ -30,11 +30,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Transforms records by normalizing the data.
@@ -78,7 +77,7 @@ public class Normalize extends Transform<StructuredRecord, StructuredRecord> {
     }
 
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
-    List<String> fieldList = Lists.newArrayList();
+    List<String> fieldList = new ArrayList<>();
     //Validate mapping fields
     String[] fieldMappingArray = config.fieldMapping.split(",");
     for (String fieldMapping : fieldMappingArray) {
@@ -133,15 +132,15 @@ public class Normalize extends Transform<StructuredRecord, StructuredRecord> {
       return;
     }
 
-    mappingFieldMap = new HashMap<String, String>();
+    mappingFieldMap = new HashMap<>();
     String[] fieldMappingArray = config.fieldMapping.split(",");
     for (String fieldMapping : fieldMappingArray) {
       String[] mappings = fieldMapping.split(":");
       mappingFieldMap.put(mappings[0], mappings[1]);
     }
 
-    normalizeFieldMap = new HashMap<String, String>();
-    normalizeFieldList = Lists.newArrayList();
+    normalizeFieldMap = new HashMap<>();
+    normalizeFieldList = new ArrayList<>();
     String[] fieldNormalizingArray = config.fieldNormalizing.split(",");
 
     for (String fieldNormalizing : fieldNormalizingArray) {
@@ -173,18 +172,13 @@ public class Normalize extends Transform<StructuredRecord, StructuredRecord> {
         continue;
       }
       StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
-      String normalizeFieldValue = String.valueOf(structuredRecord.get(normalizeField));
+      String normalizeFieldValue = String.valueOf(structuredRecord.<Object>get(normalizeField));
       //Set normalize fields to the record
       builder.set(normalizeFieldMap.get(normalizeField + NAME_KEY_SUFFIX), normalizeField)
         .set(normalizeFieldMap.get(normalizeField + VALUE_KEY_SUFFIX), normalizeFieldValue);
 
       //Set mapping fields to the record
-      Set<String> keySet = mappingFieldMap.keySet();
-      Iterator<String> itr = keySet.iterator();
-      while (itr.hasNext()) {
-        String field = itr.next();
-        builder.set(mappingFieldMap.get(field), String.valueOf(structuredRecord.get(field)));
-      }
+      mappingFieldMap.forEach((key, value) -> builder.set(value, String.valueOf(structuredRecord.<Object>get(key))));
       emitter.emit(builder.build());
     }
   }
