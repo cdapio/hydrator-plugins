@@ -198,17 +198,15 @@ public class FileSetUtil {
   }
 
   private static String parseOrcSchema(String configuredSchema) {
-    co.cask.cdap.api.data.schema.Schema schemaObj = null;
     try {
-      schemaObj = co.cask.cdap.api.data.schema.Schema.parseJson(configuredSchema);
+      co.cask.cdap.api.data.schema.Schema schemaObj = co.cask.cdap.api.data.schema.Schema.parseJson(configuredSchema);
       StringBuilder builder = new StringBuilder();
       HiveSchemaConverter.appendType(builder, schemaObj);
       return builder.toString();
     } catch (IOException e) {
-      LOG.debug("{} is not a valid schema", configuredSchema, e);
-      throw new IllegalArgumentException(String.format("{} is not a valid schema", configuredSchema), e);
+      throw new IllegalArgumentException(String.format("%s is not a valid schema", configuredSchema), e);
     } catch (UnsupportedTypeException e) {
-      throw new IllegalArgumentException(String.format("Could not create hive schema from {}", configuredSchema), e);
+      throw new IllegalArgumentException(String.format("Could not create hive schema from %s", configuredSchema), e);
     }
   }
 
