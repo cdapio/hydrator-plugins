@@ -917,6 +917,7 @@
             <version>2.9.1</version>
             <configuration>
               <failOnError>false</failOnError>
+              <additionalparam>-Xdoclint:none</additionalparam>
               <links>
                 <link>http://download.oracle.com/javase/${jee.version}/docs/api/</link>
               </links>
