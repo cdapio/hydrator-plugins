@@ -34,7 +34,6 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
-import org.apache.parquet.avro.AvroParquetInputFormat;
 import org.apache.parquet.avro.AvroWriteSupport;
 
 import java.io.IOException;
@@ -112,7 +111,7 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
         .createRecordReader(split, context);
       return new TrackingAvroRecordReader(delegate, pathField, path, parsedSchema);
     } else if ("parquet".equalsIgnoreCase(format)) {
-      RecordReader<Void, GenericRecord> delegate = (new AvroParquetInputFormat<GenericRecord>())
+      RecordReader<Void, GenericRecord> delegate = (new PatchedAvroParquetInputFormat<GenericRecord>())
         .createRecordReader(split, context);
       return new TrackingParquetRecordReader(delegate, pathField, path, parsedSchema);
     } else {
