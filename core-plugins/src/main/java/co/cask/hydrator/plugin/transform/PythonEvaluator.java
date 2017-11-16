@@ -32,7 +32,6 @@ import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.python.core.Py;
 import org.python.core.PyCode;
 import org.python.core.PyException;
@@ -41,6 +40,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -179,8 +180,15 @@ public class PythonEvaluator extends Transform<StructuredRecord, StructuredRecor
     } catch (PyException e) {
       // We put the stack trace as the exception message, because otherwise the information from PyException is lost.
       // PyException only exposes the actual cause (Python stack trace) if printStackTrace() is called on it.
-      throw new IllegalArgumentException("Could not transform input.\n" + ExceptionUtils.getStackTrace(e));
+      throw new IllegalArgumentException("Could not transform input.\n" + getStackTrace(e));
     }
+  }
+
+  private String getStackTrace(Throwable throwable) {
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw, true);
+    throwable.printStackTrace(pw);
+    return sw.toString();
   }
 
   private Object encode(Object object, Schema schema) {

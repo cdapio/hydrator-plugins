@@ -19,7 +19,6 @@ package co.cask.hydrator.plugin.batch.aggregator;
 import co.cask.cdap.api.annotation.Description;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
-import org.apache.commons.lang.StringUtils;
 
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -122,7 +121,7 @@ public class RowDenormalizerConfig extends AggregatorConfig {
    */
   Map<String, String> getFieldAliases() {
     Map<String, String> outputFieldMappings = new HashMap<String, String>();
-    if (StringUtils.isNotEmpty(fieldAliases)) {
+    if (fieldAliases != null && !fieldAliases.isEmpty()) {
       for (String field : Splitter.on(',').trimResults().split(fieldAliases)) {
         String[] value = field.split(":");
         if (value.length == 2) {

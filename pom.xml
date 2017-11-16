@@ -201,6 +201,12 @@
         <groupId>co.cask.cdap</groupId>
         <artifactId>cdap-formats</artifactId>
         <version>${cdap.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>co.cask.cdap</groupId>
