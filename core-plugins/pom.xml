@@ -74,6 +74,10 @@
       <artifactId>avro-mapred</artifactId>
       <classifier>hadoop2</classifier>
     </dependency>
+    <dependency>
+      <groupId>commons-lang</groupId>
+      <artifactId>commons-lang</artifactId>
+    </dependency>
     <!-- python script transform -->
     <dependency>
       <groupId>org.python</groupId>
