@@ -55,6 +55,7 @@ import co.cask.hydrator.plugin.batch.source.StreamBatchSource;
 import co.cask.hydrator.plugin.batch.source.TableSource;
 import co.cask.hydrator.plugin.batch.source.TimePartitionedFileSetDatasetAvroSource;
 import co.cask.hydrator.plugin.batch.source.TimePartitionedFileSetDatasetParquetSource;
+import co.cask.hydrator.plugin.error.ErrorCollector;
 import co.cask.hydrator.plugin.transform.JavaScriptTransform;
 import co.cask.hydrator.plugin.transform.ProjectionTransform;
 import co.cask.hydrator.plugin.transform.PythonEvaluator;
@@ -143,13 +144,8 @@ public class ETLBatchTestBase extends HydratorTestBase {
                       Joiner.class,
                       EmailAction.class,
                       SSHAction.class,
-                      TMSAlertPublisher.class);
-  }
-
-  protected void cleanPartitions(TimePartitionedFileSet fileSet) throws IOException {
-    for (Location dayLoc : fileSet.getEmbeddedFileSet().getBaseLocation().list()) {
-      dayLoc.delete();
-    }
+                      TMSAlertPublisher.class,
+                      ErrorCollector.class);
   }
 
   protected List<GenericRecord> readOutput(TimePartitionedFileSet fileSet, Schema schema) throws IOException {
@@ -205,7 +201,7 @@ public class ETLBatchTestBase extends HydratorTestBase {
    */
   protected WorkflowManager runETLOnce(ApplicationManager appManager)
     throws TimeoutException, InterruptedException, ExecutionException {
-    return runETLOnce(appManager, ImmutableMap.<String, String>of());
+    return runETLOnce(appManager, ImmutableMap.of());
   }
 
   /**
