@@ -23,6 +23,7 @@ import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.api.dataset.table.Put;
 import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Table;
+import co.cask.cdap.etl.api.ErrorTransform;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
@@ -52,13 +53,6 @@ import java.util.List;
  * Tests for ETLBatch.
  */
 public class ETLMapReduceTestRun extends ETLBatchTestBase {
-  public static final Schema ERROR_SCHEMA = Schema.recordOf(
-    "error",
-    Schema.Field.of("errCode", Schema.of(Schema.Type.INT)),
-    Schema.Field.of("errMsg", Schema.unionOf(Schema.of(Schema.Type.STRING),
-                                             Schema.of(Schema.Type.NULL))),
-    Schema.Field.of("invalidRecord", Schema.of(Schema.Type.STRING))
-  );
 
   @Test
   public void testInvalidTransformConfigFailsToDeploy() {
@@ -99,7 +93,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
       "sink", new ETLPlugin("KVTable", BatchSink.PLUGIN_TYPE,
                             ImmutableMap.of(Properties.BatchReadableWritable.NAME, "kvTable2"), null));
     ETLStage transform = new ETLStage("transform", new ETLPlugin("Projection", Transform.PLUGIN_TYPE,
-                                                                 ImmutableMap.<String, String>of(), null));
+                                                                 ImmutableMap.of(), null));
 
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
       .addStage(source)
@@ -260,25 +254,39 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
       new ETLPlugin("Validator",
                     Transform.PLUGIN_TYPE,
                     ImmutableMap.of("validators", "core",
-                                    "validationScript", validationScript),
-                    null),
-      "keyErrors");
+                                    "validationScript", validationScript)));
 
-    ETLStage sink = new ETLStage(
-      "sink", new ETLPlugin("Table",
-                            BatchSink.PLUGIN_TYPE,
-                            ImmutableMap.of(
-                              Properties.BatchReadableWritable.NAME, "outputTable",
-                              Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "rowkey",
-                              Properties.Table.PROPERTY_SCHEMA, schema.toString()),
-                            null));
+    ETLStage sink1 = new ETLStage(
+      "sink1", new ETLPlugin("Table",
+                             BatchSink.PLUGIN_TYPE,
+                             ImmutableMap.of(
+                               Properties.BatchReadableWritable.NAME, "outputTable",
+                               Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "rowkey",
+                               Properties.Table.PROPERTY_SCHEMA, schema.toString())));
+
+    ETLStage sink2 = new ETLStage(
+      "sink2", new ETLPlugin("Table",
+                             BatchSink.PLUGIN_TYPE,
+                             ImmutableMap.of(
+                               Properties.BatchReadableWritable.NAME, "keyErrors",
+                               Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "rowkey",
+                               Properties.Table.PROPERTY_SCHEMA, schema.toString())));
+
+    ETLStage errorCollector = new ETLStage(
+      "errors", new ETLPlugin("ErrorCollector",
+                              ErrorTransform.PLUGIN_TYPE,
+                              ImmutableMap.of()));
 
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
       .addStage(source)
       .addStage(transform)
-      .addStage(sink)
+      .addStage(errorCollector)
+      .addStage(sink1)
+      .addStage(sink2)
       .addConnection(source.getName(), transform.getName())
-      .addConnection(transform.getName(), sink.getName())
+      .addConnection(transform.getName(), sink1.getName())
+      .addConnection(transform.getName(), errorCollector.getName())
+      .addConnection(errorCollector.getName(), sink2.getName())
       .build();
 
     ApplicationManager appManager = deployETL(etlConfig, "TableToTable");
@@ -317,12 +325,17 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     Assert.assertEquals("scotch", row.getString("item"));
 
     row = outputTable.get(Bytes.toBytes("row2"));
-    Assert.assertEquals(0, row.getColumns().size());
+    Assert.assertTrue(row.isEmpty());
 
-    DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset("keyErrors");
-    try (TimePartitionedFileSet fileSet = fileSetManager.get()) {
-      List<GenericRecord> records = readOutput(fileSet, ERROR_SCHEMA);
-      Assert.assertEquals(1, records.size());
+    DataSetManager<Table> errorManager = getDataset("keyErrors");
+    try (Table errorTable = errorManager.get()) {
+      row = errorTable.get(Bytes.toBytes("row1"));
+      Assert.assertTrue(row.isEmpty());
+      row = errorTable.get(Bytes.toBytes("row2"));
+      Assert.assertEquals("jackson", row.getString("user"));
+      Assert.assertEquals(10, (int) row.getInt("count"));
+      Assert.assertTrue(Math.abs(123456789d - row.getDouble("price")) < 0.000001);
+      Assert.assertEquals("island", row.getString("item"));
     }
   }
 
