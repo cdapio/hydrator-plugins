@@ -131,7 +131,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
     ApplicationId appId = NamespaceId.DEFAULT.app("testBatchSolrSink");
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
+    ApplicationManager appManager = deployApplication(appId, appRequest);
 
     DataSetManager<Table> inputManager = getDataset(inputDatasetName);
     List<StructuredRecord> input = ImmutableList.of(
@@ -198,7 +198,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
     ApplicationId appId = NamespaceId.DEFAULT.app("testBatchSolrCloudSink");
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
+    ApplicationManager appManager = deployApplication(appId, appRequest);
 
     DataSetManager<Table> inputManager = getDataset(inputDatasetName);
     List<StructuredRecord> input = ImmutableList.of(
@@ -271,7 +271,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
     ApplicationId appId = NamespaceId.DEFAULT.app("testBatchSolrSink");
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
+    ApplicationManager appManager = deployApplication(appId, appRequest);
 
     DataSetManager<Table> inputManager = getDataset(inputDatasetName);
     List<StructuredRecord> input = ImmutableList.of(
@@ -349,7 +349,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
     ApplicationId appId = NamespaceId.DEFAULT.app("testBatchSolrSinkWrongHost");
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
+    ApplicationManager appManager = deployApplication(appId, appRequest);
 
     DataSetManager<Table> inputManager = getDataset(inputDatasetName);
     List<StructuredRecord> input = ImmutableList.of(
@@ -391,7 +391,7 @@ public class SolrSearchSinkTest extends HydratorTestBase {
 
     ApplicationId appId = NamespaceId.DEFAULT.app("testBatchSolrSink");
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(ETLBATCH_ARTIFACT, etlConfig);
-    ApplicationManager appManager = deployApplication(appId.toId(), appRequest);
+    ApplicationManager appManager = deployApplication(appId, appRequest);
 
     DataSetManager<Table> inputManager = getDataset(inputDatasetName);
     List<StructuredRecord> input = ImmutableList.of(

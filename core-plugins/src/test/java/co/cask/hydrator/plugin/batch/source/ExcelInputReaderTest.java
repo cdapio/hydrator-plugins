@@ -530,7 +530,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app(appName);
-    return deployApplication(appId.toId(), appRequest);
+    return deployApplication(appId, appRequest);
   }
 
   private WorkflowManager startWorkflow(ApplicationManager appManager, ProgramRunStatus status) throws Exception {
