@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -50,23 +51,22 @@ public class TimePartitionedFileSetDatasetParquetSource extends
    */
   public static class TPFSParquetConfig extends TPFSConfig {
 
+    @Macro
     @Description("The Parquet schema of the record being read from the source as a JSON Object.")
     private String schema;
 
     @Override
     protected void validate() {
       super.validate();
-      try {
-        new org.apache.avro.Schema.Parser().parse(schema);
-      } catch (Exception e) {
-        throw new IllegalArgumentException("Unable to parse schema with error: " + e.getMessage(), e);
-      }
     }
   }
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
+    if (tpfsParquetConfig.containsMacro("schema")) {
+      return;
+    }
     Preconditions.checkArgument(!Strings.isNullOrEmpty(tpfsParquetConfig.schema), "Schema must be specified.");
     try {
       co.cask.cdap.api.data.schema.Schema schema =

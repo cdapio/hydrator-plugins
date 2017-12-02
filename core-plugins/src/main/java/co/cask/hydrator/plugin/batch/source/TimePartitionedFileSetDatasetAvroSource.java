@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -52,6 +53,7 @@ public class TimePartitionedFileSetDatasetAvroSource extends
    */
   public static class TPFSAvroConfig extends TPFSConfig {
 
+    @Macro
     @Description("The Avro schema of the record being read from the source as a JSON Object.")
     private String schema;
 

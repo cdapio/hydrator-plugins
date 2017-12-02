@@ -56,22 +56,27 @@ public class GroupByAggregator extends RecordAggregator {
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    List<String> groupByFields = conf.getGroupByFields();
-    List<GroupByConfig.FunctionInfo> aggregates = conf.getAggregates();
 
     StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
-    Schema inputSchema = stageConfigurer.getInputSchema();
-    // if null, the input schema is unknown, or its multiple schemas.
-    // if groupByFields is empty or aggregates is empty, that means they contain macros, which means the
-    // output schema is not known at configure time.
-    if (inputSchema == null || groupByFields.isEmpty() || aggregates.isEmpty()) {
-      stageConfigurer.setOutputSchema(null);
-      return;
-    }
+    stageConfigurer.setOutputSchema(null);
 
-    // otherwise, we have a constant input schema. Get the output schema and
-    // propagate the schema, which is group by fields + aggregate fields
-    stageConfigurer.setOutputSchema(getOutputSchema(inputSchema, groupByFields, aggregates));
+//    List<String> groupByFields = conf.getGroupByFields();
+//    List<GroupByConfig.FunctionInfo> aggregates = conf.getAggregates();
+//
+//    StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
+//    Schema inputSchema = stageConfigurer.getInputSchema();
+//    // if null, the input schema is unknown, or its multiple schemas.
+//    // if groupByFields is empty or aggregates is empty, that means they contain macros, which means the
+//    // output schema is not known at configure time.
+//    if (inputSchema == null || groupByFields.isEmpty() || aggregates.isEmpty()) {
+//      stageConfigurer.setOutputSchema(null);
+//      return;
+//    }
+//
+//
+//    // otherwise, we have a constant input schema. Get the output schema and
+//    // propagate the schema, which is group by fields + aggregate fields
+//    stageConfigurer.setOutputSchema(getOutputSchema(inputSchema, groupByFields, aggregates));
   }
 
   @Override

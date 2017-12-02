@@ -32,6 +32,8 @@ import co.cask.hydrator.common.TimeParser;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -45,6 +47,7 @@ import javax.annotation.Nullable;
 public abstract class TimePartitionedFileSetSource<KEY, VALUE> extends BatchSource<KEY, VALUE, StructuredRecord> {
 
   private final TPFSConfig config;
+  private static final Logger LOG = LoggerFactory.getLogger(TimePartitionedFileSet.class);
 
   /**
    * Config for TimePartitionedFileSetDatasetAvroSource
@@ -94,6 +97,10 @@ public abstract class TimePartitionedFileSetSource<KEY, VALUE> extends BatchSour
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     config.validate();
+    if (config.containsMacro("schema")) {
+      LOG.info("Skipping creation of dataset since it has a macro");
+      return;
+    }
     if (!config.containsMacro("name") && !config.containsMacro("basePath")) {
       String tpfsName = config.name;
       FileSetProperties.Builder properties = FileSetProperties.builder();
@@ -119,7 +126,7 @@ public abstract class TimePartitionedFileSetSource<KEY, VALUE> extends BatchSour
       context.createDataset(tpfsName, TimePartitionedFileSet.class.getName(), properties.build());
     }
 
-
+    LOG.info("Setting input dataset for timepartitioned fileset {}", config.name);
     long duration = TimeParser.parseDuration(config.duration);
     long delay = Strings.isNullOrEmpty(config.delay) ? 0 : TimeParser.parseDuration(config.delay);
     long endTime = context.getLogicalStartTime() - delay;
