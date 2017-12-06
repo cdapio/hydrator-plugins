@@ -45,7 +45,6 @@ import java.util.Set;
  */
 public class GroupByConfig extends AggregatorConfig {
 
-  @Macro
   @Description("Aggregates to compute on grouped records. " +
     "Supported aggregate functions are count, count(*), sum, avg, min, max, first, last. " +
     "A function must specify the field it should be applied on, as well as the name it should be called. " +
