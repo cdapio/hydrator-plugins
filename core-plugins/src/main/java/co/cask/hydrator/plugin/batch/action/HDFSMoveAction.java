@@ -68,16 +68,15 @@ public class HDFSMoveAction extends Action {
       try {
         if (!fileSystem.rename(source, dest)) {
           if (!config.continueOnError) {
-            throw new IOException(String.format("Failed to rename file '%s' to '%s'",
-                                                source.toString(), dest.toString()));
+            throw new IOException(String.format("Failed to rename file %s to %s", source, dest));
           }
-          LOG.error("Failed to move file {} to {}", source.toString(), dest.toString());
+          LOG.error("Failed to move file {} to {}", source, dest);
         }
       } catch (IOException e) {
         if (!config.continueOnError) {
           throw e;
         }
-        LOG.error("Failed to move file {} to {}", source.toString(), dest.toString(), e);
+        LOG.error("Failed to move file {} to {}", source, dest, e);
       }
       return;
     }
@@ -119,16 +118,15 @@ public class HDFSMoveAction extends Action {
       try {
         if (!fileSystem.rename(source, dest)) {
           if (!config.continueOnError) {
-            throw new IOException(String.format("Failed to rename file '%s' to '%s'",
-                                                source.toString(), dest.toString()));
+            throw new IOException(String.format("Failed to rename file %s to %s", source, dest));
           }
-          LOG.error("Failed to move file {} to {}", source.toString(), dest.toString());
+          LOG.error("Failed to move file {} to {}", source, dest);
         }
       } catch (IOException e) {
         if (!config.continueOnError) {
           throw e;
         }
-        LOG.error("Failed to move file {} to {}", source.toString(), dest.toString(), e);
+        LOG.error("Failed to move file {} to {}", source, dest, e);
       }
     }
   }

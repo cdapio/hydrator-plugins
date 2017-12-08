@@ -62,7 +62,9 @@ public class GroupByAggregator extends RecordAggregator {
     StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
     Schema inputSchema = stageConfigurer.getInputSchema();
     // if null, the input schema is unknown, or its multiple schemas.
-    if (inputSchema == null) {
+    // if groupByFields is empty or aggregates is empty, that means they contain macros, which means the
+    // output schema is not known at configure time.
+    if (inputSchema == null || groupByFields.isEmpty() || aggregates.isEmpty()) {
       stageConfigurer.setOutputSchema(null);
       return;
     }

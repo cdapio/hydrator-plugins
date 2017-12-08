@@ -17,7 +17,7 @@ Properties
 Records with the same value for all these fields will be grouped together.
 Records output by this aggregator will contain all the group by fields and aggregate fields.
 For example, if grouping by the ``user`` field and calculating an aggregate ``numActions:count(*)``,
-output records will have a ``user`` field and a ``numActions`` field.
+output records will have a ``user`` field and a ``numActions`` field. (Macro-enabled)
 
 **aggregates:** Aggregates to compute on each group of records.
 Supported aggregate functions are `avg`, `count`, `count(*)`, `first`, `last`, `max`, `min`,`sum`.
@@ -27,7 +27,7 @@ For example, ``avgPrice:avg(price),cheapest:min(price)`` will calculate two aggr
 The first will create a field called ``avgPrice`` that is the average of all ``price`` fields in the group.
 The second will create a field called ``cheapest`` that contains the minimum ``price`` field in the group.
 The count function differs from count(*) in that it contains non-null values of a specific field,
-while count(*) will count all records regardless of value.
+while count(*) will count all records regardless of value. (Macro-enabled)
 
 **numPartitions:** Number of partitions to use when grouping fields. If not specified, the execution
 framework will decide on the number to use.
