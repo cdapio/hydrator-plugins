@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.aggregator;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.plugin.batch.aggregator.function.AggregateFunction;
 import co.cask.hydrator.plugin.batch.aggregator.function.Avg;
@@ -53,6 +54,7 @@ public class GroupByConfig extends AggregatorConfig {
     "The second will create a field called 'cheapest' that contains the minimum 'price' field in the group")
   private final String aggregates;
 
+  @Macro
   @Description("Comma separated list of record fields to group by. " +
     "All records with the same value for all these fields will be grouped together. " +
     "The records output by this aggregator will contain all the group by fields and aggregate fields. " +
@@ -71,8 +73,15 @@ public class GroupByConfig extends AggregatorConfig {
     this.aggregates = aggregates;
   }
 
+  /**
+   * @return the fields to group by. Returns an empty list if groupByFields contains a macro. Otherwise, the list
+   *         returned can never be empty.
+   */
   List<String> getGroupByFields() {
     List<String> fields = new ArrayList<>();
+    if (containsMacro("groupByFields")) {
+      return fields;
+    }
     for (String field : Splitter.on(',').trimResults().split(groupByFields)) {
       fields.add(field);
     }
@@ -82,8 +91,15 @@ public class GroupByConfig extends AggregatorConfig {
     return fields;
   }
 
+  /**
+   * @return the aggregates to perform. Returns an empty list if aggregates contains a macro. Otherwise, the list
+   *         returned can never be empty.
+   */
   List<FunctionInfo> getAggregates() {
     List<FunctionInfo> functionInfos = new ArrayList<>();
+    if (containsMacro("aggregates")) {
+      return functionInfos;
+    }
     Set<String> aggregateNames = new HashSet<>();
     for (String aggregate : Splitter.on(',').trimResults().split(aggregates)) {
       int colonIdx = aggregate.indexOf(':');

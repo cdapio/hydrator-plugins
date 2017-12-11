@@ -43,7 +43,6 @@ import java.sql.SQLException;
  * @param <K> - Key passed to this class to be written
  * @param <V> - Value passed to this class to be written. The value is ignored.
  *
- * {@inheritDoc}
  */
 public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<K, V> {
   public static final String AUTO_COMMIT_ENABLED = "co.cask.hydrator.db.output.autocommit.enabled";

@@ -59,8 +59,7 @@ public class StructuredToOrcTransformer extends RecordConverter<StructuredRecord
         WritableComparable writable = convertToWritable(field, input);
         orcRecord.setFieldValue(fields.get(i).getName(), writable);
       } catch (UnsupportedTypeException e) {
-        LOG.debug("{} is not a supported type", field.getName(), e);
-        throw new IllegalArgumentException(String.format("{} is not a supported type", field.getName()), e);
+        throw new IllegalArgumentException(String.format("%s is not a supported type", field.getName()), e);
       }
     }
     return orcRecord;
@@ -76,7 +75,7 @@ public class StructuredToOrcTransformer extends RecordConverter<StructuredRecord
       try {
         HiveSchemaConverter.appendType(builder, inputSchema);
       } catch (UnsupportedTypeException e) {
-        throw new IllegalArgumentException(String.format("Not a valid Schema {}", inputSchema.toString()), e);
+        throw new IllegalArgumentException(String.format("Not a valid Schema %s", inputSchema), e);
       }
       TypeDescription schema = TypeDescription.fromString(builder.toString());
       orcRecord = (OrcStruct) OrcStruct.createValue(schema);
@@ -120,8 +119,8 @@ public class StructuredToOrcTransformer extends RecordConverter<StructuredRecord
           return new BytesWritable(Bytes.getBytes((ByteBuffer) fieldVal));
         }
       default:
-        throw new UnsupportedTypeException(String.format("{} type is currently not supported in ORC",
-                                                         field.getSchema().getType().name()));
+        throw new UnsupportedTypeException(String.format("Type '%s' of field '%s' is currently not supported in ORC",
+                                                         fieldType.name(), field.getName()));
     }
   }
 
