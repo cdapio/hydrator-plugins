@@ -26,25 +26,12 @@
           }
         },
         {
-          "widget-type": "function-dropdown-with-alias",
+          "widget-type": "csv",
           "label": "Aggregates",
           "name": "aggregates",
           "widget-attributes": {
-            "placeholders": {
-              "field": "field",
-              "alias": "alias"
-            },
-            "dropdownOptions": [
-              "Avg",
-              "Count",
-              "First",
-              "Last",
-              "Max",
-              "Min",
-              "Stddev",
-              "Sum",
-              "Variance"
-            ]
+            "delimiter": ",",
+            "value-placeholder": "Aggregate (ex: total:sum(price))"
           }
         },
         {
