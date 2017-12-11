@@ -22,10 +22,17 @@ import co.cask.cdap.api.artifact.ArtifactVersion;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.datapipeline.DataPipelineApp;
+import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.mock.test.HydratorTestBase;
+import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
+import co.cask.cdap.proto.ProgramRunStatus;
+import co.cask.cdap.proto.artifact.AppRequest;
+import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.ArtifactId;
 import co.cask.cdap.proto.id.NamespaceId;
+import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.TestConfiguration;
+import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.alert.TMSAlertPublisher;
 import co.cask.hydrator.plugin.batch.action.EmailAction;
 import co.cask.hydrator.plugin.batch.action.SSHAction;
@@ -48,12 +55,14 @@ import co.cask.hydrator.plugin.batch.source.StreamBatchSource;
 import co.cask.hydrator.plugin.batch.source.TableSource;
 import co.cask.hydrator.plugin.batch.source.TimePartitionedFileSetDatasetAvroSource;
 import co.cask.hydrator.plugin.batch.source.TimePartitionedFileSetDatasetParquetSource;
+import co.cask.hydrator.plugin.error.ErrorCollector;
 import co.cask.hydrator.plugin.transform.JavaScriptTransform;
 import co.cask.hydrator.plugin.transform.ProjectionTransform;
 import co.cask.hydrator.plugin.transform.PythonEvaluator;
 import co.cask.hydrator.plugin.transform.StructuredRecordToGenericRecordTransform;
 import co.cask.hydrator.plugin.transform.ValidatorTransform;
 import co.cask.hydrator.plugin.validator.CoreValidator;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -77,7 +86,11 @@ import org.junit.ClassRule;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Base test class that sets up plugin and the etl batch app artifacts.
@@ -131,13 +144,8 @@ public class ETLBatchTestBase extends HydratorTestBase {
                       Joiner.class,
                       EmailAction.class,
                       SSHAction.class,
-                      TMSAlertPublisher.class);
-  }
-
-  protected void cleanPartitions(TimePartitionedFileSet fileSet) throws IOException {
-    for (Location dayLoc : fileSet.getEmbeddedFileSet().getBaseLocation().list()) {
-      dayLoc.delete();
-    }
+                      TMSAlertPublisher.class,
+                      ErrorCollector.class);
   }
 
   protected List<GenericRecord> readOutput(TimePartitionedFileSet fileSet, Schema schema) throws IOException {
@@ -177,5 +185,37 @@ public class ETLBatchTestBase extends HydratorTestBase {
       }
     }
     return records;
+  }
+
+  protected ApplicationManager deployETL(ETLBatchConfig etlConfig, String appName) throws Exception {
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
+    ApplicationId appId = NamespaceId.DEFAULT.app(appName);
+    return deployApplication(appId, appRequest);
+  }
+
+  /**
+   * Run the SmartWorkflow in the given ETL application for once and wait for the workflow's COMPLETED status
+   * with 5 minutes timeout.
+   *
+   * @param appManager the ETL application to run
+   */
+  protected WorkflowManager runETLOnce(ApplicationManager appManager)
+    throws TimeoutException, InterruptedException, ExecutionException {
+    return runETLOnce(appManager, ImmutableMap.of());
+  }
+
+  /**
+   * Run the SmartWorkflow in the given ETL application for once and wait for the workflow's COMPLETED status
+   * with 5 minutes timeout.
+   *
+   * @param appManager the ETL application to run
+   * @param arguments the arguments to be passed when running SmartWorkflow
+   */
+  protected WorkflowManager runETLOnce(ApplicationManager appManager, Map<String, String> arguments)
+    throws TimeoutException, InterruptedException, ExecutionException {
+    final WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.start(arguments);
+    workflowManager.waitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
+    return workflowManager;
   }
 }

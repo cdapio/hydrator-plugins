@@ -77,8 +77,8 @@ public class RowRecordTransformerTest {
     RowRecordTransformer transformer = new RowRecordTransformer(schema, "intField");
 
     StructuredRecord actual = transformer.toRecord(input);
-    Assert.assertTrue((Boolean) actual.get("boolField"));
-    Assert.assertEquals(512L, actual.get("longField"));
+    Assert.assertTrue(actual.get("boolField"));
+    Assert.assertEquals(512L, actual.<Long>get("longField").longValue());
     Assert.assertTrue(Math.abs(3.14f - (Float) actual.get("floatField")) < 0.000001);
     Assert.assertEquals("foo", Bytes.toString((byte[]) actual.get("bytesField")));
     Assert.assertEquals("rock", actual.get("stringField"));

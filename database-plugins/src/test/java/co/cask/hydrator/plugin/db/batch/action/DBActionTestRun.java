@@ -16,19 +16,16 @@
 
 package co.cask.hydrator.plugin.db.batch.action;
 
-import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.action.Action;
 import co.cask.cdap.etl.mock.batch.MockSink;
 import co.cask.cdap.etl.mock.batch.MockSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
-import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.DatabasePluginTestBase;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
@@ -37,7 +34,6 @@ import org.junit.Test;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Test for DBAction Plugin
@@ -79,10 +75,7 @@ public class DBActionTestRun extends DatabasePluginTestBase {
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
     ApplicationId appId = NamespaceId.DEFAULT.app("actionTest");
     ApplicationManager appManager = deployApplication(appId, appRequest);
-
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start(ImmutableMap.of("logical.start.time", "0"));
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
+    runETLOnce(appManager, ImmutableMap.of("logical.start.time", "0"));
 
     try (Connection connection = getConnection()) {
       try (Statement statement = connection.createStatement()) {

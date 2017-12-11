@@ -209,10 +209,11 @@ public class CSVParserTest {
 
     transform1.transform(StructuredRecord.builder(INPUT1)
                            .set("body", "10,stringA,3,4.32,true").build(), emitter);
-    Assert.assertEquals(10L, emitter.getEmitted().get(0).get("a"));
+    Assert.assertEquals(10L, emitter.getEmitted().get(0).<Long>get("a").longValue());
     Assert.assertEquals("stringA", emitter.getEmitted().get(0).get("b"));
-    Assert.assertEquals(3, emitter.getEmitted().get(0).get("c"));
-    Assert.assertEquals(4.32, emitter.getEmitted().get(0).get("d"));
+    Assert.assertEquals(3, emitter.getEmitted().get(0).<Integer>get("c").intValue());
+    Assert.assertEquals(4.32d, emitter.getEmitted().get(0).get("d"), 0.0001d);
+    Assert.assertEquals(4.32d, emitter.getEmitted().get(0).get("d"), 0.0001d);
     Assert.assertEquals(true, emitter.getEmitted().get(0).get("e"));
   }
 
@@ -356,12 +357,12 @@ public class CSVParserTest {
     transform.initialize(null);
     transform.transform(StructuredRecord.builder(INPUT2)
                           .set("body", "10,stringA,3,4.32,true").set("offset", 10).build(), emitter);
-    Assert.assertEquals(10L, emitter.getEmitted().get(0).get("a"));
+    Assert.assertEquals(10L, emitter.getEmitted().get(0).<Long>get("a").longValue());
     Assert.assertEquals("stringA", emitter.getEmitted().get(0).get("b"));
-    Assert.assertEquals(3, emitter.getEmitted().get(0).get("c"));
-    Assert.assertEquals(4.32, emitter.getEmitted().get(0).get("d"));
+    Assert.assertEquals(3, emitter.getEmitted().get(0).<Integer>get("c").intValue());
+    Assert.assertEquals(4.32d, emitter.getEmitted().get(0).get("d"), 0.0001d);
     Assert.assertEquals(true, emitter.getEmitted().get(0).get("e"));
-    Assert.assertEquals(10, emitter.getEmitted().get(0).get("offset")); // Pass through from input.
+    Assert.assertEquals(10, emitter.getEmitted().get(0).<Integer>get("offset").intValue()); // Pass through from input.
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -397,7 +398,7 @@ public class CSVParserTest {
     Assert.assertEquals(1, emitter.getErrors().size());
     InvalidEntry<StructuredRecord> invalidEntry = emitter.getErrors().get(0);
     Assert.assertEquals(31, invalidEntry.getErrorCode());
-    Assert.assertEquals("offset", 1, invalidEntry.getInvalidRecord().get("offset"));
+    Assert.assertEquals("offset", 1, invalidEntry.getInvalidRecord().<Integer>get("offset").intValue());
     Assert.assertEquals("body", "0,\"020\"1,\"BS:12345  ORDER:111\"4", invalidEntry.getInvalidRecord().get("body"));
   }
 }

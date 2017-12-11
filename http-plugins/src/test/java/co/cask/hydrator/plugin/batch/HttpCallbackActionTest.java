@@ -96,9 +96,9 @@ public class HttpCallbackActionTest extends HydratorTestBase {
     List<HttpHandler> handlers = new ArrayList<>();
     handlers.add(new MockFeedHandler());
     httpService = NettyHttpService.builder("MockService")
-      .addHttpHandlers(handlers)
+      .setHttpHandlers(handlers)
       .build();
-    httpService.startAndWait();
+    httpService.start();
 
     int port = httpService.getBindAddress().getPort();
     baseURL = "http://localhost:" + port;
@@ -113,8 +113,8 @@ public class HttpCallbackActionTest extends HydratorTestBase {
   }
 
   @AfterClass
-  public static void teardown() {
-    httpService.stopAndWait();
+  public static void teardown() throws Exception {
+    httpService.stop();
   }
 
   @After
@@ -164,7 +164,7 @@ public class HttpCallbackActionTest extends HydratorTestBase {
     return responseCode;
   }
 
-  protected String getFeedContent(String feedId) throws IOException {
+  private String getFeedContent(String feedId) throws IOException {
     URL url = new URL(baseURL + "/feeds/" + feedId);
     HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
     urlConn.setRequestMethod(HttpMethod.GET);

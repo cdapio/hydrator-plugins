@@ -73,13 +73,13 @@ public class AvroToStructuredTest {
       .build();
 
     StructuredRecord result = avroToStructuredTransformer.transform(record);
-    Assert.assertEquals(Integer.MAX_VALUE, result.get("int"));
+    Assert.assertEquals(Integer.MAX_VALUE, result.<Integer>get("int").intValue());
     StructuredRecord innerResult = result.get("record");
-    Assert.assertEquals(5, innerResult.get("int"));
+    Assert.assertEquals(5, innerResult.<Integer>get("int").intValue());
     Assert.assertEquals(ImmutableList.of(1.0f, 2.0f), innerResult.get("array"));
     List list = innerResult.get("array1");
     StructuredRecord array1Result = (StructuredRecord) list.get(0);
-    Assert.assertEquals(0, array1Result.get("int"));
+    Assert.assertEquals(0, array1Result.<Integer>get("int").intValue());
   }
 
   private org.apache.avro.Schema convertSchema(Schema cdapSchema) {

@@ -75,10 +75,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     ETLPlugin sinkConfig = MockSink.getPlugin("macroOutputTable");
 
     ApplicationManager appManager = deployETL(sourceConfig, sinkConfig, "testDBMacro");
-
-    Map<String, String> arguments = new HashMap<>();
-    arguments.put("logical.start.time", String.valueOf(CURRENT_TS));
-    runETLOnce(appManager, arguments);
+    runETLOnce(appManager, ImmutableMap.of("logical.start.time", String.valueOf(CURRENT_TS)));
 
     DataSetManager<Table> outputManager = getDataset("macroOutputTable");
     Assert.assertTrue(MockSink.readOutput(outputManager).isEmpty());
@@ -111,7 +108,6 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     ETLPlugin sinkConfig = MockSink.getPlugin(outputDatasetName);
 
     ApplicationManager appManager = deployETL(sourceConfig, sinkConfig, "testDBSource");
-
     runETLOnce(appManager);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
@@ -214,8 +210,8 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     // Verify data
     Assert.assertEquals("user1", row1.get("name"));
     Assert.assertEquals("user2", row2.get("name"));
-    Assert.assertEquals(1, row1.get("id"));
-    Assert.assertEquals(2, row2.get("id"));
+    Assert.assertEquals(1, row1.<Integer>get("id").intValue());
+    Assert.assertEquals(2, row2.<Integer>get("id").intValue());
   }
   
   @Test
@@ -257,8 +253,8 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     // Verify data
     Assert.assertEquals("user1", row1.get("NAME"));
     Assert.assertEquals("user2", row2.get("NAME"));
-    Assert.assertEquals(1, row1.get("ID"));
-    Assert.assertEquals(2, row2.get("ID"));
+    Assert.assertEquals(1, row1.<Integer>get("ID").intValue());
+    Assert.assertEquals(2, row2.<Integer>get("ID").intValue());
   }
 
   @Test

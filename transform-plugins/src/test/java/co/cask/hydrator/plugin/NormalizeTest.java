@@ -122,7 +122,7 @@ public class NormalizeTest extends TransformPluginsTestBase {
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app(applicationName);
-    return deployApplication(appId.toId(), appRequest);
+    return deployApplication(appId, appRequest);
   }
 
   private void startWorkflow(ApplicationManager appManager, ProgramRunStatus status) throws Exception {

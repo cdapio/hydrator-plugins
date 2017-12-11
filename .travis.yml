@@ -17,7 +17,7 @@
 language: java
 
 jdk:
-  - oraclejdk7
+  - oraclejdk8
 
 # Do not exceed Travis memory capacity
 before_install: echo "MAVEN_OPTS='-Xmx3g -XX:MaxPermSize=256m'" > ~/.mavenrc

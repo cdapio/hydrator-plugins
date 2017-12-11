@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin.batch.action;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.plugin.PluginConfig;
@@ -142,11 +143,13 @@ public class HDFSMoveAction extends Action {
     @Description("The full HDFS path of the file or directory that is to be moved. In the case of a directory, if " +
       "fileRegex is set, then only files in the source directory matching the wildcard regex will be moved. " +
       "Otherwise, all files in the directory will be moved. For example: hdfs://hostname/tmp")
+    @Macro
     private String sourcePath;
 
     @Description("The valid, full HDFS destination path in the same cluster where the file or files are to be moved. " +
       "If a directory is specified with a file sourcePath, the file will be put into that directory. If sourcePath " +
       "is a directory, it is assumed that destPath is also a directory. HDFSAction will not catch this inconsistency.")
+    @Macro
     private String destPath;
 
     @Description("Wildcard regular expression to filter the files in the source directory that will be moved")

@@ -23,20 +23,18 @@ import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.api.dataset.table.Put;
 import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.datapipeline.SmartWorkflow;
+import co.cask.cdap.etl.api.ErrorTransform;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
-import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.batch.source.FileBatchSource;
 import co.cask.hydrator.plugin.common.Properties;
@@ -50,19 +48,11 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Tests for ETLBatch.
  */
 public class ETLMapReduceTestRun extends ETLBatchTestBase {
-  public static final Schema ERROR_SCHEMA = Schema.recordOf(
-    "error",
-    Schema.Field.of("errCode", Schema.of(Schema.Type.INT)),
-    Schema.Field.of("errMsg", Schema.unionOf(Schema.of(Schema.Type.STRING),
-                                             Schema.of(Schema.Type.NULL))),
-    Schema.Field.of("invalidRecord", Schema.of(Schema.Type.STRING))
-  );
 
   @Test
   public void testInvalidTransformConfigFailsToDeploy() {
@@ -103,7 +93,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
       "sink", new ETLPlugin("KVTable", BatchSink.PLUGIN_TYPE,
                             ImmutableMap.of(Properties.BatchReadableWritable.NAME, "kvTable2"), null));
     ETLStage transform = new ETLStage("transform", new ETLPlugin("Projection", Transform.PLUGIN_TYPE,
-                                                                 ImmutableMap.<String, String>of(), null));
+                                                                 ImmutableMap.of(), null));
 
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
       .addStage(source)
@@ -113,9 +103,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
       .addConnection(transform.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("KVToKV");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
+    ApplicationManager appManager = deployETL(etlConfig, "KVToKV");
 
     // add some data to the input table
     DataSetManager<KeyValueTable> table1 = getDataset("kvTable1");
@@ -125,9 +113,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     }
     table1.flush();
 
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
+    runETLOnce(appManager);
 
     DataSetManager<KeyValueTable> table2 = getDataset("kvTable2");
     try (KeyValueTable outputTable = table2.get()) {
@@ -192,9 +178,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
       .addConnection(transform.getName(), sink2.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("DagApp");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
+    ApplicationManager appManager = deployETL(etlConfig, "DagApp");
 
     // add some data to the input table
     DataSetManager<Table> inputManager = getDataset("dagInputTable");
@@ -214,10 +198,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
       inputManager.flush();
     }
 
-
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
+    runETLOnce(appManager);
 
     // all records are passed to this table (validation not performed)
     DataSetManager<Table> outputManager1 = getDataset("dagOutputTable1");
@@ -273,30 +254,42 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
       new ETLPlugin("Validator",
                     Transform.PLUGIN_TYPE,
                     ImmutableMap.of("validators", "core",
-                                    "validationScript", validationScript),
-                    null),
-      "keyErrors");
+                                    "validationScript", validationScript)));
 
-    ETLStage sink = new ETLStage(
-      "sink", new ETLPlugin("Table",
-                            BatchSink.PLUGIN_TYPE,
-                            ImmutableMap.of(
-                              Properties.BatchReadableWritable.NAME, "outputTable",
-                              Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "rowkey",
-                              Properties.Table.PROPERTY_SCHEMA, schema.toString()),
-                            null));
+    ETLStage sink1 = new ETLStage(
+      "sink1", new ETLPlugin("Table",
+                             BatchSink.PLUGIN_TYPE,
+                             ImmutableMap.of(
+                               Properties.BatchReadableWritable.NAME, "outputTable",
+                               Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "rowkey",
+                               Properties.Table.PROPERTY_SCHEMA, schema.toString())));
+
+    ETLStage sink2 = new ETLStage(
+      "sink2", new ETLPlugin("Table",
+                             BatchSink.PLUGIN_TYPE,
+                             ImmutableMap.of(
+                               Properties.BatchReadableWritable.NAME, "keyErrors",
+                               Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "rowkey",
+                               Properties.Table.PROPERTY_SCHEMA, schema.toString())));
+
+    ETLStage errorCollector = new ETLStage(
+      "errors", new ETLPlugin("ErrorCollector",
+                              ErrorTransform.PLUGIN_TYPE,
+                              ImmutableMap.of()));
 
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
       .addStage(source)
       .addStage(transform)
-      .addStage(sink)
+      .addStage(errorCollector)
+      .addStage(sink1)
+      .addStage(sink2)
       .addConnection(source.getName(), transform.getName())
-      .addConnection(transform.getName(), sink.getName())
+      .addConnection(transform.getName(), sink1.getName())
+      .addConnection(transform.getName(), errorCollector.getName())
+      .addConnection(errorCollector.getName(), sink2.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("TableToTable");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
+    ApplicationManager appManager = deployETL(etlConfig, "TableToTable");
 
     // add some data to the input table
     DataSetManager<Table> inputManager = getDataset("inputTable");
@@ -320,9 +313,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     inputTable.put(put);
     inputManager.flush();
 
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
+    runETLOnce(appManager);
 
     DataSetManager<Table> outputManager = getDataset("outputTable");
     Table outputTable = outputManager.get();
@@ -334,12 +325,17 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     Assert.assertEquals("scotch", row.getString("item"));
 
     row = outputTable.get(Bytes.toBytes("row2"));
-    Assert.assertEquals(0, row.getColumns().size());
+    Assert.assertTrue(row.isEmpty());
 
-    DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset("keyErrors");
-    try (TimePartitionedFileSet fileSet = fileSetManager.get()) {
-      List<GenericRecord> records = readOutput(fileSet, ERROR_SCHEMA);
-      Assert.assertEquals(1, records.size());
+    DataSetManager<Table> errorManager = getDataset("keyErrors");
+    try (Table errorTable = errorManager.get()) {
+      row = errorTable.get(Bytes.toBytes("row1"));
+      Assert.assertTrue(row.isEmpty());
+      row = errorTable.get(Bytes.toBytes("row2"));
+      Assert.assertEquals("jackson", row.getString("user"));
+      Assert.assertEquals(10, (int) row.getInt("count"));
+      Assert.assertTrue(Math.abs(123456789d - row.getDouble("price")) < 0.000001);
+      Assert.assertEquals("island", row.getString("item"));
     }
   }
 
@@ -387,13 +383,8 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
       .addConnection(source.getName(), sink2.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("FileToTPFS");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 2, TimeUnit.MINUTES);
+    ApplicationManager appManager = deployETL(etlConfig, "FileToTPFS");
+    runETLOnce(appManager);
 
     for (String sinkName : new String[] { "fileSink1", "fileSink2" }) {
       DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset(sinkName);
@@ -405,7 +396,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     }
   }
 
-  @Test(expected = Exception.class)
+  @Test
   public void testDuplicateStageNameInPipeline() throws Exception {
     String filePath = "file:///tmp/test/text.txt";
 
@@ -443,6 +434,11 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     ApplicationId appId = NamespaceId.DEFAULT.app("FileToTPFS");
 
     // deploying would thrown an excpetion
-    deployApplication(appId, appRequest);
+    try {
+      deployApplication(appId, appRequest);
+      Assert.fail();
+    } catch (Exception e) {
+      // expected
+    }
   }
 }

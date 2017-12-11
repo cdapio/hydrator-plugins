@@ -20,7 +20,7 @@
 
   <groupId>co.cask.hydrator</groupId>
   <artifactId>hydrator-plugins</artifactId>
-  <version>1.8.3-SNAPSHOT</version>
+  <version>2.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Hydrator Plugin Collection</name>
   <description>A collection of plugins for Cask Hydrator.</description>
@@ -99,7 +99,8 @@
     <cassandraunit.version>2.0.2.2</cassandraunit.version>
     <commons-codec.version>1.10</commons-codec.version>
     <commons-httpclient.version>3.1</commons-httpclient.version>
-    <cdap.version>4.3.2</cdap.version>
+    <commons-lang-version>2.6</commons-lang-version>
+    <cdap.version>5.0.0-SNAPSHOT</cdap.version>
     <datastax.version>2.0.5</datastax.version>
     <dumbster.version>1.6</dumbster.version>
     <es.version>1.6.0</es.version>
@@ -122,15 +123,15 @@
     <jython.version>2.5.2</jython.version>
     <json-path.version>2.2.0</json-path.version>
     <json.version>20160212</json.version>
+    <netty.version>4.1.16.Final</netty.version>
+    <netty-http.version>1.0.0-SNAPSHOT</netty-http.version>
     <!-- properties for script build step that creates the config files for the artifacts -->
     <widgets.dir>widgets</widgets.dir>
     <docs.dir>docs</docs.dir>
-    <app.parents>system:cdap-data-pipeline[4.3.0-SNAPSHOT,4.4.0-SNAPSHOT),system:cdap-data-streams[4.3.0-SNAPSHOT,4.4.0-SNAPSHOT)</app.parents>
+    <app.parents>system:cdap-data-pipeline[5.0.0-SNAPSHOT,5.1.0-SNAPSHOT),system:cdap-data-streams[5.0.0-SNAPSHOT,5.1.0-SNAPSHOT)</app.parents>
     <!-- this is here because project.basedir evaluates to null in the script build step -->
     <main.basedir>${project.basedir}</main.basedir>
   </properties>
-
-
 
   <repositories>
     <repository>
@@ -142,6 +143,13 @@
       <url>https://oss.sonatype.org/content/repositories/snapshots</url>
     </repository>
   </repositories>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>sonatype</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+    </pluginRepository>
+  </pluginRepositories>
 
   <dependencyManagement>
     <dependencies>
@@ -194,6 +202,12 @@
         <groupId>co.cask.cdap</groupId>
         <artifactId>cdap-formats</artifactId>
         <version>${cdap.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>co.cask.cdap</groupId>
@@ -241,6 +255,11 @@
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
         <version>${guava.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-lang</groupId>
+        <artifactId>commons-lang</artifactId>
+        <version>${commons-lang-version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>
@@ -631,22 +650,30 @@
         <artifactId>spark-streaming-twitter_2.10</artifactId>
         <version>1.6.2</version>
       </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-all</artifactId>
+        <version>${netty.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>co.cask.http</groupId>
+        <artifactId>netty-http</artifactId>
+        <version>${netty-http.version}</version>
+        <scope>test</scope>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
   <build>
-    <pluginManagement>
-      <plugins>
-      </plugins>
-    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.1</version>
+        <version>3.7.0</version>
         <configuration>
-          <source>1.7</source>
-          <target>1.7</target>
+          <source>1.8</source>
+          <target>1.8</target>
         </configuration>
       </plugin>
       <plugin>
@@ -916,8 +943,8 @@
             <artifactId>maven-javadoc-plugin</artifactId>
             <version>2.9.1</version>
             <configuration>
-              <failOnError>false</failOnError>
               <additionalparam>-Xdoclint:none</additionalparam>
+              <failOnError>false</failOnError>
               <links>
                 <link>http://download.oracle.com/javase/${jee.version}/docs/api/</link>
               </links>
