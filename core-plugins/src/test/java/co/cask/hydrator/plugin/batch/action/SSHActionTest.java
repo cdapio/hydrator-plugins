@@ -18,19 +18,16 @@ package co.cask.hydrator.plugin.batch.action;
 
 import co.cask.cdap.etl.mock.action.MockActionContext;
 import co.cask.hydrator.plugin.common.EchoCommandFactory;
-import com.google.common.io.BaseEncoding;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
-import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.shell.ProcessShellFactory;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.security.PublicKey;
+import java.util.Base64;
 
 /**
  * Test for {@link SSHAction}
@@ -87,12 +84,9 @@ public class SSHActionTest {
     SimpleGeneratorHostKeyProvider simpleGeneratorHostKeyProvider = new SimpleGeneratorHostKeyProvider();
     simpleGeneratorHostKeyProvider.setAlgorithm(KeyUtils.RSA_ALGORITHM);
     sshServer.setKeyPairProvider(simpleGeneratorHostKeyProvider);
-    sshServer.setPublickeyAuthenticator(new PublickeyAuthenticator() {
-      @Override
-      public boolean authenticate(String username, PublicKey key, ServerSession session) {
-        return username.equals(USER) && BaseEncoding.base64().encode(key.getEncoded()).equals(EXPECTED_PUBLIC_KEY);
-      }
-    });
+    sshServer.setPublickeyAuthenticator((username, key, session) ->
+      username.equals(USER) && Base64.getEncoder().encodeToString(key.getEncoded()).equals(EXPECTED_PUBLIC_KEY)
+    );
     sshServer.setShellFactory(new ProcessShellFactory(SHELL_ARGS));
     sshServer.setCommandFactory(EchoCommandFactory.INSTANCE);
     return sshServer;
