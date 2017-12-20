@@ -27,8 +27,10 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
@@ -50,17 +52,21 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
   private static final String FILENAME_ONLY = "path.tracking.filename.only";
   private static final String FORMAT = "path.tracking.format";
   private static final String SCHEMA = "path.tracking.schema";
+  private static final String DELEGATE_TEXT_INPUT_FORMAT = "path.tracking.delegate.text.input.format";
 
   /**
    * Configure the input format to use the specified schema and optional path field.
    */
   public static void configure(Job job, Configuration conf, @Nullable String pathField, boolean filenameOnly,
-                               String format, @Nullable String schema) {
+                               String format, @Nullable String delegateTextInputFormat, @Nullable String schema) {
     if (pathField != null) {
       conf.set(PATH_FIELD, pathField);
     }
     conf.setBoolean(FILENAME_ONLY, filenameOnly);
     conf.set(FORMAT, format);
+    if (delegateTextInputFormat != null) {
+      conf.set(DELEGATE_TEXT_INPUT_FORMAT, delegateTextInputFormat);
+    }
     if (schema != null) {
       conf.set(SCHEMA, schema);
       if (format.equalsIgnoreCase("avro")) {
@@ -91,6 +97,44 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
     return Schema.recordOf(schema.getRecordName(), newFields);
   }
 
+  private static InputFormat<LongWritable, Text> getTextInputFormat(Configuration conf) throws IOException {
+    String inputFormatClassName = conf.get(DELEGATE_TEXT_INPUT_FORMAT);
+    if (inputFormatClassName == null) {
+      return new TextInputFormat();
+    } else {
+      try {
+        return (TextInputFormat) Class.forName(inputFormatClassName).newInstance();
+      } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+        throw new IOException("Unable to instantiate delegate text input format class " + inputFormatClassName, e);
+      }
+    }
+  }
+
+  private static InputFormat<?, ?> getDelegateInputFormat(Configuration conf)
+    throws IOException {
+    String format = conf.get(FORMAT);
+    if ("avro".equalsIgnoreCase(format)) {
+      return new AvroKeyInputFormat<GenericRecord>();
+    } else if ("parquet".equalsIgnoreCase(format)) {
+      return new AvroParquetInputFormat<>();
+    } else {
+      return getTextInputFormat(conf);
+    }
+  }
+
+  @Override
+  public List<InputSplit> getSplits(JobContext job) throws IOException {
+    try {
+      return getDelegateInputFormat(job.getConfiguration()).getSplits(job);
+    } catch (InterruptedException e) {
+      // InterruptedException is declared for InputFormat.getSplits(), but FileInputFormat
+      // does not declare that for getSplits. Hence, as long as the delegate input format extends
+      // FileInputFormat, this can never happen.
+      Thread.currentThread().interrupt();
+      throw new RuntimeException("Unexpected interrupt", e);
+    }
+  }
+
   @Override
   public RecordReader<NullWritable, StructuredRecord> createRecordReader(InputSplit split,
                                                                          TaskAttemptContext context)
@@ -116,7 +160,8 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
         .createRecordReader(split, context);
       return new TrackingParquetRecordReader(delegate, pathField, path, parsedSchema);
     } else {
-      RecordReader<LongWritable, Text> delegate = (new TextInputFormat()).createRecordReader(split, context);
+      InputFormat<LongWritable, Text> textInputFormat = getTextInputFormat(context.getConfiguration());
+      RecordReader<LongWritable, Text> delegate = textInputFormat.createRecordReader(split, context);
       return new TrackingTextRecordReader(delegate, pathField, path, parsedSchema);
     }
   }

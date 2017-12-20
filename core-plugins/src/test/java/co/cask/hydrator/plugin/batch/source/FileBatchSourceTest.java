@@ -44,6 +44,7 @@ import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.gson.Gson;
 import org.apache.avro.file.DataFileWriter;
 import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.generic.GenericRecord;
@@ -100,7 +101,10 @@ public class FileBatchSourceTest extends HydratorTestBase {
     setupBatchArtifacts(BATCH_APP_ARTIFACT_ID, DataPipelineApp.class);
     // add artifact for batch sources and sinks
     addPluginArtifact(NamespaceId.DEFAULT.artifact("core-plugins", "4.0.0"), BATCH_APP_ARTIFACT_ID,
-                      FileBatchSource.class);
+                      FileBatchSource.class,
+                      // this is a little hack to get a custom text input format into the classpath.
+                      // in production, this class would have be injected in a different way
+                      ExtraTextInputFormat.class);
 
     file1 = temporaryFolder.newFolder("test").toPath().resolve(fileName + "-test1.txt").toFile();
     FileUtils.writeStringToFile(file1, "Hello,World");
@@ -517,6 +521,41 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(expected, output);
   }
 
+  @Test
+  public void testFileBatchInputFormatTextDelegate() throws Exception {
+    File fileText = new File(temporaryFolder.newFolder(), "test.txt");
+    String outputDatasetName = "test-filesource-text";
+
+    Schema textSchema = Schema.recordOf("file.record",
+                                        Schema.Field.of("offset", Schema.of(Schema.Type.LONG)),
+                                        Schema.Field.of("body", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                                        Schema.Field.of("file", Schema.nullableOf(Schema.of(
+                                          Schema.Type.STRING))));
+
+    String appName = "FileSourceText";
+    ApplicationManager appManager = createSourceAndDeployApp(appName, fileText, "text",
+                                                             ExtraTextInputFormat.class.getName(),
+                                                             ImmutableMap.of("extra.text", "x:"),
+                                                             outputDatasetName, textSchema);
+
+    FileUtils.writeStringToFile(fileText, "Hello,World!");
+
+    workflowStartAndWait(appManager);
+
+    List<StructuredRecord> expected = ImmutableList.of(
+      StructuredRecord.builder(textSchema)
+        .set("offset", (long) 0)
+        .set("body", "x:Hello,World!")
+        .set("file", fileText.toURI().toString())
+        .build()
+    );
+
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> output = MockSink.readOutput(outputManager);
+
+    Assert.assertEquals(expected, output);
+  }
+
   @Ignore // TODO: CDAP-12491
   @Test
   public void testFileBatchInputFormatAvro() throws Exception {
@@ -772,15 +811,25 @@ public class FileBatchSourceTest extends HydratorTestBase {
 
   private ApplicationManager createSourceAndDeployApp(String appName, File file, String format,
                                                       String outputDatasetName, Schema schema) throws Exception {
+    return createSourceAndDeployApp(appName, file, format, null, null, outputDatasetName, schema);
+  }
 
+  private ApplicationManager createSourceAndDeployApp(String appName, File file, String format,
+                                                      String textDelegateClass, Map<String, String> fsProperties,
+                                                      String outputDatasetName, Schema schema) throws Exception {
     ImmutableMap.Builder<String, String> sourceProperties = ImmutableMap.<String, String>builder()
                                                               .put(Constants.Reference.REFERENCE_NAME, "TestFile")
                                                               .put(Properties.File.FILESYSTEM, "Text")
                                                               .put(Properties.File.PATH, file.getAbsolutePath())
                                                               .put(Properties.File.FORMAT, format)
                                                               .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
-                                                              .put("pathField", "file");
-
+                                                              .put(Properties.File.PATH_FIELD, "file");
+    if (textDelegateClass != null) {
+      sourceProperties.put(Properties.File.DELEGATE_TEXT_INPUT_FORMAT, textDelegateClass);
+    }
+    if (fsProperties != null && !fsProperties.isEmpty()) {
+      sourceProperties.put(Properties.File.FILESYSTEM_PROPERTIES, new Gson().toJson(fsProperties));
+    }
     if (schema != null) {
       String schemaString = schema.toString();
       sourceProperties.put(Properties.File.SCHEMA, schemaString);

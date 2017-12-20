@@ -51,6 +51,11 @@ Cannot be used if pathField is set. (Macro-enabled)
 
 **format:** Format of the file. Must be "text", "avro" or "parquet". Defaults to "text".
 
+**delegateTextInputFormat:** The fully qualified class name of a Hadoop input format to be used for reading
+the input file(s) if the format is 'text'. This is useful for text file formats that require special handling
+not available from the default TextInputFormat. The class must extend ``InputFormat<LongWritable, Text>`` and use
+splits that extend ``FileSplit``. It must be available to the program class loader at run time.
+
 **schema:** Schema for the source.
 
 **maxSplitSize:** Maximum split-size for each mapper in the MapReduce Job. Defaults to 128MB. (Macro-enabled)
