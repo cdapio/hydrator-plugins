@@ -21,19 +21,13 @@ import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.data.schema.UnsupportedTypeException;
-import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
-import co.cask.hydrator.common.HiveSchemaConverter;
 import co.cask.hydrator.plugin.common.FileSetUtil;
 import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.parquet.avro.AvroParquetInputFormat;
-import org.apache.parquet.avro.AvroParquetOutputFormat;
 
 import java.io.IOException;
 import javax.annotation.Nullable;
@@ -64,30 +58,12 @@ public class SnapshotFileBatchParquetSink extends SnapshotFileBatchSink<Void, Ge
   @Override
   public void transform(StructuredRecord input,
                         Emitter<KeyValue<Void, GenericRecord>> emitter) throws Exception {
-    emitter.emit(new KeyValue<Void, GenericRecord>(null, recordTransformer.transform(input)));
+    emitter.emit(new KeyValue<>(null, recordTransformer.transform(input)));
   }
 
   @Override
   protected void addFileProperties(FileSetProperties.Builder propertiesBuilder) {
-    String schema = config.schema.toLowerCase();
-    // parse to make sure it's valid
-    new org.apache.avro.Schema.Parser().parse(schema);
-    String hiveSchema;
-    try {
-      hiveSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(schema));
-    } catch (UnsupportedTypeException | IOException e) {
-      throw new RuntimeException("Error: Schema is not valid ", e);
-    }
-    propertiesBuilder.addAll(FileSetUtil.getParquetCompressionConfiguration(config.compressionCodec, config.schema,
-                                                                            true));
-
-    propertiesBuilder
-      .setInputFormat(AvroParquetInputFormat.class)
-      .setOutputFormat(AvroParquetOutputFormat.class)
-      .setEnableExploreOnCreate(true)
-      .setExploreFormat("parquet")
-      .setExploreSchema(hiveSchema.substring(1, hiveSchema.length() - 1))
-      .add(DatasetProperties.SCHEMA, schema);
+    FileSetUtil.configureParquetFileSet(config.schema, propertiesBuilder);
   }
 
   /**

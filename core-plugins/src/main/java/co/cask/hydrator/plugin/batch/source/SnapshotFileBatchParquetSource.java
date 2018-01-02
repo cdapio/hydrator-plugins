@@ -21,21 +21,17 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.data.schema.UnsupportedTypeException;
-import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
-import co.cask.hydrator.common.HiveSchemaConverter;
 import co.cask.hydrator.plugin.common.AvroToStructuredTransformer;
+import co.cask.hydrator.plugin.common.FileSetUtil;
 import co.cask.hydrator.plugin.common.SnapshotFileSetConfig;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.parquet.avro.AvroParquetInputFormat;
-import org.apache.parquet.avro.AvroParquetOutputFormat;
 
 import javax.annotation.Nullable;
 
@@ -74,21 +70,7 @@ public class SnapshotFileBatchParquetSource extends SnapshotFileBatchSource<Null
 
   @Override
   protected void addFileProperties(FileSetProperties.Builder propertiesBuilder) {
-    propertiesBuilder.setInputFormat(AvroParquetInputFormat.class)
-      .setOutputFormat(AvroParquetOutputFormat.class)
-      .setEnableExploreOnCreate(true)
-      .setExploreFormat("parquet");
-    try {
-      String schema = config.schema.toLowerCase();
-      String hiveSchema = HiveSchemaConverter.toHiveSchema(
-        co.cask.cdap.api.data.schema.Schema.parseJson(schema));
-      propertiesBuilder.setExploreSchema(hiveSchema.substring(1, hiveSchema.length() - 1));
-      propertiesBuilder.add(DatasetProperties.SCHEMA, schema);
-    } catch (UnsupportedTypeException e) {
-      throw new IllegalArgumentException("schema " + config.schema + " is not supported.", e);
-    } catch (Exception e) {
-      throw new IllegalArgumentException("schema " + config.schema + " is invalid.", e);
-    }
+    FileSetUtil.configureParquetFileSet(config.schema, propertiesBuilder);
   }
 
   /**

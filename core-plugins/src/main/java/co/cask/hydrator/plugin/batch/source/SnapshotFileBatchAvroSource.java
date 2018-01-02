@@ -20,21 +20,17 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.hydrator.plugin.common.AvroToStructuredTransformer;
+import co.cask.hydrator.plugin.common.FileSetUtil;
 import co.cask.hydrator.plugin.common.SnapshotFileSetConfig;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import org.apache.avro.Schema;
-import org.apache.avro.SchemaParseException;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroKey;
-import org.apache.avro.mapreduce.AvroKeyInputFormat;
-import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.apache.hadoop.io.NullWritable;
 
 import javax.annotation.Nullable;
@@ -74,22 +70,7 @@ public class SnapshotFileBatchAvroSource extends SnapshotFileBatchSource<AvroKey
 
   @Override
   protected void addFileProperties(FileSetProperties.Builder propertiesBuilder) {
-    // parse it to make sure its valid
-    try {
-      new Schema.Parser().parse(config.schema);
-    } catch (SchemaParseException e) {
-      throw new IllegalArgumentException("Could not parse schema: " + e.getMessage(), e);
-    }
-    propertiesBuilder
-      .setInputFormat(AvroKeyInputFormat.class)
-      .setOutputFormat(AvroKeyOutputFormat.class)
-      .setOutputProperty("avro.schema.output.key", config.schema)
-      .setEnableExploreOnCreate(true)
-      .setSerDe("org.apache.hadoop.hive.serde2.avro.AvroSerDe")
-      .setExploreInputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat")
-      .setExploreOutputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat")
-      .setTableProperty("avro.schema.literal", config.schema)
-      .add(DatasetProperties.SCHEMA, config.schema);
+    FileSetUtil.configureAvroFileSet(config.schema, propertiesBuilder);
   }
 
   /**
