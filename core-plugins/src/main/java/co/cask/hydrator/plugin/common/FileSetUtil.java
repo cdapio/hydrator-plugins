@@ -148,9 +148,8 @@ public class FileSetUtil {
    * @param properties a builder for the file set properties
    */
   public static void configureAvroFileSet(String configuredSchema, FileSetProperties.Builder properties) {
-    // validate and parse schema as Avro, and attempt to convert it into a Hive schema
+    // validate and parse schema as Avro
     Schema avroSchema = parseAvroSchema(configuredSchema, configuredSchema);
-    String hiveSchema = parseHiveSchema(configuredSchema, configuredSchema);
 
     properties
       .setInputFormat(AvroKeyInputFormat.class)
@@ -160,7 +159,6 @@ public class FileSetUtil {
       .setExploreInputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat")
       .setExploreOutputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat")
       .setTableProperty("avro.schema.literal", configuredSchema)
-      .setExploreSchema(hiveSchema.substring(1, hiveSchema.length() - 1))
       .add(DatasetProperties.SCHEMA, configuredSchema);
 
     Job job = createJobForConfiguration();
