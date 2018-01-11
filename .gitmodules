@@ -22,7 +22,7 @@
 [submodule "realtime-stream-source"]
 	path = realtime-stream-source
 	url = https://github.com/hydrator/realtime-stream-source.git
-	branch = release/1.1 
+	branch = release/1.3
 [submodule "condition-plugins"]
 	path = condition-plugins
 	url = https://github.com/hydrator/condition-plugins.git
