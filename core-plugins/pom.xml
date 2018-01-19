@@ -190,6 +190,7 @@
               co.cask.hydrator.plugin.transform.*;
               co.cask.hydrator.plugin.validator.*;
               co.cask.hydrator.plugin.error.*;
+              org.apache.avro.mapred.*;
               org.apache.avro.mapreduce;
               org.apache.parquet.avro.*;
               org.apache.parquet.hadoop.*;
