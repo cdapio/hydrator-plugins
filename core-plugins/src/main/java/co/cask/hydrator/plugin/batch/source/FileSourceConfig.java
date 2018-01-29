@@ -53,6 +53,10 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
     "needed for the distributed file system.";
   protected static final String FORMAT_DESCRIPTION = "Format of the file. Must be 'text', 'avro' or " +
     "'parquet'. Defaults to 'text'.";
+  protected static final String DELEGATE_TEXT_INPUT_FORMAT_DESCRIPTION = "The fully qualified name of a Hadoop " +
+    "InputFormat class to use if the format is 'text'. The class must extend InputFormat<LongWritable, Text>, " +
+    "its splits must extend FileSplit, and the class must be available on the mapreduce class path. " +
+    "Defaults to TextInputFormat.";
 
   private static final Gson GSON = new Gson();
   private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
@@ -84,6 +88,11 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
   public String format;
 
   @Nullable
+  @Description(DELEGATE_TEXT_INPUT_FORMAT_DESCRIPTION)
+  @Macro
+  public String delegateTextInputFormat;
+
+  @Nullable
   @Description(MAX_SPLIT_SIZE_DESCRIPTION)
   @Macro
   public Long maxSplitSize;
@@ -113,12 +122,13 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
   public String schema;
 
   public FileSourceConfig() {
-    this(null, null, null, null, null, null, null, null, null, null, null, null);
+    this(null, null, null, null, null, null, null, null, null, null, null, null, null);
   }
 
   public FileSourceConfig(String referenceName, @Nullable String fileRegex, @Nullable String timeTable,
                           @Nullable String inputFormatClass, @Nullable String fileSystemProperties,
-                          @Nullable String format, @Nullable Long maxSplitSize,
+                          @Nullable String format, @Nullable String delegateTextInputFormat,
+                          @Nullable Long maxSplitSize,
                           @Nullable Boolean ignoreNonExistingFolders, @Nullable Boolean recursive,
                           @Nullable String pathField, @Nullable Boolean fileNameOnly,
                           @Nullable String schema) {
@@ -131,6 +141,7 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
     this.inputFormatClass = inputFormatClass == null ?
       CombinePathTrackingInputFormat.class.getName() : inputFormatClass;
     this.format = format == null ? "text" : format;
+    this.delegateTextInputFormat = delegateTextInputFormat;
     this.maxSplitSize = maxSplitSize == null ? DEFAULT_MAX_SPLIT_SIZE : maxSplitSize;
     this.ignoreNonExistingFolders = ignoreNonExistingFolders == null ? false : ignoreNonExistingFolders;
     this.recursive = recursive == null ? false : recursive;
@@ -148,6 +159,9 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
     if (format == null || !(format.equalsIgnoreCase("text") ||
       (format.equalsIgnoreCase("avro")) || format.equalsIgnoreCase("parquet"))) {
       throw new IllegalArgumentException("Format can only be 'text', 'avro' or 'parquet'");
+    }
+    if (delegateTextInputFormat != null && !format.equalsIgnoreCase("text")) {
+      throw new IllegalArgumentException("delegateTextInputFormat can only be given if format is 'text'");
     }
     if (schema == null) {
       return;

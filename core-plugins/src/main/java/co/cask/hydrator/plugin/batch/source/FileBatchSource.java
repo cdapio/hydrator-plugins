@@ -60,17 +60,19 @@ public class FileBatchSource extends AbstractFileBatchSource {
 
     @VisibleForTesting
     public FileBatchConfig() {
-      this(null, null, null, null, null, null, null, null, null, null, null, null, null);
+      this(null, null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     public FileBatchConfig(String referenceName, @Nullable String fileRegex, @Nullable String timeTable,
                            @Nullable String inputFormatClass, @Nullable String fileSystemProperties,
-                           @Nullable String format, @Nullable Long maxSplitSize,
+                           @Nullable String format, @Nullable String delegateTextInputFormat,
+                           @Nullable Long maxSplitSize,
                            @Nullable Boolean ignoreNonExistingFolders, @Nullable Boolean recursive,
                            String path, @Nullable String pathField,
                            @Nullable Boolean fileNameOnly, @Nullable String schema) {
       super(referenceName, fileRegex, timeTable, inputFormatClass, fileSystemProperties, format,
-            maxSplitSize, ignoreNonExistingFolders, recursive, pathField, fileNameOnly, schema);
+            delegateTextInputFormat, maxSplitSize, ignoreNonExistingFolders, recursive, pathField,
+            fileNameOnly, schema);
       this.path = path;
     }
 

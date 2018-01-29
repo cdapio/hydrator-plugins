@@ -89,6 +89,11 @@
           "name": "fileSystemProperties"
         },
         {
+          "widget-type": "textbox",
+          "label": "Delegate Text Input Format Class",
+          "name": "delegateTextInputFormat"
+        },
+        {
           "widget-type": "select",
           "label": "Ignore Non-Existing Folders",
           "name": "ignoreNonExistingFolders",

@@ -28,10 +28,12 @@ public final class Properties {
     public static final String FILESYSTEM = "fileSystem";
     public static final String FILESYSTEM_PROPERTIES = "fileSystemProperties";
     public static final String PATH = "path";
+    public static final String PATH_FIELD = "pathField";
     public static final String FILE_REGEX = "fileRegex";
     public static final String TIME_TABLE = "timeTable";
     public static final String INPUT_FORMAT_CLASS = "inputFormatClass";
     public static final String FORMAT = "format";
+    public static final String DELEGATE_TEXT_INPUT_FORMAT = "delegateTextInputFormat";
     public static final String SCHEMA = "schema";
     public static final String MAX_SPLIT_SIZE = "maxSplitSize";
     public static final String IGNORE_NON_EXISTING_FOLDERS = "ignoreNonExistingFolders";
