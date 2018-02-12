@@ -20,7 +20,7 @@
 
   <groupId>co.cask.hydrator</groupId>
   <artifactId>hydrator-plugins</artifactId>
-  <version>1.8.3</version>
+  <version>1.8.4-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Hydrator Plugin Collection</name>
   <description>A collection of plugins for Cask Hydrator.</description>
@@ -39,8 +39,8 @@
     <module>solrsearch-plugins</module>
     <module>spark-plugins</module>
     <module>transform-plugins</module>
-    <module>wrangler-transform</module>
-    <module>condition-plugins</module>
+    <!--module>wrangler-transform</module>
+    <module>condition-plugins</module-->
   </modules>
 
   <licenses>
@@ -115,7 +115,7 @@
     <kafka.version>0.8.2.2</kafka.version>
     <mockftp.version>2.6</mockftp.version>
     <snappy.version>1.1.2</snappy.version>
-    <slf4j.version>1.7.5</slf4j.version>
+    <slf4j.version>1.7.12</slf4j.version>
     <twill.version>0.9.0</twill.version>
     <twitter4j.version>4.0.3</twitter4j.version>
     <zookeeper.version>3.4.5</zookeeper.version>
@@ -128,6 +128,8 @@
     <app.parents>system:cdap-data-pipeline[4.3.0-SNAPSHOT,4.4.0-SNAPSHOT),system:cdap-data-streams[4.3.0-SNAPSHOT,4.4.0-SNAPSHOT)</app.parents>
     <!-- this is here because project.basedir evaluates to null in the script build step -->
     <main.basedir>${project.basedir}</main.basedir>
+    <sqoop.version>1.4.7</sqoop.version>
+    <oracle.driver.path>/Users/poorna/Downloads/ojdbc6.jar</oracle.driver.path>
   </properties>
 
 
@@ -630,6 +632,24 @@
         <groupId>org.apache.spark</groupId>
         <artifactId>spark-streaming-twitter_2.10</artifactId>
         <version>1.6.2</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.sqoop</groupId>
+        <artifactId>sqoop</artifactId>
+        <version>${sqoop.version}</version>
+        <classifier>hadoop260</classifier>
+      </dependency>
+      <dependency>
+        <groupId>com.oracle</groupId>
+        <artifactId>ojdbc6</artifactId>
+        <version>6</version>
+        <scope>system</scope>
+        <systemPath>${oracle.driver.path}</systemPath>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>log4j-over-slf4j</artifactId>
+        <version>${slf4j.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

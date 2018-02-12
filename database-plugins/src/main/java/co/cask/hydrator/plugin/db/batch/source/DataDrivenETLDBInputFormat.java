@@ -27,7 +27,9 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.db.DBConfiguration;
 import org.apache.hadoop.mapreduce.lib.db.DBInputFormat;
 import org.apache.hadoop.mapreduce.lib.db.DBWritable;
-import org.apache.hadoop.mapreduce.lib.db.DataDrivenDBInputFormat;
+import org.apache.sqoop.manager.oracle.OraOopConstants;
+import org.apache.sqoop.manager.oracle.OraOopDataDrivenDBInputFormat;
+import org.apache.sqoop.manager.oracle.OraOopUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,12 +42,13 @@ import java.sql.SQLException;
 /**
  * Class that extends {@link DBInputFormat} to load the database driver class correctly.
  */
-public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
+public class DataDrivenETLDBInputFormat extends OraOopDataDrivenDBInputFormat {
   public static final String AUTO_COMMIT_ENABLED = "co.cask.hydrator.db.autocommit.enabled";
 
   private static final Logger LOG = LoggerFactory.getLogger(DataDrivenETLDBInputFormat.class);
   private Driver driver;
   private JDBCDriverShim driverShim;
+  private Connection connection;
 
   public static void setInput(Configuration conf,
                               Class<? extends DBWritable> inputClass,
@@ -56,11 +59,18 @@ public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
     dbConf.setInputClass(inputClass);
     dbConf.setInputQuery(inputQuery);
     dbConf.setInputBoundingQuery(inputBoundingQuery);
+    dbConf.setInputTableName("EMPLOYEES");
+    dbConf.setInputFieldNames("EMP_NO", "FIRST_NAME", "LAST_NAME");
+    conf.set(OraOopConstants.ORAOOP_TABLE_OWNER, "SYSTEM");
+    conf.set(OraOopConstants.ORAOOP_TABLE_NAME, "EMPLOYEES");
+    conf.setInt(OraOopConstants.ORAOOP_DESIRED_NUMBER_OF_MAPPERS, 10);
+    conf.set(OraOopUtilities.SQOOP_JOB_TYPE, OraOopConstants.Sqoop.Tool.IMPORT.name());
     conf.setBoolean(AUTO_COMMIT_ENABLED, enableAutoCommit);
   }
 
   @Override
   public Connection getConnection() {
+    LOG.info("********** Using new DB plugin **********");
     if (this.connection == null) {
       Configuration conf = getConf();
       try {
