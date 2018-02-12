@@ -48,7 +48,7 @@ import javax.sql.rowset.serial.SerialBlob;
  * @see org.apache.hadoop.mapreduce.lib.db.DBOutputFormat DBOutputFormat
  * @see DBWritable DBWritable
  */
-public class DBRecord implements Writable, DBWritable, Configurable {
+public class DBRecord implements Writable, org.apache.sqoop.mapreduce.DBWritable, DBWritable, Configurable {
 
   private StructuredRecord record;
   private Configuration conf;

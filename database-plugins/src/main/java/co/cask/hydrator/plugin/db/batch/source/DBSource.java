@@ -26,7 +26,6 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.plugin.EndpointPluginContext;
 import co.cask.cdap.api.plugin.PluginConfig;
-import co.cask.cdap.api.plugin.PluginProperties;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
@@ -46,6 +45,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.lib.db.DBConfiguration;
+import org.apache.sqoop.manager.oracle.OraOopUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +82,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
-    dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId());
+//    dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId());
     sourceConfig.validate();
     if (!Strings.isNullOrEmpty(sourceConfig.schema)) {
       pipelineConfigurer.getStageConfigurer().setOutputSchema(sourceConfig.getSchema());
@@ -118,7 +118,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
   @Path("getSchema")
   public Schema getSchema(GetSchemaRequest request,
                           EndpointPluginContext pluginContext) throws IllegalAccessException,
-    SQLException, InstantiationException {
+    SQLException, InstantiationException, ClassNotFoundException {
     DriverCleanup driverCleanup;
     try {
       driverCleanup = loadPluginClassAndGetDriver(request, pluginContext);
@@ -153,10 +153,10 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
   }
 
   private DriverCleanup loadPluginClassAndGetDriver(GetSchemaRequest request, EndpointPluginContext pluginContext)
-    throws IllegalAccessException, InstantiationException, SQLException {
-    Class<? extends Driver> driverClass =
-      pluginContext.loadPluginClass(request.getJDBCPluginType(),
-                                    request.jdbcPluginName, PluginProperties.builder().build());
+    throws IllegalAccessException, InstantiationException, SQLException, ClassNotFoundException {
+    Class<? extends Driver> driverClass = (Class<? extends Driver>) Class.forName("oracle.jdbc.driver.OracleDriver");
+//      pluginContext.loadPluginClass(request.getJDBCPluginType(),
+//                                    request.jdbcPluginName, PluginProperties.builder().build());
 
     if (driverClass == null) {
       throw new InstantiationException(
@@ -194,7 +194,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     hConf.clear();
 
     // Load the plugin class to make sure it is available.
-    Class<? extends Driver> driverClass = context.loadPluginClass(getJDBCPluginId());
+    Class<? extends Driver> driverClass = (Class<? extends Driver>) Class.forName("oracle.jdbc.driver.OracleDriver");
     if (sourceConfig.user == null && sourceConfig.password == null) {
       DBConfiguration.configureDB(hConf, driverClass.getName(), sourceConfig.connectionString);
     } else {
@@ -217,6 +217,8 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     if (sourceConfig.schema != null) {
       hConf.set(DBUtils.OVERRIDE_SCHEMA, sourceConfig.schema);
     }
+    LOG.info("********** Using urandom in prepare run **********");
+    OraOopUtilities.appendJavaSecurityEgd(hConf);
     context.setInput(Input.of(sourceConfig.referenceName,
                               new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf)));
   }
@@ -224,7 +226,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    driverClass = context.loadPluginClass(getJDBCPluginId());
+    driverClass = (Class<? extends Driver>) Class.forName("oracle.jdbc.driver.OracleDriver");
   }
 
   @Override

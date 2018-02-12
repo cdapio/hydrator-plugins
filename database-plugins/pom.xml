@@ -47,6 +47,23 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.apache.sqoop</groupId>
+      <artifactId>sqoop</artifactId>
+      <classifier>hadoop260</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jcl-over-slf4j</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>log4j-over-slf4j</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.oracle</groupId>
+      <artifactId>ojdbc6</artifactId>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
     </dependency>
@@ -74,9 +91,12 @@
               co.cask.hydrator.plugin.*;
               org.apache.commons.lang;
               org.apache.commons.logging.*;
-              org.codehaus.jackson.*
+              org.codehaus.jackson.*;
+              org.apache.sqoop.*;
+              oracle.jdbc.*;
+              org.apache.log4j.*
             </_exportcontents>
-            <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
+            <Embed-Dependency>*;inline=false;scope=compile|system</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
             <Embed-Directory>lib</Embed-Directory>
           </instructions>
