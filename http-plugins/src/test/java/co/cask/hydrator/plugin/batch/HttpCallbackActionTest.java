@@ -56,8 +56,10 @@ import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.ws.rs.HttpMethod;
@@ -128,9 +130,9 @@ public class HttpCallbackActionTest extends HydratorTestBase {
     ETLStage action = new ETLStage(
       "http",
       new ETLPlugin("HTTPCallback", PostAction.PLUGIN_TYPE,
-                    ImmutableMap.of("url", baseURL + "/feeds/users",
-                                    "method", "PUT",
-                                    "body", body),
+                    ImmutableMap.of("url", "${url}",
+                                    "method", "${method}",
+                                    "body", "${body}"),
                     null));
 
     ETLStage source = new ETLStage("source", MockSource.getPlugin("httpCallbackInput"));
@@ -147,8 +149,12 @@ public class HttpCallbackActionTest extends HydratorTestBase {
     ApplicationId appId = NamespaceId.DEFAULT.app("actionTest");
     ApplicationManager appManager = TestBase.deployApplication(appId, appRequest);
 
+    Map<String, String> arguments = new HashMap<>();
+    arguments.put("url", baseURL + "/feeds/users");
+    arguments.put("method", "PUT");
+    arguments.put("body", body);
     WorkflowManager manager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    manager.start();
+    manager.start(arguments);
     manager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 5, TimeUnit.MINUTES);
 
     Assert.assertEquals(body, getFeedContent("users"));
