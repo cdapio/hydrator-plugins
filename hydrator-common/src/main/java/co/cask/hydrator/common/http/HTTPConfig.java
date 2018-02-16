@@ -17,6 +17,7 @@
 package co.cask.hydrator.common.http;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.plugin.PluginConfig;
 import com.google.common.base.Strings;
 
@@ -37,18 +38,22 @@ public class HTTPConfig extends PluginConfig {
   private static final String DELIMITER = "\n";
 
   @Description("The URL to fetch data from.")
+  @Macro
   private String url;
 
   @Description("Request headers to set when performing the http request.")
   @Nullable
+  @Macro
   private String requestHeaders;
 
   @Description("Whether to automatically follow redirects. Defaults to true.")
   @Nullable
+  @Macro
   private Boolean followRedirects;
 
   @Description("Sets the connection timeout in milliseconds. Set to 0 for infinite. Default is 60000 (1 minute).")
   @Nullable
+  @Macro
   private Integer connectTimeout;
 
   public HTTPConfig() {
@@ -80,16 +85,20 @@ public class HTTPConfig extends PluginConfig {
 
   @SuppressWarnings("ConstantConditions")
   public void validate() {
-    try {
-      new URL(url);
-    } catch (MalformedURLException e) {
-      throw new IllegalArgumentException(String.format("URL '%s' is malformed: %s", url, e.getMessage()), e);
+    if (!containsMacro("url")) {
+      try {
+        new URL(url);
+      } catch (MalformedURLException e) {
+        throw new IllegalArgumentException(String.format("URL '%s' is malformed: %s", url, e.getMessage()), e);
+      }
     }
-    if (connectTimeout < 0) {
+    if (!containsMacro("connectTimeout") && connectTimeout < 0) {
       throw new IllegalArgumentException(String.format(
         "Invalid connectTimeout %d. Timeout must be 0 or a positive number.", connectTimeout));
     }
-    convertHeadersToMap(requestHeaders);
+    if (!containsMacro("requestHeaders")) {
+      convertHeadersToMap(requestHeaders);
+    }
   }
 
   private Map<String, String> convertHeadersToMap(String headersString) {
