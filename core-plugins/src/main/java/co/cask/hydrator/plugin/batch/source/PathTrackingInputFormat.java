@@ -67,6 +67,7 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
         AvroJob.setInputKeySchema(job, new org.apache.avro.Schema.Parser().parse(schema));
       } else if (format.equalsIgnoreCase("parquet")) {
         AvroWriteSupport.setSchema(conf, new org.apache.avro.Schema.Parser().parse(schema));
+        conf.set("parquet.avro.read.schema", schema);
       }
     } else if (format.equalsIgnoreCase("text")) {
       conf.set(SCHEMA, getTextOutputSchema(pathField).toString());
