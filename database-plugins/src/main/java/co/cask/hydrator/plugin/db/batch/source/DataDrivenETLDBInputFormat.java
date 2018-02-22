@@ -18,7 +18,6 @@ package co.cask.hydrator.plugin.db.batch.source;
 
 import co.cask.hydrator.plugin.DBUtils;
 import co.cask.hydrator.plugin.JDBCDriverShim;
-import co.cask.hydrator.plugin.db.batch.NoOpCommitConnection;
 import com.google.common.base.Throwables;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -59,19 +58,21 @@ public class DataDrivenETLDBInputFormat extends OraOopDataDrivenDBInputFormat {
     dbConf.setInputClass(inputClass);
     dbConf.setInputQuery(inputQuery);
     dbConf.setInputBoundingQuery(inputBoundingQuery);
-    dbConf.setInputTableName("EMPLOYEES");
-    dbConf.setInputFieldNames("EMP_NO", "FIRST_NAME", "LAST_NAME");
+    dbConf.setInputTableName("SQOOP_EMPLOYEES");
+    dbConf.setInputFieldNames("EMPLOYEE_ID", "FIRST_NAME", "LAST_NAME", "EMAIL", "PHONE_NUMBER", "ADDRESS",
+                              "HIRE_DATE", "JOB_ID", "SALARY", "COMMISSION_PCT", "MANAGER_ID", "DEPARTMENT_ID");
     conf.set(OraOopConstants.ORAOOP_TABLE_OWNER, "SYSTEM");
-    conf.set(OraOopConstants.ORAOOP_TABLE_NAME, "EMPLOYEES");
+    conf.set(OraOopConstants.ORAOOP_TABLE_NAME, "SQOOP_EMPLOYEES");
     conf.setInt(OraOopConstants.ORAOOP_DESIRED_NUMBER_OF_MAPPERS, 10);
     conf.set(OraOopUtilities.SQOOP_JOB_TYPE, OraOopConstants.Sqoop.Tool.IMPORT.name());
-    conf.setBoolean(AUTO_COMMIT_ENABLED, enableAutoCommit);
+    conf.setBoolean(AUTO_COMMIT_ENABLED, false);
   }
 
   @Override
   public Connection getConnection() {
     LOG.info("********** Using new DB plugin **********");
     if (this.connection == null) {
+      LOG.info("********** Creating a new connection **********");
       Configuration conf = getConf();
       try {
         String url = conf.get(DBConfiguration.URL_PROPERTY);
@@ -102,15 +103,6 @@ public class DataDrivenETLDBInputFormat extends OraOopDataDrivenDBInputFormat {
                                                         conf.get(DBConfiguration.USERNAME_PROPERTY),
                                                         conf.get(DBConfiguration.PASSWORD_PROPERTY));
         }
-
-        boolean autoCommitEnabled = conf.getBoolean(AUTO_COMMIT_ENABLED, false);
-        if (autoCommitEnabled) {
-          // hack to work around jdbc drivers like the hive driver that throw exceptions on commit
-          this.connection = new NoOpCommitConnection(this.connection);
-        } else {
-          this.connection.setAutoCommit(false);
-        }
-        this.connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
       } catch (Exception e) {
         throw Throwables.propagate(e);
       }

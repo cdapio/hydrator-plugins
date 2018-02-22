@@ -72,6 +72,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
   private final DBSourceConfig sourceConfig;
   private final DBManager dbManager;
   private Class<? extends Driver> driverClass;
+  private FieldCase fieldCase;
 
   public DBSource(DBSourceConfig sourceConfig) {
     super(new ReferencePluginConfig(sourceConfig.referenceName));
@@ -221,18 +222,19 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     OraOopUtilities.appendJavaSecurityEgd(hConf);
     context.setInput(Input.of(sourceConfig.referenceName,
                               new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf)));
+    LOG.info("********** Caching implementation **********");
   }
 
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
     driverClass = (Class<? extends Driver>) Class.forName("oracle.jdbc.driver.OracleDriver");
+    fieldCase = FieldCase.toFieldCase(sourceConfig.columnNameCase);
   }
 
   @Override
   public void transform(KeyValue<LongWritable, DBRecord> input, Emitter<StructuredRecord> emitter) throws Exception {
-    emitter.emit(StructuredRecordUtils.convertCase(
-      input.getValue().getRecord(), FieldCase.toFieldCase(sourceConfig.columnNameCase)));
+    emitter.emit(StructuredRecordUtils.convertCase(input.getValue().getRecord(), fieldCase));
   }
 
   @Override

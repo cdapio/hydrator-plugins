@@ -94,7 +94,7 @@
     <!-- version properties -->
     <apache-commons.version>1.2</apache-commons.version>
     <asm.version>5.0.3</asm.version>
-    <avro.version>1.7.7</avro.version>
+    <avro.version>1.8.2</avro.version>
     <cassandra.version>2.1.0</cassandra.version>
     <cassandraunit.version>2.0.2.2</cassandraunit.version>
     <commons-codec.version>1.10</commons-codec.version>
