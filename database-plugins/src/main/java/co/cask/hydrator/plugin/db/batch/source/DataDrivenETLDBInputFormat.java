@@ -62,9 +62,8 @@ public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
 
   @Override
   public Connection getConnection() {
-    LOG.info("********** Using generic DB plugin **********");
     if (this.connection == null) {
-      LOG.info("********** Creating a new connection **********");
+      LOG.info("DB input format with performance improvements");
       Configuration conf = getConf();
       try {
         String url = conf.get(DBConfiguration.URL_PROPERTY);

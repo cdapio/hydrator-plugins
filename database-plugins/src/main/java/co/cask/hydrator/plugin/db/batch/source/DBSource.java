@@ -225,7 +225,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     }
     context.setInput(Input.of(sourceConfig.referenceName,
                               new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf)));
-    LOG.info("********** Generic implementation **********");
+    LOG.info("DB source with performance improvements");
   }
 
   @Override
