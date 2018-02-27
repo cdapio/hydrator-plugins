@@ -94,7 +94,7 @@
     <!-- version properties -->
     <apache-commons.version>1.2</apache-commons.version>
     <asm.version>5.0.3</asm.version>
-    <avro.version>1.8.2</avro.version>
+    <avro.version>1.7.7</avro.version>
     <cassandra.version>2.1.0</cassandra.version>
     <cassandraunit.version>2.0.2.2</cassandraunit.version>
     <commons-codec.version>1.10</commons-codec.version>
@@ -129,7 +129,6 @@
     <!-- this is here because project.basedir evaluates to null in the script build step -->
     <main.basedir>${project.basedir}</main.basedir>
     <sqoop.version>1.4.7</sqoop.version>
-    <oracle.driver.path>/Users/poorna/Downloads/ojdbc6.jar</oracle.driver.path>
   </properties>
 
 
@@ -638,13 +637,6 @@
         <artifactId>sqoop</artifactId>
         <version>${sqoop.version}</version>
         <classifier>hadoop260</classifier>
-      </dependency>
-      <dependency>
-        <groupId>com.oracle</groupId>
-        <artifactId>ojdbc6</artifactId>
-        <version>6</version>
-        <scope>system</scope>
-        <systemPath>${oracle.driver.path}</systemPath>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>

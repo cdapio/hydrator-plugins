@@ -18,17 +18,16 @@ package co.cask.hydrator.plugin.db.batch.source;
 
 import co.cask.hydrator.plugin.DBUtils;
 import co.cask.hydrator.plugin.JDBCDriverShim;
+import co.cask.hydrator.plugin.db.batch.NoOpCommitConnection;
 import com.google.common.base.Throwables;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.apache.hadoop.mapreduce.lib.db.DBConfiguration;
 import org.apache.hadoop.mapreduce.lib.db.DBInputFormat;
-import org.apache.hadoop.mapreduce.lib.db.DBWritable;
-import org.apache.sqoop.manager.oracle.OraOopConstants;
-import org.apache.sqoop.manager.oracle.OraOopDataDrivenDBInputFormat;
-import org.apache.sqoop.manager.oracle.OraOopUtilities;
+import org.apache.sqoop.mapreduce.DBWritable;
+import org.apache.sqoop.mapreduce.db.DBConfiguration;
+import org.apache.sqoop.mapreduce.db.DataDrivenDBInputFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +40,7 @@ import java.sql.SQLException;
 /**
  * Class that extends {@link DBInputFormat} to load the database driver class correctly.
  */
-public class DataDrivenETLDBInputFormat extends OraOopDataDrivenDBInputFormat {
+public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
   public static final String AUTO_COMMIT_ENABLED = "co.cask.hydrator.db.autocommit.enabled";
 
   private static final Logger LOG = LoggerFactory.getLogger(DataDrivenETLDBInputFormat.class);
@@ -58,19 +57,12 @@ public class DataDrivenETLDBInputFormat extends OraOopDataDrivenDBInputFormat {
     dbConf.setInputClass(inputClass);
     dbConf.setInputQuery(inputQuery);
     dbConf.setInputBoundingQuery(inputBoundingQuery);
-    dbConf.setInputTableName("SQOOP_EMPLOYEES");
-    dbConf.setInputFieldNames("EMPLOYEE_ID", "FIRST_NAME", "LAST_NAME", "EMAIL", "PHONE_NUMBER", "ADDRESS",
-                              "HIRE_DATE", "JOB_ID", "SALARY", "COMMISSION_PCT", "MANAGER_ID", "DEPARTMENT_ID");
-    conf.set(OraOopConstants.ORAOOP_TABLE_OWNER, "SYSTEM");
-    conf.set(OraOopConstants.ORAOOP_TABLE_NAME, "SQOOP_EMPLOYEES");
-    conf.setInt(OraOopConstants.ORAOOP_DESIRED_NUMBER_OF_MAPPERS, 10);
-    conf.set(OraOopUtilities.SQOOP_JOB_TYPE, OraOopConstants.Sqoop.Tool.IMPORT.name());
-    conf.setBoolean(AUTO_COMMIT_ENABLED, false);
+    conf.setBoolean(AUTO_COMMIT_ENABLED, enableAutoCommit);
   }
 
   @Override
   public Connection getConnection() {
-    LOG.info("********** Using new DB plugin **********");
+    LOG.info("********** Using generic DB plugin **********");
     if (this.connection == null) {
       LOG.info("********** Creating a new connection **********");
       Configuration conf = getConf();
@@ -101,8 +93,18 @@ public class DataDrivenETLDBInputFormat extends OraOopDataDrivenDBInputFormat {
         } else {
           this.connection = DriverManager.getConnection(url,
                                                         conf.get(DBConfiguration.USERNAME_PROPERTY),
-                                                        conf.get(DBConfiguration.PASSWORD_PROPERTY));
+                                                        conf.get("co.cask.cdap.jdbc.passwd"));
         }
+
+        boolean autoCommitEnabled = conf.getBoolean(AUTO_COMMIT_ENABLED, false);
+        if (autoCommitEnabled) {
+          // hack to work around jdbc drivers like the hive driver that throw exceptions on commit
+          this.connection = new NoOpCommitConnection(this.connection);
+        } else {
+          this.connection.setAutoCommit(false);
+        }
+        // TODO: make this configurable
+        this.connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
       } catch (Exception e) {
         throw Throwables.propagate(e);
       }

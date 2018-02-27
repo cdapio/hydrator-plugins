@@ -26,6 +26,7 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.plugin.EndpointPluginContext;
 import co.cask.cdap.api.plugin.PluginConfig;
+import co.cask.cdap.api.plugin.PluginProperties;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
@@ -41,11 +42,10 @@ import co.cask.hydrator.plugin.DriverCleanup;
 import co.cask.hydrator.plugin.FieldCase;
 import co.cask.hydrator.plugin.StructuredRecordUtils;
 import com.google.common.base.Strings;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.MRJobConfig;
-import org.apache.hadoop.mapreduce.lib.db.DBConfiguration;
-import org.apache.sqoop.manager.oracle.OraOopUtilities;
+import org.apache.sqoop.mapreduce.db.DBConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,7 +83,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
-//    dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId());
+    dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId());
     sourceConfig.validate();
     if (!Strings.isNullOrEmpty(sourceConfig.schema)) {
       pipelineConfigurer.getStageConfigurer().setOutputSchema(sourceConfig.getSchema());
@@ -155,9 +155,9 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
 
   private DriverCleanup loadPluginClassAndGetDriver(GetSchemaRequest request, EndpointPluginContext pluginContext)
     throws IllegalAccessException, InstantiationException, SQLException, ClassNotFoundException {
-    Class<? extends Driver> driverClass = (Class<? extends Driver>) Class.forName("oracle.jdbc.driver.OracleDriver");
-//      pluginContext.loadPluginClass(request.getJDBCPluginType(),
-//                                    request.jdbcPluginName, PluginProperties.builder().build());
+    Class<? extends Driver> driverClass =
+      pluginContext.loadPluginClass(request.getJDBCPluginType(),
+                                    request.jdbcPluginName, PluginProperties.builder().build());
 
     if (driverClass == null) {
       throw new InstantiationException(
@@ -191,16 +191,21 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
                 "boundingQuery = {}",
               sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName,
               sourceConfig.connectionString, sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery());
-    Configuration hConf = new Configuration();
+    JobConf hConf = new JobConf();
     hConf.clear();
 
     // Load the plugin class to make sure it is available.
-    Class<? extends Driver> driverClass = (Class<? extends Driver>) Class.forName("oracle.jdbc.driver.OracleDriver");
+    Class<? extends Driver> driverClass = context.loadPluginClass(getJDBCPluginId());
+
+    // TODO: Make fetch size configurable
+    int fetchSize = 1000;
     if (sourceConfig.user == null && sourceConfig.password == null) {
-      DBConfiguration.configureDB(hConf, driverClass.getName(), sourceConfig.connectionString);
+      DBConfiguration.configureDB(hConf, driverClass.getName(), sourceConfig.connectionString, fetchSize);
     } else {
       DBConfiguration.configureDB(hConf, driverClass.getName(), sourceConfig.connectionString,
-                                  sourceConfig.user, sourceConfig.password);
+                                  sourceConfig.user, sourceConfig.password, fetchSize);
+      // TODO: figure out why password is not being set in credentials
+      hConf.set("co.cask.cdap.jdbc.passwd", sourceConfig.password);
     }
     DataDrivenETLDBInputFormat.setInput(hConf, DBRecord.class,
                                         sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery(),
@@ -218,17 +223,15 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     if (sourceConfig.schema != null) {
       hConf.set(DBUtils.OVERRIDE_SCHEMA, sourceConfig.schema);
     }
-    LOG.info("********** Using urandom in prepare run **********");
-    OraOopUtilities.appendJavaSecurityEgd(hConf);
     context.setInput(Input.of(sourceConfig.referenceName,
                               new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf)));
-    LOG.info("********** Caching implementation **********");
+    LOG.info("********** Generic implementation **********");
   }
 
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    driverClass = (Class<? extends Driver>) Class.forName("oracle.jdbc.driver.OracleDriver");
+    driverClass = context.loadPluginClass(getJDBCPluginId());;
     fieldCase = FieldCase.toFieldCase(sourceConfig.columnNameCase);
   }
 

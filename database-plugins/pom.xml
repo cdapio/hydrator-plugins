@@ -60,21 +60,12 @@
       <artifactId>log4j-over-slf4j</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.oracle</groupId>
-      <artifactId>ojdbc6</artifactId>
-    </dependency>
-    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
     </dependency>
     <dependency>
       <groupId>org.hsqldb</groupId>
       <artifactId>hsqldb</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.avro</groupId>
-      <artifactId>avro</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -98,10 +89,10 @@
               org.apache.commons.logging.*;
               org.codehaus.jackson.*;
               org.apache.sqoop.*;
-              oracle.jdbc.*;
+              com.cloudera.sqoop.*;
               org.apache.log4j.*
             </_exportcontents>
-            <Embed-Dependency>*;inline=false;scope=compile|system</Embed-Dependency>
+            <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
             <Embed-Directory>lib</Embed-Directory>
           </instructions>
