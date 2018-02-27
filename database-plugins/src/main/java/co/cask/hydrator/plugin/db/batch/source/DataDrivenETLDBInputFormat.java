@@ -100,7 +100,7 @@ public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
         } else {
           this.connection.setAutoCommit(false);
         }
-        this.connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+        this.connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
       } catch (Exception e) {
         throw Throwables.propagate(e);
       }
