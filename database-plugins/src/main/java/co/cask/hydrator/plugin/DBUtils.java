@@ -102,7 +102,8 @@ public final class DBUtils {
   /**
    * Given the result set, get the metadata of the result set and return
    * list of {@link co.cask.cdap.api.data.schema.Schema.Field},
-   * where name of the field is same as column name and type of the field is obtained using {@link DBUtils#getType(int)}
+   * where name of the field is same as column name and type of the field is obtained using
+   * {@link DBUtils#getType(int, int, int)}
    *
    * @param resultSet result set of executed query
    * @param schemaStr schema string to override resultant schema
@@ -147,7 +148,8 @@ public final class DBUtils {
   /**
    * Given the result set, get the metadata of the result set and return
    * list of {@link co.cask.cdap.api.data.schema.Schema.Field},
-   * where name of the field is same as column name and type of the field is obtained using {@link DBUtils#getType(int)}
+   * where name of the field is same as column name and type of the field is obtained using
+   * {@link DBUtils#getType(int, int, int)}
    *
    * @param resultSet result set of executed query
    * @return list of schema fields
@@ -160,7 +162,9 @@ public final class DBUtils {
     for (int i = 1; i <= metadata.getColumnCount(); i++) {
       String columnName = metadata.getColumnName(i);
       int columnSqlType = metadata.getColumnType(i);
-      Schema columnSchema = Schema.of(getType(columnSqlType));
+      int columnSqlPrecision = metadata.getPrecision(i); // total number of digits
+      int columnSqlScale = metadata.getScale(i); // digits after the decimal point
+      Schema columnSchema = Schema.of(getType(columnSqlType, columnSqlPrecision, columnSqlScale));
       if (ResultSetMetaData.columnNullable == metadata.isNullable(i)) {
         columnSchema = Schema.nullableOf(columnSchema);
       }
@@ -171,7 +175,7 @@ public final class DBUtils {
   }
 
   // given a sql type return schema type
-  private static Schema.Type getType(int sqlType) throws SQLException {
+  private static Schema.Type getType(int sqlType, int precision, int scale) throws SQLException {
     // Type.STRING covers sql types - VARCHAR,CHAR,CLOB,LONGNVARCHAR,LONGVARCHAR,NCHAR,NCLOB,NVARCHAR
     Schema.Type type = Schema.Type.STRING;
     switch (sqlType) {
@@ -204,6 +208,12 @@ public final class DBUtils {
 
       case Types.NUMERIC:
       case Types.DECIMAL:
+        // if there are no digits after the point, use integer types
+        type = scale != 0 ? Schema.Type.DOUBLE :
+          // with 10 digits we can represent 2^32 and LONG is required
+          precision > 9 ? Schema.Type.LONG : Schema.Type.INT;
+        break;
+
       case Types.DOUBLE:
         type = Schema.Type.DOUBLE;
         break;
