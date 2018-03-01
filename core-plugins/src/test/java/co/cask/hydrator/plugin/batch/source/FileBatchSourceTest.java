@@ -728,6 +728,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(expected, output);
   }
 
+  // TODO: (CDAP-13140) unignore
+  @Ignore
   @Test
   public void testFileBatchInputFormatParquetMissingField() throws Exception {
     File fileParquet = new File(temporaryFolder.newFolder(), "test.parquet");
