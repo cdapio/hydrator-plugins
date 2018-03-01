@@ -246,16 +246,26 @@ public final class DBUtils {
   }
 
   @Nullable
-  public static Object transformValue(int sqlColumnType, ResultSet resultSet, String fieldName) throws SQLException {
+  public static Object transformValue(int sqlType, int precision, int scale,
+                                      ResultSet resultSet, String fieldName) throws SQLException {
     Object original = resultSet.getObject(fieldName);
     if (original != null) {
-      switch (sqlColumnType) {
+      switch (sqlType) {
         case Types.SMALLINT:
         case Types.TINYINT:
           return ((Number) original).intValue();
         case Types.NUMERIC:
         case Types.DECIMAL:
-          return ((BigDecimal) original).doubleValue();
+          BigDecimal decimal = (BigDecimal) original;
+          if (scale != 0) {
+            // if there are digits after the point, use double types
+            return decimal.doubleValue();
+          } else if (precision > 9) {
+            // with 10 digits we can represent 2^32 and LONG is required
+            return decimal.longValue();
+          } else {
+            return decimal.intValue();
+          }
         case Types.DATE:
           return resultSet.getDate(fieldName).getTime();
         case Types.TIME:
