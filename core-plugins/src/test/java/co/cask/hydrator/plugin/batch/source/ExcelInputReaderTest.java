@@ -81,7 +81,6 @@ public class ExcelInputReaderTest extends HydratorTestBase {
   private static String sourceFolderUri;
   private static String excelTestFileOne = "/civil_test_data_one.xlsx";
   private static String excelTestFileTwo = "/civil_test_data_two.xlsx";
-  private static String excelTestDataWithDate = "/test_data_with_date.xlsx";
 
 
   @BeforeClass
@@ -100,19 +99,17 @@ public class ExcelInputReaderTest extends HydratorTestBase {
   public void copyFiles() throws Exception {
     URL testFileUrl = this.getClass().getResource(excelTestFileOne);
     URL testTwofileUrl = this.getClass().getResource(excelTestFileTwo);
-    URL testDataWithDateUrl = this.getClass().getResource(excelTestDataWithDate);
 
     FileUtils.copyFile(new File(testFileUrl.getFile()), new File(sourceFolder, excelTestFileOne));
     FileUtils.copyFile(new File(testTwofileUrl.getFile()), new File(sourceFolder, excelTestFileTwo));
-    FileUtils.copyFile(new File(testDataWithDateUrl.getFile()), new File(sourceFolder, excelTestDataWithDate));
   }
 
   @Test
-  public void testExcelWithDateDate() throws Exception {
+  public void testExcelWithDate() throws Exception {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
         .put(Constants.Reference.REFERENCE_NAME, "TestCase-testExcel")
         .put("filePath", sourceFolderUri)
-        .put("filePattern", "test_data_with_date.xlsx")
+        .put("filePattern", ".*")
         .put("sheet", "Sheet Name")
         .put("sheetValue", "Sheet1")
         .put("memoryTableName", "trackMemoryTable")
@@ -123,7 +120,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
         .put("skipFirstRow", "false")
         .put("terminateIfEmptyRow", "false")
         .put("rowsLimit", "")
-        .put("outputSchema", "A:string,B:string,C:String,D:String,E:String")
+        .put("outputSchema", "A:string,B:string,C:String,D:String,E:String,F:String")
         .put("ifErrorRecord", "Ignore error and continue")
         .put("errorDatasetName", "")
         .build();
@@ -141,8 +138,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
 
     SimpleDateFormat dateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss z yyyy");
-    Assert.assertEquals(3, output.size());
-    Date dateRow1 = dateFormat.parse((String) output.get(1).get("E"));
+    Date dateRow1 = dateFormat.parse((String) output.get(1).get("F"));
     Calendar cal = Calendar.getInstance();
     cal.setTime(dateRow1);
     Assert.assertEquals(2018, cal.get(Calendar.YEAR));
@@ -154,7 +150,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "TestCase-testExcel")
       .put("filePath", sourceFolderUri)
-      .put("filePattern", "civil_.*")
+      .put("filePattern", ".*")
       .put("sheet", "Sheet Name")
       .put("sheetValue", "Sheet1")
       .put("memoryTableName", "trackMemoryTable")
@@ -206,7 +202,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put("filePath", sourceFolderUri)
-      .put("filePattern", "civil_.*")
+      .put("filePattern", ".*")
       .put("sheet", "Sheet Number")
       .put("sheetValue", "0")
       .put("memoryTableName", "trackMemoryTableWithReProcessedTrue")
@@ -251,7 +247,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put("filePath", sourceFolderUri)
-      .put("filePattern", "civil_.*")
+      .put("filePattern", ".*")
       .put("sheet", "Sheet Name")
       .put("sheetValue", "Sheet1")
       .put("memoryTableName", "trackMemoryTableWithReProcessedFalse")
@@ -305,7 +301,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put("filePath", sourceFolderUri)
-      .put("filePattern", "civil_.*")
+      .put("filePattern", ".*")
       .put("sheet", "Sheet Name")
       .put("sheetValue", "Sheet1")
       .put("memoryTableName", "trackMemoryTableWithColumnsToBeExtracted")
@@ -357,7 +353,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put("filePath", sourceFolderUri)
-      .put("filePattern", "civil_.*")
+      .put("filePattern", ".*")
       .put("sheet", "Sheet Name")
       .put("sheetValue", "Sheet1")
       .put("memoryTableName", "trackMemoryTableWithErrorRecord")
@@ -404,7 +400,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put("filePath", sourceFolderUri)
-      .put("filePattern", "civil_.*")
+      .put("filePattern", ".*")
       .put("sheet", "Sheet Name")
       .put("sheetValue", "Sheet1")
       .put("memoryTableName", "trackMemoryTableWithNoColumnListAndOutputSchema")
@@ -435,7 +431,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put("filePath", sourceFolderUri)
-      .put("filePattern", "civil_.*")
+      .put("filePattern", ".*")
       .put("sheet", "Sheet Number")
       .put("sheetValue", "0")
       .put("memoryTableName", "trackMemoryTableWithTerminateIfEmptyRow")
@@ -466,7 +462,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put("filePath", sourceFolderUri)
-      .put("filePattern", "civil_.*")
+      .put("filePattern", ".*")
       .put("sheet", "Sheet Name")
       .put("sheetValue", "Sheet1")
       .put("memoryTableName", "trackMemoryTableWithSkipFirstRow")
@@ -497,7 +493,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put("filePath", sourceFolderUri)
-      .put("filePattern", "civil_.*")
+      .put("filePattern", ".*")
       .put("sheet", "Sheet Number")
       .put("sheetValue", "-1")
       .put("memoryTableName", "trackMemoryTableWithNoColumnListAndOutputSchema")
@@ -528,7 +524,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put("filePath", sourceFolderUri)
-      .put("filePattern", "civil_.*")
+      .put("filePattern", ".*")
       .put("sheet", "Sheet Number")
       .put("sheetValue", "0")
       .put("memoryTableName", "trackMemoryTableWithTTL")
@@ -594,7 +590,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "TestInValidRowLimit")
       .put("filePath", sourceFolderUri)
-      .put("filePattern", "civil_.*")
+      .put("filePattern", ".*")
       .put("sheet", "Sheet Name")
       .put("sheetValue", "Sheet1")
       .put("memoryTableName", "trackMemoryTableWithInValidRowLimit")
