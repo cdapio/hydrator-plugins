@@ -161,7 +161,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put("skipFirstRow", "false")
       .put("terminateIfEmptyRow", "false")
       .put("rowsLimit", "")
-      .put("outputSchema", "A:string,B:string")
+      .put("outputSchema", "A:string,B:string,C:String,D:String,E:String,F:String")
       .put("ifErrorRecord", "Ignore error and continue")
       .put("errorDatasetName", "")
       .build();
@@ -213,7 +213,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put("skipFirstRow", "false")
       .put("terminateIfEmptyRow", "false")
       .put("rowsLimit", "10")
-      .put("outputSchema", "A:string")
+      .put("outputSchema", "A:string,B:string,C:String,D:String,E:String,F:String")
       .put("ifErrorRecord", "Ignore error and continue")
       .put("errorDatasetName", "")
       .build();
@@ -258,7 +258,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put("skipFirstRow", "false")
       .put("terminateIfEmptyRow", "false")
       .put("rowsLimit", "10")
-      .put("outputSchema", "A:string,B:string")
+      .put("outputSchema", "A:string,B:string,C:String,D:String,E:String,F:String")
       .put("ifErrorRecord", "Ignore error and continue")
       .put("errorDatasetName", "")
       .build();
