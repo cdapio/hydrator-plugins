@@ -53,7 +53,11 @@ import org.junit.rules.TemporaryFolder;
 import java.io.File;
 import java.net.URL;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -104,7 +108,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
   }
 
   @Test
-  public void testDate() throws Exception {
+  public void testExcelWithDateDate() throws Exception {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
         .put(Constants.Reference.REFERENCE_NAME, "TestCase-testExcel")
         .put("filePath", sourceFolderUri)
