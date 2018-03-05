@@ -530,7 +530,6 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put("memoryTableName", "trackMemoryTableWithTTL")
       .put("tableExpiryPeriod", "15")
       .put("reprocess", "false")
-      .put("columnList", "")
       .put("columnMapping", "A:FirstColumn")
       .put("skipFirstRow", "false")
       .put("terminateIfEmptyRow", "false")

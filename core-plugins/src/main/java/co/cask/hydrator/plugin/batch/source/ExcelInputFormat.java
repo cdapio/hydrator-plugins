@@ -77,12 +77,15 @@ public class ExcelInputFormat extends TextInputFormat {
     configuration.set(SHEET, sheet);
     configuration.setBoolean(RE_PROCESS, reprocess);
     configuration.set(SHEET_VALUE, sheetValue);
-    configuration.set(COLUMN_LIST, columnList);
     configuration.setBoolean(SKIP_FIRST_ROW, skipFirstRow);
     configuration.set(TERMINATE_IF_EMPTY_ROW, terminateIfEmptyRow);
 
     if (!Strings.isNullOrEmpty(rowLimit)) {
       configuration.set(ROWS_LIMIT, rowLimit);
+    }
+
+    if (!Strings.isNullOrEmpty(columnList)) {
+      configuration.set(COLUMN_LIST, columnList);
     }
 
     configuration.set(IF_ERROR_RECORD, ifErrorRecord);
