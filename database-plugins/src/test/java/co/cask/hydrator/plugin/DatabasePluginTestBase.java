@@ -40,6 +40,8 @@ import co.cask.hydrator.plugin.db.batch.sink.DBSink;
 import co.cask.hydrator.plugin.db.batch.sink.ETLDBOutputFormat;
 import co.cask.hydrator.plugin.db.batch.source.DBSource;
 import co.cask.hydrator.plugin.db.batch.source.DataDrivenETLDBInputFormat;
+import com.cloudera.sqoop.mapreduce.db.DBInputFormat;
+import com.cloudera.sqoop.mapreduce.db.DataDrivenDBInputFormat;
 import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Sets;
@@ -102,7 +104,8 @@ public class DatabasePluginTestBase extends HydratorTestBase {
     addPluginArtifact(NamespaceId.DEFAULT.artifact("database-plugins", "1.4.0"),
                       DATAPIPELINE_ARTIFACT_ID,
                       DBSource.class, DBSink.class, DBRecord.class, ETLDBOutputFormat.class,
-                      DataDrivenETLDBInputFormat.class, DBRecord.class, QueryAction.class, DBAction.class);
+                      DataDrivenETLDBInputFormat.class, DBRecord.class, QueryAction.class, DBAction.class,
+                      DataDrivenDBInputFormat.class, DBInputFormat.class);
 
     // add hypersql 3rd party plugin
     PluginClass hypersql = new PluginClass("jdbc", "hypersql", "hypersql jdbc driver", JDBCDriver.class.getName(),
