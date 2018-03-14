@@ -133,7 +133,7 @@ public class HDFSMoveAction extends Action {
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-
+    config.validate();
   }
 
   /**
@@ -154,10 +154,22 @@ public class HDFSMoveAction extends Action {
 
     @Description("Wildcard regular expression to filter the files in the source directory that will be moved")
     @Nullable
+    @Macro
     private String fileRegex;
 
     @Description("Indicates if the pipeline should continue if the move process fails")
     private boolean continueOnError;
+
+    public void validate() {
+      if (!containsMacro("fileRegex") && fileRegex != null) {
+        try {
+          Pattern.compile(config.fileRegex);
+        } catch (Exception e) {
+          throw new IllegalArgumentException(String.format("File regex %s is invalid: %s",
+                                                           config.fileRegex, e.getMessage()), e);
+        }
+      }
+    }
 
     @VisibleForTesting
     HDFSActionConfig(String sourcePath, String destPath, String fileRegex, boolean continueOnError) {
