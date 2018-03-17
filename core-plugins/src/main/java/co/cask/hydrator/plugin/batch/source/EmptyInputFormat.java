@@ -17,7 +17,6 @@
  */
 
 package co.cask.hydrator.plugin.batch.source;
-
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
@@ -35,43 +34,43 @@ import java.util.List;
  */
 public class EmptyInputFormat<K, V> extends InputFormat<K, V> {
 
-	@Override
-	public List<InputSplit> getSplits(JobContext context) throws IOException, InterruptedException {
-		return Collections.emptyList();
-	}
+  @Override
+  public List<InputSplit> getSplits(JobContext context) throws IOException, InterruptedException {
+    return Collections.emptyList();
+  }
 
-	@Override
-	public RecordReader<K, V> createRecordReader(InputSplit split, TaskAttemptContext context) {
-		return new RecordReader<K, V>() {
-			@Override
-			public void initialize(InputSplit split, TaskAttemptContext context) {
-				// do nothing
-			}
+  @Override
+  public RecordReader<K, V> createRecordReader(InputSplit split, TaskAttemptContext context) {
+    return new RecordReader<K, V>() {
+      @Override
+      public void initialize(InputSplit split, TaskAttemptContext context) {
+        // do nothing
+      }
 
-			@Override
-			public boolean nextKeyValue() {
-				return false;
-			}
+      @Override
+      public boolean nextKeyValue() {
+        return false;
+      }
 
-			@Override
-			public K getCurrentKey() {
-				return null;
-			}
+      @Override
+      public K getCurrentKey() {
+        return null;
+      }
 
-			@Override
-			public V getCurrentValue() {
-				return null;
-			}
+      @Override
+      public V getCurrentValue() {
+        return null;
+      }
 
-			@Override
-			public float getProgress() {
-				return 1.0F;
-			}
+      @Override
+      public float getProgress() {
+        return 1.0F;
+      }
 
-			@Override
-			public void close() {
-				// nothing to do
-			}
-		};
-	}
+      @Override
+      public void close() {
+        // nothing to do
+      }
+    };
+  }
 }
