@@ -200,7 +200,7 @@ public class EmailAction extends PostAction {
       ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
       Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
       try {
-        Transport transport = session.getTransport(config.protocol);
+        Transport transport = session.getTransport(config.protocol.toLowerCase());
         transport.connect(config.host, config.port, config.username, config.password);
         try {
           transport.sendMessage(msg, msg.getAllRecipients());
