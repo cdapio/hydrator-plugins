@@ -215,7 +215,7 @@ public class ExcelInputFormat extends TextInputFormat {
               sb.append(colName).append(COLUMN_SEPERATOR).append(cell.getDateCellValue()).append(CELL_SEPERATOR);
             } else {
               sb.append(colName)
-                  .append(COLUMN_SEPERATOR).append(cell.getNumericCellValue()).append(CELL_SEPERATOR);
+                .append(COLUMN_SEPERATOR).append(cell.getStringCellValue()).append(CELL_SEPERATOR);
             }
             break;
         }
