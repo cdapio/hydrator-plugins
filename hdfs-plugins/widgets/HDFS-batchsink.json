@@ -3,6 +3,7 @@
   "metadata": {
     "spec-version": "1.0"
   },
+  "display-name": "HDFS (Deprecated)",
   "configuration-groups": [
     {
       "label": "Configuration",
