@@ -1,4 +1,4 @@
-# HDFS Batch Sink
+# HDFS Batch Sink (Deprecated. Use File Sink instead.)
 
 
 Description
