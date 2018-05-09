@@ -138,19 +138,25 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
       }
     }
 
+    outputSchemaMapping = getOutputSchemaMapping();
+  }
+
+  private Map<String, String> getOutputSchemaMapping() {
+    Map<String, String> schemaMapping = new HashMap<>();
     if (!Strings.isNullOrEmpty(excelInputreaderConfig.outputSchema)) {
       String[] schemaList = excelInputreaderConfig.outputSchema.split(",");
       for (String schema : schemaList) {
         String[] columns = schema.split(":");
         if (CollectionUtils.isNotEmpty(inputColumns) && !inputColumns.contains(columns[0])) {
           throw new IllegalArgumentException("Column name: " + columns[0] + " in 'Field Name Schema Type Mapping'" +
-                                               " does not match the columns in the 'Column To Be Extracted' input " +
-                                               "text box. It has to be one of the columns in " +
-                                               "'Column To Be Extracted' input text box.");
+              " does not match the columns in the 'Column To Be Extracted' input " +
+              "text box. It has to be one of the columns in " +
+              "'Column To Be Extracted' input text box.");
         }
-        outputSchemaMapping.put(columns[0], columns[1]);
+        schemaMapping.put(columns[0], columns[1]);
       }
     }
+    return schemaMapping;
   }
 
   @Override
@@ -292,11 +298,12 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
       processFiles = GSON.toJson(getAllProcessedFiles(batchSourceContext), ARRAYLIST_PREPROCESSED_FILES);
     }
 
+    // Set Schema
     ExcelInputFormat.setConfigurations(job, excelInputreaderConfig.filePattern, excelInputreaderConfig.sheet,
                                        excelInputreaderConfig.reprocess, excelInputreaderConfig.sheetValue,
                                        excelInputreaderConfig.columnList, excelInputreaderConfig.skipFirstRow,
                                        excelInputreaderConfig.terminateIfEmptyRow, excelInputreaderConfig.rowsLimit,
-                                       excelInputreaderConfig.ifErrorRecord, processFiles);
+                                       excelInputreaderConfig.ifErrorRecord, processFiles, getOutputSchemaMapping());
 
     // Sets the input path(s).
     ExcelInputFormat.addInputPaths(job, excelInputreaderConfig.filePath);
