@@ -58,6 +58,30 @@
             ],
             "default": "false"
           }
+        },
+        {
+          "widget-type": "select",
+          "label": "Enable Upsert",
+          "name": "enableUpsert",
+          "widget-attributes": {
+            "values": [
+              "true",
+              "false"
+            ],
+            "default": "false"
+          }
+        },
+        {
+          "widget-type": "select",
+          "label": "Enable Transaction Isolation",
+          "name": "enableTransactionIsolation",
+          "widget-attributes": {
+            "values": [
+              "true",
+              "false"
+            ],
+            "default": "true"
+          }
         }
       ]
     },

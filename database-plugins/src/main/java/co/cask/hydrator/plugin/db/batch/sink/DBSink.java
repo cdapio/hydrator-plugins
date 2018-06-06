@@ -58,6 +58,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import javax.annotation.Nullable;
 
 
 /**
@@ -93,9 +94,11 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
 
   @Override
   public void prepareRun(BatchSinkContext context) {
-    LOG.debug("tableName = {}; pluginType = {}; pluginName = {}; connectionString = {}; columns = {}",
+    LOG.debug("tableName = {}; pluginType = {}; pluginName = {}; connectionString = {}; columns = {}; " +
+                "transaction isolation enabled: {}; upsert enabled: {}",
               dbSinkConfig.tableName, dbSinkConfig.jdbcPluginType, dbSinkConfig.jdbcPluginName,
-              dbSinkConfig.connectionString, dbSinkConfig.columns);
+              dbSinkConfig.connectionString, dbSinkConfig.columns, dbSinkConfig.enableTransactionIsolation,
+              dbSinkConfig.enableUpsert);
 
     // Load the plugin class to make sure it is available.
     Class<? extends Driver> driverClass = context.loadPluginClass(getJDBCPluginId());
@@ -199,6 +202,8 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
   public static class DBSinkConfig extends DBConfig {
     public static final String COLUMNS = "columns";
     public static final String TABLE_NAME = "tableName";
+    public static final String ENABLE_UPSERT = "enableUpsert";
+    public static final String ENABLE_TRANSACTION_ISOLATION = "enableTransactionIsolation";
 
     @Name(COLUMNS)
     @Description("Comma-separated list of columns in the specified table to export to.")
@@ -209,6 +214,23 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
     @Macro
     public String tableName;
 
+    @Name(ENABLE_UPSERT)
+    @Description("Whether to enable UPSERT for queries run by this sink. Defaults to false. " +
+      "For drivers such as Phoenix where INSERT is not supported, this should be set to true.")
+    @Nullable
+    public Boolean enableUpsert;
+
+    @Name(ENABLE_TRANSACTION_ISOLATION)
+    @Description("Whether to enable transaction isolation for queries run by this sink. Defaults to true. " +
+      "The Phoenix jdbc driver will throw an exception if the Phoenix database does not have transactions enabled " +
+      "and this setting is set to true. For drivers like that, this should be set to false.")
+    @Nullable
+    public Boolean enableTransactionIsolation;
+
+    public DBSinkConfig() {
+      enableUpsert = false;
+      enableTransactionIsolation = true;
+    }
   }
 
   private static class DBOutputFormatProvider implements OutputFormatProvider {
@@ -218,6 +240,9 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
       this.conf = new HashMap<>();
 
       conf.put(ETLDBOutputFormat.AUTO_COMMIT_ENABLED, String.valueOf(dbSinkConfig.getEnableAutoCommit()));
+      conf.put(ETLDBOutputFormat.UPSERT_ENABLED, String.valueOf(dbSinkConfig.enableUpsert));
+      conf.put(ETLDBOutputFormat.TRANSACTION_ISOLATION_ENABLED,
+               String.valueOf(dbSinkConfig.enableTransactionIsolation));
       conf.put(DBConfiguration.DRIVER_CLASS_PROPERTY, driverClass.getName());
       conf.put(DBConfiguration.URL_PROPERTY, dbSinkConfig.connectionString);
       if (dbSinkConfig.user != null) {
@@ -229,6 +254,8 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
       conf.put(DBConfiguration.OUTPUT_TABLE_NAME_PROPERTY, dbSinkConfig.tableName);
       conf.put(DBConfiguration.OUTPUT_FIELD_NAMES_PROPERTY, dbSinkConfig.columns);
     }
+
+
 
     @Override
     public String getOutputFormatClassName() {

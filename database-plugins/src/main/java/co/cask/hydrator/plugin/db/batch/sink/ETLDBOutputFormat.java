@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.db.batch.sink;
 import co.cask.hydrator.plugin.DBUtils;
 import co.cask.hydrator.plugin.JDBCDriverShim;
 import co.cask.hydrator.plugin.db.batch.NoOpCommitConnection;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.RecordWriter;
@@ -46,14 +47,17 @@ import java.sql.SQLException;
  */
 public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<K, V> {
   public static final String AUTO_COMMIT_ENABLED = "co.cask.hydrator.db.output.autocommit.enabled";
+  public static final String UPSERT_ENABLED = "co.cask.hydrator.db.output.upsert.enabled";
+  public static final String TRANSACTION_ISOLATION_ENABLED = "co.cask.hydrator.db.output.transaction.isolation.enabled";
 
   private static final Logger LOG = LoggerFactory.getLogger(ETLDBOutputFormat.class);
+  private Configuration conf;
   private Driver driver;
   private JDBCDriverShim driverShim;
 
   @Override
   public RecordWriter<K, V> getRecordWriter(TaskAttemptContext context) throws IOException {
-    Configuration conf = context.getConfiguration();
+    conf = context.getConfiguration();
     DBConfiguration dbConf = new DBConfiguration(conf);
     String tableName = dbConf.getOutputTableName();
     String[] fieldNames = dbConf.getOutputFieldNames();
@@ -110,7 +114,7 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
         }
       };
     } catch (Exception ex) {
-      throw new IOException(ex.getMessage());
+      throw Throwables.propagate(ex);
     }
   }
 
@@ -155,7 +159,11 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
       } else {
         connection.setAutoCommit(false);
       }
-      connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+      boolean transactionIsolationEnabled = conf.getBoolean(TRANSACTION_ISOLATION_ENABLED, true);
+      LOG.debug("Transaction isolation enabled: {}", transactionIsolationEnabled);
+      if (transactionIsolationEnabled) {
+        connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+      }
     } catch (Exception e) {
       throw Throwables.propagate(e);
     }
@@ -168,6 +176,14 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
     // Strip the ';' at the end since Oracle doesn't like it.
     // TODO: Perhaps do a conditional if we can find a way to tell that this is going to Oracle
     // However, tested this to work on Mysql and Oracle
-    return query.substring(0, query.length() - 1);
+    query = query.substring(0, query.length() - 1);
+
+    boolean upsertEnabled = conf.getBoolean(UPSERT_ENABLED, false);
+    LOG.debug("Upsert enabled: {}", upsertEnabled);
+    if (upsertEnabled) {
+      Preconditions.checkArgument(query.startsWith("INSERT"), "Expecting query to start with 'INSERT'");
+      query = "UPSERT" + query.substring("INSERT".length());
+    }
+    return query;
   }
 }
