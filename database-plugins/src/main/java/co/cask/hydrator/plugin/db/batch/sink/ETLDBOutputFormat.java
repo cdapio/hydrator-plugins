@@ -47,7 +47,6 @@ import java.sql.SQLException;
  */
 public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<K, V> {
   public static final String AUTO_COMMIT_ENABLED = "co.cask.hydrator.db.output.autocommit.enabled";
-  public static final String UPSERT_ENABLED = "co.cask.hydrator.db.output.upsert.enabled";
   public static final String TRANSACTION_ISOLATION_ENABLED = "co.cask.hydrator.db.output.transaction.isolation.enabled";
 
   private static final Logger LOG = LoggerFactory.getLogger(ETLDBOutputFormat.class);
@@ -178,9 +177,9 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
     // However, tested this to work on Mysql and Oracle
     query = query.substring(0, query.length() - 1);
 
-    boolean upsertEnabled = conf.getBoolean(UPSERT_ENABLED, false);
-    LOG.debug("Upsert enabled: {}", upsertEnabled);
-    if (upsertEnabled) {
+    String urlProperty = conf.get(DBConfiguration.URL_PROPERTY);
+    if (urlProperty.startsWith("jdbc:phoenix")) {
+      LOG.debug("Phoenix jdbc connection detected. Replacing INSERT with UPSERT.");
       Preconditions.checkArgument(query.startsWith("INSERT"), "Expecting query to start with 'INSERT'");
       query = "UPSERT" + query.substring("INSERT".length());
     }

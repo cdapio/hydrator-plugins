@@ -47,9 +47,6 @@ Normally this setting does not matter. It only matters if you are using a jdbc d
 driver -- that will error when the commit operation is run, or a driver that will error when auto-commit is
 set to false. For drivers like those, you will need to set this to 'true'.
 
-**enableUpsert:** Whether to enable UPSERT for queries run by this sink. Defaults to false. For drivers
-such as Phoenix where INSERT is not supported, this should be set to true.
-
 **enableTransactionIsolation:** Whether to enable transaction isolation for queries run by this sink.
 Defaults to true. The Phoenix jdbc driver will throw an exception if the Phoenix database does not have
 transactions enabled and this setting is set to true. For drivers like that, this should be set to false.
