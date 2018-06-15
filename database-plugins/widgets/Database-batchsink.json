@@ -61,14 +61,17 @@
         },
         {
           "widget-type": "select",
-          "label": "Enable Transaction Isolation",
-          "name": "enableTransactionIsolation",
+          "label": "Transaction Isolation Level",
+          "name": "transactionIsolationLevel",
           "widget-attributes": {
             "values": [
-              "true",
-              "false"
+              "TRANSACTION_NONE",
+              "TRANSACTION_READ_UNCOMMITTED",
+              "TRANSACTION_READ_COMMITTED",
+              "TRANSACTION_REPEATABLE_READ",
+              "TRANSACTION_SERIALIZABLE"
             ],
-            "default": "true"
+            "default": "TRANSACTION_SERIALIZABLE"
           }
         }
       ]

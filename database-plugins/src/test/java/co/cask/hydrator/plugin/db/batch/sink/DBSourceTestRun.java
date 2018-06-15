@@ -33,6 +33,7 @@ import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.ConnectionConfig;
 import co.cask.hydrator.plugin.DBConfig;
 import co.cask.hydrator.plugin.DatabasePluginTestBase;
+import co.cask.hydrator.plugin.db.batch.TransactionIsolationLevel;
 import co.cask.hydrator.plugin.db.batch.source.DBSource;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;

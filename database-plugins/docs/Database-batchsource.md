@@ -56,6 +56,15 @@ Normally this setting does not matter. It only matters if you are using a jdbc d
 driver -- that will error when the commit operation is run, or a driver that will error when auto-commit is
 set to false. For drivers like those, you will need to set this to 'true'.
 
+**transactionIsolationLevel:** The transaction isolation level for queries run by this sink.
+Defaults to TRANSACTION_SERIALIZABLE. See java.sql.Connection#setTransactionIsolation for more details.
+The Phoenix jdbc driver will throw an exception if the Phoenix database does not have transactions enabled
+and this setting is set to true. For drivers like that, this should be set to TRANSACTION_NONE.
+
+**schema:** The schema of records output by the source. This will be used in place of whatever schema comes
+back from the query. However, it must match the schema that comes back from the query,
+except it can mark fields as nullable and can contain a subset of the fields.
+
 
 Example
 -------

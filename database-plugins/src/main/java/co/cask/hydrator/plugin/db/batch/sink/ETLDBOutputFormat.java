@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.db.batch.sink;
 import co.cask.hydrator.plugin.DBUtils;
 import co.cask.hydrator.plugin.JDBCDriverShim;
 import co.cask.hydrator.plugin.db.batch.NoOpCommitConnection;
+import co.cask.hydrator.plugin.db.batch.TransactionIsolationLevel;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import org.apache.hadoop.conf.Configuration;
@@ -47,7 +48,6 @@ import java.sql.SQLException;
  */
 public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<K, V> {
   public static final String AUTO_COMMIT_ENABLED = "co.cask.hydrator.db.output.autocommit.enabled";
-  public static final String TRANSACTION_ISOLATION_ENABLED = "co.cask.hydrator.db.output.transaction.isolation.enabled";
 
   private static final Logger LOG = LoggerFactory.getLogger(ETLDBOutputFormat.class);
   private Configuration conf;
@@ -89,13 +89,13 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
             } catch (SQLException ex) {
               LOG.warn(StringUtils.stringifyException(ex));
             }
-            throw new IOException(e.getMessage());
+            throw new IOException(e);
           } finally {
             try {
               getStatement().close();
               getConnection().close();
             } catch (SQLException ex) {
-              throw new IOException(ex.getMessage());
+              throw new IOException(ex);
             }
           }
 
@@ -158,11 +158,9 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
       } else {
         connection.setAutoCommit(false);
       }
-      boolean transactionIsolationEnabled = conf.getBoolean(TRANSACTION_ISOLATION_ENABLED, true);
-      LOG.debug("Transaction isolation enabled: {}", transactionIsolationEnabled);
-      if (transactionIsolationEnabled) {
-        connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-      }
+      String level = conf.get(TransactionIsolationLevel.CONF_KEY);
+      LOG.debug("Transaction isolation level: {}", level);
+      connection.setTransactionIsolation(TransactionIsolationLevel.getLevel(level));
     } catch (Exception e) {
       throw Throwables.propagate(e);
     }

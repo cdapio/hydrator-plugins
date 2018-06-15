@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.db.batch.source;
 import co.cask.hydrator.plugin.DBUtils;
 import co.cask.hydrator.plugin.JDBCDriverShim;
 import co.cask.hydrator.plugin.db.batch.NoOpCommitConnection;
+import co.cask.hydrator.plugin.db.batch.TransactionIsolationLevel;
 import com.google.common.base.Throwables;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -100,7 +101,9 @@ public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
         } else {
           this.connection.setAutoCommit(false);
         }
-        this.connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+        String level = conf.get(TransactionIsolationLevel.CONF_KEY);
+        LOG.debug("Transaction isolation level: {}", level);
+        connection.setTransactionIsolation(TransactionIsolationLevel.getLevel(level));
       } catch (Exception e) {
         throw Throwables.propagate(e);
       }
