@@ -43,6 +43,18 @@
           "name": "connectionString"
         },
         {
+          "widget-type": "keyvalue",
+          "label": "Connection Arguments",
+          "name": "connectionArguments",
+          "widget-attributes": {
+            "showDelimiter": "false",
+            "key-placeholder": "Key",
+            "value-placeholder": "Value",
+            "kv-delimiter" : "=",
+            "delimiter" : ";"
+          }
+        },
+        {
           "widget-type": "select",
           "label": "Enable Auto-Commit",
           "name": "enableAutoCommit",

@@ -19,8 +19,14 @@ package co.cask.hydrator.plugin;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
+import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.plugin.PluginConfig;
+import co.cask.hydrator.common.KeyValueListParser;
+import com.google.common.base.Strings;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 import javax.annotation.Nullable;
 
 /**
@@ -30,6 +36,7 @@ public class ConnectionConfig extends PluginConfig {
   public static final String CONNECTION_STRING = "connectionString";
   public static final String USER = "user";
   public static final String PASSWORD = "password";
+  public static final String CONNECTION_ARGUMENTS = "connectionArguments";
   public static final String JDBC_PLUGIN_NAME = "jdbcPluginName";
   public static final String JDBC_PLUGIN_TYPE = "jdbcPluginType";
   public static final String COLUMN_NAME_CASE = "columnNameCase";
@@ -54,6 +61,15 @@ public class ConnectionConfig extends PluginConfig {
   @Macro
   public String password;
 
+  @Name(CONNECTION_ARGUMENTS)
+  @Description("A list of arbitrary string tag/value pairs as connection arguments. This is a semicolon-separated " +
+    "list of key-value pairs, where each pair is separated by a equals '=' and specifies the key and value for the " +
+    "argument. For example, 'key1=value1;key2=value' specifies that the connection will be given arguments 'key1' " +
+    "mapped to 'value1' and the argument 'key2' mapped to 'value2'.")
+  @Nullable
+  @Macro
+  public String connectionArguments;
+
   @Name(JDBC_PLUGIN_NAME)
   @Description("Name of the JDBC plugin to use. This is the value of the 'name' key defined in the JSON file " +
     "for the JDBC plugin.")
@@ -76,5 +92,41 @@ public class ConnectionConfig extends PluginConfig {
   public ConnectionConfig() {
     jdbcPluginType = "jdbc";
     enableAutoCommit = false;
+  }
+
+  /**
+   * Parses connection arguments into a {@link Properties}.
+   *
+   * @param connectionArguments See {@link ConnectionConfig#connectionArguments}.
+   * @param user See {@link ConnectionConfig#user}.
+   * @param password See {@link ConnectionConfig#password}.
+   */
+  public static Properties getConnectionArguments(@Nullable String connectionArguments,
+                                                  @Nullable String user, @Nullable String password) {
+    KeyValueListParser kvParser = new KeyValueListParser("\\s*;\\s*", "=");
+
+    Map<String, String> connectionArgumentsMap = new HashMap<>();
+    if (!Strings.isNullOrEmpty(connectionArguments)) {
+      for (KeyValue<String, String> keyVal : kvParser.parse(connectionArguments)) {
+        String key = keyVal.getKey();
+        String val = keyVal.getValue();
+        connectionArgumentsMap.put(key, val);
+      }
+    }
+
+    if (user != null) {
+      connectionArgumentsMap.put("user", user);
+      connectionArgumentsMap.put("password", password);
+    }
+    Properties properties = new Properties();
+    properties.putAll(connectionArgumentsMap);
+    return properties;
+  }
+
+  /**
+   * @return a {@link Properties} of connection arguments, parsed from the config.
+   */
+  public Properties getConnectionArguments() {
+    return getConnectionArguments(connectionArguments, user, password);
   }
 }

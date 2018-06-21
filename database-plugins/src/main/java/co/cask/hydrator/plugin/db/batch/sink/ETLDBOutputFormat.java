@@ -16,6 +16,7 @@
 
 package co.cask.hydrator.plugin.db.batch.sink;
 
+import co.cask.hydrator.plugin.ConnectionConfig;
 import co.cask.hydrator.plugin.DBUtils;
 import co.cask.hydrator.plugin.JDBCDriverShim;
 import co.cask.hydrator.plugin.db.batch.NoOpCommitConnection;
@@ -38,6 +39,7 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Properties;
 
 /**
  * Class that extends {@link DBOutputFormat} to load the database driver class correctly.
@@ -143,13 +145,11 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
         }
       }
 
-      if (conf.get(DBConfiguration.USERNAME_PROPERTY) == null) {
-        connection = DriverManager.getConnection(url);
-      } else {
-        connection = DriverManager.getConnection(url,
-                                                 conf.get(DBConfiguration.USERNAME_PROPERTY),
-                                                 conf.get(DBConfiguration.PASSWORD_PROPERTY));
-      }
+      Properties properties =
+        ConnectionConfig.getConnectionArguments(conf.get(DBUtils.CONNECTION_ARGUMENTS),
+                                                conf.get(DBConfiguration.USERNAME_PROPERTY),
+                                                conf.get(DBConfiguration.PASSWORD_PROPERTY));
+      connection = DriverManager.getConnection(url, properties);
 
       boolean autoCommitEnabled = conf.getBoolean(AUTO_COMMIT_ENABLED, false);
       if (autoCommitEnabled) {

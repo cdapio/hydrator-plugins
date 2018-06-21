@@ -53,6 +53,7 @@ import javax.management.ReflectionException;
 public final class DBUtils {
   private static final Logger LOG = LoggerFactory.getLogger(DBUtils.class);
   public static final String OVERRIDE_SCHEMA = "co.cask.hydrator.db.override.schema";
+  public static final String CONNECTION_ARGUMENTS = "co.cask.hydrator.db.connection.arguments";
 
   /**
    * Performs any Database related cleanup

@@ -34,6 +34,7 @@ import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.common.ReferenceBatchSource;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.common.SourceInputFormatProvider;
+import co.cask.hydrator.plugin.ConnectionConfig;
 import co.cask.hydrator.plugin.DBConfig;
 import co.cask.hydrator.plugin.DBManager;
 import co.cask.hydrator.plugin.DBRecord;
@@ -57,6 +58,8 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Map;
+import java.util.Properties;
 import javax.annotation.Nullable;
 import javax.ws.rs.Path;
 
@@ -93,6 +96,8 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
   class GetSchemaRequest {
     public String connectionString;
     @Nullable
+    public String connectionArguments;
+    @Nullable
     public String user;
     @Nullable
     public String password;
@@ -123,7 +128,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     DriverCleanup driverCleanup;
     try {
       driverCleanup = loadPluginClassAndGetDriver(request, pluginContext);
-      try (Connection connection = getConnection(request.connectionString, request.user, request.password)) {
+      try (Connection connection = getConnection(request)) {
         String query = request.query;
         Statement statement = connection.createStatement();
         statement.setMaxRows(1);
@@ -174,13 +179,12 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     }
   }
 
-  private Connection getConnection(String connectionString,
-                                   @Nullable String user, @Nullable String password) throws SQLException {
-    if (user == null) {
-      return DriverManager.getConnection(connectionString);
-    } else {
-      return DriverManager.getConnection(connectionString, user, password);
-    }
+  private Connection getConnection(GetSchemaRequest getSchemaRequest) throws SQLException {
+    Properties properties =
+      ConnectionConfig.getConnectionArguments(getSchemaRequest.connectionArguments,
+                                              getSchemaRequest.user,
+                                              getSchemaRequest.password);
+    return DriverManager.getConnection(getSchemaRequest.connectionString, properties);
   }
 
   @Override
@@ -207,6 +211,9 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
                                         sourceConfig.getEnableAutoCommit());
     if (sourceConfig.transactionIsolationLevel != null) {
       hConf.set(TransactionIsolationLevel.CONF_KEY, sourceConfig.transactionIsolationLevel);
+    }
+    if (sourceConfig.connectionArguments != null) {
+      hConf.set(DBUtils.CONNECTION_ARGUMENTS, sourceConfig.connectionArguments);
     }
     if (sourceConfig.numSplits == null || sourceConfig.numSplits != 1) {
       if (!sourceConfig.getImportQuery().contains("$CONDITIONS")) {

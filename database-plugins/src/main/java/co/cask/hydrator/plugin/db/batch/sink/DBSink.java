@@ -42,12 +42,15 @@ import co.cask.hydrator.plugin.db.batch.TransactionIsolationLevel;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapred.lib.db.DBConfiguration;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
@@ -58,6 +61,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.TreeMap;
 import javax.annotation.Nullable;
 
@@ -155,14 +159,8 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
     Map<String, Integer> columnToType = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     dbManager.ensureJDBCDriverIsAvailable(driverClass);
 
-    Connection connection;
-    if (dbSinkConfig.user == null) {
-      connection = DriverManager.getConnection(dbSinkConfig.connectionString);
-    } else {
-      connection = DriverManager.getConnection(dbSinkConfig.connectionString, dbSinkConfig.user, dbSinkConfig.password);
-    }
-
-    try {
+    try (Connection connection = DriverManager.getConnection(dbSinkConfig.connectionString,
+                                                             dbSinkConfig.getConnectionArguments())) {
       try (Statement statement = connection.createStatement();
            // Run a query against the DB table that returns 0 records, but returns valid ResultSetMetadata
            // that can be used to construct DBRecord objects to sink to the database table.
@@ -183,8 +181,6 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
           columnToType.put(name, type);
         }
       }
-    } finally {
-      connection.close();
     }
 
     columns = ImmutableList.copyOf(Splitter.on(",").omitEmptyStrings().trimResults().split(dbSinkConfig.columns));
@@ -233,6 +229,9 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
       conf.put(ETLDBOutputFormat.AUTO_COMMIT_ENABLED, String.valueOf(dbSinkConfig.getEnableAutoCommit()));
       if (dbSinkConfig.transactionIsolationLevel != null) {
         conf.put(TransactionIsolationLevel.CONF_KEY, dbSinkConfig.transactionIsolationLevel);
+      }
+      if (dbSinkConfig.connectionArguments != null) {
+        conf.put(DBUtils.CONNECTION_ARGUMENTS, dbSinkConfig.connectionArguments);
       }
       conf.put(DBConfiguration.DRIVER_CLASS_PROPERTY, driverClass.getName());
       conf.put(DBConfiguration.URL_PROPERTY, dbSinkConfig.connectionString);

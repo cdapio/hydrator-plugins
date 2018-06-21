@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2018 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -16,6 +16,7 @@
 
 package co.cask.hydrator.plugin.db.batch.source;
 
+import co.cask.hydrator.plugin.ConnectionConfig;
 import co.cask.hydrator.plugin.DBUtils;
 import co.cask.hydrator.plugin.JDBCDriverShim;
 import co.cask.hydrator.plugin.db.batch.NoOpCommitConnection;
@@ -37,6 +38,7 @@ import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Properties;
 
 /**
  * Class that extends {@link DBInputFormat} to load the database driver class correctly.
@@ -48,11 +50,11 @@ public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
   private Driver driver;
   private JDBCDriverShim driverShim;
 
-  public static void setInput(Configuration conf,
-                              Class<? extends DBWritable> inputClass,
-                              String inputQuery,
-                              String inputBoundingQuery,
-                              boolean enableAutoCommit) {
+  static void setInput(Configuration conf,
+                       Class<? extends DBWritable> inputClass,
+                       String inputQuery,
+                       String inputBoundingQuery,
+                       boolean enableAutoCommit) {
     DBConfiguration dbConf = new DBConfiguration(conf);
     dbConf.setInputClass(inputClass);
     dbConf.setInputQuery(inputQuery);
@@ -86,13 +88,13 @@ public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
             LOG.debug("Registered JDBC driver via shim {}. Actual Driver {}.", driverShim, driver);
           }
         }
-        if (conf.get(DBConfiguration.USERNAME_PROPERTY) == null) {
-          this.connection = DriverManager.getConnection(url);
-        } else {
-          this.connection = DriverManager.getConnection(url,
-                                                        conf.get(DBConfiguration.USERNAME_PROPERTY),
-                                                        conf.get(DBConfiguration.PASSWORD_PROPERTY));
-        }
+
+        Properties properties =
+          ConnectionConfig.getConnectionArguments(conf.get(DBUtils.CONNECTION_ARGUMENTS),
+                                                  conf.get(DBConfiguration.USERNAME_PROPERTY),
+                                                  conf.get(DBConfiguration.PASSWORD_PROPERTY));
+        connection = DriverManager.getConnection(url, properties);
+
 
         boolean autoCommitEnabled = conf.getBoolean(AUTO_COMMIT_ENABLED, false);
         if (autoCommitEnabled) {

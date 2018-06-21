@@ -1,5 +1,5 @@
 /*
- * Copyright © 2016 Cask Data, Inc.
+ * Copyright © 2016-2018 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -17,14 +17,14 @@
 package co.cask.hydrator.plugin.db.batch.action;
 
 import co.cask.hydrator.plugin.DBManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Properties;
 
 /**
  * Class used by database action plugins to run database commands
@@ -32,14 +32,13 @@ import java.sql.Statement;
 public class DBRun {
   private final QueryConfig config;
   private final Class<? extends Driver> driverClass;
-  private static final Logger LOG = LoggerFactory.getLogger(DBRun.class);
 
   public DBRun(QueryConfig config, Class<? extends Driver> driverClass) {
     this.config = config;
     this.driverClass = driverClass;
   }
 
-  public void run() {
+  public void run() throws IOException, SQLException, InstantiationException, IllegalAccessException {
     DBManager dbManager = new DBManager(config);
 
     try {
@@ -56,18 +55,12 @@ public class DBRun {
           }
         }
       }
-    } catch (Exception e) {
-      LOG.error("Error running query {}.", config.query, e);
     } finally {
       dbManager.destroy();
     }
   }
 
   private Connection getConnection() throws SQLException {
-    if (config.user == null) {
-      return DriverManager.getConnection(config.connectionString);
-    } else {
-      return DriverManager.getConnection(config.connectionString, config.user, config.password);
-    }
+    return DriverManager.getConnection(config.connectionString, config.getConnectionArguments());
   }
 }
