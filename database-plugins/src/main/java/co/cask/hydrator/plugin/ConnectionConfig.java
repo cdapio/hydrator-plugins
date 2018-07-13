@@ -108,9 +108,7 @@ public class ConnectionConfig extends PluginConfig {
     Map<String, String> connectionArgumentsMap = new HashMap<>();
     if (!Strings.isNullOrEmpty(connectionArguments)) {
       for (KeyValue<String, String> keyVal : kvParser.parse(connectionArguments)) {
-        String key = keyVal.getKey();
-        String val = keyVal.getValue();
-        connectionArgumentsMap.put(key, val);
+        connectionArgumentsMap.put(keyVal.getKey(), keyVal.getValue());
       }
     }
 

@@ -245,8 +245,6 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
       conf.put(DBConfiguration.OUTPUT_FIELD_NAMES_PROPERTY, dbSinkConfig.columns);
     }
 
-
-
     @Override
     public String getOutputFormatClassName() {
       return ETLDBOutputFormat.class.getName();

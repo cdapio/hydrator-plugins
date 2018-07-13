@@ -38,7 +38,11 @@ public class DBRun {
     this.driverClass = driverClass;
   }
 
-  public void run() throws IOException, SQLException, InstantiationException, IllegalAccessException {
+  /**
+   * Uses a configured JDBC driver to execute a SQL statement. The configurations of which JDBC driver
+   * to use and which connection string to use come from the plugin configuration.
+   */
+  public void run() throws SQLException, InstantiationException, IllegalAccessException {
     DBManager dbManager = new DBManager(config);
 
     try {
