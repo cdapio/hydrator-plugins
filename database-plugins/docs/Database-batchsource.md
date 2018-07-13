@@ -39,6 +39,12 @@ names are the same when the case is ignored (optional).
 
 **connectionString:** JDBC connection string including database name. (Macro-enabled)
 
+**connectionArguments:** A list of arbitrary string tag/value pairs as connection arguments. These arguments
+will be passed to the JDBC driver, as connection arguments, for JDBC drivers that may need additional configurations.
+This is a semicolon-separated list of key-value pairs, where each pair is separated by a equals '=' and specifies
+the key and value for the argument. For example, 'key1=value1;key2=value' specifies that the connection will be
+given arguments 'key1' mapped to 'value1' and the argument 'key2' mapped to 'value2'. (Macro-enabled)
+
 **user:** User identity for connecting to the specified database. Required for databases that need
 authentication. Optional for databases that do not require authentication. (Macro-enabled)
 
@@ -55,6 +61,15 @@ defined in the JSON file for the JDBC plugin. Defaults to 'jdbc'.
 Normally this setting does not matter. It only matters if you are using a jdbc driver -- like the Hive
 driver -- that will error when the commit operation is run, or a driver that will error when auto-commit is
 set to false. For drivers like those, you will need to set this to 'true'.
+
+**transactionIsolationLevel:** The transaction isolation level for queries run by this sink.
+Defaults to TRANSACTION_SERIALIZABLE. See java.sql.Connection#setTransactionIsolation for more details.
+The Phoenix jdbc driver will throw an exception if the Phoenix database does not have transactions enabled
+and this setting is set to true. For drivers like that, this should be set to TRANSACTION_NONE.
+
+**schema:** The schema of records output by the source. This will be used in place of whatever schema comes
+back from the query. However, it must match the schema that comes back from the query,
+except it can mark fields as nullable and can contain a subset of the fields.
 
 
 Example

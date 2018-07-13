@@ -34,6 +34,7 @@ import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.common.ReferenceBatchSource;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.common.SourceInputFormatProvider;
+import co.cask.hydrator.plugin.ConnectionConfig;
 import co.cask.hydrator.plugin.DBConfig;
 import co.cask.hydrator.plugin.DBManager;
 import co.cask.hydrator.plugin.DBRecord;
@@ -41,6 +42,7 @@ import co.cask.hydrator.plugin.DBUtils;
 import co.cask.hydrator.plugin.DriverCleanup;
 import co.cask.hydrator.plugin.FieldCase;
 import co.cask.hydrator.plugin.StructuredRecordUtils;
+import co.cask.hydrator.plugin.db.batch.TransactionIsolationLevel;
 import com.google.common.base.Strings;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
@@ -56,6 +58,8 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Map;
+import java.util.Properties;
 import javax.annotation.Nullable;
 import javax.ws.rs.Path;
 
@@ -92,6 +96,8 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
   class GetSchemaRequest {
     public String connectionString;
     @Nullable
+    public String connectionArguments;
+    @Nullable
     public String user;
     @Nullable
     public String password;
@@ -122,7 +128,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     DriverCleanup driverCleanup;
     try {
       driverCleanup = loadPluginClassAndGetDriver(request, pluginContext);
-      try (Connection connection = getConnection(request.connectionString, request.user, request.password)) {
+      try (Connection connection = getConnection(request)) {
         String query = request.query;
         Statement statement = connection.createStatement();
         statement.setMaxRows(1);
@@ -173,13 +179,12 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     }
   }
 
-  private Connection getConnection(String connectionString,
-                                   @Nullable String user, @Nullable String password) throws SQLException {
-    if (user == null) {
-      return DriverManager.getConnection(connectionString);
-    } else {
-      return DriverManager.getConnection(connectionString, user, password);
-    }
+  private Connection getConnection(GetSchemaRequest getSchemaRequest) throws SQLException {
+    Properties properties =
+      ConnectionConfig.getConnectionArguments(getSchemaRequest.connectionArguments,
+                                              getSchemaRequest.user,
+                                              getSchemaRequest.password);
+    return DriverManager.getConnection(getSchemaRequest.connectionString, properties);
   }
 
   @Override
@@ -187,7 +192,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     sourceConfig.validate();
 
     LOG.debug("pluginType = {}; pluginName = {}; connectionString = {}; importQuery = {}; " +
-                "boundingQuery = {}",
+                "boundingQuery = {}; transaction isolation level: {}",
               sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName,
               sourceConfig.connectionString, sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery());
     Configuration hConf = new Configuration();
@@ -204,6 +209,12 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     DataDrivenETLDBInputFormat.setInput(hConf, DBRecord.class,
                                         sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery(),
                                         sourceConfig.getEnableAutoCommit());
+    if (sourceConfig.transactionIsolationLevel != null) {
+      hConf.set(TransactionIsolationLevel.CONF_KEY, sourceConfig.transactionIsolationLevel);
+    }
+    if (sourceConfig.connectionArguments != null) {
+      hConf.set(DBUtils.CONNECTION_ARGUMENTS, sourceConfig.connectionArguments);
+    }
     if (sourceConfig.numSplits == null || sourceConfig.numSplits != 1) {
       if (!sourceConfig.getImportQuery().contains("$CONDITIONS")) {
         throw new IllegalArgumentException(String.format("Import Query %s must contain the string '$CONDITIONS'.",
@@ -255,6 +266,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     public static final String SPLIT_BY = "splitBy";
     public static final String NUM_SPLITS = "numSplits";
     public static final String SCHEMA = "schema";
+    public static final String TRANSACTION_ISOLATION_LEVEL = "transactionIsolationLevel";
 
     @Name(IMPORT_QUERY)
     @Description("The SELECT query to use to import data from the specified table. " +
@@ -288,6 +300,15 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     Integer numSplits;
 
     @Nullable
+    @Name(TRANSACTION_ISOLATION_LEVEL)
+    @Description("The transaction isolation level for queries run by this sink. " +
+      "Defaults to TRANSACTION_SERIALIZABLE. See java.sql.Connection#setTransactionIsolation for more details. " +
+      "The Phoenix jdbc driver will throw an exception if the Phoenix database does not have transactions enabled " +
+      "and this setting is set to true. For drivers like that, this should be set to TRANSACTION_NONE.")
+    @Macro
+    public String transactionIsolationLevel;
+
+    @Nullable
     @Name(SCHEMA)
     @Description("The schema of records output by the source. This will be used in place of whatever schema comes " +
       "back from the query. This should only be used if there is a bug in your jdbc driver. For example, if a column " +
@@ -312,6 +333,10 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
         if (numSplits == 1) {
           hasOneSplit = true;
         }
+      }
+
+      if (!containsMacro("transactionIsolationLevel") && transactionIsolationLevel != null) {
+        TransactionIsolationLevel.validate(transactionIsolationLevel);
       }
 
       if (!hasOneSplit && !containsMacro("importQuery") && !getImportQuery().contains("$CONDITIONS")) {
