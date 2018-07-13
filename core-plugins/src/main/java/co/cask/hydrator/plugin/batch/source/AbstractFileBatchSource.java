@@ -159,24 +159,29 @@ public abstract class AbstractFileBatchSource<T extends FileSourceConfig>
     fs = FileSystem.get(conf);
 
     if (fileStatus == null && config.ignoreNonExistingFolders) {
-      path = fs.getWorkingDirectory().suffix("/tmp/tmp.txt");
-      LOG.warn(String.format("File/Folder specified in %s does not exists. Setting input path to %s.", config.getPath(),
-                             path));
-      fs.createNewFile(path);
-      conf.set(INPUT_NAME_CONFIG, path.toUri().getPath());
-      FileInputFormat.addInputPath(job, path);
+      LOG.warn(String.format("Input path %s does not exist and ignore non existing folder is set. " +
+          "The pipeline will not read any data", config.getPath()));
+      context.setInput(Input.of(config.referenceName,
+          new SourceInputFormatProvider(EmptyInputFormat.class.getName(), conf)));
+    } else if (fileStatus == null) {
+      LOG.error(String.format("Input path %s does not exist and this will fail the pipeline. " +
+          "To treat absence of input path as warning set Ignore Non existing folder property to true",
+          config.getPath()));
+      throw new RuntimeException(String.format("Input path %s does not exist", config.getPath()));
     } else {
       conf.set(INPUT_NAME_CONFIG, new Path(config.getPath()).toString());
       FileInputFormat.addInputPath(job, new Path(config.getPath()));
+      if (config.maxSplitSize != null) {
+        FileInputFormat.setMaxInputSplitSize(job, config.maxSplitSize);
+      }
+      if (CombinePathTrackingInputFormat.class.getName().equals(config.inputFormatClass)) {
+        PathTrackingInputFormat.configure(job, conf, config.pathField, config.filenameOnly,
+            config.format, config.schema);
+      }
+      context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(config.inputFormatClass, conf)));
     }
 
-    if (config.maxSplitSize != null) {
-      FileInputFormat.setMaxInputSplitSize(job, config.maxSplitSize);
-    }
-    if (CombinePathTrackingInputFormat.class.getName().equals(config.inputFormatClass)) {
-      PathTrackingInputFormat.configure(job, conf, config.pathField, config.filenameOnly, config.format, config.schema);
-    }
-    context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(config.inputFormatClass, conf)));
+
   }
 
   @Override

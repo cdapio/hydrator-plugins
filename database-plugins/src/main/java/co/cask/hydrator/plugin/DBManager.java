@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015-2016 Cask Data, Inc.
+ * Copyright © 2015-2018 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -30,6 +30,7 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Properties;
 
 /**
  * Class to manage common database operations for Database source and sink plugins.
@@ -66,21 +67,11 @@ public class DBManager implements Destroyable {
       throw Throwables.propagate(e);
     }
 
-    Connection connection;
-    try {
-      if (config.user == null) {
-        connection = DriverManager.getConnection(config.connectionString);
-      } else {
-        connection = DriverManager.getConnection(config.connectionString, config.user, config.password);
-      }
-
-      try {
-        DatabaseMetaData metadata = connection.getMetaData();
-        try (ResultSet rs = metadata.getTables(null, null, tableName, null)) {
-          return rs.next();
-        }
-      } finally {
-        connection.close();
+    try (Connection connection = DriverManager.getConnection(config.connectionString,
+                                                             config.getConnectionArguments())) {
+      DatabaseMetaData metadata = connection.getMetaData();
+      try (ResultSet rs = metadata.getTables(null, null, tableName, null)) {
+        return rs.next();
       }
     } catch (SQLException e) {
       LOG.error("Exception while trying to check the existence of database table {} for connection {}.",

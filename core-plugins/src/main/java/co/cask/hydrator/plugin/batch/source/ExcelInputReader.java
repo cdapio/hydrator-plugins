@@ -48,6 +48,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.Job;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -68,6 +70,7 @@ import javax.annotation.Nullable;
 @Description("Batch Source to read one or more excel files and convert rows to structure records using " +
   "input columns, column-mapping and field-type mapping.")
 public class ExcelInputReader extends BatchSource<LongWritable, Object, StructuredRecord> {
+  private static final Logger LOG = LoggerFactory.getLogger(ExcelInputReader.class);
 
   private static final String KEY = "key";
   private static final String FILE = "file";
@@ -220,6 +223,7 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
           break;
         default:
           //ignore on error
+          LOG.error("Error while reading excel input: ", e);
           break;
       }
     }

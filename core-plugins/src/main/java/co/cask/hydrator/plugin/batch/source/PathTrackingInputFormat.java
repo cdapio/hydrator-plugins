@@ -36,6 +36,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.parquet.avro.AvroParquetInputFormat;
 import org.apache.parquet.avro.AvroWriteSupport;
+import org.apache.parquet.io.InvalidRecordException;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -67,6 +68,8 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
         AvroJob.setInputKeySchema(job, new org.apache.avro.Schema.Parser().parse(schema));
       } else if (format.equalsIgnoreCase("parquet")) {
         AvroWriteSupport.setSchema(conf, new org.apache.avro.Schema.Parser().parse(schema));
+        // TODO: (CDAP-13140) remove
+        conf.set("parquet.avro.read.schema", schema);
       }
     } else if (format.equalsIgnoreCase("text")) {
       conf.set(SCHEMA, getTextOutputSchema(pathField).toString());
@@ -229,7 +232,13 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
 
     @Override
     public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
-      super.initialize(split, context);
+      try {
+        super.initialize(split, context);
+      } catch (InvalidRecordException e) {
+        // TODO: (CDAP-13140) remove
+        throw new RuntimeException("There is a mismatch between read and write schema. " +
+                                     "Please modify the plugin schema to include all fields in the write schema.", e);
+      }
       recordTransformer = new AvroToStructuredTransformer();
     }
 
