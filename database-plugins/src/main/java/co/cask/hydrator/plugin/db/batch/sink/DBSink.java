@@ -38,15 +38,19 @@ import co.cask.hydrator.plugin.DBManager;
 import co.cask.hydrator.plugin.DBRecord;
 import co.cask.hydrator.plugin.DBUtils;
 import co.cask.hydrator.plugin.FieldCase;
+import co.cask.hydrator.plugin.db.batch.TransactionIsolationLevel;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapred.lib.db.DBConfiguration;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
@@ -57,7 +61,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.TreeMap;
+import javax.annotation.Nullable;
 
 
 /**
@@ -93,9 +99,10 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
 
   @Override
   public void prepareRun(BatchSinkContext context) {
-    LOG.debug("tableName = {}; pluginType = {}; pluginName = {}; connectionString = {}; columns = {}",
+    LOG.debug("tableName = {}; pluginType = {}; pluginName = {}; connectionString = {}; columns = {}; " +
+                "transaction isolation level: {}",
               dbSinkConfig.tableName, dbSinkConfig.jdbcPluginType, dbSinkConfig.jdbcPluginName,
-              dbSinkConfig.connectionString, dbSinkConfig.columns);
+              dbSinkConfig.connectionString, dbSinkConfig.columns, dbSinkConfig.transactionIsolationLevel);
 
     // Load the plugin class to make sure it is available.
     Class<? extends Driver> driverClass = context.loadPluginClass(getJDBCPluginId());
@@ -152,14 +159,8 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
     Map<String, Integer> columnToType = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     dbManager.ensureJDBCDriverIsAvailable(driverClass);
 
-    Connection connection;
-    if (dbSinkConfig.user == null) {
-      connection = DriverManager.getConnection(dbSinkConfig.connectionString);
-    } else {
-      connection = DriverManager.getConnection(dbSinkConfig.connectionString, dbSinkConfig.user, dbSinkConfig.password);
-    }
-
-    try {
+    try (Connection connection = DriverManager.getConnection(dbSinkConfig.connectionString,
+                                                             dbSinkConfig.getConnectionArguments())) {
       try (Statement statement = connection.createStatement();
            // Run a query against the DB table that returns 0 records, but returns valid ResultSetMetadata
            // that can be used to construct DBRecord objects to sink to the database table.
@@ -180,8 +181,6 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
           columnToType.put(name, type);
         }
       }
-    } finally {
-      connection.close();
     }
 
     columns = ImmutableList.copyOf(Splitter.on(",").omitEmptyStrings().trimResults().split(dbSinkConfig.columns));
@@ -199,6 +198,7 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
   public static class DBSinkConfig extends DBConfig {
     public static final String COLUMNS = "columns";
     public static final String TABLE_NAME = "tableName";
+    public static final String TRANSACTION_ISOLATION_LEVEL = "transactionIsolationLevel";
 
     @Name(COLUMNS)
     @Description("Comma-separated list of columns in the specified table to export to.")
@@ -209,6 +209,15 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
     @Macro
     public String tableName;
 
+    @Nullable
+    @Name(TRANSACTION_ISOLATION_LEVEL)
+    @Description("The transaction isolation level for queries run by this sink. " +
+      "Defaults to TRANSACTION_SERIALIZABLE. See java.sql.Connection#setTransactionIsolation for more details. " +
+      "The Phoenix jdbc driver will throw an exception if the Phoenix database does not have transactions enabled " +
+      "and this setting is set to true. For drivers like that, this should be set to TRANSACTION_NONE.")
+    @Macro
+    public String transactionIsolationLevel;
+
   }
 
   private static class DBOutputFormatProvider implements OutputFormatProvider {
@@ -218,6 +227,12 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
       this.conf = new HashMap<>();
 
       conf.put(ETLDBOutputFormat.AUTO_COMMIT_ENABLED, String.valueOf(dbSinkConfig.getEnableAutoCommit()));
+      if (dbSinkConfig.transactionIsolationLevel != null) {
+        conf.put(TransactionIsolationLevel.CONF_KEY, dbSinkConfig.transactionIsolationLevel);
+      }
+      if (dbSinkConfig.connectionArguments != null) {
+        conf.put(DBUtils.CONNECTION_ARGUMENTS, dbSinkConfig.connectionArguments);
+      }
       conf.put(DBConfiguration.DRIVER_CLASS_PROPERTY, driverClass.getName());
       conf.put(DBConfiguration.URL_PROPERTY, dbSinkConfig.connectionString);
       if (dbSinkConfig.user != null) {

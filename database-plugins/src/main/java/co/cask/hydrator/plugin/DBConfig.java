@@ -40,11 +40,6 @@ public class DBConfig extends ConnectionConfig {
   @Nullable
   public String columnNameCase;
 
-  public DBConfig() {
-    jdbcPluginType = "jdbc";
-    enableAutoCommit = false;
-  }
-
   public Boolean getEnableAutoCommit() {
     return enableAutoCommit;
   }

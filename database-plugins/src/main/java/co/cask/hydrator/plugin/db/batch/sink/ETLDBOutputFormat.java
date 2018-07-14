@@ -16,9 +16,12 @@
 
 package co.cask.hydrator.plugin.db.batch.sink;
 
+import co.cask.hydrator.plugin.ConnectionConfig;
 import co.cask.hydrator.plugin.DBUtils;
 import co.cask.hydrator.plugin.JDBCDriverShim;
 import co.cask.hydrator.plugin.db.batch.NoOpCommitConnection;
+import co.cask.hydrator.plugin.db.batch.TransactionIsolationLevel;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.RecordWriter;
@@ -36,6 +39,7 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Properties;
 
 /**
  * Class that extends {@link DBOutputFormat} to load the database driver class correctly.
@@ -48,12 +52,13 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
   public static final String AUTO_COMMIT_ENABLED = "co.cask.hydrator.db.output.autocommit.enabled";
 
   private static final Logger LOG = LoggerFactory.getLogger(ETLDBOutputFormat.class);
+  private Configuration conf;
   private Driver driver;
   private JDBCDriverShim driverShim;
 
   @Override
   public RecordWriter<K, V> getRecordWriter(TaskAttemptContext context) throws IOException {
-    Configuration conf = context.getConfiguration();
+    conf = context.getConfiguration();
     DBConfiguration dbConf = new DBConfiguration(conf);
     String tableName = dbConf.getOutputTableName();
     String[] fieldNames = dbConf.getOutputFieldNames();
@@ -86,13 +91,13 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
             } catch (SQLException ex) {
               LOG.warn(StringUtils.stringifyException(ex));
             }
-            throw new IOException(e.getMessage());
+            throw new IOException(e);
           } finally {
             try {
               getStatement().close();
               getConnection().close();
             } catch (SQLException ex) {
-              throw new IOException(ex.getMessage());
+              throw new IOException(ex);
             }
           }
 
@@ -110,7 +115,7 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
         }
       };
     } catch (Exception ex) {
-      throw new IOException(ex.getMessage());
+      throw Throwables.propagate(ex);
     }
   }
 
@@ -140,13 +145,11 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
         }
       }
 
-      if (conf.get(DBConfiguration.USERNAME_PROPERTY) == null) {
-        connection = DriverManager.getConnection(url);
-      } else {
-        connection = DriverManager.getConnection(url,
-                                                 conf.get(DBConfiguration.USERNAME_PROPERTY),
-                                                 conf.get(DBConfiguration.PASSWORD_PROPERTY));
-      }
+      Properties properties =
+        ConnectionConfig.getConnectionArguments(conf.get(DBUtils.CONNECTION_ARGUMENTS),
+                                                conf.get(DBConfiguration.USERNAME_PROPERTY),
+                                                conf.get(DBConfiguration.PASSWORD_PROPERTY));
+      connection = DriverManager.getConnection(url, properties);
 
       boolean autoCommitEnabled = conf.getBoolean(AUTO_COMMIT_ENABLED, false);
       if (autoCommitEnabled) {
@@ -155,7 +158,9 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
       } else {
         connection.setAutoCommit(false);
       }
-      connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+      String level = conf.get(TransactionIsolationLevel.CONF_KEY);
+      LOG.debug("Transaction isolation level: {}", level);
+      connection.setTransactionIsolation(TransactionIsolationLevel.getLevel(level));
     } catch (Exception e) {
       throw Throwables.propagate(e);
     }
@@ -168,6 +173,14 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
     // Strip the ';' at the end since Oracle doesn't like it.
     // TODO: Perhaps do a conditional if we can find a way to tell that this is going to Oracle
     // However, tested this to work on Mysql and Oracle
-    return query.substring(0, query.length() - 1);
+    query = query.substring(0, query.length() - 1);
+
+    String urlProperty = conf.get(DBConfiguration.URL_PROPERTY);
+    if (urlProperty.startsWith("jdbc:phoenix")) {
+      LOG.debug("Phoenix jdbc connection detected. Replacing INSERT with UPSERT.");
+      Preconditions.checkArgument(query.startsWith("INSERT"), "Expecting query to start with 'INSERT'");
+      query = "UPSERT" + query.substring("INSERT".length());
+    }
+    return query;
   }
 }

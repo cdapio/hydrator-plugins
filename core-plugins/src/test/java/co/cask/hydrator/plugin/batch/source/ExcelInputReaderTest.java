@@ -52,7 +52,9 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,6 +82,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
   private static String excelTestFileOne = "/civil_test_data_one.xlsx";
   private static String excelTestFileTwo = "/civil_test_data_two.xlsx";
 
+
   @BeforeClass
   public static void setupTest() throws Exception {
     setupBatchArtifacts(BATCH_APP_ARTIFACT_ID, DataPipelineApp.class);
@@ -96,10 +99,52 @@ public class ExcelInputReaderTest extends HydratorTestBase {
   public void copyFiles() throws Exception {
     URL testFileUrl = this.getClass().getResource(excelTestFileOne);
     URL testTwofileUrl = this.getClass().getResource(excelTestFileTwo);
+
     FileUtils.copyFile(new File(testFileUrl.getFile()), new File(sourceFolder, excelTestFileOne));
     FileUtils.copyFile(new File(testTwofileUrl.getFile()), new File(sourceFolder, excelTestFileTwo));
   }
 
+  @Test
+  public void testExcelWithDate() throws Exception {
+    Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
+        .put(Constants.Reference.REFERENCE_NAME, "TestCase-testExcel")
+        .put("filePath", sourceFolderUri)
+        .put("filePattern", ".*")
+        .put("sheet", "Sheet Name")
+        .put("sheetValue", "Sheet1")
+        .put("memoryTableName", "trackMemoryTable")
+        .put("tableExpiryPeriod", "30")
+        .put("reprocess", "false")
+        .put("columnList", "")
+        .put("columnMapping", "")
+        .put("skipFirstRow", "false")
+        .put("terminateIfEmptyRow", "false")
+        .put("rowsLimit", "")
+        .put("outputSchema", "A:string,B:string,C:String,D:String,E:String,F:String")
+        .put("ifErrorRecord", "Ignore error and continue")
+        .put("errorDatasetName", "")
+        .build();
+
+    ETLStage source = new ETLStage("ExcelInputtest", new ETLPlugin("Excel", BatchSource.PLUGIN_TYPE,
+        sourceProperties, null));
+
+    String outputDatasetName = "output-testExcel";
+    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
+
+    ApplicationManager appManager = deployApp(source, sink, "ExcelTests");
+    startWorkflow(appManager, ProgramRunStatus.COMPLETED);
+
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> output = MockSink.readOutput(outputManager);
+
+    SimpleDateFormat dateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss z yyyy");
+    Date dateRow1 = dateFormat.parse((String) output.get(1).get("F"));
+    Calendar cal = Calendar.getInstance();
+    cal.setTime(dateRow1);
+    Assert.assertEquals(2018, cal.get(Calendar.YEAR));
+    Assert.assertEquals(1, cal.get(Calendar.MONTH) + 1);
+    Assert.assertEquals(1, cal.get(Calendar.DAY_OF_MONTH));
+  }
   @Test
   public void testExcelInputReader() throws Exception {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
@@ -116,7 +161,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put("skipFirstRow", "false")
       .put("terminateIfEmptyRow", "false")
       .put("rowsLimit", "")
-      .put("outputSchema", "A:string,B:string")
+      .put("outputSchema", "A:string,B:string,C:String,D:String,E:String,F:String")
       .put("ifErrorRecord", "Ignore error and continue")
       .put("errorDatasetName", "")
       .build();
@@ -168,7 +213,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put("skipFirstRow", "false")
       .put("terminateIfEmptyRow", "false")
       .put("rowsLimit", "10")
-      .put("outputSchema", "A:string")
+      .put("outputSchema", "A:string,B:string,C:String,D:String,E:String,F:String")
       .put("ifErrorRecord", "Ignore error and continue")
       .put("errorDatasetName", "")
       .build();
@@ -213,7 +258,7 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put("skipFirstRow", "false")
       .put("terminateIfEmptyRow", "false")
       .put("rowsLimit", "10")
-      .put("outputSchema", "A:string,B:string")
+      .put("outputSchema", "A:string,B:string,C:String,D:String,E:String,F:String")
       .put("ifErrorRecord", "Ignore error and continue")
       .put("errorDatasetName", "")
       .build();
@@ -485,7 +530,6 @@ public class ExcelInputReaderTest extends HydratorTestBase {
       .put("memoryTableName", "trackMemoryTableWithTTL")
       .put("tableExpiryPeriod", "15")
       .put("reprocess", "false")
-      .put("columnList", "")
       .put("columnMapping", "A:FirstColumn")
       .put("skipFirstRow", "false")
       .put("terminateIfEmptyRow", "false")
