@@ -100,8 +100,11 @@ public class DBRecord implements Writable, DBWritable, Configurable {
     StructuredRecord.Builder recordBuilder = StructuredRecord.builder(schema);
     for (int i = 0; i < schemaFields.size(); i++) {
       Schema.Field field = schemaFields.get(i);
-      int sqlColumnType = metadata.getColumnType(i + 1);
-      recordBuilder.set(field.getName(), DBUtils.transformValue(sqlColumnType, resultSet, field.getName()));
+      int sqlType = metadata.getColumnType(i + 1);
+      int sqlPrecision = metadata.getPrecision(i + 1);
+      int sqlScale = metadata.getScale(i + 1);
+      recordBuilder.set(field.getName(),
+                        DBUtils.transformValue(sqlType, sqlPrecision, sqlScale, resultSet, field.getName()));
     }
     record = recordBuilder.build();
   }

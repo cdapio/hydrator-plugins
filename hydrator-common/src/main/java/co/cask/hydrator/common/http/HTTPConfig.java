@@ -48,6 +48,7 @@ public class HTTPConfig extends PluginConfig {
 
   @Description("Whether to automatically follow redirects. Defaults to true.")
   @Nullable
+  @Macro
   private Boolean followRedirects;
 
   @Description("Sets the connection timeout in milliseconds. Set to 0 for infinite. Default is 60000 (1 minute).")

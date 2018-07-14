@@ -30,6 +30,7 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.poi.hssf.usermodel.HSSFDateUtil;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -76,12 +77,15 @@ public class ExcelInputFormat extends TextInputFormat {
     configuration.set(SHEET, sheet);
     configuration.setBoolean(RE_PROCESS, reprocess);
     configuration.set(SHEET_VALUE, sheetValue);
-    configuration.set(COLUMN_LIST, columnList);
     configuration.setBoolean(SKIP_FIRST_ROW, skipFirstRow);
     configuration.set(TERMINATE_IF_EMPTY_ROW, terminateIfEmptyRow);
 
     if (!Strings.isNullOrEmpty(rowLimit)) {
       configuration.set(ROWS_LIMIT, rowLimit);
+    }
+
+    if (!Strings.isNullOrEmpty(columnList)) {
+      configuration.set(COLUMN_LIST, columnList);
     }
 
     configuration.set(IF_ERROR_RECORD, ifErrorRecord);
@@ -207,8 +211,12 @@ public class ExcelInputFormat extends TextInputFormat {
             break;
 
           case Cell.CELL_TYPE_NUMERIC:
-            sb.append(colName)
-              .append(COLUMN_SEPERATOR).append(cell.getNumericCellValue()).append(CELL_SEPERATOR);
+            if (HSSFDateUtil.isCellDateFormatted(cell)) {
+              sb.append(colName).append(COLUMN_SEPERATOR).append(cell.getDateCellValue()).append(CELL_SEPERATOR);
+            } else {
+              sb.append(colName)
+                  .append(COLUMN_SEPERATOR).append(cell.getNumericCellValue()).append(CELL_SEPERATOR);
+            }
             break;
         }
       }
