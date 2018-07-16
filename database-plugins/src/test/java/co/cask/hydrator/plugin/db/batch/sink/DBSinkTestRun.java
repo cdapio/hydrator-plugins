@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015-2016 Cask Data, Inc.
+ * Copyright © 2015-2018 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -41,6 +41,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -61,14 +62,14 @@ public class DBSinkTestRun extends DatabasePluginTestBase {
                                          BatchSink.PLUGIN_TYPE,
                                          ImmutableMap.of(DBConfig.CONNECTION_STRING, getConnectionURL(),
                                                          DBSink.DBSinkConfig.TABLE_NAME, "MY_DEST_TABLE",
-                                                         DBSink.DBSinkConfig.COLUMNS, cols,
+                                                         DBSink.DBSinkConfig.COLUMNS, "${col-macro}",
                                                          DBConfig.JDBC_PLUGIN_NAME, "hypersql",
                                                          Constants.Reference.REFERENCE_NAME, "DBTest"),
                                          null);
     ApplicationManager appManager = deployETL(sourceConfig, sinkConfig, "testDBSink");
     createInputData(inputDatasetName);
 
-    runETLOnce(appManager);
+    runETLOnce(appManager, Collections.singletonMap("col-macro", cols));
 
     try (Connection conn = getConnection();
          Statement stmt = conn.createStatement()) {
