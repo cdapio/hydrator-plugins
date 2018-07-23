@@ -20,18 +20,27 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.dataset.DatasetManagementException;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
+import co.cask.cdap.api.lineage.field.EndPoint;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
+import co.cask.cdap.etl.api.batch.BatchSourceContext;
+import co.cask.cdap.etl.api.lineage.field.FieldOperation;
+import co.cask.cdap.etl.api.lineage.field.FieldWriteOperation;
 import co.cask.hydrator.plugin.common.AvroToStructuredTransformer;
 import co.cask.hydrator.plugin.common.FileSetUtil;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.io.NullWritable;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.stream.Collectors;
 
 /**
  * A {@link BatchSource} to read Avro record from {@link TimePartitionedFileSet}
@@ -85,6 +94,29 @@ public class TimePartitionedFileSetDatasetParquetSource extends
   @Override
   protected void addFileSetProperties(FileSetProperties.Builder properties) {
     FileSetUtil.configureParquetFileSet(tpfsParquetConfig.schema, properties);
+  }
+
+  @Override
+  public void prepareRun(BatchSourceContext context) throws DatasetManagementException {
+    super.prepareRun(context);
+    if (tpfsParquetConfig.schema == null) {
+      return;
+    }
+
+    try {
+      co.cask.cdap.api.data.schema.Schema schema =
+        co.cask.cdap.api.data.schema.Schema.parseJson(tpfsParquetConfig.schema);
+      if (schema.getFields() != null) {
+        FieldOperation operation =
+          new FieldWriteOperation("Read", "Read from TPFS Parquet dataset",
+                                  EndPoint.of(context.getNamespace(), tpfsParquetConfig.name),
+                                  schema.getFields().stream().map(co.cask.cdap.api.data.schema.Schema.Field::getName)
+                                    .collect(Collectors.toList()));
+        context.record(Collections.singletonList(operation));
+      }
+    } catch (IOException e) {
+      throw new IllegalStateException("Failed to parse schema.", e);
+    }
   }
 
   @Override

@@ -28,6 +28,8 @@ import co.cask.cdap.etl.api.MultiInputStageConfigurer;
 import co.cask.cdap.etl.api.batch.BatchJoiner;
 import co.cask.cdap.etl.api.batch.BatchJoinerContext;
 import co.cask.cdap.etl.api.batch.BatchJoinerRuntimeContext;
+import co.cask.cdap.etl.api.lineage.field.FieldOperation;
+import co.cask.cdap.etl.api.lineage.field.FieldTransformOperation;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
@@ -35,8 +37,12 @@ import com.google.common.collect.Table;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -52,6 +58,11 @@ import javax.ws.rs.Path;
   "records from non-required inputs will only be present if they match join criteria. If there are no required " +
   "inputs, outer join will be performed")
 public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, StructuredRecord> {
+
+  public static final String JOIN_OPERATION_DESCRIPTION = "Used as a key in a join";
+  public static final String IDENTITY_OPERATION_DESCRIPTION = "Unchanged as part of a join";
+  public static final String RENAME_OPERATION_DESCRIPTION = "Renamed as a part of a join";
+
   private final JoinerConfig conf;
   private Map<String, Schema> inputSchemas;
   private Schema outputSchema;
@@ -78,6 +89,78 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     if (conf.getNumPartitions() != null) {
       context.setNumPartitions(conf.getNumPartitions());
     }
+    init(context.getInputSchemas());
+    Collection<OutputFieldInfo> outputFieldInfos = createOutputFieldInfos(context.getInputSchemas());
+    context.record(createFieldOperations(outputFieldInfos, perStageJoinKeys));
+  }
+
+  /**
+   * Create the field operations from the provided OutputFieldInfo instances and join keys.
+   * For join we record several types of transformation; Join, Identity, and Rename.
+   * For each of these transformations, if the input field is directly coming from the schema
+   * of one of the stage, the field is added as {@code stage_name.field_name}. We keep track of fields
+   * outputted by operation (in {@code outputsSoFar set}, so that any operation uses that field as
+   * input later, we add it without the stage name.
+   *
+   * Join transform operation is added with join keys as input tagged with the stage name, and join keys
+   * without stage name as output.
+   *
+   * For other fields which are not renamed in join, Identity transform is added, while for fields which
+   * are renamed Rename transform is added.
+   *
+   * @param outputFieldInfos collection of output fields along with information such as stage name, alias
+   * @param perStageJoinKeys join keys
+   * @return List of field operations
+   */
+  @VisibleForTesting
+  public static List<FieldOperation> createFieldOperations(Collection<OutputFieldInfo> outputFieldInfos,
+                                                           Map<String, List<String>> perStageJoinKeys) {
+    LinkedList<FieldOperation> operations = new LinkedList<>();
+
+    // Add JOIN operation
+    List<String> joinInputs = new ArrayList<>();
+    Set<String> joinOutputs = new LinkedHashSet<>();
+    for (Map.Entry<String, List<String>> joinKey : perStageJoinKeys.entrySet()) {
+      for (String field : joinKey.getValue()) {
+        joinInputs.add(joinKey.getKey() + "." + field);
+        joinOutputs.add(field);
+      }
+    }
+    FieldOperation joinOperation = new FieldTransformOperation("Join", JOIN_OPERATION_DESCRIPTION, joinInputs,
+                                                               new ArrayList<>(joinOutputs));
+    operations.add(joinOperation);
+
+    Set<String> outputsSoFar = new HashSet<>(joinOutputs);
+
+    for (OutputFieldInfo outputFieldInfo : outputFieldInfos) {
+      // input field name for the operation will come in from schema if its not outputted so far
+      String stagedInputField = outputsSoFar.contains(outputFieldInfo.inputFieldName) ?
+        outputFieldInfo.inputFieldName : outputFieldInfo.stageName + "." + outputFieldInfo.inputFieldName;
+
+      if (outputFieldInfo.name.equals(outputFieldInfo.inputFieldName)) {
+        // Record identity transform
+        if (perStageJoinKeys.get(outputFieldInfo.stageName).contains(outputFieldInfo.inputFieldName)) {
+          // if the field is part of join key no need to emit the identity transform as it is already taken care
+          // by join
+          continue;
+        }
+        String operationName = String.format("Identity %s", stagedInputField);
+        FieldOperation identity = new FieldTransformOperation(operationName, IDENTITY_OPERATION_DESCRIPTION,
+                                                              Collections.singletonList(stagedInputField),
+                                                              outputFieldInfo.name);
+        operations.add(identity);
+        continue;
+      }
+
+      String operationName = String.format("Rename %s", stagedInputField);
+
+      FieldOperation transform = new FieldTransformOperation(operationName, RENAME_OPERATION_DESCRIPTION,
+                                                             Collections.singletonList(stagedInputField),
+                                                             outputFieldInfo.name);
+      operations.add(transform);
+    }
+
+    return operations;
   }
 
   @Override
@@ -197,6 +280,10 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
   }
 
   Schema getOutputSchema(Map<String, Schema> inputSchemas) {
+    return Schema.recordOf("join.output", getOutputFields(createOutputFieldInfos(inputSchemas)));
+  }
+
+  private Collection<OutputFieldInfo> createOutputFieldInfos(Map<String, Schema> inputSchemas) {
     validateRequiredInputs(inputSchemas);
 
     // stage name to input schema
@@ -248,7 +335,8 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
                                                          "found duplicate fields: %s for aliases: %s", duplicateFields,
                                                        duplicateAliases));
     }
-    return Schema.recordOf("join.output", getOutputFields(outputFieldInfo.values()));
+
+    return outputFieldInfo.values();
   }
 
   private List<Schema.Field> getOutputFields(Collection<OutputFieldInfo> fieldsInfo) {
@@ -262,7 +350,8 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
   /**
    * Class to hold information about output fields
    */
-  private class OutputFieldInfo {
+  @VisibleForTesting
+  static class OutputFieldInfo {
     private String name;
     private String stageName;
     private String inputFieldName;

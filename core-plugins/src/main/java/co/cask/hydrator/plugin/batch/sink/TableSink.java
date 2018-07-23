@@ -21,12 +21,17 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.DatasetManagementException;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.table.Put;
 import co.cask.cdap.api.dataset.table.Table;
+import co.cask.cdap.api.lineage.field.EndPoint;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
+import co.cask.cdap.etl.api.batch.BatchSinkContext;
+import co.cask.cdap.etl.api.lineage.field.FieldOperation;
+import co.cask.cdap.etl.api.lineage.field.FieldWriteOperation;
 import co.cask.cdap.format.RecordPutTransformer;
 import co.cask.hydrator.common.SchemaValidator;
 import co.cask.hydrator.plugin.common.Properties;
@@ -34,8 +39,11 @@ import co.cask.hydrator.plugin.common.TableSinkConfig;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 
+import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * CDAP Table Dataset Batch Sink.
@@ -78,6 +86,28 @@ public class TableSink extends BatchWritableSink<StructuredRecord, byte[], Put> 
   protected boolean shouldSkipCreateAtConfigure() {
     return tableSinkConfig.containsMacro(Properties.Table.PROPERTY_SCHEMA) ||
       tableSinkConfig.containsMacro(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD);
+  }
+
+  @Override
+  public void prepareRun(BatchSinkContext context) throws DatasetManagementException {
+    super.prepareRun(context);
+    String schemaString = tableSinkConfig.getSchemaStr();
+    if (schemaString != null) {
+      try {
+        Schema schema = Schema.parseJson(schemaString);
+        if (schema.getFields() != null) {
+          FieldOperation operation =
+            new FieldWriteOperation("Write", "Wrote to CDAP Table",
+                                    EndPoint.of(context.getNamespace(), tableSinkConfig.getName()),
+                                    schema.getFields().stream().map(Schema.Field::getName)
+                                      .collect(Collectors.toList()));
+          context.record(Collections.singletonList(operation));
+        }
+      } catch (IOException e) {
+        throw new IllegalStateException("Failed to parse schema.", e);
+      }
+    }
+
   }
 
   @Override

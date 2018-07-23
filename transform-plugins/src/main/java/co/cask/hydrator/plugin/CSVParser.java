@@ -26,16 +26,21 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.InvalidEntry;
 import co.cask.cdap.etl.api.PipelineConfigurer;
+import co.cask.cdap.etl.api.StageSubmitterContext;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
+import co.cask.cdap.etl.api.lineage.field.FieldOperation;
+import co.cask.cdap.etl.api.lineage.field.FieldTransformOperation;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
@@ -145,8 +150,25 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
   }
 
   @Override
+  public void prepareRun(StageSubmitterContext context) throws Exception {
+    super.prepareRun(context);
+    init();
+    if (fields != null) {
+      FieldOperation operation = new FieldTransformOperation("Parse", "Parsed field",
+                                                             Collections.singletonList(config.field),
+                                                             fields.stream().map(Schema.Field::getName)
+                                                               .collect(Collectors.toList()));
+      context.record(Collections.singletonList(operation));
+    }
+  }
+
+  @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
+    init();
+  }
+
+  private void init() {
     config.validate();
 
     String csvFormatString = config.format == null ? "default" : config.format.toLowerCase();

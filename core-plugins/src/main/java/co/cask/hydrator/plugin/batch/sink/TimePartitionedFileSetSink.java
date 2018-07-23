@@ -18,21 +18,28 @@ package co.cask.hydrator.plugin.batch.sink;
 
 import co.cask.cdap.api.data.batch.Output;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.DatasetManagementException;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.TimePartitionDetail;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSetArguments;
+import co.cask.cdap.api.lineage.field.EndPoint;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
+import co.cask.cdap.etl.api.lineage.field.FieldOperation;
+import co.cask.cdap.etl.api.lineage.field.FieldWriteOperation;
 import co.cask.hydrator.common.TimeParser;
 import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * TPFS Batch Sink class that stores sink data
@@ -91,6 +98,22 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
                                                           tpfsSinkConfig.timeZone);
     }
     context.addOutput(Output.ofDataset(tpfsSinkConfig.name, sinkArgs));
+
+    if (tpfsSinkConfig.schema != null) {
+      try {
+        Schema schema = Schema.parseJson(tpfsSinkConfig.schema);
+        if (schema.getFields() != null) {
+          FieldOperation operation =
+            new FieldWriteOperation("Write", "Wrote to TPFS dataset",
+                                    EndPoint.of(context.getNamespace(), tpfsSinkConfig.name),
+                                    schema.getFields().stream().map(Schema.Field::getName)
+                                      .collect(Collectors.toList()));
+          context.record(Collections.singletonList(operation));
+        }
+      } catch (IOException e) {
+        throw new IllegalStateException("Failed to parse schema.", e);
+      }
+    }
   }
 
   /**
