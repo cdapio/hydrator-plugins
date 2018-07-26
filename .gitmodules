@@ -27,3 +27,7 @@
 	path = condition-plugins
 	url = https://github.com/hydrator/condition-plugins.git
 	branch = develop
+[submodule "file"]
+	path = file-plugins
+	url = https://github.com/data-integrations/file.git
+	branch = develop
