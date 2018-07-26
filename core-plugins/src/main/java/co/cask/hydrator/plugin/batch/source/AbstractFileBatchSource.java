@@ -25,9 +25,12 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
+import co.cask.cdap.api.lineage.field.EndPoint;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
+import co.cask.cdap.etl.api.lineage.field.FieldOperation;
+import co.cask.cdap.etl.api.lineage.field.FieldReadOperation;
 import co.cask.hydrator.common.ReferenceBatchSource;
 import co.cask.hydrator.common.SourceInputFormatProvider;
 import co.cask.hydrator.common.batch.JobUtils;
@@ -51,10 +54,12 @@ import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Abstract file batch source
@@ -181,7 +186,21 @@ public abstract class AbstractFileBatchSource<T extends FileSourceConfig>
       context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(config.inputFormatClass, conf)));
     }
 
+    List<Schema.Field> fields = null;
 
+    if (config.getSchema() != null) {
+      fields = config.getSchema().getFields();
+    } else if ("text".equalsIgnoreCase(config.format)) {
+      fields = PathTrackingInputFormat.getTextOutputSchema(config.pathField).getFields();
+    }
+
+    if (fields != null) {
+      FieldOperation operation = new FieldReadOperation("Read", "Read from files",
+                                                        EndPoint.of(context.getNamespace(), config.referenceName),
+                                                        fields.stream().map(Schema.Field::getName)
+                                                          .collect(Collectors.toList()));
+      context.record(Collections.singletonList(operation));
+    }
   }
 
   @Override
