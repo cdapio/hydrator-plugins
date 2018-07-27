@@ -41,7 +41,6 @@
     <module>transform-plugins</module>
     <module>wrangler-transform</module>
     <module>condition-plugins</module>
-    <module>file</module>
   </modules>
 
   <licenses>
