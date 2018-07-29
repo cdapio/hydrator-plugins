@@ -119,12 +119,6 @@
           "widget-attributes": {
             "showDelimiter": "false",
             "dropdownOptions": [
-              "boolean",
-              "bytes",
-              "double",
-              "float",
-              "int",
-              "long",
               "string"
             ],
             "key-placeholder": "Field Name"

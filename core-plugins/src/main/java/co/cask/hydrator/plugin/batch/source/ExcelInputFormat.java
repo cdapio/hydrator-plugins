@@ -16,7 +16,9 @@
 
 package co.cask.hydrator.plugin.batch.source;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -32,6 +34,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.poi.hssf.usermodel.HSSFDateUtil;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -40,6 +43,7 @@ import org.apache.poi.ss.util.CellReference;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Map;
 
 
 /**
@@ -61,6 +65,8 @@ public class ExcelInputFormat extends TextInputFormat {
   public static final String FILE_PATTERN = "filePattern";
   public static final String SHEET = "sheet";
   public static final String SHEET_VALUE = "sheetValue";
+  public static final String OUTPUT_SCHEMA_MAPPING = "outputSchemaMapping";
+
 
   @Override
   public RecordReader<LongWritable, Text> createRecordReader(InputSplit split, TaskAttemptContext context) {
@@ -70,7 +76,7 @@ public class ExcelInputFormat extends TextInputFormat {
   public static void setConfigurations(Job job, String filePattern, String sheet, boolean reprocess,
                                        String sheetValue, String columnList, boolean skipFirstRow,
                                        String terminateIfEmptyRow, String rowLimit, String ifErrorRecord,
-                                       String processedFiles) {
+                                       String processedFiles, Map<String, String> schemaMapping) {
 
     Configuration configuration = job.getConfiguration();
     configuration.set(FILE_PATTERN, filePattern);
@@ -90,6 +96,7 @@ public class ExcelInputFormat extends TextInputFormat {
 
     configuration.set(IF_ERROR_RECORD, ifErrorRecord);
     configuration.set(PROCESSED_FILES, processedFiles);
+    configuration.set(OUTPUT_SCHEMA_MAPPING, Joiner.on(":").withKeyValueSeparator("=").join(schemaMapping));
   }
 
 
@@ -130,6 +137,11 @@ public class ExcelInputFormat extends TextInputFormat {
     //Keeps row limits
     private int rowCount;
 
+    private Map<String, String> outputSchemaMapping;
+
+    private DataFormatter formatter;
+
+
     @Override
     public void initialize(InputSplit genericSplit, TaskAttemptContext context) throws IOException,
       InterruptedException {
@@ -168,6 +180,10 @@ public class ExcelInputFormat extends TextInputFormat {
         rowIdx = 1;
         rows.next();
       }
+      outputSchemaMapping = Splitter.on(":").omitEmptyStrings()
+                                            .withKeyValueSeparator("=")
+                                            .split(job.get(OUTPUT_SCHEMA_MAPPING));
+      formatter = new DataFormatter();
     }
 
     @Override
@@ -214,8 +230,13 @@ public class ExcelInputFormat extends TextInputFormat {
             if (HSSFDateUtil.isCellDateFormatted(cell)) {
               sb.append(colName).append(COLUMN_SEPERATOR).append(cell.getDateCellValue()).append(CELL_SEPERATOR);
             } else {
-              sb.append(colName)
-                  .append(COLUMN_SEPERATOR).append(cell.getNumericCellValue()).append(CELL_SEPERATOR);
+              if (outputSchemaMapping.containsKey(colName)) {
+                String val = formatter.formatCellValue(cell);
+                sb.append(colName)
+                    .append(COLUMN_SEPERATOR).append(val).append(CELL_SEPERATOR);
+              } else {
+                sb.append(colName).append(COLUMN_SEPERATOR).append(cell.getNumericCellValue()).append(CELL_SEPERATOR);
+              }
             }
             break;
         }
