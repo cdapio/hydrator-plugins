@@ -17,6 +17,7 @@
 package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.hydrator.common.Constants;
@@ -38,6 +39,7 @@ public class DBConfig extends ConnectionConfig {
     "of column name cases across different databases but might result in column name conflicts if multiple column " +
     "names are the same when the case is ignored.")
   @Nullable
+  @Macro
   public String columnNameCase;
 
   public Boolean getEnableAutoCommit() {

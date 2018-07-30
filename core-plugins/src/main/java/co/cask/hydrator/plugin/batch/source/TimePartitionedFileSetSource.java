@@ -53,7 +53,7 @@ public abstract class TimePartitionedFileSetSource<KEY, VALUE> extends BatchSour
   public static class TPFSConfig extends PluginConfig {
     @Description("Name of the TimePartitionedFileSet to read.")
     @Macro
-    private String name;
+    protected String name;
 
     @Description("Base path for the TimePartitionedFileSet. Defaults to the name of the dataset.")
     @Nullable
@@ -106,7 +106,7 @@ public abstract class TimePartitionedFileSetSource<KEY, VALUE> extends BatchSour
   }
 
   @Override
-  public final void prepareRun(BatchSourceContext context) throws DatasetManagementException {
+  public void prepareRun(BatchSourceContext context) throws DatasetManagementException {
     config.validate();
     // If macros provided at runtime, dataset still needs to be created
     if (!context.datasetExists(config.name)) {
@@ -118,7 +118,6 @@ public abstract class TimePartitionedFileSetSource<KEY, VALUE> extends BatchSour
       addFileSetProperties(properties);
       context.createDataset(tpfsName, TimePartitionedFileSet.class.getName(), properties.build());
     }
-
 
     long duration = TimeParser.parseDuration(config.duration);
     long delay = Strings.isNullOrEmpty(config.delay) ? 0 : TimeParser.parseDuration(config.delay);

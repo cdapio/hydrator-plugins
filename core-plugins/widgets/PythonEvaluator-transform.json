@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "spec-version": "1.5"
+    "spec-version": "1.6"
   },
   "display-name" : "Python",
   "configuration-groups": [
@@ -18,6 +18,8 @@
       ]
     }
   ],
+  "emit-alerts": true,
+  "emit-errors": true,
   "errorDataset": {
     "errorDatasetTooltip": "Dataset that collects error messages from emitter. Please check reference section for usage."
   },
