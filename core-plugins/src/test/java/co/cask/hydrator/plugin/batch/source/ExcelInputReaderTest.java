@@ -47,6 +47,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
@@ -63,6 +64,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Unit tests for {@link ExcelInputReader} class.
  */
+@Ignore
 public class ExcelInputReaderTest extends HydratorTestBase {
 
   private static final ArtifactVersion CURRENT_VERSION = new ArtifactVersion("3.4.0-SNAPSHOT");
