@@ -1,0 +1,62 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Dataset Properties",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Reference Name",
+          "name": "referenceName"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Path",
+          "name": "path"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Directory Time Format",
+          "name": "suffix"
+        }
+      ]
+    },
+    {
+      "label": "Format Properties",
+      "properties": [
+        {
+          "widget-type": "select",
+          "label": "Format",
+          "name": "format",
+          "widget-attributes": {
+            "values": [
+              "text",
+              "avro",
+              "parquet"
+            ],
+            "default": "text"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Delimiter",
+          "name": "delimiter"
+        },
+        {
+          "widget-type": "json-editor",
+          "label": "File System Properties",
+          "name": "fileSystemProperties"
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "widget-type": "schema",
+      "widget-attributes": { }
+    }
+  ]
+}

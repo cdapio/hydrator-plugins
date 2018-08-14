@@ -17,8 +17,6 @@
 package co.cask.hydrator.plugin.batch.action;
 
 import co.cask.cdap.etl.api.action.Action;
-import co.cask.cdap.etl.api.batch.BatchSink;
-import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
@@ -40,7 +38,7 @@ import java.io.File;
 /**
  * Test for HDFSAction.
  */
-public class HDFSActionTestRun extends ETLBatchTestBase {
+public class FileActionTestRun extends ETLBatchTestBase {
   @ClassRule
   public static TemporaryFolder folder = new TemporaryFolder();
 
@@ -60,7 +58,7 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
   }
 
   @AfterClass
-  public static void cleanupMiniDFS() throws Exception {
+  public static void cleanupMiniDFS() {
     // Shutdown MiniDFSCluster
     dfsCluster.shutdown();
     folder.delete();
@@ -77,24 +75,15 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
     fileSystem.createNewFile(new Path("source/test.json"));
 
     ETLStage action = new ETLStage(
-      "HDFSMove",
-      new ETLPlugin("HDFSMove", Action.PLUGIN_TYPE,
+      "FileMove",
+      new ETLPlugin("FileMove", Action.PLUGIN_TYPE,
                     ImmutableMap.of("sourcePath", outputDir.toUri().toString() + "/test",
                                     "destPath", outputDir.toUri().toString() + "/",
                                     "fileRegex", ".*\\.txt",
                                     "continueOnError", "false"),
                     null));
-    ETLStage source = new ETLStage("source",
-                                   new ETLPlugin("KVTable", BatchSource.PLUGIN_TYPE,
-                                                 ImmutableMap.of("name", "hdfsTestSource"), null));
-    ETLStage sink = new ETLStage("sink", new ETLPlugin("KVTable", BatchSink.PLUGIN_TYPE,
-                                                       ImmutableMap.of("name", "hdfsTestSink"), null));
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(source)
-      .addStage(sink)
       .addStage(action)
-      .addConnection(action.getName(), source.getName())
-      .addConnection(source.getName(), sink.getName())
       .build();
 
     ApplicationManager appManager = deployETL(etlConfig, "hdfsFailedActionTest");
@@ -115,24 +104,15 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
     fileSystem.createNewFile(new Path("source/test.json"));
 
     ETLStage action = new ETLStage(
-      "HDFSMove",
-      new ETLPlugin("HDFSMove", Action.PLUGIN_TYPE,
+      "FileMove",
+      new ETLPlugin("FileMove", Action.PLUGIN_TYPE,
                     ImmutableMap.of("sourcePath", outputDir.toUri().toString() + "/source",
                                     "destPath", outputDir.toUri().toString() + "/dest",
                                     "fileRegex", ".*\\.txt",
                                     "continueOnError", "false"),
                     null));
-    ETLStage source = new ETLStage("source",
-                                   new ETLPlugin("KVTable", BatchSource.PLUGIN_TYPE,
-                                                 ImmutableMap.of("name", "hdfsTestSource"), null));
-    ETLStage sink = new ETLStage("sink", new ETLPlugin("KVTable", BatchSink.PLUGIN_TYPE,
-                                                       ImmutableMap.of("name", "hdfsTestSink"), null));
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(source)
-      .addStage(sink)
       .addStage(action)
-      .addConnection(action.getName(), source.getName())
-      .addConnection(source.getName(), sink.getName())
       .build();
 
     ApplicationManager appManager = deployETL(etlConfig, "hdfsSuccessActionTest");
@@ -155,24 +135,15 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
     fileSystem.createNewFile(new Path("dest/dest.txt"));
 
     ETLStage action = new ETLStage(
-      "HDFSMove",
-      new ETLPlugin("HDFSMove", Action.PLUGIN_TYPE,
+      "FileMove",
+      new ETLPlugin("FileMove", Action.PLUGIN_TYPE,
                     ImmutableMap.of("sourcePath", outputDir.toUri().toString() + "/source",
                                     "destPath", outputDir.toUri().toString() + "/dest/dest.txt",
                                     "fileRegex", ".*\\.txt",
                                     "continueOnError", "false"),
                     null));
-    ETLStage source = new ETLStage("source",
-                                   new ETLPlugin("KVTable", BatchSource.PLUGIN_TYPE,
-                                                 ImmutableMap.of("name", "hdfsTestSource"), null));
-    ETLStage sink = new ETLStage("sink", new ETLPlugin("KVTable", BatchSink.PLUGIN_TYPE,
-                                                       ImmutableMap.of("name", "hdfsTestSink"), null));
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(source)
-      .addStage(sink)
       .addStage(action)
-      .addConnection(action.getName(), source.getName())
-      .addConnection(source.getName(), sink.getName())
       .build();
 
     ApplicationManager appManager = deployETL(etlConfig, "hdfsInvalidActionTest");
@@ -197,23 +168,14 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
     Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/basicDir/test2.txt")));
 
     ETLStage action = new ETLStage(
-      "HDFSDelete",
-      new ETLPlugin("HDFSDelete", Action.PLUGIN_TYPE,
+      "FileDelete",
+      new ETLPlugin("FileDelete", Action.PLUGIN_TYPE,
                     ImmutableMap.of("path", outputDir.toUri().toString() + "/basicDir",
                                     "fileRegex", ".*\\.txt",
                                     "continueOnError", "false"),
                     null));
-    ETLStage source = new ETLStage("source",
-                                   new ETLPlugin("KVTable", BatchSource.PLUGIN_TYPE,
-                                                 ImmutableMap.of("name", "hdfsTestSource"), null));
-    ETLStage sink = new ETLStage("sink", new ETLPlugin("KVTable", BatchSink.PLUGIN_TYPE,
-                                                       ImmutableMap.of("name", "hdfsTestSink"), null));
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(source)
-      .addStage(sink)
       .addStage(action)
-      .addConnection(action.getName(), source.getName())
-      .addConnection(source.getName(), sink.getName())
       .build();
 
     ApplicationManager appManager = deployETL(etlConfig, "hdfsDeleteActionTest");
@@ -235,22 +197,13 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
     Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/dir/test.txt")));
 
     ETLStage action = new ETLStage(
-      "HDFSDelete",
-      new ETLPlugin("HDFSDelete", Action.PLUGIN_TYPE,
+      "FileDelete",
+      new ETLPlugin("FileDelete", Action.PLUGIN_TYPE,
                     ImmutableMap.of("path", outputDir.toUri().toString() + "/dir/test.txt",
                                     "continueOnError", "false"),
                     null));
-    ETLStage source = new ETLStage("source",
-                                   new ETLPlugin("KVTable", BatchSource.PLUGIN_TYPE,
-                                                 ImmutableMap.of("name", "hdfsTestSource"), null));
-    ETLStage sink = new ETLStage("sink", new ETLPlugin("KVTable", BatchSink.PLUGIN_TYPE,
-                                                       ImmutableMap.of("name", "hdfsTestSink"), null));
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(source)
-      .addStage(sink)
       .addStage(action)
-      .addConnection(action.getName(), source.getName())
-      .addConnection(source.getName(), sink.getName())
       .build();
 
     ApplicationManager appManager = deployETL(etlConfig, "hdfsDeleteSingleFileNoRegexActionTest");
@@ -270,23 +223,14 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
     Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/singleDir/test2.txt")));
 
     ETLStage action = new ETLStage(
-      "HDFSDelete",
-      new ETLPlugin("HDFSDelete", Action.PLUGIN_TYPE,
+      "FileDelete",
+      new ETLPlugin("FileDelete", Action.PLUGIN_TYPE,
                     ImmutableMap.of("path", outputDir.toUri().toString() + "/singleDir/test.txt",
                                     "fileRegex", ".*\\.txt",
                                     "continueOnError", "false"),
                     null));
-    ETLStage source = new ETLStage("source",
-                                   new ETLPlugin("KVTable", BatchSource.PLUGIN_TYPE,
-                                                 ImmutableMap.of("name", "hdfsTestSource"), null));
-    ETLStage sink = new ETLStage("sink", new ETLPlugin("KVTable", BatchSink.PLUGIN_TYPE,
-                                                       ImmutableMap.of("name", "hdfsTestSink"), null));
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(source)
-      .addStage(sink)
       .addStage(action)
-      .addConnection(action.getName(), source.getName())
-      .addConnection(source.getName(), sink.getName())
       .build();
 
     ApplicationManager appManager = deployETL(etlConfig, "hdfsDeleteSingleFileActionTest");
@@ -310,22 +254,13 @@ public class HDFSActionTestRun extends ETLBatchTestBase {
     Assert.assertTrue(fileSystem.exists(new Path(outputDir.toUri().toString() + "/dir1/source/dir2/test2.txt")));
 
     ETLStage action = new ETLStage(
-      "HDFSDelete",
-      new ETLPlugin("HDFSDelete", Action.PLUGIN_TYPE,
+      "FileDelete",
+      new ETLPlugin("FileDelete", Action.PLUGIN_TYPE,
                     ImmutableMap.of("path", outputDir.toUri().toString() + "/dir1/source",
                                     "continueOnError", "false"),
                     null));
-    ETLStage source = new ETLStage("source",
-                                   new ETLPlugin("KVTable", BatchSource.PLUGIN_TYPE,
-                                                 ImmutableMap.of("name", "hdfsTestSource"), null));
-    ETLStage sink = new ETLStage("sink", new ETLPlugin("KVTable", BatchSink.PLUGIN_TYPE,
-                                                       ImmutableMap.of("name", "hdfsTestSink"), null));
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
-      .addStage(source)
-      .addStage(sink)
       .addStage(action)
-      .addConnection(action.getName(), source.getName())
-      .addConnection(source.getName(), sink.getName())
       .build();
 
     ApplicationManager appManager = deployETL(etlConfig, "hdfsDeleteDirectoryActionTest");

@@ -1,19 +1,19 @@
-# HDFS Delete Action (Deprecated. Use File Delete instead.)
+# File Delete Action
 
 
 Description
 -----------
-Deletes a file or files within an HDFS cluster.
+Deletes a file or files.
 
 
 Use Case
 --------
-This action can be used to remove a file or files in an HDFS cluster.
+This action can be used to remove a file or files.
 
 
 Properties
 ----------
-**path:** The full HDFS path of the file or files that need to be deleted. If the path points to a file, 
+**path:** The full path of the file or files that need to be deleted. If the path points to a file,
 the file will be removed. If the path points to a directory with no regex specified, the directory and all of 
 its contents will be removed. If a regex is specified, only the files and directories matching that regex
 will be removed.
@@ -29,9 +29,9 @@ Example
 This example deletes all files ending in `.txt` from `/source/path`:
 
     {
-        "name": "HDFSDelete",
+        "name": "FileDelete",
         "plugin": {
-            "name": "HDFSDelete",
+            "name": "FileDelete",
             "type": "action",
             "artifact": {
                 "name": "core-plugins",

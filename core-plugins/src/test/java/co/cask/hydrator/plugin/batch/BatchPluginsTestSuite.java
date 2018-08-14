@@ -37,7 +37,7 @@ import org.junit.runners.Suite;
 // TODO: CDAP-12368
 //  ETLFTPTestRun.class,
 //  EmailActionTestRun.class,
-//  HDFSActionTestRun.class
+//  FileActionTestRun.class
 })
 public class BatchPluginsTestSuite extends ETLBatchTestBase {
 }
