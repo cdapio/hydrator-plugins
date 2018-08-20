@@ -1,26 +1,26 @@
-# HDFS Move Action (Deprecated. Use File Move instead.)
+# File Move Action
 
 
 Description
 -----------
-Moves a file or files within an HDFS cluster.
+Moves a file or files.
 
 
 Use Case
 --------
-This action can be used when a file or files need to be moved to a new location in an HDFS cluster, 
-often required when archiving files.
+This action can be used when a file or files need to be moved to a new location in a file system,
+often required when archiving files. The source and destination must be on the same file system.
 
 
 Properties
 ----------
-**sourcePath:** The full HDFS path of the file or directory that is to be moved. In the case of a directory, if
+**sourcePath:** The full path of the file or directory that is to be moved. In the case of a directory, if
 fileRegex is set, then only files in the source directory matching the wildcard regex will be moved.
 Otherwise, all files in the directory will be moved. For example: `hdfs://hostname/tmp`.
 
-**destPath:** The valid, full HDFS destination path in the same cluster where the file or files are to be moved.
+**destPath:** The valid, full destination path in the same cluster where the file or files are to be moved.
 If a directory is specified with a file sourcePath, the file will be put into that directory. If sourcePath is
-a directory, it is assumed that destPath is also a directory. HDFSAction will not catch this inconsistency.
+a directory, it is assumed that destPath is also a directory.
 
 **fileRegex:** Wildcard regular expression to filter the files in the source directory that will be moved.
 
@@ -33,9 +33,9 @@ Example
 This example moves a file from `/source/path` to `/dest/path`:
 
     {
-        "name": "HDFSMove",
+        "name": "FileMove",
         "plugin": {
-            "name": "HDFSMove",
+            "name": "FileMove",
             "type": "action",
             "artifact": {
                 "name": "core-plugins",

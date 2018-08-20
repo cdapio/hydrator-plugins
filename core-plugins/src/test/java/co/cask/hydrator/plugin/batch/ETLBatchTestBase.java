@@ -21,11 +21,11 @@ import co.cask.cdap.api.artifact.ArtifactSummary;
 import co.cask.cdap.api.artifact.ArtifactVersion;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
+import co.cask.cdap.common.utils.Tasks;
 import co.cask.cdap.datapipeline.DataPipelineApp;
 import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
-import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.ArtifactId;
@@ -40,6 +40,7 @@ import co.cask.hydrator.plugin.batch.aggregator.DedupAggregator;
 import co.cask.hydrator.plugin.batch.aggregator.GroupByAggregator;
 import co.cask.hydrator.plugin.batch.joiner.Joiner;
 import co.cask.hydrator.plugin.batch.sink.BatchCubeSink;
+import co.cask.hydrator.plugin.batch.sink.FileSink;
 import co.cask.hydrator.plugin.batch.sink.KVTableSink;
 import co.cask.hydrator.plugin.batch.sink.SnapshotFileBatchAvroSink;
 import co.cask.hydrator.plugin.batch.sink.SnapshotFileBatchParquetSink;
@@ -145,7 +146,8 @@ public class ETLBatchTestBase extends HydratorTestBase {
                       EmailAction.class,
                       SSHAction.class,
                       TMSAlertPublisher.class,
-                      ErrorCollector.class);
+                      ErrorCollector.class,
+                      FileSink.class);
   }
 
   protected List<GenericRecord> readOutput(TimePartitionedFileSet fileSet, Schema schema) throws IOException {
@@ -214,8 +216,10 @@ public class ETLBatchTestBase extends HydratorTestBase {
   protected WorkflowManager runETLOnce(ApplicationManager appManager, Map<String, String> arguments)
     throws TimeoutException, InterruptedException, ExecutionException {
     final WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    int numRuns = workflowManager.getHistory().size();
     workflowManager.start(arguments);
-    workflowManager.waitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
+    Tasks.waitFor(numRuns + 1, () -> workflowManager.getHistory().size(), 20, TimeUnit.SECONDS);
+    workflowManager.waitForStopped(5, TimeUnit.MINUTES);
     return workflowManager;
   }
 }
