@@ -220,6 +220,9 @@ public class FileSink extends ReferenceBatchSink<StructuredRecord, Object, Objec
 
     @Nullable
     private Schema getSchema(@Nullable Schema inputSchema) {
+      if (containsMacro("schema")) {
+        return null;
+      }
       if (schema == null) {
         return inputSchema;
       }
@@ -244,10 +247,12 @@ public class FileSink extends ReferenceBatchSink<StructuredRecord, Object, Objec
                                                          format));
       }
       getFSProperties();
-      Schema schema = getSchema(inputSchema);
-      if ((isAvro() || isParquet()) && schema == null) {
-        throw new IllegalArgumentException(
-          String.format("Format '%s' cannot be used without a schema. Please set the schema property.", format));
+      if (!containsMacro("schema")) {
+        Schema schema = getSchema(inputSchema);
+        if ((isAvro() || isParquet()) && schema == null) {
+          throw new IllegalArgumentException(
+            String.format("Format '%s' cannot be used without a schema. Please set the schema property.", format));
+        }
       }
     }
 

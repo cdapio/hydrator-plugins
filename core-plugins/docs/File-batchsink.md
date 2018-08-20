@@ -40,7 +40,7 @@ to the ``/etc/accesslogs/YYYY-MM-dd-HH-mm`` path. For example if the run was sch
 run midnight on new years day 2016, the pipeline would write to ``/etc/accesslogs/2016-01-01-00-00``. 
 
     {
-        "name": "HDFS",
+        "name": "File",
         "type": "batchsink",
         "properties": {
             "path": "hdfs://mycluster.net:8020/etl/accesslogs",

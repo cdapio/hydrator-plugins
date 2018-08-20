@@ -141,7 +141,8 @@ public class FileSinkTestRun extends ETLBatchTestBase {
     File outputDir = new File(baseDir, "out");
     Map<String, String> properties = ImmutableMap.of("path", outputDir.getAbsolutePath(),
                                                      "referenceName", format + "Files",
-                                                     "format", format);
+                                                     "format", format,
+                                                     "schema", "${schema}");
 
     ETLBatchConfig conf = ETLBatchConfig.builder("* * * * *")
       .addStage(new ETLStage("source", MockSource.getPlugin(inputName, SCHEMA)))
@@ -158,7 +159,9 @@ public class FileSinkTestRun extends ETLBatchTestBase {
     input.add(StructuredRecord.builder(SCHEMA).set("i", 2).set("s", "ghi").build());
     MockSource.writeInput(inputManager, input);
 
-    runETLOnce(appManager);
+    Map<String, String> arguments = new HashMap<>();
+    arguments.put("schema", SCHEMA.toString());
+    runETLOnce(appManager, arguments);
     return outputDir;
   }
 }
