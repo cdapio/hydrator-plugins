@@ -21,18 +21,26 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.DatasetManagementException;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Table;
+import co.cask.cdap.api.lineage.field.EndPoint;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
+import co.cask.cdap.etl.api.batch.BatchSourceContext;
+import co.cask.cdap.etl.api.lineage.field.FieldOperation;
+import co.cask.cdap.etl.api.lineage.field.FieldReadOperation;
 import co.cask.hydrator.common.RowRecordTransformer;
 import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.common.TableSourceConfig;
 import com.google.common.collect.Maps;
 
+import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * CDAP Table Dataset Batch Source.
@@ -70,6 +78,28 @@ public class TableSource extends BatchReadableSource<byte[], Row, StructuredReco
     Schema schema = tableConfig.getSchema();
     if (schema != null) {
       pipelineConfigurer.getStageConfigurer().setOutputSchema(schema);
+    }
+  }
+
+
+  @Override
+  public void prepareRun(BatchSourceContext context) throws DatasetManagementException {
+    super.prepareRun(context);
+    String schemaString = tableConfig.getSchemaStr();
+    if (schemaString != null) {
+      try {
+        Schema schema = Schema.parseJson(schemaString);
+        if (schema.getFields() != null) {
+          FieldOperation operation =
+            new FieldReadOperation("Read", "Read from CDAP Table",
+                                   EndPoint.of(context.getNamespace(), tableConfig.getName()),
+                                   schema.getFields().stream().map(Schema.Field::getName)
+                                      .collect(Collectors.toList()));
+          context.record(Collections.singletonList(operation));
+        }
+      } catch (IOException e) {
+        throw new IllegalStateException("Failed to parse schema.", e);
+      }
     }
   }
 
