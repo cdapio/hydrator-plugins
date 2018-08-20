@@ -20,6 +20,7 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.annotation.Requirements;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
@@ -41,6 +42,7 @@ import javax.annotation.Nullable;
 @Plugin(type = "batchsink")
 @Name("SnapshotAvro")
 @Description("Sink for a SnapshotFileSet that writes data in Avro format.")
+@Requirements(Requirements.TEPHRA_TX)
 public class SnapshotFileBatchAvroSink extends SnapshotFileBatchSink<AvroKey<GenericRecord>, NullWritable> {
   private StructuredToAvroTransformer recordTransformer;
   private final SnapshotAvroConfig config;

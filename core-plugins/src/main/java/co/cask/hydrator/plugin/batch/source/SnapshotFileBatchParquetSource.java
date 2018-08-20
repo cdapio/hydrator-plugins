@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.batch.source;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.annotation.Requirements;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
@@ -41,6 +42,7 @@ import javax.annotation.Nullable;
 @Plugin(type = "batchsource")
 @Name("SnapshotParquet")
 @Description("Reads the most recent snapshot that was written to a SnapshotParquet sink.")
+@Requirements(Requirements.TEPHRA_TX)
 public class SnapshotFileBatchParquetSource extends SnapshotFileBatchSource<NullWritable, GenericRecord> {
   private final AvroToStructuredTransformer recordTransformer = new AvroToStructuredTransformer();
   private final SnapshotParquetConfig config;

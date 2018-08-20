@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.batch.sink;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.annotation.Requirements;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.cube.Cube;
@@ -54,6 +55,7 @@ import java.util.Map;
 @Plugin(type = "batchsink")
 @Name("Cube")
 @Description("CDAP Cube Dataset Batch Sink")
+@Requirements(Requirements.TEPHRA_TX)
 public class BatchCubeSink extends BatchWritableSink<StructuredRecord, byte[], CubeFact> {
   private final CubeSinkConfig config;
 

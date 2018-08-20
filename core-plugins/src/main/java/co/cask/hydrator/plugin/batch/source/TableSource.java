@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.batch.source;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.annotation.Requirements;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
@@ -39,6 +40,7 @@ import java.util.Map;
  */
 @Plugin(type = "batchsource")
 @Name("Table")
+@Requirements(Requirements.TEPHRA_TX)
 @Description("Reads the entire contents of a CDAP Table. Outputs one record for each row in the Table.")
 public class TableSource extends BatchReadableSource<byte[], Row, StructuredRecord> {
   private RowRecordTransformer rowRecordTransformer;

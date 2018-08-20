@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.batch.sink;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.annotation.Requirements;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
@@ -38,6 +39,7 @@ import javax.annotation.Nullable;
 @Plugin(type = "batchsink")
 @Name("TPFSParquet")
 @Description("Sink for a TimePartitionedFileSet that writes data in Parquet format.")
+@Requirements(Requirements.TEPHRA_TX)
 public class TimePartitionedFileSetDatasetParquetSink extends TimePartitionedFileSetSink<Void, GenericRecord> {
 
   private StructuredToAvroTransformer recordTransformer;

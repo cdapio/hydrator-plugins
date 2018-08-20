@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.batch.sink;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.annotation.Requirements;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.DatasetManagementException;
@@ -52,6 +53,7 @@ import java.util.stream.Collectors;
 @Name("Table")
 @Description("Writes records to a Table with one record field mapping to the Table rowkey," +
   " and all other record fields mapping to Table columns.")
+@Requirements(Requirements.TEPHRA_TX)
 public class TableSink extends BatchWritableSink<StructuredRecord, byte[], Put> {
 
   private final TableSinkConfig tableSinkConfig;

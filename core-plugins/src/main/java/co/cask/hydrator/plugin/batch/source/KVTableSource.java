@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.batch.source;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.annotation.Requirements;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
@@ -38,6 +39,7 @@ import java.util.Map;
 @Name("KVTable")
 @Description("Reads the entire contents of a KeyValueTable. Outputs records with a 'key' field and a 'value' field. " +
   "Both fields are of type bytes.")
+@Requirements(Requirements.TEPHRA_TX)
 public class KVTableSource extends BatchReadableSource<byte[], byte[], StructuredRecord> {
   private static final Schema SCHEMA = Schema.recordOf(
     "keyValue",
