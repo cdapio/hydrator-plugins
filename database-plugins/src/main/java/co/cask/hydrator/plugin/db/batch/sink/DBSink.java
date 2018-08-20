@@ -42,15 +42,12 @@ import co.cask.hydrator.plugin.db.batch.TransactionIsolationLevel;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapred.lib.db.DBConfiguration;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
@@ -61,7 +58,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.TreeMap;
 import javax.annotation.Nullable;
 
@@ -218,7 +214,6 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
       "and this setting is set to true. For drivers like that, this should be set to TRANSACTION_NONE.")
     @Macro
     public String transactionIsolationLevel;
-
   }
 
   private static class DBOutputFormatProvider implements OutputFormatProvider {

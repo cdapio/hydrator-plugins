@@ -42,6 +42,11 @@ import java.nio.ByteBuffer;
 import java.sql.Date;
 import java.sql.Time;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -152,15 +157,14 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     // Verify time columns
     java.util.Date date = new java.util.Date(CURRENT_TS);
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-    long expectedDateTimestamp = Date.valueOf(sdf.format(date)).getTime();
+    LocalDate expectedDate = Date.valueOf(sdf.format(date)).toLocalDate();
     sdf = new SimpleDateFormat("H:mm:ss");
-    long expectedTimeTimestamp = Time.valueOf(sdf.format(date)).getTime();
-    Assert.assertEquals(expectedDateTimestamp, (long) row1.get("DATE_COL"));
-    Assert.assertEquals(expectedDateTimestamp, (long) row2.get("DATE_COL"));
-    Assert.assertEquals(expectedTimeTimestamp, (long) row1.get("TIME_COL"));
-    Assert.assertEquals(expectedTimeTimestamp, (long) row2.get("TIME_COL"));
-    Assert.assertEquals(CURRENT_TS, (long) row1.get("TIMESTAMP_COL"));
-    Assert.assertEquals(CURRENT_TS, (long) row2.get("TIMESTAMP_COL"));
+    LocalTime expectedTime = Time.valueOf(sdf.format(date)).toLocalTime();
+    ZonedDateTime expectedTs = date.toInstant().atZone(ZoneId.ofOffset("UTC", ZoneOffset.UTC));
+    Assert.assertEquals(expectedDate, row1.getDate("DATE_COL"));
+    Assert.assertEquals(expectedTime, row1.getTime("TIME_COL"));
+    Assert.assertEquals(expectedTs, row1.getTimestamp("TIMESTAMP_COL", ZoneId.ofOffset("UTC", ZoneOffset.UTC)));
+
     // verify binary columns
     Assert.assertEquals("user1", Bytes.toString(((ByteBuffer) row1.get("BINARY_COL")).array(), 0, 5));
     Assert.assertEquals("user2", Bytes.toString(((ByteBuffer) row2.get("BINARY_COL")).array(), 0, 5));
@@ -347,7 +351,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
       .build();
     ApplicationId appId = NamespaceId.DEFAULT.app("dbSourceNonExistingTest");
     assertRuntimeFailure(appId, etlConfig, "ETL Application with DB Source should have failed because of a " +
-      "non-existent source table.");
+      "non-existent source table.", 1);
 
     // Bad connection
     String badConnection = String.format("jdbc:hsqldb:hsql://localhost/%sWRONG", getDatabase());
@@ -370,6 +374,6 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
       .addConnection(sourceBadConn.getName(), sink.getName())
       .build();
     assertRuntimeFailure(appId, etlConfig, "ETL Application with DB Source should have failed because of a " +
-      "non-existent source database.");
+      "non-existent source database.", 2);
   }
 }

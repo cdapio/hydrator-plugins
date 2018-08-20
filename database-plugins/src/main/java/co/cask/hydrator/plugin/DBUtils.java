@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2018 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -104,7 +104,7 @@ public final class DBUtils {
    * Given the result set, get the metadata of the result set and return
    * list of {@link co.cask.cdap.api.data.schema.Schema.Field},
    * where name of the field is same as column name and type of the field is obtained using
-   * {@link DBUtils#getType(int, int, int)}
+   * {@link DBUtils#getSchema(int, int, int)}
    *
    * @param resultSet result set of executed query
    * @param schemaStr schema string to override resultant schema
@@ -150,7 +150,7 @@ public final class DBUtils {
    * Given the result set, get the metadata of the result set and return
    * list of {@link co.cask.cdap.api.data.schema.Schema.Field},
    * where name of the field is same as column name and type of the field is obtained using
-   * {@link DBUtils#getType(int, int, int)}
+   * {@link DBUtils#getSchema(int, int, int)}
    *
    * @param resultSet result set of executed query
    * @return list of schema fields
@@ -165,7 +165,7 @@ public final class DBUtils {
       int columnSqlType = metadata.getColumnType(i);
       int columnSqlPrecision = metadata.getPrecision(i); // total number of digits
       int columnSqlScale = metadata.getScale(i); // digits after the decimal point
-      Schema columnSchema = Schema.of(getType(columnSqlType, columnSqlPrecision, columnSqlScale));
+      Schema columnSchema = getSchema(columnSqlType, columnSqlPrecision, columnSqlScale);
       if (ResultSetMetaData.columnNullable == metadata.isNullable(i)) {
         columnSchema = Schema.nullableOf(columnSchema);
       }
@@ -176,7 +176,7 @@ public final class DBUtils {
   }
 
   // given a sql type return schema type
-  private static Schema.Type getType(int sqlType, int precision, int scale) throws SQLException {
+  private static Schema getSchema(int sqlType, int precision, int scale) throws SQLException {
     // Type.STRING covers sql types - VARCHAR,CHAR,CLOB,LONGNVARCHAR,LONGVARCHAR,NCHAR,NCLOB,NVARCHAR
     Schema.Type type = Schema.Type.STRING;
     switch (sqlType) {
@@ -220,10 +220,11 @@ public final class DBUtils {
         break;
 
       case Types.DATE:
+        return Schema.of(Schema.LogicalType.DATE);
       case Types.TIME:
+        return Schema.of(Schema.LogicalType.TIME_MICROS);
       case Types.TIMESTAMP:
-        type = Schema.Type.LONG;
-        break;
+        return Schema.of(Schema.LogicalType.TIMESTAMP_MICROS);
 
       case Types.BINARY:
       case Types.VARBINARY:
@@ -243,7 +244,7 @@ public final class DBUtils {
         throw new SQLException(new UnsupportedTypeException("Unsupported SQL Type: " + sqlType));
     }
 
-    return type;
+    return Schema.of(type);
   }
 
   @Nullable
@@ -268,11 +269,11 @@ public final class DBUtils {
             return decimal.intValue();
           }
         case Types.DATE:
-          return resultSet.getDate(fieldName).getTime();
+          return resultSet.getDate(fieldName);
         case Types.TIME:
-          return resultSet.getTime(fieldName).getTime();
+          return resultSet.getTime(fieldName);
         case Types.TIMESTAMP:
-          return resultSet.getTimestamp(fieldName).getTime();
+          return resultSet.getTimestamp(fieldName);
         case Types.ROWID:
           return resultSet.getString(fieldName);
         case Types.BLOB:
