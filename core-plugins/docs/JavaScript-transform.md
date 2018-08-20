@@ -36,7 +36,7 @@ Consider the following example:
             return;
         }
 
-        var threshold = context.getArguments.get('priceThreshold');
+        var threshold = context.getArguments().get('priceThreshold');
         if (input.price > threshold) {
             emitter.emitAlert({
                 'price': '' + input.price
