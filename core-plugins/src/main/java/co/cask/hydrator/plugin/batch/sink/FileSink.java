@@ -80,13 +80,13 @@ public class FileSink extends ReferenceBatchSink<StructuredRecord, Object, Objec
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
-    config.validate();
+    config.validate(pipelineConfigurer.getStageConfigurer().getInputSchema());
   }
 
   @Override
   public void prepareRun(BatchSinkContext context) throws IOException {
     // if user provided macro, need to still validate
-    config.validate();
+    config.validate(context.getInputSchema());
     Job job = JobUtils.createInstance();
     Configuration hConf = job.getConfiguration();
     hConf.set(FileOutputFormat.OUTDIR, config.getOutputDir(context.getLogicalStartTime()));
@@ -94,10 +94,7 @@ public class FileSink extends ReferenceBatchSink<StructuredRecord, Object, Objec
       hConf.set(entry.getKey(), entry.getValue());
     }
 
-    Schema schema = config.getSchema();
-    if (schema == null) {
-      schema = context.getInputSchema();
-    }
+    Schema schema = config.getSchema(context.getInputSchema());
 
     if ("text".equals(config.format)) {
       context.addOutput(Output.of(config.referenceName,
@@ -126,10 +123,8 @@ public class FileSink extends ReferenceBatchSink<StructuredRecord, Object, Objec
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    String schemaStr = config.schema;
-    if (schemaStr == null && context.getInputSchema() != null) {
-      schemaStr = context.getInputSchema().toString();
-    }
+    Schema schema = config.getSchema(context.getInputSchema());
+    String schemaStr = schema == null ? null : schema.toString();
 
     if ("avro".equalsIgnoreCase(config.format)) {
       StructuredToAvroTransformer avroTransformer = new StructuredToAvroTransformer(schemaStr);
@@ -175,6 +170,9 @@ public class FileSink extends ReferenceBatchSink<StructuredRecord, Object, Objec
   public static class Conf extends ReferencePluginConfig {
     private static final Gson GSON = new Gson();
     private static final Type MAP_TYPE = new TypeToken<Map<String, String>>() { }.getType();
+    private static final String TEXT = "text";
+    private static final String AVRO = "avro";
+    private static final String PARQUET = "parquet";
 
     @Macro
     @Description("Destination path prefix. For example, 'hdfs://mycluster.net:8020/output'")
@@ -221,9 +219,9 @@ public class FileSink extends ReferenceBatchSink<StructuredRecord, Object, Objec
     }
 
     @Nullable
-    private Schema getSchema() {
+    private Schema getSchema(@Nullable Schema inputSchema) {
       if (schema == null) {
-        return null;
+        return inputSchema;
       }
       try {
         return Schema.parseJson(schema);
@@ -232,7 +230,7 @@ public class FileSink extends ReferenceBatchSink<StructuredRecord, Object, Objec
       }
     }
 
-    private void validate() {
+    private void validate(@Nullable Schema inputSchema) {
       // if macro provided, timeSuffix will be null at configure time
       if (!Strings.isNullOrEmpty(suffix)) {
         new SimpleDateFormat(suffix);
@@ -241,12 +239,28 @@ public class FileSink extends ReferenceBatchSink<StructuredRecord, Object, Objec
         // Try to parse the JSON and propagate the error
         new Gson().fromJson(fileSystemProperties, new TypeToken<Map<String, String>>() { }.getType());
       }
-      if (!"text".equalsIgnoreCase(format) && !"avro".equalsIgnoreCase(format) && !"parquet".equalsIgnoreCase(format)) {
+      if (!isText() && !isAvro() && !isParquet()) {
         throw new IllegalArgumentException(String.format("Invalid format '%s. Must be 'text', 'avro', or 'parquet'.",
                                                          format));
       }
       getFSProperties();
-      getSchema();
+      Schema schema = getSchema(inputSchema);
+      if ((isAvro() || isParquet()) && schema == null) {
+        throw new IllegalArgumentException(
+          String.format("Format '%s' cannot be used without a schema. Please set the schema property.", format));
+      }
+    }
+
+    private boolean isAvro() {
+      return AVRO.equalsIgnoreCase(format);
+    }
+
+    private boolean isParquet() {
+      return PARQUET.equalsIgnoreCase(format);
+    }
+
+    private boolean isText() {
+      return TEXT.equalsIgnoreCase(format);
     }
 
     private Map<String, String> getFSProperties() {

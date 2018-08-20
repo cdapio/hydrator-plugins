@@ -8,8 +8,8 @@ Moves a file or files.
 
 Use Case
 --------
-This action can be used when a file or files need to be moved to a new location in an HDFS cluster, 
-often required when archiving files.
+This action can be used when a file or files need to be moved to a new location in a file system,
+often required when archiving files. The source and destination must be on the same file system.
 
 
 Properties

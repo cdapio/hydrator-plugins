@@ -9,6 +9,8 @@ For the text format, each record is written out as delimited text.
 Non-string fields will be converted to strings using their ``toString()`` Java method,
 so fields should be limited to the string, long, int, double, float, and boolean types.
 
+All types are supported when using the avro or parquet format.
+
 
 Properties
 ----------
@@ -25,6 +27,11 @@ If not specified, no suffix is used.
 
 **jobProperties:** Advanced feature to specify any additional properties that should be used with the sink,
 specified as a JSON object of string to string. These properties are set on the job at runtime. (Macro-enabled)
+
+**format:** The format to write in. Must be 'text', 'avro', or 'parquet'. Defaults to 'text'. (Macro-enabled)
+
+**schema:** The schema to use when writing data in 'avro' or 'parquet' format. Defaults to the input
+schema. (Macro-enabled)
 
 Example
 -------
