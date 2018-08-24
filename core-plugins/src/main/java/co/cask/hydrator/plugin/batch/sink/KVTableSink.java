@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.batch.sink;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.annotation.Requirements;
 import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
@@ -42,6 +43,7 @@ import javax.annotation.Nullable;
 @Plugin(type = "batchsink")
 @Name("KVTable")
 @Description("Writes records to a KeyValueTable, using configurable fields from input records as the key and value.")
+@Requirements(Requirements.TEPHRA_TX)
 public class KVTableSink extends BatchWritableSink<StructuredRecord, byte[], byte[]> {
 
   private static final String KEY_FIELD_DESC = "The name of the field to use as the key. Defaults to 'key'.";

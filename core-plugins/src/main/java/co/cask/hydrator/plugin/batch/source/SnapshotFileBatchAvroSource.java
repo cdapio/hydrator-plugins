@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.batch.source;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.annotation.Requirements;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
@@ -41,6 +42,7 @@ import javax.annotation.Nullable;
 @Plugin(type = "batchsource")
 @Name("SnapshotAvro")
 @Description("Reads the most recent snapshot that was written to a SnapshotAvro sink.")
+@Requirements(Requirements.TEPHRA_TX)
 public class SnapshotFileBatchAvroSource extends SnapshotFileBatchSource<AvroKey<GenericRecord>, NullWritable> {
   private final AvroToStructuredTransformer recordTransformer = new AvroToStructuredTransformer();
   private final SnapshotAvroConfig config;

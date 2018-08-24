@@ -19,6 +19,7 @@ package co.cask.hydrator.plugin.batch.source;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.annotation.Requirements;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.DatasetManagementException;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
@@ -50,6 +51,7 @@ import java.util.stream.Collectors;
 @Plugin(type = "batchsource")
 @Name("TPFSAvro")
 @Description("Reads from a TimePartitionedFileSet whose data is in Avro format.")
+@Requirements(Requirements.TEPHRA_TX)
 public class TimePartitionedFileSetDatasetAvroSource extends
   TimePartitionedFileSetSource<AvroKey<GenericRecord>, NullWritable> {
   private final TPFSAvroConfig tpfsAvroConfig;
