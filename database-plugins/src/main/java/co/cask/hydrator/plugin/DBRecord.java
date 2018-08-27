@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2018 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -37,8 +37,10 @@ import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
-import javax.annotation.Nullable;
 import javax.sql.rowset.serial.SerialBlob;
 
 /**
@@ -49,7 +51,6 @@ import javax.sql.rowset.serial.SerialBlob;
  * @see DBWritable DBWritable
  */
 public class DBRecord implements Writable, DBWritable, Configurable {
-
   private StructuredRecord record;
   private Configuration conf;
 
@@ -103,20 +104,31 @@ public class DBRecord implements Writable, DBWritable, Configurable {
       int sqlType = metadata.getColumnType(i + 1);
       int sqlPrecision = metadata.getPrecision(i + 1);
       int sqlScale = metadata.getScale(i + 1);
-      recordBuilder.set(field.getName(),
-                        DBUtils.transformValue(sqlType, sqlPrecision, sqlScale, resultSet, field.getName()));
+      setField(resultSet, recordBuilder, field, sqlType, sqlPrecision, sqlScale);
     }
     record = recordBuilder.build();
+  }
+
+  private void setField(ResultSet resultSet, StructuredRecord.Builder recordBuilder, Schema.Field field, int sqlType,
+                        int sqlPrecision, int sqlScale) throws SQLException {
+    Object o = DBUtils.transformValue(sqlType, sqlPrecision, sqlScale, resultSet, field.getName());
+    if (o instanceof Date) {
+      recordBuilder.setDate(field.getName(), ((Date) o).toLocalDate());
+    } else if (o instanceof Time) {
+      recordBuilder.setTime(field.getName(), ((Time) o).toLocalTime());
+    } else if (o instanceof Timestamp) {
+      Instant instant = ((Timestamp) o).toInstant();
+      recordBuilder.setTimestamp(field.getName(), instant.atZone(ZoneId.ofOffset("UTC", ZoneOffset.UTC)));
+    } else {
+      recordBuilder.set(field.getName(), o);
+    }
   }
 
   public void write(DataOutput out) throws IOException {
     Schema recordSchema = record.getSchema();
     List<Schema.Field> schemaFields = recordSchema.getFields();
     for (Schema.Field field : schemaFields) {
-      String fieldName = field.getName();
-      Schema.Type fieldType = getNonNullableType(field);
-      Object fieldValue = record.get(fieldName);
-      writeToDataOut(out, fieldType, fieldValue);
+      writeToDataOut(out, field);
     }
   }
 
@@ -129,32 +141,32 @@ public class DBRecord implements Writable, DBWritable, Configurable {
     Schema recordSchema = record.getSchema();
     List<Schema.Field> schemaFields = recordSchema.getFields();
     for (int i = 0; i < schemaFields.size(); i++) {
-      Schema.Field field = schemaFields.get(i);
-      String fieldName = field.getName();
-      Schema.Type fieldType = getNonNullableType(field);
-      Object fieldValue = record.get(fieldName);
-      writeToDB(stmt, fieldType, fieldValue, i);
+      writeToDB(stmt, schemaFields.get(i), i);
     }
   }
 
-  private Schema.Type getNonNullableType(Schema.Field field) {
-    Schema.Type type;
+  private Schema getNonNullableSchema(Schema.Field field) {
+    Schema schema = field.getSchema();
     if (field.getSchema().isNullable()) {
-      type = field.getSchema().getNonNullable().getType();
-    } else {
-      type = field.getSchema().getType();
+      schema = field.getSchema().getNonNullable();
     }
-    Preconditions.checkArgument(type.isSimpleType(),
+    Preconditions.checkArgument(schema.getType().isSimpleType(),
                                 "Only simple types are supported (boolean, int, long, float, double, string, bytes) " +
                                   "for writing a DBRecord, but found '%s' as the type for column '%s'. Please " +
-                                  "remove this column or transform it to a simple type.", type, field.getName());
-    return type;
+                                  "remove this column or transform it to a simple type.", schema.getType(),
+                                field.getName());
+    return schema;
   }
 
-  private void writeToDataOut(DataOutput out, Schema.Type fieldType, @Nullable Object fieldValue) throws IOException {
+  private void writeToDataOut(DataOutput out, Schema.Field field) throws IOException {
+    Schema fieldSchema = getNonNullableSchema(field);
+    Schema.Type fieldType = fieldSchema.getType();
+    Object fieldValue = record.get(field.getName());
+
     if (fieldValue == null) {
       return;
     }
+
     switch (fieldType) {
       case NULL:
         break;
@@ -188,13 +200,36 @@ public class DBRecord implements Writable, DBWritable, Configurable {
     }
   }
 
-  private void writeToDB(PreparedStatement stmt, Schema.Type fieldType, @Nullable Object fieldValue,
-                         int fieldIndex) throws SQLException {
+  private void writeToDB(PreparedStatement stmt, Schema.Field field, int fieldIndex) throws SQLException {
+    String fieldName = field.getName();
+    Schema fieldSchema = getNonNullableSchema(field);
+    Schema.Type fieldType = fieldSchema.getType();
+    Schema.LogicalType fieldLogicalType = fieldSchema.getLogicalType();
+    Object fieldValue = record.get(fieldName);
     int sqlIndex = fieldIndex + 1;
+
     if (fieldValue == null) {
       stmt.setNull(sqlIndex, columnTypes[fieldIndex]);
       return;
     }
+
+    if (fieldLogicalType != null) {
+      switch (fieldLogicalType) {
+        case DATE:
+          stmt.setDate(sqlIndex, Date.valueOf(record.getDate(fieldName)));
+          break;
+        case TIME_MILLIS:
+        case TIME_MICROS:
+          stmt.setTime(sqlIndex, Time.valueOf(record.getTime(fieldName)));
+          break;
+        case TIMESTAMP_MILLIS:
+        case TIMESTAMP_MICROS:
+          stmt.setTimestamp(sqlIndex, Timestamp.from(record.getTimestamp(fieldName).toInstant()));
+          break;
+      }
+      return;
+    }
+
     switch (fieldType) {
       case NULL:
         stmt.setNull(sqlIndex, columnTypes[fieldIndex]);
@@ -211,8 +246,7 @@ public class DBRecord implements Writable, DBWritable, Configurable {
         writeInt(stmt, fieldIndex, sqlIndex, fieldValue);
         break;
       case LONG:
-        // write date, timestamp or long appropriately
-        writeLong(stmt, fieldIndex, sqlIndex, fieldValue);
+        stmt.setLong(sqlIndex, (Long) fieldValue);
         break;
       case FLOAT:
         // both real and float are set with the same method on prepared statement
@@ -248,24 +282,6 @@ public class DBRecord implements Writable, DBWritable, Configurable {
       return;
     }
     stmt.setInt(sqlIndex, intValue);
-  }
-
-  private void writeLong(PreparedStatement stmt, int fieldIndex, int sqlIndex, Object fieldValue) throws SQLException {
-    Long longValue = (Long) fieldValue;
-    switch (columnTypes[fieldIndex]) {
-      case Types.DATE:
-        stmt.setDate(sqlIndex, new Date(longValue));
-        break;
-      case Types.TIME:
-        stmt.setTime(sqlIndex, new Time(longValue));
-        break;
-      case Types.TIMESTAMP:
-        stmt.setTimestamp(sqlIndex, new Timestamp(longValue));
-        break;
-      default:
-        stmt.setLong(sqlIndex, longValue);
-        break;
-    }
   }
 
   @Override

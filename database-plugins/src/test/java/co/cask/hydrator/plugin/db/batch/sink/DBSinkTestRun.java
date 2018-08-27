@@ -36,10 +36,16 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -78,6 +84,10 @@ public class DBSinkTestRun extends DatabasePluginTestBase {
       try (ResultSet resultSet = stmt.getResultSet()) {
         Assert.assertTrue(resultSet.next());
         users.add(resultSet.getString("NAME"));
+        Assert.assertEquals(new Date(CURRENT_TS).toString(), resultSet.getDate("DATE_COL").toString());
+        Assert.assertEquals(new Time(CURRENT_TS).toString(), resultSet.getTime("TIME_COL").toString());
+        Assert.assertEquals(new Timestamp(CURRENT_TS).toString(),
+                            resultSet.getTimestamp("TIMESTAMP_COL").toString());
         Assert.assertTrue(resultSet.next());
         users.add(resultSet.getString("NAME"));
         Assert.assertFalse(resultSet.next());
@@ -138,36 +148,37 @@ public class DBSinkTestRun extends DatabasePluginTestBase {
       Schema.Field.of("NUMERIC_COL", Schema.of(Schema.Type.DOUBLE)),
       Schema.Field.of("DECIMAL_COL", Schema.of(Schema.Type.DOUBLE)),
       Schema.Field.of("BIT_COL", Schema.of(Schema.Type.BOOLEAN)),
-      Schema.Field.of("DATE_COL", Schema.of(Schema.Type.LONG)),
-      Schema.Field.of("TIME_COL", Schema.of(Schema.Type.LONG)),
-      Schema.Field.of("TIMESTAMP_COL", Schema.of(Schema.Type.LONG)),
+      Schema.Field.of("DATE_COL", Schema.of(Schema.LogicalType.DATE)),
+      Schema.Field.of("TIME_COL", Schema.of(Schema.LogicalType.TIME_MICROS)),
+      Schema.Field.of("TIMESTAMP_COL", Schema.of(Schema.LogicalType.TIMESTAMP_MICROS)),
       Schema.Field.of("BINARY_COL", Schema.of(Schema.Type.BYTES)),
       Schema.Field.of("BLOB_COL", Schema.of(Schema.Type.BYTES)),
       Schema.Field.of("CLOB_COL", Schema.of(Schema.Type.STRING))
     );
     List<StructuredRecord> inputRecords = new ArrayList<>();
+    LocalDateTime localDateTime = new Timestamp(CURRENT_TS).toLocalDateTime();
     for (int i = 1; i <= 2; i++) {
       String name = "user" + i;
       inputRecords.add(StructuredRecord.builder(schema)
-        .set("ID", i)
-        .set("NAME", name)
-        .set("SCORE", 3.451f)
-        .set("GRADUATED", (i % 2 == 0))
-        .set("TINY", i + 1)
-        .set("SMALL", i + 2)
-        .set("BIG", 3456987L)
-        .set("FLOAT_COL", 3.456f)
-        .set("REAL_COL", 3.457f)
-        .set("NUMERIC_COL", 3.458d)
-        .set("DECIMAL_COL", 3.459d)
-        .set("BIT_COL", (i % 2 == 1))
-        .set("DATE_COL", CURRENT_TS)
-        .set("TIME_COL", CURRENT_TS)
-        .set("TIMESTAMP_COL", CURRENT_TS)
-        .set("BINARY_COL", name.getBytes(Charsets.UTF_8))
-        .set("BLOB_COL", name.getBytes(Charsets.UTF_8))
-        .set("CLOB_COL", CLOB_DATA)
-        .build());
+                         .set("ID", i)
+                         .set("NAME", name)
+                         .set("SCORE", 3.451f)
+                         .set("GRADUATED", (i % 2 == 0))
+                         .set("TINY", i + 1)
+                         .set("SMALL", i + 2)
+                         .set("BIG", 3456987L)
+                         .set("FLOAT_COL", 3.456f)
+                         .set("REAL_COL", 3.457f)
+                         .set("NUMERIC_COL", 3.458d)
+                         .set("DECIMAL_COL", 3.459d)
+                         .set("BIT_COL", (i % 2 == 1))
+                         .setDate("DATE_COL", localDateTime.toLocalDate())
+                         .setTime("TIME_COL", localDateTime.toLocalTime())
+                         .setTimestamp("TIMESTAMP_COL", localDateTime.atZone(ZoneId.ofOffset("UTC", ZoneOffset.UTC)))
+                         .set("BINARY_COL", name.getBytes(Charsets.UTF_8))
+                         .set("BLOB_COL", name.getBytes(Charsets.UTF_8))
+                         .set("CLOB_COL", CLOB_DATA)
+                         .build());
     }
     MockSource.writeInput(inputManager, inputRecords);
   }
