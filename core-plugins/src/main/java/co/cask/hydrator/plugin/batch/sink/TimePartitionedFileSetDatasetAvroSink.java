@@ -41,7 +41,7 @@ import javax.annotation.Nullable;
 @Plugin(type = BatchSink.PLUGIN_TYPE)
 @Name("TPFSAvro")
 @Description("Sink for a TimePartitionedFileSet that writes data in Avro format.")
-@Requirements(Requirements.TEPHRA_TX)
+@Requirements(datasetTypes = TimePartitionedFileSet.TYPE)
 public class TimePartitionedFileSetDatasetAvroSink extends
   TimePartitionedFileSetSink<AvroKey<GenericRecord>, NullWritable> {
   private StructuredToAvroTransformer recordTransformer;

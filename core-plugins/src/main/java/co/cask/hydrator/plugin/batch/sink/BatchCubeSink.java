@@ -55,7 +55,7 @@ import java.util.Map;
 @Plugin(type = "batchsink")
 @Name("Cube")
 @Description("CDAP Cube Dataset Batch Sink")
-@Requirements(Requirements.TEPHRA_TX)
+@Requirements(datasetTypes = Cube.TYPE)
 public class BatchCubeSink extends BatchWritableSink<StructuredRecord, byte[], CubeFact> {
   private final CubeSinkConfig config;
 

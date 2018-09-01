@@ -20,6 +20,7 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.annotation.Requirements;
 import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.FormatSpecification;
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -57,6 +58,7 @@ import javax.annotation.Nullable;
 @Plugin(type = "batchsource")
 @Name("Stream")
 @Description("Batch source for a stream.")
+@Requirements(datasetTypes = "stream")
 public class StreamBatchSource extends BatchSource<Object, Object, StructuredRecord> {
 
   private static final Logger LOG = LoggerFactory.getLogger(StreamBatchSource.class);

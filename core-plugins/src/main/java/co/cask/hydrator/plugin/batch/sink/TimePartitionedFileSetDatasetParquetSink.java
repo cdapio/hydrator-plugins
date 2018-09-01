@@ -39,7 +39,7 @@ import javax.annotation.Nullable;
 @Plugin(type = "batchsink")
 @Name("TPFSParquet")
 @Description("Sink for a TimePartitionedFileSet that writes data in Parquet format.")
-@Requirements(Requirements.TEPHRA_TX)
+@Requirements(datasetTypes = TimePartitionedFileSet.TYPE)
 public class TimePartitionedFileSetDatasetParquetSink extends TimePartitionedFileSetSink<Void, GenericRecord> {
 
   private StructuredToAvroTransformer recordTransformer;

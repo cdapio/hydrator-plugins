@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
 @Plugin(type = "batchsource")
 @Name("TPFSAvro")
 @Description("Reads from a TimePartitionedFileSet whose data is in Avro format.")
-@Requirements(Requirements.TEPHRA_TX)
+@Requirements(datasetTypes = TimePartitionedFileSet.TYPE)
 public class TimePartitionedFileSetDatasetAvroSource extends
   TimePartitionedFileSetSource<AvroKey<GenericRecord>, NullWritable> {
   private final TPFSAvroConfig tpfsAvroConfig;
