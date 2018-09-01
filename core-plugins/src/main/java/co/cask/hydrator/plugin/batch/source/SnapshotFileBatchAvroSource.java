@@ -23,6 +23,7 @@ import co.cask.cdap.api.annotation.Requirements;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
+import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.hydrator.plugin.common.AvroToStructuredTransformer;
@@ -42,7 +43,7 @@ import javax.annotation.Nullable;
 @Plugin(type = "batchsource")
 @Name("SnapshotAvro")
 @Description("Reads the most recent snapshot that was written to a SnapshotAvro sink.")
-@Requirements(Requirements.TEPHRA_TX)
+@Requirements(datasetTypes = PartitionedFileSet.TYPE)
 public class SnapshotFileBatchAvroSource extends SnapshotFileBatchSource<AvroKey<GenericRecord>, NullWritable> {
   private final AvroToStructuredTransformer recordTransformer = new AvroToStructuredTransformer();
   private final SnapshotAvroConfig config;

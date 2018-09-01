@@ -24,6 +24,7 @@ import co.cask.cdap.api.annotation.Requirements;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
+import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.hydrator.plugin.common.FileSetUtil;
@@ -42,7 +43,7 @@ import javax.annotation.Nullable;
 @Plugin(type = "batchsink")
 @Name("SnapshotAvro")
 @Description("Sink for a SnapshotFileSet that writes data in Avro format.")
-@Requirements(Requirements.TEPHRA_TX)
+@Requirements(datasetTypes = PartitionedFileSet.TYPE)
 public class SnapshotFileBatchAvroSink extends SnapshotFileBatchSink<AvroKey<GenericRecord>, NullWritable> {
   private StructuredToAvroTransformer recordTransformer;
   private final SnapshotAvroConfig config;

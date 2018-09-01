@@ -53,7 +53,7 @@ import java.util.stream.Collectors;
 @Name("Table")
 @Description("Writes records to a Table with one record field mapping to the Table rowkey," +
   " and all other record fields mapping to Table columns.")
-@Requirements(Requirements.TEPHRA_TX)
+@Requirements(datasetTypes = Table.TYPE)
 public class TableSink extends BatchWritableSink<StructuredRecord, byte[], Put> {
 
   private final TableSinkConfig tableSinkConfig;

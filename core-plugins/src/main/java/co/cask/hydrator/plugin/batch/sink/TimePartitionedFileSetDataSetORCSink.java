@@ -40,7 +40,7 @@ import javax.annotation.Nullable;
 @Plugin(type = BatchSink.PLUGIN_TYPE)
 @Name("TPFSOrc")
 @Description("Sink for a TimePartitionedFileSet that writes data in ORC format.")
-@Requirements(Requirements.TEPHRA_TX)
+@Requirements(datasetTypes = TimePartitionedFileSet.TYPE)
 public class TimePartitionedFileSetDataSetORCSink extends TimePartitionedFileSetSink<NullWritable, OrcStruct> {
   private static final String ORC_COMPRESS = "orc.compress";
   private static final String SNAPPY_CODEC = "SNAPPY";

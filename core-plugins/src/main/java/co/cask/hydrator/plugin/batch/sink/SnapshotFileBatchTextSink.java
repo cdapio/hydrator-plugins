@@ -24,6 +24,7 @@ import co.cask.cdap.api.annotation.Requirements;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
+import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
@@ -41,7 +42,7 @@ import javax.annotation.Nullable;
 @Plugin(type = BatchSink.PLUGIN_TYPE)
 @Name("SnapshotText")
 @Description("Sink for a SnapshotFileSet that writes data in Text format.")
-@Requirements(Requirements.TEPHRA_TX)
+@Requirements(datasetTypes = PartitionedFileSet.TYPE)
 public class SnapshotFileBatchTextSink extends SnapshotFileBatchSink<String, NullWritable> {
   private StructuredToTextTransformer recordTransformer;
   private SnapshotFileBatchTextSinkConfig config;

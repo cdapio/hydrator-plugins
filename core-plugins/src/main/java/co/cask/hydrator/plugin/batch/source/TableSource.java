@@ -40,7 +40,7 @@ import java.util.Map;
  */
 @Plugin(type = "batchsource")
 @Name("Table")
-@Requirements(Requirements.TEPHRA_TX)
+@Requirements(datasetTypes = Table.TYPE)
 @Description("Reads the entire contents of a CDAP Table. Outputs one record for each row in the Table.")
 public class TableSource extends BatchReadableSource<byte[], Row, StructuredRecord> {
   private RowRecordTransformer rowRecordTransformer;

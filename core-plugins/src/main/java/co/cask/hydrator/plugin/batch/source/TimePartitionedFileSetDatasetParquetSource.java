@@ -49,7 +49,7 @@ import java.util.stream.Collectors;
 @Plugin(type = "batchsource")
 @Name("TPFSParquet")
 @Description("Reads from a TimePartitionedFileSet whose data is in Parquet format.")
-@Requirements(Requirements.TEPHRA_TX)
+@Requirements(datasetTypes = TimePartitionedFileSet.TYPE)
 public class TimePartitionedFileSetDatasetParquetSource extends
   TimePartitionedFileSetSource<NullWritable, GenericRecord> {
 
