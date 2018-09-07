@@ -28,13 +28,13 @@ import co.cask.cdap.common.utils.Tasks;
 import co.cask.cdap.datapipeline.DataPipelineApp;
 import co.cask.cdap.datastreams.DataStreamsApp;
 import co.cask.cdap.datastreams.DataStreamsSparkLauncher;
-import co.cask.cdap.etl.api.batch.SparkCompute;
 import co.cask.cdap.etl.api.streaming.StreamingSource;
 import co.cask.cdap.etl.mock.batch.MockSink;
 import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.etl.proto.v2.DataStreamsConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
+import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.ArtifactId;
@@ -67,13 +67,11 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import javax.ws.rs.HttpMethod;
 
@@ -171,16 +169,13 @@ public class SparkPluginTest extends HydratorTestBase {
     final DataSetManager<Table> outputManager = getDataset("httpOutput");
     Tasks.waitFor(
       true,
-      new Callable<Boolean>() {
-        @Override
-        public Boolean call() throws Exception {
-          outputManager.flush();
-          Set<String> contents = new HashSet<>();
-          for (StructuredRecord record : MockSink.readOutput(outputManager)) {
-            contents.add((String) record.get("body"));
-          }
-          return contents.size() == 1 && contents.contains(content);
+      () -> {
+        outputManager.flush();
+        Set<String> contents = new HashSet<>();
+        for (StructuredRecord record : MockSink.readOutput(outputManager)) {
+          contents.add(record.get("body"));
         }
+        return contents.size() == 1 && contents.contains(content);
       },
       4,
       TimeUnit.MINUTES);
@@ -217,17 +212,10 @@ public class SparkPluginTest extends HydratorTestBase {
       .put("extensions", "txt,csv")
       .build();
 
-    Map<String, String> sparkComputeProperties = Collections.singletonMap(
-      "scalaCode", "def transform(rdd: RDD[StructuredRecord]) : RDD[StructuredRecord] = { rdd }"
-    );
-
     DataStreamsConfig pipelineCfg = DataStreamsConfig.builder()
       .addStage(new ETLStage("source", new ETLPlugin("File", StreamingSource.PLUGIN_TYPE, properties, null)))
-      .addStage(new ETLStage("sparkcompute", new ETLPlugin("ScalaSparkCompute",
-                                                           SparkCompute.PLUGIN_TYPE, sparkComputeProperties)))
       .addStage(new ETLStage("sink", MockSink.getPlugin("fileOutput")))
-      .addConnection("source", "sparkcompute")
-      .addConnection("sparkcompute", "sink")
+      .addConnection("source", "sink")
       .setBatchInterval("1s")
       .build();
 
@@ -238,27 +226,23 @@ public class SparkPluginTest extends HydratorTestBase {
 
     SparkManager sparkManager = appManager.getSparkManager(DataStreamsSparkLauncher.NAME);
     sparkManager.start();
-    sparkManager.waitForStatus(true, 10, 1);
+    sparkManager.waitForRun(ProgramRunStatus.RUNNING, 1, TimeUnit.MINUTES);
 
-    final Map<Long, String> expected = ImmutableMap.of(
+    Map<Long, String> expected = ImmutableMap.of(
       1L, "samuel jackson",
       2L, "dwayne johnson",
-      3L, "christopher walken"
-    );
+      3L, "christopher walken");
 
     final DataSetManager<Table> outputManager = getDataset("fileOutput");
     Tasks.waitFor(
       true,
-      new Callable<Boolean>() {
-        @Override
-        public Boolean call() throws Exception {
-          outputManager.flush();
-          Map<Long, String> actual = new HashMap<>();
-          for (StructuredRecord outputRecord : MockSink.readOutput(outputManager)) {
-            actual.put((Long) outputRecord.get("id"), outputRecord.get("first") + " " + outputRecord.get("last"));
-          }
-          return expected.equals(actual);
+      () -> {
+        outputManager.flush();
+        Map<Long, String> actual = new HashMap<>();
+        for (StructuredRecord outputRecord : MockSink.readOutput(outputManager)) {
+          actual.put(outputRecord.get("id"), outputRecord.get("first") + " " + outputRecord.get("last"));
         }
+        return expected.equals(actual);
       },
       4,
       TimeUnit.MINUTES);
@@ -268,10 +252,7 @@ public class SparkPluginTest extends HydratorTestBase {
 
     CharStreams.write("4,terry,crews\n5,rocky,balboa", Files.newWriterSupplier(input3, Charsets.UTF_8));
 
-    final Map<Long, String> expected2 = ImmutableMap.of(
-      4L, "terry crews",
-      5L, "rocky balboa"
-    );
+    Map<Long, String> expected2 = ImmutableMap.of(4L, "terry crews", 5L, "rocky balboa");
 
     Table outputTable = outputManager.get();
     Scanner scanner = outputTable.scan(null, null);
@@ -283,16 +264,13 @@ public class SparkPluginTest extends HydratorTestBase {
 
     Tasks.waitFor(
       true,
-      new Callable<Boolean>() {
-        @Override
-        public Boolean call() throws Exception {
-          outputManager.flush();
-          Map<Long, String> actual = new HashMap<>();
-          for (StructuredRecord outputRecord : MockSink.readOutput(outputManager)) {
-            actual.put((Long) outputRecord.get("id"), outputRecord.get("first") + " " + outputRecord.get("last"));
-          }
-          return expected2.equals(actual);
+      () -> {
+        outputManager.flush();
+        Map<Long, String> actual = new HashMap<>();
+        for (StructuredRecord outputRecord : MockSink.readOutput(outputManager)) {
+          actual.put(outputRecord.get("id"), outputRecord.get("first") + " " + outputRecord.get("last"));
         }
+        return expected2.equals(actual);
       },
       4,
       TimeUnit.MINUTES);
