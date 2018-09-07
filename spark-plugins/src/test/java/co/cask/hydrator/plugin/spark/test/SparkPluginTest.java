@@ -49,7 +49,6 @@ import co.cask.hydrator.common.http.HTTPPollConfig;
 import co.cask.hydrator.plugin.spark.FileStreamingSource;
 import co.cask.hydrator.plugin.spark.HTTPPollerSource;
 import co.cask.hydrator.plugin.spark.TwitterStreamingSource;
-import co.cask.hydrator.plugin.spark.dynamic.ScalaSparkCompute;
 import co.cask.hydrator.plugin.spark.mock.MockFeedHandler;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
@@ -117,7 +116,7 @@ public class SparkPluginTest extends HydratorTestBase {
     );
     addPluginArtifact(NamespaceId.DEFAULT.artifact("spark-plugins", "1.0.0"), parents,
                       TwitterStreamingSource.class, FileStreamingSource.class,
-                      HTTPPollerSource.class, HTTPPollConfig.class, ScalaSparkCompute.class);
+                      HTTPPollerSource.class, HTTPPollConfig.class);
 
     List<HttpHandler> handlers = new ArrayList<>();
     handlers.add(new MockFeedHandler());
