@@ -31,7 +31,7 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.cdap.etl.api.lineage.field.FieldOperation;
-import co.cask.cdap.etl.api.lineage.field.FieldWriteOperation;
+import co.cask.cdap.etl.api.lineage.field.FieldReadOperation;
 import co.cask.hydrator.plugin.common.AvroToStructuredTransformer;
 import co.cask.hydrator.plugin.common.FileSetUtil;
 import com.google.common.base.Preconditions;
@@ -110,9 +110,9 @@ public class TimePartitionedFileSetDatasetParquetSource extends
         co.cask.cdap.api.data.schema.Schema.parseJson(tpfsParquetConfig.schema);
       if (schema.getFields() != null) {
         FieldOperation operation =
-          new FieldWriteOperation("Read", "Read from TPFS Parquet dataset",
-                                  EndPoint.of(context.getNamespace(), tpfsParquetConfig.name),
-                                  schema.getFields().stream().map(co.cask.cdap.api.data.schema.Schema.Field::getName)
+          new FieldReadOperation("Read", "Read from TPFS Parquet dataset",
+                                 EndPoint.of(context.getNamespace(), tpfsParquetConfig.name),
+                                 schema.getFields().stream().map(co.cask.cdap.api.data.schema.Schema.Field::getName)
                                     .collect(Collectors.toList()));
         context.record(Collections.singletonList(operation));
       }
