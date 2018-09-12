@@ -27,12 +27,6 @@
   <artifactId>hive-plugins</artifactId>
   <modelVersion>4.0.0</modelVersion>
 
-  <properties>
-    <!-- properties for script build step that creates the config files for the artifacts -->
-    <!-- Explicitly overridden in this submodule so these plugins aren't made available to realtime pipelines -->
-    <app.parents>system:cdap-data-pipeline[5.1.0-SNAPSHOT,5.2.0-SNAPSHOT)</app.parents>
-  </properties>
-
   <repositories>
     <repository>
       <id>cloudera</id>
@@ -155,6 +149,15 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>co.cask</groupId>
+        <artifactId>cdap-maven-plugin</artifactId>
+        <configuration>
+          <cdapArtifacts>
+            <parent>system:cdap-data-pipeline[5.1.0-SNAPSHOT,6.0.0-SNAPSHOT)</parent>
+          </cdapArtifacts>
+        </configuration>
       </plugin>
     </plugins>
   </build>
