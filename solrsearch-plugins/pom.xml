@@ -121,6 +121,10 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>co.cask</groupId>
+        <artifactId>cdap-maven-plugin</artifactId>
+      </plugin>
     </plugins>
   </build>
 </project>
