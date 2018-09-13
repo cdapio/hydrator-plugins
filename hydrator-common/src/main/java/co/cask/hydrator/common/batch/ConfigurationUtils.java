@@ -15,12 +15,11 @@
  */
 package co.cask.hydrator.common.batch;
 
-import com.google.common.collect.MapDifference;
-import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Utility class for providing operations on the {@link Configuration}.
@@ -34,22 +33,21 @@ public final class ConfigurationUtils {
    * Get the {@link Map} of properties which are newly added or have updated in the configuration instance passed
    * to this method as a parameter. The modified configurations are compared with the default configurations
    * created using {@code new Configuation()}.
+   *
    * @param modifiedConf the updated configurations
    * @return the {@link Map} of properties which are newly added or have updated in the modifiedConf.
    */
   public static Map<String, String> getNonDefaultConfigurations(Configuration modifiedConf) {
-    MapDifference<String, String> mapDifference = Maps.difference(getConfigurationAsMap(new Configuration()),
-                                                                  getConfigurationAsMap(modifiedConf));
-    // new keys in the modified configurations
-    Map<String, String> newEntries = mapDifference.entriesOnlyOnRight();
-    // keys whose values got changed in the modified config
-    Map<String, MapDifference.ValueDifference<String>> stringValueDifferenceMap = mapDifference.entriesDiffering();
+    Map<String, String> defaultConf = getConfigurationAsMap(new Configuration());
     Map<String, String> result = new HashMap<>();
-    for (Map.Entry<String, MapDifference.ValueDifference<String>> stringValueDifferenceEntry :
-      stringValueDifferenceMap.entrySet()) {
-      result.put(stringValueDifferenceEntry.getKey(), stringValueDifferenceEntry.getValue().rightValue());
+    for (Map.Entry<String, String> modifiedEntry : modifiedConf) {
+      String key = modifiedEntry.getKey();
+      String modifiedVal = modifiedEntry.getValue();
+      String defaultVal = defaultConf.get(key);
+      if (!Objects.equals(modifiedVal, defaultVal)) {
+        result.put(key, modifiedVal);
+      }
     }
-    result.putAll(newEntries);
     return result;
   }
 

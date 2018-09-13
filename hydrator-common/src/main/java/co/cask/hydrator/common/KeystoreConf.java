@@ -19,7 +19,6 @@ package co.cask.hydrator.common;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.plugin.PluginConfig;
-import com.google.common.annotations.VisibleForTesting;
 
 import javax.annotation.Nullable;
 
@@ -60,7 +59,6 @@ public class KeystoreConf extends PluginConfig {
   public KeystoreConf() {
   }
 
-  @VisibleForTesting
   public KeystoreConf(String transformation, @Nullable String ivHex, String keystorePath, String keystorePassword,
                       String keystoreType, String keyAlias, String keyPassword) {
     this.transformation = transformation;

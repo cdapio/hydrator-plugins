@@ -19,8 +19,10 @@ package co.cask.hydrator.common.batch.action;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.batch.BatchActionContext;
-import com.google.common.base.Joiner;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
@@ -48,9 +50,9 @@ public class ConditionConfig extends PluginConfig {
     try {
       Condition.valueOf(runCondition.toUpperCase());
     } catch (IllegalArgumentException e) {
+      List<String> vals = Arrays.stream(Condition.values()).map(Condition::name).collect(Collectors.toList());
       throw new IllegalArgumentException(String.format(
-        "Invalid runCondition value '%s'.  Must be one of %s.",
-        runCondition, Joiner.on(',').join(Condition.values())));
+        "Invalid runCondition value '%s'.  Must be one of %s.", runCondition, String.join(",", vals)));
     }
   }
 

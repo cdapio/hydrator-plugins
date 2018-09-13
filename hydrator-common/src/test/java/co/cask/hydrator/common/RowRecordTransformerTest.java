@@ -21,11 +21,11 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Result;
 import co.cask.cdap.api.dataset.table.Row;
-import com.google.common.collect.Maps;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  */
@@ -64,7 +64,7 @@ public class RowRecordTransformerTest {
     );
 
     // can't use a hash map because we need to look up by byte[]
-    Map<byte[], byte[]> inputColumns = Maps.newTreeMap(Bytes.BYTES_COMPARATOR);
+    Map<byte[], byte[]> inputColumns = new TreeMap(Bytes.BYTES_COMPARATOR);
     inputColumns.put(Bytes.toBytes("boolField"), Bytes.toBytes(true));
     inputColumns.put(Bytes.toBytes("longField"), Bytes.toBytes(512L));
     inputColumns.put(Bytes.toBytes("floatField"), Bytes.toBytes(3.14f));

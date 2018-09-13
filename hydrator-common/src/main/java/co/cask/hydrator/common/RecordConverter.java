@@ -18,11 +18,11 @@ package co.cask.hydrator.common;
 
 import co.cask.cdap.api.data.format.UnexpectedFormatException;
 import co.cask.cdap.api.data.schema.Schema;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -64,13 +64,13 @@ public abstract class RecordConverter<INPUT, OUTPUT> {
     List<Object> output;
     if (values instanceof List) {
       List<Object> valuesList = (List<Object>) values;
-      output = Lists.newArrayListWithCapacity(valuesList.size());
+      output = new ArrayList<>(valuesList.size());
       for (Object value : valuesList) {
         output.add(convertField(value, elementSchema));
       }
     } else {
       int length = Array.getLength(values);
-      output = Lists.newArrayListWithCapacity(length);
+      output = new ArrayList<>(length);
       for (int i = 0; i < length; i++) {
         output.add(convertField(Array.get(values, i), elementSchema));
       }
@@ -80,7 +80,7 @@ public abstract class RecordConverter<INPUT, OUTPUT> {
 
   private Map<Object, Object> convertMap(Map<Object, Object> map,
                                          Schema keySchema, Schema valueSchema) throws IOException {
-    Map<Object, Object> converted = Maps.newHashMap();
+    Map<Object, Object> converted = new HashMap<>();
     for (Map.Entry<Object, Object> entry : map.entrySet()) {
       converted.put(convertField(entry.getKey(), keySchema), convertField(entry.getValue(), valueSchema));
     }

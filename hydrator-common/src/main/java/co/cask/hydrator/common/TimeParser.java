@@ -16,8 +16,6 @@
 
 package co.cask.hydrator.common;
 
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 
 import java.util.concurrent.TimeUnit;
 
@@ -58,7 +56,9 @@ public class TimeParser {
    * @return milliseconds equivalent of the duration string
    */
   public static long parseDuration(String durationStr) {
-    Preconditions.checkArgument(!Strings.isNullOrEmpty(durationStr));
+    if (durationStr == null || durationStr.isEmpty()) {
+      throw new IllegalArgumentException("duration must be specified.");
+    }
     durationStr = durationStr.trim().toLowerCase();
 
     String value = durationStr.substring(0, durationStr.length() - 1);

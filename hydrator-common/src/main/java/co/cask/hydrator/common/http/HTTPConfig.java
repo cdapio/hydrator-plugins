@@ -19,7 +19,6 @@ package co.cask.hydrator.common.http;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.plugin.PluginConfig;
-import com.google.common.base.Strings;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -103,7 +102,7 @@ public class HTTPConfig extends PluginConfig {
 
   private Map<String, String> convertHeadersToMap(String headersString) {
     Map<String, String> headersMap = new HashMap<>();
-    if (!Strings.isNullOrEmpty(headersString)) {
+    if (headersString != null && !headersString.isEmpty()) {
       for (String chunk : headersString.split(DELIMITER)) {
         String[] keyValue = chunk.split(KV_DELIMITER, 2);
         if (keyValue.length == 2) {

@@ -19,9 +19,9 @@ package co.cask.hydrator.common.http;
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.hydrator.common.Constants;
-import com.google.common.base.Charsets;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import javax.annotation.Nullable;
 
@@ -55,7 +55,7 @@ public class HTTPPollConfig extends HTTPConfig {
   public HTTPPollConfig(String referenceName, String url, long interval, String requestHeaders) {
     super(url, requestHeaders);
     this.interval = interval;
-    this.charset = Charsets.UTF_8.name();
+    this.charset = StandardCharsets.UTF_8.name();
     this.readTimeout = 60 * 1000;
     this.referenceName = referenceName;
   }

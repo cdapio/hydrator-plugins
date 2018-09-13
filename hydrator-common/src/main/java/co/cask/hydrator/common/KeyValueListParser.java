@@ -17,10 +17,11 @@
 package co.cask.hydrator.common;
 
 import co.cask.cdap.api.dataset.lib.KeyValue;
-import com.google.common.base.Splitter;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Parses a list of key value pairs.
@@ -68,7 +69,10 @@ public class KeyValueListParser {
     private final Iterator<String> pairIter;
 
     private KeyValueIterator(String kvList) {
-      pairIter = Splitter.on(pairDelimiter).trimResults().split(kvList).iterator();
+      pairIter = Arrays.stream(pairDelimiter.split(kvList))
+        .map(String::trim)
+        .collect(Collectors.toList())
+        .iterator();
     }
 
     @Override
@@ -79,7 +83,10 @@ public class KeyValueListParser {
     @Override
     public KeyValue<String, String> next() {
       String pair = pairIter.next();
-      Iterator<String> keyValIter = Splitter.on(keyValDelimiter).trimResults().split(pair).iterator();
+      Iterator<String> keyValIter = Arrays.stream(keyValDelimiter.split(pair))
+        .map(String::trim)
+        .collect(Collectors.toList())
+        .iterator();
       String key = keyValIter.next();
       if (!keyValIter.hasNext()) {
         throw new IllegalArgumentException(String.format("Invalid syntax for key-value pair in list: %s. " +

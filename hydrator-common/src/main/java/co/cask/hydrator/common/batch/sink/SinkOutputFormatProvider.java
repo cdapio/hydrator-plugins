@@ -18,10 +18,11 @@ package co.cask.hydrator.common.batch.sink;
 
 import co.cask.cdap.api.data.batch.OutputFormatProvider;
 import co.cask.hydrator.common.batch.ConfigurationUtils;
-import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.OutputFormat;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -43,7 +44,7 @@ public final class SinkOutputFormatProvider implements OutputFormatProvider {
 
   public SinkOutputFormatProvider(String outputFormatClassName, Map<String, String> configuration) {
     this.outputFormatClassName = outputFormatClassName;
-    this.configuration = ImmutableMap.copyOf(configuration);
+    this.configuration = Collections.unmodifiableMap(new HashMap<>(configuration));
   }
 
   @Override

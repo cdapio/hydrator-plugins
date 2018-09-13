@@ -20,7 +20,6 @@ import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.table.Row;
-import com.google.common.base.Preconditions;
 
 /**
  * Transforms Rows into Records.
@@ -36,8 +35,12 @@ public class RowRecordTransformer {
     if (rowFieldName != null) {
       rowField = schema.getField(rowFieldName);
       // if row field was given, it must be present in the schema and it must be a simple type
-      Preconditions.checkArgument(rowField != null, "Row field must be present in the schema.");
-      Preconditions.checkArgument(rowField.getSchema().getType().isSimpleType(), "Row field must be a simple type.");
+      if (rowField == null) {
+        throw new IllegalArgumentException("Row field must be present in the schema.");
+      }
+      if (!rowField.getSchema().getType().isSimpleType()) {
+        throw new IllegalArgumentException("Row field must be a non-nullable simple type.");
+      }
     } else {
       rowField = null;
     }
@@ -61,7 +64,10 @@ public class RowRecordTransformer {
 
   // schema must be a record and must contain only simple types
   private void validateSchema(Schema schema) {
-    Preconditions.checkArgument(schema.getType() == Schema.Type.RECORD, "Schema must be a record.");
+    if (schema.getType() != Schema.Type.RECORD) {
+      throw new IllegalArgumentException(
+        String.format("Invalid schema type %s. Schema must be a record.", schema.getType()));
+    }
     for (Schema.Field field : schema.getFields()) {
       Schema fieldSchema = field.getSchema();
       if (fieldSchema.isNullable()) {

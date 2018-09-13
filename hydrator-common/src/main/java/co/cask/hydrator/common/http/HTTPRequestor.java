@@ -18,15 +18,13 @@ package co.cask.hydrator.common.http;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import com.google.common.base.Joiner;
-import com.google.common.base.Strings;
-import com.google.common.io.CharStreams;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.CharBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,11 +63,11 @@ public class HTTPRequestor {
     try {
       if (connection.getErrorStream() != null) {
         try (Reader reader = new InputStreamReader(connection.getErrorStream(), config.getCharset())) {
-          response = CharStreams.toString(reader);
+          response = toString(reader);
         }
       } else if (connection.getInputStream() != null) {
         try (Reader reader = new InputStreamReader(connection.getInputStream(), config.getCharset())) {
-          response = CharStreams.toString(reader);
+          response = toString(reader);
         }
       }
     } finally {
@@ -79,9 +77,10 @@ public class HTTPRequestor {
     Map<String, List<String>> headers = connection.getHeaderFields();
     Map<String, String> flattenedHeaders = new HashMap<>();
     for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
-      if (!Strings.isNullOrEmpty(entry.getKey())) {
+      String key = entry.getKey();
+      if (key != null && !key.isEmpty()) {
         // If multiple values for the same header exist, concatenate them
-        flattenedHeaders.put(entry.getKey(), Joiner.on(',').skipNulls().join(entry.getValue()));
+        flattenedHeaders.put(key, String.join(",", entry.getValue()));
       }
     }
     return createStructuredRecord(response, flattenedHeaders, responseCode);
@@ -98,5 +97,16 @@ public class HTTPRequestor {
       .set("headers", headerFields)
       .set("body", response);
     return recordBuilder.build();
+  }
+
+  private String toString(Reader reader) throws IOException {
+    StringBuilder sb = new StringBuilder();
+    CharBuffer buf = CharBuffer.allocate(4096);
+    while (reader.read(buf) != -1) {
+      buf.flip();
+      sb.append(buf);
+      buf.clear();
+    }
+    return sb.toString();
   }
 }
