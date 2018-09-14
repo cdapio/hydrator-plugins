@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015, 2016 Cask Data, Inc.
+ * Copyright © 2015-2018 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -56,7 +56,8 @@ public class SnapshotFileBatchAvroSink extends SnapshotFileBatchSink<AvroKey<Gen
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    recordTransformer = new StructuredToAvroTransformer(config.schema);
+    config.convertTimestampToMillis = config.convertTimestampToMillis == null ? false : config.convertTimestampToMillis;
+    recordTransformer = new StructuredToAvroTransformer(config.schema, config.convertTimestampToMillis, false);
   }
 
   @Override
@@ -67,7 +68,8 @@ public class SnapshotFileBatchAvroSink extends SnapshotFileBatchSink<AvroKey<Gen
 
   @Override
   protected void addFileProperties(FileSetProperties.Builder propertiesBuilder) {
-    FileSetUtil.configureAvroFileSet(config.schema, propertiesBuilder);
+    config.convertTimestampToMillis = config.convertTimestampToMillis == null ? false : config.convertTimestampToMillis;
+    FileSetUtil.configureAvroFileSet(config.schema, propertiesBuilder, config.convertTimestampToMillis);
   }
 
   /**
@@ -82,11 +84,16 @@ public class SnapshotFileBatchAvroSink extends SnapshotFileBatchSink<AvroKey<Gen
     @Description("Used to specify the compression codec to be used for the final dataset.")
     private String compressionCodec;
 
+    @Nullable
+    @Description("Used to convert timestamp in microseconds to timestamp in milliseconds.")
+    private Boolean convertTimestampToMillis;
+
     public SnapshotAvroConfig(String name, @Nullable String basePath, String schema,
-                              @Nullable String compressionCodec) {
+                              @Nullable String compressionCodec, @Nullable Boolean convertTimestampToMillis) {
       super(name, basePath, null);
       this.schema = schema;
       this.compressionCodec = compressionCodec;
+      this.convertTimestampToMillis = convertTimestampToMillis;
     }
 
     @Override

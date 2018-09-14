@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2018 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -26,6 +26,7 @@ import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
+import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.hydrator.plugin.common.AvroToStructuredTransformer;
 import co.cask.hydrator.plugin.common.FileSetUtil;
 import co.cask.hydrator.plugin.common.SnapshotFileSetConfig;
@@ -45,12 +46,19 @@ import javax.annotation.Nullable;
 @Description("Reads the most recent snapshot that was written to a SnapshotAvro sink.")
 @Requirements(datasetTypes = PartitionedFileSet.TYPE)
 public class SnapshotFileBatchAvroSource extends SnapshotFileBatchSource<AvroKey<GenericRecord>, NullWritable> {
-  private final AvroToStructuredTransformer recordTransformer = new AvroToStructuredTransformer();
   private final SnapshotAvroConfig config;
+  private AvroToStructuredTransformer recordTransformer;
 
   public SnapshotFileBatchAvroSource(SnapshotAvroConfig config) {
     super(config);
     this.config = config;
+  }
+
+  @Override
+  public void initialize(BatchRuntimeContext context) throws Exception {
+    super.initialize(context);
+    config.convertTimestampToMicros = config.convertTimestampToMicros == null ? false : config.convertTimestampToMicros;
+    recordTransformer = new AvroToStructuredTransformer(false, config.convertTimestampToMicros);
   }
 
   @Override
@@ -83,9 +91,15 @@ public class SnapshotFileBatchAvroSource extends SnapshotFileBatchSource<AvroKey
     @Description("The Avro schema of the records to read.")
     private String schema;
 
-    public SnapshotAvroConfig(String name, @Nullable String basePath, String schema) {
+    @Nullable
+    @Description("Used to converts timestamp in milliseconds to timestamp in microseconds.")
+    private Boolean convertTimestampToMicros;
+
+    public SnapshotAvroConfig(String name, @Nullable String basePath, String schema,
+                              @Nullable Boolean convertTimestampToMicros) {
       super(name, basePath, null);
       this.schema = schema;
+      this.convertTimestampToMicros = convertTimestampToMicros;
     }
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015, 2016 Cask Data, Inc.
+ * Copyright © 2015-2018 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -72,9 +72,8 @@ public class FileSetUtil {
   public static void configureParquetFileSet(String configuredSchema, FileSetProperties.Builder properties) {
 
     // validate and parse schema as Avro, and attempt to convert it into a Hive schema
-    String lowerCaseSchema = configuredSchema.toLowerCase();
-    Schema avroSchema = parseAvroSchema(lowerCaseSchema, configuredSchema);
-    String hiveSchema = parseHiveSchema(lowerCaseSchema, configuredSchema);
+    Schema avroSchema = parseAvroSchema(configuredSchema, configuredSchema);
+    String hiveSchema = parseHiveSchema(configuredSchema, configuredSchema);
 
     properties
       .setInputFormat(AvroParquetInputFormat.class)
@@ -82,7 +81,7 @@ public class FileSetUtil {
       .setEnableExploreOnCreate(true)
       .setExploreFormat("parquet")
       .setExploreSchema(hiveSchema.substring(1, hiveSchema.length() - 1))
-      .add(DatasetProperties.SCHEMA, lowerCaseSchema);
+      .add(DatasetProperties.SCHEMA, configuredSchema);
 
     Job job = createJobForConfiguration();
     Configuration hConf = job.getConfiguration();
@@ -148,6 +147,31 @@ public class FileSetUtil {
    * @param properties a builder for the file set properties
    */
   public static void configureAvroFileSet(String configuredSchema, FileSetProperties.Builder properties) {
+    configureAvroFileSet(configuredSchema, properties, false);
+  }
+
+  /**
+   * Configure a file set to use Avro file format with a given schema. The schema is parsed
+   * as an Avro schema, validated and converted into a Hive schema. The file set is configured to use
+   * Avro key input and output format, and also configured for Explore to use Avro. The schema is added
+   * to the file set properties in all the different required ways:
+   * <ul>
+   *   <li>As a top-level dataset property;</li>
+   *   <li>As the schema for the input and output format;</li>
+   *   <li>As the schema of the Hive table;</li>
+   *   <li>As the schema to be used by the Avro serde (which is used by Hive).</li>
+   * </ul>
+   * @param configuredSchema the original schema configured for the table
+   * @param properties a builder for the file set properties
+   * @param convertToMillis converts timestamp from microseconds to milliseconds
+   */
+  public static void configureAvroFileSet(String configuredSchema, FileSetProperties.Builder properties,
+                                          boolean convertToMillis) {
+    if (convertToMillis) {
+      // Hack: AvroSerDe does not support timestamp-micros. So convert schema with timestamp-micros to timestamp-millis.
+      configuredSchema = configuredSchema.replace("\"timestamp-micros\"", "\"timestamp-millis\"");
+    }
+
     // validate and parse schema as Avro
     Schema avroSchema = parseAvroSchema(configuredSchema, configuredSchema);
 

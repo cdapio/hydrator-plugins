@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2018 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -23,6 +23,8 @@ import com.google.common.collect.Maps;
 import org.apache.avro.generic.GenericRecord;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -33,6 +35,14 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
 
   private final Map<Integer, Schema> schemaCache = Maps.newHashMap();
 
+  public AvroToStructuredTransformer() {
+    super(false, false);
+  }
+
+  public AvroToStructuredTransformer(boolean convertMicrosToMillis, boolean convertTimestampToMicros) {
+    super(convertMicrosToMillis, convertTimestampToMicros);
+  }
+
   public StructuredRecord transform(GenericRecord genericRecord) throws IOException {
     org.apache.avro.Schema genericRecordSchema = genericRecord.getSchema();
     return transform(genericRecord, convertSchema(genericRecordSchema));
@@ -40,7 +50,13 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
 
   @Override
   public StructuredRecord transform(GenericRecord genericRecord, Schema structuredSchema) throws IOException {
-    StructuredRecord.Builder builder = StructuredRecord.builder(structuredSchema);
+    Schema modifiedSchema = structuredSchema;
+    // Hack: AvroSerDe writes timestamp-micros as timestamp-millis. So convert schema with timestamp-millis to
+    // timestamp-micros.
+    if (convertTimestampToMicros) {
+      modifiedSchema = convertToMicros(structuredSchema);
+    }
+    StructuredRecord.Builder builder = StructuredRecord.builder(modifiedSchema);
     for (Schema.Field field : structuredSchema.getFields()) {
       String fieldName = field.getName();
       builder.set(fieldName, convertField(genericRecord.get(fieldName), field.getSchema()));
@@ -72,5 +88,21 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
       schemaCache.put(hashCode, structuredSchema);
     }
     return structuredSchema;
+  }
+
+  private Schema convertToMicros(Schema schema) {
+    if (convertTimestampToMicros && schema.getLogicalType() == Schema.LogicalType.TIMESTAMP_MILLIS) {
+      return Schema.of(Schema.LogicalType.TIMESTAMP_MICROS);
+    }
+
+    if (schema.getType() == Schema.Type.UNION) {
+      List<Schema> schemas = new ArrayList<>();
+      for (Schema.Field field : schema.getFields()) {
+        schemas.add(convertToMicros(field.getSchema()));
+      }
+      return Schema.unionOf(schemas);
+    }
+
+    return schema;
   }
 }

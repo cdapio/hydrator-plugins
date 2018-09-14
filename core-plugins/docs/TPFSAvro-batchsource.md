@@ -33,6 +33,8 @@ format as the duration value. For example, a duration of '5m' and a delay of '10
 each run of the pipeline will read events 5 minutes of data from 15 minutes before its logical
 start time to 10 minutes before its logical start time. The default value is 0. (Macro-enabled)
 
+**convertTimestampToMicros** Converts timestamp in milliseconds to timestamp in microseconds. Default value for this
+option is true.
 
 Example
 -------

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015-2016 Cask Data, Inc.
+ * Copyright © 2015-2018 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -28,6 +28,7 @@ import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.api.lineage.field.EndPoint;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
+import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.cdap.etl.api.lineage.field.FieldOperation;
@@ -44,6 +45,7 @@ import org.apache.hadoop.io.NullWritable;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 /**
  * A {@link BatchSource} to read Avro record from {@link TimePartitionedFileSet}
@@ -55,8 +57,7 @@ import java.util.stream.Collectors;
 public class TimePartitionedFileSetDatasetAvroSource extends
   TimePartitionedFileSetSource<AvroKey<GenericRecord>, NullWritable> {
   private final TPFSAvroConfig tpfsAvroConfig;
-
-  private final AvroToStructuredTransformer recordTransformer = new AvroToStructuredTransformer();
+  private AvroToStructuredTransformer recordTransformer;
 
   /**
    * Config for TimePartitionedFileSetDatasetAvroSource
@@ -65,6 +66,10 @@ public class TimePartitionedFileSetDatasetAvroSource extends
 
     @Description("The Avro schema of the record being read from the source as a JSON Object.")
     private String schema;
+
+    @Nullable
+    @Description("Used to converts timestamp in milliseconds to timestamp in microseconds.")
+    private Boolean convertTimestampToMicros;
 
     @Override
     protected void validate() {
@@ -75,6 +80,14 @@ public class TimePartitionedFileSetDatasetAvroSource extends
         throw new IllegalArgumentException("Unable to parse schema with error: " + e.getMessage(), e);
       }
     }
+  }
+
+  @Override
+  public void initialize(BatchRuntimeContext context) throws Exception {
+    super.initialize(context);
+    tpfsAvroConfig.convertTimestampToMicros = tpfsAvroConfig.convertTimestampToMicros == null ?
+      false : tpfsAvroConfig.convertTimestampToMicros;
+    recordTransformer = new AvroToStructuredTransformer(false, tpfsAvroConfig.convertTimestampToMicros);
   }
 
   @Override

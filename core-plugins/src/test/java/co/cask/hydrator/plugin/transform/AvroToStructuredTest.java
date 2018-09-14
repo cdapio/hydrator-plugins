@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2018 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -25,6 +25,7 @@ import org.apache.avro.generic.GenericRecordBuilder;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class AvroToStructuredTest {
@@ -80,6 +81,35 @@ public class AvroToStructuredTest {
     List list = innerResult.get("array1");
     StructuredRecord array1Result = (StructuredRecord) list.get(0);
     Assert.assertEquals(0, array1Result.<Integer>get("int").intValue());
+  }
+
+  @Test
+  public void testDateTimestamp() throws Exception {
+    AvroToStructuredTransformer avroToStructuredTransformer = new AvroToStructuredTransformer(false, true);
+    Schema schema = Schema.recordOf(
+      "record",
+      Schema.Field.of("int", Schema.of(Schema.Type.INT)),
+      Schema.Field.of("dt", Schema.nullableOf(Schema.of(Schema.LogicalType.DATE))),
+      Schema.Field.of("tsmillis", Schema.nullableOf(Schema.of(Schema.LogicalType
+                                                                .TIMESTAMP_MILLIS))));
+
+    org.apache.avro.Schema avroSchema = convertSchema(schema);
+    GenericRecord record = new GenericRecordBuilder(avroSchema)
+      .set("int", Integer.MAX_VALUE)
+      .set("dt", 17532)
+      .set("tsmillis", 1514805071123L)
+      .build();
+
+    StructuredRecord result = avroToStructuredTransformer.transform(record);
+    Schema expectedSchema = Schema.recordOf(
+      "record",
+      Schema.Field.of("int", Schema.of(Schema.Type.INT)),
+      Schema.Field.of("dt", Schema.nullableOf(Schema.of(Schema.LogicalType.DATE))),
+      Schema.Field.of("tsmillis", Schema.nullableOf(Schema.of(Schema.LogicalType.TIMESTAMP_MICROS))));
+
+    Assert.assertEquals(expectedSchema, result.getSchema());
+    Assert.assertEquals(LocalDate.of(2018, 1, 1), result.getDate("dt"));
+    Assert.assertEquals(1514805071123000L, (long) result.get("tsmillis"));
   }
 
   private org.apache.avro.Schema convertSchema(Schema cdapSchema) {

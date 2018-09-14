@@ -26,6 +26,18 @@
           "widget-type": "textbox",
           "label": "Clean Partitions Older Than",
           "name": "cleanPartitionsOlderThan"
+        },
+        {
+          "widget-type": "select",
+          "label": "Convert timestamp to millis",
+          "name": "convertTimestampToMicros",
+          "widget-attributes": {
+            "values": [
+              "true",
+              "false"
+            ],
+            "default": "true"
+          }
         }
       ]
     }

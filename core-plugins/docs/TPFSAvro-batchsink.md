@@ -46,6 +46,11 @@ and this property is set to 7d, the sink will delete any partitions for time par
 **compressionCodec:** Optional parameter to determine the compression codec to use on the resulting data. 
 Valid values are None, Snappy, and Deflate.
 
+**convertTimestampToMillis** Converts timestamp in microseconds to timestamp in milliseconds. This means data with
+microsecond level precision will be reduced to millisecond level precision. If this option is set to false, when
+fileset with timestamp in microseconds is explored, the timestamp field type will be `bigint` in hive instead of
+`timestamp`. Default value for this option is true.
+
 Example
 -------
 This example will write to a ``TimePartitionedFileSet`` named ``'users'``:
