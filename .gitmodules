@@ -17,13 +17,13 @@
 
 [submodule "wrangler-transform"]
 	path = wrangler-transform
-	url = https://github.com/hydrator/wrangler-transform.git
-	branch = develop
+	url = https://github.com/data-integrations/wrangler.git
+	branch = release/3.2
 [submodule "realtime-stream-source"]
 	path = realtime-stream-source
-	url = https://github.com/hydrator/realtime-stream-source.git
-	branch = develop
+	url = https://github.com/data-integrations/realtime-stream-source.git
+	branch = release/1.5
 [submodule "condition-plugins"]
 	path = condition-plugins
-	url = https://github.com/hydrator/condition-plugins.git
-	branch = develop
+	url = https://github.com/data-integrations/condition-plugins.git
+	branch = release/1.2
