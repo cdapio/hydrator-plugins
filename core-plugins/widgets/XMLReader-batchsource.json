@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "spec-version": "1.0"
+    "spec-version": "1.5"
   },
   "configuration-groups": [
     {
@@ -100,5 +100,12 @@
         ]
       }
     }
-  ]
+  ],
+  "jump-config": {
+    "datasets": [
+      {
+        "ref-property-name": "referenceName"
+      }
+    ]
+  }
 }
