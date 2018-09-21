@@ -28,8 +28,12 @@ import co.cask.cdap.etl.api.Lookup;
 import co.cask.cdap.etl.api.LookupProvider;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.StageMetrics;
+import co.cask.cdap.etl.api.StageSubmitterContext;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
+import co.cask.cdap.etl.api.lineage.field.FieldOperation;
+import co.cask.cdap.etl.api.lineage.field.FieldTransformOperation;
+import co.cask.hydrator.common.SchemaValidator;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.python.core.Py;
@@ -44,9 +48,11 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
@@ -167,6 +173,25 @@ public class PythonEvaluator extends Transform<StructuredRecord, StructuredRecor
     }
     // try evaluating the script to fail application creation if the script is invalid
     init(null);
+  }
+
+  @Override
+  public void prepareRun(StageSubmitterContext context) throws Exception {
+    super.prepareRun(context);
+    List<String> inputFields = new ArrayList<>();
+    List<String> outputFields = new ArrayList<>();
+    Schema inputSchema = context.getInputSchema();
+    if (SchemaValidator.canRecordLineage(inputSchema, "input")) {
+      //noinspection ConstantConditions
+      inputFields = inputSchema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList());
+    }
+    Schema outputSchema = context.getOutputSchema();
+    if (SchemaValidator.canRecordLineage(outputSchema, "output")) {
+      //noinspection ConstantConditions
+      outputFields = outputSchema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList());
+    }
+    FieldOperation dataPrepOperation = new FieldTransformOperation("Python", config.script, inputFields, outputFields);
+    context.record(Collections.singletonList(dataPrepOperation));
   }
 
   @Override

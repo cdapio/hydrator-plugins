@@ -25,12 +25,18 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.StageConfigurer;
 import co.cask.cdap.etl.api.batch.BatchAggregator;
+import co.cask.cdap.etl.api.batch.BatchAggregatorContext;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
+import co.cask.cdap.etl.api.lineage.field.FieldOperation;
+import co.cask.cdap.etl.api.lineage.field.FieldTransformOperation;
+import co.cask.hydrator.common.SchemaValidator;
 import co.cask.hydrator.plugin.batch.aggregator.function.AggregateFunction;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import javax.ws.rs.Path;
@@ -72,6 +78,27 @@ public class GroupByAggregator extends RecordAggregator {
     // otherwise, we have a constant input schema. Get the output schema and
     // propagate the schema, which is group by fields + aggregate fields
     stageConfigurer.setOutputSchema(getOutputSchema(inputSchema, groupByFields, aggregates));
+  }
+
+  @Override
+  public void prepareRun(BatchAggregatorContext context) throws Exception {
+    super.prepareRun(context);
+    LinkedList<FieldOperation> fllOperations = new LinkedList<>();
+    // in configurePipeline all the necessary checks have been performed already to set output schema
+    if (SchemaValidator.canRecordLineage(context.getOutputSchema(), "output")) {
+      Schema inputSchema = context.getInputSchema();
+      // for every function record the field level operation details
+      for (GroupByConfig.FunctionInfo functionInfo : conf.getAggregates()) {
+        Schema.Field outputSchemaField = getOutputSchemaField(functionInfo, inputSchema);
+        String operationName = String.format("Group %s", functionInfo.getField());
+        String description = String.format("Aggregate function applied: '%s'.", functionInfo.getFunction());
+        FieldOperation operation = new FieldTransformOperation(operationName, description,
+                                                               Collections.singletonList(functionInfo.getField()),
+                                                               outputSchemaField.getName());
+        fllOperations.add(operation);
+      }
+    }
+    context.record(fllOperations);
   }
 
   @Override
@@ -135,27 +162,9 @@ public class GroupByAggregator extends RecordAggregator {
       outputFields.add(field);
     }
 
-    // check that all fields needed by aggregate functions exist in the input schema.
+    // add all the required output field schema depending on the aggregate functions
     for (GroupByConfig.FunctionInfo functionInfo : aggregates) {
-      // special case count(*) because we don't have to check that the input field exists
-      if (functionInfo.getField().equals("*")) {
-        AggregateFunction aggregateFunction = functionInfo.getAggregateFunction(null);
-        outputFields.add(Schema.Field.of(functionInfo.getName(), aggregateFunction.getOutputSchema()));
-        continue;
-      }
-
-      Schema.Field inputField = inputSchema.getField(functionInfo.getField());
-      if (inputField == null) {
-        throw new IllegalArgumentException(String.format(
-          "Invalid aggregate %s(%s): Field '%s' does not exist in input schema %s.",
-          functionInfo.getFunction(), functionInfo.getField(), functionInfo.getField(), inputSchema));
-      }
-      if (functionInfo.getField().equalsIgnoreCase(functionInfo.getName())) {
-        throw new IllegalArgumentException(String.format("Name '%s' should not be same as aggregate field '%s'",
-                                                         functionInfo.getName(), functionInfo.getField()));
-      }
-      AggregateFunction aggregateFunction = functionInfo.getAggregateFunction(inputField.getSchema());
-      outputFields.add(Schema.Field.of(functionInfo.getName(), aggregateFunction.getOutputSchema()));
+      outputFields.add(getOutputSchemaField(functionInfo, inputSchema));
     }
     return Schema.recordOf(inputSchema.getRecordName() + ".agg", outputFields);
   }
@@ -164,6 +173,27 @@ public class GroupByAggregator extends RecordAggregator {
     for (AggregateFunction aggregateFunction : aggregateFunctions.values()) {
       aggregateFunction.operateOn(groupVal);
     }
+  }
+
+  private Schema.Field getOutputSchemaField(GroupByConfig.FunctionInfo functionInfo, Schema inputSchema) {
+    // special case count(*) because we don't have to check that the input field exists
+    if (functionInfo.getField().equals("*")) {
+      AggregateFunction aggregateFunction = functionInfo.getAggregateFunction(null);
+      return Schema.Field.of(functionInfo.getName(), aggregateFunction.getOutputSchema());
+    }
+
+    Schema.Field inputField = inputSchema.getField(functionInfo.getField());
+    if (inputField == null) {
+      throw new IllegalArgumentException(String.format(
+        "Invalid aggregate %s(%s): Field '%s' does not exist in input schema %s.",
+        functionInfo.getFunction(), functionInfo.getField(), functionInfo.getField(), inputSchema));
+    }
+    if (functionInfo.getField().equalsIgnoreCase(functionInfo.getName())) {
+      throw new IllegalArgumentException(String.format("Name '%s' should not be same as aggregate field '%s'",
+                                                       functionInfo.getName(), functionInfo.getField()));
+    }
+    AggregateFunction aggregateFunction = functionInfo.getAggregateFunction(inputField.getSchema());
+    return Schema.Field.of(functionInfo.getName(), aggregateFunction.getOutputSchema());
   }
 
   private void initAggregates(Schema valueSchema) {
