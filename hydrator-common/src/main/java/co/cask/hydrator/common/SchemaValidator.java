@@ -18,6 +18,8 @@ package co.cask.hydrator.common;
 
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.PipelineConfigurer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import javax.annotation.Nullable;
@@ -27,6 +29,8 @@ import javax.annotation.Nullable;
  * validating fields are simple, checking if schema is subset of another, checking if fields are present in schema, etc
  */
 public final class SchemaValidator {
+
+  private static final Logger LOG = LoggerFactory.getLogger(SchemaValidator.class);
 
   /**
    * Validate output schema fields and if input schema is present,
@@ -114,6 +118,25 @@ public final class SchemaValidator {
           String.format("Field : '%s' is not present in the input schema",  field));
       }
     }
+  }
+
+  /**
+   * Checks whether FLL can be recorded for the given schema.
+   *
+   * @param schema the schema to be checked
+   * @param name the name of the schema
+   * @return true if the schema is not null and FLL can be recorded else false
+   */
+  public static boolean canRecordLineage(@Nullable Schema schema, String name) {
+    if (schema == null) {
+      LOG.debug(String.format("The %s schema is null. Field level lineage will not be recorded", name));
+      return false;
+    }
+    if (schema.getFields() == null) {
+      LOG.debug(String.format("The %s schema fields are null. Field level lineage will not be recorded", name));
+      return false;
+    }
+    return true;
   }
 
   private SchemaValidator() {

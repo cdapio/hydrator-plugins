@@ -28,8 +28,12 @@ import co.cask.cdap.etl.api.InvalidEntry;
 import co.cask.cdap.etl.api.LookupConfig;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.StageMetrics;
+import co.cask.cdap.etl.api.StageSubmitterContext;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
+import co.cask.cdap.etl.api.lineage.field.FieldOperation;
+import co.cask.cdap.etl.api.lineage.field.FieldTransformOperation;
+import co.cask.hydrator.common.SchemaValidator;
 import co.cask.hydrator.plugin.ScriptConstants;
 import co.cask.hydrator.plugin.common.StructuredRecordSerializer;
 import com.google.common.annotations.VisibleForTesting;
@@ -45,8 +49,11 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
@@ -135,6 +142,26 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
     Schema outputSchema = (schema == null) ? pipelineConfigurer.getStageConfigurer().getInputSchema() : schema;
     pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
     // TODO: CDAP-4169 verify existence of configured lookup tables
+  }
+
+  @Override
+  public void prepareRun(StageSubmitterContext context) throws Exception {
+    super.prepareRun(context);
+    List<String> inputFields = new ArrayList<>();
+    List<String> outputFields = new ArrayList<>();
+    Schema inputSchema = context.getInputSchema();
+    if (SchemaValidator.canRecordLineage(inputSchema, "input")) {
+      //noinspection ConstantConditions
+      inputFields = inputSchema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList());
+    }
+    Schema outputSchema = context.getOutputSchema();
+    if (SchemaValidator.canRecordLineage(outputSchema, "output")) {
+      //noinspection ConstantConditions
+      outputFields = outputSchema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList());
+    }
+    FieldOperation dataPrepOperation = new FieldTransformOperation("JavaScript", config.script, inputFields,
+                                                                   outputFields);
+    context.record(Collections.singletonList(dataPrepOperation));
   }
 
   @Override
