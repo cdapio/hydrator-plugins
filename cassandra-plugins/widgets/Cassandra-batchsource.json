@@ -85,5 +85,12 @@
         "schema-default-type": "string"
       }
     }
-  ]
+  ],
+  "jump-config": {
+    "datasets": [
+      {
+        "ref-property-name": "referenceName"
+      }
+    ]
+  }
 }
