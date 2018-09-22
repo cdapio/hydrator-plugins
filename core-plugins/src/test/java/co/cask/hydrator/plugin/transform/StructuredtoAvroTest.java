@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2018 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -24,6 +24,10 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 
 public class StructuredtoAvroTest {
 
@@ -110,5 +114,34 @@ public class StructuredtoAvroTest {
     result = avroTransformer.transform(record);
     Assert.assertNull(result.get("byteBuffer"));
     Assert.assertNull(result.get("byteArray"));
+  }
+
+  @Test
+  public void testDateTimestamp() throws Exception {
+    Schema schema = Schema.recordOf("datetimestamp",
+                                    Schema.Field.of("id", Schema.nullableOf(Schema.of(Schema.Type.INT))),
+                                    Schema.Field.of("name", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                                    Schema.Field.of("dt", Schema.nullableOf(Schema.of(Schema.LogicalType.DATE))),
+                                    Schema.Field.of("tsmillis", Schema.nullableOf(Schema.of(Schema.LogicalType
+                                                                                              .TIMESTAMP_MILLIS))),
+                                    Schema.Field.of("tsmicros", Schema.nullableOf(Schema.of(Schema.LogicalType
+                                                                                              .TIMESTAMP_MICROS))));
+
+    StructuredRecord record = StructuredRecord.builder(schema)
+      .set("id", 1)
+      .set("name", "alice")
+      .setDate("dt", LocalDate.of(2018, 1, 1))
+      .setTimestamp("tsmillis", ZonedDateTime.of(2018 , 1 , 1, 11, 11, 11, 123 * 1000 * 1000,
+                                                 ZoneId.ofOffset("UTC", ZoneOffset.UTC)))
+      .setTimestamp("tsmicros", ZonedDateTime.of(2018 , 1 , 1, 11, 11, 11, 123456 * 1000,
+                                                 ZoneId.ofOffset("UTC", ZoneOffset.UTC)))
+      .build();
+
+    StructuredToAvroTransformer avroTransformer = new StructuredToAvroTransformer(schema.toString(), true, false);
+    GenericRecord result = avroTransformer.transform(record);
+    Assert.assertEquals(17532, result.get("dt"));
+    Assert.assertEquals(1514805071123L, result.get("tsmillis"));
+    // timestamp-millis and timestamp-micros should have same result 1514805071123L
+    Assert.assertEquals(result.get("tsmicros"), result.get("tsmillis"));
   }
 }

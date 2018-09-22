@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2015-2018 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -25,6 +25,10 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import static co.cask.cdap.api.data.schema.Schema.LogicalType.TIMESTAMP_MICROS;
+import static co.cask.cdap.api.data.schema.Schema.LogicalType.TIMESTAMP_MILLIS;
 
 /**
  * Converts an object with a schema into another type of object with the same schema.
@@ -35,6 +39,17 @@ import java.util.Map;
  * @param <OUTPUT> type of output record
  */
 public abstract class RecordConverter<INPUT, OUTPUT> {
+  protected boolean convertTimestampToMillis;
+  protected boolean convertTimestampToMicros;
+
+  public RecordConverter() {
+    this(false, false);
+  }
+
+  public RecordConverter(boolean convertMicrosToMillis, boolean convertTimestampToMicros) {
+    this.convertTimestampToMillis = convertMicrosToMillis;
+    this.convertTimestampToMicros = convertTimestampToMicros;
+  }
 
   public abstract OUTPUT transform(INPUT record, Schema schema) throws IOException;
 
@@ -78,8 +93,8 @@ public abstract class RecordConverter<INPUT, OUTPUT> {
     return output;
   }
 
-  private Map<Object, Object> convertMap(Map<Object, Object> map,
-                                         Schema keySchema, Schema valueSchema) throws IOException {
+  private Map<Object, Object> convertMap(Map<Object, Object> map, Schema keySchema,
+                                         Schema valueSchema) throws IOException {
     Map<Object, Object> converted = Maps.newHashMap();
     for (Map.Entry<Object, Object> entry : map.entrySet()) {
       converted.put(convertField(entry.getKey(), keySchema), convertField(entry.getValue(), valueSchema));
@@ -89,6 +104,16 @@ public abstract class RecordConverter<INPUT, OUTPUT> {
 
   protected Object convertField(Object field, Schema fieldSchema) throws IOException {
     Schema.Type fieldType = fieldSchema.getType();
+    // AvroSerDe does not support timestamp-micros. So convert schema with timestamp-micros to timestamp-millis and
+    // vice versa
+    if (convertTimestampToMillis && fieldSchema.getLogicalType() == TIMESTAMP_MICROS) {
+      return TimeUnit.MICROSECONDS.toMillis((Long) field);
+    }
+
+    if (convertTimestampToMicros && fieldSchema.getLogicalType() == TIMESTAMP_MILLIS) {
+      return TimeUnit.MILLISECONDS.toMicros((Long) field);
+    }
+
     switch (fieldType) {
       case RECORD:
         return transform((INPUT) field, fieldSchema);

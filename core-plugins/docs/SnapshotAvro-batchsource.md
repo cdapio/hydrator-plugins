@@ -29,6 +29,8 @@ If it doesn't exist, it will be created. (Macro-enabled)
 specified as a JSON object of string to string. These properties are set on the dataset if one is created.
 The properties are also passed to the dataset at runtime as arguments. (Macro-enabled)
 
+**convertTimestampToMicros** Converts timestamp in milliseconds to timestamp in microseconds. Default value for this
+option is true.
 
 Example
 -------

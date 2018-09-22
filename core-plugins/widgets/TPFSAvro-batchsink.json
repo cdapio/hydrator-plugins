@@ -50,6 +50,18 @@
             ],
             "default": "None"
           }
+        },
+        {
+          "widget-type": "select",
+          "label": "Convert timestamp to millis",
+          "name": "convertTimestampToMillis",
+          "widget-attributes": {
+            "values": [
+              "true",
+              "false"
+            ],
+            "default": "true"
+          }
         }
       ]
     }

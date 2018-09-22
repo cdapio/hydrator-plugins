@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015, 2016 Cask Data, Inc.
+ * Copyright © 2015-2018 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -54,14 +54,16 @@ public class TimePartitionedFileSetDatasetAvroSink extends
 
   @Override
   protected void addFileSetProperties(FileSetProperties.Builder properties) {
-    FileSetUtil.configureAvroFileSet(config.schema, properties);
+    config.convertTimestampToMillis = config.convertTimestampToMillis == null ? false : config.convertTimestampToMillis;
+    FileSetUtil.configureAvroFileSet(config.schema, properties, config.convertTimestampToMillis);
     properties.addAll(FileSetUtil.getAvroCompressionConfiguration(config.compressionCodec, config.schema, true));
   }
 
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    recordTransformer = new StructuredToAvroTransformer(config.schema);
+    config.convertTimestampToMillis = config.convertTimestampToMillis == null ? false : config.convertTimestampToMillis;
+    recordTransformer = new StructuredToAvroTransformer(config.schema, config.convertTimestampToMillis, false);
   }
 
   @Override
@@ -79,10 +81,16 @@ public class TimePartitionedFileSetDatasetAvroSink extends
     @Description("Used to specify the compression codec to be used for the final dataset.")
     private String compressionCodec;
 
+    @Nullable
+    @Description("Used to convert timestamp in microseconds to timestamp in milliseconds.")
+    private Boolean convertTimestampToMillis;
+
     public TPFSAvroSinkConfig(String name, @Nullable String basePath, @Nullable String pathFormat,
-                              @Nullable String timeZone, @Nullable String compressionCodec) {
+                              @Nullable String timeZone, @Nullable String compressionCodec,
+                              @Nullable Boolean convertTimestampToMillis) {
       super(name, basePath, pathFormat, timeZone);
       this.compressionCodec = compressionCodec;
+      this.convertTimestampToMillis = convertTimestampToMillis;
     }
   }
 }

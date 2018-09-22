@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014-2016 Cask Data, Inc.
+ * Copyright © 2014-2018 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -56,6 +56,21 @@ public final class HiveSchemaConverter {
   }
 
   public static void appendType(StringBuilder builder, Schema schema) throws UnsupportedTypeException {
+    if (schema.getLogicalType() != null) {
+      switch (schema.getLogicalType()) {
+        case DATE:
+          builder.append("date");
+          break;
+        case TIMESTAMP_MILLIS:
+        case TIMESTAMP_MICROS:
+          builder.append("timestamp");
+          break;
+        default:
+          throw new UnsupportedTypeException(String.format("Logical type %s is no supported", schema.getLogicalType()));
+      }
+      return;
+    }
+
     switch (schema.getType()) {
       case NULL:
         break;
