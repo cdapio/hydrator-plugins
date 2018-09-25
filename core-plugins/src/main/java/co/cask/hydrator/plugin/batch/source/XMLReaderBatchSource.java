@@ -106,10 +106,16 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
     config.validate();
-    pipelineConfigurer.getStageConfigurer().setOutputSchema(DEFAULT_XML_SCHEMA);
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(getSchema());
     if (!config.containsMacro("tableName") && !Strings.isNullOrEmpty(config.tableName)) {
       pipelineConfigurer.createDataset(config.tableName, KeyValueTable.class.getName());
     }
+  }
+
+  @Nullable
+  @Override
+  public Schema getSchema() {
+    return DEFAULT_XML_SCHEMA;
   }
 
   @Override

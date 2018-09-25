@@ -41,6 +41,8 @@ import org.apache.hadoop.hbase.mapreduce.MutationSerialization;
 import org.apache.hadoop.hbase.mapreduce.ResultSerialization;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 
+import javax.annotation.Nullable;
+
 /**
  *
  */
@@ -77,8 +79,14 @@ public class HBaseSource extends ReferenceBatchSource<ImmutableBytesWritable, Re
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(getSchema());
+  }
+
+  @Nullable
+  @Override
+  public Schema getSchema() {
     try {
-      pipelineConfigurer.getStageConfigurer().setOutputSchema(Schema.parseJson(config.schema));
+      return Schema.parseJson(config.schema);
     } catch (Exception e) {
       throw new IllegalArgumentException("Invalid output schema: " + e.getMessage(), e);
     }

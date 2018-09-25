@@ -60,6 +60,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 /**
  * Abstract file batch source
@@ -101,14 +102,19 @@ public abstract class AbstractFileBatchSource<T extends FileSourceConfig>
     if (!config.containsMacro("timeTable") && config.timeTable != null) {
       pipelineConfigurer.createDataset(config.timeTable, KeyValueTable.class, DatasetProperties.EMPTY);
     }
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(getSchema());
+  }
+
+  @Nullable
+  @Override
+  public Schema getSchema() {
     if (config.getSchema() != null) {
-      pipelineConfigurer.getStageConfigurer().setOutputSchema(config.getSchema());
+      return config.getSchema();
     } else if ("text".equalsIgnoreCase(config.format)) {
-      pipelineConfigurer.getStageConfigurer().setOutputSchema(PathTrackingInputFormat.getTextOutputSchema
-        (config.pathField));
-    } else {
-      pipelineConfigurer.getStageConfigurer().setOutputSchema(null);
+      return PathTrackingInputFormat.getTextOutputSchema(config.pathField);
     }
+    //TODO: Should we return DEFAULT Schema here as that is what we emit record as
+    return null;
   }
 
   @Override

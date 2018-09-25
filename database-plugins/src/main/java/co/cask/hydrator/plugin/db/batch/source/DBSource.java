@@ -87,9 +87,16 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     super.configurePipeline(pipelineConfigurer);
     dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId());
     sourceConfig.validate();
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(getSchema());
+  }
+
+  @Nullable
+  @Override
+  public Schema getSchema() {
     if (!Strings.isNullOrEmpty(sourceConfig.schema)) {
-      pipelineConfigurer.getStageConfigurer().setOutputSchema(sourceConfig.getSchema());
+      return sourceConfig.getSchema();
     }
+    return null;
   }
 
   class GetSchemaRequest {

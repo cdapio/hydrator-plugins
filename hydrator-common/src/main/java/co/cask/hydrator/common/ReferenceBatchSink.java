@@ -16,8 +16,13 @@
 
 package co.cask.hydrator.common;
 
+import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSink;
+
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * A {@link BatchSink} that verifies referenceName property
@@ -38,5 +43,14 @@ public abstract class ReferenceBatchSink<IN, KEY_OUT, VAL_OUT> extends BatchSink
     super.configurePipeline(pipelineConfigurer);
     // Verify that reference name meets dataset id constraints
     IdUtils.validateId(config.referenceName);
+    // create the external dataset this is done in the configure pipeline stage so that the external dataset with or
+    // without the schema is created when the pipeline is deployed itself.
+    Schema externalSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
+    Map<String, String> dsProperties = Collections.emptyMap();
+    if (externalSchema != null) {
+      dsProperties = Collections.singletonMap(DatasetProperties.SCHEMA, externalSchema.toString());
+    }
+    pipelineConfigurer.createDataset(config.referenceName, Constants.EXTERNAL_DATASET_TYPE,
+                                     DatasetProperties.of(dsProperties));
   }
 }
