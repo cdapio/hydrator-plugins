@@ -65,9 +65,15 @@ public class MongoDBBatchSource extends ReferenceBatchSource<Object, BSONObject,
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(getSchema());
+  }
+
+  @Nullable
+  @Override
+  public Schema getSchema() {
     try {
       BSONConverter.validateSchema(Schema.parseJson(config.schema));
-      pipelineConfigurer.getStageConfigurer().setOutputSchema(Schema.parseJson(config.schema));
+      return Schema.parseJson(config.schema);
     } catch (IOException e) {
       throw new IllegalArgumentException("Invalid output schema : " + e.getMessage(), e);
     }

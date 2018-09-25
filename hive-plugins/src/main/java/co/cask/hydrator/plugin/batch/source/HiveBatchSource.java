@@ -44,6 +44,9 @@ import org.apache.hive.service.auth.HiveAuthFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import javax.annotation.Nullable;
+
 
 /**
  * Batch source for Hive.
@@ -65,12 +68,18 @@ public class HiveBatchSource extends ReferenceBatchSource<WritableComparable, HC
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    if (config.schema != null) {
-      try {
-        pipelineConfigurer.getStageConfigurer().setOutputSchema(Schema.parseJson(config.schema));
-      } catch (Exception e) {
-        throw new IllegalArgumentException("Invalid output schema: " + e.getMessage(), e);
-      }
+    if (getSchema() != null) {
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(getSchema());
+    }
+  }
+
+  @Nullable
+  @Override
+  public Schema getSchema() {
+    try {
+      return config.schema == null ? null : Schema.parseJson(config.schema);
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Invalid output schema: " + e.getMessage(), e);
     }
   }
 

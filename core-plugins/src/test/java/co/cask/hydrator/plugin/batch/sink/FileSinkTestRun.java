@@ -18,12 +18,17 @@ package co.cask.hydrator.plugin.batch.sink;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.table.Table;
+import co.cask.cdap.api.metadata.MetadataEntity;
+import co.cask.cdap.api.metadata.MetadataScope;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.mock.batch.MockSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
+import co.cask.cdap.metadata.MetadataAdmin;
+import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
@@ -36,6 +41,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.parquet.avro.AvroParquetReader;
 import org.apache.parquet.hadoop.ParquetReader;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -54,6 +60,14 @@ import java.util.UUID;
  * Test for {@link SnapshotFileBatchSink}.
  */
 public class FileSinkTestRun extends ETLBatchTestBase {
+
+  private static MetadataAdmin metadataAdmin;
+
+  @BeforeClass
+  public static void onlyOnce() {
+    metadataAdmin = getMetadataAdmin();
+  }
+
   @ClassRule
   public static final TemporaryFolder TEMP_FOLDER = new TemporaryFolder();
   private static final Schema SCHEMA = Schema.recordOf("x",
@@ -102,6 +116,7 @@ public class FileSinkTestRun extends ETLBatchTestBase {
         }
       }
     }
+    MetadataAdmin metadataAdmin = getMetadataAdmin();
     Assert.assertEquals(ImmutableMap.of(0, "abc", 1, "def", 2, "ghi"), output);
   }
 
@@ -151,6 +166,11 @@ public class FileSinkTestRun extends ETLBatchTestBase {
       .build();
 
     ApplicationManager appManager = deployETL(conf, format + "FileSinkApp");
+    // if a schema was provided for the sink verify that the external dataset has the given schema
+    Map<String, String> metadataProperties =
+      metadataAdmin.getProperties(MetadataScope.SYSTEM,
+                                  MetadataEntity.ofDataset(NamespaceId.DEFAULT.getNamespace(), format + "Files"));
+    Assert.assertEquals(SCHEMA.toString(), metadataProperties.get(DatasetProperties.SCHEMA));
 
     DataSetManager<Table> inputManager = getDataset(inputName);
     List<StructuredRecord> input = new ArrayList<>();

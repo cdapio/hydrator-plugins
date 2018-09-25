@@ -80,10 +80,15 @@ public class BatchCassandraSource extends ReferenceBatchSource<Long, Row, Struct
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(getSchema());
+  }
+
+  @Nullable
+  @Override
+  public Schema getSchema() {
     Preconditions.checkArgument(!Strings.isNullOrEmpty(config.schema), "Schema must be specified.");
     try {
-      Schema schema = Schema.parseJson(config.schema);
-      pipelineConfigurer.getStageConfigurer().setOutputSchema(schema);
+      return Schema.parseJson(config.schema);
     } catch (Exception e) {
       throw new IllegalArgumentException("Invalid output schema: " + e.getMessage(), e);
     }
