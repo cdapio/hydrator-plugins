@@ -27,6 +27,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
+import co.cask.hydrator.common.LineageRecorder;
 import co.cask.hydrator.common.ReferenceBatchSource;
 import co.cask.hydrator.common.SourceInputFormatProvider;
 import co.cask.hydrator.common.batch.JobUtils;
@@ -92,13 +93,15 @@ public class HiveBatchSource extends ReferenceBatchSource<WritableComparable, HC
       HCatInputFormat.setInput(conf, config.dbName, config.tableName, config.partitions);
 
       HCatSchema hCatSchema = HCatInputFormat.getTableSchema(conf);
-      if (config.schema != null) {
+      if (config.getSchema() != null) {
         // if the user provided a schema then we should use that schema to read the table. This will allow user to
         // drop non-primitive types and read the table.
-        hCatSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(config.schema), hCatSchema);
+        hCatSchema = HiveSchemaConverter.toHiveSchema(config.getSchema(), hCatSchema);
         HCatInputFormat.setOutputSchema(job, hCatSchema);
       }
       context.getArguments().set(config.getDBTable(), GSON.toJson(hCatSchema));
+      LineageRecorder lineageRecorder = new LineageRecorder(context, config.referenceName);
+      lineageRecorder.createExternalDataset(config.getSchema());
       context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(HCatInputFormat.class, conf)));
     } finally {
       Thread.currentThread().setContextClassLoader(classLoader);
@@ -114,7 +117,7 @@ public class HiveBatchSource extends ReferenceBatchSource<WritableComparable, HC
       // if the user did not provide a schema then convert the hive table's schema to cdap schema
       schema = HiveSchemaConverter.toSchema(hCatSchema);
     } else {
-      schema = Schema.parseJson(config.schema);
+      schema = config.getSchema();
     }
     hCatRecordTransformer = new HCatRecordTransformer(hCatSchema, schema);
   }

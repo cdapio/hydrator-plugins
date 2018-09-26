@@ -25,12 +25,10 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
-import co.cask.cdap.api.lineage.field.EndPoint;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
-import co.cask.cdap.etl.api.lineage.field.FieldOperation;
-import co.cask.cdap.etl.api.lineage.field.FieldReadOperation;
+import co.cask.hydrator.common.LineageRecorder;
 import co.cask.hydrator.common.ReferenceBatchSource;
 import co.cask.hydrator.common.SourceInputFormatProvider;
 import co.cask.hydrator.common.batch.JobUtils;
@@ -54,7 +52,6 @@ import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -166,6 +163,7 @@ public abstract class AbstractFileBatchSource<T extends FileSourceConfig>
     if (fileStatus == null && config.ignoreNonExistingFolders) {
       LOG.warn(String.format("Input path %s does not exist and ignore non existing folder is set. " +
           "The pipeline will not read any data", config.getPath()));
+      recordLineage(context);
       context.setInput(Input.of(config.referenceName,
           new SourceInputFormatProvider(EmptyInputFormat.class.getName(), conf)));
     } else if (fileStatus == null) {
@@ -183,23 +181,24 @@ public abstract class AbstractFileBatchSource<T extends FileSourceConfig>
         PathTrackingInputFormat.configure(job, conf, config.pathField, config.filenameOnly,
             config.format, config.schema);
       }
+      recordLineage(context);
       context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(config.inputFormatClass, conf)));
     }
+  }
 
-    List<Schema.Field> fields = null;
-
+  private void recordLineage(BatchSourceContext context) {
+    LineageRecorder lineageRecorder = new LineageRecorder(context, config.referenceName);
+    lineageRecorder.createExternalDataset(config.getSchema());
+    Schema schema = null;
     if (config.getSchema() != null) {
-      fields = config.getSchema().getFields();
+      schema = config.getSchema();
     } else if ("text".equalsIgnoreCase(config.format)) {
-      fields = PathTrackingInputFormat.getTextOutputSchema(config.pathField).getFields();
+      schema = PathTrackingInputFormat.getTextOutputSchema(config.pathField);
     }
 
-    if (fields != null) {
-      FieldOperation operation = new FieldReadOperation("Read", "Read from files",
-                                                        EndPoint.of(context.getNamespace(), config.referenceName),
-                                                        fields.stream().map(Schema.Field::getName)
-                                                          .collect(Collectors.toList()));
-      context.record(Collections.singletonList(operation));
+    if (schema != null && schema.getFields() != null) {
+      lineageRecorder.recordRead("Read", "Read from files",
+                                 schema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList()));
     }
   }
 

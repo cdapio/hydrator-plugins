@@ -29,6 +29,7 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
+import co.cask.hydrator.common.LineageRecorder;
 import co.cask.hydrator.common.ReferenceBatchSource;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.common.SourceInputFormatProvider;
@@ -65,12 +66,9 @@ public class MongoDBBatchSource extends ReferenceBatchSource<Object, BSONObject,
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
-    try {
-      BSONConverter.validateSchema(Schema.parseJson(config.schema));
-      pipelineConfigurer.getStageConfigurer().setOutputSchema(Schema.parseJson(config.schema));
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Invalid output schema : " + e.getMessage(), e);
-    }
+    Schema schema = config.getSchema();
+    BSONConverter.validateSchema(schema);
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(schema);
   }
 
   @Override
@@ -96,7 +94,8 @@ public class MongoDBBatchSource extends ReferenceBatchSource<Object, BSONObject,
         className).asSubclass(MongoSplitter.class);
       MongoConfigUtil.setSplitterClass(conf, klass);
     }
-
+    LineageRecorder lineageRecorder = new LineageRecorder(context, config.referenceName);
+    lineageRecorder.createExternalDataset(config.getSchema());
     context.setInput(Input.of(config.referenceName,
                               new SourceInputFormatProvider(MongoConfigUtil.getInputFormat(conf), conf)));
   }
@@ -104,7 +103,7 @@ public class MongoDBBatchSource extends ReferenceBatchSource<Object, BSONObject,
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    bsonConverter = new BSONConverter(Schema.parseJson(config.schema));
+    bsonConverter = new BSONConverter(config.getSchema());
   }
 
   @Override
@@ -178,6 +177,22 @@ public class MongoDBBatchSource extends ReferenceBatchSource<Object, BSONObject,
       this.inputQuery = inputQuery;
       this.inputFields = inputFields;
       this.splitterClass = splitterClass;
+    }
+
+    /**
+     * @return {@link Schema} of the dataset if one was given else null
+     * @throws IllegalArgumentException if the schema is null or not a valid JSON
+     */
+    public Schema getSchema() {
+      if (schema == null) {
+        throw new IllegalArgumentException("Schema cannot be null.");
+      }
+      try {
+        return Schema.parseJson(schema);
+      } catch (IOException e) {
+        throw new IllegalArgumentException(String.format("Unable to parse schema '%s'. Reason: %s",
+                                                         schema, e.getMessage()), e);
+      }
     }
   }
 

@@ -18,12 +18,17 @@ package co.cask.hydrator.plugin.batch.sink;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.table.Table;
+import co.cask.cdap.api.metadata.MetadataEntity;
+import co.cask.cdap.api.metadata.MetadataScope;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.mock.batch.MockSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
+import co.cask.cdap.metadata.MetadataAdmin;
+import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
@@ -36,6 +41,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.parquet.avro.AvroParquetReader;
 import org.apache.parquet.hadoop.ParquetReader;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -59,6 +65,12 @@ public class FileSinkTestRun extends ETLBatchTestBase {
   private static final Schema SCHEMA = Schema.recordOf("x",
                                                        Schema.Field.of("i", Schema.of(Schema.Type.INT)),
                                                        Schema.Field.of("s", Schema.of(Schema.Type.STRING)));
+  private static MetadataAdmin metadataAdmin;
+
+  @BeforeClass
+  public static void setUp() {
+    metadataAdmin = getMetadataAdmin();
+  }
 
   @Test
   public void testTextFileSink() throws Exception {
@@ -79,6 +91,16 @@ public class FileSinkTestRun extends ETLBatchTestBase {
       }
     }
     Assert.assertEquals(ImmutableMap.of(0, "abc", 1, "def", 2, "ghi"), output);
+    validateDatasetSchema("text");
+  }
+
+  private void validateDatasetSchema(String format) {
+    // if a schema was provided for the sink verify that the external dataset has the given schema
+    Map<String, String> metadataProperties =
+      metadataAdmin.getProperties(MetadataScope.SYSTEM,
+                                  MetadataEntity.ofDataset(NamespaceId.DEFAULT.getNamespace(),
+                                                           getReferenceName(format)));
+    Assert.assertEquals(SCHEMA.toString(), metadataProperties.get(DatasetProperties.SCHEMA));
   }
 
   @Test
@@ -103,6 +125,7 @@ public class FileSinkTestRun extends ETLBatchTestBase {
       }
     }
     Assert.assertEquals(ImmutableMap.of(0, "abc", 1, "def", 2, "ghi"), output);
+    validateDatasetSchema("avro");
   }
 
   @Test
@@ -127,6 +150,7 @@ public class FileSinkTestRun extends ETLBatchTestBase {
       }
     }
     Assert.assertEquals(ImmutableMap.of(0, "abc", 1, "def", 2, "ghi"), output);
+    validateDatasetSchema("parquet");
   }
 
   /**
@@ -140,7 +164,7 @@ public class FileSinkTestRun extends ETLBatchTestBase {
     File baseDir = TEMP_FOLDER.newFolder(format + "FileSink");
     File outputDir = new File(baseDir, "out");
     Map<String, String> properties = ImmutableMap.of("path", outputDir.getAbsolutePath(),
-                                                     "referenceName", format + "Files",
+                                                     "referenceName", getReferenceName(format),
                                                      "format", format,
                                                      "schema", "${schema}");
 
@@ -163,6 +187,10 @@ public class FileSinkTestRun extends ETLBatchTestBase {
     arguments.put("schema", SCHEMA.toString());
     runETLOnce(appManager, arguments);
     return outputDir;
+  }
+
+  private String getReferenceName(String format) {
+    return format + "Files";
   }
 }
 

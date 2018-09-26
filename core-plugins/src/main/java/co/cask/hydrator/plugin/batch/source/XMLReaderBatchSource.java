@@ -32,6 +32,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
+import co.cask.hydrator.common.LineageRecorder;
 import co.cask.hydrator.common.ReferenceBatchSource;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.common.SourceInputFormatProvider;
@@ -146,6 +147,9 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
 
     XMLInputFormat.setInputPathFilter(job, BatchXMLFileFilter.class);
     XMLInputFormat.addInputPath(job, new Path(config.path));
+    // create the external dataset with the given schema
+    LineageRecorder lineageRecorder = new LineageRecorder(context, config.referenceName);
+    lineageRecorder.createExternalDataset(DEFAULT_XML_SCHEMA);
     context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(XMLInputFormat.class, conf)));
   }
 

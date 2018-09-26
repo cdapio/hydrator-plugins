@@ -28,6 +28,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
+import co.cask.hydrator.common.LineageRecorder;
 import co.cask.hydrator.common.ReferenceBatchSource;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.common.SourceInputFormatProvider;
@@ -114,17 +115,14 @@ public class BatchCassandraSource extends ReferenceBatchSource<Long, Row, Struct
       }
     }
     CqlConfigHelper.setInputCql(conf, config.query);
+    LineageRecorder lineageRecorder = new LineageRecorder(context, config.referenceName);
+    lineageRecorder.createExternalDataset(config.getSchema());
     context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(CqlInputFormat.class, conf)));
   }
 
   @Override
   public void transform(KeyValue<Long, Row> input, Emitter<StructuredRecord> emitter) throws Exception {
-    Schema schema;
-    try {
-      schema = Schema.parseJson(config.schema);
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Invalid schema: " + e.getMessage());
-    }
+    Schema schema = config.getSchema();
     StructuredRecord.Builder builder = StructuredRecord.builder(schema);
     for (Schema.Field field : schema.getFields()) {
       builder.set(field.getName(), extractValue(input.getValue(), field));
@@ -259,6 +257,15 @@ public class BatchCassandraSource extends ReferenceBatchSource<Long, Row, Struct
       this.query = query;
       this.schema = schema;
       this.properties = properties;
+    }
+
+    @Nullable
+    private Schema getSchema() {
+      try {
+        return schema == null ? null : Schema.parseJson(schema);
+      } catch (IOException e) {
+        throw new IllegalArgumentException("Invalid schema: " + e.getMessage());
+      }
     }
   }
 
