@@ -29,6 +29,7 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
+import co.cask.hydrator.common.LineageRecorder;
 import co.cask.hydrator.common.ReferenceBatchSource;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.common.SourceInputFormatProvider;
@@ -96,7 +97,8 @@ public class MongoDBBatchSource extends ReferenceBatchSource<Object, BSONObject,
         className).asSubclass(MongoSplitter.class);
       MongoConfigUtil.setSplitterClass(conf, klass);
     }
-
+    LineageRecorder lineageRecorder = new LineageRecorder(context, config.referenceName);
+    lineageRecorder.createDataset(config.schema);
     context.setInput(Input.of(config.referenceName,
                               new SourceInputFormatProvider(MongoConfigUtil.getInputFormat(conf), conf)));
   }

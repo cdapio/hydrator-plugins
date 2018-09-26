@@ -31,6 +31,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
+import co.cask.hydrator.common.LineageRecorder;
 import co.cask.hydrator.common.ReferenceBatchSource;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.common.SourceInputFormatProvider;
@@ -227,6 +228,8 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     if (sourceConfig.schema != null) {
       hConf.set(DBUtils.OVERRIDE_SCHEMA, sourceConfig.schema);
     }
+    LineageRecorder lineageRecorder = new LineageRecorder(context, sourceConfig.referenceName);
+    lineageRecorder.createDataset(sourceConfig.schema);
     context.setInput(Input.of(sourceConfig.referenceName,
                               new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf)));
   }

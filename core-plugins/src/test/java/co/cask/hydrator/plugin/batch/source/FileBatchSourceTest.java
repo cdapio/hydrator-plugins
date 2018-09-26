@@ -20,8 +20,11 @@ import co.cask.cdap.api.artifact.ArtifactSummary;
 import co.cask.cdap.api.artifact.ArtifactVersion;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.api.dataset.table.Table;
+import co.cask.cdap.api.metadata.MetadataEntity;
+import co.cask.cdap.api.metadata.MetadataScope;
 import co.cask.cdap.datapipeline.DataPipelineApp;
 import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.batch.BatchSource;
@@ -30,6 +33,7 @@ import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
+import co.cask.cdap.metadata.MetadataAdmin;
 import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.id.ApplicationId;
@@ -94,6 +98,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
   private static String fileName = dateFormat.format(new Date(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1)));
   private static File file1;
   private static File file2;
+  private static MetadataAdmin metadataAdmin;
 
   @BeforeClass
   public static void setupTest() throws Exception {
@@ -106,6 +111,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     FileUtils.writeStringToFile(file1, "Hello,World");
     file2 = temporaryFolder.newFile(fileName + "-test2.txt");
     FileUtils.writeStringToFile(file2, "CDAP,Platform");
+    metadataAdmin = getMetadataAdmin();
   }
 
   @AfterClass
@@ -515,6 +521,9 @@ public class FileBatchSourceTest extends HydratorTestBase {
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
 
     Assert.assertEquals(expected, output);
+
+    // verify that the external dataset has the given schema
+    verifyDatasetSchema("TestFile", textSchema);
   }
 
   @Ignore // TODO: CDAP-12491
@@ -684,6 +693,9 @@ public class FileBatchSourceTest extends HydratorTestBase {
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
     Assert.assertEquals(expected, output);
+
+    // verify that the external dataset has the given schema
+    verifyDatasetSchema("TestFile", RECORD_SCHEMA);
   }
 
   @Test
@@ -809,5 +821,12 @@ public class FileBatchSourceTest extends HydratorTestBase {
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
     workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 2, TimeUnit.MINUTES);
+  }
+
+  private void verifyDatasetSchema(String dsName, Schema expectedSchema) {
+    Map<String, String> metadataProperties =
+      metadataAdmin.getProperties(MetadataScope.SYSTEM, MetadataEntity.ofDataset(NamespaceId.DEFAULT.getNamespace(),
+                                                                                 dsName));
+    Assert.assertEquals(expectedSchema.toString(), metadataProperties.get(DatasetProperties.SCHEMA));
   }
 }

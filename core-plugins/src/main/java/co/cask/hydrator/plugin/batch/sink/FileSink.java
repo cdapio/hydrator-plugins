@@ -29,6 +29,7 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
+import co.cask.hydrator.common.LineageRecorder;
 import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.common.batch.JobUtils;
@@ -95,6 +96,11 @@ public class FileSink extends ReferenceBatchSink<StructuredRecord, Object, Objec
     }
 
     Schema schema = config.getSchema(context.getInputSchema());
+
+    if (schema != null) {
+      LineageRecorder lineageRecorder = new LineageRecorder(context, config.referenceName);
+      lineageRecorder.createDataset(schema.toString());
+    }
 
     if ("text".equals(config.format)) {
       context.addOutput(Output.of(config.referenceName,

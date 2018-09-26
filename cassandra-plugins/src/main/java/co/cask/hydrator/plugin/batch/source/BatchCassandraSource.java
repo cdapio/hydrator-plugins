@@ -28,6 +28,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
+import co.cask.hydrator.common.LineageRecorder;
 import co.cask.hydrator.common.ReferenceBatchSource;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.common.SourceInputFormatProvider;
@@ -114,6 +115,8 @@ public class BatchCassandraSource extends ReferenceBatchSource<Long, Row, Struct
       }
     }
     CqlConfigHelper.setInputCql(conf, config.query);
+    LineageRecorder lineageRecorder = new LineageRecorder(context, config.referenceName);
+    lineageRecorder.createDataset(config.schema);
     context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(CqlInputFormat.class, conf)));
   }
 

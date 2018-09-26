@@ -31,6 +31,7 @@ import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.cdap.format.RecordPutTransformer;
+import co.cask.hydrator.common.LineageRecorder;
 import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.SchemaValidator;
 import co.cask.hydrator.common.batch.JobUtils;
@@ -87,7 +88,8 @@ public class HBaseSink extends ReferenceBatchSink<StructuredRecord, NullWritable
 
     Configuration conf = job.getConfiguration();
     HBaseConfiguration.addHbaseResources(conf);
-
+    LineageRecorder lineageRecorder = new LineageRecorder(context, config.referenceName);
+    lineageRecorder.createDataset(config.schema);
     context.addOutput(Output.of(config.referenceName, new HBaseOutputFormatProvider(config, conf)));
   }
 

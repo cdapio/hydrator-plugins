@@ -27,6 +27,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
+import co.cask.hydrator.common.LineageRecorder;
 import co.cask.hydrator.common.ReferenceBatchSource;
 import co.cask.hydrator.common.SourceInputFormatProvider;
 import co.cask.hydrator.common.batch.JobUtils;
@@ -99,6 +100,8 @@ public class HiveBatchSource extends ReferenceBatchSource<WritableComparable, HC
         HCatInputFormat.setOutputSchema(job, hCatSchema);
       }
       context.getArguments().set(config.getDBTable(), GSON.toJson(hCatSchema));
+      LineageRecorder lineageRecorder = new LineageRecorder(context, config.referenceName);
+      lineageRecorder.createDataset(config.schema);
       context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(HCatInputFormat.class, conf)));
     } finally {
       Thread.currentThread().setContextClassLoader(classLoader);

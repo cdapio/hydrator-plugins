@@ -28,6 +28,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
+import co.cask.hydrator.common.LineageRecorder;
 import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.batch.ConfigurationUtils;
 import co.cask.hydrator.common.batch.JobUtils;
@@ -83,6 +84,8 @@ public class HiveBatchSink extends ReferenceBatchSink<StructuredRecord, NullWrit
     HCatSchema hiveSchema = sinkOutputFormatProvider.getHiveSchema();
 
     context.getArguments().set(config.getDBTable(), GSON.toJson(hiveSchema));
+    LineageRecorder lineageRecorder = new LineageRecorder(context, config.referenceName);
+    lineageRecorder.createDataset(config.schema);
     context.addOutput(Output.of(config.referenceName, sinkOutputFormatProvider));
   }
 
