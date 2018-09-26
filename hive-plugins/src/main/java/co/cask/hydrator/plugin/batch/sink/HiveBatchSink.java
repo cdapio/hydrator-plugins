@@ -28,6 +28,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
+import co.cask.hydrator.common.LineageRecorder;
 import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.batch.ConfigurationUtils;
 import co.cask.hydrator.common.batch.JobUtils;
@@ -83,6 +84,8 @@ public class HiveBatchSink extends ReferenceBatchSink<StructuredRecord, NullWrit
     HCatSchema hiveSchema = sinkOutputFormatProvider.getHiveSchema();
 
     context.getArguments().set(config.getDBTable(), GSON.toJson(hiveSchema));
+    LineageRecorder lineageRecorder = new LineageRecorder(context, config.referenceName);
+    lineageRecorder.createExternalDataset(config.getSchema());
     context.addOutput(Output.of(config.referenceName, sinkOutputFormatProvider));
   }
 
@@ -94,7 +97,7 @@ public class HiveBatchSink extends ReferenceBatchSink<StructuredRecord, NullWrit
     if (config.schema == null) {
       schema = HiveSchemaConverter.toSchema(hCatSchema);
     } else {
-      schema = Schema.parseJson(config.schema);
+      schema = config.getSchema();
     }
     recordToHCatRecordTransformer = new RecordToHCatRecordTransformer(hCatSchema, schema);
   }
@@ -139,9 +142,9 @@ public class HiveBatchSink extends ReferenceBatchSink<StructuredRecord, NullWrit
         }
       }
 
-      if (config.schema != null) {
+      if (config.getSchema() != null) {
         // if the user did provide a sink schema to use then use that one
-        hiveSchema = HiveSchemaConverter.toHiveSchema(Schema.parseJson(config.schema), hiveSchema);
+        hiveSchema = HiveSchemaConverter.toHiveSchema(config.getSchema(), hiveSchema);
       }
       HCatOutputFormat.setSchema(modifiedConf, hiveSchema);
       conf = ConfigurationUtils.getNonDefaultConfigurations(modifiedConf);

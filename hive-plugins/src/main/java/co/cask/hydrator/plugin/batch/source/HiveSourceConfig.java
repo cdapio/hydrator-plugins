@@ -18,8 +18,10 @@ package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.plugin.batch.HiveConfig;
 
+import java.io.IOException;
 import javax.annotation.Nullable;
 
 /**
@@ -39,4 +41,17 @@ public class HiveSourceConfig extends HiveConfig {
     "a source then you should provide a schema here with non-primitive fields dropped else your pipeline will fail.")
   @Nullable
   public String schema;
+
+  /**
+   * @return {@link Schema} of the dataset if one was given else null
+   */
+  @Nullable
+  public Schema getSchema() {
+    try {
+      return schema == null ? null : Schema.parseJson(schema);
+    } catch (IOException e) {
+      throw new IllegalArgumentException(String.format("Unable to parse schema '%s'. Reason: %s",
+                                                       schema, e.getMessage()), e);
+    }
+  }
 }

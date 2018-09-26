@@ -18,10 +18,12 @@ package co.cask.hydrator.plugin;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Macro;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.plugin.sink.HBaseSink;
 import co.cask.hydrator.plugin.source.HBaseSource;
 
+import java.io.IOException;
 import javax.annotation.Nullable;
 
 /**
@@ -57,5 +59,21 @@ public class HBaseConfig extends ReferencePluginConfig {
     this.tableName = tableName;
     this.rowField = rowField;
     this.schema = schema;
+  }
+
+  /**
+   * @return {@link Schema} of the dataset if one was given
+   * @throws IllegalArgumentException if the schema is null or not as valid JSON
+   */
+  public Schema getSchema() {
+    if (schema == null) {
+      throw new IllegalArgumentException("Schema cannot be null");
+    }
+    try {
+      return Schema.parseJson(schema);
+    } catch (IOException e) {
+      throw new IllegalArgumentException(String.format("Unable to parse schema '%s'. Reason: %s",
+                                                       schema, e.getMessage()), e);
+    }
   }
 }

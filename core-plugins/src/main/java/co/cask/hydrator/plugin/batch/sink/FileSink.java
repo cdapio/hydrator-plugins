@@ -29,6 +29,7 @@ import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
+import co.cask.hydrator.common.LineageRecorder;
 import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.common.batch.JobUtils;
@@ -95,6 +96,11 @@ public class FileSink extends ReferenceBatchSink<StructuredRecord, Object, Objec
     }
 
     Schema schema = config.getSchema(context.getInputSchema());
+
+    // create the external dataset with the given schema
+    LineageRecorder lineageRecorder = new LineageRecorder(context, config.referenceName);
+    lineageRecorder.createExternalDataset(schema);
+
 
     if ("text".equals(config.format)) {
       context.addOutput(Output.of(config.referenceName,
@@ -223,11 +229,8 @@ public class FileSink extends ReferenceBatchSink<StructuredRecord, Object, Objec
       if (containsMacro("schema")) {
         return null;
       }
-      if (schema == null) {
-        return inputSchema;
-      }
       try {
-        return Schema.parseJson(schema);
+        return schema == null ? null : Schema.parseJson(schema);
       } catch (IOException e) {
         throw new IllegalArgumentException("Unable to parse schema: " + e.getMessage(), e);
       }

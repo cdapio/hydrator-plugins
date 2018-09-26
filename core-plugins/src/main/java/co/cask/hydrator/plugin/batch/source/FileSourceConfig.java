@@ -203,12 +203,10 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
     }
   }
 
+  @Nullable
   protected Schema getSchema() {
     try {
-      if (schema == null) {
-        return null;
-      }
-      return Schema.parseJson(schema);
+      return schema == null ? null : Schema.parseJson(schema);
     } catch (Exception e) {
       throw new IllegalArgumentException("Unable to parse schema with error: " + e.getMessage(), e);
     }

@@ -31,6 +31,7 @@ import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.cdap.format.RecordPutTransformer;
+import co.cask.hydrator.common.LineageRecorder;
 import co.cask.hydrator.common.ReferenceBatchSink;
 import co.cask.hydrator.common.SchemaValidator;
 import co.cask.hydrator.common.batch.JobUtils;
@@ -87,7 +88,8 @@ public class HBaseSink extends ReferenceBatchSink<StructuredRecord, NullWritable
 
     Configuration conf = job.getConfiguration();
     HBaseConfiguration.addHbaseResources(conf);
-
+    LineageRecorder lineageRecorder = new LineageRecorder(context, config.referenceName);
+    lineageRecorder.createExternalDataset(config.getSchema());
     context.addOutput(Output.of(config.referenceName, new HBaseOutputFormatProvider(config, conf)));
   }
 
@@ -136,14 +138,9 @@ public class HBaseSink extends ReferenceBatchSink<StructuredRecord, NullWritable
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    Schema outputSchema = null;
     // If a schema string is present in the properties, use that to construct the outputSchema and pass it to the
     // recordPutTransformer
-    String schemaString = config.schema;
-    if (schemaString != null) {
-      outputSchema = Schema.parseJson(schemaString);
-    }
-    recordPutTransformer = new RecordPutTransformer(config.rowField, outputSchema);
+    recordPutTransformer = new RecordPutTransformer(config.rowField, config.getSchema());
   }
 
   @Override
