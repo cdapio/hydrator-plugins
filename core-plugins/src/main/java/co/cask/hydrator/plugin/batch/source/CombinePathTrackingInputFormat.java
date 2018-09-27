@@ -61,31 +61,15 @@ public class CombinePathTrackingInputFormat extends CombineFileInputFormat<NullW
     List<InputSplit> fileSplits = super.getSplits(job);
     Configuration hConf = job.getConfiguration();
 
-    boolean copyHeader = hConf.getBoolean(PathTrackingInputFormat.COPY_HEADER, false);
+    boolean shouldCopyHeader = hConf.getBoolean(PathTrackingInputFormat.COPY_HEADER, false);
     List<InputSplit> splits = new ArrayList<>(fileSplits.size());
-
-    if (!copyHeader) {
-      for (InputSplit split : fileSplits) {
-        splits.add(new CombineHeaderFileSplit((CombineFileSplit) split, null));
-      }
-      return splits;
-    }
 
     String header = null;
     for (InputSplit split : fileSplits) {
       CombineFileSplit combineFileSplit = (CombineFileSplit) split;
 
-      Path[] paths = combineFileSplit.getPaths();
-      // read the header from one of the files if the header hasn't been determined yet
-      // if the split has no paths for some reason, it is ok for the header to remain null,
-      // as no records would be read from that split anyway.
-      if (header == null) {
-        for (Path path : paths) {
-          header = getHeader(path.getFileSystem(hConf), path);
-          if (header != null) {
-            break;
-          }
-        }
+      if (shouldCopyHeader && header == null) {
+        header = getHeader(hConf, combineFileSplit);
       }
       splits.add(new CombineHeaderFileSplit(combineFileSplit, header));
     }
@@ -94,10 +78,18 @@ public class CombinePathTrackingInputFormat extends CombineFileInputFormat<NullW
   }
 
   @Nullable
-  private String getHeader(FileSystem fs, Path path) throws IOException {
-    try (BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(path), StandardCharsets.UTF_8))) {
-      return reader.readLine();
+  private String getHeader(Configuration hConf, CombineFileSplit split) throws IOException {
+    String header = null;
+    for (Path path : split.getPaths()) {
+      try (FileSystem fs = path.getFileSystem(hConf);
+        BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(path), StandardCharsets.UTF_8))) {
+        header = reader.readLine();
+        if (header != null) {
+          break;
+        }
+      }
     }
+    return header;
   }
 
   /**
