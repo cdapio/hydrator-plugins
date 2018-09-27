@@ -580,7 +580,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(expected, output);
 
     // verify that the external dataset has the given schema
-    verifyDatasetSchema("TestFile", textSchema);
+    verifyDatasetSchema(appName + "TestFile", textSchema);
   }
 
   @Ignore // TODO: CDAP-12491
@@ -752,7 +752,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(expected, output);
 
     // verify that the external dataset has the given schema
-    verifyDatasetSchema("TestFile", RECORD_SCHEMA);
+    verifyDatasetSchema(appName + "TestFile", RECORD_SCHEMA);
   }
 
   @Test
@@ -845,7 +845,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
                                                       String outputDatasetName, Schema schema) throws Exception {
 
     ImmutableMap.Builder<String, String> sourceProperties = ImmutableMap.<String, String>builder()
-                                                              .put(Constants.Reference.REFERENCE_NAME, "TestFile")
+                                                              .put(Constants.Reference.REFERENCE_NAME,
+                                                                   appName + "TestFile")
                                                               .put(Properties.File.FILESYSTEM, "Text")
                                                               .put(Properties.File.PATH, file.getAbsolutePath())
                                                               .put(Properties.File.FORMAT, format)
