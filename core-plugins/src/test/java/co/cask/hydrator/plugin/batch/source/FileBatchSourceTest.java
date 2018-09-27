@@ -66,9 +66,12 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.Writer;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -410,6 +413,60 @@ public class FileBatchSourceTest extends HydratorTestBase {
     }
     Assert.assertTrue(outputValue.contains("Hello,World"));
     Assert.assertTrue(outputValue.contains("CDAP,Platform"));
+  }
+
+  @Test
+  public void testCopyHeader() throws Exception {
+    File inputFile = temporaryFolder.newFile();
+
+    try (Writer writer = new FileWriter(inputFile)) {
+      writer.write("header123\n");
+      writer.write("123456789\n");
+      writer.write("987654321\n");
+    }
+
+    // each line is 10 bytes. So a max split size of 10 should break the file into 3 splits.
+    Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
+      .put(Constants.Reference.REFERENCE_NAME, "CopyHeader")
+      .put("copyHeader", "true")
+      .put("maxSplitSize", "10")
+      .put(Properties.File.PATH, inputFile.getAbsolutePath())
+      .build();
+
+    ETLStage source = new ETLStage("FileInput", new ETLPlugin("File", BatchSource.PLUGIN_TYPE, sourceProperties, null));
+
+    String outputDatasetName = "copyHeaderOutput";
+    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
+
+    ETLBatchConfig config = ETLBatchConfig.builder()
+      .addStage(source)
+      .addStage(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, config);
+    ApplicationId appId = NamespaceId.DEFAULT.app("CopyHeaderTest");
+
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
+
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+
+    Map<String, Integer> expected = new HashMap<>();
+    expected.put("header123", 3);
+    expected.put("123456789", 1);
+    expected.put("987654321", 1);
+    Map<String, Integer> actual = new HashMap<>();
+    for (StructuredRecord record : MockSink.readOutput(outputManager)) {
+      String body = record.get("body");
+      if (actual.containsKey(body)) {
+        actual.put(body, actual.get(body) + 1);
+      } else {
+        actual.put(body, 1);
+      }
+    }
+    Assert.assertEquals(expected, actual);
   }
 
   @Test
