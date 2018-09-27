@@ -179,7 +179,7 @@ public abstract class AbstractFileBatchSource<T extends FileSourceConfig>
       }
       if (CombinePathTrackingInputFormat.class.getName().equals(config.inputFormatClass)) {
         PathTrackingInputFormat.configure(job, conf, config.pathField, config.filenameOnly,
-            config.format, config.schema);
+            config.format, config.schema, config.shouldCopyHeader());
       }
       recordLineage(context);
       context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(config.inputFormatClass, conf)));

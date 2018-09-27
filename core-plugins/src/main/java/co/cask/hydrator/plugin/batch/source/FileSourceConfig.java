@@ -112,6 +112,11 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
   @Description("Schema for the source")
   public String schema;
 
+  // this is a hidden property that only exists for wrangler's parse-as-csv that uses the header as the schema
+  // when this is true and the format is text, the header will be the first record returned by every record reader
+  @Nullable
+  private Boolean copyHeader;
+
   public FileSourceConfig() {
     this(null, null, null, null, null, null, null, null, null, null, null, null);
   }
@@ -137,6 +142,7 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
     this.filenameOnly = fileNameOnly == null ? false : fileNameOnly;
     this.pathField = pathField;
     this.schema = schema;
+    this.copyHeader = false;
   }
 
   protected void validate() {
@@ -213,4 +219,8 @@ public abstract class FileSourceConfig extends ReferencePluginConfig {
   }
 
   protected abstract String getPath();
+
+  boolean shouldCopyHeader() {
+    return copyHeader;
+  }
 }
