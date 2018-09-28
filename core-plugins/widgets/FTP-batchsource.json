@@ -22,11 +22,6 @@
           "name": "fileRegex"
         },
         {
-          "widget-type": "textbox",
-          "label": "Input Format Class",
-          "name": "inputFormatClassName"
-        },
-        {
           "widget-type": "json-editor",
           "label": "File System Properties",
           "name": "fileSystemProperties"

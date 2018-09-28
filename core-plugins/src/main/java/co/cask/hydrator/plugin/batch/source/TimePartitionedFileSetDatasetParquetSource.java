@@ -32,7 +32,7 @@ import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.cdap.etl.api.lineage.field.FieldOperation;
 import co.cask.cdap.etl.api.lineage.field.FieldReadOperation;
-import co.cask.hydrator.plugin.common.AvroToStructuredTransformer;
+import co.cask.hydrator.format.AvroToStructuredTransformer;
 import co.cask.hydrator.plugin.common.FileSetUtil;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;

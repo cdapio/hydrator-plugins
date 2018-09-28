@@ -54,6 +54,11 @@
     </dependency>
     <dependency>
       <groupId>co.cask.hydrator</groupId>
+      <artifactId>format-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>co.cask.hydrator</groupId>
       <artifactId>hydrator-common</artifactId>
       <version>${project.version}</version>
     </dependency>

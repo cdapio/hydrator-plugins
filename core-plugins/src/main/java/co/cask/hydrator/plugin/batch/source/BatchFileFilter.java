@@ -14,9 +14,8 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.common;
+package co.cask.hydrator.plugin.batch.source;
 
-import co.cask.hydrator.plugin.batch.source.FileBatchSource;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.hadoop.conf.Configuration;

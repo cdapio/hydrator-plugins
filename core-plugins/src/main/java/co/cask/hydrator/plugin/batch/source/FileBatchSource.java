@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015-2016 Cask Data, Inc.
+ * Copyright © 2015-2018 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -17,13 +17,30 @@
 package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
+import co.cask.cdap.api.common.Bytes;
+import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.DatasetProperties;
+import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.etl.api.batch.BatchSource;
-import com.google.common.annotations.VisibleForTesting;
+import co.cask.cdap.etl.api.batch.BatchSourceContext;
+import co.cask.hydrator.format.PathTrackingInputFormat;
+import co.cask.hydrator.format.plugin.AbstractFileSource;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
-import javax.annotation.Nullable;
+import java.lang.reflect.Type;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+
 
 /**
  * A {@link BatchSource} to use any distributed file system as a Source.
@@ -31,52 +48,78 @@ import javax.annotation.Nullable;
 @Plugin(type = "batchsource")
 @Name("File")
 @Description("Batch source for File Systems")
-public class FileBatchSource extends AbstractFileBatchSource {
-  protected static final String PATH_DESCRIPTION = "Path to file(s) to be read. If a directory is specified, " +
-    "terminate the path name with a \'/\'. For distributed file system such as HDFS, file system name should come" +
-    " from 'fs.DefaultFS' property in the 'core-site.xml'. For example, 'hdfs://mycluster.net:8020/input', where" +
-    " value of the property 'fs.DefaultFS' in the 'core-site.xml' is 'hdfs://mycluster.net:8020'. The path uses " +
-    "filename expansion (globbing) to read files.";
+public class FileBatchSource extends AbstractFileSource {
+  public static final Schema DEFAULT_SCHEMA = PathTrackingInputFormat.getTextOutputSchema(null);
+  static final String INPUT_NAME_CONFIG = "input.path.name";
+  static final String INPUT_REGEX_CONFIG = "input.path.regex";
+  static final String LAST_TIME_READ = "last.time.read";
+  static final String CUTOFF_READ_TIME = "cutoff.read.time";
+  static final String USE_TIMEFILTER = "timefilter";
+  private static final Gson GSON = new Gson();
+  private static final Type ARRAYLIST_DATE_TYPE = new TypeToken<ArrayList<Date>>() { }.getType();
+  private final FileSourceConfig config;
 
-  private final FileBatchConfig config;
-
-  public FileBatchSource(FileBatchConfig config) {
+  public FileBatchSource(FileSourceConfig config) {
     super(config);
     this.config = config;
   }
 
-  @VisibleForTesting
-  FileBatchConfig getConfig() {
-    return config;
+  @Override
+  public void prepareRun(BatchSourceContext context) throws Exception {
+    super.prepareRun(context);
+
+    // Need to create dataset now if macro was provided at configure time
+    if (config.getTimeTable() != null && !context.datasetExists(config.getTimeTable())) {
+      context.createDataset(config.getTimeTable(), KeyValueTable.class.getName(), DatasetProperties.EMPTY);
+    }
   }
 
-  /**
-   * Config class that contains all the properties needed for the file source.
-   */
-  public static class FileBatchConfig extends FileSourceConfig {
-    @Description(PATH_DESCRIPTION)
-    @Macro
-    public String path;
-
-    @VisibleForTesting
-    public FileBatchConfig() {
-      this(null, null, null, null, null, null, null, null, null, null, null, null, null);
+  @Override
+  protected Map<String, String> getFileSystemProperties(BatchSourceContext context) {
+    Map<String, String> properties = new HashMap<>(config.getFileSystemProperties());
+    if (config.shouldCopyHeader()) {
+      properties.put(PathTrackingInputFormat.COPY_HEADER, "true");
     }
 
-    public FileBatchConfig(String referenceName, @Nullable String fileRegex, @Nullable String timeTable,
-                           @Nullable String inputFormatClass, @Nullable String fileSystemProperties,
-                           @Nullable String format, @Nullable Long maxSplitSize,
-                           @Nullable Boolean ignoreNonExistingFolders, @Nullable Boolean recursive,
-                           String path, @Nullable String pathField,
-                           @Nullable Boolean fileNameOnly, @Nullable String schema) {
-      super(referenceName, fileRegex, timeTable, inputFormatClass, fileSystemProperties, format,
-            maxSplitSize, ignoreNonExistingFolders, recursive, pathField, fileNameOnly, schema);
-      this.path = path;
+    // TODO:(CDAP-14424) Remove time table logic
+    // everything from this point on should be removed in a future release.
+    // the time table stuff is super specific, requiring input paths to be in a very specific format
+    // and it assumes the pipeline is scheduled to run in a specific way
+
+    //SimpleDateFormat needs to be local because it is not threadsafe
+    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH");
+
+    //calculate date one hour ago, rounded down to the nearest hour
+    Date prevHour = new Date(context.getLogicalStartTime() - TimeUnit.HOURS.toMillis(1));
+    Calendar cal = Calendar.getInstance();
+    cal.setTime(prevHour);
+    cal.set(Calendar.MINUTE, 0);
+    cal.set(Calendar.SECOND, 0);
+    cal.set(Calendar.MILLISECOND, 0);
+    prevHour = cal.getTime();
+
+    if (config.getTimeTable() != null) {
+      KeyValueTable table = context.getDataset(config.getTimeTable());
+      String datesToRead = Bytes.toString(table.read(LAST_TIME_READ));
+      if (datesToRead == null) {
+        List<Date> firstRun = new ArrayList<>(1);
+        firstRun.add(new Date(0));
+        datesToRead = GSON.toJson(firstRun, ARRAYLIST_DATE_TYPE);
+      }
+      List<Date> attempted = new ArrayList<>();
+      attempted.add(prevHour);
+      String updatedDatesToRead = GSON.toJson(attempted, ARRAYLIST_DATE_TYPE);
+      if (!updatedDatesToRead.equals(datesToRead)) {
+        table.write(LAST_TIME_READ, updatedDatesToRead);
+      }
+      properties.put(LAST_TIME_READ, datesToRead);
     }
 
-    @Override
-    protected String getPath() {
-      return path;
-    }
+    properties.put(CUTOFF_READ_TIME, dateFormat.format(prevHour));
+    Pattern pattern = config.getFilePattern();
+    properties.put(INPUT_REGEX_CONFIG, pattern == null ? ".*" : pattern.toString());
+    properties.put("mapreduce.input.pathFilter.class", BatchFileFilter.class.getName());
+
+    return properties;
   }
 }

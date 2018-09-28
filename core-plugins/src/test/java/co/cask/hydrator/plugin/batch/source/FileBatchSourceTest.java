@@ -44,6 +44,7 @@ import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.common.Constants;
+import co.cask.hydrator.format.PathTrackingInputFormat;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -61,7 +62,6 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
@@ -129,16 +129,6 @@ public class FileBatchSourceTest extends HydratorTestBase {
   }
 
   @Test
-  public void testDefaults() {
-    FileBatchSource.FileBatchConfig fileBatchConfig = new FileBatchSource.FileBatchConfig();
-    Assert.assertEquals(ImmutableMap.<String, String>of(), fileBatchConfig.getFileSystemProperties());
-    Assert.assertEquals(".*", fileBatchConfig.fileRegex);
-    Assert.assertEquals(CombinePathTrackingInputFormat.class.getName(), fileBatchConfig.inputFormatClass);
-    Assert.assertNotNull(fileBatchConfig.maxSplitSize);
-    Assert.assertEquals(FileSourceConfig.DEFAULT_MAX_SPLIT_SIZE, (long) fileBatchConfig.maxSplitSize);
-  }
-
-  @Test
   public void testIgnoreNonExistingFolder() throws Exception {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
@@ -151,7 +141,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     String outputDatasetName = "ignore-non-existing-files";
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(source)
       .addStage(sink)
       .addConnection(source.getName(), sink.getName())
@@ -185,7 +175,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     String outputDatasetName = "output-batchsourcetest";
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(source)
       .addStage(sink)
       .addConnection(source.getName(), sink.getName())
@@ -223,7 +213,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     String outputDatasetName = "recursive-folders";
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(source)
       .addStage(sink)
       .addConnection(source.getName(), sink.getName())
@@ -244,8 +234,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Set<StructuredRecord> expected = ImmutableSet.of(
       StructuredRecord.builder(schema).set("offset", 0L).set("body", "Hello,World").set("file", "test1.txt").build(),
       StructuredRecord.builder(schema).set("offset", 0L).set("body", "CDAP,Platform").set("file", "test3.txt").build());
-    Set<StructuredRecord> actual = new HashSet<>();
-    actual.addAll(MockSink.readOutput(outputManager));
+    Set<StructuredRecord> actual = new HashSet<>(MockSink.readOutput(outputManager));
     Assert.assertEquals(expected, actual);
   }
 
@@ -264,7 +253,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     String outputDatasetName = "non-recursive-regex";
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(source)
       .addStage(sink)
       .addConnection(source.getName(), sink.getName())
@@ -285,7 +274,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals("Expected records", 1, output.size());
     Set<String> outputValue = new HashSet<>();
     for (StructuredRecord record : output) {
-      outputValue.add((String) record.get("body"));
+      outputValue.add(record.get("body"));
     }
     Assert.assertTrue(outputValue.contains("CDAP,Platform"));
   }
@@ -305,7 +294,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     String outputDatasetName = "file-regex";
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(source)
       .addStage(sink)
       .addConnection(source.getName(), sink.getName())
@@ -326,7 +315,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals("Expected records", 1, output.size());
     Set<String> outputValue = new HashSet<>();
     for (StructuredRecord record : output) {
-      outputValue.add((String) record.get("body"));
+      outputValue.add(record.get("body"));
     }
     Assert.assertTrue(outputValue.contains("CDAP,Platform"));
   }
@@ -346,7 +335,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     String outputDatasetName = "recursive-regex";
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(source)
       .addStage(sink)
       .addConnection(source.getName(), sink.getName())
@@ -367,7 +356,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals("Expected records", 2, output.size());
     Set<String> outputValue = new HashSet<>();
     for (StructuredRecord record : output) {
-      outputValue.add((String) record.get("body"));
+      outputValue.add(record.get("body"));
     }
     Assert.assertTrue(outputValue.contains("Hello,World"));
     Assert.assertTrue(outputValue.contains("CDAP,Platform"));
@@ -388,7 +377,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     String outputDatasetName = "path-globbing";
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(source)
       .addStage(sink)
       .addConnection(source.getName(), sink.getName())
@@ -409,7 +398,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals("Expected records", 2, output.size());
     Set<String> outputValue = new HashSet<>();
     for (StructuredRecord record : output) {
-      outputValue.add((String) record.get("body"));
+      outputValue.add(record.get("body"));
     }
     Assert.assertTrue(outputValue.contains("Hello,World"));
     Assert.assertTrue(outputValue.contains("CDAP,Platform"));
@@ -478,34 +467,25 @@ public class FileBatchSourceTest extends HydratorTestBase {
       .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
       .put(Properties.File.RECURSIVE, "false")
       .build();
-
     ETLStage source = new ETLStage("FileInput", new ETLPlugin("File", BatchSource.PLUGIN_TYPE, sourceProperties, null));
-
     String outputDatasetName = "time-filter";
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
-
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(source)
       .addStage(sink)
       .addConnection(source.getName(), sink.getName())
       .build();
-
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-timefilter-regex");
-
     ApplicationManager appManager = deployApplication(appId, appRequest);
-
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
     workflowManager.waitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
-
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
-
     Assert.assertEquals("Expected records", 1, output.size());
     Assert.assertEquals("Hello,World", output.get(0).get("body"));
   }
-
   @Test
   public void testRecursiveTimeFilterRegex() throws Exception {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
@@ -515,34 +495,26 @@ public class FileBatchSourceTest extends HydratorTestBase {
       .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
       .put(Properties.File.RECURSIVE, "true")
       .build();
-
     ETLStage source = new ETLStage("FileInput", new ETLPlugin("File", BatchSource.PLUGIN_TYPE, sourceProperties, null));
-
     String outputDatasetName = "recursive-timefilter-regex";
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
-
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(source)
       .addStage(sink)
       .addConnection(source.getName(), sink.getName())
       .build();
-
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-recursive-timefilter-regex");
-
     ApplicationManager appManager = deployApplication(appId, appRequest);
-
     WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
     workflowManager.start();
     workflowManager.waitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
-
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
-
     Assert.assertEquals("Expected records", 2, output.size());
     Set<String> outputValue = new HashSet<>();
     for (StructuredRecord record : output) {
-      outputValue.add((String) record.get("body"));
+      outputValue.add(record.get("body"));
     }
     Assert.assertTrue(outputValue.contains("Hello,World"));
     Assert.assertTrue(outputValue.contains("CDAP,Platform"));
@@ -583,7 +555,6 @@ public class FileBatchSourceTest extends HydratorTestBase {
     verifyDatasetSchema("TestFile", textSchema);
   }
 
-  @Ignore // TODO: CDAP-12491
   @Test
   public void testFileBatchInputFormatAvro() throws Exception {
     File fileAvro = new File(temporaryFolder.newFolder(), "test.avro");
@@ -624,7 +595,6 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(expected, output);
   }
 
-  @Ignore //TODO: CDAP-12491
   @Test
   public void testFileBatchInputFormatAvroNullSchema() throws Exception {
     File fileAvro = new File(temporaryFolder.newFolder(), "test.avro");
@@ -669,7 +639,6 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(expected, output);
   }
 
-  @Ignore //TODO: CDAP-12491
   @Test
   public void testFileBatchInputFormatAvroMissingField() throws Exception {
     File fileAvro = new File(temporaryFolder.newFolder(), "test.avro");
@@ -797,8 +766,6 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(expected, output);
   }
 
-  // TODO: (CDAP-13140) unignore
-  @Ignore
   @Test
   public void testFileBatchInputFormatParquetMissingField() throws Exception {
     File fileParquet = new File(temporaryFolder.newFolder(), "test.parquet");
@@ -861,7 +828,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
 
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(source)
       .addStage(sink)
       .addConnection(source.getName(), sink.getName())
