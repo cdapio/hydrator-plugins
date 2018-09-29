@@ -24,7 +24,7 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.format.FileFormat;
-import co.cask.hydrator.format.PathTrackingInputFormat;
+import co.cask.hydrator.format.input.PathTrackingInputFormat;
 import co.cask.hydrator.format.plugin.AbstractFileSource;
 import co.cask.hydrator.format.plugin.FileSourceProperties;
 import com.google.common.reflect.TypeToken;

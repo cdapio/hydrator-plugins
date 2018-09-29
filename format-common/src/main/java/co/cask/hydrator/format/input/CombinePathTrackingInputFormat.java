@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.format;
+package co.cask.hydrator.format.input;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import org.apache.hadoop.conf.Configuration;

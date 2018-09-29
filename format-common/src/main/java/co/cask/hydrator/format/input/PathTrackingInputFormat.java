@@ -14,10 +14,12 @@
  * the License.
  */
 
-package co.cask.hydrator.format;
+package co.cask.hydrator.format.input;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.hydrator.format.AvroToStructuredTransformer;
+import co.cask.hydrator.format.FileFormat;
 import co.cask.hydrator.format.plugin.FileSourceProperties;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroKey;

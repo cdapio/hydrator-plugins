@@ -207,6 +207,7 @@
               co.cask.hydrator.plugin.transform.*;
               co.cask.hydrator.plugin.validator.*;
               co.cask.hydrator.plugin.error.*;
+              co.cask.hydrator.format.*;
               org.apache.avro.mapred.*;
               org.apache.avro.mapreduce;
               org.apache.parquet.avro.*;

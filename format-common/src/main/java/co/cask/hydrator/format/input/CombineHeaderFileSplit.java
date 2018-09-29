@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.format;
+package co.cask.hydrator.format.input;
 
 import org.apache.hadoop.mapreduce.lib.input.CombineFileRecordReader;
 import org.apache.hadoop.mapreduce.lib.input.CombineFileSplit;

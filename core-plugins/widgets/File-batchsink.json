@@ -32,11 +32,14 @@
           "name": "format",
           "widget-attributes": {
             "values": [
-              "text",
               "avro",
-              "parquet"
+              "csv",
+              "delimited",
+              "json",
+              "parquet",
+              "tsv"
             ],
-            "default": "text"
+            "default": "json"
           }
         },
         {
