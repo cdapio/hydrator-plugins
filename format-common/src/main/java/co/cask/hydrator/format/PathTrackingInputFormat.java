@@ -1,5 +1,5 @@
 /*
- * Copyright © 2017 Cask Data, Inc.
+ * Copyright © 2018 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -14,11 +14,11 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.source;
+package co.cask.hydrator.format;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.hydrator.plugin.common.AvroToStructuredTransformer;
+import co.cask.hydrator.format.plugin.FileSourceProperties;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.avro.mapreduce.AvroJob;
@@ -53,7 +53,13 @@ import javax.annotation.Nullable;
  * TODO: (CDAP-14406) clean up File input formats.
  */
 public class PathTrackingInputFormat extends FileInputFormat<NullWritable, StructuredRecord> {
-  static final String COPY_HEADER = "path.tracking.copy.header";
+  /**
+   * This property is used to configure the record readers to emit the header as the first record read,
+   * regardless of if it is actually in the input split.
+   * This is a hack to support wrangler's parse-as-csv with header and will be removed once
+   * there is a proper solution in wrangler.
+   */
+  public static final String COPY_HEADER = "path.tracking.copy.header";
   private static final String PATH_FIELD = "path.tracking.path.field";
   private static final String FILENAME_ONLY = "path.tracking.filename.only";
   private static final String FORMAT = "path.tracking.format";
@@ -62,26 +68,27 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
   /**
    * Configure the input format to use the specified schema and optional path field.
    */
-  public static void configure(Job job, Configuration conf, @Nullable String pathField, boolean filenameOnly,
-                               String format, @Nullable String schema, boolean shouldCopyHeader) {
+  public static void configure(Job job, FileSourceProperties properties) {
+    Configuration conf = job.getConfiguration();
+    String pathField = properties.getPathField();
     if (pathField != null) {
       conf.set(PATH_FIELD, pathField);
     }
-    conf.setBoolean(FILENAME_ONLY, filenameOnly);
-    conf.set(FORMAT, format);
+    conf.setBoolean(FILENAME_ONLY, properties.useFilenameAsPath());
+    FileFormat format = properties.getFormat();
+    conf.set(FORMAT, format.name());
+    Schema schema = properties.getSchema();
+
     if (schema != null) {
-      conf.set(SCHEMA, schema);
-      if (format.equalsIgnoreCase("avro")) {
-        AvroJob.setInputKeySchema(job, new org.apache.avro.Schema.Parser().parse(schema));
-      } else if (format.equalsIgnoreCase("parquet")) {
-        AvroWriteSupport.setSchema(conf, new org.apache.avro.Schema.Parser().parse(schema));
-        // TODO: (CDAP-13140) remove
-        conf.set("parquet.avro.read.schema", schema);
+      conf.set(SCHEMA, schema.toString());
+      if (format == FileFormat.AVRO) {
+        AvroJob.setInputKeySchema(job, new org.apache.avro.Schema.Parser().parse(schema.toString()));
+      } else if (format == FileFormat.PARQUET) {
+        AvroWriteSupport.setSchema(conf, new org.apache.avro.Schema.Parser().parse(schema.toString()));
       }
-    } else if (format.equalsIgnoreCase("text")) {
+    } else if (format == FileFormat.TEXT) {
       conf.set(SCHEMA, getTextOutputSchema(pathField).toString());
     }
-    conf.setBoolean(COPY_HEADER, shouldCopyHeader);
   }
 
   public static Schema getTextOutputSchema(@Nullable String pathField) {
@@ -94,7 +101,7 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
     return Schema.recordOf("file.record", fields);
   }
 
-  public static Schema addFieldToSchema(Schema schema, String addFieldKey) {
+  private static Schema addFieldToSchema(Schema schema, String addFieldKey) {
     List<Schema.Field> newFields = new ArrayList<>(schema.getFields().size() + 1);
     newFields.addAll(schema.getFields());
     Schema.Field newField = Schema.Field.of(addFieldKey, Schema.of(Schema.Type.STRING));
