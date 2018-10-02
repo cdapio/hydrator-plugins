@@ -99,51 +99,12 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
   public void validate() {
     FileFormat fileFormat = null;
     if (!containsMacro("format")) {
-      fileFormat = getFormat();
+      getFormat();
     }
 
     Schema schema = null;
     if (!containsMacro("schema")) {
-      schema = getSchema();
-    }
-
-    if (fileFormat == FileFormat.TEXT && schema != null) {
-      Schema.Field offsetField = schema.getField("offset");
-      if (offsetField == null) {
-        throw new IllegalArgumentException("Schema for text format must have a field named 'offset'");
-      }
-      Schema offsetSchema = offsetField.getSchema();
-      Schema.Type offsetType = offsetSchema.isNullable() ? offsetSchema.getNonNullable().getType() :
-        offsetSchema.getType();
-      if (offsetType != Schema.Type.LONG) {
-        throw new IllegalArgumentException("Type of 'offset' field must be 'long', but found " + offsetType);
-      }
-
-      Schema.Field bodyField = schema.getField("body");
-      if (bodyField == null) {
-        throw new IllegalArgumentException("Schema for text format must have a field named 'body'");
-      }
-      Schema bodySchema = bodyField.getSchema();
-      Schema.Type bodyType = bodySchema.isNullable() ? bodySchema.getNonNullable().getType() : bodySchema.getType();
-      if (bodyType != Schema.Type.STRING) {
-        throw new IllegalArgumentException("Type of 'body' field must be 'string', but found + " + bodyType);
-      }
-    }
-
-    if (pathField != null && schema != null) {
-      Schema.Field schemaPathField = schema.getField(pathField);
-      if (schemaPathField == null) {
-        throw new IllegalArgumentException(
-          String.format("Path field '%s' is not present in the schema. Please add it to the schema as a string field.",
-                        pathField));
-      }
-      Schema pathFieldSchema = schemaPathField.getSchema();
-      Schema.Type pathFieldType = pathFieldSchema.isNullable() ? pathFieldSchema.getNonNullable().getType() :
-        pathFieldSchema.getType();
-      if (pathFieldType != Schema.Type.STRING) {
-        throw new IllegalArgumentException(
-          String.format("Path field '%s' must be of type 'string', but found '%s'.", pathField, pathFieldType));
-      }
+      getSchema();
     }
   }
 
@@ -154,7 +115,7 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
 
   @Override
   public FileFormat getFormat() {
-    return FileFormat.from(format, FileFormat::canRead);
+    return containsMacro("format") ? null : FileFormat.from(format, FileFormat::canRead);
   }
 
   @Nullable
@@ -192,7 +153,7 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
   @Nullable
   public Schema getSchema() {
     try {
-      return schema == null ? null : Schema.parseJson(schema);
+      return containsMacro("schema") || schema == null ? null : Schema.parseJson(schema);
     } catch (Exception e) {
       throw new IllegalArgumentException("Unable to parse schema with error: " + e.getMessage(), e);
     }
