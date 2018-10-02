@@ -20,6 +20,7 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.plugin.PluginConfig;
+import co.cask.hydrator.common.IdUtils;
 import co.cask.hydrator.format.FileFormat;
 
 import java.io.IOException;
@@ -58,6 +59,7 @@ public abstract class AbstractFileSinkConfig extends PluginConfig implements Fil
   private String schema;
 
   public void validate() {
+    IdUtils.validateId(referenceName);
     if (suffix != null && !containsMacro("suffix")) {
       new SimpleDateFormat(suffix);
     }

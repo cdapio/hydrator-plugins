@@ -20,6 +20,7 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.plugin.PluginConfig;
+import co.cask.hydrator.common.IdUtils;
 import co.cask.hydrator.format.FileFormat;
 
 import java.util.regex.Pattern;
@@ -97,6 +98,7 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
   }
 
   public void validate() {
+    IdUtils.validateId(referenceName);
     FileFormat fileFormat = null;
     if (!containsMacro("format")) {
       fileFormat = getFormat();
