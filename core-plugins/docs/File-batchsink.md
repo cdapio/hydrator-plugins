@@ -28,10 +28,13 @@ If not specified, no suffix is used.
 **jobProperties:** Advanced feature to specify any additional properties that should be used with the sink,
 specified as a JSON object of string to string. These properties are set on the job at runtime. (Macro-enabled)
 
-**format:** The format to write in. Must be 'text', 'avro', or 'parquet'. Defaults to 'text'. (Macro-enabled)
+**Format:** Format to write the records in.
+The format must be one of 'json', 'avro', 'parquet', 'csv', 'tsv', or 'delimited'. (Macro-enabled)
 
-**schema:** The schema to use when writing data in 'avro' or 'parquet' format. Defaults to the input
-schema. (Macro-enabled)
+**Delimiter:** Delimiter to use if the format is 'delimited'.
+The delimiter will be ignored if the format is anything other than 'delimited'.
+
+**Schema:** Schema of the data to write. (Macro-enabled)
 
 Example
 -------

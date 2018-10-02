@@ -23,7 +23,7 @@ import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
-import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
+import co.cask.hydrator.format.StructuredToAvroTransformer;
 import org.apache.avro.generic.GenericRecord;
 
 /**

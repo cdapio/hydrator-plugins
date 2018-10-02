@@ -31,7 +31,6 @@ import javax.annotation.Nullable;
  */
 @SuppressWarnings({"unused", "ConstantConditions"})
 public abstract class AbstractFileSourceConfig extends PluginConfig implements FileSourceProperties {
-  @Macro
   @Description("Name be used to uniquely identify this source for lineage, annotating metadata, etc.")
   private String referenceName;
 
@@ -155,7 +154,7 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
 
   @Override
   public FileFormat getFormat() {
-    return FileFormat.from(format);
+    return FileFormat.from(format, FileFormat::canRead);
   }
 
   @Nullable

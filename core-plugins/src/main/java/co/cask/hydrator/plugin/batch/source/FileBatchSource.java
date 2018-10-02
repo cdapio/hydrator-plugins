@@ -25,7 +25,7 @@ import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
-import co.cask.hydrator.format.PathTrackingInputFormat;
+import co.cask.hydrator.format.input.PathTrackingInputFormat;
 import co.cask.hydrator.format.plugin.AbstractFileSource;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;

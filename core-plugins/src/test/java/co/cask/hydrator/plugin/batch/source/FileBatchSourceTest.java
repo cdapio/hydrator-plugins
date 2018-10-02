@@ -44,7 +44,7 @@ import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.common.Constants;
-import co.cask.hydrator.format.PathTrackingInputFormat;
+import co.cask.hydrator.format.input.PathTrackingInputFormat;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;

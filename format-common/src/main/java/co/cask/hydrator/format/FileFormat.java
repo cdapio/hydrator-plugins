@@ -16,29 +16,95 @@
 
 package co.cask.hydrator.format;
 
+import co.cask.cdap.api.data.schema.Schema;
+import co.cask.hydrator.format.output.AvroOutputProvider;
+import co.cask.hydrator.format.output.DelimitedTextOutputProvider;
+import co.cask.hydrator.format.output.FileOutputFormatter;
+import co.cask.hydrator.format.output.FileOutputFormatterProvider;
+import co.cask.hydrator.format.output.JsonOutputProvider;
+import co.cask.hydrator.format.output.ParquetOutputProvider;
+
 import java.util.Arrays;
+import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 /**
- * FileFormat supported by the file based sources/sinks.
+ * FileFormat supported by the file based sources/sinks. Some formats can be used for both reading and writing.
+ * Each value also contains an {@link FileOutputFormatterProvider} that contains the logic required to configure
+ * a Hadoop OutputFormat for writing. This is meant to consolidate all format related operations so that multiple
+ * plugins can easily support the same set of formats without re-implementing logic.
  */
 public enum FileFormat {
-  AVRO,
-  PARQUET,
-  TEXT;
+  AVRO(new AvroOutputProvider(), true, true),
+  CSV(new DelimitedTextOutputProvider(","), true, false),
+  DELIMITED(new DelimitedTextOutputProvider(null), true, false),
+  JSON(new JsonOutputProvider(), true, false),
+  PARQUET(new ParquetOutputProvider(), true, true),
+  TEXT(null, false, true),
+  TSV(new DelimitedTextOutputProvider("\t"), true, false);
+  private final FileOutputFormatterProvider outputProvider;
+  private final boolean canWrite;
+  private final boolean canRead;
+
+  FileFormat(FileOutputFormatterProvider outputProvider, boolean canWrite, boolean canRead) {
+    this.outputProvider = outputProvider;
+    this.canWrite = canWrite;
+    this.canRead = canRead;
+  }
+
+  public boolean canWrite() {
+    return canWrite;
+  }
+
+  public boolean canRead() {
+    return canRead;
+  }
+
+  @Nullable
+  public <K, V> FileOutputFormatter<K, V> getFileOutputFormatter(Map<String, String> properties,
+                                                                 @Nullable Schema schema) {
+    //noinspection unchecked
+    return (FileOutputFormatter<K, V>) outputProvider.create(properties, schema);
+  }
 
   /**
-   * Functionally like the valueOf method except it throws a nicer error message about what the valid values are.
+   * Get a FileFormat from the specified string. This is similar to the valueOf method except that the error
+   * message will contain the full set of valid values. It also supports filtering which enum values are valid.
+   * This can be used to only get FileFormats that can be used for reading or only get formats that can be used
+   * for writing.
+   *
+   * @param format the format to get
+   * @param isValidFormat a filter used to only allow certain enum values
+   * @return the FileFormat corresponding to the specified string
+   * @throws IllegalArgumentException if the specified format does not have an equivalent value that also satisfies the
+   *   specified predicate
    */
-  public static FileFormat from(String format) {
+  public static FileFormat from(String format, Predicate<FileFormat> isValidFormat) {
+    FileFormat fileFormat;
     try {
-      return FileFormat.valueOf(format.toUpperCase());
+      fileFormat = valueOf(format.toUpperCase());
     } catch (IllegalArgumentException e) {
-      String values = Arrays.stream(FileFormat.values())
-        .map(f -> f.name().toLowerCase())
-        .collect(Collectors.joining(", "));
-      throw new IllegalArgumentException(String.format("Invalid format '%s'. The value must be one of %s",
-                                                       format, values));
+      throw new IllegalArgumentException(getExceptionMessage(format, isValidFormat));
     }
+
+    if (!isValidFormat.test(fileFormat)) {
+      throw new IllegalArgumentException(getExceptionMessage(format, isValidFormat));
+    }
+
+    return fileFormat;
+  }
+
+  /**
+   * Return an error message that enumerates all valid values that are acceptable.
+   */
+  private static String getExceptionMessage(String format, Predicate<FileFormat> isValid) {
+    String values = Arrays.stream(FileFormat.values())
+      .filter(isValid)
+      .map(f -> f.name().toLowerCase())
+      .collect(Collectors.joining(", "));
+    throw new IllegalArgumentException(String.format("Invalid format '%s'. The value must be one of %s",
+                                                     format, values));
   }
 }

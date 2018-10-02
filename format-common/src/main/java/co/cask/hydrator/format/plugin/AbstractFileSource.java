@@ -27,10 +27,10 @@ import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.common.LineageRecorder;
 import co.cask.hydrator.common.SourceInputFormatProvider;
 import co.cask.hydrator.common.batch.JobUtils;
-import co.cask.hydrator.format.CombinePathTrackingInputFormat;
-import co.cask.hydrator.format.EmptyInputFormat;
-import co.cask.hydrator.format.PathTrackingInputFormat;
 import co.cask.hydrator.format.RegexPathFilter;
+import co.cask.hydrator.format.input.CombinePathTrackingInputFormat;
+import co.cask.hydrator.format.input.EmptyInputFormat;
+import co.cask.hydrator.format.input.PathTrackingInputFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -66,6 +66,7 @@ public abstract class AbstractFileSource extends BatchSource<NullWritable, Struc
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     properties.validate();
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(properties.getSchema());
   }
 
   @Override
@@ -135,6 +136,7 @@ public abstract class AbstractFileSource extends BatchSource<NullWritable, Struc
    * Override this to specify a custom field level operation name and description.
    */
   protected void recordLineage(LineageRecorder lineageRecorder, List<String> outputFields) {
-    lineageRecorder.recordRead("Read", "Read from files", outputFields);
+    lineageRecorder.recordRead("Read", String.format("Read from %s files.",
+                                                     properties.getFormat().name().toLowerCase()), outputFields);
   }
 }

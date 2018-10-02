@@ -18,7 +18,7 @@ package co.cask.hydrator.plugin.transform;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
+import co.cask.hydrator.format.StructuredToAvroTransformer;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.Assert;
 import org.junit.Test;
@@ -47,7 +47,7 @@ public class StructuredtoAvroTest {
              .build()
       )
       .build();
-    StructuredToAvroTransformer structuredToAvroTransformer = new StructuredToAvroTransformer(schema.toString());
+    StructuredToAvroTransformer structuredToAvroTransformer = new StructuredToAvroTransformer(schema);
     GenericRecord result = structuredToAvroTransformer.transform(record);
     Assert.assertEquals(5, result.get("intField"));
     GenericRecord innerRecord = (GenericRecord) result.get("recordField");
@@ -67,7 +67,7 @@ public class StructuredtoAvroTest {
     StructuredRecord record = StructuredRecord.builder(inputSchema)
       .set("id", 123L).set("name", "ABC").set("age", 10).build();
 
-    StructuredToAvroTransformer avroTransformer = new StructuredToAvroTransformer(outputSchema.toString());
+    StructuredToAvroTransformer avroTransformer = new StructuredToAvroTransformer(outputSchema);
     GenericRecord result = avroTransformer.transform(record);
     Assert.assertEquals(123L, result.get("id"));
     Assert.assertEquals("ABC", result.get("name"));
@@ -84,7 +84,7 @@ public class StructuredtoAvroTest {
       .set("byteArray", bytes)
       .set("byteBuffer", ByteBuffer.wrap(bytes))
       .build();
-    StructuredToAvroTransformer avroTransformer = new StructuredToAvroTransformer(schema.toString());
+    StructuredToAvroTransformer avroTransformer = new StructuredToAvroTransformer(schema);
     GenericRecord result = avroTransformer.transform(record);
     Assert.assertEquals(ByteBuffer.wrap(bytes), result.get("byteBuffer"));
     Assert.assertEquals(ByteBuffer.wrap(bytes), result.get("byteArray"));
@@ -100,7 +100,7 @@ public class StructuredtoAvroTest {
       .set("byteArray", bytes)
       .set("byteBuffer", ByteBuffer.wrap(bytes))
       .build();
-    StructuredToAvroTransformer avroTransformer = new StructuredToAvroTransformer(schema.toString());
+    StructuredToAvroTransformer avroTransformer = new StructuredToAvroTransformer(schema);
     GenericRecord result = avroTransformer.transform(record);
     Assert.assertEquals(ByteBuffer.wrap(bytes), result.get("byteBuffer"));
     Assert.assertEquals(ByteBuffer.wrap(bytes), result.get("byteArray"));
