@@ -49,6 +49,7 @@ public interface FileSourceProperties {
   /**
    * Get the format of the data to read.
    */
+  @Nullable
   FileFormat getFormat();
 
   /**
