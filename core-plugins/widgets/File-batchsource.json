@@ -28,11 +28,21 @@
           "widget-attributes": {
             "values": [
               "avro",
+              "blob",
+              "csv",
+              "delimited",
+              "json",
               "parquet",
-              "text"
+              "text",
+              "tsv"
             ],
             "default": "text"
           }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Delimiter",
+          "name": "delimiter"
         },
         {
           "widget-type": "textbox",

@@ -20,6 +20,7 @@ import co.cask.cdap.api.data.batch.Input;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
+import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
@@ -56,44 +57,26 @@ import java.util.stream.Collectors;
  * Plugins should extend this class and simply provide any additional Configuration properties that are required
  * by their specific FileSystem, such as credential information.
  * Their PluginConfig should implement FileSourceProperties and be passed into the constructor of this class.
+ *
+ * @param <T> type of config
  */
-public abstract class AbstractFileSource extends BatchSource<NullWritable, StructuredRecord, StructuredRecord> {
-  private final FileSourceProperties properties;
+public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProperties>
+  extends BatchSource<NullWritable, StructuredRecord, StructuredRecord> {
+  private final T config;
 
-  protected AbstractFileSource(FileSourceProperties properties) {
-    this.properties = properties;
+  protected AbstractFileSource(T config) {
+    this.config = config;
   }
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    properties.validate();
+    config.validate();
 
-    Schema schema = properties.getSchema();
-    FileFormat fileFormat = properties.getFormat();
-    if (fileFormat == FileFormat.TEXT && schema != null) {
-      Schema.Field offsetField = schema.getField("offset");
-      if (offsetField == null) {
-        throw new IllegalArgumentException("Schema for text format must have a field named 'offset'");
-      }
-      Schema offsetSchema = offsetField.getSchema();
-      Schema.Type offsetType = offsetSchema.isNullable() ? offsetSchema.getNonNullable().getType() :
-        offsetSchema.getType();
-      if (offsetType != Schema.Type.LONG) {
-        throw new IllegalArgumentException("Type of 'offset' field must be 'long', but found " + offsetType);
-      }
+    Schema schema = config.getSchema();
+    FileFormat fileFormat = config.getFormat();
+    fileFormat.getFileInputFormatter(config.getProperties().getProperties(), schema);
 
-      Schema.Field bodyField = schema.getField("body");
-      if (bodyField == null) {
-        throw new IllegalArgumentException("Schema for text format must have a field named 'body'");
-      }
-      Schema bodySchema = bodyField.getSchema();
-      Schema.Type bodyType = bodySchema.isNullable() ? bodySchema.getNonNullable().getType() : bodySchema.getType();
-      if (bodyType != Schema.Type.STRING) {
-        throw new IllegalArgumentException("Type of 'body' field must be 'string', but found + " + bodyType);
-      }
-    }
-
-    String pathField = properties.getPathField();
+    String pathField = config.getPathField();
     if (pathField != null && schema != null) {
       Schema.Field schemaPathField = schema.getField(pathField);
       if (schemaPathField == null) {
@@ -109,25 +92,25 @@ public abstract class AbstractFileSource extends BatchSource<NullWritable, Struc
           String.format("Path field '%s' must be of type 'string', but found '%s'.", pathField, pathFieldType));
       }
     }
-    pipelineConfigurer.getStageConfigurer().setOutputSchema(properties.getSchema());
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(config.getSchema());
   }
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
-    properties.validate();
+    config.validate();
 
     Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();
 
-    Pattern pattern = properties.getFilePattern();
+    Pattern pattern = config.getFilePattern();
     if (pattern != null) {
       RegexPathFilter.configure(conf, pattern);
       FileInputFormat.setInputPathFilter(job, RegexPathFilter.class);
     }
-    FileInputFormat.setInputDirRecursive(job, properties.shouldReadRecursively());
+    FileInputFormat.setInputDirRecursive(job, config.shouldReadRecursively());
 
-    Schema schema = properties.getSchema();
-    LineageRecorder lineageRecorder = new LineageRecorder(context, properties.getReferenceName());
+    Schema schema = config.getSchema();
+    LineageRecorder lineageRecorder = new LineageRecorder(context, config.getReferenceName());
     lineageRecorder.createExternalDataset(schema);
 
     if (schema != null && schema.getFields() != null) {
@@ -135,29 +118,34 @@ public abstract class AbstractFileSource extends BatchSource<NullWritable, Struc
                     schema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList()));
     }
 
-    Path path = new Path(properties.getPath());
+    Path path = new Path(config.getPath());
     FileSystem pathFileSystem = FileSystem.get(path.toUri(), conf);
     FileStatus[] fileStatus = pathFileSystem.globStatus(path);
 
     String inputFormatClass;
     if (fileStatus == null) {
-      if (properties.shouldAllowEmptyInput()) {
+      if (config.shouldAllowEmptyInput()) {
         inputFormatClass = EmptyInputFormat.class.getName();
       } else {
         throw new IOException(String.format("Input path %s does not exist", path));
       }
     } else {
       FileInputFormat.addInputPath(job, path);
-      FileInputFormat.setMaxInputSplitSize(job, properties.getMaxSplitSize());
-      PathTrackingInputFormat.configure(job, properties);
-      inputFormatClass = CombinePathTrackingInputFormat.class.getName();
+      FileInputFormat.setMaxInputSplitSize(job, config.getMaxSplitSize());
+      PathTrackingInputFormat.configure(job, config, config.getProperties().getProperties());
+      FileFormat format = config.getFormat();
+      if (format == FileFormat.BLOB) {
+        inputFormatClass = PathTrackingInputFormat.class.getName();
+      } else {
+        inputFormatClass = CombinePathTrackingInputFormat.class.getName();
+      }
     }
 
     // set entries here, in case they need to override anything this base class does
     for (Map.Entry<String, String> entry : getFileSystemProperties(context).entrySet()) {
       conf.set(entry.getKey(), entry.getValue());
     }
-    context.setInput(Input.of(properties.getReferenceName(), new SourceInputFormatProvider(inputFormatClass, conf)));
+    context.setInput(Input.of(config.getReferenceName(), new SourceInputFormatProvider(inputFormatClass, conf)));
   }
 
   @Override
@@ -180,6 +168,6 @@ public abstract class AbstractFileSource extends BatchSource<NullWritable, Struc
    */
   protected void recordLineage(LineageRecorder lineageRecorder, List<String> outputFields) {
     lineageRecorder.recordRead("Read", String.format("Read from %s files.",
-                                                     properties.getFormat().name().toLowerCase()), outputFields);
+                                                     config.getFormat().name().toLowerCase()), outputFields);
   }
 }

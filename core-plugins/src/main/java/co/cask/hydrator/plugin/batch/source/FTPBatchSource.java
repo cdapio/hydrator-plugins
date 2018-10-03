@@ -21,10 +21,11 @@ import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.format.FileFormat;
-import co.cask.hydrator.format.input.PathTrackingInputFormat;
+import co.cask.hydrator.format.input.TextInputProvider;
 import co.cask.hydrator.format.plugin.AbstractFileSource;
 import co.cask.hydrator.format.plugin.FileSourceProperties;
 import com.google.common.reflect.TypeToken;
@@ -64,7 +65,7 @@ public class FTPBatchSource extends AbstractFileSource {
    * Config class that contains all the properties needed for FTP Batch Source.
    */
   @SuppressWarnings("unused")
-  public static class FTPBatchSourceConfig implements FileSourceProperties {
+  public static class FTPBatchSourceConfig extends PluginConfig implements FileSourceProperties {
     private static final Gson GSON = new Gson();
     private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
 
@@ -152,7 +153,7 @@ public class FTPBatchSource extends AbstractFileSource {
     @Nullable
     @Override
     public Schema getSchema() {
-      return PathTrackingInputFormat.getTextOutputSchema(null);
+      return TextInputProvider.getSchema(null);
     }
 
     Map<String, String> getFileSystemProperties() {

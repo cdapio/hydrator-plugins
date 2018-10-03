@@ -46,8 +46,8 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
 
   @Macro
   @Nullable
-  @Description("Format of the data to read. Supported formats are 'text', 'avro' or 'parquet'. "
-    + "The default value is 'text'.")
+  @Description("Format of the data to read. Supported formats are 'avro', 'blob', 'csv', 'delimited', 'json', "
+    + "'parquet', 'text', or 'tsv'. ")
   private String format;
 
   @Nullable
@@ -63,7 +63,7 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
   private Boolean ignoreNonExistingFolders;
 
   @Nullable
-  @Description("Whether to recursively read directories within in the input directory. The default is false.")
+  @Description("Whether to recursively read directories within the input directory. The default is false.")
   private Boolean recursive;
 
   @Nullable
@@ -81,6 +81,12 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
   @Description("Output schema for the source. Formats like 'avro' and 'parquet' require a schema in order to "
     + "read the data.")
   private String schema;
+
+  @Macro
+  @Nullable
+  @Description("The delimiter to use if the format is 'delimited'. The delimiter will be ignored if the format "
+    + "is anything other than 'delimited'.")
+  private String delimiter;
 
   // this is a hidden property that only exists for wrangler's parse-as-csv that uses the header as the schema
   // when this is true and the format is text, the header will be the first record returned by every record reader
