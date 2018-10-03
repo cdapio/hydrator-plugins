@@ -18,6 +18,7 @@ package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.artifact.ArtifactSummary;
 import co.cask.cdap.api.artifact.ArtifactVersion;
+import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.DatasetProperties;
@@ -33,6 +34,7 @@ import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
+import co.cask.cdap.format.StructuredRecordStringConverter;
 import co.cask.cdap.metadata.MetadataAdmin;
 import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
@@ -44,7 +46,8 @@ import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.common.Constants;
-import co.cask.hydrator.format.input.PathTrackingInputFormat;
+import co.cask.hydrator.format.FileFormat;
+import co.cask.hydrator.format.input.TextInputProvider;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -68,6 +71,8 @@ import org.junit.rules.TemporaryFolder;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.Writer;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -76,7 +81,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Nullable;
 
 /**
  * Tests to verify configuration of {@link FileBatchSource}
@@ -230,7 +237,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
 
-    Schema schema = PathTrackingInputFormat.getTextOutputSchema("file");
+    Schema schema = TextInputProvider.getSchema("file");
     Set<StructuredRecord> expected = ImmutableSet.of(
       StructuredRecord.builder(schema).set("offset", 0L).set("body", "Hello,World").set("file", "test1.txt").build(),
       StructuredRecord.builder(schema).set("offset", 0L).set("body", "CDAP,Platform").set("file", "test3.txt").build());
@@ -518,6 +525,129 @@ public class FileBatchSourceTest extends HydratorTestBase {
     }
     Assert.assertTrue(outputValue.contains("Hello,World"));
     Assert.assertTrue(outputValue.contains("CDAP,Platform"));
+  }
+
+  @Test
+  public void testReadBlob() throws Exception {
+    File testFolder = temporaryFolder.newFolder();
+    File file1 = new File(testFolder, "test1");
+    File file2 = new File(testFolder, "test2");
+    String outputDatasetName = UUID.randomUUID().toString();
+
+    Schema schema = Schema.recordOf("blob",
+                                    Schema.Field.of("body", Schema.of(Schema.Type.BYTES)),
+                                    Schema.Field.of("file", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
+
+    String appName = UUID.randomUUID().toString();
+    ApplicationManager appManager = createSourceAndDeployApp(appName, testFolder, FileFormat.BLOB.name(),
+                                                             outputDatasetName, schema);
+
+    String content1 = "abc\ndef\nghi\njkl";
+    FileUtils.writeStringToFile(file1, content1);
+    String content2 = "123\n456\n789";
+    FileUtils.writeStringToFile(file2, content2);
+
+    workflowStartAndWait(appManager);
+
+    byte[] byteContent1 = content1.getBytes(StandardCharsets.US_ASCII);
+    byte[] byteContent2 = content2.getBytes(StandardCharsets.US_ASCII);
+
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> output = MockSink.readOutput(outputManager);
+    Assert.assertEquals(2, output.size());
+
+    Map<String, byte[]> contents = new HashMap<>();
+    for (StructuredRecord outputRecord : output) {
+      contents.put(outputRecord.get("file"), Bytes.toBytes((ByteBuffer) outputRecord.get("body")));
+    }
+    Assert.assertArrayEquals(byteContent1, contents.get(file1.toURI().toString()));
+    Assert.assertArrayEquals(byteContent2, contents.get(file2.toURI().toString()));
+  }
+
+  @Test
+  public void testReadJson() throws Exception {
+    File fileText = new File(temporaryFolder.newFolder(), "test.json");
+    String outputDatasetName = UUID.randomUUID().toString();
+
+    Schema schema = Schema.recordOf("user",
+                                    Schema.Field.of("id", Schema.of(Schema.Type.LONG)),
+                                    Schema.Field.of("name", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                                    Schema.Field.of("file", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
+
+    String appName = UUID.randomUUID().toString();
+    ApplicationManager appManager = createSourceAndDeployApp(appName, fileText, FileFormat.JSON.name(),
+                                                             outputDatasetName, schema);
+
+    StructuredRecord record1 = StructuredRecord.builder(schema).set("id", 0L).set("name", "Sam").build();
+    StructuredRecord record2 = StructuredRecord.builder(schema).set("id", 1L).build();
+    String fileContent = StructuredRecordStringConverter.toJsonString(record1) + "\n"
+      + StructuredRecordStringConverter.toJsonString(record2);
+    FileUtils.writeStringToFile(fileText, fileContent);
+
+    workflowStartAndWait(appManager);
+
+    StructuredRecord expected1 = StructuredRecord.builder(schema)
+      .set("id", record1.get("id"))
+      .set("name", record1.get("name"))
+      .set("file", fileText.toURI().toString()).build();
+    StructuredRecord expected2 = StructuredRecord.builder(schema)
+      .set("id", record2.get("id"))
+      .set("name", record2.get("name"))
+      .set("file", fileText.toURI().toString()).build();
+    Set<StructuredRecord> expected = ImmutableSet.of(expected1, expected2);
+
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    Set<StructuredRecord> output = new HashSet<>(MockSink.readOutput(outputManager));
+
+    Assert.assertEquals(expected, output);
+  }
+
+  @Test
+  public void testReadCSV() throws Exception {
+    testReadDelimitedText(FileFormat.CSV.name(), ",");
+  }
+
+  @Test
+  public void testReadTSV() throws Exception {
+    testReadDelimitedText(FileFormat.TSV.name(), "\t");
+  }
+
+  @Test
+  public void testReadDelimited() throws Exception {
+    testReadDelimitedText(FileFormat.DELIMITED.name(), "\u0001");
+  }
+
+  private void testReadDelimitedText(String format, String delimiter) throws Exception {
+    File fileText = new File(temporaryFolder.newFolder(), "test.txt");
+    String outputDatasetName = UUID.randomUUID().toString();
+
+    Schema schema = Schema.recordOf("user",
+                                    Schema.Field.of("id", Schema.of(Schema.Type.LONG)),
+                                    Schema.Field.of("name", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                                    Schema.Field.of("file", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
+
+    String appName = UUID.randomUUID().toString();
+    ApplicationManager appManager = createSourceAndDeployApp(appName, fileText, format, outputDatasetName, schema,
+                                                             delimiter);
+
+    String inputStr = new StringBuilder()
+      .append("0").append("\n")
+      .append("1").append(delimiter).append("\n")
+      .append("2").append(delimiter).append("sam\n").toString();
+    FileUtils.writeStringToFile(fileText, inputStr);
+
+    workflowStartAndWait(appManager);
+
+    Set<StructuredRecord> expected = ImmutableSet.of(
+      StructuredRecord.builder(schema).set("id", 0L).set("file", fileText.toURI().toString()).build(),
+      StructuredRecord.builder(schema).set("id", 1L).set("file", fileText.toURI().toString()).build(),
+      StructuredRecord.builder(schema).set("id", 2L).set("name", "sam").set("file", fileText.toURI().toString()).build()
+    );
+
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    Set<StructuredRecord> output = new HashSet<>(MockSink.readOutput(outputManager));
+
+    Assert.assertEquals(expected, output);
   }
 
   @Test
@@ -810,15 +940,22 @@ public class FileBatchSourceTest extends HydratorTestBase {
 
   private ApplicationManager createSourceAndDeployApp(String appName, File file, String format,
                                                       String outputDatasetName, Schema schema) throws Exception {
+    return createSourceAndDeployApp(appName, file, format, outputDatasetName, schema, null);
+  }
+
+  private ApplicationManager createSourceAndDeployApp(String appName, File file, String format,
+                                                      String outputDatasetName, Schema schema,
+                                                      @Nullable String delimiter) throws Exception {
 
     ImmutableMap.Builder<String, String> sourceProperties = ImmutableMap.<String, String>builder()
-                                                              .put(Constants.Reference.REFERENCE_NAME,
-                                                                   appName + "TestFile")
-                                                              .put(Properties.File.FILESYSTEM, "Text")
-                                                              .put(Properties.File.PATH, file.getAbsolutePath())
-                                                              .put(Properties.File.FORMAT, format)
-                                                              .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
-                                                              .put("pathField", "file");
+      .put(Constants.Reference.REFERENCE_NAME, appName + "TestFile")
+      .put(Properties.File.PATH, file.getAbsolutePath())
+      .put(Properties.File.FORMAT, format)
+      .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
+      .put("pathField", "file");
+    if (delimiter != null) {
+      sourceProperties.put("delimiter", delimiter);
+    }
 
     if (schema != null) {
       String schemaString = schema.toString();

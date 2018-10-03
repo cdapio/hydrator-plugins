@@ -17,6 +17,14 @@
 package co.cask.hydrator.format;
 
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.hydrator.format.input.AvroInputProvider;
+import co.cask.hydrator.format.input.BlobInputProvider;
+import co.cask.hydrator.format.input.DelimitedInputProvider;
+import co.cask.hydrator.format.input.FileInputFormatter;
+import co.cask.hydrator.format.input.FileInputFormatterProvider;
+import co.cask.hydrator.format.input.JsonInputProvider;
+import co.cask.hydrator.format.input.ParquetInputProvider;
+import co.cask.hydrator.format.input.TextInputProvider;
 import co.cask.hydrator.format.output.AvroOutputProvider;
 import co.cask.hydrator.format.output.DelimitedTextOutputProvider;
 import co.cask.hydrator.format.output.FileOutputFormatter;
@@ -37,21 +45,24 @@ import javax.annotation.Nullable;
  * plugins can easily support the same set of formats without re-implementing logic.
  */
 public enum FileFormat {
-  AVRO(new AvroOutputProvider(), true, true),
-  CSV(new DelimitedTextOutputProvider(","), true, false),
-  DELIMITED(new DelimitedTextOutputProvider(null), true, false),
-  JSON(new JsonOutputProvider(), true, false),
-  PARQUET(new ParquetOutputProvider(), true, true),
-  TEXT(null, false, true),
-  TSV(new DelimitedTextOutputProvider("\t"), true, false);
+  AVRO(new AvroInputProvider(), new AvroOutputProvider()),
+  BLOB(new BlobInputProvider(), null),
+  CSV(new DelimitedInputProvider(","), new DelimitedTextOutputProvider(",")),
+  DELIMITED(new DelimitedInputProvider(null), new DelimitedTextOutputProvider(null)),
+  JSON(new JsonInputProvider(), new JsonOutputProvider()),
+  PARQUET(new ParquetInputProvider(), new ParquetOutputProvider()),
+  TEXT(new TextInputProvider(), null),
+  TSV(new DelimitedInputProvider("\t"), new DelimitedTextOutputProvider("\t"));
+  private final FileInputFormatterProvider inputProvider;
   private final FileOutputFormatterProvider outputProvider;
   private final boolean canWrite;
   private final boolean canRead;
 
-  FileFormat(FileOutputFormatterProvider outputProvider, boolean canWrite, boolean canRead) {
+  FileFormat(@Nullable FileInputFormatterProvider inputProvider, @Nullable FileOutputFormatterProvider outputProvider) {
+    this.inputProvider = inputProvider;
     this.outputProvider = outputProvider;
-    this.canWrite = canWrite;
-    this.canRead = canRead;
+    this.canWrite = outputProvider != null;
+    this.canRead = inputProvider != null;
   }
 
   public boolean canWrite() {
@@ -62,11 +73,36 @@ public enum FileFormat {
     return canRead;
   }
 
-  @Nullable
+  /**
+   * Create the FileOutputFormatter for this format.
+   *
+   * @param properties plugin properties
+   * @param schema schema for the pipeline stage
+   * @return the FileOutputFormatter for this format
+   * @throws IllegalArgumentException if the properties or schema are not valid
+   */
   public <K, V> FileOutputFormatter<K, V> getFileOutputFormatter(Map<String, String> properties,
                                                                  @Nullable Schema schema) {
     //noinspection unchecked
+    if (outputProvider == null) {
+      throw new IllegalArgumentException(String.format("Format '%s' cannot be used for writing", this.name()));
+    }
     return (FileOutputFormatter<K, V>) outputProvider.create(properties, schema);
+  }
+
+  /**
+   * Create the FileInputFormatter for this format.
+   *
+   * @param properties plugin properties
+   * @param schema schema for the pipeline stage
+   * @return the FileInputFormatter for this format
+   * @throws IllegalArgumentException if the properties or schema are not valid
+   */
+  public FileInputFormatter getFileInputFormatter(Map<String, String> properties, @Nullable Schema schema) {
+    if (inputProvider == null) {
+      throw new IllegalArgumentException(String.format("Format '%s' cannot be used for reading.", this.name()));
+    }
+    return inputProvider.create(properties, schema);
   }
 
   /**
