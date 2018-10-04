@@ -312,9 +312,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
 
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
+    appManager.getWorkflowManager(SmartWorkflow.NAME)
+      .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -352,10 +351,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
     ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-recursive-regex");
 
     ApplicationManager appManager = deployApplication(appId, appRequest);
-
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
+    appManager.getWorkflowManager(SmartWorkflow.NAME)
+      .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -394,10 +391,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
     ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-path-globbing");
 
     ApplicationManager appManager = deployApplication(appId, appRequest);
-
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
+    appManager.getWorkflowManager(SmartWorkflow.NAME)
+      .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
@@ -444,8 +439,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
     ApplicationId appId = NamespaceId.DEFAULT.app("CopyHeaderTest");
 
     ApplicationManager appManager = deployApplication(appId, appRequest);
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
+    appManager.getWorkflowManager(SmartWorkflow.NAME)
+      .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
 
@@ -485,9 +480,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-timefilter-regex");
     ApplicationManager appManager = deployApplication(appId, appRequest);
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
+    appManager.getWorkflowManager(SmartWorkflow.NAME)
+      .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
     Assert.assertEquals("Expected records", 1, output.size());
@@ -513,9 +507,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-recursive-timefilter-regex");
     ApplicationManager appManager = deployApplication(appId, appRequest);
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
+    appManager.getWorkflowManager(SmartWorkflow.NAME)
+      .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
     Assert.assertEquals("Expected records", 2, output.size());
@@ -547,7 +540,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
     String content2 = "123\n456\n789";
     FileUtils.writeStringToFile(file2, content2);
 
-    workflowStartAndWait(appManager);
+    appManager.getWorkflowManager(SmartWorkflow.NAME)
+      .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     byte[] byteContent1 = content1.getBytes(StandardCharsets.US_ASCII);
     byte[] byteContent2 = content2.getBytes(StandardCharsets.US_ASCII);
@@ -584,7 +578,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
       + StructuredRecordStringConverter.toJsonString(record2);
     FileUtils.writeStringToFile(fileText, fileContent);
 
-    workflowStartAndWait(appManager);
+    appManager.getWorkflowManager(SmartWorkflow.NAME)
+      .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     StructuredRecord expected1 = StructuredRecord.builder(schema)
       .set("id", record1.get("id"))
@@ -636,7 +631,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
       .append("2").append(delimiter).append("sam\n").toString();
     FileUtils.writeStringToFile(fileText, inputStr);
 
-    workflowStartAndWait(appManager);
+    appManager.getWorkflowManager(SmartWorkflow.NAME)
+      .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     Set<StructuredRecord> expected = ImmutableSet.of(
       StructuredRecord.builder(schema).set("id", 0L).set("file", fileText.toURI().toString()).build(),
@@ -666,7 +662,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
 
     FileUtils.writeStringToFile(fileText, "Hello,World!");
 
-    workflowStartAndWait(appManager);
+    appManager.getWorkflowManager(SmartWorkflow.NAME)
+      .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     List<StructuredRecord> expected = ImmutableList.of(
       StructuredRecord.builder(textSchema)
@@ -710,7 +707,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
     dataFileWriter.close();
     inputManager.flush();
 
-    workflowStartAndWait(appManager);
+    appManager.getWorkflowManager(SmartWorkflow.NAME)
+      .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     List<StructuredRecord> expected = ImmutableList.of(
       StructuredRecord.builder(RECORD_SCHEMA)
@@ -754,7 +752,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
     dataFileWriter.close();
     inputManager.flush();
 
-    workflowStartAndWait(appManager);
+    appManager.getWorkflowManager(SmartWorkflow.NAME)
+      .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     List<StructuredRecord> expected = ImmutableList.of(
       StructuredRecord.builder(RECORD_SCHEMA)
@@ -799,7 +798,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
     dataFileWriter.close();
     inputManager.flush();
 
-    workflowStartAndWait(appManager);
+    appManager.getWorkflowManager(SmartWorkflow.NAME)
+      .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     List<StructuredRecord> expected = ImmutableList.of(
       StructuredRecord.builder(recordSchemaWithMissingField)
@@ -836,7 +836,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
     parquetWriter.close();
     inputManager.flush();
 
-    workflowStartAndWait(appManager);
+    appManager.getWorkflowManager(SmartWorkflow.NAME)
+      .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     List<StructuredRecord> expected = ImmutableList.of(
       StructuredRecord.builder(RECORD_SCHEMA)
@@ -881,7 +882,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
     parquetWriter.close();
     inputManager.flush();
 
-    workflowStartAndWait(appManager);
+    appManager.getWorkflowManager(SmartWorkflow.NAME)
+      .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     List<StructuredRecord> expected = ImmutableList.of(
       StructuredRecord.builder(RECORD_SCHEMA)
@@ -924,7 +926,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
     parquetWriter.close();
     inputManager.flush();
 
-    workflowStartAndWait(appManager);
+    appManager.getWorkflowManager(SmartWorkflow.NAME)
+      .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     List<StructuredRecord> expected = ImmutableList.of(
       StructuredRecord.builder(recordSchemaWithMissingField)
@@ -974,15 +977,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
 
     AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app(appName);
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-
-    return appManager;
-  }
-
-  private void workflowStartAndWait(ApplicationManager appManager) throws Exception {
-    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.COMPLETED, 1, 2, TimeUnit.MINUTES);
+    return deployApplication(appId, appRequest);
   }
 
   private void verifyDatasetSchema(String dsName, Schema expectedSchema) {
