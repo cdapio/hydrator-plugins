@@ -647,6 +647,37 @@ public class FileBatchSourceTest extends HydratorTestBase {
   }
 
   @Test
+  public void testTextFormatWithoutOffset() throws Exception {
+    File fileText = new File(temporaryFolder.newFolder(), "test.txt");
+    String outputDatasetName = UUID.randomUUID().toString();
+
+    Schema textSchema = Schema.recordOf("file.record",
+                                        Schema.Field.of("body", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                                        Schema.Field.of("file", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
+
+    String appName = UUID.randomUUID().toString();
+    ApplicationManager appManager = createSourceAndDeployApp(appName, fileText, "text", outputDatasetName, textSchema);
+
+    FileUtils.writeStringToFile(fileText, "Hello,World!");
+
+    appManager.getWorkflowManager(SmartWorkflow.NAME)
+      .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
+
+    List<StructuredRecord> expected = ImmutableList.of(
+      StructuredRecord.builder(textSchema)
+        .set("body", "Hello,World!")
+        .set("file", fileText.toURI().toString())
+        .build()
+    );
+
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> output = MockSink.readOutput(outputManager);
+
+    Assert.assertEquals(expected, output);
+  }
+
+
+  @Test
   public void testFileBatchInputFormatText() throws Exception {
     File fileText = new File(temporaryFolder.newFolder(), "test.txt");
     String outputDatasetName = "test-filesource-text";
@@ -654,8 +685,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Schema textSchema = Schema.recordOf("file.record",
                                         Schema.Field.of("offset", Schema.of(Schema.Type.LONG)),
                                         Schema.Field.of("body", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
-                                        Schema.Field.of("file", Schema.nullableOf(Schema.of(
-                                          Schema.Type.STRING))));
+                                        Schema.Field.of("file", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
 
     String appName = "FileSourceText";
     ApplicationManager appManager = createSourceAndDeployApp(appName, fileText, "text", outputDatasetName, textSchema);
