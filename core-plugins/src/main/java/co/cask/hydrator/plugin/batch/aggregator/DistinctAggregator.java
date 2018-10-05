@@ -29,9 +29,11 @@ import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import com.google.common.base.Splitter;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Nullable;
+import javax.ws.rs.Path;
 
 /**
  * Distinct aggregator.
@@ -44,15 +46,20 @@ import javax.annotation.Nullable;
 public class DistinctAggregator extends RecordAggregator {
   private final Conf conf;
   private Iterable<String> fields;
+  private Schema outputSchema;
 
   /**
    * Plugin Configuration
    */
   public static class Conf extends AggregatorConfig {
+    @Nullable
     @Description("Optional comma-separated list of fields to perform the distinct on. If none is given, each record " +
       "will be taken as is. Otherwise, only fields in this list will be considered.")
-    @Nullable
     private String fields;
+
+    Iterable<String> getFields() {
+      return fields == null ? Collections.emptyList() : Splitter.on(',').trimResults().split(fields);
+    }
   }
 
   public DistinctAggregator(Conf conf) {
@@ -71,22 +78,24 @@ public class DistinctAggregator extends RecordAggregator {
     }
 
     // otherwise, we have a constant input schema. Get the output schema and propagate the schema
-    stageConfigurer.setOutputSchema(getOutputSchema(inputSchema));
+    stageConfigurer.setOutputSchema(getOutputSchema(inputSchema, conf.getFields()));
   }
 
   @Override
-  public void initialize(BatchRuntimeContext context) throws Exception {
-    fields = conf.fields == null ? null : Splitter.on(',').trimResults().split(conf.fields);
+  public void initialize(BatchRuntimeContext context) {
+    outputSchema = context.getOutputSchema();
+    fields = conf.getFields();
   }
 
   @Override
-  public void groupBy(StructuredRecord record, Emitter<StructuredRecord> emitter) throws Exception {
+  public void groupBy(StructuredRecord record, Emitter<StructuredRecord> emitter) {
     if (fields == null) {
       emitter.emit(record);
       return;
     }
 
-    StructuredRecord.Builder builder = StructuredRecord.builder(getOutputSchema(record.getSchema()));
+    Schema recordSchema = outputSchema == null ? getOutputSchema(record.getSchema(), fields) : outputSchema;
+    StructuredRecord.Builder builder = StructuredRecord.builder(recordSchema);
     for (String fieldName : fields) {
       builder.set(fieldName, record.get(fieldName));
     }
@@ -95,24 +104,36 @@ public class DistinctAggregator extends RecordAggregator {
 
   @Override
   public void aggregate(StructuredRecord groupKey, Iterator<StructuredRecord> iterator,
-                        Emitter<StructuredRecord> emitter) throws Exception {
+                        Emitter<StructuredRecord> emitter) {
     emitter.emit(groupKey);
   }
 
-  private Schema getOutputSchema(Schema inputSchema) {
-    if (conf.fields == null) {
+  @Path("outputSchema")
+  public Schema getOutputSchema(GetSchemaRequest request) {
+    return getOutputSchema(request.inputSchema, request.getFields());
+  }
+
+  private static Schema getOutputSchema(Schema inputSchema, Iterable<String> fields) {
+    if (fields == null || !fields.iterator().hasNext()) {
       return inputSchema;
     }
 
-    List<Schema.Field> fields = new ArrayList<>();
-    for (String fieldName : Splitter.on(',').trimResults().split(conf.fields)) {
+    List<Schema.Field> outputFields = new ArrayList<>();
+    for (String fieldName : fields) {
       Schema.Field field = inputSchema.getField(fieldName);
       if (field == null) {
         throw new IllegalArgumentException(String.format("Field %s does not exist in input schema %s.",
                                                          fieldName, inputSchema));
       }
-      fields.add(field);
+      outputFields.add(field);
     }
-    return Schema.recordOf(inputSchema.getRecordName() + ".distinct", fields);
+    return Schema.recordOf(inputSchema.getRecordName() + ".distinct", outputFields);
+  }
+
+  /**
+   * Endpoint request for output schema.
+   */
+  public static class GetSchemaRequest extends Conf {
+    private Schema inputSchema;
   }
 }
