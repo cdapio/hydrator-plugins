@@ -237,7 +237,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
 
-    Schema schema = TextInputProvider.getSchema("file");
+    Schema schema = TextInputProvider.getDefaultSchema("file");
     Set<StructuredRecord> expected = ImmutableSet.of(
       StructuredRecord.builder(schema).set("offset", 0L).set("body", "Hello,World").set("file", "test1.txt").build(),
       StructuredRecord.builder(schema).set("offset", 0L).set("body", "CDAP,Platform").set("file", "test3.txt").build());

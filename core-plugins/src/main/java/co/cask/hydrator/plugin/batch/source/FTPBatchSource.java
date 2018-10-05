@@ -153,7 +153,7 @@ public class FTPBatchSource extends AbstractFileSource {
     @Nullable
     @Override
     public Schema getSchema() {
-      return TextInputProvider.getSchema(null);
+      return TextInputProvider.getDefaultSchema(null);
     }
 
     Map<String, String> getFileSystemProperties() {

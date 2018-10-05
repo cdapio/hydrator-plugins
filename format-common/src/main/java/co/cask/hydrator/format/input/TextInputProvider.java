@@ -53,12 +53,12 @@ public class TextInputProvider implements FileInputFormatterProvider {
     }
 
     if (schema == null) {
-      schema = getSchema(properties.get("pathField"));
+      schema = getDefaultSchema(properties.get("pathField"));
     }
     return new TextInputFormatter(schema);
   }
 
-  public static Schema getSchema(@Nullable String pathField) {
+  public static Schema getDefaultSchema(@Nullable String pathField) {
     List<Schema.Field> fields = new ArrayList<>();
     fields.add(Schema.Field.of("offset", Schema.of(Schema.Type.LONG)));
     fields.add(Schema.Field.of("body", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
