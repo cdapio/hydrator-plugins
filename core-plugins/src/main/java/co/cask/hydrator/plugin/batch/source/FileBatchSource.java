@@ -50,7 +50,7 @@ import java.util.regex.Pattern;
 @Name("File")
 @Description("Batch source for File Systems")
 public class FileBatchSource extends AbstractFileSource {
-  public static final Schema DEFAULT_SCHEMA = TextInputProvider.getSchema(null);
+  public static final Schema DEFAULT_SCHEMA = TextInputProvider.getDefaultSchema(null);
   static final String INPUT_NAME_CONFIG = "input.path.name";
   static final String INPUT_REGEX_CONFIG = "input.path.regex";
   static final String LAST_TIME_READ = "last.time.read";

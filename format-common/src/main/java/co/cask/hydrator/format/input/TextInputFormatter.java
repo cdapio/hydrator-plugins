@@ -61,12 +61,14 @@ public class TextInputFormatter implements FileInputFormatter {
     private final RecordReader<LongWritable, Text> delegate;
     private final Schema schema;
     private final String header;
+    private final boolean setOffset;
     private boolean emittedHeader;
 
     TextRecordReader(RecordReader<LongWritable, Text> delegate, Schema schema, @Nullable String header) {
       this.delegate = delegate;
       this.schema = schema;
       this.header = header;
+      this.setOffset = schema.getField("offset") != null;
     }
 
     @Override
@@ -102,10 +104,14 @@ public class TextInputFormatter implements FileInputFormatter {
       StructuredRecord.Builder recordBuilder = StructuredRecord.builder(schema);
       if (header != null && !emittedHeader) {
         emittedHeader = true;
-        recordBuilder.set("offset", 0L);
+        if (setOffset) {
+          recordBuilder.set("offset", 0L);
+        }
         recordBuilder.set("body", header);
       } else {
-        recordBuilder.set("offset", delegate.getCurrentKey().get());
+        if (setOffset) {
+          recordBuilder.set("offset", delegate.getCurrentKey().get());
+        }
         recordBuilder.set("body", delegate.getCurrentValue().toString());
       }
       return recordBuilder;

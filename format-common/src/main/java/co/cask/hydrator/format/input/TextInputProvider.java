@@ -32,14 +32,13 @@ public class TextInputProvider implements FileInputFormatterProvider {
   public FileInputFormatter create(Map<String, String> properties, @Nullable Schema schema) {
     if (schema != null) {
       Schema.Field offsetField = schema.getField("offset");
-      if (offsetField == null) {
-        throw new IllegalArgumentException("Schema for text format must have a field named 'offset'");
-      }
-      Schema offsetSchema = offsetField.getSchema();
-      Schema.Type offsetType = offsetSchema.isNullable() ? offsetSchema.getNonNullable().getType() :
-        offsetSchema.getType();
-      if (offsetType != Schema.Type.LONG) {
-        throw new IllegalArgumentException("Type of 'offset' field must be 'long', but found " + offsetType);
+      if (offsetField != null) {
+        Schema offsetSchema = offsetField.getSchema();
+        Schema.Type offsetType = offsetSchema.isNullable() ? offsetSchema.getNonNullable().getType() :
+          offsetSchema.getType();
+        if (offsetType != Schema.Type.LONG) {
+          throw new IllegalArgumentException("Type of 'offset' field must be 'long', but found " + offsetType);
+        }
       }
 
       Schema.Field bodyField = schema.getField("body");
@@ -54,12 +53,12 @@ public class TextInputProvider implements FileInputFormatterProvider {
     }
 
     if (schema == null) {
-      schema = getSchema(properties.get("pathField"));
+      schema = getDefaultSchema(properties.get("pathField"));
     }
     return new TextInputFormatter(schema);
   }
 
-  public static Schema getSchema(@Nullable String pathField) {
+  public static Schema getDefaultSchema(@Nullable String pathField) {
     List<Schema.Field> fields = new ArrayList<>();
     fields.add(Schema.Field.of("offset", Schema.of(Schema.Type.LONG)));
     fields.add(Schema.Field.of("body", Schema.nullableOf(Schema.of(Schema.Type.STRING))));

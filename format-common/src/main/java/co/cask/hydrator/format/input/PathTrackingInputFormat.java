@@ -32,9 +32,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -94,7 +92,7 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
 
   @Deprecated
   public static Schema getTextOutputSchema(@Nullable String pathField) {
-    return TextInputProvider.getSchema(pathField);
+    return TextInputProvider.getDefaultSchema(pathField);
   }
 
   @Override
