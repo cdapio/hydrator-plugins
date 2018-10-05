@@ -118,6 +118,11 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
                     schema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList()));
     }
 
+    // set entries here, before FileSystem is used
+    for (Map.Entry<String, String> entry : getFileSystemProperties(context).entrySet()) {
+      conf.set(entry.getKey(), entry.getValue());
+    }
+
     Path path = new Path(config.getPath());
     FileSystem pathFileSystem = FileSystem.get(path.toUri(), conf);
     FileStatus[] fileStatus = pathFileSystem.globStatus(path);
@@ -141,10 +146,11 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
       }
     }
 
-    // set entries here, in case they need to override anything this base class does
+    // set entries here again, in case anything set by PathTrackingInputFormat should be overridden
     for (Map.Entry<String, String> entry : getFileSystemProperties(context).entrySet()) {
       conf.set(entry.getKey(), entry.getValue());
     }
+
     context.setInput(Input.of(config.getReferenceName(), new SourceInputFormatProvider(inputFormatClass, conf)));
   }
 
