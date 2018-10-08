@@ -31,6 +31,12 @@ public class DelimitedInputProvider implements FileInputFormatterProvider {
     this.constantDelimiter = constantDelimiter;
   }
 
+  @Nullable
+  @Override
+  public Schema getSchema(@Nullable String pathField) {
+    return null;
+  }
+
   @Override
   public FileInputFormatter create(Map<String, String> properties, @Nullable Schema schema) {
     if (schema == null) {

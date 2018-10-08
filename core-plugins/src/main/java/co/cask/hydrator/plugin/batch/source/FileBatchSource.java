@@ -23,8 +23,10 @@ import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValueTable;
+import co.cask.cdap.api.plugin.EndpointPluginContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
+import co.cask.hydrator.format.FileFormat;
 import co.cask.hydrator.format.input.PathTrackingInputFormat;
 import co.cask.hydrator.format.input.TextInputProvider;
 import co.cask.hydrator.format.plugin.AbstractFileSource;
@@ -41,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
+import javax.ws.rs.Path;
 
 
 /**
@@ -49,7 +52,7 @@ import java.util.regex.Pattern;
 @Plugin(type = "batchsource")
 @Name("File")
 @Description("Batch source for File Systems")
-public class FileBatchSource extends AbstractFileSource {
+public class FileBatchSource extends AbstractFileSource<FileSourceConfig> {
   public static final Schema DEFAULT_SCHEMA = TextInputProvider.getDefaultSchema(null);
   static final String INPUT_NAME_CONFIG = "input.path.name";
   static final String INPUT_REGEX_CONFIG = "input.path.regex";
@@ -73,6 +76,23 @@ public class FileBatchSource extends AbstractFileSource {
     if (config.getTimeTable() != null && !context.datasetExists(config.getTimeTable())) {
       context.createDataset(config.getTimeTable(), KeyValueTable.class.getName(), DatasetProperties.EMPTY);
     }
+  }
+
+  /**
+   * Endpoint method to get the output schema of a source.
+   *
+   * @param config configuration for the source
+   * @param pluginContext context to create plugins
+   * @return schema of fields
+   */
+  @Path("getSchema")
+  public Schema getSchema(FileSourceConfig config, EndpointPluginContext pluginContext) {
+    FileFormat fileFormat = config.getFormat();
+    if (fileFormat == null) {
+      return config.getSchema();
+    }
+    Schema schema = fileFormat.getSchema(config.getPathField());
+    return schema == null ? config.getSchema() : schema;
   }
 
   @Override

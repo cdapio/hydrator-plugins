@@ -67,6 +67,10 @@ public class BlobInputFormatter implements FileInputFormatter {
         if (!hasNext) {
           return false;
         }
+        hasNext = false;
+        if (split.getLength() == 0) {
+          return false;
+        }
 
         Path path = split.getPath();
         FileSystem fs = path.getFileSystem(context.getConfiguration());
@@ -74,7 +78,6 @@ public class BlobInputFormatter implements FileInputFormatter {
           val = new byte[(int) split.getLength()];
           ByteStreams.readFully(input, val);
         }
-        hasNext = false;
         return true;
       }
 

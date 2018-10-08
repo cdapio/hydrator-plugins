@@ -27,6 +27,12 @@ import javax.annotation.Nullable;
 public interface FileInputFormatterProvider {
 
   /**
+   * Get the schema that the format requires, if it requires a specific schema.
+   */
+  @Nullable
+  Schema getSchema(@Nullable String pathField);
+
+  /**
    * Creates a FileInputFormatter.
    */
   FileInputFormatter create(Map<String, String> properties, @Nullable Schema schema);

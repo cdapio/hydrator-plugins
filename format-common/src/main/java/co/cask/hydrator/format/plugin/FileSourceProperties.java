@@ -30,6 +30,7 @@ import javax.annotation.Nullable;
  * PluginConfig, or in case there is some class hierarchy that does not allow it.
  */
 public interface FileSourceProperties {
+  String PATH_FIELD = "pathField";
 
   /**
    * Validates the properties, throwing an IllegalArgumentException if anything is invalid.

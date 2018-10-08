@@ -47,7 +47,6 @@ import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.format.FileFormat;
-import co.cask.hydrator.format.input.TextInputProvider;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -200,10 +199,10 @@ public class FileBatchSourceTest extends HydratorTestBase {
 
   @Test
   public void testRecursiveFolders() throws Exception {
-    Schema outputSchema = Schema.recordOf("file.record",
-                                          Schema.Field.of("offset", Schema.of(Schema.Type.LONG)),
-                                          Schema.Field.of("body", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
-                                          Schema.Field.of("file", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
+    Schema schema = Schema.recordOf("file.record",
+                                    Schema.Field.of("offset", Schema.of(Schema.Type.LONG)),
+                                    Schema.Field.of("body", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                                    Schema.Field.of("file", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put(Properties.File.PATH, "src/test/resources/")
@@ -212,7 +211,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
       .put(Properties.File.RECURSIVE, "true")
       .put("pathField", "file")
       .put("filenameOnly", "true")
-      .put(Properties.File.SCHEMA, outputSchema.toString())
+      .put(Properties.File.SCHEMA, schema.toString())
       .build();
 
     ETLStage source = new ETLStage("FileInput", new ETLPlugin("File", BatchSource.PLUGIN_TYPE, sourceProperties, null));
@@ -237,7 +236,6 @@ public class FileBatchSourceTest extends HydratorTestBase {
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
 
-    Schema schema = TextInputProvider.getDefaultSchema("file");
     Set<StructuredRecord> expected = ImmutableSet.of(
       StructuredRecord.builder(schema).set("offset", 0L).set("body", "Hello,World").set("file", "test1.txt").build(),
       StructuredRecord.builder(schema).set("offset", 0L).set("body", "CDAP,Platform").set("file", "test3.txt").build());
@@ -525,6 +523,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     File testFolder = temporaryFolder.newFolder();
     File file1 = new File(testFolder, "test1");
     File file2 = new File(testFolder, "test2");
+    File file3 = new File(testFolder, "empty");
     String outputDatasetName = UUID.randomUUID().toString();
 
     Schema schema = Schema.recordOf("blob",
@@ -539,6 +538,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     FileUtils.writeStringToFile(file1, content1);
     String content2 = "123\n456\n789";
     FileUtils.writeStringToFile(file2, content2);
+    file3.createNewFile();
 
     appManager.getWorkflowManager(SmartWorkflow.NAME)
       .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
@@ -679,7 +679,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
 
   @Test
   public void testFileBatchInputFormatText() throws Exception {
-    File fileText = new File(temporaryFolder.newFolder(), "test.txt");
+    File outputFolder = temporaryFolder.newFolder();
+    File fileText = new File(outputFolder, "test.txt");
     String outputDatasetName = "test-filesource-text";
 
     Schema textSchema = Schema.recordOf("file.record",
@@ -688,9 +689,12 @@ public class FileBatchSourceTest extends HydratorTestBase {
                                         Schema.Field.of("file", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
 
     String appName = "FileSourceText";
-    ApplicationManager appManager = createSourceAndDeployApp(appName, fileText, "text", outputDatasetName, textSchema);
+    ApplicationManager appManager = createSourceAndDeployApp(appName, outputFolder, "text",
+                                                             outputDatasetName, textSchema);
 
     FileUtils.writeStringToFile(fileText, "Hello,World!");
+    File emptyFile = new File(outputFolder, "empty");
+    emptyFile.createNewFile();
 
     appManager.getWorkflowManager(SmartWorkflow.NAME)
       .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
