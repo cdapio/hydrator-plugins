@@ -30,7 +30,7 @@
 [submodule "amazon-s3-plugins"]
 	path = amazon-s3-plugins
 	url = https://github.com/data-integrations/amazon-s3-plugins
-	branch = release/1.8
+	branch = release/1.9
 [submodule "realtime-stream-source"]
 	path = realtime-stream-source
 	url = https://github.com/data-integrations/realtime-stream-source.git
