@@ -3,11 +3,6 @@
 
 Description
 -----------
-Batch source to use any Distributed File System as a Source.
-
-
-Use Case
---------
 This source is used whenever you need to read from a distributed file system.
 For example, you may want to read in log files from S3 every hour and then store
 the logs in a TimePartitionedFileSet.
@@ -15,74 +10,32 @@ the logs in a TimePartitionedFileSet.
 
 Properties
 ----------
-**referenceName:** This will be used to uniquely identify this source for lineage, annotating metadata, etc.
+**Reference Name:** Name used to uniquely identify this source for lineage, annotating metadata, etc.
 
-**fileSystemProperties:** A JSON string representing a map of properties
-needed for the distributed file system.
-For example, the property names needed for S3 are "fs.s3n.awsSecretAccessKey"
-and "fs.s3n.awsAccessKeyId". (Macro-enabled)
-
-**path:** Path to file(s) to be read. If a directory is specified,
-terminate the path name with a '/'. The path uses filename expansion (globbing) to read files. (Macro-enabled)
-
-**fileRegex:** Regex to filter out files in the path. It accepts regular expression which is applied to the complete
-path and returns the list of files that match the specified pattern.
-
-**pathField:** If specified, each output record will include a field with this name that contains the file URI
-that the record was read from. Requires a customized version of CombineFileInputFormat, so it cannot be used if
-an inputFormatClass is given.
-
-**filenameOnly:** If true and a pathField is specified, only the filename will be used.
-If false, the full URI will be used. Defaults to false.
+**Path:** Path to read from. For example, s3a://<bucket>/path/to/input
 
 **Format:** Format of the data to read.
 The format must be one of 'avro', 'blob', 'csv', 'delimited', 'json', 'parquet', 'text', or 'tsv'.
 If the format is 'blob', every input file will be read into a separate record.
 The 'blob' format also requires a schema that contains a field named 'body' of type 'bytes'.
-If the format is 'text', the schema must contain a field named 'body' of type 'string'. (Macro-enabled)
+If the format is 'text', the schema must contain a field named 'body' of type 'string'.
 
-**schema:** Schema of the data to read.
+**Delimiter:** Delimiter to use when the format is 'delimited'. This will be ignored for other formats.
 
-**maxSplitSize:** Maximum split-size for each mapper in the MapReduce Job. Defaults to 128MB. (Macro-enabled)
+**Maximum Split Size:** Maximum size in bytes for each input partition.
+Smaller partitions will increase the level of parallelism, but will require more resources and overhead.
+The default value is 128MB.
 
-**ignoreNonExistingFolders:** Identify if path needs to be ignored or not, for case when directory or file does not
-exists. If set to true it will treat the not present folder as 0 input and log a warning. Default is false.
+**Path Field:** Output field to place the path of the file that the record was read from.
+If not specified, the file path will not be included in output records.
+If specified, the field must exist in the output schema as a string.
 
-**recursive:** Boolean value to determine if files are to be read recursively from the path. Default is false.
+**Path Filename Only:** Whether to only use the filename instead of the URI of the file path when a path field is given.
+The default value is false.
 
-Example
--------
-This example connects to Amazon S3 and reads in files found in the specified directory while
-using the stateful Timefilter, which ensures that each file is read only once. The Timefilter
-requires that files be named with either the convention ``"yy-MM-dd-HH..."`` (S3) or ``"...'.'yy-MM-dd-HH..."``
-(Cloudfront). The stateful metadata is stored in a table named 'timeTable'. With the maxSplitSize
-set to 1MB, if the total size of the files being read is larger than 1MB, CDAP will
-configure Hadoop to use more than one mapper:
+**Read Files Recursively:** Whether files are to be read recursively from the path. The default value is false.
 
-    {
-        "name": "FileBatchSource",
-        "type": "batchsource",
-        "properties": {
-            "fileSystem": "S3",
-            "fileSystemProperties": "{
-                \"fs.s3n.awsAccessKeyId\": \"accessID\",
-                \"fs.s3n.awsSecretAccessKey\": \"accessKey\"
-            }",
-            "path": "s3n://path/to/logs/",
-            "fileRegex": "timefilter",
-            "timeTable": "timeTable",
-            "format": "text",
-            "schema": "{
-                \"type\":\"file.record\",
-                \"name\":\"webactivity\",
-                \"fields\":[
-                    {\"name\":\"offset\",\"type\":\"long\"},
-                    {\"name\":\"body\",\"type\":\"long\"},
-                    {\"name\":\"file\",\"type\":\"string\"},
-                ]
-            }"
-            "maxSplitSize": "1048576",
-            "ignoreNonExistingFolders": "false",
-            "recursive": "false"
-        }
-    }
+**Allow Empty Input:** Whether to allow an input path that contains no data. When set to false, the plugin
+will error when there is no data to read. When set to true, no error will be thrown and zero records will be read.
+
+**File System Properties:** Additional properties to use with the InputFormat when reading the data.
