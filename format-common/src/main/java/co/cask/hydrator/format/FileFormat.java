@@ -106,6 +106,21 @@ public enum FileFormat {
   }
 
   /**
+   * Return the schema for this format, if the format requires a specific schema. Returns null if the format does
+   * not require a specific schema. Should only be called for formats that can read.
+   *
+   * @param pathField the field of the file path, if it exists.
+   * @return the schema required by the format, if it exists
+   */
+  @Nullable
+  public Schema getSchema(@Nullable String pathField) {
+    if (inputProvider == null) {
+      throw new IllegalArgumentException(String.format("Format '%s' cannot be used for reading.", this.name()));
+    }
+    return inputProvider.getSchema(pathField);
+  }
+
+  /**
    * Get a FileFormat from the specified string. This is similar to the valueOf method except that the error
    * message will contain the full set of valid values. It also supports filtering which enum values are valid.
    * This can be used to only get FileFormats that can be used for reading or only get formats that can be used

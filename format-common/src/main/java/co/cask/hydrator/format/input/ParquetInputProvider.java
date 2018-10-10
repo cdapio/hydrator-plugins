@@ -26,6 +26,12 @@ import javax.annotation.Nullable;
  */
 public class ParquetInputProvider implements FileInputFormatterProvider {
 
+  @Nullable
+  @Override
+  public Schema getSchema(@Nullable String pathField) {
+    return null;
+  }
+
   @Override
   public FileInputFormatter create(Map<String, String> properties, @Nullable Schema schema) {
     return new ParquetInputFormatter(schema);

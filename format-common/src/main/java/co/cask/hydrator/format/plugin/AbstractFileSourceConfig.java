@@ -18,6 +18,7 @@ package co.cask.hydrator.format.plugin;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Macro;
+import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.hydrator.common.IdUtils;
@@ -66,6 +67,7 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
   @Description("Whether to recursively read directories within the input directory. The default is false.")
   private Boolean recursive;
 
+  @Name(FileSourceProperties.PATH_FIELD)
   @Nullable
   @Description("Output field to place the path of the file that the record was read from. "
     + "If not specified, the file path will not be included in output records. "

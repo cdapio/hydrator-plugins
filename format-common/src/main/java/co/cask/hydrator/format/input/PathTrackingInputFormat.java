@@ -33,6 +33,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -112,7 +113,12 @@ public class PathTrackingInputFormat extends FileInputFormat<NullWritable, Struc
     String path = filenameOnly ? fileSplit.getPath().getName() : fileSplit.getPath().toUri().toString();
     String schema = hConf.get(SCHEMA);
     Schema parsedSchema = schema == null ? null : Schema.parseJson(schema);
-    FileInputFormatter inputFormatter = format.getFileInputFormatter(Collections.emptyMap(), parsedSchema);
+
+    Map<String, String> properties = new HashMap<>();
+    if (pathField != null) {
+      properties.put(FileSourceProperties.PATH_FIELD, pathField);
+    }
+    FileInputFormatter inputFormatter = format.getFileInputFormatter(properties, parsedSchema);
     RecordReader<NullWritable, StructuredRecord.Builder> reader = inputFormatter.create(fileSplit, context);
     return new TrackingRecordReader(reader, pathField, path);
   }

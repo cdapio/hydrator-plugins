@@ -26,6 +26,12 @@ import javax.annotation.Nullable;
  */
 public class AvroInputProvider implements FileInputFormatterProvider {
 
+  @Nullable
+  @Override
+  public Schema getSchema(@Nullable String pathField) {
+    return null;
+  }
+
   @Override
   public FileInputFormatter create(Map<String, String> properties, @Nullable Schema schema) {
     return new AvroInputFormatter(schema);
