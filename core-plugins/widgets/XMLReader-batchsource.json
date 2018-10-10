@@ -1,25 +1,23 @@
 {
   "metadata": {
-    "spec-version": "1.0"
+    "spec-version": "1.5"
   },
   "configuration-groups": [
     {
-      "label": "XML Reader Batch Source Properties",
+      "label": "Basic",
       "properties": [
         {
           "widget-type": "textbox",
           "label": "Reference Name",
-          "name": "referenceName"
+          "name": "referenceName",
+          "widget-attributes": {
+            "placeholder": "Name used to identify this source for lineage"
+          }
         },
         {
           "widget-type": "textbox",
           "label": "Path",
           "name": "path"
-        },
-        {
-          "widget-type": "textbox",
-          "label": "File Pattern",
-          "name": "pattern"
         },
         {
           "widget-type": "textbox",
@@ -41,11 +39,6 @@
           }
         },
         {
-          "widget-type": "textbox",
-          "label": "Target Folder",
-          "name": "targetFolder"
-        },
-        {
           "widget-type": "select",
           "label": "Reprocessing Required",
           "name": "reprocessingRequired",
@@ -59,6 +52,29 @@
         },
         {
           "widget-type": "textbox",
+          "label": "Temporary Folder",
+          "name": "temporaryFolder",
+          "widget-attributes": {
+            "default": "/tmp"
+          }
+        }
+      ]
+    },
+    {
+      "label": "Advanced",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "File Pattern",
+          "name": "pattern"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Target Folder",
+          "name": "targetFolder"
+        },
+        {
+          "widget-type": "textbox",
           "label": "Table Name",
           "name": "tableName"
         },
@@ -66,14 +82,6 @@
           "widget-type": "textbox",
           "label": "Table Data Expiry Period (Days)",
           "name": "tableExpiryPeriod"
-        },
-        {
-          "widget-type": "textbox",
-          "label": "Temporary Folder",
-          "name": "temporaryFolder",
-          "widget-attributes": {
-            "default": "/tmp"
-          }
         }
       ]
     }
@@ -100,5 +108,12 @@
         ]
       }
     }
-  ]
+  ],
+  "jump-config": {
+    "datasets": [
+      {
+        "ref-property-name": "referenceName"
+      }
+    ]
+  }
 }

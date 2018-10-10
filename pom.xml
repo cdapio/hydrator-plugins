@@ -31,6 +31,7 @@
     <module>core-plugins</module>
     <module>cassandra-plugins</module>
     <module>database-plugins</module>
+    <module>format-common</module>
     <module>hbase-plugins</module>
     <module>hdfs-plugins</module>
     <module>hive-plugins</module>
@@ -40,6 +41,9 @@
     <module>spark-plugins</module>
     <module>transform-plugins</module>
     <module>wrangler-transform</module>
+    <module>google-cloud</module>
+    <module>kafka-plugins</module>
+    <module>amazon-s3-plugins</module>
     <module>condition-plugins</module>
   </modules>
 
@@ -124,7 +128,7 @@
     <json-path.version>2.2.0</json-path.version>
     <json.version>20160212</json.version>
     <netty.version>4.1.16.Final</netty.version>
-    <netty-http.version>1.0.0</netty-http.version>
+    <netty-http.version>1.1.0</netty-http.version>
   </properties>
 
   <repositories>

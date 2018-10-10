@@ -1,6 +1,6 @@
 
 /*
- * Copyright © 2015 Cask Data, Inc.
+ * Copyright © 2018 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -15,7 +15,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.common;
+package co.cask.hydrator.format;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.hydrator.common.RecordConverter;
@@ -27,6 +27,7 @@ import org.apache.avro.generic.GenericRecordBuilder;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * Creates GenericRecords from StructuredRecords
@@ -35,17 +36,10 @@ public class StructuredToAvroTransformer extends RecordConverter<StructuredRecor
 
   private final Map<Integer, Schema> schemaCache;
   private final co.cask.cdap.api.data.schema.Schema outputCDAPSchema;
-  private final Schema outputAvroSchema;
 
-  public StructuredToAvroTransformer(String outputSchema) {
+  public StructuredToAvroTransformer(@Nullable co.cask.cdap.api.data.schema.Schema outputSchema) {
     this.schemaCache = Maps.newHashMap();
-    try {
-      this.outputCDAPSchema =
-        (outputSchema != null) ? co.cask.cdap.api.data.schema.Schema.parseJson(outputSchema) : null;
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Unable to parse schema: Reason: " + e.getMessage(), e);
-    }
-    this.outputAvroSchema = (outputSchema != null) ? new Schema.Parser().parse(outputSchema) : null;
+    this.outputCDAPSchema = outputSchema;
   }
 
   public GenericRecord transform(StructuredRecord structuredRecord) throws IOException {

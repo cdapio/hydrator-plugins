@@ -1,30 +1,33 @@
 {
   "metadata": {
-    "spec-version": "1.0"
+    "spec-version": "1.5"
   },
   "configuration-groups": [
     {
-      "label": "FTP Batch Source Properties",
+      "label": "Basic",
       "properties": [
         {
           "widget-type": "textbox",
           "label": "Reference Name",
-          "name": "referenceName"
+          "name": "referenceName",
+          "widget-attributes": {
+            "placeholder": "Name used to identify this source for lineage"
+          }
         },
         {
           "widget-type": "textbox",
           "label": "Path",
           "name": "path"
-        },
+        }
+      ]
+    },
+    {
+      "label": "Advanced",
+      "properties": [
         {
           "widget-type": "textbox",
           "label": "Regex Path Filter",
           "name": "fileRegex"
-        },
-        {
-          "widget-type": "textbox",
-          "label": "Input Format Class",
-          "name": "inputFormatClassName"
         },
         {
           "widget-type": "json-editor",
@@ -32,27 +35,22 @@
           "name": "fileSystemProperties"
         },
         {
-          "widget-type": "select",
-          "label": "Ignore Non-Existing Folders",
+          "widget-type": "radio-group",
+          "label": "Allow Empty Input",
           "name": "ignoreNonExistingFolders",
           "widget-attributes": {
-            "values": [
-              "true",
-              "false"
-            ],
-            "default": "false"
-          }
-        },
-        {
-          "widget-type": "select",
-          "label": "Read files recursively",
-          "name": "recursive",
-          "widget-attributes": {
-            "values": [
-              "true",
-              "false"
-            ],
-            "default": "false"
+            "layout": "inline",
+            "default": "false",
+            "options": [
+              {
+                "id": "true",
+                "label": "True"
+              },
+              {
+                "id": "false",
+                "label": "False"
+              }
+            ]
           }
         }
       ]
@@ -76,5 +74,12 @@
         ]
       }
     }
-  ]
+  ],
+  "jump-config": {
+    "datasets": [
+      {
+        "ref-property-name": "referenceName"
+      }
+    ]
+  }
 }

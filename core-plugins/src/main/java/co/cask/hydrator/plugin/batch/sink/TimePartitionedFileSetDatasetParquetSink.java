@@ -27,8 +27,8 @@ import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
+import co.cask.hydrator.format.StructuredToAvroTransformer;
 import co.cask.hydrator.plugin.common.FileSetUtil;
-import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
 import org.apache.avro.generic.GenericRecord;
 
 import javax.annotation.Nullable;
@@ -59,12 +59,12 @@ public class TimePartitionedFileSetDatasetParquetSink extends TimePartitionedFil
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    recordTransformer = new StructuredToAvroTransformer(config.schema);
+    recordTransformer = new StructuredToAvroTransformer(config.getSchema());
   }
 
   @Override
   public void transform(StructuredRecord input, Emitter<KeyValue<Void, GenericRecord>> emitter) throws Exception {
-    emitter.emit(new KeyValue<Void, GenericRecord>(null, recordTransformer.transform(input)));
+    emitter.emit(new KeyValue<>(null, recordTransformer.transform(input)));
   }
 
   /**

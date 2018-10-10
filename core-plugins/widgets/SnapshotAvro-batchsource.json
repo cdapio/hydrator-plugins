@@ -5,7 +5,7 @@
   "display-name": "Avro Snapshot Dataset",
   "configuration-groups": [
     {
-      "label": "Snapshot Fileset - AVRO",
+      "label": "Basic",
       "properties": [
         {
           "widget-type": "dataset-selector",
@@ -16,16 +16,16 @@
           "widget-type": "textbox",
           "label": "Snapshot Base Path",
           "name": "basePath"
-        },
+        }
+      ]
+    },
+    {
+      "label": "Advanced",
+      "properties": [
         {
           "widget-type": "json-editor",
           "label": "FileSet Properties",
           "name": "fileProperties"
-        },
-        {
-          "widget-type": "textbox",
-          "label": "Clean Partitions Older Than",
-          "name": "cleanPartitionsOlderThan"
         }
       ]
     }

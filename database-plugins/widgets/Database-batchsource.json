@@ -5,28 +5,16 @@
   "display-name": "Database",
   "configuration-groups": [
     {
-      "label": "General",
+      "label": "Basic",
       "properties": [
         {
           "widget-type": "textbox",
           "label": "Reference Name",
-          "name": "referenceName"
+          "name": "referenceName",
+          "widget-attributes": {
+            "placeholder": "Name used to identify this source for lineage"
+          }
         },
-        {
-          "widget-type": "textbox",
-          "label": "Username",
-          "name": "user"
-        },
-        {
-          "widget-type": "password",
-          "label": "Password",
-          "name": "password"
-        }
-      ]
-    },
-    {
-      "label": "JDBC Information",
-      "properties": [
         {
           "widget-type": "textbox",
           "label": "Plugin Name",
@@ -35,57 +23,16 @@
         {
           "widget-type": "textbox",
           "label": "Plugin Type",
-          "name": "jdbcPluginType"
+          "name": "jdbcPluginType",
+          "widget-attributes": {
+            "default": "jdbc"
+          }
         },
         {
           "widget-type": "textbox",
           "label": "Connection String",
           "name": "connectionString"
         },
-        {
-          "widget-type": "keyvalue",
-          "label": "Connection Arguments",
-          "name": "connectionArguments",
-          "widget-attributes": {
-            "showDelimiter": "false",
-            "key-placeholder": "Key",
-            "value-placeholder": "Value",
-            "kv-delimiter" : "=",
-            "delimiter" : ";"
-          }
-        },
-        {
-          "widget-type": "select",
-          "label": "Enable Auto-Commit",
-          "name": "enableAutoCommit",
-          "widget-attributes": {
-            "values": [
-              "true",
-              "false"
-            ],
-            "default": "false"
-          }
-        },
-        {
-          "widget-type": "select",
-          "label": "Transaction Isolation Level",
-          "name": "transactionIsolationLevel",
-          "widget-attributes": {
-            "values": [
-              "TRANSACTION_NONE",
-              "TRANSACTION_READ_UNCOMMITTED",
-              "TRANSACTION_READ_COMMITTED",
-              "TRANSACTION_REPEATABLE_READ",
-              "TRANSACTION_SERIALIZABLE"
-            ],
-            "default": "TRANSACTION_SERIALIZABLE"
-          }
-        }
-      ]
-    },
-    {
-      "label": "Database Properties",
-      "properties": [
         {
           "widget-type": "textarea",
           "label": "Import Query",
@@ -117,6 +64,57 @@
           "widget-type": "textbox",
           "label": "Number of Splits to Generate",
           "name": "numSplits"
+        }
+      ]
+    },
+    {
+      "label": "Credentials",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Username",
+          "name": "user"
+        },
+        {
+          "widget-type": "password",
+          "label": "Password",
+          "name": "password"
+        }
+      ]
+    },
+    {
+      "label": "Advanced",
+      "properties": [
+        {
+          "widget-type": "keyvalue",
+          "label": "Connection Arguments",
+          "name": "connectionArguments",
+          "widget-attributes": {
+            "showDelimiter": "false",
+            "key-placeholder": "Key",
+            "value-placeholder": "Value",
+            "kv-delimiter" : "=",
+            "delimiter" : ";"
+          }
+        },
+        {
+          "widget-type": "radio-group",
+          "label": "Enable Auto-Commit",
+          "name": "enableAutoCommit",
+          "widget-attributes": {
+            "layout": "inline",
+            "default": "false",
+            "options": [
+              {
+                "id": "true",
+                "label": "True"
+              },
+              {
+                "id": "false",
+                "label": "False"
+              }
+            ]
+          }
         },
         {
           "widget-type": "select",
@@ -129,6 +127,21 @@
               "No change"
             ],
             "default": "No change"
+          }
+        },
+        {
+          "widget-type": "select",
+          "label": "Transaction Isolation Level",
+          "name": "transactionIsolationLevel",
+          "widget-attributes": {
+            "values": [
+              "TRANSACTION_NONE",
+              "TRANSACTION_READ_UNCOMMITTED",
+              "TRANSACTION_READ_COMMITTED",
+              "TRANSACTION_REPEATABLE_READ",
+              "TRANSACTION_SERIALIZABLE"
+            ],
+            "default": "TRANSACTION_SERIALIZABLE"
           }
         }
       ]
@@ -151,5 +164,12 @@
         "schema-default-type": "string"
       }
     }
-  ]
+  ],
+  "jump-config": {
+    "datasets": [
+      {
+        "ref-property-name": "referenceName"
+      }
+    ]
+  }
 }

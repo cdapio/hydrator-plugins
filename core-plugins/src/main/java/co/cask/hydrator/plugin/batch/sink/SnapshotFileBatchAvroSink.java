@@ -22,13 +22,14 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.annotation.Requirements;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
+import co.cask.hydrator.format.StructuredToAvroTransformer;
 import co.cask.hydrator.plugin.common.FileSetUtil;
-import co.cask.hydrator.plugin.common.StructuredToAvroTransformer;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.hadoop.io.NullWritable;
@@ -56,7 +57,7 @@ public class SnapshotFileBatchAvroSink extends SnapshotFileBatchSink<AvroKey<Gen
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     super.initialize(context);
-    recordTransformer = new StructuredToAvroTransformer(config.schema);
+    recordTransformer = new StructuredToAvroTransformer(config.getSchema());
   }
 
   @Override
@@ -92,10 +93,13 @@ public class SnapshotFileBatchAvroSink extends SnapshotFileBatchSink<AvroKey<Gen
     @Override
     public void validate() {
       super.validate();
+      getSchema();
+    }
+
+    @Nullable
+    public Schema getSchema() {
       try {
-        if (schema != null) {
-          co.cask.cdap.api.data.schema.Schema.parseJson(schema);
-        }
+        return schema == null ? null : Schema.parseJson(schema);
       } catch (IOException e) {
         throw new IllegalArgumentException("Unable to parse schema: " + e.getMessage());
       }

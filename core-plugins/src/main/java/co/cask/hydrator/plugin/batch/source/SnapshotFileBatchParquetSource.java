@@ -27,7 +27,7 @@ import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
-import co.cask.hydrator.plugin.common.AvroToStructuredTransformer;
+import co.cask.hydrator.format.AvroToStructuredTransformer;
 import co.cask.hydrator.plugin.common.FileSetUtil;
 import co.cask.hydrator.plugin.common.SnapshotFileSetConfig;
 import com.google.common.base.Preconditions;

@@ -1,49 +1,64 @@
 {
   "metadata": {
-    "spec-version": "1.0"
+    "spec-version": "1.5"
   },
   "configuration-groups": [
     {
-      "label": "Dataset Properties",
+      "label": "Basic",
       "properties": [
         {
           "widget-type": "textbox",
           "label": "Reference Name",
-          "name": "referenceName"
+          "name": "referenceName",
+          "widget-attributes": {
+            "placeholder": "Name used to identify this sink for lineage"
+          }
         },
         {
           "widget-type": "textbox",
           "label": "Path",
-          "name": "path"
+          "name": "path",
+          "widget-attributes": {
+            "placeholder": "/path/to/output"
+          }
         },
         {
           "widget-type": "textbox",
-          "label": "Directory Time Format",
-          "name": "suffix"
-        }
-      ]
-    },
-    {
-      "label": "Format Properties",
-      "properties": [
+          "label": "Path Suffix",
+          "name": "suffix",
+          "widget-attributes" : {
+            "default": "yyyy-MM-dd-HH-mm"
+          }
+        },
         {
           "widget-type": "select",
           "label": "Format",
           "name": "format",
           "widget-attributes": {
             "values": [
-              "text",
               "avro",
-              "parquet"
+              "csv",
+              "delimited",
+              "json",
+              "parquet",
+              "tsv"
             ],
-            "default": "text"
+            "default": "json"
           }
         },
         {
           "widget-type": "textbox",
           "label": "Delimiter",
-          "name": "delimiter"
-        },
+          "name": "delimiter",
+          "widget-attributes": {
+            "placeholder": "Delimiter if the format is 'delimited'"
+          }
+        }
+      ]
+    },
+    {
+      "label": "Advanced",
+      "properties": [
         {
           "widget-type": "json-editor",
           "label": "File System Properties",

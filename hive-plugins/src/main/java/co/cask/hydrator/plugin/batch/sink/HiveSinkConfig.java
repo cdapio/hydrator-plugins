@@ -18,8 +18,10 @@ package co.cask.hydrator.plugin.batch.sink;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.plugin.batch.HiveConfig;
 
+import java.io.IOException;
 import javax.annotation.Nullable;
 
 /**
@@ -41,4 +43,17 @@ public class HiveSinkConfig extends HiveConfig {
     "schema of the table will be used and it should match the schema of the data being written.")
   @Nullable
   public String schema;
+
+  /**
+   * @return {@link Schema} of the dataset if one was given else null
+   */
+  @Nullable
+  public Schema getSchema() {
+    try {
+      return schema == null ? null : Schema.parseJson(schema);
+    } catch (IOException e) {
+      throw new IllegalArgumentException(String.format("Unable to parse schema '%s'. Reason: %s",
+                                                       schema, e.getMessage()), e);
+    }
+  }
 }

@@ -1,25 +1,26 @@
 {
   "metadata": {
-    "spec-version": "1.0"
+    "spec-version": "1.5"
   },
   "configuration-groups": [
     {
-      "label": "Input Properties",
+      "label": "Basic",
       "properties": [
         {
           "widget-type": "textbox",
           "label": "Reference Name",
-          "name": "referenceName"
+          "name": "referenceName",
+          "widget-attributes": {
+            "placeholder": "Name used to identify this source for lineage"
+          }
         },
         {
           "widget-type": "textbox",
           "label": "Path",
-          "name": "path"
-        },
-        {
-          "widget-type": "textbox",
-          "label": "Regex Path Filter",
-          "name": "fileRegex"
+          "name": "path",
+          "widget-attributes": {
+            "placeholder": "/path/to/input"
+          }
         },
         {
           "widget-type": "select",
@@ -28,60 +29,115 @@
           "widget-attributes": {
             "values": [
               "avro",
+              "blob",
+              "csv",
+              "delimited",
+              "json",
               "parquet",
-              "text"
+              "text",
+              "tsv"
             ],
             "default": "text"
+          },
+          "plugin-function": {
+            "method": "POST",
+            "widget": "outputSchema",
+            "output-property": "schema",
+            "plugin-method": "getSchema"
           }
         },
         {
           "widget-type": "textbox",
-          "label": "Maximum Split Size",
-          "name": "maxSplitSize"
-        },
-        {
-          "widget-type": "select",
-          "label": "Read files recursively",
-          "name": "recursive",
+          "label": "Delimiter",
+          "name": "delimiter",
           "widget-attributes": {
-            "values": [
-              "true",
-              "false"
-            ],
-            "default": "false"
+            "placeholder": "Delimiter if the format is 'delimited'"
           }
         }
       ]
     },
     {
-      "label": "Output Schema Properties",
-      "properties": [
+      "label": "Advanced",
+      "properties": [{
+        "widget-type": "textbox",
+        "label": "Maximum Split Size",
+        "name": "maxSplitSize",
+        "widget-attributes": {
+          "placeholder": "Maximum split size for each partition specified in bytes"
+        }
+      },
+        {
+          "widget-type": "textbox",
+          "label": "Regex Path Filter",
+          "name": "fileRegex",
+          "widget-attributes": {
+            "placeholder": "Regular expression for files to read"
+          }
+        },
         {
           "widget-type": "textbox",
           "label": "Path Field",
-          "name": "pathField"
+          "name": "pathField",
+          "widget-attributes": {
+            "placeholder": "Output field to contain the path of the object that was read from"
+          }
         },
         {
-          "widget-type": "select",
-          "label": "Use File Name as Path Field",
+          "widget-type": "radio-group",
           "name": "filenameOnly",
+          "label": "Path Filename Only",
           "widget-attributes": {
-            "values": [
-              "true",
-              "false"
-            ],
-            "default": "false"
+            "layout": "inline",
+            "default": "false",
+            "options": [
+              {
+                "id": "true",
+                "label": "True"
+              },
+              {
+                "id": "false",
+                "label": "False"
+              }
+            ]
           }
-        }
-      ]
-    },
-    {
-      "label": "Advanced Properties",
-      "properties": [
+        },
         {
-          "widget-type": "textbox",
-          "label": "Input Format Class",
-          "name": "inputFormatClass"
+          "widget-type": "radio-group",
+          "name": "recursive",
+          "label": "Read Files Recursively",
+          "widget-attributes": {
+            "layout": "inline",
+            "default": "false",
+            "options": [
+              {
+                "id": "true",
+                "label": "True"
+              },
+              {
+                "id": "false",
+                "label": "False"
+              }
+            ]
+          }
+        },
+        {
+          "widget-type": "radio-group",
+          "label": "Allow Empty Input",
+          "name": "ignoreNonExistingFolders",
+          "widget-attributes": {
+            "layout": "inline",
+            "default": "false",
+            "options": [
+              {
+                "id": "true",
+                "label": "True"
+              },
+              {
+                "id": "false",
+                "label": "False"
+              }
+            ]
+          }
         },
         {
           "widget-type": "json-editor",
@@ -89,21 +145,13 @@
           "name": "fileSystemProperties"
         },
         {
-          "widget-type": "select",
-          "label": "Ignore Non-Existing Folders",
-          "name": "ignoreNonExistingFolders",
-          "widget-attributes": {
-            "values": [
-              "true",
-              "false"
-            ],
-            "default": "false"
-          }
-        },
-        {
-          "widget-type": "textbox",
+          "widget-type": "hidden",
           "label": "Time Table",
           "name": "timeTable"
+        },
+        {
+          "widget-type": "hidden",
+          "name": "copyHeader"
         }
       ]
     }
@@ -129,5 +177,12 @@
         }
       }
     }
-  ]
+  ],
+  "jump-config": {
+    "datasets": [
+      {
+        "ref-property-name": "referenceName"
+      }
+    ]
+  }
 }

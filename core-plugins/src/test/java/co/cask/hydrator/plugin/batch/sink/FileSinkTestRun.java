@@ -18,14 +18,21 @@ package co.cask.hydrator.plugin.batch.sink;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.table.Table;
+import co.cask.cdap.api.metadata.MetadataEntity;
+import co.cask.cdap.api.metadata.MetadataScope;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.mock.batch.MockSource;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
+import co.cask.cdap.format.StructuredRecordStringConverter;
+import co.cask.cdap.metadata.MetadataAdmin;
+import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
+import co.cask.hydrator.format.FileFormat;
 import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
 import com.google.common.collect.ImmutableMap;
 import org.apache.avro.file.DataFileStream;
@@ -36,6 +43,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.parquet.avro.AvroParquetReader;
 import org.apache.parquet.hadoop.ParquetReader;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -44,11 +52,13 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import javax.annotation.Nullable;
 
 /**
  * Test for {@link SnapshotFileBatchSink}.
@@ -59,64 +69,85 @@ public class FileSinkTestRun extends ETLBatchTestBase {
   private static final Schema SCHEMA = Schema.recordOf("x",
                                                        Schema.Field.of("i", Schema.of(Schema.Type.INT)),
                                                        Schema.Field.of("s", Schema.of(Schema.Type.STRING)));
+  private static MetadataAdmin metadataAdmin;
+
+  @BeforeClass
+  public static void setUp() {
+    metadataAdmin = getMetadataAdmin();
+  }
 
   @Test
-  public void testTextFileSink() throws Exception {
-    File outputDir = runPipeline("text");
+  public void testCSVFileSink() throws Exception {
+    testDelimitedFileSink(FileFormat.CSV, ",");
+  }
 
+  @Test
+  public void testTSVFileSink() throws Exception {
+    testDelimitedFileSink(FileFormat.TSV, "\t");
+  }
+
+  @Test
+  public void testDelimitedFileSink() throws Exception {
+    testDelimitedFileSink(FileFormat.DELIMITED, "\u0001");
+  }
+
+  private void testDelimitedFileSink(FileFormat format, String delimiter) throws Exception {
+    // only set the delimiter as a pipeline property if the format is "delimited".
+    // otherwise, the delimiter should be tied to the format
     Map<Integer, String> output = new HashMap<>();
-    for (File outputFile : outputDir.listFiles()) {
-      String fileName = outputFile.getName();
-      if (fileName.startsWith(".") || "_SUCCESS".equals(fileName)) {
-        continue;
-      }
-      try (BufferedReader reader = new BufferedReader(new FileReader(outputFile))) {
+    runPipeline(format, format == FileFormat.DELIMITED ? delimiter : null, file -> {
+      try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
         String line;
         while ((line = reader.readLine()) != null) {
-          String[] fields = line.split(",");
+          String[] fields = line.split(delimiter);
           output.put(Integer.valueOf(fields[0]), fields[1]);
         }
       }
-    }
+    });
     Assert.assertEquals(ImmutableMap.of(0, "abc", 1, "def", 2, "ghi"), output);
+    validateDatasetSchema(format);
+  }
+
+  @Test
+  public void testJsonFileSink() throws Exception {
+    Map<Integer, String> output = new HashMap<>();
+    runPipeline(FileFormat.JSON, file -> {
+      try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+          StructuredRecord outputRecord = StructuredRecordStringConverter.fromJsonString(line, SCHEMA);
+          output.put(outputRecord.get("i"), outputRecord.get("s"));
+        }
+      }
+    });
+    Assert.assertEquals(ImmutableMap.of(0, "abc", 1, "def", 2, "ghi"), output);
+    validateDatasetSchema(FileFormat.AVRO);
   }
 
   @Test
   public void testAvroFileSink() throws Exception {
-    File outputDir = runPipeline("avro");
     org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(SCHEMA.toString());
     DatumReader<GenericRecord> datumReader = new GenericDatumReader<>(avroSchema);
 
     Map<Integer, String> output = new HashMap<>();
-    for (File outputFile : outputDir.listFiles()) {
-      String fileName = outputFile.getName();
-      if (fileName.startsWith(".") || "_SUCCESS".equals(fileName)) {
-        continue;
-      }
-
+    runPipeline(FileFormat.AVRO, file -> {
       try (DataFileStream<GenericRecord> fileStream =
-        new DataFileStream<>(new FileInputStream(outputFile), datumReader)) {
+        new DataFileStream<>(new FileInputStream(file), datumReader)) {
 
         for (GenericRecord genericRecord : fileStream) {
           output.put((int) genericRecord.get("i"), genericRecord.get("s").toString());
         }
       }
-    }
+    });
     Assert.assertEquals(ImmutableMap.of(0, "abc", 1, "def", 2, "ghi"), output);
+    validateDatasetSchema(FileFormat.AVRO);
   }
 
   @Test
   public void testParquetFileSink() throws Exception {
-    File outputDir = runPipeline("parquet");
-
     Map<Integer, String> output = new HashMap<>();
-    for (File outputFile : outputDir.listFiles()) {
-      String fileName = outputFile.getName();
-      if (fileName.startsWith(".") || "_SUCCESS".equals(fileName)) {
-        continue;
-      }
-
-      Path parquetFile = new Path(outputFile.toString());
+    runPipeline(FileFormat.PARQUET, file -> {
+      Path parquetFile = new Path(file.toString());
       AvroParquetReader.Builder<GenericRecord> genericRecordBuilder = AvroParquetReader.builder(parquetFile);
       try (ParquetReader<GenericRecord> reader = genericRecordBuilder.build()) {
         GenericRecord genericRecord = reader.read();
@@ -125,26 +156,32 @@ public class FileSinkTestRun extends ETLBatchTestBase {
           genericRecord = reader.read();
         }
       }
-    }
+    });
     Assert.assertEquals(ImmutableMap.of(0, "abc", 1, "def", 2, "ghi"), output);
+    validateDatasetSchema(FileFormat.PARQUET);
+  }
+
+  private void runPipeline(FileFormat format, FileConsumer fileConsumer) throws Exception {
+    runPipeline(format, null, fileConsumer);
   }
 
   /**
    * Creates and runs a pipeline that is the mock source writing to a file sink using the specified format.
    * It will always write three records, {"i":0, "s":"abc"}, {"i":1, "s":"def"}, and {"i":2, "s":"ghi"}.
-   * The output directory will be returned.
    */
-  private File runPipeline(String format) throws Exception {
+  private void runPipeline(FileFormat format, @Nullable String delimiter, FileConsumer fileConsumer) throws Exception {
     String inputName = UUID.randomUUID().toString();
 
     File baseDir = TEMP_FOLDER.newFolder(format + "FileSink");
     File outputDir = new File(baseDir, "out");
-    Map<String, String> properties = ImmutableMap.of("path", outputDir.getAbsolutePath(),
-                                                     "referenceName", format + "Files",
-                                                     "format", format,
-                                                     "schema", "${schema}");
+    Map<String, String> properties = new HashMap<>();
+    properties.put("path", outputDir.getAbsolutePath());
+    properties.put("referenceName", format.name());
+    properties.put("format", format.name());
+    properties.put("schema", "${schema}");
+    properties.put("delimiter", delimiter);
 
-    ETLBatchConfig conf = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig conf = ETLBatchConfig.builder()
       .addStage(new ETLStage("source", MockSource.getPlugin(inputName, SCHEMA)))
       .addStage(new ETLStage("sink", new ETLPlugin("File", BatchSink.PLUGIN_TYPE, properties)))
       .addConnection("source", "sink")
@@ -162,7 +199,35 @@ public class FileSinkTestRun extends ETLBatchTestBase {
     Map<String, String> arguments = new HashMap<>();
     arguments.put("schema", SCHEMA.toString());
     runETLOnce(appManager, arguments);
-    return outputDir;
+
+    File[] outputFiles = outputDir.listFiles();
+    if (outputFiles == null) {
+      return;
+    }
+    for (File outputFile : outputFiles) {
+      String fileName = outputFile.getName();
+      if (fileName.startsWith(".") || "_SUCCESS".equals(fileName)) {
+        continue;
+      }
+
+      fileConsumer.consume(outputFile);
+    }
+  }
+
+  private void validateDatasetSchema(FileFormat format) {
+    // if a schema was provided for the sink verify that the external dataset has the given schema
+    Map<String, String> metadataProperties =
+      metadataAdmin.getProperties(MetadataScope.SYSTEM,
+                                  MetadataEntity.ofDataset(NamespaceId.DEFAULT.getNamespace(),
+                                                           format.name()));
+    Assert.assertEquals(SCHEMA.toString(), metadataProperties.get(DatasetProperties.SCHEMA));
+  }
+
+  /**
+   * Consumes a file.
+   */
+  private interface FileConsumer {
+    void consume(File file) throws IOException;
   }
 }
 

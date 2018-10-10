@@ -5,7 +5,7 @@
   "display-name": "Parquet Time Partitioned Dataset",
   "configuration-groups": [
     {
-      "label": "Time Partitioned Fileset - Parquet",
+      "label": "Basic",
       "properties": [
         {
           "widget-type": "dataset-selector",
