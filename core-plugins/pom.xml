@@ -81,15 +81,6 @@
       <artifactId>junit</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.avro</groupId>
-      <artifactId>avro</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.avro</groupId>
-      <artifactId>avro-mapred</artifactId>
-      <classifier>hadoop2</classifier>
-    </dependency>
-    <dependency>
       <groupId>commons-lang</groupId>
       <artifactId>commons-lang</artifactId>
     </dependency>
@@ -116,17 +107,6 @@
       <artifactId>mail</artifactId>
     </dependency>
     <!-- End for EMail -->
-    <dependency>
-      <groupId>org.apache.parquet</groupId>
-      <artifactId>parquet-avro</artifactId>
-      <version>1.8.1</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.avro</groupId>
-          <artifactId>avro</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
     <dependency>
       <groupId>net.sf.uadetector</groupId>
       <artifactId>uadetector-resources</artifactId>
@@ -184,6 +164,12 @@
     </dependency>
     <dependency>
       <groupId>co.cask.hydrator</groupId>
+      <artifactId>format-blob</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>co.cask.hydrator</groupId>
       <artifactId>format-delimited</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
@@ -206,6 +192,12 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>co.cask.hydrator</groupId>
+      <artifactId>format-text</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -218,19 +210,14 @@
         <configuration>
           <instructions>
             <_exportcontents>
-              co.cask.hydrator.plugin.alert.*;
+              co.cask.hydrator.plugin.*;
               co.cask.hydrator.plugin.batch.*;
               co.cask.hydrator.plugin.common;
               co.cask.hydrator.plugin.realtime.*;
               co.cask.hydrator.plugin.streaming.*;
               co.cask.hydrator.plugin.transform.*;
               co.cask.hydrator.plugin.validator.*;
-              co.cask.hydrator.plugin.error.*;
-              co.cask.hydrator.format.*;
-              org.apache.avro.mapred.*;
-              org.apache.avro.mapreduce;
-              org.apache.parquet.avro.*;
-              org.apache.parquet.hadoop.*;
+              co.cask.hydrator.plugin.error.*
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>

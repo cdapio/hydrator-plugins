@@ -17,73 +17,122 @@
 package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.data.batch.Input;
+import co.cask.cdap.api.data.batch.InputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.schema.Schema;
+import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
-import co.cask.cdap.api.dataset.lib.PartitionedFileSetProperties;
+import co.cask.cdap.api.lineage.field.EndPoint;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
+import co.cask.cdap.etl.api.lineage.field.FieldOperation;
+import co.cask.cdap.etl.api.lineage.field.FieldReadOperation;
 import co.cask.hydrator.plugin.batch.sink.SnapshotFileBatchSink;
-import co.cask.hydrator.plugin.common.SnapshotFileSetConfig;
 import co.cask.hydrator.plugin.dataset.SnapshotFileSet;
+import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import org.apache.hadoop.io.NullWritable;
 
 import java.lang.reflect.Type;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Reads the latest snapshot written by a {@link SnapshotFileBatchSink}.
  *
- * @param <KEY> type of key to output
- * @param <VALUE> type of value to output
+ * @param <T> type of plugin config
  */
-public abstract class SnapshotFileBatchSource<KEY, VALUE> extends BatchSource<KEY, VALUE, StructuredRecord> {
+public abstract class SnapshotFileBatchSource<T extends SnapshotFileSetSourceConfig>
+  extends BatchSource<NullWritable, StructuredRecord, StructuredRecord> {
   private static final Gson GSON = new Gson();
   private static final Type MAP_TYPE = new TypeToken<Map<String, String>>() { }.getType();
+  private static final String FORMAT_PLUGIN_ID = "format";
 
-  private final SnapshotFileSetConfig config;
+  protected final T config;
 
-  public SnapshotFileBatchSource(SnapshotFileSetConfig config) {
+  public SnapshotFileBatchSource(T config) {
     this.config = config;
   }
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    if (!config.containsMacro("name") && !config.containsMacro("basePath") && !config.containsMacro("fileProperties")) {
-      PartitionedFileSetProperties.Builder fileProperties = SnapshotFileSet.getBaseProperties(config);
-      addFileProperties(fileProperties);
-
-      pipelineConfigurer.createDataset(config.getName(), PartitionedFileSet.class, fileProperties.build());
+    String inputFormatName = getInputFormatName();
+    InputFormatProvider inputFormatProvider =
+      pipelineConfigurer.usePlugin("inputformat", inputFormatName, FORMAT_PLUGIN_ID, config.getProperties());
+    if (inputFormatProvider == null) {
+      throw new IllegalArgumentException(
+        String.format("Could not find the '%s' input format plugin. "
+                        + "Please ensure the '%s' format plugin is installed.", inputFormatName, inputFormatName));
     }
+    // get input format configuration to give the output format plugin a chance to validate it's config
+    // and fail pipeline deployment if it is invalid
+    inputFormatProvider.getInputFormatConfiguration();
+
+    if (!config.containsMacro("name") && !config.containsMacro("basePath") && !config.containsMacro("fileProperties")) {
+      pipelineConfigurer.createDataset(config.getName(), PartitionedFileSet.class,
+                                       createProperties(inputFormatProvider));
+    }
+
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(config.getSchema());
   }
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
+    InputFormatProvider inputFormatProvider = context.newPluginInstance(FORMAT_PLUGIN_ID);
+    DatasetProperties datasetProperties = createProperties(inputFormatProvider);
+
     // Dataset must still be created if macros provided at configure time
     if (!context.datasetExists(config.getName())) {
-      PartitionedFileSetProperties.Builder fileProperties = SnapshotFileSet.getBaseProperties(config);
-      addFileProperties(fileProperties);
-
-      context.createDataset(config.getName(), PartitionedFileSet.class.getName(), fileProperties.build());
+      context.createDataset(config.getName(), PartitionedFileSet.class.getName(), datasetProperties);
     }
 
     PartitionedFileSet partitionedFileSet = context.getDataset(config.getName());
     SnapshotFileSet snapshotFileSet = new SnapshotFileSet(partitionedFileSet);
 
-    Map<String, String> arguments = new HashMap<>();
+    Map<String, String> arguments = new HashMap<>(datasetProperties.getProperties());
 
     if (config.getFileProperties() != null) {
       arguments = GSON.fromJson(config.getFileProperties(), MAP_TYPE);
     }
 
+    Schema schema = config.getSchema();
+    if (schema.getFields() != null) {
+      String formatName = getInputFormatName();
+      FieldOperation operation =
+        new FieldReadOperation("Read", String.format("Read from SnapshotFile source in %s format.", formatName),
+                               EndPoint.of(context.getNamespace(), config.getName()),
+                               schema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList()));
+      context.record(Collections.singletonList(operation));
+    }
+
     context.setInput(Input.ofDataset(config.getName(), snapshotFileSet.getInputArguments(arguments)));
   }
+
+  private DatasetProperties createProperties(InputFormatProvider inputFormatProvider) {
+    FileSetProperties.Builder properties = SnapshotFileSet.getBaseProperties(config);
+
+    if (!Strings.isNullOrEmpty(config.getBasePath())) {
+      properties.setBasePath(config.getBasePath());
+    }
+
+    properties.setInputFormat(inputFormatProvider.getInputFormatClassName());
+    for (Map.Entry<String, String> formatProperty : inputFormatProvider.getInputFormatConfiguration().entrySet()) {
+      properties.setInputProperty(formatProperty.getKey(), formatProperty.getValue());
+    }
+    addFileProperties(properties);
+    return properties.build();
+  }
+
+  protected abstract String getInputFormatName();
 
   /**
    * add all fileset properties specific to the type of sink, such as schema and output format.
    */
   protected abstract void addFileProperties(FileSetProperties.Builder propertiesBuilder);
+
 }

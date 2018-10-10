@@ -17,6 +17,7 @@
 package co.cask.hydrator.format.plugin;
 
 import co.cask.cdap.api.data.batch.Input;
+import co.cask.cdap.api.data.batch.InputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.KeyValue;
@@ -30,9 +31,7 @@ import co.cask.hydrator.common.SourceInputFormatProvider;
 import co.cask.hydrator.common.batch.JobUtils;
 import co.cask.hydrator.format.FileFormat;
 import co.cask.hydrator.format.RegexPathFilter;
-import co.cask.hydrator.format.input.CombinePathTrackingInputFormat;
 import co.cask.hydrator.format.input.EmptyInputFormat;
-import co.cask.hydrator.format.input.PathTrackingInputFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -62,6 +61,7 @@ import java.util.stream.Collectors;
  */
 public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProperties>
   extends BatchSource<NullWritable, StructuredRecord, StructuredRecord> {
+  private static final String FORMAT_PLUGIN_ID = "format";
   private final T config;
 
   protected AbstractFileSource(T config) {
@@ -75,7 +75,13 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
     Schema schema = config.getSchema();
     FileFormat fileFormat = config.getFormat();
     if (fileFormat != null) {
-      fileFormat.getFileInputFormatter(config.getProperties().getProperties(), schema);
+      InputFormatProvider inputFormatProvider =
+        pipelineConfigurer.usePlugin("inputformat", fileFormat.name().toLowerCase(), FORMAT_PLUGIN_ID,
+                                     config.getProperties());
+      if (inputFormatProvider == null) {
+        throw new IllegalArgumentException(String.format("Could not find the '%s' input format.",
+                                                         fileFormat.name().toLowerCase()));
+      }
     }
 
     String pathField = config.getPathField();
@@ -94,12 +100,15 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
           String.format("Path field '%s' must be of type 'string', but found '%s'.", pathField, pathFieldType));
       }
     }
+
     pipelineConfigurer.getStageConfigurer().setOutputSchema(config.getSchema());
   }
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
     config.validate();
+
+    InputFormatProvider inputFormatProvider = context.newPluginInstance(FORMAT_PLUGIN_ID);
 
     Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();
@@ -127,6 +136,7 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
 
     Path path = new Path(config.getPath());
     FileSystem pathFileSystem = FileSystem.get(path.toUri(), conf);
+
     FileStatus[] fileStatus = pathFileSystem.globStatus(path);
 
     String inputFormatClass;
@@ -139,12 +149,10 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
     } else {
       FileInputFormat.addInputPath(job, path);
       FileInputFormat.setMaxInputSplitSize(job, config.getMaxSplitSize());
-      PathTrackingInputFormat.configure(job, config, config.getProperties().getProperties());
-      FileFormat format = config.getFormat();
-      if (format == FileFormat.BLOB) {
-        inputFormatClass = PathTrackingInputFormat.class.getName();
-      } else {
-        inputFormatClass = CombinePathTrackingInputFormat.class.getName();
+      inputFormatClass = inputFormatProvider.getInputFormatClassName();
+      Configuration hConf = job.getConfiguration();
+      for (Map.Entry<String, String> propertyEntry : inputFormatProvider.getInputFormatConfiguration().entrySet()) {
+        hConf.set(propertyEntry.getKey(), propertyEntry.getValue());
       }
     }
 

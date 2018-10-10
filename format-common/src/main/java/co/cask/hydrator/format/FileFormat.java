@@ -17,17 +17,10 @@
 package co.cask.hydrator.format;
 
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.hydrator.format.input.AvroInputProvider;
-import co.cask.hydrator.format.input.BlobInputProvider;
-import co.cask.hydrator.format.input.DelimitedInputProvider;
-import co.cask.hydrator.format.input.FileInputFormatter;
-import co.cask.hydrator.format.input.FileInputFormatterProvider;
-import co.cask.hydrator.format.input.JsonInputProvider;
-import co.cask.hydrator.format.input.ParquetInputProvider;
-import co.cask.hydrator.format.input.TextInputProvider;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Map;
+import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -37,46 +30,29 @@ import javax.annotation.Nullable;
  * TODO: remove once formats have completely been converted to plugins
  */
 public enum FileFormat {
-  AVRO(new AvroInputProvider(), true),
-  BLOB(new BlobInputProvider(), false),
-  CSV(new DelimitedInputProvider(","), true),
-  DELIMITED(new DelimitedInputProvider(null), true),
-  JSON(new JsonInputProvider(), true),
-  ORC(null, true),
-  PARQUET(new ParquetInputProvider(), true),
-  TEXT(new TextInputProvider(), false),
-  TSV(new DelimitedInputProvider("\t"), true);
-  private final FileInputFormatterProvider inputProvider;
-  private final boolean canWrite;
+  AVRO(true, true),
+  BLOB(true, false),
+  CSV(true, true),
+  DELIMITED(true, true),
+  JSON(true, true),
+  ORC(false, true),
+  PARQUET(true, true),
+  TEXT(true, false),
+  TSV(true, true);
   private final boolean canRead;
+  private final boolean canWrite;
 
-  FileFormat(@Nullable FileInputFormatterProvider inputProvider, boolean canWrite) {
-    this.inputProvider = inputProvider;
-    this.canRead = inputProvider != null;
+  FileFormat(boolean canRead, boolean canWrite) {
+    this.canRead = canRead;
     this.canWrite = canWrite;
-  }
-
-  public boolean canWrite() {
-    return canWrite;
   }
 
   public boolean canRead() {
     return canRead;
   }
 
-  /**
-   * Create the FileInputFormatter for this format.
-   *
-   * @param properties plugin properties
-   * @param schema schema for the pipeline stage
-   * @return the FileInputFormatter for this format
-   * @throws IllegalArgumentException if the properties or schema are not valid
-   */
-  public FileInputFormatter getFileInputFormatter(Map<String, String> properties, @Nullable Schema schema) {
-    if (inputProvider == null) {
-      throw new IllegalArgumentException(String.format("Format '%s' cannot be used for reading.", this.name()));
-    }
-    return inputProvider.create(properties, schema);
+  public boolean canWrite() {
+    return canWrite;
   }
 
   /**
@@ -88,10 +64,25 @@ public enum FileFormat {
    */
   @Nullable
   public Schema getSchema(@Nullable String pathField) {
-    if (inputProvider == null) {
-      throw new IllegalArgumentException(String.format("Format '%s' cannot be used for reading.", this.name()));
+    // TODO: move into the plugin formats once it is possible to instantiate them in the get schema methods.
+    List<Schema.Field> fields = new ArrayList<>(3);
+    switch (this) {
+      case TEXT:
+        fields.add(Schema.Field.of("offset", Schema.of(Schema.Type.LONG)));
+        fields.add(Schema.Field.of("body", Schema.of(Schema.Type.STRING)));
+        if (pathField != null) {
+          fields.add(Schema.Field.of(pathField, Schema.of(Schema.Type.STRING)));
+        }
+        return Schema.recordOf("text", fields);
+      case BLOB:
+        fields.add(Schema.Field.of("body", Schema.of(Schema.Type.BYTES)));
+        if (pathField != null) {
+          fields.add(Schema.Field.of(pathField, Schema.of(Schema.Type.STRING)));
+        }
+        return Schema.recordOf("text", fields);
+      default:
+        return null;
     }
-    return inputProvider.getSchema(pathField);
   }
 
   /**

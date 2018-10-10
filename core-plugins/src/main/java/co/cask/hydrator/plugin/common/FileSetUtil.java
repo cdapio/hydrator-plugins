@@ -20,17 +20,6 @@ import co.cask.cdap.api.data.schema.UnsupportedTypeException;
 import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.hydrator.common.HiveSchemaConverter;
-import co.cask.hydrator.common.batch.JobUtils;
-import com.google.common.base.Throwables;
-import org.apache.avro.Schema;
-import org.apache.avro.mapreduce.AvroJob;
-import org.apache.avro.mapreduce.AvroKeyInputFormat;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapreduce.Job;
-import org.apache.parquet.avro.AvroParquetInputFormat;
-
-import java.io.IOException;
-import java.util.Map;
 
 /**
  * Utilities for configuring file sets during pipeline configuration.
@@ -51,25 +40,13 @@ public class FileSetUtil {
    * @param properties a builder for the file set properties
    */
   public static void configureParquetFileSet(String configuredSchema, FileSetProperties.Builder properties) {
-
-    // validate and parse schema as Avro, and attempt to convert it into a Hive schema
-    Schema avroSchema = parseAvroSchema(configuredSchema, configuredSchema);
     String hiveSchema = parseHiveSchema(configuredSchema, configuredSchema);
 
     properties
-      .setInputFormat(AvroParquetInputFormat.class)
       .setEnableExploreOnCreate(true)
       .setExploreFormat("parquet")
       .setExploreSchema(hiveSchema.substring(1, hiveSchema.length() - 1))
       .add(DatasetProperties.SCHEMA, configuredSchema);
-
-    Job job = createJobForConfiguration();
-    Configuration hConf = job.getConfiguration();
-    hConf.clear();
-    AvroParquetInputFormat.setAvroReadSchema(job, avroSchema);
-    for (Map.Entry<String, String> entry : hConf) {
-      properties.setInputProperty(entry.getKey(), entry.getValue());
-    }
   }
 
   /**
@@ -91,8 +68,6 @@ public class FileSetUtil {
     String lowerCaseSchema = configuredSchema.toLowerCase();
     String hiveSchema = parseHiveSchema(lowerCaseSchema, configuredSchema);
     hiveSchema = hiveSchema.substring(1, hiveSchema.length() - 1);
-
-    String orcSchema = parseOrcSchema(configuredSchema);
 
     properties.setExploreInputFormat("org.apache.hadoop.hive.ql.io.orc.OrcInputFormat")
       .setExploreOutputFormat("org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat")
@@ -118,36 +93,16 @@ public class FileSetUtil {
    * @param properties a builder for the file set properties
    */
   public static void configureAvroFileSet(String configuredSchema, FileSetProperties.Builder properties) {
-    // validate and parse schema as Avro
-    Schema avroSchema = parseAvroSchema(configuredSchema, configuredSchema);
-
     properties
-      .setInputFormat(AvroKeyInputFormat.class)
       .setEnableExploreOnCreate(true)
       .setSerDe("org.apache.hadoop.hive.serde2.avro.AvroSerDe")
       .setExploreInputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat")
       .setExploreOutputFormat("org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat")
       .setTableProperty("avro.schema.literal", configuredSchema)
       .add(DatasetProperties.SCHEMA, configuredSchema);
-
-    Job job = createJobForConfiguration();
-    Configuration hConf = job.getConfiguration();
-    hConf.clear();
-    AvroJob.setInputKeySchema(job, avroSchema);
-    for (Map.Entry<String, String> entry : hConf) {
-      properties.setInputProperty(entry.getKey(), entry.getValue());
-    }
   }
 
   /*----- private helpers ----*/
-
-  private static Schema parseAvroSchema(String schemaString, String configuredSchema) {
-    try {
-      return new Schema.Parser().parse(schemaString);
-    } catch (Exception e) {
-      throw new IllegalArgumentException("Schema " + configuredSchema + " is invalid.", e);
-    }
-  }
 
   private static String parseHiveSchema(String schemaString, String configuredSchema) {
     try {
@@ -156,28 +111,6 @@ public class FileSetUtil {
       throw new IllegalArgumentException("Schema " + configuredSchema + " is not supported as a Hive schema.", e);
     } catch (Exception e) {
       throw new IllegalArgumentException("Schema " + configuredSchema + " is invalid.", e);
-    }
-  }
-
-  private static String parseOrcSchema(String configuredSchema) {
-    try {
-      co.cask.cdap.api.data.schema.Schema schemaObj = co.cask.cdap.api.data.schema.Schema.parseJson(configuredSchema);
-      StringBuilder builder = new StringBuilder();
-      HiveSchemaConverter.appendType(builder, schemaObj);
-      return builder.toString();
-    } catch (IOException e) {
-      throw new IllegalArgumentException(String.format("%s is not a valid schema", configuredSchema), e);
-    } catch (UnsupportedTypeException e) {
-      throw new IllegalArgumentException(String.format("Could not create hive schema from %s", configuredSchema), e);
-    }
-  }
-
-  private static Job createJobForConfiguration() {
-    try {
-      return JobUtils.createInstance();
-    } catch (IOException e) {
-      // Shouldn't happen
-      throw Throwables.propagate(e);
     }
   }
 }

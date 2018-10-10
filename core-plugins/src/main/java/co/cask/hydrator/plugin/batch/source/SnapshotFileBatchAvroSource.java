@@ -25,17 +25,10 @@ import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
 import co.cask.cdap.etl.api.Emitter;
-import co.cask.cdap.etl.api.PipelineConfigurer;
-import co.cask.hydrator.format.AvroToStructuredTransformer;
+import co.cask.hydrator.format.FileFormat;
 import co.cask.hydrator.plugin.common.FileSetUtil;
 import co.cask.hydrator.plugin.common.SnapshotFileSetConfig;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
-import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.mapred.AvroKey;
 import org.apache.hadoop.io.NullWritable;
-
-import javax.annotation.Nullable;
 
 /**
  * Reads data written by a {@link SnapshotFileBatchAvroSource}. Reads only the most recent partition.
@@ -44,48 +37,24 @@ import javax.annotation.Nullable;
 @Name("SnapshotAvro")
 @Description("Reads the most recent snapshot that was written to a SnapshotAvro sink.")
 @Requirements(datasetTypes = PartitionedFileSet.TYPE)
-public class SnapshotFileBatchAvroSource extends SnapshotFileBatchSource<AvroKey<GenericRecord>, NullWritable> {
-  private final AvroToStructuredTransformer recordTransformer = new AvroToStructuredTransformer();
-  private final SnapshotAvroConfig config;
+public class SnapshotFileBatchAvroSource extends SnapshotFileBatchSource<SnapshotFileSetSourceConfig> {
 
-  public SnapshotFileBatchAvroSource(SnapshotAvroConfig config) {
+  public SnapshotFileBatchAvroSource(SnapshotFileSetSourceConfig config) {
     super(config);
-    this.config = config;
   }
 
   @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    super.configurePipeline(pipelineConfigurer);
-    Preconditions.checkArgument(!Strings.isNullOrEmpty(config.schema), "Schema must be specified.");
-    try {
-      co.cask.cdap.api.data.schema.Schema schema = co.cask.cdap.api.data.schema.Schema.parseJson(config.schema);
-      pipelineConfigurer.getStageConfigurer().setOutputSchema(schema);
-    } catch (Exception e) {
-      throw new IllegalArgumentException("Invalid output schema: " + e.getMessage(), e);
-    }
+  protected String getInputFormatName() {
+    return FileFormat.AVRO.name().toLowerCase();
   }
 
   @Override
-  public void transform(KeyValue<AvroKey<GenericRecord>, NullWritable> input,
-                        Emitter<StructuredRecord> emitter) throws Exception {
-    emitter.emit(recordTransformer.transform(input.getKey().datum()));
+  public void transform(KeyValue<NullWritable, StructuredRecord> input, Emitter<StructuredRecord> emitter) {
+    emitter.emit(input.getValue());
   }
 
   @Override
   protected void addFileProperties(FileSetProperties.Builder propertiesBuilder) {
-    FileSetUtil.configureAvroFileSet(config.schema, propertiesBuilder);
-  }
-
-  /**
-   * Config for SnapshotFileBatchAvroSource
-   */
-  public static class SnapshotAvroConfig extends SnapshotFileSetConfig {
-    @Description("The Avro schema of the records to read.")
-    private String schema;
-
-    public SnapshotAvroConfig(String name, @Nullable String basePath, String schema) {
-      super(name, basePath, null);
-      this.schema = schema;
-    }
+    FileSetUtil.configureAvroFileSet(config.getSchema().toString(), propertiesBuilder);
   }
 }

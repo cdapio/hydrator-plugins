@@ -56,9 +56,28 @@
       <artifactId>junit</artifactId>
     </dependency>
     <dependency>
+      <groupId>co.cask.hydrator</groupId>
+      <artifactId>format-avro</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.apache.parquet</groupId>
       <artifactId>parquet-avro</artifactId>
       <version>1.8.1</version>
+    </dependency>
+    <!--
+      jackson is required by avro's schema parser but doesn't get bundled unless it's a
+      direct dependency for some reason
+       -->
+    <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-core-asl</artifactId>
+      <version>1.9.13</version>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-mapper-asl</artifactId>
+      <version>1.9.13</version>
     </dependency>
   </dependencies>
 
@@ -73,9 +92,7 @@
         <configuration>
           <instructions>
             <_exportcontents>
-              co.cask.format.parquet.*;
-              org.apache.parquet.avro.*;
-              org.apache.parquet.hadoop.*;
+              co.cask.format.parquet.*
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
