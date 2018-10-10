@@ -17,28 +17,34 @@ that was read from the table.
 
 Properties
 ----------
-**runCondition:** When to run the action. Must be 'completion', 'success', or 'failure'. Defaults to 'success'.
+**Run Condition:** When to run the action. Must be 'completion', 'success', or 'failure'. Defaults to 'success'.
 If set to 'completion', the action will be executed regardless of whether the pipeline run succeeded or failed.
 If set to 'success', the action will only be executed if the pipeline run succeeded.
 If set to 'failure', the action will only be executed if the pipeline run failed.
 
-**query:** The query to run.
-
-**connectionString:** JDBC connection string including database name.
-
-**user:** User identity for connecting to the specified database. Required for databases that need
-authentication. Optional for databases that do not require authentication.
-
-**password:** Password to use to connect to the specified database. Required for databases
-that need authentication. Optional for databases that do not require authentication.
-
-**jdbcPluginName:** Name of the JDBC plugin to use. This is the value of the 'name' key
+**Plugin Name:** Name of the JDBC plugin to use. This is the value of the 'name' key
 defined in the JSON file for the JDBC plugin.
 
-**jdbcPluginType:** Type of the JDBC plugin to use. This is the value of the 'type' key
+**Plugin Type:** Type of the JDBC plugin to use. This is the value of the 'type' key
 defined in the JSON file for the JDBC plugin. Defaults to 'jdbc'.
 
-**enableAutoCommit:** Whether to enable auto-commit for queries run by this source. Defaults to 'false'.
+**Query:** The query to run.
+
+**Connection String:** JDBC connection string including database name.
+
+**Username:** User identity for connecting to the specified database. Required for databases that need
+authentication. Optional for databases that do not require authentication.
+
+**Password:** Password to use to connect to the specified database. Required for databases
+that need authentication. Optional for databases that do not require authentication.
+
+**Connection Arguments:** A list of arbitrary string tag/value pairs as connection arguments. These arguments
+will be passed to the JDBC driver, as connection arguments, for JDBC drivers that may need additional configurations.
+This is a semicolon-separated list of key-value pairs, where each pair is separated by a equals '=' and specifies
+the key and value for the argument. For example, 'key1=value1;key2=value' specifies that the connection will be
+given arguments 'key1' mapped to 'value1' and the argument 'key2' mapped to 'value2'. (Macro-enabled)
+
+**Enable Auto-Commit:** Whether to enable auto-commit for queries run by this source. Defaults to 'false'.
 Normally this setting does not matter. It only matters if you are using a jdbc driver -- like the Hive
 driver -- that will error when the commit operation is run, or a driver that will error when auto-commit is
 set to false. For drivers like those, you will need to set this to 'true'.
