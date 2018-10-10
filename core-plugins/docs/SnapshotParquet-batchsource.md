@@ -18,16 +18,16 @@ this source to read the most recent snapshot and run a data analysis on it.
 
 Properties
 ----------
-**name:** Name of the PartitionedFileSet to which records are written.
+**Dataset Name:** Name of the PartitionedFileSet to read from.
 If it doesn't exist, it will be created. (Macro-enabled)
 
-**schema:** The Parquet schema of the record being written to the sink as a JSON object.
+**Snapshot Base Path:** Base path for the PartitionedFileSet. Defaults to the name of the dataset. (Macro-enabled)
 
-**basePath:** Base path for the PartitionedFileSet. Defaults to the name of the dataset. (Macro-enabled)
-
-**fileProperties:** Advanced feature to specify any additional properties that should be used with the sink,
+**FileSet Properties:** Advanced feature to specify any additional properties that should be used with the source,
 specified as a JSON object of string to string. These properties are set on the dataset if one is created.
 The properties are also passed to the dataset at runtime as arguments. (Macro-enabled)
+
+**Schema:** The Parquet schema of the record being written to the sink as a JSON object.
 
 
 Example

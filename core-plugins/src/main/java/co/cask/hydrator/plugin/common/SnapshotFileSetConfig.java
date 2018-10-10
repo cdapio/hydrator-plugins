@@ -42,7 +42,7 @@ public abstract class SnapshotFileSetConfig extends PluginConfig {
 
   @Name(Properties.SnapshotFileSetSink.FILE_PROPERTIES)
   @Nullable
-  @Description("Advanced feature to specify any additional properties that should be used with the sink, " +
+  @Description("Advanced feature to specify any additional properties that should be used with the plugin, " +
     "specified as a JSON object of string to string. These properties are set on the dataset if one is created. " +
     "The properties are also passed to the dataset at runtime as arguments.")
   @Macro
