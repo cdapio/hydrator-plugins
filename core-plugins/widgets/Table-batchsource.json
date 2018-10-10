@@ -5,7 +5,7 @@
   "display-name": "CDAP Table Dataset",
   "configuration-groups": [
     {
-      "label": "General",
+      "label": "Basic",
       "properties": [
         {
           "widget-type": "dataset-selector",

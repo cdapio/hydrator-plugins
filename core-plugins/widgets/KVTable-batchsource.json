@@ -5,7 +5,7 @@
   "display-name": "Key Value Dataset",
   "configuration-groups": [
     {
-      "label": "KV Table Properties",
+      "label": "Basic",
       "properties": [
         {
           "widget-type": "dataset-selector",
