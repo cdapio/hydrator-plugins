@@ -74,7 +74,9 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
 
     Schema schema = config.getSchema();
     FileFormat fileFormat = config.getFormat();
-    fileFormat.getFileInputFormatter(config.getProperties().getProperties(), schema);
+    if (fileFormat != null) {
+      fileFormat.getFileInputFormatter(config.getProperties().getProperties(), schema);
+    }
 
     String pathField = config.getPathField();
     if (pathField != null && schema != null) {
