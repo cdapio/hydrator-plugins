@@ -14,33 +14,46 @@
  * the License.
  */
 
-package co.cask.hydrator.format.input;
+package co.cask.hydrator.format.input.text;
 
+import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Name;
+import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.hydrator.format.input.InputFormatConfig;
+import co.cask.hydrator.format.input.PathTrackingInputFormatProvider;
 import co.cask.hydrator.format.plugin.FileSourceProperties;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
- * Provides Parquet formatters.
+ * Input reading logic for text files.
  */
-public class TextInputProvider implements FileInputFormatterProvider {
+@Plugin(type = "inputformat")
+@Name("text")
+@Description("Text input format plugin for file based plugins.")
+public class TextInputFormatProvider extends PathTrackingInputFormatProvider<TextInputFormatProvider.TextConfig> {
 
-  @Nullable
-  @Override
-  public Schema getSchema(@Nullable String pathField) {
-    return getDefaultSchema(pathField);
+  public TextInputFormatProvider(TextConfig conf) {
+    super(conf);
   }
 
   @Override
-  public FileInputFormatter create(Map<String, String> properties, @Nullable Schema schema) {
-    String pathField = properties.get(FileSourceProperties.PATH_FIELD);
-    if (schema == null) {
-      return new TextInputFormatter(getSchema(pathField));
+  public String getInputFormatClassName() {
+    return CombineTextInputFormat.class.getName();
+  }
+
+  @Override
+  protected void validate() {
+    if (conf.containsMacro("schema")) {
+      return;
     }
+
+    String pathField = conf.getPathField();
+    Schema schema = conf.getSchema();
 
     // text must contain 'body' as type 'string'.
     // it can optionally contain a 'offset' field of type 'long'
@@ -97,7 +110,6 @@ public class TextInputProvider implements FileInputFormatterProvider {
                       expectedFields, numExtraFields, numExtraFields > 1 ? "s" : ""));
     }
 
-    return new TextInputFormatter(schema);
   }
 
   public static Schema getDefaultSchema(@Nullable String pathField) {
@@ -108,5 +120,31 @@ public class TextInputProvider implements FileInputFormatterProvider {
       fields.add(Schema.Field.of(pathField, Schema.of(Schema.Type.STRING)));
     }
     return Schema.recordOf("textfile", fields);
+  }
+
+  /**
+   * Text plugin config
+   */
+  public static class TextConfig extends InputFormatConfig {
+
+    /**
+     * Return the configured schema, or the default schema if none was given. Should never be called if the
+     * schema contains a macro
+     */
+    @Override
+    public Schema getSchema() {
+      if (containsMacro("schema")) {
+        throw new IllegalStateException("schema should not be checked until macros are evaluated.");
+      }
+      if (schema == null) {
+        return getDefaultSchema(pathField);
+      }
+      try {
+        return Schema.parseJson(schema);
+      } catch (IOException e) {
+        throw new IllegalArgumentException("Unable to parse schema: " + e.getMessage(), e);
+      }
+    }
+
   }
 }

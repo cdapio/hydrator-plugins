@@ -14,10 +14,12 @@
  * the License.
  */
 
-package co.cask.hydrator.format.input;
+package co.cask.hydrator.format.input.text;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.hydrator.format.input.CombinePathTrackingInputFormat;
+import co.cask.hydrator.format.input.PathTrackingInputFormat;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
@@ -28,27 +30,18 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
- * Input reading logic for text files.
+ * Text format that tracks which file each record was read from.
  */
-public class TextInputFormatter implements FileInputFormatter {
-  private final Schema schema;
-
-  TextInputFormatter(Schema schema) {
-    this.schema = schema;
-  }
+public class PathTrackingTextInputFormat extends PathTrackingInputFormat {
 
   @Override
-  public Map<String, String> getFormatConfig() {
-    return Collections.emptyMap();
-  }
-
-  @Override
-  public RecordReader<NullWritable, StructuredRecord.Builder> create(FileSplit split, TaskAttemptContext context) {
+  protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(FileSplit split,
+                                                                                    TaskAttemptContext context,
+                                                                                    @Nullable String pathField,
+                                                                                    Schema schema) {
     RecordReader<LongWritable, Text> delegate = (new TextInputFormat()).createRecordReader(split, context);
     String header = context.getConfiguration().get(CombinePathTrackingInputFormat.HEADER);
     return new TextRecordReader(delegate, schema, header);

@@ -14,39 +14,44 @@
  * the License.
  */
 
-package co.cask.hydrator.format.input;
+package co.cask.hydrator.format.input.blob;
 
+import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Name;
+import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.hydrator.format.plugin.FileSourceProperties;
+import co.cask.hydrator.format.input.InputFormatConfig;
+import co.cask.hydrator.format.input.PathTrackingInputFormatProvider;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import javax.annotation.Nullable;
 
 /**
- * Provides Blob formatters.
+ * Reads the entire contents of a File into a single record
  */
-public class BlobInputProvider implements FileInputFormatterProvider {
+@Plugin(type = "inputformat")
+@Name("blob")
+@Description("Blob input format plugin for file based plugins.")
+public class BlobInputFormatProvider extends PathTrackingInputFormatProvider<BlobInputFormatProvider.BlobConfig> {
 
-  @Nullable
-  @Override
-  public Schema getSchema(@Nullable String pathField) {
-    List<Schema.Field> fields = new ArrayList<>();
-    fields.add(Schema.Field.of("body", Schema.of(Schema.Type.BYTES)));
-    if (pathField != null && !pathField.isEmpty()) {
-      fields.add(Schema.Field.of(pathField, Schema.of(Schema.Type.STRING)));
-    }
-    return Schema.recordOf("blob", fields);
+  public BlobInputFormatProvider(BlobConfig conf) {
+    super(conf);
   }
 
   @Override
-  public FileInputFormatter create(Map<String, String> properties, @Nullable Schema schema) {
-    String pathField = properties.get(FileSourceProperties.PATH_FIELD);
-    if (schema == null) {
-      return new BlobInputFormatter(getSchema(pathField));
+  public String getInputFormatClassName() {
+    return PathTrackingBlobInputFormat.class.getName();
+  }
+
+  @Override
+  protected void validate() {
+    if (conf.containsMacro("schema")) {
+      return;
     }
 
+    Schema schema = conf.getSchema();
+    String pathField = conf.getPathField();
     Schema.Field bodyField = schema.getField("body");
     if (bodyField == null) {
       throw new IllegalArgumentException("The schema for the 'blob' format must have a field named 'body'");
@@ -74,7 +79,39 @@ public class BlobInputProvider implements FileInputFormatterProvider {
                           + "but found %d other field%s.", pathField, numFields - 2, numExtra > 1 ? "s" : ""));
       }
     }
+  }
 
-    return new BlobInputFormatter(schema);
+  /**
+   * Config for blob format. Overrides getSchema method to return the default schema if it is not provided.
+   */
+  public static class BlobConfig extends InputFormatConfig {
+
+    /**
+     * Return the configured schema, or the default schema if none was given. Should never be called if the
+     * schema contains a macro
+     */
+    @Override
+    public Schema getSchema() {
+      if (containsMacro("schema")) {
+        throw new IllegalStateException("schema should not be checked until macros are evaluated.");
+      }
+      if (schema == null) {
+        return getDefaultSchema();
+      }
+      try {
+        return Schema.parseJson(schema);
+      } catch (IOException e) {
+        throw new IllegalArgumentException("Unable to parse schema: " + e.getMessage(), e);
+      }
+    }
+
+    private Schema getDefaultSchema() {
+      List<Schema.Field> fields = new ArrayList<>();
+      fields.add(Schema.Field.of("body", Schema.of(Schema.Type.BYTES)));
+      if (pathField != null && !pathField.isEmpty()) {
+        fields.add(Schema.Field.of(pathField, Schema.of(Schema.Type.STRING)));
+      }
+      return Schema.recordOf("blob", fields);
+    }
   }
 }

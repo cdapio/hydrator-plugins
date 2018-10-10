@@ -14,13 +14,13 @@
  * the License.
  */
 
-package co.cask.hydrator.format.input;
+package co.cask.hydrator.format.input.parquet;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.format.AvroToStructuredTransformer;
+import co.cask.hydrator.format.input.PathTrackingInputFormat;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -30,35 +30,20 @@ import org.apache.parquet.avro.AvroParquetInputFormat;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
- * Reads parquet into StructuredRecords.
+ * Parquet format that tracks which file each record was read from.
  */
-public class ParquetInputFormatter implements FileInputFormatter {
-  private final Schema schema;
-
-  ParquetInputFormatter(@Nullable Schema schema) {
-    this.schema = schema;
-  }
+public class PathTrackingParquetInputFormat extends PathTrackingInputFormat {
 
   @Override
-  public Map<String, String> getFormatConfig() {
-    Map<String, String> properties = new HashMap<>();
-    if (schema != null) {
-      properties.put("parquet.avro.schema", schema.toString());
-    }
-    return properties;
-  }
-
-  @Override
-  public RecordReader<NullWritable, StructuredRecord.Builder> create(FileSplit split, TaskAttemptContext context)
+  protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(FileSplit split,
+                                                                                    TaskAttemptContext context,
+                                                                                    @Nullable String pathField,
+                                                                                    @Nullable Schema schema)
     throws IOException, InterruptedException {
-    Configuration hConf = context.getConfiguration();
-    String pathField = hConf.get(PathTrackingInputFormat.PATH_FIELD);
     RecordReader<Void, GenericRecord> delegate = (new AvroParquetInputFormat<GenericRecord>())
       .createRecordReader(split, context);
     return new ParquetRecordReader(delegate, schema, pathField);

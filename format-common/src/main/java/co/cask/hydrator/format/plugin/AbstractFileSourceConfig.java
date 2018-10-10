@@ -125,7 +125,7 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
 
   @Override
   public FileFormat getFormat() {
-    return containsMacro("format") ? null : FileFormat.from(format, FileFormat::canRead);
+    return containsMacro("format") ? null : FileFormat.from(format, x -> true);
   }
 
   @Nullable

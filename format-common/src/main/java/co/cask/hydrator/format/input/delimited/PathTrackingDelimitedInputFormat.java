@@ -14,10 +14,11 @@
  * the License.
  */
 
-package co.cask.hydrator.format.input;
+package co.cask.hydrator.format.input.delimited;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.hydrator.format.input.PathTrackingInputFormat;
 import com.google.common.base.Splitter;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -29,33 +30,23 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
- * Reads delimited text into StructuredRecords.
+ * Delimited text format that tracks which file each record was read from.
  */
-public class DelimitedTextInputFormatter implements FileInputFormatter {
-  private final Schema schema;
-  private final String delimiter;
-
-  DelimitedTextInputFormatter(Schema schema, String delimiter) {
-    this.schema = schema;
-    this.delimiter = delimiter;
-  }
+public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
+  static final String DELIMITER = "delimiter";
 
   @Override
-  public Map<String, String> getFormatConfig() {
-    Map<String, String> config = new HashMap<>();
-    config.put("delimiter", delimiter);
-    return config;
-  }
+  protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(FileSplit split,
+                                                                                    TaskAttemptContext context,
+                                                                                    @Nullable String pathField,
+                                                                                    @Nullable Schema schema) {
 
-  @Override
-  public RecordReader<NullWritable, StructuredRecord.Builder> create(FileSplit split, TaskAttemptContext context) {
     RecordReader<LongWritable, Text> delegate = (new TextInputFormat()).createRecordReader(split, context);
-    String delimiter = context.getConfiguration().get("delimiter");
+    String delimiter = context.getConfiguration().get(DELIMITER);
 
     return new RecordReader<NullWritable, StructuredRecord.Builder>() {
 

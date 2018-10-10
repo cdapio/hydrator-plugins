@@ -14,26 +14,20 @@
  * the License.
  */
 
-package co.cask.hydrator.format.input;
+package co.cask.hydrator.format.input.text;
 
-import co.cask.cdap.api.data.schema.Schema;
-
-import java.util.Map;
-import javax.annotation.Nullable;
+import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.hydrator.format.input.CombinePathTrackingInputFormat;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.mapreduce.RecordReader;
 
 /**
- * Provides Parquet formatters.
+ * Combined input format that tracks which file each text record was read from.
  */
-public class ParquetInputProvider implements FileInputFormatterProvider {
-
-  @Nullable
-  @Override
-  public Schema getSchema(@Nullable String pathField) {
-    return null;
-  }
+public class CombineTextInputFormat extends CombinePathTrackingInputFormat {
 
   @Override
-  public FileInputFormatter create(Map<String, String> properties, @Nullable Schema schema) {
-    return new ParquetInputFormatter(schema);
+  protected Class<? extends RecordReader<NullWritable, StructuredRecord>> getRecordReaderClass() {
+    return CombineTextRecordReader.class;
   }
 }

@@ -14,10 +14,11 @@
  * the License.
  */
 
-package co.cask.hydrator.format.input;
+package co.cask.hydrator.format.input.blob;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.hydrator.format.input.PathTrackingInputFormat;
 import com.google.common.io.ByteStreams;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -29,26 +30,18 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
- * Reads the entire contents of a File into a single record
+ * Blob input format
  */
-public class BlobInputFormatter implements FileInputFormatter {
-  private final Schema schema;
-
-  BlobInputFormatter(Schema schema) {
-    this.schema = schema;
-  }
+public class PathTrackingBlobInputFormat extends PathTrackingInputFormat {
 
   @Override
-  public Map<String, String> getFormatConfig() {
-    return Collections.emptyMap();
-  }
-
-  @Override
-  public RecordReader<NullWritable, StructuredRecord.Builder> create(FileSplit split, TaskAttemptContext context) {
+  protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(FileSplit split,
+                                                                                    TaskAttemptContext context,
+                                                                                    @Nullable String pathField,
+                                                                                    @Nullable Schema schema) {
     if (split.getLength() > Integer.MAX_VALUE) {
       throw new IllegalArgumentException("Blob format cannot be used with files larger than 2GB");
     }
@@ -102,5 +95,6 @@ public class BlobInputFormatter implements FileInputFormatter {
         // no-op
       }
     };
+
   }
 }

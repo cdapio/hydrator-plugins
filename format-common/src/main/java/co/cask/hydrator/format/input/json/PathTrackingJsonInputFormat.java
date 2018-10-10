@@ -14,11 +14,16 @@
  * the License.
  */
 
-package co.cask.hydrator.format.input;
+package co.cask.hydrator.format.input.json;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.format.StructuredRecordStringConverter;
+import co.cask.hydrator.format.AvroToStructuredTransformer;
+import co.cask.hydrator.format.input.PathTrackingInputFormat;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.mapred.AvroKey;
+import org.apache.avro.mapreduce.AvroKeyInputFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -31,27 +36,16 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
- * Reads json into StructuredRecords.
+ * Avro format that tracks which file each record was read from.
  */
-public class JsonInputFormatter implements FileInputFormatter {
-  private final Schema schema;
+public class PathTrackingJsonInputFormat extends PathTrackingInputFormat {
 
-  JsonInputFormatter(Schema schema) {
-    this.schema = schema;
-  }
 
-  @Override
-  public Map<String, String> getFormatConfig() {
-    return Collections.emptyMap();
-  }
-
-  private Schema getModifiedSchema(@Nullable String pathField) {
+  private Schema getModifiedSchema(Schema schema, @Nullable String pathField) {
     // if the path field is set, it might not be nullable
     // if it's not nullable, decoding a string into a StructuredRecord will fail because a non-nullable
     // field will have a null value.
@@ -70,12 +64,14 @@ public class JsonInputFormatter implements FileInputFormatter {
     return Schema.recordOf(schema.getRecordName(), fieldCopies);
   }
 
+
   @Override
-  public RecordReader<NullWritable, StructuredRecord.Builder> create(FileSplit split, TaskAttemptContext context) {
+  protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(FileSplit split,
+                                                                                    TaskAttemptContext context,
+                                                                                    @Nullable String pathField,
+                                                                                    @Nullable Schema schema) {
     RecordReader<LongWritable, Text> delegate = (new TextInputFormat()).createRecordReader(split, context);
-    Configuration hConf = context.getConfiguration();
-    String pathField = hConf.get(PathTrackingInputFormat.PATH_FIELD);
-    Schema modifiedSchema = getModifiedSchema(pathField);
+    Schema modifiedSchema = getModifiedSchema(schema, pathField);
 
     return new RecordReader<NullWritable, StructuredRecord.Builder>() {
 

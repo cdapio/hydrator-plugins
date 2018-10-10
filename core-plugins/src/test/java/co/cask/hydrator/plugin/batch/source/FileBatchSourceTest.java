@@ -47,6 +47,13 @@ import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.format.FileFormat;
+import co.cask.hydrator.format.input.PathTrackingInputFormat;
+import co.cask.hydrator.format.input.avro.AvroInputFormatProvider;
+import co.cask.hydrator.format.input.blob.BlobInputFormatProvider;
+import co.cask.hydrator.format.input.delimited.DelimitedTextInputFormatProvider;
+import co.cask.hydrator.format.input.json.JsonInputFormatProvider;
+import co.cask.hydrator.format.input.parquet.ParquetInputFormatProvider;
+import co.cask.hydrator.format.input.text.TextInputFormatProvider;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -115,6 +122,10 @@ public class FileBatchSourceTest extends HydratorTestBase {
     // add artifact for batch sources and sinks
     addPluginArtifact(NamespaceId.DEFAULT.artifact("core-plugins", "4.0.0"), BATCH_APP_ARTIFACT_ID,
                       FileBatchSource.class);
+    addPluginArtifact(NamespaceId.DEFAULT.artifact("format-plugins", "4.0.0"), BATCH_APP_ARTIFACT_ID,
+                      TextInputFormatProvider.class, DelimitedTextInputFormatProvider.class,
+                      JsonInputFormatProvider.class, AvroInputFormatProvider.class, ParquetInputFormatProvider.class,
+                      PathTrackingInputFormat.class, BlobInputFormatProvider.class);
 
     file1 = temporaryFolder.newFolder("test").toPath().resolve(fileName + "-test1.txt").toFile();
     FileUtils.writeStringToFile(file1, "Hello,World");

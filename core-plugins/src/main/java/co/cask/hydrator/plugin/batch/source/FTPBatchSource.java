@@ -25,7 +25,7 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.format.FileFormat;
-import co.cask.hydrator.format.input.TextInputProvider;
+import co.cask.hydrator.format.input.text.TextInputFormatProvider;
 import co.cask.hydrator.format.plugin.AbstractFileSource;
 import co.cask.hydrator.format.plugin.FileSourceProperties;
 import com.google.common.reflect.TypeToken;
@@ -153,7 +153,7 @@ public class FTPBatchSource extends AbstractFileSource {
     @Nullable
     @Override
     public Schema getSchema() {
-      return TextInputProvider.getDefaultSchema(null);
+      return TextInputFormatProvider.getDefaultSchema(null);
     }
 
     Map<String, String> getFileSystemProperties() {

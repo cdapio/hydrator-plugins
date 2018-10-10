@@ -14,26 +14,20 @@
  * the License.
  */
 
-package co.cask.hydrator.format.input;
+package co.cask.hydrator.format.input.json;
 
-import co.cask.cdap.api.data.schema.Schema;
-
-import java.util.Map;
-import javax.annotation.Nullable;
+import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.hydrator.format.input.CombinePathTrackingInputFormat;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.mapreduce.RecordReader;
 
 /**
- * Provides Avro formatters.
+ * Combined input format that tracks which file each avro record was read from.
  */
-public class AvroInputProvider implements FileInputFormatterProvider {
-
-  @Nullable
-  @Override
-  public Schema getSchema(@Nullable String pathField) {
-    return null;
-  }
+public class CombineJsonInputFormat extends CombinePathTrackingInputFormat {
 
   @Override
-  public FileInputFormatter create(Map<String, String> properties, @Nullable Schema schema) {
-    return new AvroInputFormatter(schema);
+  protected Class<? extends RecordReader<NullWritable, StructuredRecord>> getRecordReaderClass() {
+    return CombineJsonRecordReader.class;
   }
 }

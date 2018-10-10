@@ -27,7 +27,6 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.CombineFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.CombineFileRecordReader;
-import org.apache.hadoop.mapreduce.lib.input.CombineFileRecordReaderWrapper;
 import org.apache.hadoop.mapreduce.lib.input.CombineFileSplit;
 
 import java.io.BufferedReader;
@@ -41,12 +40,9 @@ import javax.annotation.Nullable;
 /**
  * Similar to CombineTextInputFormat except it uses PathTrackingInputFormat to keep track of filepaths that
  * records were read from.
- *
- * This class is tightly coupled with {@link PathTrackingInputFormat}.
- * TODO: (CDAP-14406) clean up File input formats.
  */
-public class CombinePathTrackingInputFormat extends CombineFileInputFormat<NullWritable, StructuredRecord> {
-  static final String HEADER = "combine.path.tracking.header";
+public abstract class CombinePathTrackingInputFormat extends CombineFileInputFormat<NullWritable, StructuredRecord> {
+  public static final String HEADER = "combine.path.tracking.header";
 
   /**
    * Converts the CombineFileSplits derived by CombineFileInputFormat into CombineHeaderFileSplits
@@ -103,20 +99,14 @@ public class CombinePathTrackingInputFormat extends CombineFileInputFormat<NullW
     if (combineSplit.getHeader() != null) {
       context.getConfiguration().set(HEADER, combineSplit.getHeader());
     }
-    return new CombineFileRecordReader<>(combineSplit, context, RecordReaderWrapper.class);
+    return new CombineFileRecordReader<>(combineSplit, context, getRecordReaderClass());
   }
 
   /**
-   * This is just a wrapper that's responsible for delegating to a corresponding RecordReader in
+   * Get the wrapper record reader class that's responsible for delegating to a corresponding RecordReader in
    * {@link PathTrackingInputFormat}. All it does is pick the i'th path in the CombineFileSplit to create a
    * FileSplit and use the delegate RecordReader to read that split.
    */
-  private static class RecordReaderWrapper extends CombineFileRecordReaderWrapper<NullWritable, StructuredRecord> {
+  protected abstract Class<? extends RecordReader<NullWritable, StructuredRecord>> getRecordReaderClass();
 
-    // this constructor signature is required by CombineFileRecordReader
-    RecordReaderWrapper(CombineFileSplit split, TaskAttemptContext context,
-                        Integer idx) throws IOException, InterruptedException {
-      super(new PathTrackingInputFormat(), split, context, idx);
-    }
-  }
 }

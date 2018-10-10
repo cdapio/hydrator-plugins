@@ -14,15 +14,15 @@
  * the License.
  */
 
-package co.cask.hydrator.format.input;
+package co.cask.hydrator.format.input.avro;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.format.AvroToStructuredTransformer;
+import co.cask.hydrator.format.input.PathTrackingInputFormat;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.avro.mapreduce.AvroKeyInputFormat;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -31,35 +31,19 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
- * Reads avro into StructuredRecords.
+ * Avro format that tracks which file each record was read from.
  */
-public class AvroInputFormatter implements FileInputFormatter {
-  private final Schema schema;
-
-  AvroInputFormatter(@Nullable Schema schema) {
-    this.schema = schema;
-  }
+public class PathTrackingAvroInputFormat extends PathTrackingInputFormat {
 
   @Override
-  public Map<String, String> getFormatConfig() {
-    Map<String, String> properties = new HashMap<>();
-    if (schema != null) {
-      properties.put("avro.schema.input.key", schema.toString());
-    }
-    return properties;
-  }
+  protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(
+    FileSplit split, TaskAttemptContext context,
+    @Nullable String pathField, @Nullable Schema schema) throws IOException, InterruptedException {
 
-  @Override
-  public RecordReader<NullWritable, StructuredRecord.Builder> create(FileSplit split, TaskAttemptContext context)
-    throws IOException, InterruptedException {
-    Configuration hConf = context.getConfiguration();
-    String pathField = hConf.get(PathTrackingInputFormat.PATH_FIELD);
     RecordReader<AvroKey<GenericRecord>, NullWritable> delegate = (new AvroKeyInputFormat<GenericRecord>())
       .createRecordReader(split, context);
     return new AvroRecordReader(delegate, schema, pathField);
