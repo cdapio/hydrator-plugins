@@ -33,7 +33,6 @@
     <module>database-plugins</module>
     <module>format-common</module>
     <module>hbase-plugins</module>
-    <module>hdfs-plugins</module>
     <module>hive-plugins</module>
     <module>http-plugins</module>
     <module>mongodb-plugins</module>
