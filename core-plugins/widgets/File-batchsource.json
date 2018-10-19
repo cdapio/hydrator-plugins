@@ -146,11 +146,6 @@
         },
         {
           "widget-type": "hidden",
-          "label": "Time Table",
-          "name": "timeTable"
-        },
-        {
-          "widget-type": "hidden",
           "name": "copyHeader"
         }
       ]
