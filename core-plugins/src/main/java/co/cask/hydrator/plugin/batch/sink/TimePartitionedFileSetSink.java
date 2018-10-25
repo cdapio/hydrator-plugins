@@ -17,14 +17,18 @@
 package co.cask.hydrator.plugin.batch.sink;
 
 import co.cask.cdap.api.data.batch.Output;
+import co.cask.cdap.api.data.batch.OutputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.DatasetManagementException;
+import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
+import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.TimePartitionDetail;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSetArguments;
 import co.cask.cdap.api.lineage.field.EndPoint;
+import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
@@ -32,6 +36,7 @@ import co.cask.cdap.etl.api.lineage.field.FieldOperation;
 import co.cask.cdap.etl.api.lineage.field.FieldWriteOperation;
 import co.cask.hydrator.common.TimeParser;
 import com.google.common.base.Strings;
+import org.apache.hadoop.io.NullWritable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,54 +48,60 @@ import java.util.stream.Collectors;
 
 /**
  * TPFS Batch Sink class that stores sink data
- * @param <KEY_OUT> the type of key the sink outputs
- * @param <VAL_OUT> the type of value the sink outputs
+ *
+ * @param <T> the type of plugin config
  */
-public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
-  extends BatchSink<StructuredRecord, KEY_OUT, VAL_OUT> {
+public abstract class TimePartitionedFileSetSink<T extends TPFSSinkConfig>
+  extends BatchSink<StructuredRecord, NullWritable, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(TimePartitionedFileSetSink.class);
+  private static final String FORMAT_PLUGIN_ID = "format";
 
-  protected final TPFSSinkConfig tpfsSinkConfig;
+  protected final T tpfsSinkConfig;
 
-  protected TimePartitionedFileSetSink(TPFSSinkConfig tpfsSinkConfig) {
+  protected TimePartitionedFileSetSink(T tpfsSinkConfig) {
     this.tpfsSinkConfig = tpfsSinkConfig;
   }
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     tpfsSinkConfig.validate();
+    String outputFormatName = getOutputFormatName();
+    OutputFormatProvider outputFormatProvider =
+      pipelineConfigurer.usePlugin("outputformat", outputFormatName, FORMAT_PLUGIN_ID, tpfsSinkConfig.getProperties());
+    if (outputFormatProvider == null) {
+      throw new IllegalArgumentException(
+        String.format("Could not find the '%s' output format plugin. "
+                        + "Please ensure the '%s' format plugin is installed.", outputFormatName, outputFormatName));
+    }
+    // get output format configuration to give the output format plugin a chance to validate it's config
+    // and fail pipeline deployment if it is invalid
+    outputFormatProvider.getOutputFormatConfiguration();
+
     // create the dataset at configure time if no macros were provided on necessary fields
     if (!tpfsSinkConfig.containsMacro("name") && !tpfsSinkConfig.containsMacro("basePath") &&
       !tpfsSinkConfig.containsMacro("schema")) {
-      String tpfsName = tpfsSinkConfig.name;
-      FileSetProperties.Builder properties = FileSetProperties.builder();
-      if (!Strings.isNullOrEmpty(tpfsSinkConfig.basePath)) {
-        properties.setBasePath(tpfsSinkConfig.basePath);
-      }
-      addFileSetProperties(properties);
-      pipelineConfigurer.createDataset(tpfsName, TimePartitionedFileSet.class.getName(), properties.build());
+      pipelineConfigurer.createDataset(tpfsSinkConfig.name, TimePartitionedFileSet.class.getName(),
+                                       createProperties(outputFormatProvider));
     }
   }
 
   @Override
-  public void prepareRun(BatchSinkContext context) throws DatasetManagementException {
+  public void prepareRun(BatchSinkContext context) throws DatasetManagementException, InstantiationException {
     tpfsSinkConfig.validate();
+    OutputFormatProvider outputFormatProvider = context.newPluginInstance(FORMAT_PLUGIN_ID);
     // if macros were provided and the dataset doesn't exist, create it now
     if (!context.datasetExists(tpfsSinkConfig.name)) {
-      String tpfsName = tpfsSinkConfig.name;
-      FileSetProperties.Builder properties = FileSetProperties.builder();
-
-      if (!Strings.isNullOrEmpty(tpfsSinkConfig.basePath)) {
-        properties.setBasePath(tpfsSinkConfig.basePath);
-      }
-      addFileSetProperties(properties);
-      context.createDataset(tpfsName, TimePartitionedFileSet.class.getName(), properties.build());
+      context.createDataset(tpfsSinkConfig.name, TimePartitionedFileSet.class.getName(),
+                            createProperties(outputFormatProvider));
     }
+
+    // setup output path arguments
     long outputPartitionTime = context.getLogicalStartTime();
     if (tpfsSinkConfig.partitionOffset != null) {
       outputPartitionTime -= TimeParser.parseDuration(tpfsSinkConfig.partitionOffset);
     }
-    Map<String, String> sinkArgs = getAdditionalTPFSArguments();
+
+    Map<String, String> sinkArgs = new HashMap<>();
     LOG.debug("Writing to output partition of time {}.", outputPartitionTime);
     TimePartitionedFileSetArguments.setOutputPartitionTime(sinkArgs, outputPartitionTime);
     if (!Strings.isNullOrEmpty(tpfsSinkConfig.filePathFormat)) {
@@ -116,15 +127,26 @@ public abstract class TimePartitionedFileSetSink<KEY_OUT, VAL_OUT>
     }
   }
 
-  /**
-   * @return any additional properties that need to be set for the sink. For example, avro sink requires
-   *         setting some schema output key.
-   */
-  protected Map<String, String> getAdditionalTPFSArguments() {
-    // release 1.4 hydrator plugins uses FileSetUtil to set all the properties that the input and output formats
-    // require when it creates the dataset, so it doesn't need to set those arguments at runtime. inorder to be
-    // backward compatible to older versions of the plugins we need to set this at runtime.
-    return new HashMap<>();
+  @Override
+  public void transform(StructuredRecord input, Emitter<KeyValue<NullWritable, StructuredRecord>> emitter) {
+    emitter.emit(new KeyValue<>(NullWritable.get(), input));
+  }
+
+  protected abstract String getOutputFormatName();
+
+  private DatasetProperties createProperties(OutputFormatProvider outputFormatProvider) {
+    FileSetProperties.Builder properties = FileSetProperties.builder();
+
+    if (!Strings.isNullOrEmpty(tpfsSinkConfig.basePath)) {
+      properties.setBasePath(tpfsSinkConfig.basePath);
+    }
+
+    properties.setOutputFormat(outputFormatProvider.getOutputFormatClassName());
+    for (Map.Entry<String, String> formatProperty : outputFormatProvider.getOutputFormatConfiguration().entrySet()) {
+      properties.setOutputProperty(formatProperty.getKey(), formatProperty.getValue());
+    }
+    addFileSetProperties(properties);
+    return properties.build();
   }
 
   /**

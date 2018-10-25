@@ -52,7 +52,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -178,7 +177,8 @@ public class FileSinkTestRun extends ETLBatchTestBase {
     properties.put("path", outputDir.getAbsolutePath());
     properties.put("referenceName", format.name());
     properties.put("format", format.name());
-    properties.put("schema", "${schema}");
+    //properties.put("schema", "${schema}");
+    properties.put("schema", SCHEMA.toString());
     properties.put("delimiter", delimiter);
 
     ETLBatchConfig conf = ETLBatchConfig.builder()
@@ -227,7 +227,7 @@ public class FileSinkTestRun extends ETLBatchTestBase {
    * Consumes a file.
    */
   private interface FileConsumer {
-    void consume(File file) throws IOException;
+    void consume(File file) throws Exception;
   }
 }
 

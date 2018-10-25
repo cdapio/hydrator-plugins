@@ -27,6 +27,7 @@ import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
+import co.cask.hydrator.format.FileFormat;
 import co.cask.hydrator.format.StructuredToAvroTransformer;
 import co.cask.hydrator.plugin.common.FileSetUtil;
 import org.apache.avro.generic.GenericRecord;
@@ -40,9 +41,8 @@ import javax.annotation.Nullable;
 @Name("TPFSParquet")
 @Description("Sink for a TimePartitionedFileSet that writes data in Parquet format.")
 @Requirements(datasetTypes = TimePartitionedFileSet.TYPE)
-public class TimePartitionedFileSetDatasetParquetSink extends TimePartitionedFileSetSink<Void, GenericRecord> {
-
-  private StructuredToAvroTransformer recordTransformer;
+public class TimePartitionedFileSetDatasetParquetSink extends
+  TimePartitionedFileSetSink<TimePartitionedFileSetDatasetParquetSink.TPFSParquetSinkConfig> {
   private final TPFSParquetSinkConfig config;
 
   public TimePartitionedFileSetDatasetParquetSink(TPFSParquetSinkConfig config) {
@@ -51,20 +51,13 @@ public class TimePartitionedFileSetDatasetParquetSink extends TimePartitionedFil
   }
 
   @Override
+  protected String getOutputFormatName() {
+    return FileFormat.PARQUET.name().toLowerCase();
+  }
+
+  @Override
   protected void addFileSetProperties(FileSetProperties.Builder properties) {
     FileSetUtil.configureParquetFileSet(config.schema, properties);
-    properties.addAll(FileSetUtil.getParquetCompressionConfiguration(config.compressionCodec, config.schema, true));
-  }
-
-  @Override
-  public void initialize(BatchRuntimeContext context) throws Exception {
-    super.initialize(context);
-    recordTransformer = new StructuredToAvroTransformer(config.getSchema());
-  }
-
-  @Override
-  public void transform(StructuredRecord input, Emitter<KeyValue<Void, GenericRecord>> emitter) throws Exception {
-    emitter.emit(new KeyValue<>(null, recordTransformer.transform(input)));
   }
 
   /**

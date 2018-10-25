@@ -16,21 +16,23 @@
 
 package co.cask.hydrator.plugin.batch.sink;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.data.batch.Output;
+import co.cask.cdap.api.data.batch.OutputFormatProvider;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.DatasetManagementException;
+import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
+import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
+import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.common.TimeParser;
-import co.cask.hydrator.plugin.common.SnapshotFileSetConfig;
 import co.cask.hydrator.plugin.dataset.SnapshotFileSet;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import org.apache.hadoop.io.NullWritable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,44 +40,57 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.Nullable;
 
 /**
  * Sink that stores snapshots on HDFS, and keeps track of which snapshot is the latest snapshot.
  *
- * @param <KEY_OUT> the type of key the sink outputs
- * @param <VAL_OUT> the type of value the sink outputs
+ * @param <T> the type of plugin config
  */
-public abstract class SnapshotFileBatchSink<KEY_OUT, VAL_OUT> extends BatchSink<StructuredRecord, KEY_OUT, VAL_OUT> {
+public abstract class SnapshotFileBatchSink<T extends SnapshotFileSetBatchSinkConfig>
+  extends BatchSink<StructuredRecord, NullWritable, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(SnapshotFileBatchSink.class);
   private static final Gson GSON = new Gson();
   private static final Type MAP_TYPE = new TypeToken<Map<String, String>>() { }.getType();
+  private static final String FORMAT_PLUGIN_ID = "format";
 
-  private final SnapshotFileSetBatchSinkConfig config;
+  private final T config;
   private SnapshotFileSet snapshotFileSet;
 
-  public SnapshotFileBatchSink(SnapshotFileSetBatchSinkConfig config) {
+  public SnapshotFileBatchSink(T config) {
     this.config = config;
   }
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     config.validate();
+    String outputFormatName = getOutputFormatPlugin();
+    OutputFormatProvider outputFormatProvider = pipelineConfigurer.usePlugin("outputformat", outputFormatName,
+                                                                             FORMAT_PLUGIN_ID, config.getProperties());
+    if (outputFormatProvider == null) {
+      throw new IllegalArgumentException(
+        String.format("Could not find the '%s' output format plugin. "
+                        + "Please ensure the '%s' format plugin is installed.", outputFormatName, outputFormatName));
+    }
+    // validate config properties
+    outputFormatProvider.getOutputFormatConfiguration();
+
     if (!config.containsMacro("name") && !config.containsMacro("basePath") && !config.containsMacro("fileProperties")) {
       FileSetProperties.Builder fileProperties = SnapshotFileSet.getBaseProperties(config);
       addFileProperties(fileProperties);
-      pipelineConfigurer.createDataset(config.getName(), PartitionedFileSet.class, fileProperties.build());
+      pipelineConfigurer.createDataset(config.getName(), PartitionedFileSet.class,
+                                       createProperties(outputFormatProvider));
     }
   }
 
   @Override
-  public void prepareRun(BatchSinkContext context) throws DatasetManagementException {
+  public void prepareRun(BatchSinkContext context) throws DatasetManagementException, InstantiationException {
     // if macros were provided, the dataset still needs to be created
     config.validate();
+    OutputFormatProvider outputFormatProvider = context.newPluginInstance(FORMAT_PLUGIN_ID);
+
     if (!context.datasetExists(config.getName())) {
-      FileSetProperties.Builder fileProperties = SnapshotFileSet.getBaseProperties(config);
-      addFileProperties(fileProperties);
-      context.createDataset(config.getName(), PartitionedFileSet.class.getName(), fileProperties.build());
+      context.createDataset(config.getName(), PartitionedFileSet.class.getName(),
+                            createProperties(outputFormatProvider));
     }
 
     PartitionedFileSet files = context.getDataset(config.getName());
@@ -88,6 +103,11 @@ public abstract class SnapshotFileBatchSink<KEY_OUT, VAL_OUT> extends BatchSink<
     }
     context.addOutput(Output.ofDataset(config.getName(),
                                        snapshotFileSet.getOutputArguments(context.getLogicalStartTime(), arguments)));
+  }
+
+  @Override
+  public void transform(StructuredRecord input, Emitter<KeyValue<NullWritable, StructuredRecord>> emitter) {
+    emitter.emit(new KeyValue<>(NullWritable.get(), input));
   }
 
   @Override
@@ -113,44 +133,22 @@ public abstract class SnapshotFileBatchSink<KEY_OUT, VAL_OUT> extends BatchSink<
     }
   }
 
+  private DatasetProperties createProperties(OutputFormatProvider outputFormatProvider) {
+    FileSetProperties.Builder fileProperties = SnapshotFileSet.getBaseProperties(config);
+    addFileProperties(fileProperties);
+
+    fileProperties.setOutputFormat(outputFormatProvider.getOutputFormatClassName());
+    for (Map.Entry<String, String> formatProperty : outputFormatProvider.getOutputFormatConfiguration().entrySet()) {
+      fileProperties.setOutputProperty(formatProperty.getKey(), formatProperty.getValue());
+    }
+    return fileProperties.build();
+  }
+
+  protected abstract String getOutputFormatPlugin();
+
   /**
    * add all fileset properties specific to the type of sink, such as schema and output format.
    */
   protected abstract void addFileProperties(FileSetProperties.Builder propertiesBuilder);
 
-  /**
-   * Config for SnapshotFileBatchSink
-   */
-  public static class SnapshotFileSetBatchSinkConfig extends SnapshotFileSetConfig {
-    @Description("Optional property that configures the sink to delete old partitions after successful runs. " +
-      "If set, when a run successfully finishes, the sink will subtract this amount of time from the runtime and " +
-      "delete any partitions older than that time. " +
-      "The format is expected to be a number followed by an 's', 'm', 'h', or 'd' specifying the time unit, with 's' " +
-      "for seconds, 'm' for minutes, 'h' for hours, and 'd' for days. For example, if the pipeline is scheduled to " +
-      "run at midnight of January 1, 2016, and this property is set to 7d, the sink will delete any partitions " +
-      "for time partitions older than midnight Dec 25, 2015.")
-    @Nullable
-    @Macro
-    protected String cleanPartitionsOlderThan;
-
-    public SnapshotFileSetBatchSinkConfig() {
-
-    }
-
-    public SnapshotFileSetBatchSinkConfig(String name, @Nullable String basePath,
-                                          @Nullable String cleanPartitionsOlderThan) {
-      super(name, basePath, null);
-      this.cleanPartitionsOlderThan = cleanPartitionsOlderThan;
-    }
-
-    public String getCleanPartitionsOlderThan() {
-      return cleanPartitionsOlderThan;
-    }
-
-    public void validate() {
-      if (cleanPartitionsOlderThan != null) {
-        TimeParser.parseDuration(cleanPartitionsOlderThan);
-      }
-    }
-  }
 }

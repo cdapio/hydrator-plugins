@@ -21,15 +21,10 @@ import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.annotation.Requirements;
-import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
-import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
-import co.cask.cdap.etl.api.Emitter;
-import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
-import co.cask.hydrator.plugin.common.StructuredToTextTransformer;
-import org.apache.hadoop.io.NullWritable;
+import co.cask.hydrator.format.FileFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
@@ -43,25 +38,17 @@ import javax.annotation.Nullable;
 @Name("SnapshotText")
 @Description("Sink for a SnapshotFileSet that writes data in Text format.")
 @Requirements(datasetTypes = PartitionedFileSet.TYPE)
-public class SnapshotFileBatchTextSink extends SnapshotFileBatchSink<String, NullWritable> {
-  private StructuredToTextTransformer recordTransformer;
-  private SnapshotFileBatchTextSinkConfig config;
+public class SnapshotFileBatchTextSink extends SnapshotFileBatchSink<SnapshotFileBatchTextSink.Conf> {
+  private Conf config;
 
-  public SnapshotFileBatchTextSink(SnapshotFileBatchTextSinkConfig config) {
+  public SnapshotFileBatchTextSink(Conf config) {
     super(config);
     this.config = config;
   }
 
   @Override
-  public void initialize(BatchRuntimeContext context) throws Exception {
-    super.initialize(context);
-    recordTransformer = new StructuredToTextTransformer(config.delimiter);
-  }
-
-  @Override
-  public void transform(StructuredRecord input,
-                        Emitter<KeyValue<String, NullWritable>> emitter) throws Exception {
-    emitter.emit(new KeyValue<>(recordTransformer.transform(input), NullWritable.get()));
+  protected String getOutputFormatPlugin() {
+    return FileFormat.DELIMITED.name().toLowerCase();
   }
 
   @Override
@@ -77,19 +64,15 @@ public class SnapshotFileBatchTextSink extends SnapshotFileBatchSink<String, Nul
   /**
    * Config for SnapshotFileBatchTextSink.
    */
-  public static class SnapshotFileBatchTextSinkConfig extends SnapshotFileSetBatchSinkConfig {
+  public static class Conf extends SnapshotFileSetBatchSinkConfig {
     @Description("The Delimiter used to combine the Structured Record fields, Defaults to tab")
     @Nullable
     @Macro
     private String delimiter;
 
-    public SnapshotFileBatchTextSinkConfig() {
+    public Conf() {
       this.delimiter = "\t";
     }
 
-    public SnapshotFileBatchTextSinkConfig(String name, @Nullable String basePath, @Nullable String delimiter) {
-      super(name, basePath, null);
-      this.delimiter = delimiter;
-    }
   }
 }

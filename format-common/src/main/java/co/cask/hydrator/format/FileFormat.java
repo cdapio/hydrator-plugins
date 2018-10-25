@@ -25,12 +25,6 @@ import co.cask.hydrator.format.input.FileInputFormatterProvider;
 import co.cask.hydrator.format.input.JsonInputProvider;
 import co.cask.hydrator.format.input.ParquetInputProvider;
 import co.cask.hydrator.format.input.TextInputProvider;
-import co.cask.hydrator.format.output.AvroOutputProvider;
-import co.cask.hydrator.format.output.DelimitedTextOutputProvider;
-import co.cask.hydrator.format.output.FileOutputFormatter;
-import co.cask.hydrator.format.output.FileOutputFormatterProvider;
-import co.cask.hydrator.format.output.JsonOutputProvider;
-import co.cask.hydrator.format.output.ParquetOutputProvider;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -40,29 +34,26 @@ import javax.annotation.Nullable;
 
 /**
  * FileFormat supported by the file based sources/sinks. Some formats can be used for both reading and writing.
- * Each value also contains an {@link FileOutputFormatterProvider} that contains the logic required to configure
- * a Hadoop OutputFormat for writing. This is meant to consolidate all format related operations so that multiple
- * plugins can easily support the same set of formats without re-implementing logic.
+ * TODO: remove once formats have completely been converted to plugins
  */
 public enum FileFormat {
-  AVRO(new AvroInputProvider(), new AvroOutputProvider()),
-  BLOB(new BlobInputProvider(), null),
-  CSV(new DelimitedInputProvider(","), new DelimitedTextOutputProvider(",")),
-  DELIMITED(new DelimitedInputProvider(null), new DelimitedTextOutputProvider(null)),
-  JSON(new JsonInputProvider(), new JsonOutputProvider()),
-  PARQUET(new ParquetInputProvider(), new ParquetOutputProvider()),
-  TEXT(new TextInputProvider(), null),
-  TSV(new DelimitedInputProvider("\t"), new DelimitedTextOutputProvider("\t"));
+  AVRO(new AvroInputProvider(), true),
+  BLOB(new BlobInputProvider(), false),
+  CSV(new DelimitedInputProvider(","), true),
+  DELIMITED(new DelimitedInputProvider(null), true),
+  JSON(new JsonInputProvider(), true),
+  ORC(null, true),
+  PARQUET(new ParquetInputProvider(), true),
+  TEXT(new TextInputProvider(), false),
+  TSV(new DelimitedInputProvider("\t"), true);
   private final FileInputFormatterProvider inputProvider;
-  private final FileOutputFormatterProvider outputProvider;
   private final boolean canWrite;
   private final boolean canRead;
 
-  FileFormat(@Nullable FileInputFormatterProvider inputProvider, @Nullable FileOutputFormatterProvider outputProvider) {
+  FileFormat(@Nullable FileInputFormatterProvider inputProvider, boolean canWrite) {
     this.inputProvider = inputProvider;
-    this.outputProvider = outputProvider;
-    this.canWrite = outputProvider != null;
     this.canRead = inputProvider != null;
+    this.canWrite = canWrite;
   }
 
   public boolean canWrite() {
@@ -71,23 +62,6 @@ public enum FileFormat {
 
   public boolean canRead() {
     return canRead;
-  }
-
-  /**
-   * Create the FileOutputFormatter for this format.
-   *
-   * @param properties plugin properties
-   * @param schema schema for the pipeline stage
-   * @return the FileOutputFormatter for this format
-   * @throws IllegalArgumentException if the properties or schema are not valid
-   */
-  public <K, V> FileOutputFormatter<K, V> getFileOutputFormatter(Map<String, String> properties,
-                                                                 @Nullable Schema schema) {
-    //noinspection unchecked
-    if (outputProvider == null) {
-      throw new IllegalArgumentException(String.format("Format '%s' cannot be used for writing", this.name()));
-    }
-    return (FileOutputFormatter<K, V>) outputProvider.create(properties, schema);
   }
 
   /**

@@ -14,42 +14,40 @@
  * the License.
  */
 
-package co.cask.hydrator.format.output;
+package co.cask.format.json;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.format.StructuredRecordStringConverter;
+import co.cask.hydrator.format.output.DelegatingOutputFormat;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapred.JobContext;
+import org.apache.hadoop.mapreduce.OutputFormat;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
+import java.util.function.Function;
 
 /**
- * Defines logic for writing JSON files.
+ * Converts StructuredRecord into string before delegating to TextOutputFormat.
  */
-public class JsonOutputFormatter implements FileOutputFormatter<NullWritable, Text> {
+public class StructuredJsonOutputFormat extends DelegatingOutputFormat<NullWritable, Text> {
 
   @Override
-  public KeyValue<NullWritable, Text> transform(StructuredRecord record) {
-    try {
-      return new KeyValue<>(NullWritable.get(),
-                            new Text(StructuredRecordStringConverter.toJsonString(record)));
-    } catch (IOException e) {
-      throw new RuntimeException("Unable to transform CDAP record into a JSON record.", e);
-    }
+  protected OutputFormat<NullWritable, Text> createDelegate() {
+    return new TextOutputFormat<>();
   }
 
   @Override
-  public String getFormatClassName() {
-    return TextOutputFormat.class.getName();
+  protected Function<StructuredRecord, KeyValue<NullWritable, Text>> getConversion(TaskAttemptContext context) {
+    return record -> {
+      try {
+        return new KeyValue<>(NullWritable.get(), new Text(StructuredRecordStringConverter.toJsonString(record)));
+      } catch (IOException e) {
+        throw new RuntimeException("Unable to convert record into a json object", e);
+      }
+    };
   }
 
-  @Override
-  public Map<String, String> getFormatConfig() {
-    return Collections.singletonMap(JobContext.OUTPUT_KEY_CLASS, Text.class.getName());
-  }
 }

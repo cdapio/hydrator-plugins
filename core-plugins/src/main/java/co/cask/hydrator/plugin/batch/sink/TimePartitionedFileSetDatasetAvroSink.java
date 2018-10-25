@@ -21,12 +21,14 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.annotation.Requirements;
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
+import co.cask.hydrator.format.FileFormat;
 import co.cask.hydrator.format.StructuredToAvroTransformer;
 import co.cask.hydrator.plugin.common.FileSetUtil;
 import org.apache.avro.generic.GenericRecord;
@@ -43,8 +45,7 @@ import javax.annotation.Nullable;
 @Description("Sink for a TimePartitionedFileSet that writes data in Avro format.")
 @Requirements(datasetTypes = TimePartitionedFileSet.TYPE)
 public class TimePartitionedFileSetDatasetAvroSink extends
-  TimePartitionedFileSetSink<AvroKey<GenericRecord>, NullWritable> {
-  private StructuredToAvroTransformer recordTransformer;
+  TimePartitionedFileSetSink<TimePartitionedFileSetDatasetAvroSink.TPFSAvroSinkConfig> {
   private final TPFSAvroSinkConfig config;
 
   public TimePartitionedFileSetDatasetAvroSink(TPFSAvroSinkConfig config) {
@@ -53,21 +54,13 @@ public class TimePartitionedFileSetDatasetAvroSink extends
   }
 
   @Override
+  protected String getOutputFormatName() {
+    return FileFormat.AVRO.name().toLowerCase();
+  }
+
+  @Override
   protected void addFileSetProperties(FileSetProperties.Builder properties) {
     FileSetUtil.configureAvroFileSet(config.schema, properties);
-    properties.addAll(FileSetUtil.getAvroCompressionConfiguration(config.compressionCodec, config.schema, true));
-  }
-
-  @Override
-  public void initialize(BatchRuntimeContext context) throws Exception {
-    super.initialize(context);
-    recordTransformer = new StructuredToAvroTransformer(config.getSchema());
-  }
-
-  @Override
-  public void transform(StructuredRecord input,
-                        Emitter<KeyValue<AvroKey<GenericRecord>, NullWritable>> emitter) throws Exception {
-    emitter.emit(new KeyValue<>(new AvroKey<>(recordTransformer.transform(input)), NullWritable.get()));
   }
 
   /**
