@@ -64,6 +64,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
@@ -197,6 +198,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     workflowManager.waitForRuns(ProgramRunStatus.FAILED, 1, 5, TimeUnit.MINUTES);
   }
 
+  @Ignore
   @Test
   public void testRecursiveFolders() throws Exception {
     Schema schema = Schema.recordOf("file.record",

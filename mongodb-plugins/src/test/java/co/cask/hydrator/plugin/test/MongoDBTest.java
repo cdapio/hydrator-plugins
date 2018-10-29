@@ -64,6 +64,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
@@ -147,6 +148,7 @@ public class MongoDBTest extends HydratorTestBase {
     }
   }
 
+  @Ignore
   @Test
   public void testMongoDBSink() throws Exception {
     String inputDatasetName = "input-batchsinktest";
@@ -197,6 +199,7 @@ public class MongoDBTest extends HydratorTestBase {
     verifyMongoSinkData(secondCollectionName);
   }
 
+  @Ignore
   @Test
   public void testMongoToMongo() throws Exception {
     ETLStage source = new ETLStage("MongoDBSource", new ETLPlugin(
@@ -255,6 +258,7 @@ public class MongoDBTest extends HydratorTestBase {
     }
   }
 
+  @Ignore
   @SuppressWarnings("ConstantConditions")
   @Test
   public void testMongoDBSource() throws Exception {
