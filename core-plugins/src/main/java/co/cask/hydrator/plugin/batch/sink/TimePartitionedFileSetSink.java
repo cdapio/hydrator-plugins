@@ -89,10 +89,10 @@ public abstract class TimePartitionedFileSetSink<T extends TPFSSinkConfig>
   public void prepareRun(BatchSinkContext context) throws DatasetManagementException, InstantiationException {
     tpfsSinkConfig.validate();
     OutputFormatProvider outputFormatProvider = context.newPluginInstance(FORMAT_PLUGIN_ID);
+    DatasetProperties datasetProperties = createProperties(outputFormatProvider);
     // if macros were provided and the dataset doesn't exist, create it now
     if (!context.datasetExists(tpfsSinkConfig.name)) {
-      context.createDataset(tpfsSinkConfig.name, TimePartitionedFileSet.class.getName(),
-                            createProperties(outputFormatProvider));
+      context.createDataset(tpfsSinkConfig.name, TimePartitionedFileSet.class.getName(), datasetProperties);
     }
 
     // setup output path arguments
@@ -101,7 +101,11 @@ public abstract class TimePartitionedFileSetSink<T extends TPFSSinkConfig>
       outputPartitionTime -= TimeParser.parseDuration(tpfsSinkConfig.partitionOffset);
     }
 
-    Map<String, String> sinkArgs = new HashMap<>();
+    // need to use all the dataset properties as arguments in case the dataset already exists,
+    // created by the previous version of this plugin before output format plugins were used.
+    // in that scenario, the output format attached to the dataset properties will be incorrect,
+    // and must be overridden here.
+    Map<String, String> sinkArgs = new HashMap<>(datasetProperties.getProperties());
     LOG.debug("Writing to output partition of time {}.", outputPartitionTime);
     TimePartitionedFileSetArguments.setOutputPartitionTime(sinkArgs, outputPartitionTime);
     if (!Strings.isNullOrEmpty(tpfsSinkConfig.filePathFormat)) {

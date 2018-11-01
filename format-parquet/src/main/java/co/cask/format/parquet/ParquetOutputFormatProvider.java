@@ -25,6 +25,7 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.plugin.PluginClass;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.api.plugin.PluginPropertyField;
+import org.apache.parquet.format.CompressionCodec;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -42,9 +43,6 @@ public class ParquetOutputFormatProvider implements OutputFormatProvider {
   static final String SCHEMA_KEY = "parquet.avro.schema";
   static final String NAME = "parquet";
   static final String DESC = "Plugin for writing files in parquet format.";
-  private static final String CODEC_SNAPPY = "SNAPPY";
-  private static final String CODEC_GZIP = "GZIP";
-  private static final String CODEC_LZO = "LZO";
   private static final String PARQUET_COMPRESSION = "parquet.compression";
   private final Conf conf;
 
@@ -66,14 +64,11 @@ public class ParquetOutputFormatProvider implements OutputFormatProvider {
     }
 
     if (conf.compressionCodec != null && !"none".equalsIgnoreCase(conf.compressionCodec)) {
-      if (CODEC_SNAPPY.equalsIgnoreCase(conf.compressionCodec)) {
-        configuration.put(PARQUET_COMPRESSION, CODEC_SNAPPY);
-      } else if (CODEC_GZIP.equalsIgnoreCase(conf.compressionCodec)) {
-        configuration.put(PARQUET_COMPRESSION, CODEC_GZIP);
-      } else if (CODEC_LZO.equalsIgnoreCase(conf.compressionCodec)) {
-        configuration.put(PARQUET_COMPRESSION, CODEC_LZO);
-      } else {
-        throw new IllegalArgumentException("Unsupported compression codec " + conf.compressionCodec);
+      try {
+        CompressionCodec.valueOf(conf.compressionCodec.toUpperCase());
+        configuration.put(PARQUET_COMPRESSION, conf.compressionCodec.toUpperCase());
+      } catch (IllegalArgumentException e) {
+        throw new IllegalArgumentException("Unsupported compression codec " + conf.compressionCodec, e);
       }
     }
     return configuration;

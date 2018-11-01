@@ -26,6 +26,7 @@ import co.cask.cdap.api.plugin.PluginClass;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.api.plugin.PluginPropertyField;
 import co.cask.hydrator.common.HiveSchemaConverter;
+import org.apache.orc.CompressionKind;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -65,16 +66,13 @@ public class OrcOutputFormatProvider implements OutputFormatProvider {
     configuration.put("orc.mapred.output.schema", parseOrcSchema(conf.schema));
 
     if (conf.compressionCodec != null && !conf.compressionCodec.equalsIgnoreCase("None")) {
-      switch (conf.compressionCodec.toUpperCase()) {
-        case SNAPPY_CODEC:
-          configuration.put(ORC_COMPRESS, SNAPPY_CODEC);
-          break;
-        case ZLIB_CODEC:
-          configuration.put(ORC_COMPRESS, ZLIB_CODEC);
-          break;
-        default:
-          throw new IllegalArgumentException("Unsupported compression codec " + conf.compressionCodec);
+      try {
+        CompressionKind.valueOf(conf.compressionCodec.toUpperCase());
+        configuration.put(ORC_COMPRESS, conf.compressionCodec.toUpperCase());
+      } catch (IllegalArgumentException e) {
+        throw new IllegalArgumentException("Unsupported compression codec " + conf.compressionCodec);
       }
+
       if (conf.compressionChunkSize != null) {
         configuration.put(COMPRESS_SIZE, conf.compressionChunkSize.toString());
       }

@@ -24,6 +24,7 @@ import co.cask.cdap.api.data.batch.OutputFormatProvider;
 import co.cask.cdap.api.plugin.PluginClass;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.api.plugin.PluginPropertyField;
+import org.apache.avro.file.CodecFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -42,8 +43,6 @@ public class AvroOutputFormatProvider implements OutputFormatProvider {
   static final String DESC = "Plugin for writing files in avro format.";
   private static final String AVRO_OUTPUT_CODEC = "avro.output.codec";
   private static final String MAPRED_OUTPUT_COMPRESS = "mapred.output.compress";
-  private static final String CODEC_SNAPPY = "snappy";
-  private static final String CODEC_DEFLATE = "deflate";
   private final Conf conf;
 
   public AvroOutputFormatProvider(Conf conf) {
@@ -65,12 +64,11 @@ public class AvroOutputFormatProvider implements OutputFormatProvider {
     if (conf.compressionCodec != null && !conf.containsMacro("compressionCodec") &&
       !"none".equalsIgnoreCase(conf.compressionCodec)) {
 
-      configuration.put(MAPRED_OUTPUT_COMPRESS, "true");
-      if (CODEC_SNAPPY.equalsIgnoreCase(conf.compressionCodec)) {
-        configuration.put(AVRO_OUTPUT_CODEC, CODEC_SNAPPY);
-      } else if (CODEC_DEFLATE.equalsIgnoreCase(conf.compressionCodec)) {
-        configuration.put(AVRO_OUTPUT_CODEC, CODEC_DEFLATE);
-      } else {
+      try {
+        CodecFactory.fromString(conf.compressionCodec.toLowerCase());
+        configuration.put(MAPRED_OUTPUT_COMPRESS, "true");
+        configuration.put(AVRO_OUTPUT_CODEC, conf.compressionCodec.toLowerCase());
+      } catch (Exception e) {
         throw new IllegalArgumentException("Unsupported compression codec " + conf.compressionCodec);
       }
     }
@@ -83,7 +81,7 @@ public class AvroOutputFormatProvider implements OutputFormatProvider {
   public static class Conf extends PluginConfig {
     private static final String SCHEMA_DESC = "Schema of the data to write.";
     private static final String CODEC_DESC =
-      "Compression codec to use when writing data. Must be 'snappy', 'deflate', or 'none.'";
+      "Compression codec to use when writing data. Must be 'snappy', 'deflate', 'bzip2', 'xz', or 'none.'";
 
     @Macro
     @Nullable

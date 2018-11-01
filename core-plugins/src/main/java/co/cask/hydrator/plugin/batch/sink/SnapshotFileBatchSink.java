@@ -87,16 +87,19 @@ public abstract class SnapshotFileBatchSink<T extends SnapshotFileSetBatchSinkCo
     // if macros were provided, the dataset still needs to be created
     config.validate();
     OutputFormatProvider outputFormatProvider = context.newPluginInstance(FORMAT_PLUGIN_ID);
-
+    DatasetProperties datasetProperties = createProperties(outputFormatProvider);
     if (!context.datasetExists(config.getName())) {
-      context.createDataset(config.getName(), PartitionedFileSet.class.getName(),
-                            createProperties(outputFormatProvider));
+      context.createDataset(config.getName(), PartitionedFileSet.class.getName(), datasetProperties);
     }
 
     PartitionedFileSet files = context.getDataset(config.getName());
     snapshotFileSet = new SnapshotFileSet(files);
 
-    Map<String, String> arguments = new HashMap<>();
+    // need to use all the dataset properties as arguments in case the dataset already exists,
+    // created by the previous version of this plugin before output format plugins were used.
+    // in that scenario, the output format attached to the dataset properties will be incorrect,
+    // and must be overridden here.
+    Map<String, String> arguments = new HashMap<>(datasetProperties.getProperties());
 
     if (config.getFileProperties() != null) {
       arguments = GSON.fromJson(config.getFileProperties(), MAP_TYPE);
