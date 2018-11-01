@@ -169,6 +169,7 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
       new ETLPlugin("SnapshotText", BatchSink.PLUGIN_TYPE,
                     ImmutableMap.<String, String>builder()
                       .put(Properties.SnapshotFileSetSink.NAME, "testText")
+                      .put("delimiter", "\t")
                       .build(),
                     null));
 

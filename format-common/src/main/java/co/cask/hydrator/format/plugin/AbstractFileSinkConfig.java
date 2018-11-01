@@ -42,7 +42,6 @@ public abstract class AbstractFileSinkConfig extends PluginConfig implements Fil
     "If not specified, nothing will be appended to the path.")
   private String suffix;
 
-  @Macro
   @Description("The format to write in. The format must be one of 'json', 'avro', 'parquet', 'csv', 'tsv', "
     + "or 'delimited'.")
   private String format;

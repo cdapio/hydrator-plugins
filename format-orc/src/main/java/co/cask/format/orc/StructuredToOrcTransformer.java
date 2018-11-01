@@ -1,5 +1,5 @@
 /*
- * Copyright © 2016 Cask Data, Inc.
+ * Copyright © 2018 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.common;
+package co.cask.format.orc;
 
 import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
@@ -44,9 +44,11 @@ import java.util.Map;
  * Creates ORCStruct records from StructuredRecords
  */
 public class StructuredToOrcTransformer extends RecordConverter<StructuredRecord, OrcStruct> {
-
-  private static final Logger LOG = LoggerFactory.getLogger(StructuredToOrcTransformer.class);
   private final Map<Schema, TypeDescription> schemaCache = new HashMap<>();
+
+  public OrcStruct transform(StructuredRecord input) {
+    return transform(input, input.getSchema());
+  }
 
   @Override
   public OrcStruct transform(StructuredRecord input, Schema schema) {
