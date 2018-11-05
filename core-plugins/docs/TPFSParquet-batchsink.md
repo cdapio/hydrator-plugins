@@ -44,7 +44,7 @@ The format is expected to be a number followed by an 's', 'm', 'h', or 'd' speci
 and this property is set to 7d, the sink will delete any partitions for time partitions older than midnight Dec 25, 2015. (Macro-enabled)
 
 **compressionCodec:** Optional parameter to determine the compression codec to use on the resulting data. 
-Valid values are None, Snappy, GZip, and LZO.
+Valid values are None, Snappy, GZip.
 
 Example
 -------
