@@ -18,11 +18,7 @@ package co.cask.hydrator.plugin.batch.source;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Macro;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.format.plugin.AbstractFileSourceConfig;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -52,11 +48,6 @@ public class FileSourceConfig extends AbstractFileSourceConfig {
     + "This is an advanced feature that requires knowledge of the properties supported by the underlying filesystem.")
   private String fileSystemProperties;
 
-  @Macro
-  @Nullable
-  @Description("Deprecated property. Use the logicalStartTime macro in the file path instead of this.")
-  private String timeTable;
-
   FileSourceConfig() {
     super();
     fileSystemProperties = "{}";
@@ -81,10 +72,5 @@ public class FileSourceConfig extends AbstractFileSourceConfig {
 
   public String getPath() {
     return path;
-  }
-
-  @Nullable
-  public String getTimeTable() {
-    return timeTable;
   }
 }

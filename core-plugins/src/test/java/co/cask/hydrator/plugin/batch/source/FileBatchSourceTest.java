@@ -459,66 +459,6 @@ public class FileBatchSourceTest extends HydratorTestBase {
   }
 
   @Test
-  public void testTimeFilterRegex() throws Exception {
-    Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
-      .put(Constants.Reference.REFERENCE_NAME, "TestCase")
-      .put(Properties.File.PATH, file1.getParent().replaceAll("\\\\", "/"))
-      .put(Properties.File.FILE_REGEX, "timefilter")
-      .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
-      .put(Properties.File.RECURSIVE, "false")
-      .build();
-    ETLStage source = new ETLStage("FileInput", new ETLPlugin("File", BatchSource.PLUGIN_TYPE, sourceProperties, null));
-    String outputDatasetName = "time-filter";
-    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
-      .addStage(source)
-      .addStage(sink)
-      .addConnection(source.getName(), sink.getName())
-      .build();
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-timefilter-regex");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-    appManager.getWorkflowManager(SmartWorkflow.NAME)
-      .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
-    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
-    List<StructuredRecord> output = MockSink.readOutput(outputManager);
-    Assert.assertEquals("Expected records", 1, output.size());
-    Assert.assertEquals("Hello,World", output.get(0).get("body"));
-  }
-  @Test
-  public void testRecursiveTimeFilterRegex() throws Exception {
-    Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
-      .put(Constants.Reference.REFERENCE_NAME, "TestCase")
-      .put(Properties.File.PATH, file1.getParentFile().getParent().replaceAll("\\\\", "/"))
-      .put(Properties.File.FILE_REGEX, "timefilter")
-      .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
-      .put(Properties.File.RECURSIVE, "true")
-      .build();
-    ETLStage source = new ETLStage("FileInput", new ETLPlugin("File", BatchSource.PLUGIN_TYPE, sourceProperties, null));
-    String outputDatasetName = "recursive-timefilter-regex";
-    ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
-      .addStage(source)
-      .addStage(sink)
-      .addConnection(source.getName(), sink.getName())
-      .build();
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
-    ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-recursive-timefilter-regex");
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-    appManager.getWorkflowManager(SmartWorkflow.NAME)
-      .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
-    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
-    List<StructuredRecord> output = MockSink.readOutput(outputManager);
-    Assert.assertEquals("Expected records", 2, output.size());
-    Set<String> outputValue = new HashSet<>();
-    for (StructuredRecord record : output) {
-      outputValue.add(record.get("body"));
-    }
-    Assert.assertTrue(outputValue.contains("Hello,World"));
-    Assert.assertTrue(outputValue.contains("CDAP,Platform"));
-  }
-
-  @Test
   public void testReadBlob() throws Exception {
     File testFolder = temporaryFolder.newFolder();
     File file1 = new File(testFolder, "test1");
