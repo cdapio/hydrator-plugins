@@ -46,8 +46,7 @@
             "values": [
               "None",
               "Snappy",
-              "GZip",
-              "LZO"
+              "GZip"
             ],
             "default": "None"
           }
