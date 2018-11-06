@@ -26,7 +26,7 @@
 [submodule "kafka-plugins"]
 	path = kafka-plugins
 	url = https://github.com/data-integrations/kafka-plugins
-	branch = release/1.9
+	branch = release/2.0
 [submodule "amazon-s3-plugins"]
 	path = amazon-s3-plugins
 	url = https://github.com/data-integrations/amazon-s3-plugins
