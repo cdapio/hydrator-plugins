@@ -20,20 +20,11 @@ import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.annotation.Requirements;
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
-import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
-import co.cask.cdap.etl.api.Emitter;
-import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.hydrator.format.FileFormat;
-import co.cask.hydrator.format.StructuredToAvroTransformer;
 import co.cask.hydrator.plugin.common.FileSetUtil;
-import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.mapred.AvroKey;
-import org.apache.hadoop.io.NullWritable;
 
 import javax.annotation.Nullable;
 

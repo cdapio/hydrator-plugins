@@ -88,8 +88,7 @@
         <configuration>
           <instructions>
             <_exportcontents>
-              co.cask.format.orc.*;
-              org.apache.orc.*;
+              co.cask.format.orc.*
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
