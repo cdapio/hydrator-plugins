@@ -17,25 +17,25 @@
 
 [submodule "wrangler-transform"]
 	path = wrangler-transform
-	url = https://github.com/data-integrations/wrangler.git
-	branch = release/3.2
+	url = https://github.com/Guavus/wrangler.git
+	branch = build_guavus_3.2
 [submodule "google-cloud"]
 	path = google-cloud
-	url = https://github.com/data-integrations/google-cloud
-	branch = release/0.11
+	url = https://github.com/Guavus/google-cloud.git
+	branch = build_guavus_0.11
 [submodule "kafka-plugins"]
 	path = kafka-plugins
-	url = https://github.com/data-integrations/kafka-plugins
-	branch = release/1.9
+	url = https://github.com/Guavus/kafka-plugins.git
+	branch = build_guavus_1.9
 [submodule "amazon-s3-plugins"]
 	path = amazon-s3-plugins
-	url = https://github.com/data-integrations/amazon-s3-plugins
-	branch = release/1.9
+	url = https://github.com/Guavus/amazon-s3-plugins.git
+	branch = build_guavus_1.9
 [submodule "realtime-stream-source"]
 	path = realtime-stream-source
-	url = https://github.com/data-integrations/realtime-stream-source.git
-	branch = release/1.5
+	url = https://github.com/Guavus/realtime-stream-source.git
+	branch = build_guavus_1.5
 [submodule "condition-plugins"]
 	path = condition-plugins
-	url = https://github.com/data-integrations/condition-plugins.git
-	branch = release/1.2
+	url = https://github.com/Guavus/condition-plugins.git
+	branch = build_guavus_1.2
