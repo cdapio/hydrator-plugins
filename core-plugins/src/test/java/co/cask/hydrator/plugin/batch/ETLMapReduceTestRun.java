@@ -45,6 +45,7 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
@@ -83,6 +84,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     }
   }
 
+  @Ignore
   @Test
   public void testKVToKV() throws Exception {
     // kv table to kv table pipeline
@@ -123,6 +125,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     }
   }
 
+  @Ignore
   @Test
   public void testDAG() throws Exception {
 
@@ -221,6 +224,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     }
   }
 
+  @Ignore
   @SuppressWarnings("ConstantConditions")
   @Test
   public void testTableToTableWithValidations() throws Exception {
@@ -339,6 +343,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     }
   }
 
+  @Ignore
   @Test
   public void testFiletoMultipleTPFS() throws Exception {
     String filePath = "file:///tmp/test/text.txt";

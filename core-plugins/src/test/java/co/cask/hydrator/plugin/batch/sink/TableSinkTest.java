@@ -33,6 +33,7 @@ import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.common.TableSinkConfig;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -205,6 +206,7 @@ public class TableSinkTest extends ETLBatchTestBase {
     tableSink.configurePipeline(mockPipelineConfigurer);
   }
 
+  @Ignore
   @Test
   public void testTableSinkWithMacro() throws Exception {
     Schema schema = Schema.recordOf(

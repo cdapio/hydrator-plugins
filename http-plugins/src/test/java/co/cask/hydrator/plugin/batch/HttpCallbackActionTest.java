@@ -48,6 +48,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -124,6 +125,7 @@ public class HttpCallbackActionTest extends HydratorTestBase {
     resetFeeds();
   }
 
+  @Ignore
   @Test
   public void testHTTPCallbackAction() throws Exception {
     String body = "samuel jackson, dwayne johnson, christopher walken";

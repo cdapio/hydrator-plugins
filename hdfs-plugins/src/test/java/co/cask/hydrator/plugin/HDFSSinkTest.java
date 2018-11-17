@@ -52,6 +52,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
@@ -120,6 +121,7 @@ public class HDFSSinkTest extends HydratorTestBase {
     }
   }
 
+  @Ignore
   @Test
   public void testHDFSSink() throws Exception {
     String inputDatasetName = "input-hdfssinktest";
@@ -173,6 +175,7 @@ public class HDFSSinkTest extends HydratorTestBase {
     Assert.assertEquals(ImmutableSet.of("\0|10|400.23", "CDAP|13|123.23"), lines);
   }
 
+  @Ignore
   @Test
   public void testAddingJobProperties() throws Exception {
     String inputDatasetName = "input-hdfssinktest";

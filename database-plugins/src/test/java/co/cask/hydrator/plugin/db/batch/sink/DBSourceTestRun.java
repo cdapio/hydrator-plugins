@@ -36,6 +36,7 @@ import co.cask.hydrator.plugin.DatabasePluginTestBase;
 import co.cask.hydrator.plugin.db.batch.source.DBSource;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
@@ -56,6 +57,7 @@ import java.util.Map;
  */
 public class DBSourceTestRun extends DatabasePluginTestBase {
 
+  @Ignore
   @Test
   @SuppressWarnings("ConstantConditions")
   public void testDBMacroSupport() throws Exception {
@@ -86,6 +88,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     Assert.assertTrue(MockSink.readOutput(outputManager).isEmpty());
   }
 
+  @Ignore
   @Test
   @SuppressWarnings("ConstantConditions")
   public void testDBSource() throws Exception {
@@ -178,6 +181,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     Assert.assertEquals(CLOB_DATA, row2.get("CLOB_COL"));
   }
 
+  @Ignore
   @Test
   public void testDBSourceWithLowerCaseColNames() throws Exception {
     String importQuery = "SELECT ID, NAME FROM \"my_table\" WHERE ID < 3 AND $CONDITIONS";
@@ -217,7 +221,8 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     Assert.assertEquals(1, row1.<Integer>get("id").intValue());
     Assert.assertEquals(2, row2.<Integer>get("id").intValue());
   }
-  
+ 
+  @Ignore 
   @Test
   public void testDbSourceMultipleTables() throws Exception {
     // have the same data in both tables ('\"my_table\"' and '\"your_table\"'), and select the ID and NAME fields from

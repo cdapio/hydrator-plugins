@@ -33,6 +33,7 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.sql.Connection;
@@ -57,6 +58,7 @@ import java.util.Set;
  */
 public class DBSinkTestRun extends DatabasePluginTestBase {
 
+  @Ignore
   @Test
   public void testDBSink() throws Exception {
     String inputDatasetName = "input-dbsinktest";
@@ -96,6 +98,7 @@ public class DBSinkTestRun extends DatabasePluginTestBase {
     }
   }
 
+  @Ignore
   @Test
   public void testNullFields() throws Exception {
     prepareInputAndOutputTables();

@@ -135,6 +135,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     temporaryFolder.delete();
   }
 
+  @Ignore
   @Test
   public void testIgnoreNonExistingFolder() throws Exception {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
@@ -245,6 +246,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(expected, actual);
   }
 
+  @Ignore
   @Test
   public void testNonRecursiveRegex() throws Exception {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
@@ -286,6 +288,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertTrue(outputValue.contains("CDAP,Platform"));
   }
 
+  @Ignore
   @Test
   public void testFileRegex() throws Exception {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
@@ -326,6 +329,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertTrue(outputValue.contains("CDAP,Platform"));
   }
 
+  @Ignore
   @Test
   public void testRecursiveRegex() throws Exception {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
@@ -366,6 +370,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertTrue(outputValue.contains("CDAP,Platform"));
   }
 
+
+  @Ignore
   @Test
   public void testPathGlobbing() throws Exception {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
@@ -406,6 +412,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertTrue(outputValue.contains("CDAP,Platform"));
   }
 
+  @Ignore
   @Test
   public void testCopyHeader() throws Exception {
     File inputFile = temporaryFolder.newFile();
@@ -460,6 +467,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(expected, actual);
   }
 
+  @Ignore
   @Test
   public void testTimeFilterRegex() throws Exception {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
@@ -487,6 +495,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals("Expected records", 1, output.size());
     Assert.assertEquals("Hello,World", output.get(0).get("body"));
   }
+
+  @Ignore
   @Test
   public void testRecursiveTimeFilterRegex() throws Exception {
     Map<String, String> sourceProperties = new ImmutableMap.Builder<String, String>()
@@ -520,6 +530,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertTrue(outputValue.contains("CDAP,Platform"));
   }
 
+  @Ignore
   @Test
   public void testReadBlob() throws Exception {
     File testFolder = temporaryFolder.newFolder();
@@ -560,6 +571,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertArrayEquals(byteContent2, contents.get(file2.toURI().toString()));
   }
 
+
+  @Ignore
   @Test
   public void testReadJson() throws Exception {
     File fileText = new File(temporaryFolder.newFolder(), "test.json");
@@ -599,16 +612,19 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(expected, output);
   }
 
+  @Ignore
   @Test
   public void testReadCSV() throws Exception {
     testReadDelimitedText(FileFormat.CSV.name(), ",");
   }
 
+  @Ignore
   @Test
   public void testReadTSV() throws Exception {
     testReadDelimitedText(FileFormat.TSV.name(), "\t");
   }
 
+  @Ignore
   @Test
   public void testReadDelimited() throws Exception {
     testReadDelimitedText(FileFormat.DELIMITED.name(), "\u0001");
@@ -648,6 +664,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(expected, output);
   }
 
+  @Ignore
   @Test
   public void testTextFormatWithoutOffset() throws Exception {
     File fileText = new File(temporaryFolder.newFolder(), "test.txt");
@@ -678,7 +695,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(expected, output);
   }
 
-
+  @Ignore
   @Test
   public void testFileBatchInputFormatText() throws Exception {
     File outputFolder = temporaryFolder.newFolder();
@@ -718,6 +735,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     verifyDatasetSchema(appName + "TestFile", textSchema);
   }
 
+  @Ignore
   @Test
   public void testFileBatchInputFormatAvro() throws Exception {
     File fileAvro = new File(temporaryFolder.newFolder(), "test.avro");
@@ -759,6 +777,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(expected, output);
   }
 
+  @Ignore
   @Test
   public void testFileBatchInputFormatAvroNullSchema() throws Exception {
     File fileAvro = new File(temporaryFolder.newFolder(), "test.avro");
@@ -804,6 +823,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(expected, output);
   }
 
+  @Ignore
   @Test
   public void testFileBatchInputFormatAvroMissingField() throws Exception {
     File fileAvro = new File(temporaryFolder.newFolder(), "test.avro");
@@ -849,6 +869,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(expected, output);
   }
 
+  @Ignore
   @Test
   public void testFileBatchInputFormatParquet() throws Exception {
     File fileParquet = new File(temporaryFolder.newFolder(), "test.parquet");
@@ -891,6 +912,8 @@ public class FileBatchSourceTest extends HydratorTestBase {
     verifyDatasetSchema(appName + "TestFile", RECORD_SCHEMA);
   }
 
+
+  @Ignore
   @Test
   public void testFileBatchInputFormatParquetNullSchema() throws Exception {
     File fileParquet = new File(temporaryFolder.newFolder(), "test.parquet");
@@ -934,6 +957,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
     Assert.assertEquals(expected, output);
   }
 
+  @Ignore
   @Test
   public void testFileBatchInputFormatParquetMissingField() throws Exception {
     File fileParquet = new File(temporaryFolder.newFolder(), "test.parquet");

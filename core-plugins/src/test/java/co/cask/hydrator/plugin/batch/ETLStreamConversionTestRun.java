@@ -36,6 +36,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.sql.Connection;
@@ -63,12 +64,14 @@ public class ETLStreamConversionTestRun extends ETLBatchTestBase {
     Schema.Field.of("num", Schema.of(Schema.Type.INT)),
     Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
 
+  @Ignore
   @Test
   public void testStreamConversionTPFSParquetSink() throws Exception {
     testSink(Engine.MAPREDUCE, "TPFSParquet");
     testSink(Engine.SPARK, "TPFSParquet");
   }
 
+  @Ignore
   @Test
   public void testStreamConversionTPFSAvroSink() throws Exception {
     testSink(Engine.MAPREDUCE, "TPFSAvro");

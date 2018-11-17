@@ -36,6 +36,7 @@ import co.cask.hydrator.plugin.common.CubeSinkConfig;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Collection;
@@ -74,6 +75,7 @@ public class BatchCubeSinkTest extends ETLBatchTestBase {
     cubeSink.getProperties();
   }
 
+  @Ignore
   @Test
   public void test() throws Exception {
 

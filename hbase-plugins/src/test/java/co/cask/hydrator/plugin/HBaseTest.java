@@ -63,6 +63,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
@@ -152,6 +153,7 @@ public class HBaseTest extends HydratorTestBase {
     }
   }
 
+  @Ignore
   @Test
   public void testHBaseSink() throws Exception {
     String inputDatasetName = "input-hbasesinktest";
@@ -203,6 +205,7 @@ public class HBaseTest extends HydratorTestBase {
     Assert.assertEquals("212.36", Bytes.toString(orclData.get("col2".getBytes())));
   }
 
+  @Ignore
   @Test
   public void testHBaseSource() throws Exception {
     Map<String, String> hBaseProps = new HashMap<>();

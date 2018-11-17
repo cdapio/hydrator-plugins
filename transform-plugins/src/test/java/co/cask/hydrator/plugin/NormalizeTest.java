@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -238,6 +239,7 @@ public class NormalizeTest extends TransformPluginsTestBase {
     new Normalize(config).configurePipeline(configurer);
   }
 
+  @Ignore
   @Test
   public void testNormalize() throws Exception {
     String inputTable = "inputNormalizeTable";
@@ -275,6 +277,7 @@ public class NormalizeTest extends TransformPluginsTestBase {
     Assert.assertEquals(outputRecords.get(5).get(ATTRIBUTE_VALUE), dataMap.get(getKeyFromRecord(outputRecords.get(5))));
   }
 
+  @Ignore
   @Test
   public void testNormalizeWithEmptyAttributeValue() throws Exception {
     String inputTable = "inputNormalizeWithEmptyValueTable";

@@ -33,6 +33,7 @@ import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -40,6 +41,7 @@ import org.junit.Test;
  */
 public class GroupByTestRun extends ETLBatchTestBase {
 
+  @Ignore
   @Test
   public void testGroupBy() throws Exception {
 

@@ -39,6 +39,7 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -66,6 +67,7 @@ public class ValueMapperTest extends TransformPluginsTestBase {
   private static final String DESIGNATIONNAME = "designationName";
   private static final String SALARYDESC = "salaryDesc";
 
+  @Ignore
   @Test
   public void testEmptyAndNull() throws Exception {
     String inputTable = "input_table_test_Empty_Null";
@@ -139,6 +141,7 @@ public class ValueMapperTest extends TransformPluginsTestBase {
       .get(DESIGNATIONNAME));
   }
 
+  @Ignore
   @Test
   public void testWithNoDefaults() throws Exception {
     String inputTable = "input_table_without_defaults";
@@ -226,6 +229,7 @@ public class ValueMapperTest extends TransformPluginsTestBase {
       .get(SALARY));
   }
 
+  @Ignore
   @Test
   public void testWithMultipleMapping() throws Exception {
     String inputTable = "input_table_with_multi_mapping";

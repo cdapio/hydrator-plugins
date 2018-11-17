@@ -44,6 +44,7 @@ import org.apache.parquet.avro.AvroParquetReader;
 import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.twill.filesystem.Location;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -65,6 +66,7 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
     Schema.Field.of("id", Schema.of(Schema.Type.STRING)),
     Schema.Field.of("price", Schema.of(Schema.Type.INT)));
 
+  @Ignore
   @Test
   public void testMultiSnapshotOutput() throws Exception {
     String tableName = "SnapshotInputTable";
@@ -151,6 +153,7 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
     testSource("SnapshotParquet", "testParquet", expected);
   }
 
+  @Ignore
   @Test
   public void testSnapshotTextSink() throws Exception {
     String tableName = "SnapshotTextInputTable";

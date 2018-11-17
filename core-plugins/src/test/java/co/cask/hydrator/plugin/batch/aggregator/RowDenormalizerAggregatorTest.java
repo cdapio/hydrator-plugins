@@ -34,6 +34,7 @@ import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
@@ -50,6 +51,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
     Schema.Field.of("NameField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
     Schema.Field.of("ValueField", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
 
+  @Ignore
   @Test
   public void testDenormalizerWithMultipleKeyFieldValues() throws Exception {
     String inputDatasetName = "denormalizer_multiple_key_input";
@@ -151,6 +153,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
     }
   }
 
+  @Ignore
   @Test
   public void testDenormalizerWithNullValues() throws Exception {
     String inputDatasetName = "denormalizer_null_values_input";
@@ -269,6 +272,7 @@ public class RowDenormalizerAggregatorTest extends ETLBatchTestBase {
     }
   }
 
+  @Ignore
   @Test
   public void testDenormalizerWithWrongOutputField() throws Exception {
     String inputDatasetName = "denormalizer_wrong_field_input";

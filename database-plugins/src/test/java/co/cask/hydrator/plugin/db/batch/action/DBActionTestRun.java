@@ -29,6 +29,7 @@ import co.cask.cdap.test.ApplicationManager;
 import co.cask.hydrator.plugin.DatabasePluginTestBase;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.sql.Connection;
@@ -40,6 +41,7 @@ import java.sql.Statement;
  */
 public class DBActionTestRun extends DatabasePluginTestBase {
 
+  @Ignore
   @Test
   public void testDBAction() throws Exception {
     // create a table that the action will truncate at the end of the run

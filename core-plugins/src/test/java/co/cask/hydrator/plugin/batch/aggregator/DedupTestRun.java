@@ -39,6 +39,7 @@ import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -48,6 +49,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class DedupTestRun extends ETLBatchTestBase {
 
+  @Ignore
   @Test
   public void testDedup() throws Exception {
     String purchasesDatasetName = "purchases";

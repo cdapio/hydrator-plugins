@@ -53,6 +53,7 @@ import org.apache.parquet.avro.AvroParquetWriter;
 import org.apache.parquet.hadoop.ParquetWriter;
 import org.apache.twill.filesystem.Location;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.sql.Connection;
@@ -67,6 +68,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
                                                               Schema.Field.of("i", Schema.of(Schema.Type.INT)),
                                                               Schema.Field.of("l", Schema.of(Schema.Type.LONG)));
 
+  @Ignore
   @Test
   public void testPartitionOffsetAndCleanup() throws Exception {
 
@@ -153,7 +155,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     Assert.assertEquals(Long.MAX_VALUE, outputRecords.get(0).get("l"));
   }
 
-
+  @Ignore
   @Test
   public void testOrc() throws Exception {
     Schema recordSchema2 = Schema.recordOf("record",
@@ -256,6 +258,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     Assert.assertEquals(0, results.getDouble(15), 0.1);
   }
 
+  @Ignore
   @Test
   public void testAvroSourceConversionToAvroSink() throws Exception {
 
@@ -308,6 +311,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     Assert.assertEquals(Integer.MAX_VALUE, newRecords.get(0).get("intVar"));
   }
 
+  @Ignore
   @Test
   public void testParquet() throws Exception {
     ETLBatchConfig etlConfig = buildBatchConfig(null);
@@ -329,6 +333,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     deleteDatasetInstance(NamespaceId.DEFAULT.dataset("inputParquet"));
   }
 
+  @Ignore
   @Test
   public void testParquetSnappy() throws Exception {
    ETLBatchConfig etlConfig = buildBatchConfig("Snappy");
@@ -353,6 +358,7 @@ public class ETLTPFSTestRun extends ETLBatchTestBase {
     deleteDatasetInstance(NamespaceId.DEFAULT.dataset("inputParquet"));
   }
 
+  @Ignore
   @Test
   public void testAvroCompressionDeflate() throws Exception {
     Schema eventSchema = Schema.recordOf("record", Schema.Field.of("intVar", Schema.of(Schema.Type.INT)));

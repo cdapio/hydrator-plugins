@@ -39,6 +39,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -51,6 +52,7 @@ import java.util.Set;
 public class AlertPublisherTest extends ETLBatchTestBase {
   private static final Gson GSON = new Gson();
 
+  @Ignore
   @Test
   public void testAlertPublisher() throws Exception {
     String sourceName = "alertSource";
