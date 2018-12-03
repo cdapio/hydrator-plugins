@@ -35,8 +35,8 @@ import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
+import co.cask.format.text.input.TextInputFormatProvider;
 import co.cask.hydrator.common.Constants;
-import co.cask.hydrator.plugin.batch.source.FileBatchSource;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
 import org.apache.avro.generic.GenericRecord;
@@ -53,6 +53,7 @@ import java.util.List;
  * Tests for ETLBatch.
  */
 public class ETLMapReduceTestRun extends ETLBatchTestBase {
+  private static final Schema TEXT_SCHEMA = TextInputFormatProvider.getDefaultSchema(null);
 
   @Test
   public void testInvalidTransformConfigFailsToDeploy() {
@@ -364,18 +365,16 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
 
     ETLStage sink1 = new ETLStage(
       "sink1", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
-                             ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA,
-                                             FileBatchSource.DEFAULT_SCHEMA.toString(),
+                             ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA, TEXT_SCHEMA.toString(),
                                              Properties.TimePartitionedFileSetDataset.TPFS_NAME, "fileSink1"),
                              null));
     ETLStage sink2 = new ETLStage(
       "sink2", new ETLPlugin("TPFSParquet", BatchSink.PLUGIN_TYPE,
-                             ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA,
-                                             FileBatchSource.DEFAULT_SCHEMA.toString(),
+                             ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA, TEXT_SCHEMA.toString(),
                                              Properties.TimePartitionedFileSetDataset.TPFS_NAME, "fileSink2"),
                              null));
 
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(source)
       .addStage(sink1)
       .addStage(sink2)
@@ -389,7 +388,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     for (String sinkName : new String[] { "fileSink1", "fileSink2" }) {
       DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset(sinkName);
       try (TimePartitionedFileSet fileSet = fileSetManager.get()) {
-        List<GenericRecord> records = readOutput(fileSet, FileBatchSource.DEFAULT_SCHEMA);
+        List<GenericRecord> records = readOutput(fileSet, TEXT_SCHEMA);
         Assert.assertEquals(1, records.size());
         Assert.assertEquals(testData, records.get(0).get("body").toString());
       }
@@ -410,19 +409,17 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
 
     ETLStage sink1 = new ETLStage(
       "sink", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
-                            ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA,
-                                            FileBatchSource.DEFAULT_SCHEMA.toString(),
+                            ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA, TEXT_SCHEMA.toString(),
                                             Properties.TimePartitionedFileSetDataset.TPFS_NAME, "fileSink1"),
                             null));
     // duplicate name for 2nd sink, should throw exception
     ETLStage sink2 = new ETLStage(
       "sink", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
-                            ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA,
-                                            FileBatchSource.DEFAULT_SCHEMA.toString(),
+                            ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA, TEXT_SCHEMA.toString(),
                                             Properties.TimePartitionedFileSetDataset.TPFS_NAME, "fileSink2"),
                             null));
 
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(source)
       .addStage(sink1)
       .addStage(sink2)

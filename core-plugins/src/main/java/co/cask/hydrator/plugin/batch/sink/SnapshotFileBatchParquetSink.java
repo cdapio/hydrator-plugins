@@ -21,16 +21,11 @@ import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.annotation.Requirements;
-import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
-import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
-import co.cask.cdap.etl.api.Emitter;
-import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
-import co.cask.hydrator.format.StructuredToAvroTransformer;
+import co.cask.hydrator.format.FileFormat;
 import co.cask.hydrator.plugin.common.FileSetUtil;
-import org.apache.avro.generic.GenericRecord;
 
 import java.io.IOException;
 import javax.annotation.Nullable;
@@ -43,26 +38,17 @@ import javax.annotation.Nullable;
 @Name("SnapshotParquet")
 @Description("Sink for a SnapshotFileSet that writes data in Parquet format.")
 @Requirements(datasetTypes = PartitionedFileSet.TYPE)
-public class SnapshotFileBatchParquetSink extends SnapshotFileBatchSink<Void, GenericRecord> {
-  private final SnapshotParquetConfig config;
+public class SnapshotFileBatchParquetSink extends SnapshotFileBatchSink<SnapshotFileBatchParquetSink.Conf> {
+  private final Conf config;
 
-  private StructuredToAvroTransformer recordTransformer;
-
-  public SnapshotFileBatchParquetSink(SnapshotParquetConfig config) {
+  public SnapshotFileBatchParquetSink(Conf config) {
     super(config);
     this.config = config;
   }
 
   @Override
-  public void initialize(BatchRuntimeContext context) throws Exception {
-    super.initialize(context);
-    recordTransformer = new StructuredToAvroTransformer(config.getSchema());
-  }
-
-  @Override
-  public void transform(StructuredRecord input,
-                        Emitter<KeyValue<Void, GenericRecord>> emitter) throws Exception {
-    emitter.emit(new KeyValue<>(null, recordTransformer.transform(input)));
+  protected String getOutputFormatPlugin() {
+    return FileFormat.PARQUET.name().toLowerCase();
   }
 
   @Override
@@ -73,7 +59,7 @@ public class SnapshotFileBatchParquetSink extends SnapshotFileBatchSink<Void, Ge
   /**
    * Config for SnapshotFileBatchParquetSink.
    */
-  public static class SnapshotParquetConfig extends SnapshotFileSetBatchSinkConfig {
+  public static class Conf extends SnapshotFileSetBatchSinkConfig {
     @Description("The Parquet schema of the record being written to the Sink as a JSON Object.")
     @Macro
     private String schema;
@@ -81,13 +67,6 @@ public class SnapshotFileBatchParquetSink extends SnapshotFileBatchSink<Void, Ge
     @Nullable
     @Description("Used to specify the compression codec to be used for the final dataset.")
     private String compressionCodec;
-
-    public SnapshotParquetConfig(String name, @Nullable String basePath, String schema,
-                                 @Nullable String compressionCodec) {
-      super(name, basePath, null);
-      this.schema = schema;
-      this.compressionCodec = compressionCodec;
-    }
 
     @Override
     public void validate() {

@@ -25,7 +25,6 @@ import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.format.FileFormat;
 import co.cask.hydrator.format.input.PathTrackingInputFormat;
-import co.cask.hydrator.format.input.TextInputProvider;
 import co.cask.hydrator.format.plugin.AbstractFileSource;
 
 import java.util.HashMap;
@@ -40,7 +39,6 @@ import javax.ws.rs.Path;
 @Name("File")
 @Description("Batch source for File Systems")
 public class FileBatchSource extends AbstractFileSource<FileSourceConfig> {
-  public static final Schema DEFAULT_SCHEMA = TextInputProvider.getDefaultSchema(null);
   private final FileSourceConfig config;
 
   public FileBatchSource(FileSourceConfig config) {
@@ -59,10 +57,9 @@ public class FileBatchSource extends AbstractFileSource<FileSourceConfig> {
   public Schema getSchema(FileSourceConfig config, EndpointPluginContext pluginContext) {
     FileFormat fileFormat = config.getFormat();
     if (fileFormat == null) {
-      return config.getSchema();
+      throw new IllegalArgumentException("File format must be given to fetch output schema.");
     }
-    Schema schema = fileFormat.getSchema(config.getPathField());
-    return schema == null ? config.getSchema() : schema;
+    return fileFormat.getSchema(config.getPathField());
   }
 
   @Override

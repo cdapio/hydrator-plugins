@@ -18,34 +18,32 @@ package co.cask.hydrator.plugin.common;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Macro;
-import co.cask.cdap.api.annotation.Name;
+import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.plugin.PluginConfig;
 
+import java.io.IOException;
 import javax.annotation.Nullable;
 
 /**
  * {@link PluginConfig} for snapshot fileset sources and sinks.
  */
 public abstract class SnapshotFileSetConfig extends PluginConfig {
-  @Name(Properties.SnapshotFileSetSink.NAME)
+  @Macro
   @Description("Name of the PartitionedFileset Dataset to which the records are written to. " +
     "If it doesn't exist, it will be created.")
-  @Macro
   protected String name;
 
-  @Name(Properties.SnapshotFileSetSink.BASE_PATH)
+  @Macro
+  @Nullable
   @Description("The path where the data will be recorded. " +
     "Defaults to the name of the dataset.")
-  @Nullable
-  @Macro
   protected String basePath;
 
-  @Name(Properties.SnapshotFileSetSink.FILE_PROPERTIES)
+  @Macro
   @Nullable
   @Description("Advanced feature to specify any additional properties that should be used with the plugin, " +
     "specified as a JSON object of string to string. These properties are set on the dataset if one is created. " +
     "The properties are also passed to the dataset at runtime as arguments.")
-  @Macro
   protected String fileProperties;
 
   public SnapshotFileSetConfig() {

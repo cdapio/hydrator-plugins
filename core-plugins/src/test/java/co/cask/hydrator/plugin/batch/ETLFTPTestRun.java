@@ -25,7 +25,7 @@ import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
-import co.cask.hydrator.plugin.batch.source.FileBatchSource;
+import co.cask.hydrator.plugin.batch.source.FTPBatchSource;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
 import org.apache.avro.generic.GenericRecord;
@@ -41,7 +41,6 @@ import org.mockftpserver.fake.filesystem.UnixFakeFileSystem;
 
 import java.io.File;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -53,16 +52,15 @@ public class ETLFTPTestRun extends ETLBatchTestBase {
   private static final String PWD = "abcd";
   private static final String TEST_STRING = "Hello World";
 
-  public static File folder;
-  public static File file;
-  public static int port;
+  private static File folder;
+  private static int port;
 
   private static FakeFtpServer ftpServer;
 
   @Before
   public void init() throws Exception {
     folder = TMP_FOLDER.newFolder();
-    file = new File(folder, "sample");
+    File file = new File(folder, "sample");
 
     ftpServer = new FakeFtpServer();
     ftpServer.setServerControlPort(0);
@@ -74,17 +72,12 @@ public class ETLFTPTestRun extends ETLBatchTestBase {
     ftpServer.addUserAccount(new UserAccount(USER, PWD, folder.getAbsolutePath()));
     ftpServer.start();
 
-    Tasks.waitFor(true, new Callable<Boolean>() {
-      @Override
-      public Boolean call() throws Exception {
-        return ftpServer.isStarted();
-      }
-    }, 5, TimeUnit.SECONDS);
+    Tasks.waitFor(true, () -> ftpServer.isStarted(), 5, TimeUnit.SECONDS);
     port = ftpServer.getServerControlPort();
   }
 
   @After
-  public void stop() throws Exception {
+  public void stop() {
     if (ftpServer != null) {
       ftpServer.stop();
     }
@@ -106,11 +99,11 @@ public class ETLFTPTestRun extends ETLBatchTestBase {
       "TPFSAvro",
       BatchSink.PLUGIN_TYPE,
       ImmutableMap.<String, String>builder()
-        .put(Properties.TimePartitionedFileSetDataset.SCHEMA, FileBatchSource.DEFAULT_SCHEMA.toString())
+        .put(Properties.TimePartitionedFileSetDataset.SCHEMA, FTPBatchSource.SCHEMA.toString())
         .put(Properties.TimePartitionedFileSetDataset.TPFS_NAME, "fileSink").build(),
       null));
 
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(source)
       .addStage(sink)
       .addConnection(source.getName(), sink.getName())
@@ -121,7 +114,7 @@ public class ETLFTPTestRun extends ETLBatchTestBase {
 
     DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset("fileSink");
     try (TimePartitionedFileSet fileSet = fileSetManager.get()) {
-      List<GenericRecord> records = readOutput(fileSet, FileBatchSource.DEFAULT_SCHEMA);
+      List<GenericRecord> records = readOutput(fileSet, FTPBatchSource.SCHEMA);
       Assert.assertEquals(1, records.size());
       GenericRecord record = records.get(0);
       Assert.assertEquals(TEST_STRING, record.get("body").toString());
