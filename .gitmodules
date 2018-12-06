@@ -31,10 +31,6 @@
 	path = amazon-s3-plugins
 	url = https://github.com/data-integrations/amazon-s3-plugins
 	branch = develop
-[submodule "realtime-stream-source"]
-	path = realtime-stream-source
-	url = https://github.com/data-integrations/realtime-stream-source.git
-	branch = develop
 [submodule "condition-plugins"]
 	path = condition-plugins
 	url = https://github.com/data-integrations/condition-plugins.git
