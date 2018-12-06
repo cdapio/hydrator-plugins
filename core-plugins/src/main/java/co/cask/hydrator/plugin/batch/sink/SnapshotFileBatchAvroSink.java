@@ -21,18 +21,11 @@ import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.annotation.Requirements;
-import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
-import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
-import co.cask.cdap.etl.api.Emitter;
-import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
-import co.cask.hydrator.format.StructuredToAvroTransformer;
+import co.cask.hydrator.format.FileFormat;
 import co.cask.hydrator.plugin.common.FileSetUtil;
-import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.mapred.AvroKey;
-import org.apache.hadoop.io.NullWritable;
 
 import java.io.IOException;
 import javax.annotation.Nullable;
@@ -45,25 +38,17 @@ import javax.annotation.Nullable;
 @Name("SnapshotAvro")
 @Description("Sink for a SnapshotFileSet that writes data in Avro format.")
 @Requirements(datasetTypes = PartitionedFileSet.TYPE)
-public class SnapshotFileBatchAvroSink extends SnapshotFileBatchSink<AvroKey<GenericRecord>, NullWritable> {
-  private StructuredToAvroTransformer recordTransformer;
-  private final SnapshotAvroConfig config;
+public class SnapshotFileBatchAvroSink extends SnapshotFileBatchSink<SnapshotFileBatchAvroSink.Conf> {
+  private final Conf config;
 
-  public SnapshotFileBatchAvroSink(SnapshotAvroConfig config) {
+  public SnapshotFileBatchAvroSink(Conf config) {
     super(config);
     this.config = config;
   }
 
   @Override
-  public void initialize(BatchRuntimeContext context) throws Exception {
-    super.initialize(context);
-    recordTransformer = new StructuredToAvroTransformer(config.getSchema());
-  }
-
-  @Override
-  public void transform(StructuredRecord input,
-                        Emitter<KeyValue<AvroKey<GenericRecord>, NullWritable>> emitter) throws Exception {
-    emitter.emit(new KeyValue<>(new AvroKey<>(recordTransformer.transform(input)), NullWritable.get()));
+  protected String getOutputFormatPlugin() {
+    return FileFormat.AVRO.name().toLowerCase();
   }
 
   @Override
@@ -74,7 +59,7 @@ public class SnapshotFileBatchAvroSink extends SnapshotFileBatchSink<AvroKey<Gen
   /**
    * Config for SnapshotFileBatchAvroSink
    */
-  public static class SnapshotAvroConfig extends SnapshotFileSetBatchSinkConfig {
+  public static class Conf extends SnapshotFileSetBatchSinkConfig {
     @Description("The Avro schema of the record being written to the Sink as a JSON Object.")
     @Macro
     private String schema;
@@ -82,13 +67,6 @@ public class SnapshotFileBatchAvroSink extends SnapshotFileBatchSink<AvroKey<Gen
     @Nullable
     @Description("Used to specify the compression codec to be used for the final dataset.")
     private String compressionCodec;
-
-    public SnapshotAvroConfig(String name, @Nullable String basePath, String schema,
-                              @Nullable String compressionCodec) {
-      super(name, basePath, null);
-      this.schema = schema;
-      this.compressionCodec = compressionCodec;
-    }
 
     @Override
     public void validate() {

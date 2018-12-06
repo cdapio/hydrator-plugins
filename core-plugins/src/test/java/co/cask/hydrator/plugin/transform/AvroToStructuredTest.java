@@ -18,7 +18,7 @@ package co.cask.hydrator.plugin.transform;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.hydrator.format.AvroToStructuredTransformer;
+import co.cask.format.avro.AvroToStructuredTransformer;
 import com.google.common.collect.ImmutableList;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericRecordBuilder;

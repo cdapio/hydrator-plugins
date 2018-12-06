@@ -16,8 +16,6 @@
 
 package co.cask.hydrator.plugin.batch.source;
 
-import co.cask.cdap.api.artifact.ArtifactSummary;
-import co.cask.cdap.api.artifact.ArtifactVersion;
 import co.cask.cdap.api.common.Bytes;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
@@ -26,20 +24,16 @@ import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.api.metadata.MetadataEntity;
 import co.cask.cdap.api.metadata.MetadataScope;
-import co.cask.cdap.datapipeline.DataPipelineApp;
 import co.cask.cdap.datapipeline.SmartWorkflow;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.mock.batch.MockSink;
-import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
 import co.cask.cdap.format.StructuredRecordStringConverter;
-import co.cask.cdap.metadata.MetadataAdmin;
 import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.artifact.AppRequest;
 import co.cask.cdap.proto.id.ApplicationId;
-import co.cask.cdap.proto.id.ArtifactId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
@@ -47,6 +41,7 @@ import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.format.FileFormat;
+import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -60,9 +55,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.avro.AvroParquetWriter;
 import org.apache.parquet.hadoop.ParquetWriter;
-import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -87,15 +80,10 @@ import javax.annotation.Nullable;
 /**
  * Tests to verify configuration of {@link FileBatchSource}
  */
-public class FileBatchSourceTest extends HydratorTestBase {
+public class FileBatchSourceTest extends ETLBatchTestBase {
 
   @ClassRule
   public static final TestConfiguration CONFIG = new TestConfiguration("explore.enabled", false);
-  private static final ArtifactVersion CURRENT_VERSION = new ArtifactVersion("3.4.0-SNAPSHOT");
-  private static final ArtifactId BATCH_APP_ARTIFACT_ID =
-    NamespaceId.DEFAULT.artifact("data-pipeline", CURRENT_VERSION.getVersion());
-  private static final ArtifactSummary BATCH_ARTIFACT =
-    new ArtifactSummary(BATCH_APP_ARTIFACT_ID.getArtifact(), BATCH_APP_ARTIFACT_ID.getVersion());
   private static final Schema RECORD_SCHEMA = Schema.recordOf("record",
                                                               Schema.Field.of("i", Schema.of(Schema.Type.INT)),
                                                               Schema.Field.of("l", Schema.of(Schema.Type.LONG)),
@@ -105,34 +93,6 @@ public class FileBatchSourceTest extends HydratorTestBase {
   public static TemporaryFolder temporaryFolder = new TemporaryFolder();
   private static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
   private static String fileName = dateFormat.format(new Date(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1)));
-  private static File file1;
-  private static File file2;
-  private static MetadataAdmin metadataAdmin;
-
-  @BeforeClass
-  public static void setupTest() throws Exception {
-    setupBatchArtifacts(BATCH_APP_ARTIFACT_ID, DataPipelineApp.class);
-    // add artifact for batch sources and sinks
-    addPluginArtifact(NamespaceId.DEFAULT.artifact("core-plugins", "4.0.0"), BATCH_APP_ARTIFACT_ID,
-                      FileBatchSource.class);
-
-    file1 = temporaryFolder.newFolder("test").toPath().resolve(fileName + "-test1.txt").toFile();
-    FileUtils.writeStringToFile(file1, "Hello,World");
-    file2 = temporaryFolder.newFile(fileName + "-test2.txt");
-    FileUtils.writeStringToFile(file2, "CDAP,Platform");
-    metadataAdmin = getMetadataAdmin();
-  }
-
-  @AfterClass
-  public static void tearDown() throws Exception {
-    if (file1.exists()) {
-      file1.delete();
-    }
-    if (file2.exists()) {
-      file2.delete();
-    }
-    temporaryFolder.delete();
-  }
 
   @Test
   public void testIgnoreNonExistingFolder() throws Exception {
@@ -153,7 +113,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-ignore-non-existing-files");
 
     ApplicationManager appManager = deployApplication(appId, appRequest);
@@ -187,7 +147,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-not-present-folder");
 
     ApplicationManager appManager = deployApplication(appId, appRequest);
@@ -225,7 +185,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-recursive-folders");
 
     ApplicationManager appManager = deployApplication(appId, appRequest);
@@ -264,7 +224,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-non-recursive-regex");
 
     ApplicationManager appManager = deployApplication(appId, appRequest);
@@ -305,7 +265,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-file-Regex");
 
     ApplicationManager appManager = deployApplication(appId, appRequest);
@@ -345,7 +305,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-recursive-regex");
 
     ApplicationManager appManager = deployApplication(appId, appRequest);
@@ -385,7 +345,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app("FileTest-path-globbing");
 
     ApplicationManager appManager = deployApplication(appId, appRequest);
@@ -433,7 +393,7 @@ public class FileBatchSourceTest extends HydratorTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, config);
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, config);
     ApplicationId appId = NamespaceId.DEFAULT.app("CopyHeaderTest");
 
     ApplicationManager appManager = deployApplication(appId, appRequest);
@@ -949,15 +909,14 @@ public class FileBatchSourceTest extends HydratorTestBase {
       .addConnection(source.getName(), sink.getName())
       .build();
 
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(BATCH_ARTIFACT, etlConfig);
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
     ApplicationId appId = NamespaceId.DEFAULT.app(appName);
     return deployApplication(appId, appRequest);
   }
 
   private void verifyDatasetSchema(String dsName, Schema expectedSchema) {
-    Map<String, String> metadataProperties =
-      metadataAdmin.getProperties(MetadataScope.SYSTEM, MetadataEntity.ofDataset(NamespaceId.DEFAULT.getNamespace(),
-                                                                                 dsName));
+    Map<String, String> metadataProperties = getMetadataAdmin()
+      .getProperties(MetadataScope.SYSTEM, MetadataEntity.ofDataset(NamespaceId.DEFAULT.getNamespace(), dsName));
     Assert.assertEquals(expectedSchema.toString(), metadataProperties.get(DatasetProperties.SCHEMA));
   }
 }

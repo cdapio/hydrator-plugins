@@ -82,7 +82,7 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
       "sink1",
       new ETLPlugin("SnapshotAvro", BatchSink.PLUGIN_TYPE,
                     ImmutableMap.<String, String>builder()
-                      .put(Properties.SnapshotFileSetSink.NAME, "testAvro")
+                      .put(Properties.BatchReadableWritable.NAME, "testAvro")
                       .put("schema", SCHEMA.toString())
                       .build(),
                     null));
@@ -91,7 +91,7 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
       "sink2",
       new ETLPlugin("SnapshotParquet", BatchSink.PLUGIN_TYPE,
                     ImmutableMap.<String, String>builder()
-                      .put(Properties.SnapshotFileSetSink.NAME, "testParquet")
+                      .put(Properties.BatchReadableWritable.NAME, "testParquet")
                       .put("schema", SCHEMA.toString())
                       .build(),
                     null));
@@ -168,7 +168,8 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
       "sink1",
       new ETLPlugin("SnapshotText", BatchSink.PLUGIN_TYPE,
                     ImmutableMap.<String, String>builder()
-                      .put(Properties.SnapshotFileSetSink.NAME, "testText")
+                      .put(Properties.BatchReadableWritable.NAME, "testText")
+                      .put("delimiter", "\t")
                       .build(),
                     null));
 
@@ -224,7 +225,7 @@ public class ETLSnapshotTestRun extends ETLBatchTestBase {
       "sink",
       new ETLPlugin("SnapshotAvro", BatchSink.PLUGIN_TYPE,
                     ImmutableMap.<String, String>builder()
-                      .put(Properties.SnapshotFileSetSink.NAME, outputName)
+                      .put(Properties.BatchReadableWritable.NAME, outputName)
                       .put("schema", SCHEMA.toString())
                       .build(),
                     null));

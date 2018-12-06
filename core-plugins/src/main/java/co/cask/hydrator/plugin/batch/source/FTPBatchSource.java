@@ -25,7 +25,6 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.format.FileFormat;
-import co.cask.hydrator.format.input.TextInputProvider;
 import co.cask.hydrator.format.plugin.AbstractFileSource;
 import co.cask.hydrator.format.plugin.FileSourceProperties;
 import com.google.common.reflect.TypeToken;
@@ -46,6 +45,9 @@ import javax.annotation.Nullable;
 @Description("Batch source for an FTP or SFTP source. Prefix of the path ('ftp://...' or 'sftp://...') determines " +
   "the source server type, either FTP or SFTP.")
 public class FTPBatchSource extends AbstractFileSource {
+  public static final Schema SCHEMA = Schema.recordOf("text",
+                                                      Schema.Field.of("offset", Schema.of(Schema.Type.LONG)),
+                                                      Schema.Field.of("body", Schema.of(Schema.Type.STRING)));
   private final FTPBatchSourceConfig config;
 
   public FTPBatchSource(FTPBatchSourceConfig config) {
@@ -153,7 +155,7 @@ public class FTPBatchSource extends AbstractFileSource {
     @Nullable
     @Override
     public Schema getSchema() {
-      return TextInputProvider.getDefaultSchema(null);
+      return SCHEMA;
     }
 
     Map<String, String> getFileSystemProperties() {

@@ -33,6 +33,22 @@ import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.TestConfiguration;
 import co.cask.cdap.test.WorkflowManager;
+import co.cask.format.avro.input.AvroInputFormatProvider;
+import co.cask.format.avro.output.AvroOutputFormatProvider;
+import co.cask.format.blob.input.BlobInputFormatProvider;
+import co.cask.format.delimited.input.CSVInputFormatProvider;
+import co.cask.format.delimited.input.DelimitedInputFormatProvider;
+import co.cask.format.delimited.input.TSVInputFormatProvider;
+import co.cask.format.delimited.output.CSVOutputFormatProvider;
+import co.cask.format.delimited.output.DelimitedOutputFormatProvider;
+import co.cask.format.delimited.output.TSVOutputFormatProvider;
+import co.cask.format.json.input.JsonInputFormatProvider;
+import co.cask.format.json.output.JsonOutputFormatProvider;
+import co.cask.format.orc.output.OrcOutputFormatProvider;
+import co.cask.format.parquet.input.ParquetInputFormatProvider;
+import co.cask.format.parquet.output.ParquetOutputFormatProvider;
+import co.cask.format.text.input.TextInputFormatProvider;
+import co.cask.hydrator.format.input.CombinePathTrackingInputFormat;
 import co.cask.hydrator.plugin.alert.TMSAlertPublisher;
 import co.cask.hydrator.plugin.batch.action.EmailAction;
 import co.cask.hydrator.plugin.batch.action.SSHAction;
@@ -45,7 +61,6 @@ import co.cask.hydrator.plugin.batch.sink.KVTableSink;
 import co.cask.hydrator.plugin.batch.sink.SnapshotFileBatchAvroSink;
 import co.cask.hydrator.plugin.batch.sink.SnapshotFileBatchParquetSink;
 import co.cask.hydrator.plugin.batch.sink.TableSink;
-import co.cask.hydrator.plugin.batch.sink.TimePartitionedFileSetDataSetORCSink;
 import co.cask.hydrator.plugin.batch.sink.TimePartitionedFileSetDatasetAvroSink;
 import co.cask.hydrator.plugin.batch.sink.TimePartitionedFileSetDatasetParquetSink;
 import co.cask.hydrator.plugin.batch.source.FTPBatchSource;
@@ -60,7 +75,6 @@ import co.cask.hydrator.plugin.error.ErrorCollector;
 import co.cask.hydrator.plugin.transform.JavaScriptTransform;
 import co.cask.hydrator.plugin.transform.ProjectionTransform;
 import co.cask.hydrator.plugin.transform.PythonEvaluator;
-import co.cask.hydrator.plugin.transform.StructuredRecordToGenericRecordTransform;
 import co.cask.hydrator.plugin.transform.ValidatorTransform;
 import co.cask.hydrator.plugin.validator.CoreValidator;
 import com.google.common.collect.ImmutableMap;
@@ -75,8 +89,9 @@ import org.apache.avro.mapred.AvroKey;
 import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.ql.exec.vector.TimestampColumnVector;
+import org.apache.orc.TypeDescription;
 import org.apache.orc.mapred.OrcStruct;
-import org.apache.orc.mapreduce.OrcMapreduceRecordWriter;
+import org.apache.orc.mapreduce.OrcOutputFormat;
 import org.apache.parquet.avro.AvroParquetInputFormat;
 import org.apache.parquet.avro.AvroParquetOutputFormat;
 import org.apache.parquet.avro.AvroParquetReader;
@@ -130,14 +145,11 @@ public class ETLBatchTestBase extends HydratorTestBase {
                       BatchCubeSink.class, KVTableSink.class, TableSink.class,
                       TimePartitionedFileSetDatasetAvroSink.class, AvroKeyOutputFormat.class, AvroKey.class,
                       TimePartitionedFileSetDatasetParquetSink.class, AvroParquetOutputFormat.class,
-                      TimePartitionedFileSetDataSetORCSink.class, OrcStruct.class,
-                      OrcMapreduceRecordWriter.class, TimestampColumnVector.class,
                       SnapshotFileBatchAvroSink.class, SnapshotFileBatchParquetSink.class,
                       SnapshotFileBatchAvroSource.class, SnapshotFileBatchParquetSource.class,
                       FTPBatchSource.class,
                       ProjectionTransform.class,
                       ValidatorTransform.class, CoreValidator.class,
-                      StructuredRecordToGenericRecordTransform.class,
                       JavaScriptTransform.class,
                       PythonEvaluator.class,
                       GroupByAggregator.class,
@@ -147,7 +159,32 @@ public class ETLBatchTestBase extends HydratorTestBase {
                       SSHAction.class,
                       TMSAlertPublisher.class,
                       ErrorCollector.class,
-                      FileSink.class);
+                      FileSink.class, CombinePathTrackingInputFormat.class);
+    // add format plugins
+    addPluginArtifact(NamespaceId.DEFAULT.artifact("formats-avro", "4.0.0"), DATAPIPELINE_ARTIFACT_ID,
+                      ImmutableSet.of(AvroOutputFormatProvider.PLUGIN_CLASS, AvroInputFormatProvider.PLUGIN_CLASS),
+                      AvroOutputFormatProvider.class, AvroInputFormatProvider.class);
+    addPluginArtifact(NamespaceId.DEFAULT.artifact("formats-blob", "4.0.0"), DATAPIPELINE_ARTIFACT_ID,
+                      ImmutableSet.of(BlobInputFormatProvider.PLUGIN_CLASS), BlobInputFormatProvider.class);
+    addPluginArtifact(NamespaceId.DEFAULT.artifact("formats-delimited", "4.0.0"), DATAPIPELINE_ARTIFACT_ID,
+                      ImmutableSet.of(DelimitedOutputFormatProvider.PLUGIN_CLASS,
+                                      DelimitedInputFormatProvider.PLUGIN_CLASS,
+                                      CSVOutputFormatProvider.PLUGIN_CLASS, CSVInputFormatProvider.PLUGIN_CLASS,
+                                      TSVOutputFormatProvider.PLUGIN_CLASS, TSVInputFormatProvider.PLUGIN_CLASS),
+                      DelimitedOutputFormatProvider.class, DelimitedInputFormatProvider.class);
+    addPluginArtifact(NamespaceId.DEFAULT.artifact("formats-json", "4.0.0"), DATAPIPELINE_ARTIFACT_ID,
+                      ImmutableSet.of(JsonOutputFormatProvider.PLUGIN_CLASS, JsonInputFormatProvider.PLUGIN_CLASS),
+                      JsonOutputFormatProvider.class, JsonInputFormatProvider.class);
+    addPluginArtifact(NamespaceId.DEFAULT.artifact("formats-orc", "4.0.0"), DATAPIPELINE_ARTIFACT_ID,
+                      ImmutableSet.of(OrcOutputFormatProvider.PLUGIN_CLASS),
+                      OrcOutputFormatProvider.class, OrcOutputFormat.class, OrcStruct.class,
+                      TypeDescription.class, TimestampColumnVector.class);
+    addPluginArtifact(NamespaceId.DEFAULT.artifact("formats-parquet", "4.0.0"), DATAPIPELINE_ARTIFACT_ID,
+                      ImmutableSet.of(ParquetOutputFormatProvider.PLUGIN_CLASS,
+                                      ParquetInputFormatProvider.PLUGIN_CLASS),
+                      ParquetOutputFormatProvider.class, ParquetInputFormatProvider.class);
+    addPluginArtifact(NamespaceId.DEFAULT.artifact("formats-text", "4.0.0"), DATAPIPELINE_ARTIFACT_ID,
+                      ImmutableSet.of(TextInputFormatProvider.PLUGIN_CLASS), TextInputFormatProvider.class);
   }
 
   protected List<GenericRecord> readOutput(TimePartitionedFileSet fileSet, Schema schema) throws IOException {
