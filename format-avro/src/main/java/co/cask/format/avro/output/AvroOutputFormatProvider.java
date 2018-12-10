@@ -95,7 +95,7 @@ public class AvroOutputFormatProvider implements OutputFormatProvider {
 
   private static PluginClass getPluginClass() {
     Map<String, PluginPropertyField> properties = new HashMap<>();
-    properties.put("schema", new PluginPropertyField("schema", Conf.SCHEMA_DESC, "string", false, true));
+    properties.put("schema", new PluginPropertyField("schema", Conf.SCHEMA_DESC, "string", true, true));
     properties.put("compressionCodec",
                    new PluginPropertyField("compressionCodec", Conf.CODEC_DESC, "string", false, true));
     return new PluginClass("outputformat", NAME, DESC, AvroOutputFormatProvider.class.getName(),
