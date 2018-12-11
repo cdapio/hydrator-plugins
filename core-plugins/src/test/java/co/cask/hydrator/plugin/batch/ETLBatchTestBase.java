@@ -99,6 +99,7 @@ import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.twill.filesystem.Location;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
 import java.util.List;
@@ -141,10 +142,10 @@ public class ETLBatchTestBase extends HydratorTestBase {
                       StreamBatchSource.class,
                       TableSource.class,
                       TimePartitionedFileSetDatasetAvroSource.class,
-                      TimePartitionedFileSetDatasetParquetSource.class, AvroParquetInputFormat.class,
+                      TimePartitionedFileSetDatasetParquetSource.class,
                       BatchCubeSink.class, KVTableSink.class, TableSink.class,
-                      TimePartitionedFileSetDatasetAvroSink.class, AvroKeyOutputFormat.class, AvroKey.class,
-                      TimePartitionedFileSetDatasetParquetSink.class, AvroParquetOutputFormat.class,
+                      TimePartitionedFileSetDatasetAvroSink.class,
+                      TimePartitionedFileSetDatasetParquetSink.class,
                       SnapshotFileBatchAvroSink.class, SnapshotFileBatchParquetSink.class,
                       SnapshotFileBatchAvroSource.class, SnapshotFileBatchParquetSource.class,
                       FTPBatchSource.class,
@@ -159,7 +160,7 @@ public class ETLBatchTestBase extends HydratorTestBase {
                       SSHAction.class,
                       TMSAlertPublisher.class,
                       ErrorCollector.class,
-                      FileSink.class, CombinePathTrackingInputFormat.class);
+                      FileSink.class);
     // add format plugins
     addPluginArtifact(NamespaceId.DEFAULT.artifact("formats-avro", "4.0.0"), DATAPIPELINE_ARTIFACT_ID,
                       ImmutableSet.of(AvroOutputFormatProvider.PLUGIN_CLASS, AvroInputFormatProvider.PLUGIN_CLASS),
@@ -182,7 +183,8 @@ public class ETLBatchTestBase extends HydratorTestBase {
     addPluginArtifact(NamespaceId.DEFAULT.artifact("formats-parquet", "4.0.0"), DATAPIPELINE_ARTIFACT_ID,
                       ImmutableSet.of(ParquetOutputFormatProvider.PLUGIN_CLASS,
                                       ParquetInputFormatProvider.PLUGIN_CLASS),
-                      ParquetOutputFormatProvider.class, ParquetInputFormatProvider.class);
+                      ParquetOutputFormatProvider.class, ParquetInputFormatProvider.class,
+                      Snappy.class);
     addPluginArtifact(NamespaceId.DEFAULT.artifact("formats-text", "4.0.0"), DATAPIPELINE_ARTIFACT_ID,
                       ImmutableSet.of(TextInputFormatProvider.PLUGIN_CLASS), TextInputFormatProvider.class);
   }
