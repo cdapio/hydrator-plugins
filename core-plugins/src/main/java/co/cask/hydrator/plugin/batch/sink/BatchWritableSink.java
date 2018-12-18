@@ -24,64 +24,75 @@ import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.plugin.common.BatchReadableWritableConfig;
 import co.cask.hydrator.plugin.common.Properties;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 
 import java.util.Map;
 
 /**
- * An abstract Sink for CDAP Datasets that are batch writable, which means they can be used as output of a
- * mapreduce job. Extending subclasses must provide implementation for {@link BatchWritableSink} which should return the
+ * An abstract Sink for CDAP Datasets that are batch writable, which means they
+ * can be used as output of a mapreduce job. Extending subclasses must provide
+ * implementation for {@link BatchWritableSink} which should return the
  * properties used by the sink.
  *
- * @param <IN> the type of input object to the sink
- * @param <KEY_OUT> the type of key the sink outputs
- * @param <VAL_OUT> the type of value the sink outputs
+ * @param <IN>
+ *            the type of input object to the sink
+ * @param <KEY_OUT>
+ *            the type of key the sink outputs
+ * @param <VAL_OUT>
+ *            the type of value the sink outputs
  */
 public abstract class BatchWritableSink<IN, KEY_OUT, VAL_OUT> extends BatchSink<IN, KEY_OUT, VAL_OUT> {
-  private final BatchReadableWritableConfig batchReadableWritableConfig;
+    private final BatchReadableWritableConfig batchReadableWritableConfig;
 
-  protected BatchWritableSink(BatchReadableWritableConfig batchReadableWritableConfig) {
-    this.batchReadableWritableConfig = batchReadableWritableConfig;
-  }
-
-  @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    // null check for tests, as macro fields map and properties are null in test cases
-    if (!batchReadableWritableConfig.containsMacro(Properties.BatchReadableWritable.NAME)) {
-      String datasetName = getProperties().get(Properties.BatchReadableWritable.NAME);
-      Preconditions.checkArgument(datasetName != null && !datasetName.isEmpty(), "Dataset name must be given.");
-      String datasetType = getProperties().get(Properties.BatchReadableWritable.TYPE);
-      Preconditions.checkArgument(datasetType != null && !datasetType.isEmpty(), "Dataset type must be given.");
-
-      Map<String, String> properties = Maps.newHashMap(getProperties());
-      properties.remove(Properties.BatchReadableWritable.NAME);
-      properties.remove(Properties.BatchReadableWritable.TYPE);
-
-      if (!shouldSkipCreateAtConfigure()) {
-        pipelineConfigurer.createDataset(datasetName, datasetType,
-                                         DatasetProperties.builder().addAll(properties).build());
-      }
+    protected BatchWritableSink(BatchReadableWritableConfig batchReadableWritableConfig) {
+        this.batchReadableWritableConfig = batchReadableWritableConfig;
     }
-  }
 
-  protected boolean shouldSkipCreateAtConfigure() {
-    return false;
-  }
+    @Override
+    public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+        // null check for tests, as macro fields map and properties are null in test
+        // cases
+        if (!batchReadableWritableConfig.containsMacro(Properties.BatchReadableWritable.NAME)) {
+            String datasetName = getProperties().get(Properties.BatchReadableWritable.NAME);
+            Preconditions.checkArgument(datasetName != null && !datasetName.isEmpty(), "Dataset name must be given.");
+            String datasetType = getProperties().get(Properties.BatchReadableWritable.TYPE);
+            Preconditions.checkArgument(datasetType != null && !datasetType.isEmpty(), "Dataset type must be given.");
 
-  /**
-   * An abstract method which the subclass should override to provide their dataset types
-   */
-  protected abstract Map<String, String> getProperties();
+            Map<String, String> properties = Maps.newHashMap(getProperties());
+            properties.remove(Properties.BatchReadableWritable.NAME);
+            properties.remove(Properties.BatchReadableWritable.TYPE);
 
-  @Override
-  public void prepareRun(BatchSinkContext context) throws DatasetManagementException {
-    Map<String, String> properties = getProperties();
-    if (!context.datasetExists(properties.get(Properties.BatchReadableWritable.NAME))) {
-      context.createDataset(properties.get(Properties.BatchReadableWritable.NAME),
-                            properties.get(Properties.BatchReadableWritable.TYPE),
-                            DatasetProperties.builder().addAll(properties).build());
+            if (!shouldSkipCreateAtConfigure()) {
+                pipelineConfigurer.createDataset(datasetName, datasetType,
+                        DatasetProperties.builder().addAll(properties).build());
+            }
+        }
     }
-    context.addOutput(Output.ofDataset(properties.get(Properties.BatchReadableWritable.NAME)));
-  }
+
+    protected boolean shouldSkipCreateAtConfigure() {
+        return false;
+    }
+
+    /**
+     * An abstract method which the subclass should override to provide their
+     * dataset types
+     */
+    protected abstract Map<String, String> getProperties();
+
+    @Override
+    public void prepareRun(BatchSinkContext context) throws DatasetManagementException {
+        Map<String, String> properties = getProperties();
+        if (!context.datasetExists(properties.get(Properties.BatchReadableWritable.NAME))) {
+            context.createDataset(properties.get(Properties.BatchReadableWritable.NAME),
+                    properties.get(Properties.BatchReadableWritable.TYPE),
+                    DatasetProperties.builder().addAll(properties).build());
+        } else {
+            // This will be needed in case we want to clear existing dataset before writing
+            // it again.
+            // context.discardDataset(context.getDataset(properties.get(Properties.BatchReadableWritable.NAME)));
+        }
+        context.addOutput(Output.ofDataset(properties.get(Properties.BatchReadableWritable.NAME)));
+    }
 }

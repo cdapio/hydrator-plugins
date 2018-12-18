@@ -1,0 +1,48 @@
+{
+  "metadata": {
+    "spec-version": "1.1",
+    "label": "RowDenormalizer"
+  },
+  "configuration-groups": [
+    {
+      "label": "Field Mapping",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Key Field",
+          "name": "keyField"
+        },
+		    {
+          "widget-type": "textbox",
+          "label": "Input Name Field",
+          "name": "nameField"
+        },
+		    {
+          "widget-type": "textbox",
+          "label": "Input Value Field",
+          "name": "valueField"
+        },
+		    {
+          "widget-type": "csv",
+          "label": "Output fields to include",
+          "name": "outputFields",
+          "widget-attributes": {
+            "delimiter": ",",
+            "value-placeholder": "Output Field Name"
+          }
+        },
+        {
+          "widget-type": "keyvalue",
+          "label": "Output fields to rename",
+          "name": "fieldAliases",
+          "widget-attributes": {
+            "showDelimiter": "false",
+            "key-placeholder": "Field Name",
+            "value-placeholder": "New Field Name"
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}

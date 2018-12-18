@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "spec-version": "1.5"
+  },
+  "configuration-groups": [
+    {
+      "label": "Feature Selection Configuration",
+      "properties": [
+        {
+          "widget-type": "hidden",
+          "name": "dummy",
+          "widget-attributes": {
+			"default": "default"
+          },
+          "plugin-function": {
+            "method": "POST",
+            "widget": "outputSchema",
+            "output-property": "schema",
+            "plugin-method": "outputSchema",
+            "required-fields": [],
+            "missing-required-fields-message": "'"
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}

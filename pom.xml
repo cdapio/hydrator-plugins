@@ -40,6 +40,7 @@
     <module>solrsearch-plugins</module>
     <module>spark-plugins</module>
     <module>transform-plugins</module>
+    <module>feature-engineering-plugin</module>
     <module>wrangler-transform</module>
     <module>google-cloud</module>
     <module>kafka-plugins</module>
@@ -183,6 +184,11 @@
         <artifactId>cdap-etl-proto</artifactId>
         <version>${cdap.version}</version>
         <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>co.cask.cdap</groupId>
+        <artifactId>cdap-common</artifactId>
+        <version>${cdap.version}</version>
       </dependency>
       <dependency>
         <groupId>co.cask.cdap</groupId>

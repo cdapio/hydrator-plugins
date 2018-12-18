@@ -1,5 +1,5 @@
 /*
- * Copyright © 2016 Cask Data, Inc.
+ * Copyright © 2018 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.joiner;
+package com.guavus.featureengineering.cdap.plugin.batch.joiner;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.annotation.Name;
@@ -35,6 +35,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Table;
+import com.guavus.featureengineering.cdap.plugin.batch.joiner.config.JoinerConfig;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -54,7 +55,7 @@ import javax.ws.rs.Path;
  * Batch joiner to join records from multiple inputs
  */
 @Plugin(type = BatchJoiner.PLUGIN_TYPE)
-@Name("Joiner")
+@Name("JoinerFE")
 @Description("Performs join operation on records from each input based on required inputs. If all the inputs are "
         + "required inputs, inner join will be performed. Otherwise inner join will be performed on required inputs "
         + "and records from non-required inputs will only be present if they match join criteria. If there are no "
@@ -66,12 +67,13 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     public static final String RENAME_OPERATION_DESCRIPTION = "Renamed as a part of a join";
 
     private final JoinerConfig conf;
-    private Map<String, Schema> inputSchemas;
-    private Schema outputSchema;
-    private Map<String, List<String>> perStageJoinKeys;
-    private Table<String, String, String> perStageSelectedFields;
-    private Set<String> requiredInputs;
-    private Multimap<String, String> duplicateFields = ArrayListMultimap.create();
+    protected Map<String, Schema> inputSchemas;
+    protected Schema outputSchema;
+    protected Map<String, List<String>> perStageJoinKeys;
+    protected Table<String, String, String> perStageSelectedFields;
+    protected Set<String> requiredInputs;
+    protected Multimap<String, String> duplicateFields = ArrayListMultimap.create();
+    protected Map<String, String> keysToBeAppendedMap;
 
     public Joiner(JoinerConfig conf) {
         this.conf = conf;
@@ -81,6 +83,9 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     public void configurePipeline(MultiInputPipelineConfigurer pipelineConfigurer) {
         MultiInputStageConfigurer stageConfigurer = pipelineConfigurer.getMultiInputStageConfigurer();
         Map<String, Schema> inputSchemas = stageConfigurer.getInputSchemas();
+        if (conf.getIsDynamicSchema()) {
+            inputSchemas = null;
+        }
         init(inputSchemas);
         // validate the input schema and get the output schema for it
         stageConfigurer.setOutputSchema(getOutputSchema(inputSchemas));
@@ -91,9 +96,11 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
         if (conf.getNumPartitions() != null) {
             context.setNumPartitions(conf.getNumPartitions());
         }
-        init(context.getInputSchemas());
-        Collection<OutputFieldInfo> outputFieldInfos = createOutputFieldInfos(context.getInputSchemas());
-        context.record(createFieldOperations(outputFieldInfos, perStageJoinKeys));
+        if (!conf.getIsDynamicSchema()) {
+            init(context.getInputSchemas());
+            Collection<OutputFieldInfo> outputFieldInfos = createOutputFieldInfos(context.getInputSchemas());
+            context.record(createFieldOperations(outputFieldInfos, perStageJoinKeys));
+        }
     }
 
     /**
@@ -172,9 +179,13 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
 
     @Override
     public void initialize(BatchJoinerRuntimeContext context) throws Exception {
-        init(context.getInputSchemas());
-        inputSchemas = context.getInputSchemas();
-        outputSchema = context.getOutputSchema();
+        if (conf.getIsDynamicSchema()) {
+            init(null);
+        } else {
+            init(context.getInputSchemas());
+            inputSchemas = context.getInputSchemas();
+            outputSchema = context.getOutputSchema();
+        }
     }
 
     @Override
@@ -228,7 +239,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
         return outRecordBuilder.build();
     }
 
-    private Object convertNANToZero(Object value) {
+    protected Object convertNANToZero(Object value) {
         try {
             if (Double.isNaN((double) value)) {
                 return 0.0;
@@ -245,13 +256,16 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     }
 
     void init(Map<String, Schema> inputSchemas) {
-        validateJoinKeySchemas(inputSchemas, conf.getPerStageJoinKeys());
+        perStageJoinKeys = conf.getPerStageJoinKeys();
+        if (!conf.getIsDynamicSchema()) {
+            validateJoinKeySchemas(inputSchemas);
+        }
         requiredInputs = conf.getInputs();
         perStageSelectedFields = conf.getPerStageSelectedFields();
+        keysToBeAppendedMap = conf.getKeysToBeAppended();
     }
 
-    void validateJoinKeySchemas(Map<String, Schema> inputSchemas, Map<String, List<String>> joinKeys) {
-        perStageJoinKeys = joinKeys;
+    void validateJoinKeySchemas(Map<String, Schema> inputSchemas) {
 
         if (perStageJoinKeys.size() != inputSchemas.size()) {
             throw new IllegalArgumentException("There should be join keys present from each stage");
@@ -288,7 +302,10 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     @Path("outputSchema")
     @VisibleForTesting
     public Schema getOutputSchema(GetSchemaRequest request) {
-        validateJoinKeySchemas(request.inputSchemas, request.getPerStageJoinKeys());
+        if (!conf.getIsDynamicSchema()) {
+            validateJoinKeySchemas(request.inputSchemas);
+        }
+        perStageJoinKeys = request.getPerStageJoinKeys();
         requiredInputs = request.getInputs();
         perStageSelectedFields = request.getPerStageSelectedFields();
         duplicateFields = ArrayListMultimap.create();
@@ -302,7 +319,10 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
         public Map<String, Schema> inputSchemas;
     }
 
-    Schema getOutputSchema(Map<String, Schema> inputSchemas) {
+    protected Schema getOutputSchema(Map<String, Schema> inputSchemas) {
+        if (inputSchemas == null) {
+            return null;
+        }
         return Schema.recordOf("join.output", getOutputFields(createOutputFieldInfos(inputSchemas)));
     }
 
@@ -362,7 +382,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
         return outputFieldInfo.values();
     }
 
-    private List<Schema.Field> getOutputFields(Collection<OutputFieldInfo> fieldsInfo) {
+    protected List<Schema.Field> getOutputFields(Collection<OutputFieldInfo> fieldsInfo) {
         List<Schema.Field> outputFields = new ArrayList<>();
         for (OutputFieldInfo fieldInfo : fieldsInfo) {
             outputFields.add(fieldInfo.getField());
@@ -374,7 +394,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
      * Class to hold information about output fields
      */
     @VisibleForTesting
-    static class OutputFieldInfo {
+    protected static class OutputFieldInfo {
         private String name;
         private String stageName;
         private String inputFieldName;
@@ -458,7 +478,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
         }
     }
 
-    private void validateRequiredInputs(Map<String, Schema> inputSchemas) {
+    protected void validateRequiredInputs(Map<String, Schema> inputSchemas) {
         for (String requiredInput : requiredInputs) {
             if (!inputSchemas.containsKey(requiredInput)) {
                 throw new IllegalArgumentException(

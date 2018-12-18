@@ -10,29 +10,40 @@
       "label": "Join",
       "properties": [
         {
-          "widget-type": "sql-select-fields",
+          "widget-type": "csv",
           "label": "Fields",
           "name": "selectedFields",
-          "description": "List of fields to be selected and/or renamed in the Joiner output from each stages. There must not be a duplicate fields in the output."
-        },
-        {
-          "widget-type": "join-types",
-          "label": "Join Type",
-          "name": "requiredInputs",
-          "description": "Type of joins to be performed. Inner join means all stages are required, while Outer join allows for 0 or more input stages to be required input."
-        },
-        {
-          "widget-type": "hidden",
-          "name": "keysToBeAppended",
           "widget-attributes": {
-            "default": "default"
+            "delimiter": ",",
+            "value-placeholder": "Selected Fields"
           }
         },
         {
-          "widget-type": "sql-conditions",
+          "widget-type": "csv",
+          "label": "Join Type",
+          "name": "requiredInputs",
+          "widget-attributes": {
+            "delimiter": ",",
+            "value-placeholder": "Join Type"
+          }
+        },
+        {
+          "widget-type": "csv",
+          "label": "Keys to be Appended",
+          "name": "keysToBeAppended",
+          "widget-attributes": {
+            "delimiter": ",",
+            "value-placeholder": "Keys to be Appended"
+          }
+        },
+        {
+          "widget-type": "csv",
           "label": "Join Condition",
           "name": "joinKeys",
-          "description": "List of join keys to perform join operation."
+          "widget-attributes": {
+            "delimiter": ",",
+            "value-placeholder": "Join Condition"
+          }
         },
         {
           "widget-type": "textbox",

@@ -1,0 +1,55 @@
+{
+  "metadata": {
+    "spec-version": "1.5",
+    "label": "Row Transform"
+  },
+  "configuration-groups": [
+    {
+      "label": "General",
+      "properties": [
+        {
+          "widget-type": "csv",
+          "label": "",
+          "name": "temp",
+          "widget-attributes": {
+            "delimiter": ",",
+            "value-placeholder": "Field Name"
+          },
+          "plugin-function": {
+            "method": "POST",
+            "widget": "outputSchema",
+            "output-property": "schema",
+            "plugin-method": "outputSchema",
+            "required-fields": ["primitives"],
+            "missing-required-fields-message": "'Transform Functions' properties are required to fetch schema."
+          }
+        },
+        {
+          "widget-type": "function-dropdown-with-alias",
+          "label": "Filters",
+          "name": "filters",
+          "widget-attributes": {
+            "placeholders": {
+              "field": "field",
+              "alias": "filterValue"
+            },
+            "dropdownOptions": [
+              "LT",
+              "GT",
+              "LTE",
+              "GTE",
+              "EQ",
+              "NEQ"
+            ]
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Number of Partitions",
+          "name": "numPartitions"
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}
