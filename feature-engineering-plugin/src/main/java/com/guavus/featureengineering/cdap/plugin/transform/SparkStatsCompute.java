@@ -307,7 +307,7 @@ public class SparkStatsCompute extends SparkCompute<StructuredRecord, Structured
             if (type.equals(Schema.Type.STRING)) {
                 stringCount++;
             } else if (type.equals(Schema.Type.DOUBLE) || type.equals(Schema.Type.INT) || type.equals(Schema.Type.FLOAT)
-                    || type.equals(Schema.Type.LONG)) {
+                    || type.equals(Schema.Type.LONG) || type.equals(Schema.Type.BOOLEAN)) {
                 numericCount++;
             }
         }
@@ -524,7 +524,9 @@ public class SparkStatsCompute extends SparkCompute<StructuredRecord, Structured
                             continue;
                         }
                         if (getSchemaType(field.getSchema()).equals(Schema.Type.BOOLEAN)) {
-                            val = val.toString().equals("true") ? 1 : 0;
+                            double valDouble = val.toString().equals("true") ? 1 : 0;
+                            values.add(valDouble);
+                            continue;
                         }
                         try {
                             values.add(Double.parseDouble(val.toString()));

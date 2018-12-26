@@ -410,7 +410,9 @@ public class StatsCompute extends SparkCompute<StructuredRecord, StructuredRecor
                             continue;
                         }
                         if (field.getSchema().getType().equals(Schema.Type.BOOLEAN)) {
-                            val = val.toString().equals("true") ? 1 : 0;
+                            double valDouble = val.toString().equals("true") ? 1 : 0;
+                            values.add(valDouble);
+                            continue;
                         }
                         try {
                             values.add(Double.parseDouble(val.toString()));
