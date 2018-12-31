@@ -45,6 +45,18 @@
 					"widget-attributes": {
 						"default": "0.0001"
 					}
+				},
+				{
+					"name": "skipEncodedFeaturesInVIF",
+					"label": "Skip Encoded Features in VIF",
+					"widget-type": "select",
+					"widget-attributes": {
+						"default": "true",
+						"values": [
+							"false",
+							"true"
+						]
+					}
 				}
 			]
 		}

@@ -143,7 +143,7 @@ public class RowDeduper extends SparkCompute<StructuredRecord, StructuredRecord>
         }
         Schema outputSchema = getOutputSchema(sparkExecutionPluginContext.getInputSchema(), columnToBeDeduped);
         List<Field> outputField = outputSchema.getFields();
-        return javaRDD.map(new Function<StructuredRecord, String>() {
+        JavaRDD<StructuredRecord> outputRDD = javaRDD.map(new Function<StructuredRecord, String>() {
 
             @Override
             public String call(StructuredRecord record) throws Exception {
@@ -177,6 +177,9 @@ public class RowDeduper extends SparkCompute<StructuredRecord, StructuredRecord>
             }
 
         });
+        
+        outputRDD.cache();
+        return outputRDD;
     }
 
     private Schema.Type getSchemaType(Schema schema) {

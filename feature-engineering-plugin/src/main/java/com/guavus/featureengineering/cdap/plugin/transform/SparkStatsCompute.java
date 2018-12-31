@@ -100,28 +100,6 @@ public class SparkStatsCompute extends SparkCompute<StructuredRecord, Structured
         private Schema inputSchema;
     }
 
-    private static class Identity<T> implements Function<T, T> {
-        @Override
-        public T call(T t) throws Exception {
-            return t;
-        }
-    }
-
-    private static class CountFunction implements PairFlatMapFunction<Tuple2<String, Iterable<String>>, String, Long> {
-
-        @Override
-        public Iterator<Tuple2<String, Long>> call(Tuple2<String, Iterable<String>> tuples) throws Exception {
-            String word = tuples._1();
-            Long count = 0L;
-            for (String s : tuples._2()) {
-                count++;
-            }
-            List<Tuple2<String, Long>> output = new ArrayList<>();
-            output.add(new Tuple2<>(word, count));
-            return output.iterator();
-        }
-    }
-
     public SparkStatsCompute(Conf config) {
         this.config = config;
     }

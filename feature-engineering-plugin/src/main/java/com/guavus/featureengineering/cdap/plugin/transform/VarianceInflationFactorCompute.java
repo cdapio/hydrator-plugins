@@ -25,6 +25,7 @@ import co.cask.cdap.api.data.schema.Schema;
 import co.cask.cdap.api.data.schema.Schema.Field;
 import co.cask.cdap.api.data.schema.Schema.Type;
 import co.cask.cdap.api.plugin.PluginConfig;
+import co.cask.cdap.common.enums.CategoricalColumnEncoding;
 import co.cask.cdap.common.enums.VarianceInflationFactorSchema;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.batch.SparkCompute;
@@ -48,6 +49,7 @@ import org.apache.spark.mllib.regression.LinearRegressionModel;
 import org.apache.spark.mllib.regression.LinearRegressionWithSGD;
 import org.apache.spark.mllib.stat.MultivariateStatisticalSummary;
 import org.apache.spark.mllib.stat.Statistics;
+import org.apache.spark.storage.StorageLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,6 +96,7 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
     private int numIterations;
     private int linearRegressionIterations;
     private double stepSize;
+    private boolean skipEncodedFeaturesInVIF = true;
     
     /**
      * Config properties for the plugin.
@@ -116,6 +119,10 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
         @Nullable
         @Description("Step size for multi linear regression run.")
         private String stepSize;
+        
+        @Nullable
+        @Description("Option to skip encoded features from VIF computation.")
+        private String skipEncodedFeaturesInVIF;
         
         Conf() {
             this.selectionThreshold = "0.999999999";
@@ -157,6 +164,10 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
                 return 0.0001;
             }
         }
+        
+        public boolean getSkipEncodedFeaturesInVIF() {
+            return Boolean.parseBoolean(skipEncodedFeaturesInVIF);
+        }
     }
     
     @Override
@@ -165,6 +176,7 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
         this.numIterations = config.getNumIterations();
         this.linearRegressionIterations = config.getLinearRegressionIterations();
         this.stepSize = config.getStepSize();
+        this.skipEncodedFeaturesInVIF = config.getSkipEncodedFeaturesInVIF();
     }
     
     /**
@@ -222,6 +234,7 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
         } catch (Throwable th) {
             return sparkExecutionPluginContext.getSparkContext().parallelize(new LinkedList<StructuredRecord>());
         }
+        javaRDD.cache();
         Schema inputSchema = getInputSchema(javaRDD);
         final List<Schema.Field> inputField = inputSchema.getFields();
         Map<String, Integer> dataTypeCountMap = getDataTypeCountMap(inputField);
@@ -244,6 +257,7 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
                     .broadcast(computedFeaturesStddev);
             tupledRDD = getFilteredStandardizedRDD(javaRDD, inputField, featureMeanMap, featureSTDMap);
             tupledRDD.cache();
+            javaRDD.unpersist();
             vectoredRDD = getVectorRDDForMean(tupledRDD, inputField);
             summary = Statistics.colStats(vectoredRDD.rdd());
             if (summary.mean() == null) {
@@ -290,10 +304,9 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
     private List<StructuredRecord> computeVIFScoresAllIterations(Map<String, Double> computedFeaturesMean,
             JavaRDD<List<Tuple2<String, Double>>> tupledRDD, Schema inputSchema) {
         Map<String, Double> computedRSquareMap = new HashMap<String, Double>();
-        int numIterations = computedFeaturesMean.size();
         List<StructuredRecord> recordList = new LinkedList<>();
         long recordIndex = 1;
-        for (int it = 0; it < numIterations && it < this.linearRegressionIterations; it++) {
+        for (int it = 0; computedFeaturesMean.size() > 1 && it < this.linearRegressionIterations; it++) {
             double maxVIF = Double.MIN_VALUE;
             String maxVIFFeature = "";
             Map<String, Double> featureVIFMap = new HashMap<String, Double>();
@@ -310,8 +323,9 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
                 }
                 featureVIFMap.put(targetVariable.getKey(), vif);
             }
-            computedRSquareMap.put(maxVIFFeature, maxVIF);
-            computedFeaturesMean.remove(maxVIFFeature);
+            maxVIFFeature = adjustComputedFeatures(skipEncodedFeaturesInVIF, computedFeaturesMean, computedRSquareMap,
+                    maxVIFFeature, maxVIF);
+            
             StructuredRecord record = generateRecord(recordIndex++, maxVIFFeature, maxVIF, featureVIFMap, inputSchema);
             recordList.add(record);
             if (maxVIF < this.selectionThreshold) {
@@ -319,6 +333,31 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
             }
         }
         return recordList;
+    }
+    
+    private String adjustComputedFeatures(boolean skipEncodedFeaturesInVIF, Map<String, Double> computedFeaturesMean,
+            Map<String, Double> computedRSquareMap, String maxVIFFeature, double maxVIF) {
+        if (skipEncodedFeaturesInVIF) {
+            String normalizedMaxVIFFeature = CategoricalColumnEncoding.DUMMY_CODING.getOriginalFeatureName(maxVIFFeature);
+            if (normalizedMaxVIFFeature != null) {
+                List<String> allFeatures = new LinkedList<String>(computedFeaturesMean.keySet());
+                for (String feature : allFeatures) {
+                    if (feature.startsWith(
+                            normalizedMaxVIFFeature + CategoricalColumnEncoding.DUMMY_CODING.getStringEncoding())) {
+                        computedFeaturesMean.remove(feature);
+                        computedRSquareMap.put(feature, maxVIF);
+                    }
+                }
+                maxVIFFeature = normalizedMaxVIFFeature;
+            } else {
+                computedRSquareMap.put(maxVIFFeature, maxVIF);
+                computedFeaturesMean.remove(maxVIFFeature);
+            }
+        } else {
+            computedRSquareMap.put(maxVIFFeature, maxVIF);
+            computedFeaturesMean.remove(maxVIFFeature);
+        }
+        return maxVIFFeature;
     }
     
     private double computeRSquare(JavaRDD<LabeledPoint> labeledData, LinearRegressionModel model, Double actualYMean) {

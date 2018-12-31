@@ -1,0 +1,31 @@
+{
+	"metadata": {
+		"spec-version": "1.5",
+		"label": "Row Transform"
+	},
+	"configuration-groups": [
+		{
+			"label": "General",
+			"properties": [
+				{
+					"widget-type": "csv",
+					"label": "String Columns To Be Discarded",
+					"name": "discardedColumns",
+					"widget-attributes": {
+						"delimiter": ",",
+						"value-placeholder": "Field Name"
+					}
+				},
+				{
+					"widget-type": "textbox",
+					"label": "Categorical Column Dictionary Limit",
+					"name": "categoricalDictionaryThreshold",
+					"widget-attributes": {
+						"default": "1000"
+					}
+				}
+			]
+		}
+	],
+	"outputs": []
+}
