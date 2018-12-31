@@ -71,6 +71,7 @@ public class OneHotEncoder extends SparkCompute<StructuredRecord, StructuredReco
     private final Conf config;
     private Set<String> discardedColumnSet;
     private int categoricalDictionaryThreshold;
+    private int numPartitions;
     
     /**
      * Config properties for the plugin.
@@ -86,9 +87,14 @@ public class OneHotEncoder extends SparkCompute<StructuredRecord, StructuredReco
         @Description("Threshold to be used while discarding string columns with cardinality more than this threshold")
         private String categoricalDictionaryThreshold;
         
+        @Nullable
+        @Description("Number of data partitions")
+        private String numPartitions;
+        
         Conf() {
             this.discardedColumns = "";
             this.categoricalDictionaryThreshold = "";
+            this.numPartitions = "10";
         }
         
         public List<String> getDiscardedColumns() {
@@ -112,12 +118,24 @@ public class OneHotEncoder extends SparkCompute<StructuredRecord, StructuredReco
                 return 1000;
             }
         }
+        
+        public int getNumPartitions() {
+            try {
+                if (this.numPartitions != null && !this.numPartitions.isEmpty()) {
+                    return Integer.parseInt(numPartitions);
+                }
+            } catch (Exception e) {
+                return 10;
+            }
+            return 10;
+        }
     }
     
     @Override
     public void initialize(SparkExecutionPluginContext context) throws Exception {
         this.discardedColumnSet.addAll(config.getDiscardedColumns());
         this.categoricalDictionaryThreshold = config.getCategoricalDictionaryThreshold();
+        this.numPartitions = config.getNumPartitions();
     }
     
     public OneHotEncoder(Conf config) {
@@ -142,6 +160,7 @@ public class OneHotEncoder extends SparkCompute<StructuredRecord, StructuredReco
         } catch (Throwable th) {
             return sparkExecutionPluginContext.getSparkContext().parallelize(new LinkedList<StructuredRecord>());
         }
+        javaRDD.repartition(this.numPartitions);
         Schema inputSchema = getInputSchema(javaRDD);
         final List<Schema.Field> inputField = inputSchema.getFields();
         Map<String, Integer> dataTypeCountMap = getDataTypeCountMap(inputField);
@@ -171,6 +190,9 @@ public class OneHotEncoder extends SparkCompute<StructuredRecord, StructuredReco
                                 .split(CategoricalColumnEncoding.DUMMY_CODING.getStringEncoding());
                         inputField = inputSchema.getField(token[0]);
                         val = record.get(inputField.getName());
+                        if (val == null) {
+                            val = "null";
+                        }
                         if (token[1].equals(val.toString())) {
                             builder.set(outputField.getName(), 1);
                         } else {

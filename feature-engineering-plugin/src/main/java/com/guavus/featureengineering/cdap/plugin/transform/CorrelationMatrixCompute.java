@@ -72,25 +72,37 @@ public class CorrelationMatrixCompute extends SparkCompute<StructuredRecord, Str
      */
     public static final String NAME = "CorrelationMatrixCompute";
     private final Conf config;
+    private int numPartitions;
     
     /**
      * Config properties for the plugin.
      */
     @VisibleForTesting
     public static class Conf extends PluginConfig {
-        
+                
         @Nullable
-        @Description("Dummy Field.")
-        private String dummy;
+        @Description("Number of data partitions")
+        private String numPartitions;
         
         Conf() {
-            this.dummy = "";
+            this.numPartitions = "10";
         }
         
+        public int getNumPartitions() {
+            try {
+                if (this.numPartitions != null && !this.numPartitions.isEmpty()) {
+                    return Integer.parseInt(numPartitions);
+                }
+            } catch (Exception e) {
+                return 10;
+            }
+            return 10;
+        }
     }
     
     @Override
     public void initialize(SparkExecutionPluginContext context) throws Exception {
+        this.numPartitions = config.getNumPartitions();
     }
     
     /**
@@ -148,6 +160,7 @@ public class CorrelationMatrixCompute extends SparkCompute<StructuredRecord, Str
         } catch (Throwable th) {
             return sparkExecutionPluginContext.getSparkContext().parallelize(new LinkedList<StructuredRecord>());
         }
+        javaRDD.repartition(this.numPartitions);
         Schema inputSchema = getInputSchema(javaRDD);
         final List<Schema.Field> inputField = inputSchema.getFields();
         Map<String, Integer> dataTypeCountMap = getDataTypeCountMap(inputField);

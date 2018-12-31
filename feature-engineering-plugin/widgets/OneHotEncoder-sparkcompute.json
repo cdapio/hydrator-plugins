@@ -23,6 +23,14 @@
 					"widget-attributes": {
 						"default": "1000"
 					}
+				},
+				{
+					"widget-type": "textbox",
+					"label": "Number of Partitions",
+					"name": "numPartitions",
+					"widget-attributes": {
+						"default": "400"
+					}
 				}
 			]
 		}

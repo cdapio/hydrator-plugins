@@ -1,28 +1,21 @@
 {
-  "metadata": {
-    "spec-version": "1.5"
-  },
-  "configuration-groups": [
-    {
-      "label": "Correlation Matrix Configuration",
-      "properties": [
-        {
-          "widget-type": "hidden",
-          "name": "dummy",
-          "widget-attributes": {
-			"default": "default"
-          },
-          "plugin-function": {
-            "method": "POST",
-            "widget": "outputSchema",
-            "output-property": "schema",
-            "plugin-method": "outputSchema",
-            "required-fields": [],
-            "missing-required-fields-message": "'"
-          }
-        }
-      ]
-    }
-  ],
-  "outputs": []
+	"metadata": {
+		"spec-version": "1.5"
+	},
+	"configuration-groups": [
+		{
+			"label": "Correlation Matrix Configuration",
+			"properties": [
+				{
+					"widget-type": "textbox",
+					"label": "Number of Partitions",
+					"name": "numPartitions",
+					"widget-attributes": {
+						"default": "400"
+					}
+				}
+			]
+		}
+	],
+	"outputs": []
 }

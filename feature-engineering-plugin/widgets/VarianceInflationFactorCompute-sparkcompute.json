@@ -43,7 +43,7 @@
 					"label": "Linear Regression Step Size",
 					"name": "stepSize",
 					"widget-attributes": {
-						"default": "0.0001"
+						"default": "0.001"
 					}
 				},
 				{
@@ -56,6 +56,14 @@
 							"false",
 							"true"
 						]
+					}
+				},
+				{
+					"widget-type": "textbox",
+					"label": "Number of Partitions",
+					"name": "numPartitions",
+					"widget-attributes": {
+						"default": "600"
 					}
 				}
 			]

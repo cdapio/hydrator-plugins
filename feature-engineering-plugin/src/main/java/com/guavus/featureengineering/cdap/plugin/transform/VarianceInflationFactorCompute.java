@@ -97,6 +97,7 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
     private int linearRegressionIterations;
     private double stepSize;
     private boolean skipEncodedFeaturesInVIF = true;
+    private int numPartitions;
     
     /**
      * Config properties for the plugin.
@@ -109,7 +110,7 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
         private String selectionThreshold;
         
         @Nullable
-        @Description("Number of iterations to run  with greater vif score.")
+        @Description("Number of iterations to run with greater vif score.")
         private String numIterations;
         
         @Nullable
@@ -124,11 +125,16 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
         @Description("Option to skip encoded features from VIF computation.")
         private String skipEncodedFeaturesInVIF;
         
+        @Nullable
+        @Description("Number of data partitions")
+        private String numPartitions;
+        
         Conf() {
             this.selectionThreshold = "0.999999999";
             this.numIterations = "10000";
             this.linearRegressionIterations = "100";
             this.stepSize = "0.00000001";
+            this.numPartitions = "10";
         }
         
         public Double getSelectionThreshold() {
@@ -168,6 +174,17 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
         public boolean getSkipEncodedFeaturesInVIF() {
             return Boolean.parseBoolean(skipEncodedFeaturesInVIF);
         }
+        
+        public int getNumPartitions() {
+            try {
+                if (this.numPartitions != null && !this.numPartitions.isEmpty()) {
+                    return Integer.parseInt(numPartitions);
+                }
+            } catch (Exception e) {
+                return 10;
+            }
+            return 10;
+        }
     }
     
     @Override
@@ -177,6 +194,7 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
         this.linearRegressionIterations = config.getLinearRegressionIterations();
         this.stepSize = config.getStepSize();
         this.skipEncodedFeaturesInVIF = config.getSkipEncodedFeaturesInVIF();
+        this.numPartitions = config.getNumPartitions();
     }
     
     /**
@@ -338,7 +356,8 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
     private String adjustComputedFeatures(boolean skipEncodedFeaturesInVIF, Map<String, Double> computedFeaturesMean,
             Map<String, Double> computedRSquareMap, String maxVIFFeature, double maxVIF) {
         if (skipEncodedFeaturesInVIF) {
-            String normalizedMaxVIFFeature = CategoricalColumnEncoding.DUMMY_CODING.getOriginalFeatureName(maxVIFFeature);
+            String normalizedMaxVIFFeature = CategoricalColumnEncoding.DUMMY_CODING
+                    .getOriginalFeatureName(maxVIFFeature);
             if (normalizedMaxVIFFeature != null) {
                 List<String> allFeatures = new LinkedList<String>(computedFeaturesMean.keySet());
                 for (String feature : allFeatures) {
