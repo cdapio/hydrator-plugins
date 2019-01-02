@@ -65,6 +65,14 @@
 					"widget-attributes": {
 						"default": "600"
 					}
+				},
+				{
+					"widget-type": "textbox",
+					"label": "Number of Parallel Computation Threads",
+					"name": "noOfParallelThreads",
+					"widget-attributes": {
+						"default": "10"
+					}
 				}
 			]
 		}

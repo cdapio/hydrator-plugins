@@ -49,7 +49,6 @@ import org.apache.spark.mllib.regression.LinearRegressionModel;
 import org.apache.spark.mllib.regression.LinearRegressionWithSGD;
 import org.apache.spark.mllib.stat.MultivariateStatisticalSummary;
 import org.apache.spark.mllib.stat.Statistics;
-import org.apache.spark.storage.StorageLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +61,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import javax.annotation.Nullable;
 import javax.ws.rs.Path;
@@ -83,6 +86,8 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
     
     private static final Double ZERO = 0.0;
     
+    private static ExecutorService threadPool = Executors.newCachedThreadPool();
+    
     /**
      * 
      */
@@ -98,6 +103,7 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
     private double stepSize;
     private boolean skipEncodedFeaturesInVIF = true;
     private int numPartitions;
+    private int noOfParallelThreads;
     
     /**
      * Config properties for the plugin.
@@ -129,12 +135,17 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
         @Description("Number of data partitions")
         private String numPartitions;
         
+        @Nullable
+        @Description("Number of parallel threads to compute VIF")
+        private String noOfParallelThreads;
+        
         Conf() {
             this.selectionThreshold = "0.999999999";
             this.numIterations = "10000";
             this.linearRegressionIterations = "100";
             this.stepSize = "0.00000001";
             this.numPartitions = "10";
+            this.noOfParallelThreads = "10";
         }
         
         public Double getSelectionThreshold() {
@@ -185,6 +196,17 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
             }
             return 10;
         }
+        
+        public int getNoOfParallelThreads() {
+            try {
+                if (this.noOfParallelThreads != null && !this.noOfParallelThreads.isEmpty()) {
+                    return Integer.parseInt(noOfParallelThreads);
+                }
+            } catch (Exception e) {
+                return 10;
+            }
+            return 10;
+        }
     }
     
     @Override
@@ -195,6 +217,7 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
         this.stepSize = config.getStepSize();
         this.skipEncodedFeaturesInVIF = config.getSkipEncodedFeaturesInVIF();
         this.numPartitions = config.getNumPartitions();
+        this.noOfParallelThreads = config.getNoOfParallelThreads();
     }
     
     /**
@@ -252,6 +275,7 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
         } catch (Throwable th) {
             return sparkExecutionPluginContext.getSparkContext().parallelize(new LinkedList<StructuredRecord>());
         }
+        javaRDD.repartition(numPartitions);
         javaRDD.cache();
         Schema inputSchema = getInputSchema(javaRDD);
         final List<Schema.Field> inputField = inputSchema.getFields();
@@ -325,32 +349,121 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
         List<StructuredRecord> recordList = new LinkedList<>();
         long recordIndex = 1;
         for (int it = 0; computedFeaturesMean.size() > 1 && it < this.linearRegressionIterations; it++) {
+            Map<String, Double> featureVIFMap = new HashMap<String, Double>();
+            List<String> maxVIFFeatureList = computeVIFWithMaxVIFFeature(computedFeaturesMean, computedRSquareMap,
+                    featureVIFMap, tupledRDD);
+            double maxVIF = Double.MIN_VALUE;
+            for (String maxVIFFeature : maxVIFFeatureList) {
+                double maxVIFTemp = featureVIFMap.get(maxVIFFeature);
+                maxVIFFeature = adjustComputedFeatures(skipEncodedFeaturesInVIF, computedFeaturesMean,
+                        computedRSquareMap, maxVIFFeature, maxVIFTemp);
+                
+                StructuredRecord record = generateRecord(recordIndex++, maxVIFFeature, maxVIFTemp, featureVIFMap,
+                        inputSchema);
+                recordList.add(record);
+                if (!Double.isNaN(maxVIFTemp)) {
+                    maxVIF = Math.max(maxVIF, maxVIFTemp);
+                }
+            }
+            if (maxVIF < this.selectionThreshold) {
+                break;
+            }
+        }
+        return recordList;
+    }
+    
+    private List<String> computeVIFWithMaxVIFFeature(Map<String, Double> computedFeaturesMean,
+            Map<String, Double> computedRSquareMap, Map<String, Double> featureVIFMap,
+            JavaRDD<List<Tuple2<String, Double>>> tupledRDD) {
+        int taskSize = computedFeaturesMean.size() / this.noOfParallelThreads;
+        if (taskSize == 0) {
+            taskSize = 1;
+        }
+        Map<String, Double> taskComputedFeaturesMean = new HashMap<>();
+        int index = 0;
+        double maxVIF = Double.MIN_VALUE;
+        String maxVIFFeature = "";
+        List<Future<Map<String, Double>>> futureList = new LinkedList<>();
+        for (Map.Entry<String, Double> meanEntry : computedFeaturesMean.entrySet()) {
+            if (index < taskSize) {
+                taskComputedFeaturesMean.put(meanEntry.getKey(), meanEntry.getValue());
+                index++;
+            } else {
+                Future<Map<String, Double>> futureTask = threadPool.submit(new VIFJob(taskComputedFeaturesMean,
+                        computedRSquareMap, tupledRDD, this.numIterations, this.stepSize));
+                futureList.add(futureTask);
+                taskComputedFeaturesMean = new HashMap<>();
+                taskComputedFeaturesMean.put(meanEntry.getKey(), meanEntry.getValue());
+                index = 1;
+            }
+        }
+        List<String> featuresToBePruned = new LinkedList<String>();
+        for (Future<Map<String, Double>> futureTask : futureList) {
+            try {
+                Map<String, Double> featureVIFScoreMap = futureTask.get();
+                for (Map.Entry<String, Double> vifEntry : featureVIFScoreMap.entrySet()) {
+                    if (vifEntry.getValue() > maxVIF) {
+                        maxVIF = vifEntry.getValue();
+                        maxVIFFeature = vifEntry.getKey();
+                    }
+                    featureVIFMap.put(vifEntry.getKey(), vifEntry.getValue());
+                    if (Double.isNaN(vifEntry.getValue())) {
+                        featuresToBePruned.add(vifEntry.getKey());
+                    }
+                }
+            } catch (Exception e) {
+                LOG.error("Got exception while running VIF sub task", e);
+            }
+        }
+        featuresToBePruned.add(maxVIFFeature);
+        return featuresToBePruned;
+    }
+    
+    private static class VIFJob implements Callable<Map<String, Double>> {
+        private Map<String, Double> computedFeaturesMean;
+        private Map<String, Double> computedRSquareMap;
+        private JavaRDD<List<Tuple2<String, Double>>> tupledRDD;
+        private int numIterations;
+        private double stepSize;
+        
+        VIFJob(Map<String, Double> computedFeaturesMean, Map<String, Double> computedRSquareMap,
+                JavaRDD<List<Tuple2<String, Double>>> tupledRDD, int numIterations, double stepSize) {
+            this.computedFeaturesMean = computedFeaturesMean;
+            this.computedRSquareMap = computedRSquareMap;
+            this.tupledRDD = tupledRDD;
+            this.numIterations = numIterations;
+            this.stepSize = stepSize;
+        }
+        
+        @Override
+        public Map<String, Double> call() throws Exception {
             double maxVIF = Double.MIN_VALUE;
             String maxVIFFeature = "";
             Map<String, Double> featureVIFMap = new HashMap<String, Double>();
             for (Map.Entry<String, Double> targetVariable : computedFeaturesMean.entrySet()) {
                 JavaRDD<LabeledPoint> labeledData = getLabeledRDD(targetVariable.getKey(), tupledRDD,
                         new HashSet<String>(computedRSquareMap.keySet()));
+                labeledData.cache();
                 LinearRegressionModel model = LinearRegressionWithSGD.train(JavaRDD.toRDD(labeledData),
                         this.numIterations, this.stepSize);
                 double rSquare = computeRSquare(labeledData, model, targetVariable.getValue());
                 double vif = 1.0 / (1.0 - rSquare);
-                if (vif > maxVIF) {
+                if (Double.isNaN(vif)) {
+                    maxVIF = vif;
+                    maxVIFFeature = targetVariable.getKey();
+                    featureVIFMap.put(targetVariable.getKey(), vif);
+                    labeledData.unpersist();
+                    break;
+                } else if (vif > maxVIF) {
                     maxVIF = vif;
                     maxVIFFeature = targetVariable.getKey();
                 }
                 featureVIFMap.put(targetVariable.getKey(), vif);
+                labeledData.unpersist();
             }
-            maxVIFFeature = adjustComputedFeatures(skipEncodedFeaturesInVIF, computedFeaturesMean, computedRSquareMap,
-                    maxVIFFeature, maxVIF);
-            
-            StructuredRecord record = generateRecord(recordIndex++, maxVIFFeature, maxVIF, featureVIFMap, inputSchema);
-            recordList.add(record);
-            if (maxVIF < this.selectionThreshold) {
-                break;
-            }
+            return featureVIFMap;
         }
-        return recordList;
+        
     }
     
     private String adjustComputedFeatures(boolean skipEncodedFeaturesInVIF, Map<String, Double> computedFeaturesMean,
@@ -379,7 +492,8 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
         return maxVIFFeature;
     }
     
-    private double computeRSquare(JavaRDD<LabeledPoint> labeledData, LinearRegressionModel model, Double actualYMean) {
+    private static double computeRSquare(JavaRDD<LabeledPoint> labeledData, LinearRegressionModel model,
+            Double actualYMean) {
         JavaPairRDD<Double, Double> valuesAndPreds = labeledData
                 .mapToPair(new PairFunction<LabeledPoint, Double, Double>() {
                     
@@ -393,7 +507,7 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
         return 1 - (ssRes / ssTotal);
     }
     
-    private double computeSSTotal(JavaPairRDD<Double, Double> valuesAndPreds, Double actualYMean) {
+    private static double computeSSTotal(JavaPairRDD<Double, Double> valuesAndPreds, Double actualYMean) {
         return valuesAndPreds.mapToDouble(new DoubleFunction<Tuple2<Double, Double>>() {
             
             @Override
@@ -404,7 +518,7 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
         }).sum();
     }
     
-    private double computeSSRes(JavaPairRDD<Double, Double> valuesAndPreds) {
+    private static double computeSSRes(JavaPairRDD<Double, Double> valuesAndPreds) {
         return valuesAndPreds.mapToDouble(new DoubleFunction<Tuple2<Double, Double>>() {
             
             @Override
@@ -415,8 +529,8 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
         }).sum();
     }
     
-    private JavaRDD<LabeledPoint> getLabeledRDD(String targetFeature, JavaRDD<List<Tuple2<String, Double>>> tupledRDD,
-            Set<String> processedFeatureSet) {
+    private static JavaRDD<LabeledPoint> getLabeledRDD(String targetFeature,
+            JavaRDD<List<Tuple2<String, Double>>> tupledRDD, Set<String> processedFeatureSet) {
         return tupledRDD.map(new Function<List<Tuple2<String, Double>>, LabeledPoint>() {
             
             @Override

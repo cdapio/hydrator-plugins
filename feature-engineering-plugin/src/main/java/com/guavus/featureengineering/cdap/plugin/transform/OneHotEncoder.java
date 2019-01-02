@@ -102,9 +102,6 @@ public class OneHotEncoder extends SparkCompute<StructuredRecord, StructuredReco
             for (String field : Splitter.on(',').trimResults().split(discardedColumns)) {
                 fields.add(field);
             }
-            if (fields.isEmpty()) {
-                throw new IllegalArgumentException("The 'discardedColumns' property must be set.");
-            }
             return fields;
         }
         
@@ -320,7 +317,6 @@ public class OneHotEncoder extends SparkCompute<StructuredRecord, StructuredReco
     private List<Tuple2<String, Set<String>>> getEncodedSchema(JavaRDD<StructuredRecord> javaRDD,
             List<Field> inputField) {
         
-        Schema schema = javaRDD.first().getSchema();
         List<Tuple2<String, Set<String>>> fieldMap = javaRDD
                 .map(new Function<StructuredRecord, List<Tuple2<String, Set<String>>>>() {
                     
