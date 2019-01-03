@@ -54,6 +54,7 @@ import org.slf4j.LoggerFactory;
 
 import scala.Tuple2;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -397,6 +398,9 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
                 index = 1;
             }
         }
+        Future<Map<String, Double>> futureTask1 = threadPool.submit(new VIFJob(taskComputedFeaturesMean,
+                computedRSquareMap, tupledRDD, this.numIterations, this.stepSize));
+        futureList.add(futureTask1);
         List<String> featuresToBePruned = new LinkedList<String>();
         for (Future<Map<String, Double>> futureTask : futureList) {
             try {
@@ -419,7 +423,7 @@ public class VarianceInflationFactorCompute extends SparkCompute<StructuredRecor
         return featuresToBePruned;
     }
     
-    private static class VIFJob implements Callable<Map<String, Double>> {
+    private static class VIFJob implements Callable<Map<String, Double>>, Serializable {
         private Map<String, Double> computedFeaturesMean;
         private Map<String, Double> computedRSquareMap;
         private JavaRDD<List<Tuple2<String, Double>>> tupledRDD;

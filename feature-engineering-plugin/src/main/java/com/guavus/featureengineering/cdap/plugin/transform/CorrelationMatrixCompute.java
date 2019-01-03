@@ -50,6 +50,7 @@ import org.slf4j.LoggerFactory;
 
 import scala.Tuple2;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -254,7 +255,8 @@ public class CorrelationMatrixCompute extends SparkCompute<StructuredRecord, Str
                     spearmanCoefficientValues, computedFeatures);
             recordList = createStructuredRecord(computedCoefficientMatrixPearson, computedCoefficientMatrixSpearman,
                     inputSchema, computedFeatures);
-        } else if (dataTypeCountMap.get("string") > 0) {
+        }
+        if (dataTypeCountMap.get("string") > 0) {
             List<Tuple2<String, Map<String, Integer>>> columnValueFrequencyTupleList = getColumnValueFrequencies(
                     javaRDD, inputField);
             List<Tuple2<String, Map<String, Integer>>> columnValueIndexTupleList = mapStringValuesToIndex(
@@ -289,7 +291,9 @@ public class CorrelationMatrixCompute extends SparkCompute<StructuredRecord, Str
                 index = 1;
             }
         }
-        
+        Future<Map<String, Map<String, ChiSqTestResult>>> futureTask = threadPool.submit(new ChiSquaredTestJob(
+                columnValueIndexTupleList, javaRDD, inputSchema.getFields(), taskFieldList));
+        futureList.add(futureTask);
         for (Future<Map<String, Map<String, ChiSqTestResult>>> task : futureList) {
             try {
                 Map<String, Map<String, ChiSqTestResult>> result = task.get();
@@ -333,7 +337,8 @@ public class CorrelationMatrixCompute extends SparkCompute<StructuredRecord, Str
         return outputMap;
     }
     
-    private static class ChiSquaredTestJob implements Callable<Map<String, Map<String, ChiSqTestResult>>> {
+    private static class ChiSquaredTestJob
+            implements Callable<Map<String, Map<String, ChiSqTestResult>>>, Serializable {
         private List<Tuple2<String, Map<String, Integer>>> columnValueIndexTupleList;
         private List<Field> inputField;
         private JavaRDD<StructuredRecord> javaRDD;
@@ -355,6 +360,7 @@ public class CorrelationMatrixCompute extends SparkCompute<StructuredRecord, Str
                         targetField);
                 labelledRDD.cache();
                 ChiSqTestResult[] featureTestResults = Statistics.chiSqTest(labelledRDD.rdd());
+                labelledRDD.unpersist();
                 Map<String, ChiSqTestResult> targetResult = new HashMap<>();
                 result.put(targetField, targetResult);
                 int index = 0;
@@ -443,7 +449,7 @@ public class CorrelationMatrixCompute extends SparkCompute<StructuredRecord, Str
     private List<Tuple2<String, Map<String, Integer>>> getColumnValueFrequencies(JavaRDD<StructuredRecord> javaRDD,
             List<Field> inputField) {
         List<Tuple2<String, Map<String, Integer>>> fieldMap = null;
-        javaRDD.map(new Function<StructuredRecord, List<Tuple2<String, Map<String, Integer>>>>() {
+        fieldMap = javaRDD.map(new Function<StructuredRecord, List<Tuple2<String, Map<String, Integer>>>>() {
             
             @Override
             public List<Tuple2<String, Map<String, Integer>>> call(StructuredRecord record) throws Exception {
