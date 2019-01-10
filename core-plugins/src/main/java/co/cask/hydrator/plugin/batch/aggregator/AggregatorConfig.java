@@ -22,17 +22,11 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import javax.annotation.Nullable;
 
 /**
- * Base aggregator config, since almost all aggregators should support setting
- * the number of partitions.
+ * Base aggregator config, since almost all aggregators should support setting the number of partitions.
  */
 public class AggregatorConfig extends PluginConfig {
-    @Nullable
-    @Description("Number of partitions to use when aggregating. If not specified, the execution framework "
-            + "will decide how many to use.")
-    public Integer numPartitions;
-
-    @Nullable
-    @Description("Flag to set if schema is static or dynamic.")
-    public Boolean isDynamicSchema = false;
-
+  @Nullable
+  @Description("Number of partitions to use when aggregating. If not specified, the execution framework " +
+    "will decide how many to use.")
+  protected Integer numPartitions;
 }
