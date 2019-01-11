@@ -35,17 +35,6 @@ public final class Properties {
   }
 
   /**
-   * Properties for the StreamBatchSource as well as the real-time StreamSink
-   */
-  public static class Stream {
-    public static final String NAME = "name";
-    public static final String SCHEMA = "schema";
-    public static final String FORMAT = "format";
-    public static final String DELAY = "delay";
-    public static final String DURATION = "duration";
-  }
-
-  /**
    * Properties for the TimePartitionedFileSetDatasetAvroSink
    */
   public static class TimePartitionedFileSetDataset {
