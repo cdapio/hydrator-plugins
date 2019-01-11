@@ -29,7 +29,6 @@ import org.junit.runners.Suite;
 @RunWith(TestSuite.class)
 @Suite.SuiteClasses({
   ETLSnapshotTestRun.class,
-  ETLStreamConversionTestRun.class,
   ETLTPFSTestRun.class,
   ETLMapReduceTestRun.class,
   GroupByTestRun.class,

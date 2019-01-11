@@ -48,7 +48,6 @@ import co.cask.format.orc.output.OrcOutputFormatProvider;
 import co.cask.format.parquet.input.ParquetInputFormatProvider;
 import co.cask.format.parquet.output.ParquetOutputFormatProvider;
 import co.cask.format.text.input.TextInputFormatProvider;
-import co.cask.hydrator.format.input.CombinePathTrackingInputFormat;
 import co.cask.hydrator.plugin.alert.TMSAlertPublisher;
 import co.cask.hydrator.plugin.batch.action.EmailAction;
 import co.cask.hydrator.plugin.batch.action.SSHAction;
@@ -67,7 +66,6 @@ import co.cask.hydrator.plugin.batch.source.FTPBatchSource;
 import co.cask.hydrator.plugin.batch.source.KVTableSource;
 import co.cask.hydrator.plugin.batch.source.SnapshotFileBatchAvroSource;
 import co.cask.hydrator.plugin.batch.source.SnapshotFileBatchParquetSource;
-import co.cask.hydrator.plugin.batch.source.StreamBatchSource;
 import co.cask.hydrator.plugin.batch.source.TableSource;
 import co.cask.hydrator.plugin.batch.source.TimePartitionedFileSetDatasetAvroSource;
 import co.cask.hydrator.plugin.batch.source.TimePartitionedFileSetDatasetParquetSource;
@@ -85,15 +83,11 @@ import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.DatumReader;
-import org.apache.avro.mapred.AvroKey;
-import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.ql.exec.vector.TimestampColumnVector;
 import org.apache.orc.TypeDescription;
 import org.apache.orc.mapred.OrcStruct;
 import org.apache.orc.mapreduce.OrcOutputFormat;
-import org.apache.parquet.avro.AvroParquetInputFormat;
-import org.apache.parquet.avro.AvroParquetOutputFormat;
 import org.apache.parquet.avro.AvroParquetReader;
 import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.twill.filesystem.Location;
@@ -139,7 +133,6 @@ public class ETLBatchTestBase extends HydratorTestBase {
     // add artifact for batch sources and sinks
     addPluginArtifact(NamespaceId.DEFAULT.artifact("core-plugins", "1.0.0"), parents,
                       KVTableSource.class,
-                      StreamBatchSource.class,
                       TableSource.class,
                       TimePartitionedFileSetDatasetAvroSource.class,
                       TimePartitionedFileSetDatasetParquetSource.class,
