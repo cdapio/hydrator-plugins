@@ -41,10 +41,8 @@
           "name": "format",
           "widget-attributes": {
             "values": [
-              "clf",
               "csv",
-              "grok",
-              "syslog",
+              "json",
               "text",
               "tsv"
             ],

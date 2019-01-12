@@ -24,11 +24,11 @@ import co.cask.cdap.api.data.format.FormatSpecification;
 import co.cask.cdap.api.data.format.RecordFormat;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.flow.flowlet.StreamEvent;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.streaming.StreamingContext;
 import co.cask.cdap.etl.api.streaming.StreamingSource;
 import co.cask.cdap.format.RecordFormats;
+import co.cask.cdap.format.StructuredRecordStringConverter;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
@@ -122,7 +122,7 @@ public class FileStreamingSource extends ReferenceStreamingSource<StructuredReco
     private final String format;
     private final String schemaStr;
     private transient Schema schema;
-    private transient RecordFormat<StreamEvent, StructuredRecord> recordFormat;
+    private transient Function<String, StructuredRecord> recordFormat;
 
     FormatFunction(String format, String schemaStr) {
       this.format = format;
@@ -134,12 +134,22 @@ public class FileStreamingSource extends ReferenceStreamingSource<StructuredReco
       // first time this was called, initialize schema and time, key, and message fields.
       if (recordFormat == null) {
         schema = Schema.parseJson(schemaStr);
-        FormatSpecification spec = new FormatSpecification(format, schema, new HashMap<String, String>());
-        recordFormat = RecordFormats.createInitializedFormat(spec);
+        if ("csv".equals(format)) {
+          recordFormat = text -> StructuredRecordStringConverter.fromDelimitedString(text, ",", schema);
+        } else if ("json".equals(format)) {
+          recordFormat = text -> StructuredRecordStringConverter.fromJsonString(text, schema);
+        } else if ("text".equals(format)) {
+          recordFormat = text -> StructuredRecord.builder(schema).set("body", text).build();
+        } else if ("tsv".equals(format)) {
+          recordFormat = text -> StructuredRecordStringConverter.fromDelimitedString(text, ",", schema);
+        } else {
+          // should never happen
+          throw new IllegalStateException("Unknown format " + format);
+        }
       }
 
       StructuredRecord.Builder builder = StructuredRecord.builder(schema);
-      StructuredRecord messageRecord = recordFormat.read(new StreamEvent(ByteBuffer.wrap(in._2().copyBytes())));
+      StructuredRecord messageRecord = recordFormat.call(in._2().toString());
       for (Schema.Field messageField : messageRecord.getSchema().getFields()) {
         String fieldName = messageField.getName();
         builder.set(fieldName, messageRecord.get(fieldName));
@@ -152,7 +162,7 @@ public class FileStreamingSource extends ReferenceStreamingSource<StructuredReco
    * Configuration for the source.
    */
   public static class Conf extends ReferencePluginConfig {
-    private static final Set<String> FORMATS = ImmutableSet.of("text", "csv", "tsv", "clf", "grok", "syslog");
+    private static final Set<String> FORMATS = ImmutableSet.of("csv", "json", "text", "tsv");
 
     @Macro
     @Description("The format of the source files. Must be text, csv, tsv, clf, grok, or syslog. Defaults to text.")

@@ -20,7 +20,7 @@ Properties
 **path:** The path of the directory to monitor. Files must be written to the monitored directory by
 "moving" them from another location within the same file system. File names starting with . are ignored. (Macro-enabled)
 
-**format:** Format of files in the directory. Supported formats are 'text', 'csv', 'tsv', 'clf', 'grok', and 'syslog'.
+**format:** Format of files in the directory. Supported formats are 'csv', 'json', 'text', and 'tsv'.
 The default format is 'text'. (Macro-enabled)
 
 **schema:** Schema of files in the directory.
