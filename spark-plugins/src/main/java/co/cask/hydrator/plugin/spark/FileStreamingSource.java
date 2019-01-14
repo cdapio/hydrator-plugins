@@ -24,7 +24,6 @@ import co.cask.cdap.api.data.format.FormatSpecification;
 import co.cask.cdap.api.data.format.RecordFormat;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.flow.flowlet.StreamEvent;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.streaming.StreamingContext;
 import co.cask.cdap.etl.api.streaming.StreamingSource;
@@ -122,7 +121,7 @@ public class FileStreamingSource extends ReferenceStreamingSource<StructuredReco
     private final String format;
     private final String schemaStr;
     private transient Schema schema;
-    private transient RecordFormat<StreamEvent, StructuredRecord> recordFormat;
+    private transient RecordFormat<ByteBuffer, StructuredRecord> recordFormat;
 
     FormatFunction(String format, String schemaStr) {
       this.format = format;
@@ -139,7 +138,7 @@ public class FileStreamingSource extends ReferenceStreamingSource<StructuredReco
       }
 
       StructuredRecord.Builder builder = StructuredRecord.builder(schema);
-      StructuredRecord messageRecord = recordFormat.read(new StreamEvent(ByteBuffer.wrap(in._2().copyBytes())));
+      StructuredRecord messageRecord = recordFormat.read(ByteBuffer.wrap(in._2().copyBytes()));
       for (Schema.Field messageField : messageRecord.getSchema().getFields()) {
         String fieldName = messageField.getName();
         builder.set(fieldName, messageRecord.get(fieldName));
