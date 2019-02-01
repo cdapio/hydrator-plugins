@@ -40,7 +40,6 @@
     <module>solrsearch-plugins</module>
     <module>spark-plugins</module>
     <module>transform-plugins</module>
-    <module>feature-engineering-plugin</module>
     <module>wrangler-transform</module>
     <module>google-cloud</module>
     <module>kafka-plugins</module>
