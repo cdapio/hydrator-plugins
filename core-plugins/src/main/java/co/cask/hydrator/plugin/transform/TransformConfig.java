@@ -32,6 +32,11 @@ public class TransformConfig extends PluginConfig {
     private static final long serialVersionUID = 9178561772366181317L;
 
     @Nullable
+    @Description("Number of partitions to use when transforming. If not specified, the execution framework "
+            + "will decide how many to use.")
+    public Integer numPartitions;
+    
+    @Nullable
     @Description("Flag to set if schema is static or dynamic.")
     public Boolean isDynamicSchema = false;
 
