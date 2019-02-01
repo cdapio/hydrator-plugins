@@ -24,6 +24,7 @@ import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.etl.api.batch.BatchAggregator;
 import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.cdap.etl.api.batch.BatchSource;
+import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
 import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
 import co.cask.cdap.etl.proto.v2.ETLPlugin;
 import co.cask.cdap.etl.proto.v2.ETLStage;
@@ -31,9 +32,12 @@ import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
 import co.cask.hydrator.plugin.common.Properties;
+import co.cask.hydrator.plugin.validator.CoreValidator;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.Collections;
 
 /**
  * Tests for GroupBy Aggregator.
@@ -198,5 +202,50 @@ public class GroupByTestRun extends ETLBatchTestBase {
     row = itemsTable.get(Bytes.toBytes("shirt"));
     Assert.assertEquals(row.getLong("totalPurchases").longValue(), 2L);
     Assert.assertEquals(row.getLong("latestPurchase").longValue(), 1234567890003L);
+  }
+
+  @Test
+  public void testGroupByCollectList() throws Exception {
+      /*
+        <ts, user, item, price> --> group by user, itemList:CollectList(item) --> user table
+     */
+    Schema purchaseSchema = Schema.recordOf(
+            "purchase",
+            Schema.Field.of("ts", Schema.of(Schema.Type.LONG)),
+            Schema.Field.of("user", Schema.of(Schema.Type.STRING)),
+            Schema.Field.of("item", Schema.of(Schema.Type.STRING)),
+            Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
+    Schema userSchema = Schema.recordOf(
+            "user",
+            Schema.Field.of("user", Schema.of(Schema.Type.STRING)),
+            Schema.Field.of("itemList", Schema.arrayOf(Schema.of(Schema.Type.STRING))));
+    GroupByConfig groupByConfig = new GroupByConfig("user",  "itemList:CollectList(item)");
+    GroupByAggregator groupByAggregator = new GroupByAggregator(groupByConfig);
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(purchaseSchema, Collections.EMPTY_MAP);
+    groupByAggregator.configurePipeline(mockConfigurer);
+    Assert.assertEquals(userSchema, mockConfigurer.getOutputSchema());
+  }
+
+  @Test
+  public void testGroupByCollectSet() throws Exception {
+      /*
+        <ts, user, item, price> --> group by item, uniqueUsers:CollectSet(user) --> item table
+     */
+    Schema purchaseSchema = Schema.recordOf(
+            "purchase",
+            Schema.Field.of("ts", Schema.of(Schema.Type.LONG)),
+            Schema.Field.of("user", Schema.of(Schema.Type.STRING)),
+            Schema.Field.of("item", Schema.of(Schema.Type.STRING)),
+            Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
+    Schema itemSchema = Schema.recordOf(
+            "item",
+            Schema.Field.of("item", Schema.of(Schema.Type.STRING)),
+            Schema.Field.of("uniqueUsers", Schema.arrayOf(Schema.of(Schema.Type.STRING))));
+
+    GroupByConfig groupByConfig = new GroupByConfig("item",  "uniqueUsers:CollectSet(user)");
+    GroupByAggregator groupByAggregator = new GroupByAggregator(groupByConfig);
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(purchaseSchema, Collections.EMPTY_MAP);
+    groupByAggregator.configurePipeline(mockConfigurer);
+    Assert.assertEquals(itemSchema, mockConfigurer.getOutputSchema());
   }
 }
