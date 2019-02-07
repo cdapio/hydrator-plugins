@@ -28,7 +28,7 @@ public class AggregatorConfig extends PluginConfig {
   @Nullable
   @Description("Number of partitions to use when aggregating. If not specified, the execution framework " +
     "will decide how many to use.")
-  protected Integer numPartitions;
+  public Integer numPartitions;
   
   @Nullable
   @Description("Flag to set if schema is static or dynamic.")
