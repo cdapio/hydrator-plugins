@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.aggregator;
+package co.cask.hydrator.plugin.transform;
 
 import co.cask.cdap.api.annotation.Description;
 import co.cask.cdap.api.plugin.PluginConfig;
@@ -22,15 +22,22 @@ import co.cask.cdap.api.plugin.PluginConfig;
 import javax.annotation.Nullable;
 
 /**
- * Base aggregator config, since almost all aggregators should support setting the number of partitions.
+ * Base aggregator config, since almost all aggregators should support setting
+ * the number of partitions.
  */
-public class AggregatorConfig extends PluginConfig {
-  @Nullable
-  @Description("Number of partitions to use when aggregating. If not specified, the execution framework " +
-    "will decide how many to use.")
-  public Integer numPartitions;
-  
-  @Nullable
-  @Description("Flag to set if schema is static or dynamic.")
-  public Boolean isDynamicSchema = false;
+public class TransformConfig extends PluginConfig {
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 9178561772366181317L;
+
+    @Nullable
+    @Description("Number of partitions to use when transforming. If not specified, the execution framework "
+            + "will decide how many to use.")
+    public Integer numPartitions;
+    
+    @Nullable
+    @Description("Flag to set if schema is static or dynamic.")
+    public Boolean isDynamicSchema = false;
+
 }
