@@ -37,7 +37,9 @@ public class GroupByAggregatorConfigTest {
                                                "firstItem:first(item ) ," +
                                                "lastItem: last( item)," +
                                                "smallestPurchase:min( price) , " +
-                                               "largestPurchase :max(price ) ");
+                                               "largestPurchase :max(price ) ," +
+                                               "itemList :CollectList(item) ," +
+                                               "itemSet :CollectSet(item)");
     Assert.assertEquals(ImmutableList.of("user", "item", "email"), config.getGroupByFields());
     List<GroupByConfig.FunctionInfo> expected = ImmutableList.of(
       new GroupByConfig.FunctionInfo("avgPrice", "price", GroupByConfig.Function.AVG),
@@ -47,7 +49,9 @@ public class GroupByAggregatorConfigTest {
       new GroupByConfig.FunctionInfo("firstItem", "item", GroupByConfig.Function.FIRST),
       new GroupByConfig.FunctionInfo("lastItem", "item", GroupByConfig.Function.LAST),
       new GroupByConfig.FunctionInfo("smallestPurchase", "price", GroupByConfig.Function.MIN),
-      new GroupByConfig.FunctionInfo("largestPurchase", "price", GroupByConfig.Function.MAX)
+      new GroupByConfig.FunctionInfo("largestPurchase", "price", GroupByConfig.Function.MAX),
+      new GroupByConfig.FunctionInfo("itemList", "item", GroupByConfig.Function.COLLECTLIST),
+      new GroupByConfig.FunctionInfo("itemSet", "item", GroupByConfig.Function.COLLECTSET)
     );
     Assert.assertEquals(expected, config.getAggregates());
   }

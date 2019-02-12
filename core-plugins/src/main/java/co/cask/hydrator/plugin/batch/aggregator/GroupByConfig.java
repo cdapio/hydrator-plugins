@@ -21,6 +21,8 @@ import co.cask.cdap.api.annotation.Macro;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.plugin.batch.aggregator.function.AggregateFunction;
 import co.cask.hydrator.plugin.batch.aggregator.function.Avg;
+import co.cask.hydrator.plugin.batch.aggregator.function.CollectList;
+import co.cask.hydrator.plugin.batch.aggregator.function.CollectSet;
 import co.cask.hydrator.plugin.batch.aggregator.function.Count;
 import co.cask.hydrator.plugin.batch.aggregator.function.CountAll;
 import co.cask.hydrator.plugin.batch.aggregator.function.First;
@@ -30,6 +32,7 @@ import co.cask.hydrator.plugin.batch.aggregator.function.Min;
 import co.cask.hydrator.plugin.batch.aggregator.function.Stddev;
 import co.cask.hydrator.plugin.batch.aggregator.function.Sum;
 import co.cask.hydrator.plugin.batch.aggregator.function.Variance;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
@@ -199,6 +202,10 @@ public class GroupByConfig extends AggregatorConfig {
           return new Stddev(field, fieldSchema);
         case VARIANCE:
           return new Variance(field, fieldSchema);
+        case COLLECTLIST:
+          return new CollectList(field, fieldSchema);
+        case COLLECTSET:
+          return new CollectSet(field, fieldSchema);
       }
       // should never happen
       throw new IllegalStateException("Unknown function type " + function);
@@ -244,6 +251,8 @@ public class GroupByConfig extends AggregatorConfig {
     FIRST,
     LAST,
     STDDEV,
-    VARIANCE
+    VARIANCE,
+    COLLECTLIST,
+    COLLECTSET
   }
 }
