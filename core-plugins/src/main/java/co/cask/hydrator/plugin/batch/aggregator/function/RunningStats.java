@@ -22,25 +22,26 @@ package co.cask.hydrator.plugin.batch.aggregator.function;
  * http://www.johndcook.com/blog/skewness_kurtosis/
  */
 public final class RunningStats  {
-  private long entries = 0L;
+  private long numEntries = 0L;
   private double mean1, mean2, mean3, mean4 = 0d;
 
   /**
-   * Pushes a number into machinary that computes a lot of statistics.
+   * Pushes a number into machinery that computes a lot of statistics.
    * @param x number to be added to computing statistics.
    */
   public void push(double x) {
     double delta, deltaN, deltaN2, term1;
 
-    long n1 = entries;
-    entries++;
+    long n1 = numEntries;
+    numEntries++;
     delta = x - mean1;
-    deltaN = delta / entries;
+    deltaN = delta / numEntries;
     deltaN2 = deltaN * deltaN;
     term1 = delta * deltaN * n1;
     mean1 += deltaN;
-    mean4 += term1 * deltaN2 * (entries * entries - 3 * entries + 3) + 6 * deltaN2 * mean2 - 4 * deltaN * mean3;
-    mean3 += term1 * deltaN * (entries - 2) - 3 * deltaN * mean2;
+    mean4 +=
+      term1 * deltaN2 * (numEntries * numEntries - 3 * numEntries + 3) + 6 * deltaN2 * mean2 - 4 * deltaN * mean3;
+    mean3 += term1 * deltaN * (numEntries - 2) - 3 * deltaN * mean2;
     mean2 += term1;
   }
 
@@ -55,7 +56,10 @@ public final class RunningStats  {
    * @return Variance of all numbers.
    */
   public double variance() {
-    return mean2 / (entries - 1.0d);
+    if (numEntries == 0) {
+      return 0;
+    }
+    return mean2 / numEntries;
   }
 
   /**
@@ -69,13 +73,13 @@ public final class RunningStats  {
    * @return Skewness of all numbers.
    */
   public double skewness() {
-    return Math.sqrt((double) entries) * mean3 / Math.pow(mean2, 1.5d);
+    return Math.sqrt((double) numEntries) * mean3 / Math.pow(mean2, 1.5d);
   }
 
   /**
    * @return Kurtosis of all numbers.
    */
   public double kurtosis() {
-    return (double) entries * mean4 / (mean2 * mean2) - 3.0;
+    return (double) numEntries * mean4 / (mean2 * mean2) - 3.0;
   }
 }
