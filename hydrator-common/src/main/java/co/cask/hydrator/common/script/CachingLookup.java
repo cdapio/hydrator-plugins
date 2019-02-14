@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.transform;
+package co.cask.hydrator.common.script;
 
 import co.cask.cdap.etl.api.CacheConfig;
 import co.cask.cdap.etl.api.Lookup;

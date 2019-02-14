@@ -34,6 +34,8 @@ import co.cask.cdap.etl.api.TransformContext;
 import co.cask.cdap.etl.api.lineage.field.FieldOperation;
 import co.cask.cdap.etl.api.lineage.field.FieldTransformOperation;
 import co.cask.hydrator.common.SchemaValidator;
+import co.cask.hydrator.common.script.JavaTypeConverters;
+import co.cask.hydrator.common.script.ScriptContext;
 import co.cask.hydrator.plugin.ScriptConstants;
 import co.cask.hydrator.plugin.common.StructuredRecordSerializer;
 import com.google.common.annotations.VisibleForTesting;

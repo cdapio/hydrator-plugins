@@ -15,7 +15,7 @@
  */
 package co.cask.hydrator.plugin;
 
-import co.cask.hydrator.plugin.transform.JavaTypeConverters;
+import co.cask.hydrator.common.script.JavaTypeConverters;
 
 /**
  * Constants for transforms using JavaScript.
