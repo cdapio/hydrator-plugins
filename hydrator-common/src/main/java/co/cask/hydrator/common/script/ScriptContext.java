@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.transform;
+package co.cask.hydrator.common.script;
 
 import co.cask.cdap.etl.api.Arguments;
 import co.cask.cdap.etl.api.LookupConfig;
@@ -25,7 +25,7 @@ import org.slf4j.Logger;
 import javax.annotation.Nullable;
 
 /**
- * Context passed to {@link JavaScriptTransform} scripts.
+ * Context passed to javascript and python scripts.
  */
 public class ScriptContext {
   private final Logger logger;

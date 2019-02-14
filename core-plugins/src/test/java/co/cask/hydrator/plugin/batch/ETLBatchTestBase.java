@@ -72,7 +72,6 @@ import co.cask.hydrator.plugin.batch.source.TimePartitionedFileSetDatasetParquet
 import co.cask.hydrator.plugin.error.ErrorCollector;
 import co.cask.hydrator.plugin.transform.JavaScriptTransform;
 import co.cask.hydrator.plugin.transform.ProjectionTransform;
-import co.cask.hydrator.plugin.transform.PythonEvaluator;
 import co.cask.hydrator.plugin.transform.ValidatorTransform;
 import co.cask.hydrator.plugin.validator.CoreValidator;
 import com.google.common.collect.ImmutableMap;
@@ -145,7 +144,6 @@ public class ETLBatchTestBase extends HydratorTestBase {
                       ProjectionTransform.class,
                       ValidatorTransform.class, CoreValidator.class,
                       JavaScriptTransform.class,
-                      PythonEvaluator.class,
                       GroupByAggregator.class,
                       DedupAggregator.class,
                       Joiner.class,

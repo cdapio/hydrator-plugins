@@ -20,6 +20,8 @@ import co.cask.cdap.etl.api.Arguments;
 import co.cask.cdap.etl.api.LookupConfig;
 import co.cask.cdap.etl.api.LookupProvider;
 import co.cask.cdap.etl.api.StageMetrics;
+import co.cask.hydrator.common.script.JavaTypeConverters;
+import co.cask.hydrator.common.script.ScriptContext;
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 

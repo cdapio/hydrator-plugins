@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package co.cask.hydrator.plugin.transform;
+package co.cask.hydrator.common.script;
 
 import co.cask.cdap.api.dataset.DatasetProperties;
 import co.cask.cdap.etl.api.LookupConfig;

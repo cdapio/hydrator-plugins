@@ -31,6 +31,7 @@ import co.cask.cdap.etl.api.StageMetrics;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
 import co.cask.cdap.etl.api.Validator;
+import co.cask.hydrator.common.script.JavaTypeConverters;
 import co.cask.hydrator.plugin.ScriptConstants;
 import co.cask.hydrator.plugin.common.StructuredRecordSerializer;
 import com.google.common.annotations.VisibleForTesting;

@@ -14,15 +14,13 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.transform;
-
-import co.cask.hydrator.plugin.ScriptConstants;
+package co.cask.hydrator.common.script;
 
 import java.util.Map;
 
 /**
- * Utility methods defined in the JavaScript context of {@link ScriptTransform}.
- * The JavaScript implementation is located in {@link ScriptConstants#HELPER_DEFINITION}.
+ * Utility methods defined in the JavaScript context of ScriptTransform.
+ * The JavaScript implementation is located in ScriptConstants#HELPER_DEFINITION.
  */
 public interface JavaTypeConverters {
   /**
