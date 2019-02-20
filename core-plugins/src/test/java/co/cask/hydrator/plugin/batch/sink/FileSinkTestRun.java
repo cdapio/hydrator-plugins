@@ -52,6 +52,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -214,7 +215,7 @@ public class FileSinkTestRun extends ETLBatchTestBase {
     }
   }
 
-  private void validateDatasetSchema(FileFormat format) {
+  private void validateDatasetSchema(FileFormat format) throws IOException {
     // if a schema was provided for the sink verify that the external dataset has the given schema
     Map<String, String> metadataProperties =
       metadataAdmin.getProperties(MetadataScope.SYSTEM,
