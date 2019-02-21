@@ -62,6 +62,7 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -914,7 +915,7 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
     return deployApplication(appId, appRequest);
   }
 
-  private void verifyDatasetSchema(String dsName, Schema expectedSchema) {
+  private void verifyDatasetSchema(String dsName, Schema expectedSchema) throws IOException {
     Map<String, String> metadataProperties = getMetadataAdmin()
       .getProperties(MetadataScope.SYSTEM, MetadataEntity.ofDataset(NamespaceId.DEFAULT.getNamespace(), dsName));
     Assert.assertEquals(expectedSchema.toString(), metadataProperties.get(DatasetProperties.SCHEMA));
