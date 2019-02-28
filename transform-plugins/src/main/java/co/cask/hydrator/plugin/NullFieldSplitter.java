@@ -35,7 +35,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
-import javax.ws.rs.Path;
 
 /**
  * Splits input data into two outputs based on whether a configurable field is null or not.
@@ -66,7 +65,7 @@ public class NullFieldSplitter extends SplitterTransform<StructuredRecord, Struc
   }
 
   @Override
-  public void initialize(TransformContext context) throws Exception {
+  public void initialize(TransformContext context) {
     schemaMap = new HashMap<>();
     Schema inputSchema = context.getInputSchema();
     if (inputSchema != null) {
@@ -96,11 +95,6 @@ public class NullFieldSplitter extends SplitterTransform<StructuredRecord, Struc
       }
       emitter.emit(NON_NULL_PORT, builder.build());
     }
-  }
-
-  @Path("outputSchema")
-  public Map<String, Schema> getOutputSchemas(GetSchemaRequest request) {
-    return getOutputSchemas(request.inputSchema, request);
   }
 
   private static Map<String, Schema> getOutputSchemas(Schema inputSchema, Conf conf) {
@@ -143,13 +137,6 @@ public class NullFieldSplitter extends SplitterTransform<StructuredRecord, Struc
       }
     }
     return Schema.recordOf(nullableSchema.getRecordName() + ".nonnull", fields);
-  }
-
-  /**
-   * Request to get output schemas
-   */
-  public static class GetSchemaRequest extends Conf {
-    private Schema inputSchema;
   }
 
   /**

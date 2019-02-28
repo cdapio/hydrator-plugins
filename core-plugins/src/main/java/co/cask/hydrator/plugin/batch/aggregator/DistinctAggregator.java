@@ -33,7 +33,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Nullable;
-import javax.ws.rs.Path;
 
 /**
  * Distinct aggregator.
@@ -108,11 +107,6 @@ public class DistinctAggregator extends RecordAggregator {
     emitter.emit(groupKey);
   }
 
-  @Path("outputSchema")
-  public Schema getOutputSchema(GetSchemaRequest request) {
-    return getOutputSchema(request.inputSchema, request.getFields());
-  }
-
   private static Schema getOutputSchema(Schema inputSchema, Iterable<String> fields) {
     if (fields == null || !fields.iterator().hasNext()) {
       return inputSchema;
@@ -128,12 +122,5 @@ public class DistinctAggregator extends RecordAggregator {
       outputFields.add(field);
     }
     return Schema.recordOf(inputSchema.getRecordName() + ".distinct", outputFields);
-  }
-
-  /**
-   * Endpoint request for output schema.
-   */
-  public static class GetSchemaRequest extends Conf {
-    private Schema inputSchema;
   }
 }

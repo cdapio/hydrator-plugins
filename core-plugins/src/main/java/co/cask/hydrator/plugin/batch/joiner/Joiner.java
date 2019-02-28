@@ -46,7 +46,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.ws.rs.Path;
 
 /**
  * Batch joiner to join records from multiple inputs
@@ -64,7 +63,6 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
   public static final String RENAME_OPERATION_DESCRIPTION = "Renamed as a part of a join";
 
   private final JoinerConfig conf;
-  private Map<String, Schema> inputSchemas;
   private Schema outputSchema;
   private Map<String, List<String>> perStageJoinKeys;
   private Table<String, String, String> perStageSelectedFields;
@@ -85,7 +83,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
   }
 
   @Override
-  public void prepareRun(BatchJoinerContext context) throws Exception {
+  public void prepareRun(BatchJoinerContext context) {
     if (conf.getNumPartitions() != null) {
       context.setNumPartitions(conf.getNumPartitions());
     }
@@ -164,14 +162,14 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
   }
 
   @Override
-  public void initialize(BatchJoinerRuntimeContext context) throws Exception {
+  public void initialize(BatchJoinerRuntimeContext context) {
     init(context.getInputSchemas());
-    inputSchemas = context.getInputSchemas();
+    Map<String, Schema> inputSchemas = context.getInputSchemas();
     outputSchema = context.getOutputSchema();
   }
 
   @Override
-  public StructuredRecord joinOn(String stageName, StructuredRecord record) throws Exception {
+  public StructuredRecord joinOn(String stageName, StructuredRecord record) {
     List<Schema.Field> fields = new ArrayList<>();
     Schema schema = record.getSchema();
 
@@ -262,24 +260,11 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     }
   }
 
-  @Path("outputSchema")
-  @VisibleForTesting
-  public Schema getOutputSchema(GetSchemaRequest request) {
-    validateJoinKeySchemas(request.inputSchemas, request.getPerStageJoinKeys());
-    requiredInputs = request.getInputs();
-    perStageSelectedFields = request.getPerStageSelectedFields();
-    duplicateFields = ArrayListMultimap.create();
-    return getOutputSchema(request.inputSchemas);
-  }
-
-  /**
-   * Endpoint request for output schema.
-   */
-  public static class GetSchemaRequest extends JoinerConfig {
-    public Map<String, Schema> inputSchemas;
-  }
-
   Schema getOutputSchema(Map<String, Schema> inputSchemas) {
+    validateJoinKeySchemas(inputSchemas, conf.getPerStageJoinKeys());
+    requiredInputs = conf.getInputs();
+    perStageSelectedFields = conf.getPerStageSelectedFields();
+    duplicateFields = ArrayListMultimap.create();
     return Schema.recordOf("join.output", getOutputFields(createOutputFieldInfos(inputSchemas)));
   }
 

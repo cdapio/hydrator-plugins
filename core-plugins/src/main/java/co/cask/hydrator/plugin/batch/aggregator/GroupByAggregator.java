@@ -39,7 +39,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.Path;
 
 /**
  * Batch group by aggregator.
@@ -143,11 +142,6 @@ public class GroupByAggregator extends RecordAggregator {
     emitter.emit(builder.build());
   }
 
-  @Path("outputSchema")
-  public Schema getOutputSchema(GetSchemaRequest request) {
-    return getOutputSchema(request.inputSchema, request.getGroupByFields(), request.getAggregates());
-  }
-
   private Schema getOutputSchema(Schema inputSchema, List<String> groupByFields,
                                  List<GroupByConfig.FunctionInfo> aggregates) {
     // Check that all the group by fields exist in the input schema,
@@ -226,12 +220,5 @@ public class GroupByAggregator extends RecordAggregator {
       fields.add(fieldSchema);
     }
     return Schema.recordOf("group.key.schema", fields);
-  }
-
-  /**
-   * Endpoint request for output schema.
-   */
-  public static class GetSchemaRequest extends GroupByConfig {
-    private Schema inputSchema;
   }
 }
