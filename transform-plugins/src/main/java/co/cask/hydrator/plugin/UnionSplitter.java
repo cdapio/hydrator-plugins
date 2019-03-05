@@ -36,7 +36,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
-import javax.ws.rs.Path;
 
 /**
  * Splits input between multiple output ports, with one port per possible type in the union.
@@ -66,7 +65,7 @@ public class UnionSplitter extends SplitterTransform<StructuredRecord, Structure
   }
 
   @Override
-  public void transform(StructuredRecord record, MultiOutputEmitter<StructuredRecord> emitter) throws Exception {
+  public void transform(StructuredRecord record, MultiOutputEmitter<StructuredRecord> emitter) {
     if (conf.unionField == null) {
       emitter.emit(record.getSchema().getRecordName(), record);
       return;
@@ -165,11 +164,6 @@ public class UnionSplitter extends SplitterTransform<StructuredRecord, Structure
     emitter.emit(port, builder.build());
   }
 
-  @Path("outputSchema")
-  public Map<String, Schema> getOutputSchemas(GetSchemaRequest request) {
-    return getOutputSchemas(request.inputSchema, request.unionField, request.modifySchema);
-  }
-
   @VisibleForTesting
   static Map<String, Schema> getOutputSchemas(Schema inputSchema, String unionField, boolean modifySchema) {
     Map<String, Schema> outputPortSchemas = new HashMap<>();
@@ -219,13 +213,6 @@ public class UnionSplitter extends SplitterTransform<StructuredRecord, Structure
     }
 
     return outputPortSchemas;
-  }
-
-  /**
-   * Request to get output schemas.
-   */
-  static class GetSchemaRequest extends Conf {
-    private Schema inputSchema;
   }
 
   /**

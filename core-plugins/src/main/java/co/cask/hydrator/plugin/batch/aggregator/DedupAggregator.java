@@ -31,7 +31,6 @@ import co.cask.hydrator.plugin.batch.aggregator.function.SelectionFunction;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import javax.ws.rs.Path;
 
 /**
  * Deduplicate aggregator.
@@ -74,13 +73,13 @@ public class DedupAggregator extends RecordAggregator {
   }
 
   @Override
-  public void initialize(BatchRuntimeContext context) throws Exception {
+  public void initialize(BatchRuntimeContext context) {
     uniqueFields = dedupConfig.getUniqueFields();
     filterFunction = dedupConfig.getFilter();
   }
 
   @Override
-  public void groupBy(StructuredRecord record, Emitter<StructuredRecord> emitter) throws Exception {
+  public void groupBy(StructuredRecord record, Emitter<StructuredRecord> emitter) {
     if (uniqueFields == null) {
       emitter.emit(record);
       return;
@@ -95,7 +94,7 @@ public class DedupAggregator extends RecordAggregator {
 
   @Override
   public void aggregate(StructuredRecord groupKey, Iterator<StructuredRecord> iterator,
-                        Emitter<StructuredRecord> emitter) throws Exception {
+                        Emitter<StructuredRecord> emitter) {
     if (!iterator.hasNext()) {
       return;
     }
@@ -126,11 +125,6 @@ public class DedupAggregator extends RecordAggregator {
     }
   }
 
-  @Path("outputSchema")
-  public Schema getOutputSchema(GetSchemaRequest request) {
-    return getOutputSchema(request.inputSchema);
-  }
-
   private Schema getGroupKeySchema(Schema inputSchema) {
     List<Schema.Field> fields = new ArrayList<>();
     for (String fieldName : dedupConfig.getUniqueFields()) {
@@ -146,13 +140,6 @@ public class DedupAggregator extends RecordAggregator {
 
   private Schema getOutputSchema(Schema inputSchema) {
     return Schema.recordOf(inputSchema.getRecordName() + ".dedup", inputSchema.getFields());
-  }
-
-  /**
-   * Endpoint request for output schema.
-   */
-  public static class GetSchemaRequest extends DedupConfig {
-    private Schema inputSchema;
   }
 
   private void validateSchema(Schema inputSchema, List<String> uniqueFields, DedupConfig.DedupFunctionInfo function) {

@@ -21,17 +21,16 @@ import co.cask.cdap.api.annotation.Name;
 import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.plugin.EndpointPluginContext;
 import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.ErrorRecord;
 import co.cask.cdap.etl.api.ErrorTransform;
 import co.cask.cdap.etl.api.PipelineConfigurer;
+import co.cask.cdap.etl.api.validation.InvalidConfigPropertyException;
 
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
-import javax.ws.rs.Path;
 
 /**
  * Adds the error code, message, and stage to each record, then emits it.
@@ -50,19 +49,19 @@ public class ErrorCollector extends ErrorTransform<StructuredRecord, StructuredR
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
     if (inputSchema != null) {
       if (config.messageField != null && inputSchema.getField(config.messageField) != null) {
-        throw new IllegalArgumentException(String.format(
+        throw new InvalidConfigPropertyException(String.format(
           "Input schema already contains message field '%s'. Please set message field to a different value.",
-          config.messageField));
+          config.messageField), "messageField");
       }
       if (config.codeField != null && inputSchema.getField(config.codeField) != null) {
-        throw new IllegalArgumentException(String.format(
+        throw new InvalidConfigPropertyException(String.format(
           "Input schema already contains code field '%s'. Please set code field to a different value.",
-          config.codeField));
+          config.codeField), "codeField");
       }
       if (config.stageField != null && inputSchema.getField(config.stageField) != null) {
-        throw new IllegalArgumentException(String.format(
+        throw new InvalidConfigPropertyException(String.format(
           "Input schema already contains stage field '%s'. Please set stage field to a different value.",
-          config.stageField));
+          config.stageField), "stageField");
       }
       Schema outputSchema = getOutputSchema(config, inputSchema);
       pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
@@ -70,7 +69,7 @@ public class ErrorCollector extends ErrorTransform<StructuredRecord, StructuredR
   }
 
   @Override
-  public void transform(ErrorRecord<StructuredRecord> input, Emitter<StructuredRecord> emitter) throws Exception {
+  public void transform(ErrorRecord<StructuredRecord> input, Emitter<StructuredRecord> emitter) {
     StructuredRecord invalidRecord = input.getRecord();
     StructuredRecord.Builder output = StructuredRecord.builder(getOutputSchema(config, invalidRecord.getSchema()));
     for (Schema.Field field : invalidRecord.getSchema().getFields()) {
@@ -101,24 +100,6 @@ public class ErrorCollector extends ErrorTransform<StructuredRecord, StructuredR
       fields.add(Schema.Field.of(config.stageField, Schema.of(Schema.Type.STRING)));
     }
     return Schema.recordOf("error" + inputSchema.getRecordName(), fields);
-  }
-
-  /**
-   * Endpoint method to get the output schema of this stage.
-   *
-   * @param request {@link GetSchemaRequest} containing information required for connection and query to execute.
-   * @param pluginContext context to create plugins
-   */
-  @Path("getSchema")
-  public Schema getSchema(GetSchemaRequest request, EndpointPluginContext pluginContext) {
-    return getOutputSchema(request, request.inputSchema);
-  }
-
-  /**
-   * Endpoint request for output schema.
-   */
-  public static class GetSchemaRequest extends Config {
-    private Schema inputSchema;
   }
 
   /**

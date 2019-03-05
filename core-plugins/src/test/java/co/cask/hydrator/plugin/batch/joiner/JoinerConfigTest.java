@@ -208,21 +208,20 @@ public class JoinerConfigTest {
 
   @Test
   public void testJoinerOutputSchema() {
-    Joiner.GetSchemaRequest getSchemaRequest = new Joiner.GetSchemaRequest();
-    getSchemaRequest.inputSchemas = ImmutableMap.of("film", filmSchema, "filmActor", filmActorSchema,
+    Map<String, Schema> inputSchemas = ImmutableMap.of("film", filmSchema, "filmActor", filmActorSchema,
                                                     "filmCategory", filmCategorySchema);
-    getSchemaRequest.joinKeys = "film.film_id=filmActor.film_id=filmCategory.film_id";
-    getSchemaRequest.selectedFields = "film.film_id, film.film_name, filmActor.actor_name as renamed_actor, " +
+    String joinKeys = "film.film_id=filmActor.film_id=filmCategory.film_id";
+    String selectedFields = "film.film_id, film.film_name, filmActor.actor_name as renamed_actor, " +
       "filmCategory.category_name as renamed_category";
-    getSchemaRequest.requiredInputs = "film,filmActor,filmCategory";
+    String requiredInputs = "film,filmActor,filmCategory";
+    JoinerConfig joinerConfig = new JoinerConfig(joinKeys, selectedFields, requiredInputs);
 
-    Joiner joiner = new Joiner(null);
-    Assert.assertEquals(outputSchema, joiner.getOutputSchema(getSchemaRequest));
+    Joiner joiner = new Joiner(joinerConfig);
+    Assert.assertEquals(outputSchema, joiner.getOutputSchema(inputSchemas));
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void testOutputSchemaForInvalidKeys() {
-    Joiner.GetSchemaRequest getSchemaRequest = new Joiner.GetSchemaRequest();
     // film_id is Long but it should be String, OutputSchema call should throw an exception
     Schema filmCategorySchema = Schema.recordOf(
       "filmCategory",
@@ -230,17 +229,18 @@ public class JoinerConfigTest {
       Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("category_name", Schema.of(Schema.Type.STRING)));
 
-    getSchemaRequest.inputSchemas = ImmutableMap.of("film", filmSchema, "filmActor", filmActorSchema,
-                                                    "filmCategory", filmCategorySchema);
+    Map<String, Schema> inputSchemas = ImmutableMap.of("film", filmSchema, "filmActor", filmActorSchema,
+                                                       "filmCategory", filmCategorySchema);
 
-
-    getSchemaRequest.joinKeys = "film.film_id=filmActor.film_id=filmCategory.film_id";
-    getSchemaRequest.selectedFields = "film.film_id, film.film_name, filmActor.actor_name as renamed_actor, " +
+    String joinKeys = "film.film_id=filmActor.film_id=filmCategory.film_id";
+    String selectedFields = "film.film_id, film.film_name, filmActor.actor_name as renamed_actor, " +
       "filmCategory.category_name as renamed_category";
-    getSchemaRequest.requiredInputs = "film,filmActor,filmCategory";
-    Joiner joiner = new Joiner(null);
+    String requiredInputs = "film,filmActor,filmCategory";
+    JoinerConfig config = new JoinerConfig(joinKeys, selectedFields, requiredInputs);
+
+    Joiner joiner = new Joiner(config);
     // should throw IllegalArgumentException exception
-    joiner.getOutputSchema(getSchemaRequest);
+    joiner.getOutputSchema(inputSchemas);
   }
 
   @Test
@@ -251,12 +251,13 @@ public class JoinerConfigTest {
       Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("category_name", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
 
-    Joiner.GetSchemaRequest getSchemaRequest = new Joiner.GetSchemaRequest();
-    getSchemaRequest.inputSchemas = ImmutableMap.of("film", filmSchema, "filmActor", filmActorSchema,
+    Map<String, Schema> inputSchemas = ImmutableMap.of("film", filmSchema, "filmActor", filmActorSchema,
                                                     "filmCategory", filmCategorySchema);
-    getSchemaRequest.joinKeys = "film.film_id=filmActor.film_id=filmCategory.film_id";
-    getSchemaRequest.selectedFields = "film.film_id, film.film_name, filmActor.actor_name as renamed_actor, " +
+    String joinKeys = "film.film_id=filmActor.film_id=filmCategory.film_id";
+    String selectedFields = "film.film_id, film.film_name, filmActor.actor_name as renamed_actor, " +
       "filmCategory.category_name as renamed_category";
+    String requiredInputs = "film,filmActor";
+    JoinerConfig conf = new JoinerConfig(joinKeys, selectedFields, requiredInputs);
 
     Schema outputSchema = Schema.recordOf(
       "joined",
@@ -264,10 +265,9 @@ public class JoinerConfigTest {
       Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("renamed_actor", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("renamed_category", filmCategorySchema.getField("category_name").getSchema()));
-    getSchemaRequest.requiredInputs = "film,filmActor";
 
-    Joiner joiner = new Joiner(null);
-    Assert.assertEquals(outputSchema, joiner.getOutputSchema(getSchemaRequest));
+    Joiner joiner = new Joiner(conf);
+    Assert.assertEquals(outputSchema, joiner.getOutputSchema(inputSchemas));
   }
 
 }
