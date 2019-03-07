@@ -16,6 +16,10 @@
           }
         },
         {
+          "widget-type": "hidden",
+          "name": "query"
+        },
+        {
           "widget-type": "textbox",
           "label": "Plugin Name",
           "name": "jdbcPluginName"
@@ -41,10 +45,23 @@
             "rows": "4"
           },
           "plugin-function": {
-            "method": "POST",
             "widget": "getSchema",
             "output-property": "schema",
-            "plugin-method": "getSchema"
+            "omit-properties": [
+              {
+                "name": "schema"
+              }
+            ],
+            "add-properties": [
+              {
+                "name": "query",
+                "widget-type": "textarea",
+                "label": "Query",
+                "widget-attributes": {
+                  "rows": "4"
+                }
+              }
+            ]
           }
         },
         {

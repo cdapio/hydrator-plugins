@@ -44,7 +44,8 @@ public class DBManager implements Destroyable {
     this.config = config;
   }
 
-  public void validateJDBCPluginPipeline(PipelineConfigurer pipelineConfigurer, String jdbcPluginId) {
+  public Class<? extends Driver> validateJDBCPluginPipeline(PipelineConfigurer pipelineConfigurer,
+                                                            String jdbcPluginId) {
     Preconditions.checkArgument(!(config.user == null && config.password != null),
                                 "user is null. Please provide both user name and password if database requires " +
                                   "authentication. If not, please remove password and retry.");
@@ -56,6 +57,7 @@ public class DBManager implements Destroyable {
       jdbcDriverClass != null, "Unable to load JDBC Driver class for plugin name '%s'. Please make sure that the " +
         "plugin '%s' of type '%s' containing the driver has been installed correctly.", config.jdbcPluginName,
       config.jdbcPluginName, config.jdbcPluginType);
+    return jdbcDriverClass;
   }
 
   public boolean tableExists(Class<? extends Driver> jdbcDriverClass, String tableName) {
