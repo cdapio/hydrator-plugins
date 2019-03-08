@@ -90,7 +90,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     Schema configuredSchema = sourceConfig.getSchema();
     if (configuredSchema != null) {
       pipelineConfigurer.getStageConfigurer().setOutputSchema(sourceConfig.getSchema());
-    } else {
+    } else if (sourceConfig.query != null) {
       try {
         pipelineConfigurer.getStageConfigurer().setOutputSchema(getSchema(driverClass));
       } catch (IllegalAccessException | InstantiationException e) {
