@@ -279,7 +279,7 @@ public class BatchCassandraSource extends ReferenceBatchSource<Long, Row, Struct
     public static final String KEYSPACE = "keyspace";
     public static final String INITIAL_ADDRESS = "initialAddress";
     public static final String USERNAME = "username";
-    public static final String PASSWORD = "password";
+    public static final String PASSWORD = "password"; //NOSONAR
     public static final String QUERY = "query";
     public static final String SCHEMA = "schema";
     public static final String PROPERTIES = "properties";
