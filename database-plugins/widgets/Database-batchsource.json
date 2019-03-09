@@ -45,7 +45,7 @@
             "rows": "4"
           },
           "plugin-function": {
-            "widget": "getSchema",
+            "widget": "outputSchema",
             "output-property": "schema",
             "omit-properties": [
               {
