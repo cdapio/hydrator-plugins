@@ -1,5 +1,5 @@
 /*
- * Copyright © 2016 Cask Data, Inc.
+ * Copyright © 2016-2019 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -43,8 +43,6 @@ import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
 import co.cask.cdap.test.SparkManager;
 import co.cask.cdap.test.TestConfiguration;
-import co.cask.http.HttpHandler;
-import co.cask.http.NettyHttpService;
 import co.cask.hydrator.common.http.HTTPPollConfig;
 import co.cask.hydrator.plugin.spark.FileStreamingSource;
 import co.cask.hydrator.plugin.spark.HTTPPollerSource;
@@ -55,6 +53,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
+import io.cdap.http.HttpHandler;
+import io.cdap.http.NettyHttpService;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
