@@ -35,7 +35,7 @@ import javax.annotation.Nullable;
 public class ConnectionConfig extends PluginConfig {
   public static final String CONNECTION_STRING = "connectionString";
   public static final String USER = "user";
-  public static final String PASSWORD = "password";
+  public static final String PASSWORD = "password"; //NOSONAR
   public static final String CONNECTION_ARGUMENTS = "connectionArguments";
   public static final String JDBC_PLUGIN_NAME = "jdbcPluginName";
   public static final String JDBC_PLUGIN_TYPE = "jdbcPluginType";

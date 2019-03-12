@@ -43,6 +43,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.OutputKeys;
@@ -146,6 +147,7 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
       InputSource source = new InputSource(new StringReader((String) input.get(config.inputField)));
       source.setEncoding(config.encoding);
       DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
+      builderFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
       DocumentBuilder documentBuilder = builderFactory.newDocumentBuilder();
       Document document = documentBuilder.parse(source);
       XPathFactory xpathFactory = XPathFactory.newInstance();
@@ -223,7 +225,10 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
   private String nodeToString(Node node) {
     StringWriter stringWriter = new StringWriter();
     try {
-      Transformer transformer = TransformerFactory.newInstance().newTransformer();
+      TransformerFactory transFactory = TransformerFactory.newInstance();
+      transFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+      Transformer transformer = transFactory.newTransformer();
+      transformer.setOutputProperty(OutputKeys.INDENT, "yes");
       transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
       transformer.setOutputProperty(OutputKeys.INDENT, "no");
       transformer.transform(new DOMSource(node), new StreamResult(stringWriter));

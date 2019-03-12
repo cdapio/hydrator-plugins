@@ -106,6 +106,8 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
     Configuration conf = context.getConfiguration();
     fs = file.getFileSystem(conf);
     XMLInputFactory factory = XMLInputFactory.newInstance();
+    factory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, Boolean.FALSE);
+    factory.setProperty(XMLInputFactory.SUPPORT_DTD, Boolean.FALSE);
     fdDataInputStream = fs.open(file);
     availableBytes = split.getLength();
     try {
