@@ -73,18 +73,14 @@
   </scm>
 
   <distributionManagement>
-    <repository>
-      <id>sonatype.release</id>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
-    </repository>
-    <snapshotRepository>
-      <id>sonatype.snapshots</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    </snapshotRepository>
-    <site>
-      <id>cask</id>
-      <url>http://cask.co</url>
-    </site>
+           <repository>
+               <id>central</id>
+               <url>http://artifacts.ggn.in.guavus.com:80/libs-release-local</url>
+           </repository>
+           <snapshotRepository>
+               <id>snapshots</id>
+               <url>http://artifacts.ggn.in.guavus.com:8081/artifactory/libs-snapshot-local</url>
+           </snapshotRepository>
   </distributionManagement>
 
   <issueManagement>
@@ -130,25 +126,7 @@
     <netty.version>4.1.16.Final</netty.version>
     <netty-http.version>1.1.0</netty-http.version>
   </properties>
-
-  <repositories>
-    <repository>
-      <id>sonatype</id>
-      <url>https://oss.sonatype.org/content/groups/public</url>
-    </repository>
-    <repository>
-      <id>sonatype-snapshots</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    </repository>
-  </repositories>
-
-  <pluginRepositories>
-    <pluginRepository>
-      <id>sonatype</id>
-      <url>https://oss.sonatype.org/content/groups/public/</url>
-    </pluginRepository>
-  </pluginRepositories>
-
+  
   <dependencyManagement>
     <dependencies>
       <dependency>
