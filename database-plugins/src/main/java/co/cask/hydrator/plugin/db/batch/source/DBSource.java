@@ -105,7 +105,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     throws IllegalAccessException, SQLException, InstantiationException {
     DriverCleanup driverCleanup = loadPluginClassAndGetDriver(driverClass);
     try (Connection connection = getConnection()) {
-      String query = sourceConfig.query;
+      String query = sourceConfig.importQuery;
       Statement statement = connection.createStatement();
       statement.setMaxRows(1);
       if (query.contains("$CONDITIONS")) {

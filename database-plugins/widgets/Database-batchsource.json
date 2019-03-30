@@ -51,16 +51,6 @@
               {
                 "name": "schema"
               }
-            ],
-            "add-properties": [
-              {
-                "name": "query",
-                "widget-type": "textarea",
-                "label": "Query",
-                "widget-attributes": {
-                  "rows": "4"
-                }
-              }
             ]
           }
         },
