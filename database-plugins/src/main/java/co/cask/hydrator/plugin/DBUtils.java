@@ -159,6 +159,7 @@ public final class DBUtils {
   public static List<Schema.Field> getSchemaFields(ResultSet resultSet) throws SQLException {
     List<Schema.Field> schemaFields = Lists.newArrayList();
     ResultSetMetaData metadata = resultSet.getMetaData();
+    LOG.error("colcount = {}", metadata.getColumnCount());
     // ResultSetMetadata columns are numbered starting with 1
     for (int i = 1; i <= metadata.getColumnCount(); i++) {
       String columnName = metadata.getColumnName(i);
@@ -169,6 +170,7 @@ public final class DBUtils {
       if (ResultSetMetaData.columnNullable == metadata.isNullable(i)) {
         columnSchema = Schema.nullableOf(columnSchema);
       }
+      LOG.error("name = {}, schema = {}", columnName, columnSchema.toString());
       Schema.Field field = Schema.Field.of(columnName, columnSchema);
       schemaFields.add(field);
     }

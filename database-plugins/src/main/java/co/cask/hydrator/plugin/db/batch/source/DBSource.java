@@ -108,9 +108,11 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
       String query = sourceConfig.importQuery;
       Statement statement = connection.createStatement();
       statement.setMaxRows(1);
+      LOG.error("query = {}", query);
       if (query.contains("$CONDITIONS")) {
         query = removeConditionsClause(query);
       }
+      LOG.error("query = {}", query);
       ResultSet resultSet = statement.executeQuery(query);
       return Schema.recordOf("outputSchema", DBUtils.getSchemaFields(resultSet));
     } finally {
