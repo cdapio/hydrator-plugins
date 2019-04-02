@@ -820,7 +820,7 @@
       <id>release</id>
       <build>
         <plugins>
-          <plugin>
+          <!--<plugin>
             <groupId>org.sonatype.plugins</groupId>
             <artifactId>nexus-staging-maven-plugin</artifactId>
             <version>1.6.2</version>
@@ -830,7 +830,7 @@
               <serverId>sonatype.release</serverId>
               <stagingProfileId>655dc88dc770c3</stagingProfileId>
             </configuration>
-          </plugin>
+          </plugin>-->
           <!-- Source JAR -->
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
@@ -877,7 +877,7 @@
             </executions>
           </plugin>
 
-          <plugin>
+          <!--<plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-gpg-plugin</artifactId>
             <version>1.5</version>
@@ -892,7 +892,7 @@
                 </goals>
               </execution>
             </executions>
-          </plugin>
+          </plugin>-->
         </plugins>
       </build>
     </profile>
