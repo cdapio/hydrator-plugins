@@ -46,11 +46,6 @@
     <module>solrsearch-plugins</module>
     <module>spark-plugins</module>
     <module>transform-plugins</module>
-    <module>wrangler-transform</module>
-    <module>google-cloud</module>
-    <module>kafka-plugins</module>
-    <module>amazon-s3-plugins</module>
-    <module>condition-plugins</module>
   </modules>
 
   <licenses>
@@ -825,6 +820,21 @@
 
   <!-- Profile for release. Includes signing of jars. -->
   <profiles>
+    <profile>
+      <!-- Profile to include submodules -->
+      <id>submodules</id>
+      <activation>
+        <jdk>[1.8,)</jdk>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <modules>
+        <module>wrangler-transform</module>
+        <module>google-cloud</module>
+        <module>kafka-plugins</module>
+        <module>amazon-s3-plugins</module>
+        <module>condition-plugins</module>
+      </modules>
+    </profile>
     <profile> 
       <id>skipTests</id>
       <build>
