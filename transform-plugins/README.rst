@@ -23,13 +23,13 @@ Follow these instructions to build and deploy Hydrator transform plugins.
 
 Prerequisites
 -------------
-To use plugins, you must have CDAP version 3.2.0 or later. You can download CDAP Standalone that includes Hydrator `here <http://cask.co/downloads>`__.
+To use plugins, you must have CDAP version 3.2.0 or later. You can download CDAP Standalone that includes Hydrator `here <http://cdap.io/downloads>`__.
  
 Build Plugins
 -------------
 You get started with Hydrator plugins by building directly from the latest source code::
 
-  git clone https://github.com/caskdata/hydrator-plugins.git
+  git clone https://github.com/cdapio/hydrator-plugins.git
   cd hydrator-plugins
   mvn clean package -pl transform-plugins -am
 

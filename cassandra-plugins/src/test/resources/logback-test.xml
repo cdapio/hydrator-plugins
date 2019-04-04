@@ -40,7 +40,7 @@
     </encoder>
   </appender>
 
-  <logger name="co.cask.hydrator" level="DEBUG" />
+  <logger name="io.cdap.plugin" level="DEBUG" />
 
   <root level="DEBUG">
     <appender-ref ref="STDOUT"/>

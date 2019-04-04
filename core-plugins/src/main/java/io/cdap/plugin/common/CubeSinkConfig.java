@@ -29,7 +29,7 @@ public class CubeSinkConfig extends BatchReadableWritableConfig {
   @Name(Properties.Cube.DATASET_RESOLUTIONS)
   @Description("Aggregation resolutions to be used if a new Cube dataset " +
     "needs to be created. See Cube dataset configuration details available at " +
-    "http://docs.cask.co/cdap/current/en/developers-manual/building-blocks/datasets/cube.html#cube-configuration " +
+    "http://docs.cdap.io/cdap/current/en/developer-manual/building-blocks/datasets/cube.html#cube-configuration " +
     "for more information.")
   @Nullable
   String resolutions;
@@ -42,7 +42,7 @@ public class CubeSinkConfig extends BatchReadableWritableConfig {
     "value 'abc,xyz'. the fields are comma separated, key and value are delimited by ':' and " +
     "the entries are delimited by ';'. See [Cube dataset configuration details] for more information. " +
     "[Cube dataset configuration details]: " +
-    "http://docs.cask.co/cdap/current/en/developers-manual/building-blocks/datasets/cube.html")
+    "http://docs.cdap.io/cdap/current/en/developer-manual/building-blocks/datasets/cube.html")
   @Nullable
   String aggregations;
 
