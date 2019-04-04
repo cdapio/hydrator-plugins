@@ -16,11 +16,11 @@
 
 package co.cask.format.parquet.output;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.format.avro.StructuredToAvroTransformer;
 import co.cask.hydrator.format.output.DelegatingOutputFormat;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.dataset.lib.KeyValue;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.OutputFormat;

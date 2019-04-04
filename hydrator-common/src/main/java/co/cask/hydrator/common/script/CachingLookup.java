@@ -16,14 +16,14 @@
 
 package co.cask.hydrator.common.script;
 
-import co.cask.cdap.etl.api.CacheConfig;
-import co.cask.cdap.etl.api.Lookup;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import io.cdap.cdap.etl.api.CacheConfig;
+import io.cdap.cdap.etl.api.Lookup;
 
 import java.util.Map;
 import java.util.Set;

@@ -16,10 +16,10 @@
 
 package co.cask.hydrator.common;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
-import co.cask.cdap.api.plugin.PluginConfig;
 import com.google.common.annotations.VisibleForTesting;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
+import io.cdap.cdap.api.plugin.PluginConfig;
 
 import javax.annotation.Nullable;
 

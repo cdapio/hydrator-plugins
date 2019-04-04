@@ -16,12 +16,12 @@
 
 package co.cask.hydrator.common;
 
-import co.cask.cdap.api.common.Bytes;
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.table.Result;
-import co.cask.cdap.api.dataset.table.Row;
 import com.google.common.collect.Maps;
+import io.cdap.cdap.api.common.Bytes;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.dataset.table.Result;
+import io.cdap.cdap.api.dataset.table.Row;
 import org.junit.Assert;
 import org.junit.Test;
 

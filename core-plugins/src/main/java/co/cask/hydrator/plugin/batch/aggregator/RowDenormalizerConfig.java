@@ -16,9 +16,9 @@
 
 package co.cask.hydrator.plugin.batch.aggregator;
 
-import co.cask.cdap.api.annotation.Description;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
+import io.cdap.cdap.api.annotation.Description;
 
 import java.util.HashMap;
 import java.util.LinkedHashSet;

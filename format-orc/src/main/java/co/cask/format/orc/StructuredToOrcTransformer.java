@@ -16,12 +16,12 @@
 
 package co.cask.format.orc;
 
-import co.cask.cdap.api.common.Bytes;
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.data.schema.UnsupportedTypeException;
 import co.cask.hydrator.common.HiveSchemaConverter;
 import co.cask.hydrator.common.RecordConverter;
+import io.cdap.cdap.api.common.Bytes;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.data.schema.UnsupportedTypeException;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.DoubleWritable;
@@ -32,8 +32,6 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.orc.TypeDescription;
 import org.apache.orc.mapred.OrcStruct;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;

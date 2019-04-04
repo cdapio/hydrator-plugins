@@ -16,29 +16,29 @@
 
 package co.cask.hydrator.plugin.batch.sink;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Name;
-import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.annotation.Requirements;
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.DatasetManagementException;
-import co.cask.cdap.api.dataset.lib.KeyValue;
-import co.cask.cdap.api.dataset.table.Put;
-import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.api.lineage.field.EndPoint;
-import co.cask.cdap.etl.api.Emitter;
-import co.cask.cdap.etl.api.PipelineConfigurer;
-import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
-import co.cask.cdap.etl.api.batch.BatchSinkContext;
-import co.cask.cdap.etl.api.lineage.field.FieldOperation;
-import co.cask.cdap.etl.api.lineage.field.FieldWriteOperation;
-import co.cask.cdap.format.RecordPutTransformer;
 import co.cask.hydrator.common.SchemaValidator;
 import co.cask.hydrator.plugin.common.Properties;
 import co.cask.hydrator.plugin.common.TableSinkConfig;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Name;
+import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.annotation.Requirements;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.dataset.DatasetManagementException;
+import io.cdap.cdap.api.dataset.lib.KeyValue;
+import io.cdap.cdap.api.dataset.table.Put;
+import io.cdap.cdap.api.dataset.table.Table;
+import io.cdap.cdap.api.lineage.field.EndPoint;
+import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
+import io.cdap.cdap.etl.api.batch.BatchSinkContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
+import io.cdap.cdap.etl.api.lineage.field.FieldWriteOperation;
+import io.cdap.cdap.format.RecordPutTransformer;
 
 import java.io.IOException;
 import java.util.Collections;

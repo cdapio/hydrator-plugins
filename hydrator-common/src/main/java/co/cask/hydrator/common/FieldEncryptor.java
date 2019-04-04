@@ -16,8 +16,8 @@
 
 package co.cask.hydrator.common;
 
-import co.cask.cdap.api.common.Bytes;
-import co.cask.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.common.Bytes;
+import io.cdap.cdap.api.data.schema.Schema;
 import org.apache.commons.codec.binary.Hex;
 
 import java.io.InputStream;

@@ -16,9 +16,9 @@
 
 package co.cask.hydrator.plugin.batch.source;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.plugin.batch.commons.HiveSchemaConverter;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
 import org.apache.hadoop.hive.common.type.HiveChar;
 import org.apache.hadoop.hive.common.type.HiveVarchar;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;

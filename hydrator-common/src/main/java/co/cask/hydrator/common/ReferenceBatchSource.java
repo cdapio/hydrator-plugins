@@ -16,8 +16,8 @@
 
 package co.cask.hydrator.common;
 
-import co.cask.cdap.etl.api.PipelineConfigurer;
-import co.cask.cdap.etl.api.batch.BatchSource;
+import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.batch.BatchSource;
 
 /**
  * A {@link BatchSource} that verifies referenceName property

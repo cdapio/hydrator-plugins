@@ -17,9 +17,9 @@
 
 package co.cask.format.avro;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.hydrator.common.RecordConverter;
 import com.google.common.collect.Maps;
+import io.cdap.cdap.api.data.format.StructuredRecord;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericRecordBuilder;
@@ -35,9 +35,9 @@ import javax.annotation.Nullable;
 public class StructuredToAvroTransformer extends RecordConverter<StructuredRecord, GenericRecord> {
 
   private final Map<Integer, Schema> schemaCache;
-  private final co.cask.cdap.api.data.schema.Schema outputCDAPSchema;
+  private final io.cdap.cdap.api.data.schema.Schema outputCDAPSchema;
 
-  public StructuredToAvroTransformer(@Nullable co.cask.cdap.api.data.schema.Schema outputSchema) {
+  public StructuredToAvroTransformer(@Nullable io.cdap.cdap.api.data.schema.Schema outputSchema) {
     this.schemaCache = Maps.newHashMap();
     this.outputCDAPSchema = outputSchema;
   }
@@ -49,15 +49,15 @@ public class StructuredToAvroTransformer extends RecordConverter<StructuredRecor
 
   @Override
   public GenericRecord transform(StructuredRecord structuredRecord,
-                                 co.cask.cdap.api.data.schema.Schema schema) throws IOException {
-    co.cask.cdap.api.data.schema.Schema structuredRecordSchema = structuredRecord.getSchema();
+                                 io.cdap.cdap.api.data.schema.Schema schema) throws IOException {
+    io.cdap.cdap.api.data.schema.Schema structuredRecordSchema = structuredRecord.getSchema();
 
     Schema avroSchema = getAvroSchema(schema);
 
     GenericRecordBuilder recordBuilder = new GenericRecordBuilder(avroSchema);
     for (Schema.Field field : avroSchema.getFields()) {
       String fieldName = field.name();
-      co.cask.cdap.api.data.schema.Schema.Field schemaField = structuredRecordSchema.getField(fieldName);
+      io.cdap.cdap.api.data.schema.Schema.Field schemaField = structuredRecordSchema.getField(fieldName);
       if (schemaField == null) {
         throw new IllegalArgumentException("Input record does not contain the " + fieldName + " field.");
       }
@@ -74,7 +74,7 @@ public class StructuredToAvroTransformer extends RecordConverter<StructuredRecor
     return ByteBuffer.wrap((byte[]) field);
   }
 
-  private Schema getAvroSchema(co.cask.cdap.api.data.schema.Schema cdapSchema) {
+  private Schema getAvroSchema(io.cdap.cdap.api.data.schema.Schema cdapSchema) {
     int hashCode = cdapSchema.hashCode();
     if (schemaCache.containsKey(hashCode)) {
       return schemaCache.get(hashCode);

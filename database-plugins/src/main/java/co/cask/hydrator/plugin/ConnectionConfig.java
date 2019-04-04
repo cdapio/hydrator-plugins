@@ -16,13 +16,13 @@
 
 package co.cask.hydrator.plugin;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
-import co.cask.cdap.api.annotation.Name;
-import co.cask.cdap.api.dataset.lib.KeyValue;
-import co.cask.cdap.api.plugin.PluginConfig;
 import co.cask.hydrator.common.KeyValueListParser;
 import com.google.common.base.Strings;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
+import io.cdap.cdap.api.annotation.Name;
+import io.cdap.cdap.api.dataset.lib.KeyValue;
+import io.cdap.cdap.api.plugin.PluginConfig;
 
 import java.util.HashMap;
 import java.util.Map;

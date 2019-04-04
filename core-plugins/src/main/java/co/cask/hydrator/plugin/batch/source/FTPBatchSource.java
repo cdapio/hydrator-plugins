@@ -16,19 +16,19 @@
 
 package co.cask.hydrator.plugin.batch.source;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
-import co.cask.cdap.api.annotation.Name;
-import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.plugin.PluginConfig;
-import co.cask.cdap.etl.api.batch.BatchSource;
-import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.format.FileFormat;
 import co.cask.hydrator.format.plugin.AbstractFileSource;
 import co.cask.hydrator.format.plugin.FileSourceProperties;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
+import io.cdap.cdap.api.annotation.Name;
+import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.etl.api.batch.BatchSource;
+import io.cdap.cdap.etl.api.batch.BatchSourceContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
 import java.lang.reflect.Type;

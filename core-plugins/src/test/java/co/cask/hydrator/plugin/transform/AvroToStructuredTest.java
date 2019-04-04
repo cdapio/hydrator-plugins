@@ -16,10 +16,10 @@
 
 package co.cask.hydrator.plugin.transform;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
 import co.cask.format.avro.AvroToStructuredTransformer;
 import com.google.common.collect.ImmutableList;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericRecordBuilder;
 import org.junit.Assert;

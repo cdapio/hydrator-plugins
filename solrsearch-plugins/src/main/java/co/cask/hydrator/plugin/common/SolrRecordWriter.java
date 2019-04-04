@@ -15,11 +15,11 @@
  */
 package co.cask.hydrator.plugin.common;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.format.StructuredRecordStringConverter;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.format.StructuredRecordStringConverter;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.RecordWriter;

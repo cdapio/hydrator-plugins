@@ -16,9 +16,9 @@
 
 package co.cask.hydrator.plugin.batch.joiner;
 
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.etl.api.lineage.field.FieldOperation;
-import co.cask.cdap.etl.api.lineage.field.FieldTransformOperation;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
+import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
 import org.junit.Assert;
 import org.junit.Test;
 

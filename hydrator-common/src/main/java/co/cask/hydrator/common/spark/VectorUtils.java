@@ -15,8 +15,8 @@
  */
 package co.cask.hydrator.common.spark;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.spark.mllib.linalg.SparseVector;
 

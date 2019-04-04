@@ -16,10 +16,10 @@
 
 package co.cask.hydrator.plugin;
 
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.data.schema.UnsupportedTypeException;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.data.schema.UnsupportedTypeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,7 +102,7 @@ public final class DBUtils {
 
   /**
    * Given the result set, get the metadata of the result set and return
-   * list of {@link co.cask.cdap.api.data.schema.Schema.Field},
+   * list of {@link io.cdap.cdap.api.data.schema.Schema.Field},
    * where name of the field is same as column name and type of the field is obtained using
    * {@link DBUtils#getSchema(int, int, int)}
    *
@@ -148,7 +148,7 @@ public final class DBUtils {
 
   /**
    * Given the result set, get the metadata of the result set and return
-   * list of {@link co.cask.cdap.api.data.schema.Schema.Field},
+   * list of {@link io.cdap.cdap.api.data.schema.Schema.Field},
    * where name of the field is same as column name and type of the field is obtained using
    * {@link DBUtils#getSchema(int, int, int)}
    *

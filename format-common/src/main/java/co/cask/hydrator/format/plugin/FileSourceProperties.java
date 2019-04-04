@@ -16,8 +16,8 @@
 
 package co.cask.hydrator.format.plugin;
 
-import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.format.FileFormat;
+import io.cdap.cdap.api.data.schema.Schema;
 
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;

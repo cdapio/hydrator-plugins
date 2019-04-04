@@ -16,14 +16,14 @@
 
 package co.cask.hydrator.plugin.spark;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Name;
-import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.etl.api.streaming.StreamingContext;
-import co.cask.cdap.etl.api.streaming.StreamingSource;
 import co.cask.hydrator.common.http.HTTPPollConfig;
 import co.cask.hydrator.common.http.HTTPRequestor;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Name;
+import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.etl.api.streaming.StreamingContext;
+import io.cdap.cdap.etl.api.streaming.StreamingSource;
 import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.receiver.Receiver;

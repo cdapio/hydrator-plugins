@@ -16,10 +16,10 @@
 
 package co.cask.hydrator.plugin;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.format.UnexpectedFormatException;
-import co.cask.cdap.api.data.schema.Schema;
 import com.google.common.collect.Lists;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.format.UnexpectedFormatException;
+import io.cdap.cdap.api.data.schema.Schema;
 import org.bson.BSONObject;
 import org.bson.types.BasicBSONList;
 

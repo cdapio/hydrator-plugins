@@ -16,15 +16,15 @@
 
 package co.cask.hydrator.plugin.transform;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.etl.api.Validator;
-import co.cask.cdap.etl.mock.common.MockEmitter;
-import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
-import co.cask.cdap.etl.mock.transform.MockTransformContext;
 import co.cask.hydrator.plugin.validator.CoreValidator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.Validator;
+import io.cdap.cdap.etl.mock.common.MockEmitter;
+import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
+import io.cdap.cdap.etl.mock.transform.MockTransformContext;
 import org.junit.Assert;
 import org.junit.Test;
 

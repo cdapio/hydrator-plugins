@@ -29,7 +29,7 @@
 
   <dependencies>
     <dependency>
-      <groupId>co.cask.cdap</groupId>
+      <groupId>io.cdap.cdap</groupId>
       <artifactId>cdap-etl-api</artifactId>
     </dependency>
     <dependency>
@@ -41,7 +41,7 @@
       <artifactId>netty-http</artifactId>
     </dependency>
     <dependency>
-      <groupId>co.cask.cdap</groupId>
+      <groupId>io.cdap.cdap</groupId>
       <artifactId>cdap-unit-test</artifactId>
     </dependency>
     <dependency>
@@ -49,7 +49,7 @@
       <artifactId>guava</artifactId>
     </dependency>
     <dependency>
-      <groupId>co.cask.cdap</groupId>
+      <groupId>io.cdap.cdap</groupId>
       <artifactId>cdap-data-pipeline</artifactId>
     </dependency>
     <dependency>
@@ -58,7 +58,7 @@
       <version>${project.parent.version}</version>
     </dependency>
     <dependency>
-      <groupId>co.cask.cdap</groupId>
+      <groupId>io.cdap.cdap</groupId>
       <artifactId>hydrator-test</artifactId>
     </dependency>
   </dependencies>

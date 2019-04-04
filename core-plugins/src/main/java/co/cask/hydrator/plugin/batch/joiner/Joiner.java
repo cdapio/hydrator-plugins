@@ -16,24 +16,24 @@
 
 package co.cask.hydrator.plugin.batch.joiner;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Name;
-import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.etl.api.JoinConfig;
-import co.cask.cdap.etl.api.JoinElement;
-import co.cask.cdap.etl.api.MultiInputPipelineConfigurer;
-import co.cask.cdap.etl.api.MultiInputStageConfigurer;
-import co.cask.cdap.etl.api.batch.BatchJoiner;
-import co.cask.cdap.etl.api.batch.BatchJoinerContext;
-import co.cask.cdap.etl.api.batch.BatchJoinerRuntimeContext;
-import co.cask.cdap.etl.api.lineage.field.FieldOperation;
-import co.cask.cdap.etl.api.lineage.field.FieldTransformOperation;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Table;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Name;
+import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.JoinConfig;
+import io.cdap.cdap.etl.api.JoinElement;
+import io.cdap.cdap.etl.api.MultiInputPipelineConfigurer;
+import io.cdap.cdap.etl.api.MultiInputStageConfigurer;
+import io.cdap.cdap.etl.api.batch.BatchJoiner;
+import io.cdap.cdap.etl.api.batch.BatchJoinerContext;
+import io.cdap.cdap.etl.api.batch.BatchJoinerRuntimeContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
+import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
 
 import java.util.ArrayList;
 import java.util.Collection;

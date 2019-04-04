@@ -16,14 +16,14 @@
 
 package co.cask.hydrator.plugin.common;
 
-import co.cask.cdap.api.dataset.lib.PartitionKey;
-import co.cask.cdap.api.dataset.lib.PartitionOutput;
-import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
-import co.cask.cdap.api.dataset.lib.PartitionedFileSetProperties;
-import co.cask.cdap.api.dataset.lib.Partitioning;
-import co.cask.cdap.etl.mock.test.HydratorTestBase;
 import co.cask.hydrator.plugin.batch.sink.SnapshotFileBatchSink;
 import co.cask.hydrator.plugin.dataset.SnapshotFileSet;
+import io.cdap.cdap.api.dataset.lib.PartitionKey;
+import io.cdap.cdap.api.dataset.lib.PartitionOutput;
+import io.cdap.cdap.api.dataset.lib.PartitionedFileSet;
+import io.cdap.cdap.api.dataset.lib.PartitionedFileSetProperties;
+import io.cdap.cdap.api.dataset.lib.Partitioning;
+import io.cdap.cdap.etl.mock.test.HydratorTestBase;
 import org.apache.avro.mapreduce.AvroKeyInputFormat;
 import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.junit.Assert;

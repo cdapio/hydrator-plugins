@@ -16,12 +16,12 @@
 
 package co.cask.format.delimited.output;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Name;
-import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.data.batch.OutputFormatProvider;
-import co.cask.cdap.api.plugin.PluginClass;
-import co.cask.cdap.api.plugin.PluginPropertyField;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Name;
+import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.data.batch.OutputFormatProvider;
+import io.cdap.cdap.api.plugin.PluginClass;
+import io.cdap.cdap.api.plugin.PluginPropertyField;
 
 import java.util.HashMap;
 import java.util.Map;

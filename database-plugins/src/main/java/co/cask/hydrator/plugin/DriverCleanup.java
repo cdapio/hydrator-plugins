@@ -16,8 +16,8 @@
 
 package co.cask.hydrator.plugin;
 
-import co.cask.cdap.etl.api.Destroyable;
 import com.google.common.base.Throwables;
+import io.cdap.cdap.etl.api.Destroyable;
 
 import java.sql.DriverManager;
 import java.sql.SQLException;

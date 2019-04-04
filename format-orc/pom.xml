@@ -31,11 +31,11 @@
 
   <dependencies>
     <dependency>
-      <groupId>co.cask.cdap</groupId>
+      <groupId>io.cdap.cdap</groupId>
       <artifactId>cdap-etl-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>co.cask.cdap</groupId>
+      <groupId>io.cdap.cdap</groupId>
       <artifactId>cdap-formats</artifactId>
     </dependency>
     <dependency>

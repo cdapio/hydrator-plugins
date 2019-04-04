@@ -16,19 +16,19 @@
 
 package co.cask.hydrator.plugin.dataset;
 
-import co.cask.cdap.api.dataset.lib.PartitionDetail;
-import co.cask.cdap.api.dataset.lib.PartitionFilter;
-import co.cask.cdap.api.dataset.lib.PartitionKey;
-import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
-import co.cask.cdap.api.dataset.lib.PartitionedFileSetArguments;
-import co.cask.cdap.api.dataset.lib.PartitionedFileSetProperties;
-import co.cask.cdap.api.dataset.lib.Partitioning;
 import co.cask.hydrator.plugin.common.SnapshotFileSetConfig;
 import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import io.cdap.cdap.api.dataset.lib.PartitionDetail;
+import io.cdap.cdap.api.dataset.lib.PartitionFilter;
+import io.cdap.cdap.api.dataset.lib.PartitionKey;
+import io.cdap.cdap.api.dataset.lib.PartitionedFileSet;
+import io.cdap.cdap.api.dataset.lib.PartitionedFileSetArguments;
+import io.cdap.cdap.api.dataset.lib.PartitionedFileSetProperties;
+import io.cdap.cdap.api.dataset.lib.Partitioning;
 import org.apache.twill.filesystem.Location;
 
 import java.io.IOException;

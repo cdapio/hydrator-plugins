@@ -16,13 +16,13 @@
 
 package co.cask.hydrator.plugin.streaming;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Name;
-import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.plugin.PluginConfig;
-import co.cask.cdap.etl.api.PipelineConfigurer;
-import co.cask.cdap.etl.api.StageConfigurer;
-import co.cask.cdap.etl.api.streaming.Windower;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Name;
+import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageConfigurer;
+import io.cdap.cdap.etl.api.streaming.Windower;
 
 /**
  * Window plugin.

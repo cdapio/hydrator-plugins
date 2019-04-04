@@ -16,9 +16,9 @@
 
 package co.cask.hydrator.common;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Name;
-import co.cask.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Name;
+import io.cdap.cdap.api.plugin.PluginConfig;
 
 /**
  * {@link PluginConfig} that contains a referenceName property that is used to create an external Dataset for

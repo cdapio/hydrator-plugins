@@ -18,13 +18,11 @@ package co.cask.hydrator.plugin.db.batch.action;
 
 import co.cask.hydrator.plugin.DBManager;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Properties;
 
 /**
  * Class used by database action plugins to run database commands

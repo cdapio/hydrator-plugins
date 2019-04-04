@@ -16,17 +16,6 @@
 
 package co.cask.hydrator.plugin.batch.sink;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Name;
-import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.annotation.Requirements;
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.dataset.lib.KeyValue;
-import co.cask.cdap.api.dataset.lib.cube.Cube;
-import co.cask.cdap.api.dataset.lib.cube.CubeFact;
-import co.cask.cdap.etl.api.Emitter;
-import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
-import co.cask.cdap.etl.api.batch.BatchSink;
 import co.cask.hydrator.plugin.common.CubeSinkConfig;
 import co.cask.hydrator.plugin.common.CubeUtils;
 import co.cask.hydrator.plugin.common.Properties;
@@ -34,6 +23,17 @@ import co.cask.hydrator.plugin.common.StructuredRecordToCubeFact;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Strings;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Name;
+import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.annotation.Requirements;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.dataset.lib.KeyValue;
+import io.cdap.cdap.api.dataset.lib.cube.Cube;
+import io.cdap.cdap.api.dataset.lib.cube.CubeFact;
+import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
+import io.cdap.cdap.etl.api.batch.BatchSink;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -46,7 +46,7 @@ import java.util.Map;
  * <p/>
  * If {@link Cube} dataset does not exist, it will be created using properties provided with this sink. See more
  * information on available {@link Cube} dataset configuration properties at
- * co.cask.cdap.data2.dataset2.lib.cube.CubeDatasetDefinition.
+ * io.cdap.cdap.data2.dataset2.lib.cube.CubeDatasetDefinition.
  * <p/>
  * To configure transformation from {@link StructuredRecord} to a {@link CubeFact} the
  * mapping configuration is required, following {@link StructuredRecordToCubeFact} documentation.

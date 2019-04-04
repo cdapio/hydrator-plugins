@@ -16,10 +16,10 @@
 
 package co.cask.hydrator.common.http;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Name;
 import co.cask.hydrator.common.Constants;
 import com.google.common.base.Charsets;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Name;
 
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;

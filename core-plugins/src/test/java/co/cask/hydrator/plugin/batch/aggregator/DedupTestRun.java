@@ -16,32 +16,24 @@
 
 package co.cask.hydrator.plugin.batch.aggregator;
 
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.table.Put;
-import co.cask.cdap.api.dataset.table.Row;
-import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.datapipeline.SmartWorkflow;
-import co.cask.cdap.etl.api.batch.BatchAggregator;
-import co.cask.cdap.etl.api.batch.BatchSink;
-import co.cask.cdap.etl.api.batch.BatchSource;
-import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
-import co.cask.cdap.etl.proto.v2.ETLPlugin;
-import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.ProgramRunStatus;
-import co.cask.cdap.proto.artifact.AppRequest;
-import co.cask.cdap.proto.id.ApplicationId;
-import co.cask.cdap.proto.id.NamespaceId;
-import co.cask.cdap.test.ApplicationManager;
-import co.cask.cdap.test.DataSetManager;
-import co.cask.cdap.test.WorkflowManager;
 import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.dataset.table.Put;
+import io.cdap.cdap.api.dataset.table.Row;
+import io.cdap.cdap.api.dataset.table.Table;
+import io.cdap.cdap.etl.api.batch.BatchAggregator;
+import io.cdap.cdap.etl.api.batch.BatchSink;
+import io.cdap.cdap.etl.api.batch.BatchSource;
+import io.cdap.cdap.etl.proto.v2.ETLBatchConfig;
+import io.cdap.cdap.etl.proto.v2.ETLPlugin;
+import io.cdap.cdap.etl.proto.v2.ETLStage;
+import io.cdap.cdap.test.ApplicationManager;
+import io.cdap.cdap.test.DataSetManager;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * Test for Dedup Aggregator.

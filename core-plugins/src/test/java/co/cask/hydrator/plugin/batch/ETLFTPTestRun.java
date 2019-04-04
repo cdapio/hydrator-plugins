@@ -16,18 +16,18 @@
 
 package co.cask.hydrator.plugin.batch;
 
-import co.cask.cdap.api.dataset.lib.TimePartitionedFileSet;
-import co.cask.cdap.common.utils.Tasks;
-import co.cask.cdap.etl.api.batch.BatchSink;
-import co.cask.cdap.etl.api.batch.BatchSource;
-import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
-import co.cask.cdap.etl.proto.v2.ETLPlugin;
-import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.test.ApplicationManager;
-import co.cask.cdap.test.DataSetManager;
 import co.cask.hydrator.plugin.batch.source.FTPBatchSource;
 import co.cask.hydrator.plugin.common.Properties;
 import com.google.common.collect.ImmutableMap;
+import io.cdap.cdap.api.dataset.lib.TimePartitionedFileSet;
+import io.cdap.cdap.common.utils.Tasks;
+import io.cdap.cdap.etl.api.batch.BatchSink;
+import io.cdap.cdap.etl.api.batch.BatchSource;
+import io.cdap.cdap.etl.proto.v2.ETLBatchConfig;
+import io.cdap.cdap.etl.proto.v2.ETLPlugin;
+import io.cdap.cdap.etl.proto.v2.ETLStage;
+import io.cdap.cdap.test.ApplicationManager;
+import io.cdap.cdap.test.DataSetManager;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.After;
 import org.junit.Assert;

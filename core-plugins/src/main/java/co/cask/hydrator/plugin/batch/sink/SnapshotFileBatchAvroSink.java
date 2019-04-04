@@ -16,16 +16,16 @@
 
 package co.cask.hydrator.plugin.batch.sink;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
-import co.cask.cdap.api.annotation.Name;
-import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.annotation.Requirements;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.lib.FileSetProperties;
-import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
 import co.cask.hydrator.format.FileFormat;
 import co.cask.hydrator.plugin.common.FileSetUtil;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
+import io.cdap.cdap.api.annotation.Name;
+import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.annotation.Requirements;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.dataset.lib.FileSetProperties;
+import io.cdap.cdap.api.dataset.lib.PartitionedFileSet;
 
 import java.io.IOException;
 import javax.annotation.Nullable;

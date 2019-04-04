@@ -16,25 +16,25 @@
 
 package co.cask.hydrator.plugin.db.batch.sink;
 
-import co.cask.cdap.api.common.Bytes;
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.etl.api.batch.BatchSource;
-import co.cask.cdap.etl.mock.batch.MockSink;
-import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
-import co.cask.cdap.etl.proto.v2.ETLPlugin;
-import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.artifact.AppRequest;
-import co.cask.cdap.proto.id.ApplicationId;
-import co.cask.cdap.proto.id.NamespaceId;
-import co.cask.cdap.test.ApplicationManager;
-import co.cask.cdap.test.DataSetManager;
 import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.plugin.ConnectionConfig;
 import co.cask.hydrator.plugin.DBConfig;
 import co.cask.hydrator.plugin.DatabasePluginTestBase;
 import co.cask.hydrator.plugin.db.batch.source.DBSource;
 import com.google.common.collect.ImmutableMap;
+import io.cdap.cdap.api.common.Bytes;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.dataset.table.Table;
+import io.cdap.cdap.etl.api.batch.BatchSource;
+import io.cdap.cdap.etl.mock.batch.MockSink;
+import io.cdap.cdap.etl.proto.v2.ETLBatchConfig;
+import io.cdap.cdap.etl.proto.v2.ETLPlugin;
+import io.cdap.cdap.etl.proto.v2.ETLStage;
+import io.cdap.cdap.proto.artifact.AppRequest;
+import io.cdap.cdap.proto.id.ApplicationId;
+import io.cdap.cdap.proto.id.NamespaceId;
+import io.cdap.cdap.test.ApplicationManager;
+import io.cdap.cdap.test.DataSetManager;
 import org.junit.Assert;
 import org.junit.Test;
 

@@ -16,11 +16,11 @@
 
 package co.cask.hydrator.format.input;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.plugin.PluginConfig;
-import co.cask.cdap.api.plugin.PluginPropertyField;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.api.plugin.PluginPropertyField;
 
 import java.io.IOException;
 import java.util.Collections;

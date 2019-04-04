@@ -16,12 +16,12 @@
 
 package co.cask.hydrator.plugin.batch.joiner;
 
-import co.cask.cdap.api.data.schema.Schema;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Table;
+import io.cdap.cdap.api.data.schema.Schema;
 import org.junit.Assert;
 import org.junit.Test;
 

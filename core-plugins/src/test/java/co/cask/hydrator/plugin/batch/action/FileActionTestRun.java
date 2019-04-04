@@ -16,13 +16,13 @@
 
 package co.cask.hydrator.plugin.batch.action;
 
-import co.cask.cdap.etl.api.action.Action;
-import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
-import co.cask.cdap.etl.proto.v2.ETLPlugin;
-import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.test.ApplicationManager;
 import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
 import com.google.common.collect.ImmutableMap;
+import io.cdap.cdap.etl.api.action.Action;
+import io.cdap.cdap.etl.proto.v2.ETLBatchConfig;
+import io.cdap.cdap.etl.proto.v2.ETLPlugin;
+import io.cdap.cdap.etl.proto.v2.ETLStage;
+import io.cdap.cdap.test.ApplicationManager;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;

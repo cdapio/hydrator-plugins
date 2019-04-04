@@ -16,7 +16,7 @@
 
 package co.cask.hydrator.plugin.common;
 
-import co.cask.cdap.api.common.Bytes;
+import io.cdap.cdap.api.common.Bytes;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;

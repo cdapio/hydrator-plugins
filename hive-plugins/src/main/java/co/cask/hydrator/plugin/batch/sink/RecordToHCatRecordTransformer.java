@@ -16,10 +16,10 @@
 
 package co.cask.hydrator.plugin.batch.sink;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.plugin.batch.commons.HiveSchemaConverter;
 import com.google.common.base.Preconditions;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
 import org.apache.hive.hcatalog.common.HCatException;
 import org.apache.hive.hcatalog.data.DefaultHCatRecord;
 import org.apache.hive.hcatalog.data.HCatRecord;

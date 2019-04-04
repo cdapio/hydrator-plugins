@@ -16,19 +16,19 @@
 
 package co.cask.hydrator.format.plugin;
 
-import co.cask.cdap.api.data.batch.Output;
-import co.cask.cdap.api.data.batch.OutputFormatProvider;
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.lib.KeyValue;
-import co.cask.cdap.api.plugin.PluginConfig;
-import co.cask.cdap.etl.api.Emitter;
-import co.cask.cdap.etl.api.PipelineConfigurer;
-import co.cask.cdap.etl.api.batch.BatchSink;
-import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.common.LineageRecorder;
 import co.cask.hydrator.common.batch.sink.SinkOutputFormatProvider;
 import co.cask.hydrator.format.FileFormat;
+import io.cdap.cdap.api.data.batch.Output;
+import io.cdap.cdap.api.data.batch.OutputFormatProvider;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.dataset.lib.KeyValue;
+import io.cdap.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.batch.BatchSink;
+import io.cdap.cdap.etl.api.batch.BatchSinkContext;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 

@@ -16,9 +16,6 @@
 
 package co.cask.hydrator.plugin.batch.aggregator;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
-import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.plugin.batch.aggregator.function.AggregateFunction;
 import co.cask.hydrator.plugin.batch.aggregator.function.Avg;
 import co.cask.hydrator.plugin.batch.aggregator.function.CollectList;
@@ -32,10 +29,12 @@ import co.cask.hydrator.plugin.batch.aggregator.function.Min;
 import co.cask.hydrator.plugin.batch.aggregator.function.Stddev;
 import co.cask.hydrator.plugin.batch.aggregator.function.Sum;
 import co.cask.hydrator.plugin.batch.aggregator.function.Variance;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
+import io.cdap.cdap.api.data.schema.Schema;
 
 import java.util.ArrayList;
 import java.util.HashSet;

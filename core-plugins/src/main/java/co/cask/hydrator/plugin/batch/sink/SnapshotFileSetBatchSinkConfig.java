@@ -16,10 +16,10 @@
 
 package co.cask.hydrator.plugin.batch.sink;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
 import co.cask.hydrator.common.TimeParser;
 import co.cask.hydrator.plugin.common.SnapshotFileSetConfig;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
 
 import javax.annotation.Nullable;
 

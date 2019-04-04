@@ -16,8 +16,8 @@
 
 package co.cask.hydrator.common;
 
-import co.cask.cdap.api.data.batch.InputFormatProvider;
 import co.cask.hydrator.common.batch.ConfigurationUtils;
+import io.cdap.cdap.api.data.batch.InputFormatProvider;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputFormat;
 

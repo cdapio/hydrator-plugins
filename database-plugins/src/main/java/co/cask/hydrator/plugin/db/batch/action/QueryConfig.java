@@ -16,9 +16,9 @@
 
 package co.cask.hydrator.plugin.db.batch.action;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
 import co.cask.hydrator.plugin.ConnectionConfig;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
 
 /**
  * Config for Actions running database commands

@@ -16,10 +16,10 @@
 
 package co.cask.hydrator.plugin.batch.source;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
-import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.plugin.common.SnapshotFileSetConfig;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
+import io.cdap.cdap.api.data.schema.Schema;
 
 import java.io.IOException;
 import javax.annotation.Nullable;

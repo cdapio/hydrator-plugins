@@ -16,11 +16,11 @@
 
 package co.cask.hydrator.plugin;
 
-import co.cask.cdap.api.plugin.PluginProperties;
-import co.cask.cdap.etl.api.Destroyable;
-import co.cask.cdap.etl.api.PipelineConfigurer;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
+import io.cdap.cdap.api.plugin.PluginProperties;
+import io.cdap.cdap.etl.api.Destroyable;
+import io.cdap.cdap.etl.api.PipelineConfigurer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +30,6 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Properties;
 
 /**
  * Class to manage common database operations for Database source and sink plugins.

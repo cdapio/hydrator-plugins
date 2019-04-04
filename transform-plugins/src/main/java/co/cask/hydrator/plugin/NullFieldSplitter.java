@@ -16,19 +16,19 @@
 
 package co.cask.hydrator.plugin;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
-import co.cask.cdap.api.annotation.Name;
-import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.plugin.PluginConfig;
-import co.cask.cdap.etl.api.MultiOutputEmitter;
-import co.cask.cdap.etl.api.MultiOutputPipelineConfigurer;
-import co.cask.cdap.etl.api.MultiOutputStageConfigurer;
-import co.cask.cdap.etl.api.SplitterTransform;
-import co.cask.cdap.etl.api.TransformContext;
 import com.google.common.annotations.VisibleForTesting;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
+import io.cdap.cdap.api.annotation.Name;
+import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.etl.api.MultiOutputEmitter;
+import io.cdap.cdap.etl.api.MultiOutputPipelineConfigurer;
+import io.cdap.cdap.etl.api.MultiOutputStageConfigurer;
+import io.cdap.cdap.etl.api.SplitterTransform;
+import io.cdap.cdap.etl.api.TransformContext;
 
 import java.util.ArrayList;
 import java.util.HashMap;

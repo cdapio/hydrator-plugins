@@ -16,24 +16,24 @@
 
 package co.cask.hydrator.plugin.source;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Name;
-import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.data.batch.Input;
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.lib.KeyValue;
-import co.cask.cdap.api.dataset.table.Row;
-import co.cask.cdap.etl.api.Emitter;
-import co.cask.cdap.etl.api.PipelineConfigurer;
-import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
-import co.cask.cdap.etl.api.batch.BatchSourceContext;
 import co.cask.hydrator.common.LineageRecorder;
 import co.cask.hydrator.common.ReferenceBatchSource;
 import co.cask.hydrator.common.SourceInputFormatProvider;
 import co.cask.hydrator.plugin.HBaseConfig;
 import co.cask.hydrator.plugin.source.mapreduce.HBaseTableInputFormat;
 import com.google.common.base.Strings;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Name;
+import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.data.batch.Input;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.dataset.lib.KeyValue;
+import io.cdap.cdap.api.dataset.table.Row;
+import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
+import io.cdap.cdap.etl.api.batch.BatchSourceContext;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
@@ -97,7 +97,7 @@ public class HBaseSource extends ReferenceBatchSource<ImmutableBytesWritable, Re
   @Override
   public void transform(KeyValue<ImmutableBytesWritable, Result> input, Emitter<StructuredRecord> emitter)
     throws Exception {
-    Row cdapRow = new co.cask.cdap.api.dataset.table.Result(
+    Row cdapRow = new io.cdap.cdap.api.dataset.table.Result(
       input.getValue().getRow(), input.getValue().getFamilyMap(config.columnFamily.getBytes()));
     StructuredRecord record = rowRecordTransformer.toRecord(cdapRow);
     emitter.emit(record);

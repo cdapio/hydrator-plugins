@@ -16,10 +16,10 @@
 
 package co.cask.hydrator.common.batch.action;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.plugin.PluginConfig;
-import co.cask.cdap.etl.api.batch.BatchActionContext;
 import com.google.common.base.Joiner;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.etl.api.batch.BatchActionContext;
 
 import javax.annotation.Nullable;
 

@@ -16,8 +16,8 @@
 
 package co.cask.hydrator.plugin.batch.aggregator;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.plugin.PluginConfig;
 
 import javax.annotation.Nullable;
 

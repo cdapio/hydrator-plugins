@@ -16,11 +16,11 @@
 
 package co.cask.hydrator.plugin.batch.source;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
 import co.cask.hydrator.format.plugin.AbstractFileSourceConfig;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
 
 import java.lang.reflect.Type;
 import java.util.HashMap;

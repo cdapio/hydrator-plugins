@@ -15,8 +15,8 @@
  */
 package co.cask.hydrator.common.script;
 
-import co.cask.cdap.etl.api.Lookup;
-import co.cask.cdap.etl.api.LookupTableConfig;
+import io.cdap.cdap.etl.api.Lookup;
+import io.cdap.cdap.etl.api.LookupTableConfig;
 
 import java.util.Set;
 

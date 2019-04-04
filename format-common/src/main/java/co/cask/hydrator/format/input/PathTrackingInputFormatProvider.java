@@ -16,7 +16,7 @@
 
 package co.cask.hydrator.format.input;
 
-import co.cask.cdap.api.data.batch.InputFormatProvider;
+import io.cdap.cdap.api.data.batch.InputFormatProvider;
 
 import java.util.HashMap;
 import java.util.Map;

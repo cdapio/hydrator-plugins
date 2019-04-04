@@ -16,11 +16,11 @@
 
 package co.cask.hydrator.common.http;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.io.CharStreams;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
 
 import java.io.IOException;
 import java.io.InputStreamReader;

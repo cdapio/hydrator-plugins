@@ -16,7 +16,7 @@
 
 package co.cask.hydrator.format;
 
-import co.cask.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.data.schema.Schema;
 
 import java.util.ArrayList;
 import java.util.Arrays;

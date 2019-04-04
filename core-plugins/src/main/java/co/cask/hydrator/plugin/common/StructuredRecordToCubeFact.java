@@ -16,15 +16,15 @@
 
 package co.cask.hydrator.plugin.common;
 
-import co.cask.cdap.api.common.Bytes;
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.lib.cube.CubeFact;
-import co.cask.cdap.api.dataset.lib.cube.MeasureType;
-import co.cask.cdap.api.dataset.lib.cube.Measurement;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import io.cdap.cdap.api.common.Bytes;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.dataset.lib.cube.CubeFact;
+import io.cdap.cdap.api.dataset.lib.cube.MeasureType;
+import io.cdap.cdap.api.dataset.lib.cube.Measurement;
 
 import java.nio.ByteBuffer;
 import java.text.DateFormat;
@@ -37,7 +37,7 @@ import javax.annotation.Nullable;
 
 /**
  * Transforms a {@link StructuredRecord} into a {@link CubeFact} object that can be written to a
- * {@link co.cask.cdap.api.dataset.lib.cube.Cube} dataset.
+ * {@link io.cdap.cdap.api.dataset.lib.cube.Cube} dataset.
  * <p/>
  * To configure transformation from {@link StructuredRecord} to a {@link CubeFact} the
  * mapping configuration can be provided for timestamp field and measurements. All fields from {@link StructuredRecord}
@@ -51,7 +51,7 @@ import javax.annotation.Nullable;
  * To add a measurement to a {@link CubeFact} specify its type with the property
  * cubeFact.measurement.{@literal<}measurement_name>={@literal<}measurement_type>. Measurement name corresponds to a
  * field name in the {@link StructuredRecord} that contains its value.
- * Measurement type (specified in 'type' property) can be one of {@link co.cask.cdap.api.dataset.lib.cube.MeasureType}
+ * Measurement type (specified in 'type' property) can be one of {@link io.cdap.cdap.api.dataset.lib.cube.MeasureType}
  * values.
  * <p/>
  * Example of the configuration:

@@ -16,9 +16,9 @@
 
 package co.cask.hydrator.plugin.batch.aggregator;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.etl.api.batch.BatchAggregator;
-import co.cask.cdap.etl.api.batch.BatchAggregatorContext;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.etl.api.batch.BatchAggregator;
+import io.cdap.cdap.etl.api.batch.BatchAggregatorContext;
 
 import javax.annotation.Nullable;
 

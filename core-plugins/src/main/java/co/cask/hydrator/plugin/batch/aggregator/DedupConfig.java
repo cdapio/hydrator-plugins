@@ -15,8 +15,6 @@
  */
 package co.cask.hydrator.plugin.batch.aggregator;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.plugin.batch.aggregator.function.First;
 import co.cask.hydrator.plugin.batch.aggregator.function.Last;
 import co.cask.hydrator.plugin.batch.aggregator.function.MaxSelection;
@@ -26,6 +24,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.data.schema.Schema;
 
 import java.util.ArrayList;
 import java.util.List;

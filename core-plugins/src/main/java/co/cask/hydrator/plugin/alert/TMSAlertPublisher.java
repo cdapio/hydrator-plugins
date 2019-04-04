@@ -16,19 +16,19 @@
 
 package co.cask.hydrator.plugin.alert;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
-import co.cask.cdap.api.annotation.Name;
-import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.messaging.MessagePublisher;
-import co.cask.cdap.api.messaging.TopicAlreadyExistsException;
-import co.cask.cdap.api.messaging.TopicNotFoundException;
-import co.cask.cdap.api.plugin.PluginConfig;
-import co.cask.cdap.etl.api.Alert;
-import co.cask.cdap.etl.api.AlertPublisher;
-import co.cask.cdap.etl.api.AlertPublisherContext;
-import co.cask.cdap.etl.api.PipelineConfigurer;
 import com.google.gson.Gson;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
+import io.cdap.cdap.api.annotation.Name;
+import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.messaging.MessagePublisher;
+import io.cdap.cdap.api.messaging.TopicAlreadyExistsException;
+import io.cdap.cdap.api.messaging.TopicNotFoundException;
+import io.cdap.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.etl.api.Alert;
+import io.cdap.cdap.etl.api.AlertPublisher;
+import io.cdap.cdap.etl.api.AlertPublisherContext;
+import io.cdap.cdap.etl.api.PipelineConfigurer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -16,12 +16,12 @@
 
 package co.cask.hydrator.plugin.spark;
 
-import co.cask.cdap.api.dataset.DatasetProperties;
-import co.cask.cdap.etl.api.PipelineConfigurer;
-import co.cask.cdap.etl.api.streaming.StreamingSource;
 import co.cask.hydrator.common.Constants;
 import co.cask.hydrator.common.IdUtils;
 import co.cask.hydrator.common.ReferencePluginConfig;
+import io.cdap.cdap.api.dataset.DatasetProperties;
+import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.streaming.StreamingSource;
 
 /**
  * Base streaming source that adds an External Dataset for a reference name, and performs a single getDataset()

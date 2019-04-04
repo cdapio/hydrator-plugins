@@ -16,8 +16,8 @@
 
 package co.cask.hydrator.format.output;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.dataset.lib.KeyValue;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.dataset.lib.KeyValue;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;

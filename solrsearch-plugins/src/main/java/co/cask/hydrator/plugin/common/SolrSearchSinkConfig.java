@@ -15,12 +15,12 @@
  */
 package co.cask.hydrator.plugin.common;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.hydrator.common.KeyValueListParser;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import com.google.common.base.Strings;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.dataset.lib.KeyValue;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;

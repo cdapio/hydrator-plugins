@@ -16,13 +16,12 @@
 
 package co.cask.hydrator.plugin.batch.action;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Name;
-import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.plugin.PluginConfig;
-import co.cask.cdap.etl.api.PipelineConfigurer;
-import co.cask.cdap.etl.api.action.Action;
-import co.cask.cdap.etl.api.action.ActionContext;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Name;
+import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.action.Action;
+import io.cdap.cdap.etl.api.action.ActionContext;
 
 /**
  * Action that moves file(s) within HDFS in the same cluster.

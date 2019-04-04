@@ -17,8 +17,8 @@
 
 package co.cask.hydrator.plugin.common;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
 
 import java.io.IOException;
 import java.util.Iterator;

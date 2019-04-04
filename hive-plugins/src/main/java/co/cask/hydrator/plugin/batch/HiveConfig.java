@@ -16,10 +16,10 @@
 
 package co.cask.hydrator.plugin.batch;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
-import co.cask.cdap.api.annotation.Name;
 import co.cask.hydrator.common.ReferencePluginConfig;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
+import io.cdap.cdap.api.annotation.Name;
 
 import javax.annotation.Nullable;
 

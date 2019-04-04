@@ -16,28 +16,28 @@
 
 package co.cask.hydrator.plugin.batch;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.lib.CloseableIterator;
-import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.api.messaging.Message;
-import co.cask.cdap.api.messaging.MessageFetcher;
-import co.cask.cdap.etl.api.Alert;
-import co.cask.cdap.etl.api.AlertPublisher;
-import co.cask.cdap.etl.mock.alert.NullAlertTransform;
-import co.cask.cdap.etl.mock.batch.MockSink;
-import co.cask.cdap.etl.mock.batch.MockSource;
-import co.cask.cdap.etl.proto.ArtifactSelectorConfig;
-import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
-import co.cask.cdap.etl.proto.v2.ETLPlugin;
-import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.proto.id.NamespaceId;
-import co.cask.cdap.test.ApplicationManager;
-import co.cask.cdap.test.DataSetManager;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.dataset.lib.CloseableIterator;
+import io.cdap.cdap.api.dataset.table.Table;
+import io.cdap.cdap.api.messaging.Message;
+import io.cdap.cdap.api.messaging.MessageFetcher;
+import io.cdap.cdap.etl.api.Alert;
+import io.cdap.cdap.etl.api.AlertPublisher;
+import io.cdap.cdap.etl.mock.alert.NullAlertTransform;
+import io.cdap.cdap.etl.mock.batch.MockSink;
+import io.cdap.cdap.etl.mock.batch.MockSource;
+import io.cdap.cdap.etl.proto.ArtifactSelectorConfig;
+import io.cdap.cdap.etl.proto.v2.ETLBatchConfig;
+import io.cdap.cdap.etl.proto.v2.ETLPlugin;
+import io.cdap.cdap.etl.proto.v2.ETLStage;
+import io.cdap.cdap.proto.id.NamespaceId;
+import io.cdap.cdap.test.ApplicationManager;
+import io.cdap.cdap.test.DataSetManager;
 import org.junit.Assert;
 import org.junit.Test;
 

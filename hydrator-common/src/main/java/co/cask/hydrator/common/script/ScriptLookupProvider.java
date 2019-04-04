@@ -15,10 +15,10 @@
  */
 package co.cask.hydrator.common.script;
 
-import co.cask.cdap.api.dataset.DatasetProperties;
-import co.cask.cdap.etl.api.LookupConfig;
-import co.cask.cdap.etl.api.LookupProvider;
-import co.cask.cdap.etl.api.LookupTableConfig;
+import io.cdap.cdap.api.dataset.DatasetProperties;
+import io.cdap.cdap.etl.api.LookupConfig;
+import io.cdap.cdap.etl.api.LookupProvider;
+import io.cdap.cdap.etl.api.LookupTableConfig;
 
 /**
  * {@link LookupProvider} implementation.

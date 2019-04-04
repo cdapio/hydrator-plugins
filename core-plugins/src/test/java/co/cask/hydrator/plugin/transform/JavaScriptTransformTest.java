@@ -16,22 +16,22 @@
 
 package co.cask.hydrator.plugin.transform;
 
-import co.cask.cdap.api.common.Bytes;
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.etl.api.InvalidEntry;
-import co.cask.cdap.etl.api.Lookup;
-import co.cask.cdap.etl.api.LookupConfig;
-import co.cask.cdap.etl.api.LookupTableConfig;
-import co.cask.cdap.etl.api.Transform;
-import co.cask.cdap.etl.mock.common.MockEmitter;
-import co.cask.cdap.etl.mock.common.MockLookupProvider;
-import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
-import co.cask.cdap.etl.mock.transform.MockTransformContext;
 import co.cask.hydrator.plugin.validator.CoreValidator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import io.cdap.cdap.api.common.Bytes;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.InvalidEntry;
+import io.cdap.cdap.etl.api.Lookup;
+import io.cdap.cdap.etl.api.LookupConfig;
+import io.cdap.cdap.etl.api.LookupTableConfig;
+import io.cdap.cdap.etl.api.Transform;
+import io.cdap.cdap.etl.mock.common.MockEmitter;
+import io.cdap.cdap.etl.mock.common.MockLookupProvider;
+import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
+import io.cdap.cdap.etl.mock.transform.MockTransformContext;
 import org.junit.Assert;
 import org.junit.Test;
 

@@ -16,10 +16,10 @@
 
 package co.cask.hydrator.plugin.validator;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Name;
-import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.etl.api.Validator;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Name;
+import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.etl.api.Validator;
 import org.apache.commons.validator.GenericValidator;
 import org.apache.commons.validator.routines.CreditCardValidator;
 import org.apache.commons.validator.routines.DateValidator;

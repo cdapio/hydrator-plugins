@@ -16,8 +16,8 @@
 
 package co.cask.hydrator.plugin.batch.aggregator.function;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
 
 /**
  * Counts the number of records in a group. This is the function for count(*).

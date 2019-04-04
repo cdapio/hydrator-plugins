@@ -16,12 +16,12 @@
 
 package co.cask.hydrator.plugin;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
-import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import co.cask.hydrator.plugin.sink.HBaseSink;
 import co.cask.hydrator.plugin.source.HBaseSource;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
+import io.cdap.cdap.api.data.schema.Schema;
 
 import java.io.IOException;
 import javax.annotation.Nullable;

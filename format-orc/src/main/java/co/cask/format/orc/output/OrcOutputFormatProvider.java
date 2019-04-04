@@ -16,16 +16,16 @@
 
 package co.cask.format.orc.output;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
-import co.cask.cdap.api.annotation.Name;
-import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.data.batch.OutputFormatProvider;
-import co.cask.cdap.api.data.schema.UnsupportedTypeException;
-import co.cask.cdap.api.plugin.PluginClass;
-import co.cask.cdap.api.plugin.PluginConfig;
-import co.cask.cdap.api.plugin.PluginPropertyField;
 import co.cask.hydrator.common.HiveSchemaConverter;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
+import io.cdap.cdap.api.annotation.Name;
+import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.data.batch.OutputFormatProvider;
+import io.cdap.cdap.api.data.schema.UnsupportedTypeException;
+import io.cdap.cdap.api.plugin.PluginClass;
+import io.cdap.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.api.plugin.PluginPropertyField;
 import org.apache.orc.CompressionKind;
 
 import java.io.IOException;
@@ -134,7 +134,7 @@ public class OrcOutputFormatProvider implements OutputFormatProvider {
 
   private static String parseOrcSchema(String configuredSchema) {
     try {
-      co.cask.cdap.api.data.schema.Schema schemaObj = co.cask.cdap.api.data.schema.Schema.parseJson(configuredSchema);
+      io.cdap.cdap.api.data.schema.Schema schemaObj = io.cdap.cdap.api.data.schema.Schema.parseJson(configuredSchema);
       StringBuilder builder = new StringBuilder();
       HiveSchemaConverter.appendType(builder, schemaObj);
       return builder.toString();

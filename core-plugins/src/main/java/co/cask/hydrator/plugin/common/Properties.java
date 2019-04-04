@@ -60,7 +60,7 @@ public final class Properties {
   public static class Cube {
     public static final String DATASET_NAME = "name";
     public static final String DATASET_RESOLUTIONS =
-      co.cask.cdap.api.dataset.lib.cube.Cube.PROPERTY_RESOLUTIONS;
+      io.cdap.cdap.api.dataset.lib.cube.Cube.PROPERTY_RESOLUTIONS;
     public static final String DATASET_OTHER = "dataset.cube.properties";
     public static final String AGGREGATIONS = "dataset.cube.aggregations";
 
@@ -76,9 +76,9 @@ public final class Properties {
    */
   public static class Table {
     public static final String NAME = "name";
-    public static final String PROPERTY_SCHEMA = co.cask.cdap.api.dataset.table.Table.PROPERTY_SCHEMA;
+    public static final String PROPERTY_SCHEMA = io.cdap.cdap.api.dataset.table.Table.PROPERTY_SCHEMA;
     public static final String PROPERTY_SCHEMA_ROW_FIELD =
-      co.cask.cdap.api.dataset.table.Table.PROPERTY_SCHEMA_ROW_FIELD;
+      io.cdap.cdap.api.dataset.table.Table.PROPERTY_SCHEMA_ROW_FIELD;
   }
 
   /**

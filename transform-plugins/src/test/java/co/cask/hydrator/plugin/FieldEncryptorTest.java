@@ -16,9 +16,9 @@
 
 package co.cask.hydrator.plugin;
 
-import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.common.FieldEncryptor;
 import co.cask.hydrator.common.KeystoreConf;
+import io.cdap.cdap.api.data.schema.Schema;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;

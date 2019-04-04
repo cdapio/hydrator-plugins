@@ -16,10 +16,10 @@
 
 package co.cask.format.orc.output;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.dataset.lib.KeyValue;
 import co.cask.format.orc.StructuredToOrcTransformer;
 import co.cask.hydrator.format.output.DelegatingOutputFormat;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.dataset.lib.KeyValue;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;

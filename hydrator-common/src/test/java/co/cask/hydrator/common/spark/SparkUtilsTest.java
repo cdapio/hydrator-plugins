@@ -15,9 +15,9 @@
  */
 package co.cask.hydrator.common.spark;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
 import com.google.common.base.Splitter;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
 import org.junit.Assert;
 import org.junit.Test;
 

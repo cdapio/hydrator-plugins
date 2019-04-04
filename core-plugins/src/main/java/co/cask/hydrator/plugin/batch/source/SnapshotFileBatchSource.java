@@ -16,24 +16,24 @@
 
 package co.cask.hydrator.plugin.batch.source;
 
-import co.cask.cdap.api.data.batch.Input;
-import co.cask.cdap.api.data.batch.InputFormatProvider;
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.DatasetProperties;
-import co.cask.cdap.api.dataset.lib.FileSetProperties;
-import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
-import co.cask.cdap.api.lineage.field.EndPoint;
-import co.cask.cdap.etl.api.PipelineConfigurer;
-import co.cask.cdap.etl.api.batch.BatchSource;
-import co.cask.cdap.etl.api.batch.BatchSourceContext;
-import co.cask.cdap.etl.api.lineage.field.FieldOperation;
-import co.cask.cdap.etl.api.lineage.field.FieldReadOperation;
 import co.cask.hydrator.plugin.batch.sink.SnapshotFileBatchSink;
 import co.cask.hydrator.plugin.dataset.SnapshotFileSet;
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import io.cdap.cdap.api.data.batch.Input;
+import io.cdap.cdap.api.data.batch.InputFormatProvider;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.dataset.DatasetProperties;
+import io.cdap.cdap.api.dataset.lib.FileSetProperties;
+import io.cdap.cdap.api.dataset.lib.PartitionedFileSet;
+import io.cdap.cdap.api.lineage.field.EndPoint;
+import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.batch.BatchSource;
+import io.cdap.cdap.etl.api.batch.BatchSourceContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
+import io.cdap.cdap.etl.api.lineage.field.FieldReadOperation;
 import org.apache.hadoop.io.NullWritable;
 
 import java.lang.reflect.Type;

@@ -16,8 +16,8 @@
 
 package co.cask.hydrator.plugin.batch.aggregator.function;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.etl.api.Aggregator;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.etl.api.Aggregator;
 
 /**
  * Methods to manage lifecycle functions performed on group of {@link StructuredRecord}, typically used in the

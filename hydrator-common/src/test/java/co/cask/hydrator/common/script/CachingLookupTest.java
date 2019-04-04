@@ -16,12 +16,12 @@
 
 package co.cask.hydrator.common.script;
 
-import co.cask.cdap.etl.api.CacheConfig;
-import co.cask.cdap.etl.api.Lookup;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
+import io.cdap.cdap.etl.api.CacheConfig;
+import io.cdap.cdap.etl.api.Lookup;
 import org.junit.Assert;
 import org.junit.Test;
 

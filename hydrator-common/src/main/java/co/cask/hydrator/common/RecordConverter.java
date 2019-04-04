@@ -16,10 +16,10 @@
 
 package co.cask.hydrator.common;
 
-import co.cask.cdap.api.data.format.UnexpectedFormatException;
-import co.cask.cdap.api.data.schema.Schema;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import io.cdap.cdap.api.data.format.UnexpectedFormatException;
+import io.cdap.cdap.api.data.schema.Schema;
 
 import java.io.IOException;
 import java.lang.reflect.Array;

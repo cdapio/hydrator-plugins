@@ -15,16 +15,16 @@
  */
 package co.cask.hydrator.common;
 
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.DatasetManagementException;
-import co.cask.cdap.api.dataset.DatasetProperties;
-import co.cask.cdap.api.dataset.InstanceConflictException;
-import co.cask.cdap.api.lineage.field.EndPoint;
-import co.cask.cdap.api.lineage.field.ReadOperation;
-import co.cask.cdap.api.lineage.field.WriteOperation;
-import co.cask.cdap.etl.api.batch.BatchContext;
-import co.cask.cdap.etl.api.lineage.field.FieldReadOperation;
-import co.cask.cdap.etl.api.lineage.field.FieldWriteOperation;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.dataset.DatasetManagementException;
+import io.cdap.cdap.api.dataset.DatasetProperties;
+import io.cdap.cdap.api.dataset.InstanceConflictException;
+import io.cdap.cdap.api.lineage.field.EndPoint;
+import io.cdap.cdap.api.lineage.field.ReadOperation;
+import io.cdap.cdap.api.lineage.field.WriteOperation;
+import io.cdap.cdap.etl.api.batch.BatchContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldReadOperation;
+import io.cdap.cdap.etl.api.lineage.field.FieldWriteOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

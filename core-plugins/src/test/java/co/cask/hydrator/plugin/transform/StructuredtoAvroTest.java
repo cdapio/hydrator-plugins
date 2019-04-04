@@ -16,9 +16,9 @@
 
 package co.cask.hydrator.plugin.transform;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
 import co.cask.format.avro.StructuredToAvroTransformer;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.Assert;
 import org.junit.Test;

@@ -16,13 +16,13 @@
 
 package co.cask.format.avro.input;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Name;
-import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.plugin.PluginClass;
 import co.cask.hydrator.format.input.PathTrackingConfig;
 import co.cask.hydrator.format.input.PathTrackingInputFormatProvider;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Name;
+import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.plugin.PluginClass;
 
 import java.util.Map;
 

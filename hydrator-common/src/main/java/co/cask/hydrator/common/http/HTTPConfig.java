@@ -16,10 +16,10 @@
 
 package co.cask.hydrator.common.http;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
-import co.cask.cdap.api.plugin.PluginConfig;
 import com.google.common.base.Strings;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
+import io.cdap.cdap.api.plugin.PluginConfig;
 
 import java.net.MalformedURLException;
 import java.net.URL;

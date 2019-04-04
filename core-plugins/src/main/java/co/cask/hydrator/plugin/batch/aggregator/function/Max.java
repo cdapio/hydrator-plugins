@@ -16,7 +16,7 @@
 
 package co.cask.hydrator.plugin.batch.aggregator.function;
 
-import co.cask.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.data.schema.Schema;
 
 import javax.annotation.Nullable;
 

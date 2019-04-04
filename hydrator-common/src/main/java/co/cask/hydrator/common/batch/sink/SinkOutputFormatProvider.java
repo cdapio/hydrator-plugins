@@ -16,9 +16,9 @@
 
 package co.cask.hydrator.common.batch.sink;
 
-import co.cask.cdap.api.data.batch.OutputFormatProvider;
 import co.cask.hydrator.common.batch.ConfigurationUtils;
 import com.google.common.collect.ImmutableMap;
+import io.cdap.cdap.api.data.batch.OutputFormatProvider;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.OutputFormat;
 

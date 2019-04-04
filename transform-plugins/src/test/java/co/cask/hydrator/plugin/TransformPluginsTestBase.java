@@ -16,14 +16,14 @@
 
 package co.cask.hydrator.plugin;
 
-import co.cask.cdap.api.artifact.ArtifactSummary;
-import co.cask.cdap.api.artifact.ArtifactVersion;
-import co.cask.cdap.datapipeline.DataPipelineApp;
-import co.cask.cdap.etl.mock.test.HydratorTestBase;
-import co.cask.cdap.proto.id.ArtifactId;
-import co.cask.cdap.proto.id.NamespaceId;
-import co.cask.cdap.test.TestConfiguration;
 import co.cask.hydrator.common.KeystoreConf;
+import io.cdap.cdap.api.artifact.ArtifactSummary;
+import io.cdap.cdap.api.artifact.ArtifactVersion;
+import io.cdap.cdap.datapipeline.DataPipelineApp;
+import io.cdap.cdap.etl.mock.test.HydratorTestBase;
+import io.cdap.cdap.proto.id.ArtifactId;
+import io.cdap.cdap.proto.id.NamespaceId;
+import io.cdap.cdap.test.TestConfiguration;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.csv.CSVFormat;
 import org.junit.BeforeClass;

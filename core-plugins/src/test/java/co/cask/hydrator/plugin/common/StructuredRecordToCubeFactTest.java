@@ -16,14 +16,14 @@
 
 package co.cask.hydrator.plugin.common;
 
-import co.cask.cdap.api.common.Bytes;
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.lib.cube.CubeFact;
-import co.cask.cdap.api.dataset.lib.cube.MeasureType;
-import co.cask.cdap.api.dataset.lib.cube.Measurement;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
+import io.cdap.cdap.api.common.Bytes;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.dataset.lib.cube.CubeFact;
+import io.cdap.cdap.api.dataset.lib.cube.MeasureType;
+import io.cdap.cdap.api.dataset.lib.cube.Measurement;
 import org.junit.Assert;
 import org.junit.Test;
 

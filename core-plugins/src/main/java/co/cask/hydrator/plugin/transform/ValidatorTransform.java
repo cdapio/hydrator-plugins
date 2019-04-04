@@ -16,21 +16,6 @@
 
 package co.cask.hydrator.plugin.transform;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Name;
-import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.plugin.PluginConfig;
-import co.cask.cdap.api.plugin.PluginProperties;
-import co.cask.cdap.etl.api.Arguments;
-import co.cask.cdap.etl.api.Emitter;
-import co.cask.cdap.etl.api.InvalidEntry;
-import co.cask.cdap.etl.api.LookupConfig;
-import co.cask.cdap.etl.api.PipelineConfigurer;
-import co.cask.cdap.etl.api.StageMetrics;
-import co.cask.cdap.etl.api.Transform;
-import co.cask.cdap.etl.api.TransformContext;
-import co.cask.cdap.etl.api.Validator;
 import co.cask.hydrator.common.script.JavaTypeConverters;
 import co.cask.hydrator.plugin.ScriptConstants;
 import co.cask.hydrator.plugin.common.StructuredRecordSerializer;
@@ -40,6 +25,21 @@ import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Name;
+import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.api.plugin.PluginProperties;
+import io.cdap.cdap.etl.api.Arguments;
+import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.InvalidEntry;
+import io.cdap.cdap.etl.api.LookupConfig;
+import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageMetrics;
+import io.cdap.cdap.etl.api.Transform;
+import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.Validator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

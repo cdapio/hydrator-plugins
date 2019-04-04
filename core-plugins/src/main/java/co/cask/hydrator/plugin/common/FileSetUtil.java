@@ -16,10 +16,10 @@
 
 package co.cask.hydrator.plugin.common;
 
-import co.cask.cdap.api.data.schema.UnsupportedTypeException;
-import co.cask.cdap.api.dataset.DatasetProperties;
-import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.hydrator.common.HiveSchemaConverter;
+import io.cdap.cdap.api.data.schema.UnsupportedTypeException;
+import io.cdap.cdap.api.dataset.DatasetProperties;
+import io.cdap.cdap.api.dataset.lib.FileSetProperties;
 
 /**
  * Utilities for configuring file sets during pipeline configuration.
@@ -106,7 +106,7 @@ public class FileSetUtil {
 
   private static String parseHiveSchema(String schemaString, String configuredSchema) {
     try {
-      return HiveSchemaConverter.toHiveSchema(co.cask.cdap.api.data.schema.Schema.parseJson(schemaString));
+      return HiveSchemaConverter.toHiveSchema(io.cdap.cdap.api.data.schema.Schema.parseJson(schemaString));
     } catch (UnsupportedTypeException e) {
       throw new IllegalArgumentException("Schema " + configuredSchema + " is not supported as a Hive schema.", e);
     } catch (Exception e) {

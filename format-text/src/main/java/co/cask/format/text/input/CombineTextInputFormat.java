@@ -16,8 +16,8 @@
 
 package co.cask.format.text.input;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.hydrator.format.input.PathTrackingInputFormat;
+import io.cdap.cdap.api.data.format.StructuredRecord;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;

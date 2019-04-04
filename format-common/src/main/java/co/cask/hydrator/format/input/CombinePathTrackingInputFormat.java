@@ -16,7 +16,7 @@
 
 package co.cask.hydrator.format.input;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.format.StructuredRecord;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;

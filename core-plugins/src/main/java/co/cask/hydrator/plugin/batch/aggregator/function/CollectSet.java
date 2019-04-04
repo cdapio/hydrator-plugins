@@ -16,11 +16,10 @@
 
 package co.cask.hydrator.plugin.batch.aggregator.function;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
 
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 
 /**

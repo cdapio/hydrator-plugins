@@ -16,10 +16,10 @@
 
 package co.cask.format.avro;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.common.RecordConverter;
 import com.google.common.collect.Maps;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
 import org.apache.avro.generic.GenericRecord;
 
 import java.io.IOException;

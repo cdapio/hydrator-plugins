@@ -16,11 +16,11 @@
 
 package co.cask.hydrator.plugin;
 
-import co.cask.cdap.common.test.TestSuite;
 import co.cask.hydrator.plugin.db.batch.action.DBActionTestRun;
 import co.cask.hydrator.plugin.db.batch.action.DBQueryActionTestRun;
 import co.cask.hydrator.plugin.db.batch.sink.DBSinkTestRun;
 import co.cask.hydrator.plugin.db.batch.sink.DBSourceTestRun;
+import io.cdap.cdap.common.test.TestSuite;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;

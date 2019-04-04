@@ -16,23 +16,23 @@
 
 package co.cask.hydrator.plugin.spark;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
-import co.cask.cdap.api.annotation.Name;
-import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.data.format.FormatSpecification;
-import co.cask.cdap.api.data.format.RecordFormat;
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.etl.api.PipelineConfigurer;
-import co.cask.cdap.etl.api.streaming.StreamingContext;
-import co.cask.cdap.etl.api.streaming.StreamingSource;
-import co.cask.cdap.format.RecordFormats;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
+import io.cdap.cdap.api.annotation.Name;
+import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.data.format.FormatSpecification;
+import io.cdap.cdap.api.data.format.RecordFormat;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.streaming.StreamingContext;
+import io.cdap.cdap.etl.api.streaming.StreamingSource;
+import io.cdap.cdap.format.RecordFormats;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;

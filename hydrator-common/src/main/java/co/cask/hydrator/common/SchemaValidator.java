@@ -16,8 +16,8 @@
 
 package co.cask.hydrator.common;
 
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.PipelineConfigurer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

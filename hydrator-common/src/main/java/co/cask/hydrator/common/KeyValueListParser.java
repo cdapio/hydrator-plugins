@@ -16,8 +16,8 @@
 
 package co.cask.hydrator.common;
 
-import co.cask.cdap.api.dataset.lib.KeyValue;
 import com.google.common.base.Splitter;
+import io.cdap.cdap.api.dataset.lib.KeyValue;
 
 import java.util.Iterator;
 import java.util.regex.Pattern;

@@ -16,10 +16,10 @@
 
 package co.cask.format.delimited.output;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.dataset.lib.KeyValue;
-import co.cask.cdap.format.StructuredRecordStringConverter;
 import co.cask.hydrator.format.output.DelegatingOutputFormat;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.dataset.lib.KeyValue;
+import io.cdap.cdap.format.StructuredRecordStringConverter;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;

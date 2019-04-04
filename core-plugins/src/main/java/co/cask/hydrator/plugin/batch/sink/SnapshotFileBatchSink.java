@@ -16,22 +16,22 @@
 
 package co.cask.hydrator.plugin.batch.sink;
 
-import co.cask.cdap.api.data.batch.Output;
-import co.cask.cdap.api.data.batch.OutputFormatProvider;
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.dataset.DatasetManagementException;
-import co.cask.cdap.api.dataset.DatasetProperties;
-import co.cask.cdap.api.dataset.lib.FileSetProperties;
-import co.cask.cdap.api.dataset.lib.KeyValue;
-import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
-import co.cask.cdap.etl.api.Emitter;
-import co.cask.cdap.etl.api.PipelineConfigurer;
-import co.cask.cdap.etl.api.batch.BatchSink;
-import co.cask.cdap.etl.api.batch.BatchSinkContext;
 import co.cask.hydrator.common.TimeParser;
 import co.cask.hydrator.plugin.dataset.SnapshotFileSet;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import io.cdap.cdap.api.data.batch.Output;
+import io.cdap.cdap.api.data.batch.OutputFormatProvider;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.dataset.DatasetManagementException;
+import io.cdap.cdap.api.dataset.DatasetProperties;
+import io.cdap.cdap.api.dataset.lib.FileSetProperties;
+import io.cdap.cdap.api.dataset.lib.KeyValue;
+import io.cdap.cdap.api.dataset.lib.PartitionedFileSet;
+import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.batch.BatchSink;
+import io.cdap.cdap.etl.api.batch.BatchSinkContext;
 import org.apache.hadoop.io.NullWritable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

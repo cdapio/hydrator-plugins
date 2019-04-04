@@ -16,10 +16,10 @@
 
 package co.cask.hydrator.common.script;
 
-import co.cask.cdap.etl.api.Arguments;
-import co.cask.cdap.etl.api.LookupConfig;
-import co.cask.cdap.etl.api.LookupProvider;
-import co.cask.cdap.etl.api.StageMetrics;
+import io.cdap.cdap.etl.api.Arguments;
+import io.cdap.cdap.etl.api.LookupConfig;
+import io.cdap.cdap.etl.api.LookupProvider;
+import io.cdap.cdap.etl.api.StageMetrics;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;

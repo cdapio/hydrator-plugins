@@ -15,12 +15,13 @@
  */
 package co.cask.hydrator.common.spark;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;

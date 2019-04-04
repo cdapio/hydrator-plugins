@@ -16,9 +16,9 @@
 
 package co.cask.hydrator.plugin.batch.commons;
 
-import co.cask.cdap.api.data.schema.Schema;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import io.cdap.cdap.api.data.schema.Schema;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoFactory;

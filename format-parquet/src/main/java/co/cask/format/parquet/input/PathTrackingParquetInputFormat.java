@@ -16,10 +16,10 @@
 
 package co.cask.format.parquet.input;
 
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
 import co.cask.format.avro.AvroToStructuredTransformer;
 import co.cask.hydrator.format.input.PathTrackingInputFormat;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;

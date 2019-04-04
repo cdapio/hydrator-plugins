@@ -16,9 +16,9 @@
 
 package co.cask.hydrator.plugin;
 
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.etl.mock.common.MockPipelineConfigurer;
 import co.cask.hydrator.plugin.sink.HBaseSink;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
 import org.junit.Assert;
 import org.junit.Test;
 

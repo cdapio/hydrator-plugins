@@ -16,8 +16,8 @@
 
 package co.cask.hydrator.plugin.batch.action;
 
-import co.cask.cdap.etl.mock.action.MockActionContext;
 import co.cask.hydrator.plugin.common.EchoCommandFactory;
+import io.cdap.cdap.etl.mock.action.MockActionContext;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
