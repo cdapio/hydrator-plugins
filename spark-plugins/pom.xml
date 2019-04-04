@@ -192,11 +192,10 @@
         <configuration>
           <instructions>
             <_exportcontents>
-              co.cask.hydrator.plugin.spark.*;
+              io.cdap.plugin.spark.*;
               org.apache.spark.streaming.scheduler.*;
               org.apache.spark.streaming.twitter.*;
-              twitter4j.*;
-              co.cask.hydrator.common.http
+              twitter4j.*
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>

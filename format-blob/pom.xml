@@ -68,7 +68,7 @@
         <configuration>
           <instructions>
             <_exportcontents>
-              co.cask.format.blob.*;
+              io.cdap.plugin.format.blob.*;
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>

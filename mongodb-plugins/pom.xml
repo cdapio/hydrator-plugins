@@ -87,7 +87,7 @@
         <configuration>
           <instructions>
             <_exportcontents>
-              co.cask.hydrator.plugin.*;
+              io.cdap.plugin.*;
               com.mongodb.hadoop.*;
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>

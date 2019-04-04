@@ -210,14 +210,14 @@
         <configuration>
           <instructions>
             <_exportcontents>
-              co.cask.hydrator.plugin.*;
-              co.cask.hydrator.plugin.batch.*;
-              co.cask.hydrator.plugin.common;
-              co.cask.hydrator.plugin.realtime.*;
-              co.cask.hydrator.plugin.streaming.*;
-              co.cask.hydrator.plugin.transform.*;
-              co.cask.hydrator.plugin.validator.*;
-              co.cask.hydrator.plugin.error.*
+              io.cdap.plugin.*;
+              io.cdap.plugin.batch.*;
+              io.cdap.plugin.common;
+              io.cdap.plugin.realtime.*;
+              io.cdap.plugin.streaming.*;
+              io.cdap.plugin.transform.*;
+              io.cdap.plugin.validator.*;
+              io.cdap.plugin.error.*
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>

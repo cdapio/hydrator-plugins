@@ -92,7 +92,7 @@
         <configuration>
           <instructions>
             <_exportcontents>
-              co.cask.format.parquet.*
+              io.cdap.plugin.format.parquet.*
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>

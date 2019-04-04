@@ -109,7 +109,7 @@
             <Embed-Transitive>true</Embed-Transitive>
             <Embed-Directory>lib</Embed-Directory>
             <!--Only @Plugin classes in the export packages will be included as plugin-->
-            <_exportcontents>co.cask.hydrator.plugin.*</_exportcontents>
+            <_exportcontents>io.cdap.plugin.*</_exportcontents>
           </instructions>
         </configuration>
         <executions>

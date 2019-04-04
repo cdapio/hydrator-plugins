@@ -134,7 +134,7 @@
         <configuration>
           <instructions>
             <_exportcontents>
-              co.cask.hydrator.plugin.*;
+              io.cdap.plugin.*;
               org.apache.commons.lang;
               org.apache.hadoop.hbase.mapreduce;
             </_exportcontents>
