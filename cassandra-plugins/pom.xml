@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright © 2015 Cask Data, Inc.
+  ~ Copyright © 2015-2019 Cask Data, Inc.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License"); you may not
   ~ use this file except in compliance with the License. You may obtain a copy of
@@ -19,7 +19,7 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
-    <groupId>co.cask.hydrator</groupId>
+    <groupId>io.cdap.plugin</groupId>
     <artifactId>hydrator-plugins</artifactId>
     <version>2.2.0-SNAPSHOT</version>
   </parent>
@@ -34,23 +34,23 @@
       <artifactId>jsr250-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>co.cask.cdap</groupId>
+      <groupId>io.cdap.cdap</groupId>
       <artifactId>cdap-etl-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>co.cask.cdap</groupId>
+      <groupId>io.cdap.cdap</groupId>
       <artifactId>cdap-data-pipeline</artifactId>
     </dependency>
     <dependency>
-      <groupId>co.cask.cdap</groupId>
+      <groupId>io.cdap.cdap</groupId>
       <artifactId>hydrator-test</artifactId>
     </dependency>
     <dependency>
-      <groupId>co.cask.cdap</groupId>
+      <groupId>io.cdap.cdap</groupId>
       <artifactId>cdap-formats</artifactId>
     </dependency>
     <dependency>
-      <groupId>co.cask.hydrator</groupId>
+      <groupId>io.cdap.plugin</groupId>
       <artifactId>hydrator-common</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -92,8 +92,8 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <_exportcontents>co.cask.hydrator.plugin.batch.*;org.apache.cassandra.hadoop.*;
-              org.apache.commons.lang;co.cask.hydrator.plugin.realtime.*</_exportcontents>
+            <_exportcontents>io.cdap.plugin.batch.*;org.apache.cassandra.hadoop.*;
+              org.apache.commons.lang;io.cdap.plugin.realtime.*</_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
             <Embed-Directory>lib</Embed-Directory>
@@ -109,7 +109,7 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>co.cask</groupId>
+        <groupId>io.cdap</groupId>
         <artifactId>cdap-maven-plugin</artifactId>
       </plugin>
     </plugins>

@@ -16,7 +16,7 @@ Following are instructions to build and deploy the Hydrator Cassandra plugins.
 Prerequisites
 -------------
 
-To use the plugins, you must have CDAP version 3.2.0 or later. You can download CDAP Standalone that includes Hydrator `here <http://cask.co/downloads>`__
+To use the plugins, you must have CDAP version 3.2.0 or later. You can download CDAP Standalone that includes Hydrator `here <http://cdap.io/downloads>`__
 
 Apache Cassandra v. 2.1.0 is the only version of Apache Cassandra that the Hydrator plugins support.
 
@@ -25,7 +25,7 @@ Build Plugins
 
 You get started with Hydrator plugins by building directly from the latest source code::
 
-  git clone https://github.com/caskdata/hydrator-plugins.git
+  git clone https://github.com/cdapio/hydrator-plugins.git
   cd hydrator-plugins
   mvn clean package -pl cassandra-plugins -am
 
@@ -42,7 +42,7 @@ You can deploy the plugins using the CDAP CLI::
 
 License and Trademarks
 ======================
-Copyright © 2015 Cask Data, Inc.
+Copyright © 2015-2019 Cask Data, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 in compliance with the License. You may obtain a copy of the License at

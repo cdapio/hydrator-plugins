@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Copyright © 2015-2016 Cask Data, Inc.
+  Copyright © 2015-2019 Cask Data, Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License"); you may not
   use this file except in compliance with the License. You may obtain a copy of
@@ -18,13 +18,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 <modelVersion>4.0.0</modelVersion>
 
-  <groupId>co.cask.hydrator</groupId>
+  <groupId>io.cdap.plugin</groupId>
   <artifactId>hydrator-plugins</artifactId>
   <version>2.2.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Hydrator Plugin Collection</name>
-  <description>A collection of plugins for Cask Hydrator.</description>
-  <url>https://github.com/caskdata/hydrator-plugins</url>
+  <description>A collection of plugins for CDAP</description>
+  <url>https://github.com/cdapio/hydrator-plugins</url>
 
   <modules>
     <module>hydrator-common</module>
@@ -46,11 +46,6 @@
     <module>solrsearch-plugins</module>
     <module>spark-plugins</module>
     <module>transform-plugins</module>
-    <module>wrangler-transform</module>
-    <module>google-cloud</module>
-    <module>kafka-plugins</module>
-    <module>amazon-s3-plugins</module>
-    <module>condition-plugins</module>
   </modules>
 
   <licenses>
@@ -64,17 +59,17 @@
 
   <developers>
     <developer>
-      <name>Cask Data</name>
-      <email>cask-dev@googlegroups.com</email>
-      <organization>Cask Data, Inc.</organization>
-      <organizationUrl>http://www.cdap.io</organizationUrl>
+      <name>CDAP</name>
+      <email>cdap-dev@googlegroups.com</email>
+      <organization>CDAP</organization>
+      <organizationUrl>http://cdap.io</organizationUrl>
     </developer>
   </developers>
 
   <scm>
-    <connection>scm:git:https://github.com/caskdata/hydrator-plugins.git</connection>
-    <developerConnection>scm:git:git@github.com:caskdata/hydrator-plugins.git</developerConnection>
-    <url>https://github.com/caskdata/hydrator-plugins.git</url>
+    <connection>scm:git:https://github.com/cdapio/hydrator-plugins.git</connection>
+    <developerConnection>scm:git:git@github.com:cdapio/hydrator-plugins.git</developerConnection>
+    <url>https://github.com/cdapio/hydrator-plugins.git</url>
     <tag>HEAD</tag>
   </scm>
 
@@ -87,10 +82,6 @@
       <id>sonatype.snapshots</id>
       <url>https://oss.sonatype.org/content/repositories/snapshots</url>
     </snapshotRepository>
-    <site>
-      <id>cask</id>
-      <url>http://cask.co</url>
-    </site>
   </distributionManagement>
 
   <issueManagement>
@@ -173,37 +164,37 @@
         <version>1.0</version>
       </dependency>
       <dependency>
-        <groupId>co.cask.cdap</groupId>
+        <groupId>io.cdap.cdap</groupId>
         <artifactId>cdap-api</artifactId>
         <version>${cdap.version}</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
-        <groupId>co.cask.cdap</groupId>
+        <groupId>io.cdap.cdap</groupId>
         <artifactId>cdap-api-spark</artifactId>
         <version>${cdap.version}</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
-        <groupId>co.cask.cdap</groupId>
+        <groupId>io.cdap.cdap</groupId>
         <artifactId>cdap-etl-proto</artifactId>
         <version>${cdap.version}</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
-        <groupId>co.cask.cdap</groupId>
+        <groupId>io.cdap.cdap</groupId>
         <artifactId>cdap-etl-api</artifactId>
         <version>${cdap.version}</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
-        <groupId>co.cask.cdap</groupId>
+        <groupId>io.cdap.cdap</groupId>
         <artifactId>cdap-etl-api-spark</artifactId>
         <version>${cdap.version}</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
-        <groupId>co.cask.cdap</groupId>
+        <groupId>io.cdap.cdap</groupId>
         <artifactId>cdap-formats</artifactId>
         <version>${cdap.version}</version>
         <exclusions>
@@ -214,37 +205,37 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>co.cask.cdap</groupId>
+        <groupId>io.cdap.cdap</groupId>
         <artifactId>cdap-data-pipeline</artifactId>
         <version>${cdap.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>co.cask.cdap</groupId>
+        <groupId>io.cdap.cdap</groupId>
         <artifactId>cdap-data-streams</artifactId>
         <version>${cdap.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>co.cask.cdap</groupId>
+        <groupId>io.cdap.cdap</groupId>
         <artifactId>hydrator-test</artifactId>
         <version>${cdap.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>co.cask.cdap</groupId>
+        <groupId>io.cdap.cdap</groupId>
         <artifactId>cdap-etl-realtime</artifactId>
         <version>${cdap.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>co.cask.cdap</groupId>
+        <groupId>io.cdap.cdap</groupId>
         <artifactId>cdap-test</artifactId>
         <version>${cdap.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>co.cask.cdap</groupId>
+        <groupId>io.cdap.cdap</groupId>
         <artifactId>cdap-unit-test</artifactId>
         <version>${cdap.version}</version>
         <scope>test</scope>
@@ -677,9 +668,9 @@
     <pluginManagement>
       <plugins>
         <plugin>
-          <groupId>co.cask</groupId>
+          <groupId>io.cdap</groupId>
           <artifactId>cdap-maven-plugin</artifactId>
-          <version>1.0.1</version>
+          <version>1.1.0</version>
           <configuration>
             <cdapArtifacts>
               <parent>system:cdap-data-pipeline[5.1.0-SNAPSHOT,7.0.0-SNAPSHOT)</parent>
@@ -742,7 +733,7 @@
       <plugin>
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
-        <version>0.10</version>
+        <version>0.11</version>
         <dependencies>
           <dependency>
             <groupId>org.apache.maven.doxia</groupId>
@@ -829,6 +820,21 @@
 
   <!-- Profile for release. Includes signing of jars. -->
   <profiles>
+    <profile>
+      <!-- Profile to include submodules -->
+      <id>submodules</id>
+      <activation>
+        <jdk>[1.8,)</jdk>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <modules>
+        <module>wrangler-transform</module>
+        <module>google-cloud</module>
+        <module>kafka-plugins</module>
+        <module>amazon-s3-plugins</module>
+        <module>condition-plugins</module>
+      </modules>
+    </profile>
     <profile> 
       <id>skipTests</id>
       <build>
@@ -856,7 +862,6 @@
             <configuration>
               <nexusUrl>https://oss.sonatype.org</nexusUrl>
               <serverId>sonatype.release</serverId>
-              <stagingProfileId>655dc88dc770c3</stagingProfileId>
             </configuration>
           </plugin>
           <!-- Source JAR -->
@@ -891,7 +896,7 @@
               </links>
               <doctitle>${project.name} ${project.version}</doctitle>
               <bottom>
-                <![CDATA[Copyright &#169; {currentYear} <a href="http://cask.co" target="_blank">Cask Data, Inc.</a> Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache License, Version 2.0</a>.]]>
+                <![CDATA[Copyright &#169; {currentYear} <a href="http://cdap.io" target="_blank">CDAP</a> Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache License, Version 2.0</a>.]]>
               </bottom>
             </configuration>
             <executions>

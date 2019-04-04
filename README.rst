@@ -2,8 +2,8 @@
 Hydrator Plugins Collection
 ===========================
 
-.. image:: https://travis-ci.org/caskdata/hydrator-plugins.svg?branch=develop
-    :target: https://travis-ci.org/caskdata/hydrator-plugins
+.. image:: https://travis-ci.org/cdapio/hydrator-plugins.svg?branch=develop
+    :target: https://travis-ci.org/cdapio/hydrator-plugins
 
 Introduction
 ============
@@ -26,7 +26,7 @@ than welcome to do so. If you would like to build plugins, here are links to get
 - `How to build custom Hydrator plugins
   <http://docs.cask.co/cdap/current/en/hydrator-manual/developing-plugins/index.html>`__
 - `How to test a plugin <http://docs.cask.co/cdap/current/en/hydrator-manual/developing-plugins/testing-plugins.html>`__
-- `How to package a plugin 
+- `How to package a plugin
   <http://docs.cask.co/cdap/current/en/hydrator-manual/developing-plugins/packaging-plugins.html>`__
 - `How to deploy a plugin
   <http://docs.cask.co/cdap/current/en/hydrator-manual/plugin-management.html#deploying-plugins>`__
@@ -87,7 +87,7 @@ CDAP IRC Channel: #cdap on irc.freenode.net
 License and Trademarks
 ======================
 
-Copyright © 2015-2016 Cask Data, Inc.
+Copyright © 2015-2019 Cask Data, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 in compliance with the License. You may obtain a copy of the License at

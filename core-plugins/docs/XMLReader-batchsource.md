@@ -51,9 +51,9 @@ Here are some regular expression pattern examples:
 
 Example
 -------
-This example reads data from the folder "hdfs:/cask/source/xmls/" and emits XML records on the basis of the node path
+This example reads data from the folder "hdfs:/cdap/source/xmls/" and emits XML records on the basis of the node path
 "/catalog/book/title". It will generate structured records with the fields 'offset', 'fileName', and 'record'.
-It will move the XML files to the target folder "hdfs:/cask/target/xmls/" and update the processed file information
+It will move the XML files to the target folder "hdfs:/cdap/target/xmls/" and update the processed file information
 in the table named "trackingTable".
 
       {
@@ -63,14 +63,14 @@ in the table named "trackingTable".
                     "type": "batchsource",
                     "properties":{
                                   "referenceName": "referenceName""
-                                  "path": "hdfs:/cask/source/xmls/*",
+                                  "path": "hdfs:/cdap/source/xmls/*",
                                   "Pattern": "^catalog.*"
                                   "nodePath": "/catalog/book/title"
                                   "actionAfterProcess" : "Move",
-                                  "targetFolder":"hdfs:/cask/target/xmls/",
+                                  "targetFolder":"hdfs:/cdap/target/xmls/",
                                   "reprocessingRequired": "No",
                                   "tableName": "trackingTable",
-                                  "temporaryFolder": "hdfs:/cask/tmp/"
+                                  "temporaryFolder": "hdfs:/cdap/tmp/"
                     }
          }
       }
@@ -107,6 +107,6 @@ in the table named "trackingTable".
     +==================================================================================+
     | offset | filename                            | record                            |
     +==================================================================================+
-    | 2      | hdfs:/cask/source/xmls/catalog.xml  | <title>Oberon's Legacy</title>    |
-    | 13     | hdfs:/cask/source/xmls/catalog.xml  | <title>The Sundered Grail</title> |
+    | 2      | hdfs:/cdap/source/xmls/catalog.xml  | <title>Oberon's Legacy</title>    |
+    | 13     | hdfs:/cdap/source/xmls/catalog.xml  | <title>The Sundered Grail</title> |
     +==================================================================================+

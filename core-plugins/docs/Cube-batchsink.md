@@ -33,7 +33,7 @@ Each aggregation group is identified by a unique name and value is a collection 
 example, if aggregations are desired on fields ``abc`` and ``xyz``, the
 property can have the key ``agg1`` and value ``abc,xyz``:
 See [Cube dataset configuration details] for more information.
-[Cube dataset configuration details]: http://docs.cask.co/cdap/current/en/developers-manual/building-blocks/datasets/cube.html
+[Cube dataset configuration details]: http://docs.cdap.io/cdap/current/en/developer-manual/building-blocks/datasets/cube.html
 
 **dataset.cube.properties:** Provides additional cube dataset properties if needed.
 
