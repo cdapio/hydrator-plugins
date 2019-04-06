@@ -18,20 +18,20 @@
 [submodule "wrangler-transform"]
 	path = wrangler-transform
 	url = https://github.com/data-integrations/wrangler.git
-	branch = develop
+	branch = release/4.0
 [submodule "google-cloud"]
 	path = google-cloud
 	url = https://github.com/data-integrations/google-cloud
-	branch = develop
+	branch = release/0.12
 [submodule "kafka-plugins"]
 	path = kafka-plugins
 	url = https://github.com/data-integrations/kafka-plugins
-	branch = develop
+	branch = release/2.1
 [submodule "amazon-s3-plugins"]
 	path = amazon-s3-plugins
 	url = https://github.com/data-integrations/amazon-s3-plugins
-	branch = develop
+	branch = release/1.10
 [submodule "condition-plugins"]
 	path = condition-plugins
 	url = https://github.com/data-integrations/condition-plugins.git
-	branch = develop
+	branch = release/1.3
