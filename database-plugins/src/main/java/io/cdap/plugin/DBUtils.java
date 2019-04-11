@@ -278,23 +278,32 @@ public final class DBUtils {
           return resultSet.getString(fieldName);
         case Types.BLOB:
           Blob blob = (Blob) original;
-          try {
-            return blob.getBytes(1, (int) blob.length());
-          } finally {
-            blob.free();
+          if (blob == null) {
+            return null;
+          } else {
+            try {
+              return blob.getBytes(1, (int) blob.length());
+            } finally {
+              blob.free();
+            }
           }
         case Types.CLOB:
           Clob clob = (Clob) original;
-          try {
-            return clob.getSubString(1, (int) clob.length());
-          } finally {
-            clob.free();
+          if (clob == null) {
+            return null;
+          } else {
+            try {
+              if (clob != null) {
+                return clob.getSubString(1, (int) clob.length());
+              }
+            } finally {
+              clob.free();
+            }
           }
       }
     }
     return original;
   }
-
   /**
    * De-register all SQL drivers that are associated with the class
    */
