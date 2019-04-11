@@ -297,7 +297,11 @@ public final class DBUtils {
                 return clob.getSubString(1, (int) clob.length());
               }
             } finally {
-              clob.free();
+              try {
+                clob.free();
+              }catch (Exception e) {
+                LOG.debug("Making sure the clob.free does not throw exception .... ");
+              }
             }
           }
       }
