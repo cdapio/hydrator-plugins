@@ -168,6 +168,7 @@ public class TableSinkTest extends ETLBatchTestBase {
   public void testTableSink() {
     Schema outputSchema = Schema.recordOf(
       "purchase",
+      Schema.Field.of("rowkey", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("user", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("count", Schema.of(Schema.Type.INT))
     );
@@ -198,6 +199,25 @@ public class TableSinkTest extends ETLBatchTestBase {
       Schema.Field.of("rowkey", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("user", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("count", Schema.of(Schema.Type.INT))
+    );
+    TableSinkConfig tableSinkConfig = new TableSinkConfig("tableSink", "rowkey", outputSchema.toString());
+    TableSink tableSink = new TableSink(tableSinkConfig);
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
+    tableSink.configurePipeline(mockPipelineConfigurer);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testTableSinkWithOutputSchemaMissingRowKeyField() {
+    Schema outputSchema = Schema.recordOf(
+        "purchase",
+        Schema.Field.of("user", Schema.of(Schema.Type.STRING)),
+        Schema.Field.of("count", Schema.of(Schema.Type.INT))
+    );
+    Schema inputSchema = Schema.recordOf(
+        "purchase",
+        Schema.Field.of("rowkey", Schema.of(Schema.Type.STRING)),
+        Schema.Field.of("user", Schema.of(Schema.Type.STRING)),
+        Schema.Field.of("count", Schema.of(Schema.Type.INT))
     );
     TableSinkConfig tableSinkConfig = new TableSinkConfig("tableSink", "rowkey", outputSchema.toString());
     TableSink tableSink = new TableSink(tableSinkConfig);

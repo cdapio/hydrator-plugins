@@ -73,13 +73,19 @@ public class TableSink extends BatchWritableSink<StructuredRecord, byte[], Put> 
     Schema outputSchema =
       SchemaValidator.validateOutputSchemaAndInputSchemaIfPresent(tableSinkConfig.getSchemaStr(),
                                                                   tableSinkConfig.getRowField(), pipelineConfigurer);
-    if ((outputSchema != null) && (outputSchema.getFields().size() == 1)) {
-      String fieldName = outputSchema.getFields().get(0).getName();
-      if (fieldName.equals(tableSinkConfig.getRowField())) {
+    if (outputSchema != null) {
+      if (outputSchema.getFields().size() == 1) {
+        String fieldName = outputSchema.getFields().get(0).getName();
+        if (fieldName.equals(tableSinkConfig.getRowField())) {
+          throw new IllegalArgumentException(
+              String.format("Output schema should have columns other than rowkey."));
+        }
+      } else if (outputSchema.getField(tableSinkConfig.getRowField()) == null) {
         throw new IllegalArgumentException(
-          String.format("Output schema should have columns other than rowkey."));
+            String.format("Output schema should contain the rowkey column."));
       }
     }
+
     // NOTE: this is done only for testing, once CDAP-4575 is implemented, we can use this schema in initialize
     pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
   }
