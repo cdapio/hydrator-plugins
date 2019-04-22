@@ -88,10 +88,9 @@ public class TableSinkTest extends ETLBatchTestBase {
 
   @Test
   public void testTableSinkWithComplexTypeSkipped() {
-    // This doesn't include the rowkey in the output record. The row key inclusion in output record
-    // is optional.
     Schema outputSchema = Schema.recordOf(
       "purchase",
+      Schema.Field.of("rowkey", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("user", Schema.of(Schema.Type.STRING))
     );
 
@@ -210,8 +209,7 @@ public class TableSinkTest extends ETLBatchTestBase {
   public void testTableSinkWithOutputSchemaMissingRowKeyField() {
     Schema outputSchema = Schema.recordOf(
         "purchase",
-        Schema.Field.of("user", Schema.of(Schema.Type.STRING)),
-        Schema.Field.of("count", Schema.of(Schema.Type.INT))
+        Schema.Field.of("user", Schema.of(Schema.Type.STRING))
     );
     Schema inputSchema = Schema.recordOf(
         "purchase",
