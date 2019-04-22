@@ -74,13 +74,13 @@ public class TableSink extends BatchWritableSink<StructuredRecord, byte[], Put> 
       SchemaValidator.validateOutputSchemaAndInputSchemaIfPresent(tableSinkConfig.getSchemaStr(),
                                                                   tableSinkConfig.getRowField(), pipelineConfigurer);
     if (outputSchema != null) {
-      String fieldName = outputSchema.getFields().get(0).getName();
-      if (outputSchema.getFields().size() == 1 && fieldName.equals(tableSinkConfig.getRowField())) {
-        throw new IllegalArgumentException(
-            String.format("Output schema should have columns other than rowkey."));
-      } else if (outputSchema.getField(tableSinkConfig.getRowField()) == null) {
-        throw new IllegalArgumentException(
-            String.format("Output schema should contain the rowkey column."));
+      if (outputSchema.getField(tableSinkConfig.getRowField()) == null) {
+        throw new IllegalArgumentException("Output schema should contain the rowkey column.");
+      } else if (outputSchema.getFields().size() == 1) {
+        String fieldName = outputSchema.getFields().get(0).getName();
+        if (fieldName.equals(tableSinkConfig.getRowField())) {
+          throw new IllegalArgumentException("Output schema should have columns other than rowkey.");
+        }
       }
     }
 
