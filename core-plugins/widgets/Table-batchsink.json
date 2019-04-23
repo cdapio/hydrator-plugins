@@ -13,7 +13,7 @@
           "name": "name"
         },
         {
-          "widget-type": "textbox",
+          "widget-type": "input-field-selector",
           "label": "Row Field",
           "name": "schema.row.field"
         }
