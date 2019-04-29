@@ -55,6 +55,7 @@
             "add-properties": [
               {
                 "name": "query",
+                "plugin-property-for-value": "importQuery",
                 "widget-type": "textarea",
                 "label": "Query",
                 "widget-attributes": {
