@@ -25,9 +25,25 @@ import org.apache.avro.generic.GenericRecordBuilder;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.List;
 
 public class AvroToStructuredTest {
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testNullValueForNonNullableField() throws IOException {
+    AvroToStructuredTransformer avroToStructuredTransformer = new AvroToStructuredTransformer();
+
+    org.apache.avro.Schema avroSchema = convertSchema(
+      Schema.recordOf("nullable", Schema.Field.of("x", Schema.nullableOf(Schema.of(Schema.Type.INT)))));
+    GenericRecord avroRecord = new GenericRecordBuilder(avroSchema)
+      .set("x", null)
+      .build();
+
+    Schema schema = Schema.recordOf("x", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
+    avroToStructuredTransformer.transform(avroRecord, schema);
+  }
+
   @Test
   public void testAvroToStructuredConversionForNested() throws Exception {
     AvroToStructuredTransformer avroToStructuredTransformer = new AvroToStructuredTransformer();

@@ -61,7 +61,7 @@ public class StructuredToAvroTransformer extends RecordConverter<StructuredRecor
       if (schemaField == null) {
         throw new IllegalArgumentException("Input record does not contain the " + fieldName + " field.");
       }
-      recordBuilder.set(fieldName, convertField(structuredRecord.get(fieldName), schemaField.getSchema()));
+      recordBuilder.set(fieldName, convertField(structuredRecord.get(fieldName), schemaField));
     }
     return recordBuilder.build();
   }
