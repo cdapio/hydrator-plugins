@@ -87,8 +87,26 @@ public abstract class RecordConverter<INPUT, OUTPUT> {
     return converted;
   }
 
+  protected Object convertField(Object field, Schema.Field schemaField) throws IOException {
+    try {
+      return convertField(field, schemaField.getSchema());
+    } catch (IOException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new IllegalArgumentException(
+        String.format("Error converting field '%s': %s", schemaField.getName(), e.getMessage()), e);
+    }
+  }
+
   protected Object convertField(Object field, Schema fieldSchema) throws IOException {
     Schema.Type fieldType = fieldSchema.getType();
+    if (fieldType == Schema.Type.UNION) {
+      return convertUnion(field, fieldSchema.getUnionSchemas());
+    }
+    if (field == null) {
+      throw new NullPointerException("Found a null value for a non-nullable field.");
+    }
+
     switch (fieldType) {
       case RECORD:
         return transform((INPUT) field, fieldSchema);
@@ -97,8 +115,6 @@ public abstract class RecordConverter<INPUT, OUTPUT> {
       case MAP:
         Map.Entry<Schema, Schema> mapSchema = fieldSchema.getMapSchema();
         return convertMap((Map<Object, Object>) field, mapSchema.getKey(), mapSchema.getValue());
-      case UNION:
-        return convertUnion(field, fieldSchema.getUnionSchemas());
       case NULL:
         return null;
       case STRING:
