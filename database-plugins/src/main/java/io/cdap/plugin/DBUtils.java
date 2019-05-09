@@ -165,7 +165,8 @@ public final class DBUtils {
       int columnSqlType = metadata.getColumnType(i);
       int columnSqlPrecision = metadata.getPrecision(i); // total number of digits
       int columnSqlScale = metadata.getScale(i); // digits after the decimal point
-      Schema columnSchema = getSchema(columnSqlType, columnSqlPrecision, columnSqlScale);
+      String columnTypeName = metadata.getColumnTypeName(i);
+      Schema columnSchema = getSchema(columnTypeName, columnSqlType, columnSqlPrecision, columnSqlScale);
       if (ResultSetMetaData.columnNullable == metadata.isNullable(i)) {
         columnSchema = Schema.nullableOf(columnSchema);
       }
@@ -176,7 +177,7 @@ public final class DBUtils {
   }
 
   // given a sql type return schema type
-  private static Schema getSchema(int sqlType, int precision, int scale) throws SQLException {
+  private static Schema getSchema(String typeName, int sqlType, int precision, int scale) throws SQLException {
     // Type.STRING covers sql types - VARCHAR,CHAR,CLOB,LONGNVARCHAR,LONGVARCHAR,NCHAR,NCLOB,NVARCHAR
     Schema.Type type = Schema.Type.STRING;
     switch (sqlType) {
@@ -194,8 +195,11 @@ public final class DBUtils {
 
       case Types.TINYINT:
       case Types.SMALLINT:
-      case Types.INTEGER:
         type = Schema.Type.INT;
+        break;
+      case Types.INTEGER:
+        // CDAP-12211 - handling unsigned integers in mysql
+        type = "int unsigned".equalsIgnoreCase(typeName) ? Schema.Type.LONG : Schema.Type.INT;
         break;
 
       case Types.BIGINT:
