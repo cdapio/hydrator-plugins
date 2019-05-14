@@ -20,7 +20,7 @@
   <parent>
     <artifactId>hydrator-plugins</artifactId>
     <groupId>io.cdap.plugin</groupId>
-    <version>2.2.0</version>
+    <version>6.0.0</version>
   </parent>
 
   <name>MongoDB Plugins</name>
