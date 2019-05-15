@@ -31,64 +31,56 @@ Example
 -------
 Suppose the union splitter is configured to split on the 'item' field:
 
-    {
-        "name": "UnionSplitter",
-        "type": "splittertransform",
-        "properties": {
-            "field": "item",
-            "modifySchema": "true"
-        }
+```json
+{
+    "name": "UnionSplitter",
+    "type": "splittertransform",
+    "properties": {
+        "field": "item",
+        "modifySchema": "true"
     }
+}
+```
 
 
 Suppose the splitter receives records with schema:
 
-    +=================================+
-    | name  | type                    |
-    +=================================+
-    | id    | long                    |
-    | user  | string                  |
-    | item  | [ int, long, itemMeta ] |
-    +=================================+
+| name  | type                    |
+| ----- | ----------------------- |
+| id    | long                    |
+| user  | string                  |
+| item  | [ int, long, itemMeta ] |
 
 with the 'item' field as a union of int, long and a record named 'itemMeta' with schema:
 
-    +=================================+
-    | name  | type                    |
-    +=================================+
-    | id    | long                    |
-    | desc  | string                  |
-    +=================================+
+| name  | type                    |
+| ----- | ----------------------- |
+| id    | long                    |
+| desc  | string                  |
 
 This means the union splitter will have three output ports, one for each schema in the union.
 
 If a record contains an integer for the 'item' field, it will be emitted to the 'int' port with output schema:
 
-    +===============================+
-    | name  | type                  |
-    +===============================+
-    | id    | long                  |
-    | user  | string                |
-    | item  | int                   |
-    +===============================+
+| name  | type                  |
+| ----- | --------------------- |
+| id    | long                  |
+| user  | string                |
+| item  | int                   |
 
 If a record contains a long for the 'item' field, it will be emitted to the 'long' port with output schema:
 
-    +===============================+
-    | name  | type                  |
-    +===============================+
-    | id    | long                  |
-    | user  | string                |
-    | item  | long                  |
-    +===============================+
+| name  | type                  |
+| ----- | --------------------- |
+| id    | long                  |
+| user  | string                |
+| item  | long                  |
 
 If a record contains a StructuredRecord with the itemMeta schema for the 'item' field,
 it will be emitted to the 'itemMeta' port with output schema:
 
-    +===============================+
-    | name  | type                  |
-    +===============================+
-    | id    | long                  |
-    | user  | string                |
-    | item  | itemMeta              |
-    +===============================+
+| name  | type                  |
+| ----- | --------------------- |
+| id    | long                  |
+| user  | string                |
+| item  | itemMeta              |

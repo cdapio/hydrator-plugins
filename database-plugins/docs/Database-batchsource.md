@@ -79,29 +79,29 @@ it will connect to the 'prod' database of a PostgreSQL instance running on 'loca
 It will run the 'importQuery' against the 'users' table to read four columns from the table.
 The column types will be used to derive the record field types output by the source.
 
-    {
-        "name": "Database",
-        "type": "batchsource",
-        "properties": {
-            "importQuery": "select id,name,email,phone from users where $CONDITIONS",
-            "boundingQuery": "select min(id),max(id) from users",
-            "splitBy": "id",
-            "connectionString": "jdbc:postgresql://localhost:5432/prod",
-            "user": "user123",
-            "password": "password-abc",
-            "jdbcPluginName": "postgres",
-            "jdbcPluginType": "jdbc"
-        }
+```json
+{
+    "name": "Database",
+    "type": "batchsource",
+    "properties": {
+        "importQuery": "select id,name,email,phone from users where $CONDITIONS",
+        "boundingQuery": "select min(id),max(id) from users",
+        "splitBy": "id",
+        "connectionString": "jdbc:postgresql://localhost:5432/prod",
+        "user": "user123",
+        "password": "password-abc",
+        "jdbcPluginName": "postgres",
+        "jdbcPluginType": "jdbc"
     }
+}
+```
 
 For example, if the 'id' column is a primary key of type int and the other columns are
 non-nullable varchars, output records will have this schema:
 
-    +======================================+
-    | field name     | type                |
-    +======================================+
-    | id             | int                 |
-    | name           | string              |
-    | email          | string              |
-    | phone          | string              |
-    +======================================+
+| field name     | type                |
+| -------------- | ------------------- |
+| id             | int                 |
+| name           | string              |
+| email          | string              |
+| phone          | string              |

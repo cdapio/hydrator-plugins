@@ -5,20 +5,18 @@ Description
 -----------
 Samples tweets in real-time through Spark streaming. Output records will have this schema:
 
-    +================================+
-    | field name  | type             |
-    +================================+
-    | id          | long             |
-    | message     | string           |
-    | lang        | nullable string  |
-    | time        | nullable long    |
-    | favCount    | int              |
-    | rtCount     | int              |
-    | source      | nullable string  |
-    | geoLat      | nullable double  |
-    | geoLong     | nullable double  |
-    | isRetweet   | boolean          |
-    +================================+
+| field name  | type             |
+| ----------- | ---------------- |
+| id          | long             |
+| message     | string           |
+| lang        | nullable string  |
+| time        | nullable long    |
+| favCount    | int              |
+| rtCount     | int              |
+| source      | nullable string  |
+| geoLat      | nullable double  |
+| geoLong     | nullable double  |
+| isRetweet   | boolean          |
 
 
 Use Case
@@ -52,14 +50,15 @@ the relevant app to find the consumer key and secret.
 Example
 -------
 
-    {
-        "name": "Twitter",
-        "type": "streamingsource",
-        "properties": {
-            "AccessToken": "GetAccessTokenFromTwitter",
-            "AccessTokenSecret": "GetAccessTokenSecretFromTwitter",
-            "ConsumerKey": "GetConsumerKeyFromTwitter",
-            "ConsumerSecret": "GetConsumerSecretFromTwitter"
-        }
+```json
+{
+    "name": "Twitter",
+    "type": "streamingsource",
+    "properties": {
+        "AccessToken": "GetAccessTokenFromTwitter",
+        "AccessTokenSecret": "GetAccessTokenSecretFromTwitter",
+        "ConsumerKey": "GetConsumerKeyFromTwitter",
+        "ConsumerSecret": "GetConsumerSecretFromTwitter"
     }
-
+}
+```

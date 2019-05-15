@@ -22,6 +22,7 @@ Example
 -------
 This example reads from a KeyValueTable named 'items':
 
+```json
     {
         "name": "KVTable",
         "type": "batchsource",
@@ -29,12 +30,11 @@ This example reads from a KeyValueTable named 'items':
             "name": "items"
         }
     }
+```
 
 It outputs records with this schema:
 
-    +====================+
-    | field name | type  |
-    +====================+
-    | key        | bytes |
-    | value      | bytes |
-    +====================+
+| field name | type  |
+| ---------- | ----- |
+| key        | bytes |
+| value      | bytes |

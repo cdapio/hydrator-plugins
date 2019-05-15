@@ -39,25 +39,27 @@ Example
 This example reads from a TimePartitionedFileSet named 'webactivity', assuming the underlying
 files are in Avro format:
 
-    {
-        "name": "TPFSAvro",
-        "type": "batchsource",
-        "properties": {
-            "name": "webactivity",
-            "duration": "5m",
-            "delay": "1m",
-            "schema": "{
-                \"type\":\"record\",
-                \"name\":\"webactivity\",
-                \"fields\":[
-                    {\"name\":\"date\",\"type\":\"string\"},
-                    {\"name\":\"userid\",\"type\":\"long\"},
-                    {\"name\":\"action\",\"type\":\"string\"},
-                    {\"name\":\"item\",\"type\":\"string\"}
-                ]
-            }"
-        }
+```json
+{
+    "name": "TPFSAvro",
+    "type": "batchsource",
+    "properties": {
+        "name": "webactivity",
+        "duration": "5m",
+        "delay": "1m",
+        "schema": "{
+            \"type\":\"record\",
+            \"name\":\"webactivity\",
+            \"fields\":[
+                {\"name\":\"date\",\"type\":\"string\"},
+                {\"name\":\"userid\",\"type\":\"long\"},
+                {\"name\":\"action\",\"type\":\"string\"},
+                {\"name\":\"item\",\"type\":\"string\"}
+            ]
+        }"
     }
+}
+```
 
 TimePartitionedFileSets are partitioned by year, month, day, hour, and minute. Suppose the
 current run was scheduled to start at 10:00am on January 1, 2015. Since the 'delay'
@@ -70,11 +72,9 @@ will be read.
 The source will read the actual data using the given schema and will output records with
 this schema:
 
-    +=======================+
-    | field name  | type    |
-    +=======================+
-    | date        | string  |
-    | userid      | long    |
-    | action      | string  |
-    | item        | string  |
-    +=======================+
+| field name  | type    |
+| ----------- | ------- |
+| date        | string  |
+| userid      | long    |
+| action      | string  |
+| item        | string  |

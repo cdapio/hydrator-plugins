@@ -34,6 +34,7 @@ This example deduplicates records by their `fname` and `lname` fields. Then, it 
 duplicates based on the `cost` field. Since the function specified is `max`, the record with the maximum value in the
 `cost` field is chosen out of each set of duplicate records.
 
+```json
     {
         "name": "Deduplicate",
         "type": "batchaggregator",
@@ -42,28 +43,25 @@ duplicates based on the `cost` field. Since the function specified is `max`, the
             "filterOperation": "cost:max"
         }
     }
-
+```
 
 For example, suppose the aggregator receives input records where each record represents a purchase:
 
-    +======================================+
-    | fname  | lname   | cost   |  zipcode |
-    +======================================+
-    | bob    | smith   | 50.23  |  12345   |
-    | bob    | jones   | 30.64  |  23456   |
-    | alice  | smith   | 1.50   |  34567   |
-    | bob    | smith   | 0.50   |  45678   |
-    | alice  | smith   | 30.21  |  56789   |
-    | alice  | jones   | 500.93 |  67890   |
-    +======================================+
+| fname  | lname   | cost   |  zipcode |
+| ------ | ------- | ------ | -------- |
+| bob    | smith   | 50.23  |  12345   |
+| bob    | jones   | 30.64  |  23456   |
+| alice  | smith   | 1.50   |  34567   |
+| bob    | smith   | 0.50   |  45678   |
+| alice  | smith   | 30.21  |  56789   |
+| alice  | jones   | 500.93 |  67890   |
+    
 
 Output records will contain one record for each `fname,lname` combination that has the maximum `cost`:
 
-    +======================================+
-    | fname  | lname   | cost   |  zipcode |
-    +======================================+
-    | bob    | smith   | 50.23  |  12345   |
-    | bob    | jones   | 30.64  |  23456   |
-    | alice  | smith   | 30.21  |  56789   |
-    | alice  | jones   | 500.93 |  67890   |
-    +======================================+
+| fname  | lname   | cost   |  zipcode |
+| ------ | ------- | ------ | -------- |
+| bob    | smith   | 50.23  |  12345   |
+| bob    | jones   | 30.64  |  23456   |
+| alice  | smith   | 30.21  |  56789   |
+| alice  | jones   | 500.93 |  67890   |

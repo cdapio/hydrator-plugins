@@ -28,31 +28,31 @@ This example creates windows of width five seconds that slides every two seconds
 configuration, the batch interval for the entire pipeline must be set to one second, as both the width
 and slide interval must be multiples of the batch interval.
 
-    {
-        "name": "XMLReaderBatchSource",
-        "plugin":{
-            "name": "Window",
-            "type": "windower",
-            "properties":{
-                "width": "5",
-                "slideInterval": "2"
-            }
+```json
+{
+    "name": "XMLReaderBatchSource",
+    "plugin":{
+        "name": "Window",
+        "type": "windower",
+        "properties":{
+            "width": "5",
+            "slideInterval": "2"
         }
     }
+}
+```
 
 With this setup, the plugin would generate these windowed batches:
 
-    +====================================+
-    | time | input | output              |
-    +====================================+
-    | 1    | x1    |                     |
-    | 2    | x2    | [ - - - x1 x2 ]     |
-    | 3    | x3    |                     |
-    | 4    | x4    | [ - x1 x2 x3 x4 ]   |
-    | 5    | x5    |                     |
-    | 6    | x6    | [ x2 x3 x4 x5 x6 ]  |
-    | 7    | x7    |                     |
-    | 8    | x8    | [ x4 x5 x6 x7 x8 ]  |
-    | 9    | x9    |                     |
-    | 10   | x10   | [ x6 x7 x8 x9 x10 ] |
-    +====================================+
+| time | input | output              |
+| ---- | ----- | ------------------- |
+| 1    | x1    |                     |
+| 2    | x2    | [ - - - x1 x2 ]     |
+| 3    | x3    |                     |
+| 4    | x4    | [ - x1 x2 x3 x4 ]   |
+| 5    | x5    |                     |
+| 6    | x6    | [ x2 x3 x4 x5 x6 ]  |
+| 7    | x7    |                     |
+| 8    | x8    | [ x4 x5 x6 x7 x8 ]  |
+| 9    | x9    |                     |
+| 10   | x10   | [ x6 x7 x8 x9 x10 ] |

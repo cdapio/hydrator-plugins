@@ -86,6 +86,7 @@ generate structured records according to the inputs.
 
 The plugin JSON Representation will be:
 
+```json
     {
       "name": "Excel",
       "type": "batchsource",
@@ -106,34 +107,28 @@ The plugin JSON Representation will be:
             "errorDatasetName": ""
        }
     }
+```
 
 Suppose, the above **filePath** contains only one file with these input rows from **Sheet1**:
 
-    +======================================+
-    |    A      |     B      |     C       |
-    +======================================+
-    |    1      |  "John"    |    23       |
-    |    2      |  "Alan"    |    34       |
-    |    3      |  "Ashley"  |    45       |
-    +======================================+
+|    A      |     B      |     C       |
+| --------- | ---------- | ----------- |
+| 1         | "John"     | 23          |
+| 2         | "Alan"     | 34          |
+| 3         | "Ashley"   | 45          |
 
 After, the processing has been done by the Excel plugin, the output will have these
 structure and contents, with the 'B' and 'C' column names being replaced by the 'name' and 'age'
 columns respectively:
 
-    +======================================+
-    |    A       |   name    |     age     |
-    +======================================+
-    |   "1"      |  "John"   |    "23"     |
-    |   "2"      |  "Alan"   |    "34"     |
-    |   "3"      |  "Ashley" |    "45"     |
-    +======================================+
-
+|    A       |   name    |     age     |
+| ---------- | --------- | ----------- |
+| "1"        | "John"    | "23"        |
+| "2"        | "Alan"    | "34"        |
+| "3"        | "Ashley"  | "45"        |
 
 The memory table **inventory-memory-table** will contain:
 
-    +===========================================================================+
-    |    key                                                 |   value          |
-    +===========================================================================+
-    | "hdfs://<namenode-hostname>:9000/tmp/inventory.xlsx"   | "1322018752992l" |
-    +===========================================================================+
+|    key                                                 |   value          |
+| ------------------------------------------------------ | ---------------- |
+| "hdfs://<namenode-hostname>:9000/tmp/inventory.xlsx"   | "1322018752992l" |

@@ -30,33 +30,33 @@ Example
 -------
 This example reads from a Table named 'users':
 
-    {
-        "name": "Table",
-        "type": "batchsource",
-        "properties": {
-            "name": "users",
-            "schema": "{
-                \"type\":\"record\",
-                \"name\":\"user\",
-                \"fields\":[
-                    {\"name\":\"id\",\"type\":\"long\"},
-                    {\"name\":\"name\",\"type\":\"string\"},
-                    {\"name\":\"birthyear\",\"type\":\"int\"}
-                ]
-            }",
-            "schema.row.field": "id"
-        }
+```json
+{
+    "name": "Table",
+    "type": "batchsource",
+    "properties": {
+        "name": "users",
+        "schema": "{
+            \"type\":\"record\",
+            \"name\":\"user\",
+            \"fields\":[
+                {\"name\":\"id\",\"type\":\"long\"},
+                {\"name\":\"name\",\"type\":\"string\"},
+                {\"name\":\"birthyear\",\"type\":\"int\"}
+            ]
+        }",
+        "schema.row.field": "id"
     }
+}
+```
 
 It outputs records with this schema:
 
-    +======================================+
-    | field name     | type                |
-    +======================================+
-    | id             | long                |
-    | name           | string              |
-    | birthyear      | int                 |
-    +======================================+
+| field name     | type                |
+| -------------- | ------------------- |
+| id             | long                |
+| name           | string              |
+| birthyear      | int                 |
 
 The 'id' field will be read from the row key of the table. The 'name' field will be read from the
 'name' column in the table. The 'birthyear' field will be read from the 'birthyear' column in the

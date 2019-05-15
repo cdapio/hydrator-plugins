@@ -33,24 +33,25 @@ This example searches for an input Schema field named 'body', and then attempts 
 the Combined Log Format entries found in the field for the URI, IP, browser, device,
 HTTP status code, and timestamp:
 
-    {
-        "name": "LogParser",
-        "type": "transform",
-        "properties": {
-            "logFormat": "CLF",
-            "inputName": "body"
-        }
+```json
+{
+    "name": "LogParser",
+    "type": "transform",
+    "properties": {
+        "logFormat": "CLF",
+        "inputName": "body"
     }
+}
+```
 
 The Transform will emit records with this schema:
 
-    +============================+
-    | field name    | type       |
-    +============================+
-    | uri           | string     |
-    | ip            | string     |
-    | browser       | string     |
-    | device        | string     |
-    | httpStatus    | int        |
-    | ts            | long       |
-    +============================+
+    
+| field name    | type       |
+| ------------- | ---------- |
+| uri           | string     |
+| ip            | string     |
+| browser       | string     |
+| device        | string     |
+| httpStatus    | int        |
+| ts            | long       |

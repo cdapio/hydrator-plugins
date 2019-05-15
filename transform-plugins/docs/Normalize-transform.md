@@ -42,17 +42,14 @@ a "Customer" table.
 
 Customer_Profile table:
 
-    +==============================================================================================================+
-    | CustomerId | First_Name | Last_Name  | Shipping_Address | Credit_Card | Billing_Address | Last_Update_Date   |
-    +==============================================================================================================+
-    | S23424242  | Joltie     | Root       | 32826 Mars Way,  | 2334-232132 | 32826 Mars Way, | 05/12/2015         |
-    |            |            |            | Marsville,  MR,  | -2323       | Marsville,  MR, |                    |
-    |            |            |            | 24344            |             | 24344           |                    |
-    +--------------------------------------------------------------------------------------------------------------+
-    | R45764646  | Iris       | Cask       | 32423, Your Way, | 2343-12312- | 32421 MyVilla,  | 04/03/2012         |
-    |            |            |            | YourVille, YR,   | 12313       | YourVille, YR,  |                    |
-    |            |            |            | 65765            |             | 23423           |                    |
-    +==============================================================================================================+
+| CustomerId | First_Name | Last_Name  | Shipping_Address | Credit_Card | Billing_Address | Last_Update_Date   |
+| ---------- | ---------- | ---------- | ---------------- | ----------- | --------------- | ------------------ | 
+| S23424242  | Joltie     | Root       | 32826 Mars Way,  | 2334-232132 | 32826 Mars Way, | 05/12/2015         |
+|            |            |            | Marsville,  MR,  | -2323       | Marsville,  MR, |                    |
+|            |            |            | 24344            |             | 24344           |                    |
+| R45764646  | Iris       | Cask       | 32423, Your Way, | 2343-12312- | 32421 MyVilla,  | 04/03/2012         |
+|            |            |            | YourVille, YR,   | 12313       | YourVille, YR,  |                    |
+|            |            |            | 65765            |             | 23423           |                    |
 
 Map the "CustomerId" column to the "ID" column of the output schema, and the
 "Last_Update_Date" to the "Date" column of the output schema. Normalize the "First_Name",
@@ -62,59 +59,57 @@ schema.
 
 The plugin's JSON Representation will be:
 
-    {
+```json
+{
+    "name": "Normalize",
+    "plugin": {
         "name": "Normalize",
-        "plugin": {
-            "name": "Normalize",
-            "type": "transform",
-            "label": "Normalize",
-            "properties": {
-               "fieldMapping": "CustomerId:ID,Last_Update_Date:Date",
-               "fieldNormalizing": "First_Name:Attribute_Type:Attribute_Value,
-                                    Last_Name:Attribute_Type:Attribute_Value,
-                                    Credit_Card:Attribute_Type:Attribute_Value,
-                                    Billing_Address:Attribute_Type:Attribute_Value",
-               "outputSchema": "{
-                             \"type\":\"schema\",
-                             \"name\":\"outputSchema\",
-                             \"fields\":[
-                               {\"name\":\"ID\",\"type\":\"string\"},
-                               {\"name\":\"Date\",\"type\":\"string\"},
-                               {\"name\":\"Attribute_Type\",\"type\":\"string\"},
-                               {\"name\":\"Attribute_Value\",\"type\":\"string\"}
-                             ]
-               }"
-            }
+        "type": "transform",
+        "label": "Normalize",
+        "properties": {
+            "fieldMapping": "CustomerId:ID,Last_Update_Date:Date",
+            "fieldNormalizing": "First_Name:Attribute_Type:Attribute_Value,
+                                Last_Name:Attribute_Type:Attribute_Value,
+                                Credit_Card:Attribute_Type:Attribute_Value,
+                                Billing_Address:Attribute_Type:Attribute_Value",
+            "outputSchema": "{
+                            \"type\":\"schema\",
+                            \"name\":\"outputSchema\",
+                            \"fields\":[
+                            {\"name\":\"ID\",\"type\":\"string\"},
+                            {\"name\":\"Date\",\"type\":\"string\"},
+                            {\"name\":\"Attribute_Type\",\"type\":\"string\"},
+                            {\"name\":\"Attribute_Value\",\"type\":\"string\"}
+                            ]
+            }"
         }
     }
+}
+```
 
 
 After the transformation, the output records in the Customer table will be:
 
-    +====================================================================================+
-    | ID        | Attribute_Type  | Attribute_Value                         | Date       |
-    +====================================================================================+
-    | S23424242 | First Name      | Joltie                                  | 05/12/2015 |
-    | S23424242 | Last Name       | Root                                    | 05/12/2015 |
-    | S23424242 | Credit Card     | 2334-232132-2323                        | 05/12/2015 |
-    | S23424242 | Billing Address | 32826 Mars Way, Marsville,  MR, 24344   | 05/12/2015 |
-    | R45764646 | First Name      | Iris                                    | 04/03/2012 |
-    | R45764646 | Last Name       | Cask                                    | 04/03/2012 |
-    | R45764646 | Credit Card     | 2343-12312-12313                        | 04/03/2012 |
-    | R45764646 | Billing Address | 32421, MyVilla Ct, YourVille, YR, 23423 | 04/03/2012 |
-    +====================================================================================+
+| ID        | Attribute_Type  | Attribute_Value                         | Date       |
+| --------- | --------------- | --------------------------------------- | ---------- |
+| S23424242 | First Name      | Joltie                                  | 05/12/2015 |
+| S23424242 | Last Name       | Root                                    | 05/12/2015 |
+| S23424242 | Credit Card     | 2334-232132-2323                        | 05/12/2015 |
+| S23424242 | Billing Address | 32826 Mars Way, Marsville,  MR, 24344   | 05/12/2015 |
+| R45764646 | First Name      | Iris                                    | 04/03/2012 |
+| R45764646 | Last Name       | Cask                                    | 04/03/2012 |
+| R45764646 | Credit Card     | 2343-12312-12313                        | 04/03/2012 |
+| R45764646 | Billing Address | 32421, MyVilla Ct, YourVille, YR, 23423 | 04/03/2012 |
 
 Next, create a new pipeline to normalize the Customer_Purchase table to the revised Customer table.
 
 Customer_Purchase table:
 
-    +===========================================================+
-    | CustomerId | Item_ID          | Item_Cost | Purchase_Date |
-    +===========================================================+
-    | S23424242  | UR-AR-243123-ST  | 245.67    | 08/09/2015    |
-    | S23424242  | SKU-234294242942 | 67.90     | 10/12/2015    |
-    | R45764646  | SKU-567757543532 | 14.15     | 06/09/2014    |
-    +===========================================================+
+| CustomerId | Item_ID          | Item_Cost | Purchase_Date |
+| ---------- | ---------------- | --------- | ------------- |
+| S23424242  | UR-AR-243123-ST  | 245.67    | 08/09/2015    |
+| S23424242  | SKU-234294242942 | 67.90     | 10/12/2015    |
+| R45764646  | SKU-567757543532 | 14.15     | 06/09/2014    |
 
 Map the "CustomerId" column to the "ID" column of the output schema, and the
 "Purchase_Date" to the "Date" column of the output schema. Normalize the "Item_ID" and
@@ -123,46 +118,46 @@ and each value will be mapped to the "Attribute_Value" column of the output sche
 
 The plugin's JSON Representation will be:
 
-    {
+```json
+{
+    "name": "Normalize",
+    "plugin": {
         "name": "Normalize",
-        "plugin": {
-            "name": "Normalize",
-            "type": "transform",
-            "label": "Normalize",
-            "properties": {
-               "fieldMapping": "CustomerId:ID,Purchase_Date:Date",
-               "fieldNormalizing": "Item_ID:Attribute_Type:Attribute_Value,Item_Cost:Attribute_Type:Attribute_Value",
-               "outputSchema": "{
-                             \"type\":\"schema\",
-                             \"name\":\"outputSchema\",
-                             \"fields\":[
-                               {\"name\":\"ID\",\"type\":\"string\"},
-                               {\"name\":\"Date\",\"type\":\"string\"},
-                               {\"name\":\"Attribute_Type\",\"type\":\"string\"},
-                               {\"name\":\"Attribute_Value\",\"type\":\"string\"}
-                             ]
-               }"
-            }
+        "type": "transform",
+        "label": "Normalize",
+        "properties": {
+            "fieldMapping": "CustomerId:ID,Purchase_Date:Date",
+            "fieldNormalizing": "Item_ID:Attribute_Type:Attribute_Value,Item_Cost:Attribute_Type:Attribute_Value",
+            "outputSchema": "{
+                            \"type\":\"schema\",
+                            \"name\":\"outputSchema\",
+                            \"fields\":[
+                            {\"name\":\"ID\",\"type\":\"string\"},
+                            {\"name\":\"Date\",\"type\":\"string\"},
+                            {\"name\":\"Attribute_Type\",\"type\":\"string\"},
+                            {\"name\":\"Attribute_Value\",\"type\":\"string\"}
+                            ]
+            }"
         }
     }
+}
+```
 
 After the transformation, the output records in the Customer table will be:
 
-    +=====================================================================================+
-    | ID        | Attribute_Type  | Attribute_Value                         | Date        |
-    +=====================================================================================+
-    | S23424242 | First_Name      | Joltie                                  | 05/12/2015  |
-    | S23424242 | Last_Name       | Root                                    | 05/12/2015  |
-    | S23424242 | Credit_Card     | 2334-232132-2323                        | 05/12/2015  |
-    | S23424242 | Billing_Address | 32826 Mars Way, Marsville,  MR, 24344   | 05/12/2015  |
-    | R45764646 | First_Name      | Iris                                    | 04/03/2012  |
-    | R45764646 | Last_Name       | Cask                                    | 04/03/2012  |
-    | R45764646 | Credit_Card     | 2343-12312-12313                        | 04/03/2012  |
-    | R45764646 | Billing_Address | 32421, MyVilla Ct, YourVille, YR, 23423 | 08/09/2015  |
-    | S23424242 | Item_ID         | UR-AR-243123-ST                         | 08/09/2015  |
-    | S23424242 | Item_Cost       | 245.67                                  | 08/09/2015  |
-    | S23424242 | Item_ID         | SKU-234294242942                        | 10/12/2015  |
-    | S23424242 | Item_Cost       | 67.90                                   | 10/12/2015  |
-    | R45764646 | Item_ID         | SKU-567757543532                        | 06/09/2014  |
-    | R45764646 | Item_Cost       | 14.15                                   | 06/09/2014  |
-    +=====================================================================================+
+| ID        | Attribute_Type  | Attribute_Value                         | Date        |
+| --------- | --------------- | --------------------------------------- | ----------- |
+| S23424242 | First_Name      | Joltie                                  | 05/12/2015  |
+| S23424242 | Last_Name       | Root                                    | 05/12/2015  |
+| S23424242 | Credit_Card     | 2334-232132-2323                        | 05/12/2015  |
+| S23424242 | Billing_Address | 32826 Mars Way, Marsville,  MR, 24344   | 05/12/2015  |
+| R45764646 | First_Name      | Iris                                    | 04/03/2012  |
+| R45764646 | Last_Name       | Cask                                    | 04/03/2012  |
+| R45764646 | Credit_Card     | 2343-12312-12313                        | 04/03/2012  |
+| R45764646 | Billing_Address | 32421, MyVilla Ct, YourVille, YR, 23423 | 08/09/2015  |
+| S23424242 | Item_ID         | UR-AR-243123-ST                         | 08/09/2015  |
+| S23424242 | Item_Cost       | 245.67                                  | 08/09/2015  |
+| S23424242 | Item_ID         | SKU-234294242942                        | 10/12/2015  |
+| S23424242 | Item_Cost       | 67.90                                   | 10/12/2015  |
+| R45764646 | Item_ID         | SKU-567757543532                        | 06/09/2014  |
+| R45764646 | Item_Cost       | 14.15                                   | 06/09/2014  |
