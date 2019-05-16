@@ -18,47 +18,43 @@ Defaults to true.
 Example
 -------
 
-    {
-        "name": "NullFieldSplitter",
-        "type": "splittertransform"
-        "properties": {
-            "field": "email",
-            "modifySchema": "true"
-        }
+```json
+{
+    "name": "NullFieldSplitter",
+    "type": "splittertransform"
+    "properties": {
+        "field": "email",
+        "modifySchema": "true"
     }
+}
+```
 
 This example takes splits input based on whether the ``email`` field is null.
 For example, if the input to the plugin is:
 
-     +======================================================+
-     | id (long) | name (string) | email (nullable string)  |
-     +======================================================+
-     | 0         | alice         |                          |
-     | 1         | bob           |                          |
-     | 2         | carl          | karl@example.com         |
-     | 3         | duncan        | duncandonuts@example.com |
-     | 4         | evelyn        |                          |
-     | 5         | frank         | frankfurter@example.com  |
-     | 6         | gary          | gerry@example.com        |
-     +======================================================+
+| id (long) | name (string) | email (nullable string)  |
+| --------- | ------------- | ------------------------ |
+| 0         | alice         |                          |
+| 1         | bob           |                          |
+| 2         | carl          | karl@example.com         |
+| 3         | duncan        | duncandonuts@example.com |
+| 4         | evelyn        |                          |
+| 5         | frank         | frankfurter@example.com  |
+| 6         | gary          | gerry@example.com        |
 
 then records emitted to the ``null`` port will be:
 
-     +======================================================+
-     | id (long) | name (string) | email (nullable string)  |
-     +======================================================+
-     | 0         | alice         |                          |
-     | 1         | bob           |                          |
-     | 4         | evelyn        |                          |
-     +======================================================+
+| id (long) | name (string) | email (nullable string)  |
+| --------- | ------------- | ------------------------ |
+| 0         | alice         |                          |
+| 1         | bob           |                          |
+| 4         | evelyn        |                          |
 
 and records emitted to the ``nonnull`` port will be:
 
-     +======================================================+
-     | id (long) | name (string) | email (string)           |
-     +======================================================+
-     | 2         | carl          | karl@example.com         |
-     | 3         | duncan        | duncandonuts@example.com |
-     | 5         | frank         | frankfurter@example.com  |
-     | 6         | gary          | gerry@example.com        |
-     +======================================================+
+| id (long) | name (string) | email (string)           |
+| --------- | ------------- | ------------------------ |
+| 2         | carl          | karl@example.com         |
+| 3         | duncan        | duncandonuts@example.com |
+| 5         | frank         | frankfurter@example.com  |
+| 6         | gary          | gerry@example.com        |

@@ -51,38 +51,38 @@ Example
 -------
 This example writes to the 'attr' column family of an HBase table named 'users':
 
-    {
-        "name": "Table",
-        "type": "batchsink",
-        "properties": {
-            "tableName": "users",
-            "columnFamily": "attr",
-            "rowField": "id",
-            "zkQuorum": "host1,host2,host3",
-            "zkClientPort": "2181",
-            "zkNodeParent": "/hbase",
-            "schema": "{
-                \"type\":\"record\",
-                \"name\":\"user\",
-                \"fields\":[
-                    {\"name\":\"id\",\"type\":\"long\"},
-                    {\"name\":\"name\",\"type\":\"string\"},
-                    {\"name\":\"birthyear\",\"type\":\"int\"}
-                ]
-            }",
-            "schema.row.field": "id"
-        }
+```json
+{
+    "name": "Table",
+    "type": "batchsink",
+    "properties": {
+        "tableName": "users",
+        "columnFamily": "attr",
+        "rowField": "id",
+        "zkQuorum": "host1,host2,host3",
+        "zkClientPort": "2181",
+        "zkNodeParent": "/hbase",
+        "schema": "{
+            \"type\":\"record\",
+            \"name\":\"user\",
+            \"fields\":[
+                {\"name\":\"id\",\"type\":\"long\"},
+                {\"name\":\"name\",\"type\":\"string\"},
+                {\"name\":\"birthyear\",\"type\":\"int\"}
+            ]
+        }",
+        "schema.row.field": "id"
     }
+}
+```
 
 It takes records with this schema as input:
 
-    +======================================+
-    | field name     | type                |
-    +======================================+
-    | id             | long                |
-    | name           | string              |
-    | birthyear      | int                 |
-    +======================================+
+| field name     | type                |
+| -------------- | ------------------- |
+| id             | long                |
+| name           | string              |
+| birthyear      | int                 |
 
 The 'id' field will be used as the rowkey when writing to the table. The 'name' and 'birthyear' record
 fields will be written to column qualifiers named 'name' and 'birthyear'.

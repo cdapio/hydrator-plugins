@@ -34,6 +34,7 @@ Example
 -------
 This example inner joins records from ``customers`` and ``purchases`` inputs on customer id and selects customer_id, name, item and price fields.
 
+```json
     {
         "name": "Joiner",
         "type": "batchjoiner",
@@ -43,42 +44,38 @@ This example inner joins records from ``customers`` and ``purchases`` inputs on 
             "joinKeys": "customers.id = purchases.customer_id"
         }
     }
-
+```
 
 For example, suppose the joiner receives input records from customers and purchases as below:
 
 
-    +=================================================================================================+
-    | id | first_name | last_name |  street_address      |   city    | state | zipcode | phone number |  
-    +=================================================================================================+
-    | 1  | Douglas    | Williams  | 1, Vista Montana     | San Jose  | CA    | 95134   | 408-777-3214 |
-    | 2  | David      | Johnson   | 3, Baypointe Parkway | Houston   | TX    | 78970   | 804-777-2341 |
-    | 3  | Hugh       | Jackman   | 5, Cool Way          | Manhattan | NY    | 67263   | 708-234-2168 |
-    | 4  | Walter     | White     | 3828, Piermont Dr    | Orlando   | FL    | 73498   | 201-734-7315 |
-    | 5  | Frank      | Underwood | 1609 Far St.         | San Diego | CA    | 29770   | 201-506-8756 |
-    | 6  | Serena     | Woods     | 123 Far St.          | Las Vegas | Nv    | 45334   | 888-605-3479 |
-    +=================================================================================================+
+| id | first_name | last_name |  street_address      |   city    | state | zipcode | phone number |
+| -- | ---------- | --------- | -------------------- | --------- | ----- | ------- | ------------ |
+| 1  | Douglas    | Williams  | 1, Vista Montana     | San Jose  | CA    | 95134   | 408-777-3214 |
+| 2  | David      | Johnson   | 3, Baypointe Parkway | Houston   | TX    | 78970   | 804-777-2341 |
+| 3  | Hugh       | Jackman   | 5, Cool Way          | Manhattan | NY    | 67263   | 708-234-2168 |
+| 4  | Walter     | White     | 3828, Piermont Dr    | Orlando   | FL    | 73498   | 201-734-7315 |
+| 5  | Frank      | Underwood | 1609 Far St.         | San Diego | CA    | 29770   | 201-506-8756 |
+| 6  | Serena     | Woods     | 123 Far St.          | Las Vegas | Nv    | 45334   | 888-605-3479 |
 
-    +==============================+
-    | customer_id | item   | price |      
-    +==============================+
-    | 1           | donut  | 0.80  |
-    | 1           | coffee | 2.05  |
-    | 2           | donut  | 1.50  |
-    | 2           | plate  | 0.50  |
-    | 3           | tea    | 1.99  |
-    | 5           | cookie | 0.50  |
-    +==============================+
+
+| customer_id | item   | price |
+| ----------- | ------ | ----- |
+| 1           | donut  | 0.80  |
+| 1           | coffee | 2.05  |
+| 2           | donut  | 1.50  |
+| 2           | plate  | 0.50  |
+| 3           | tea    | 1.99  |
+| 5           | cookie | 0.50  |
 
 Output records will contain inner join on customer id:
 
-    +========================================+
-    | customer_id | name    | item   | price |
-    +========================================+
-    | 1           | Douglas | donut  | 0.80  |
-    | 1           | Douglas | coffee | 2.05  |
-    | 2           | David   | donut  | 1.50  |
-    | 2           | David   | plate  | 0.50  |
-    | 3           | Hugh    | tea    | 1.99  |
-    | 5           | Frank   | cookie | 0.50  |
-    +========================================+
+| customer_id | name    | item   | price |
+| ----------- | ------- | ------ | ----- |
+| 1           | Douglas | donut  | 0.80  |
+| 1           | Douglas | coffee | 2.05  |
+| 2           | David   | donut  | 1.50  |
+| 2           | David   | plate  | 0.50  |
+| 3           | Hugh    | tea    | 1.99  |
+| 5           | Frank   | cookie | 0.50  |
+

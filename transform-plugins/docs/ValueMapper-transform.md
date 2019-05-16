@@ -50,49 +50,45 @@ the ValueMapper transform on the *designation* field in the input data.
 
 The plugin JSON Representation will be:
 
-    {
-        "name": "ValueMapper",
-        "type": "transform",
-        "properties": {
-            "mapping": "designation:designationLookupTableName:designationName",
-            "defaults": "designation:DefaultDesignation"
-        }
+```json
+{
+    "name": "ValueMapper",
+    "type": "transform",
+    "properties": {
+        "mapping": "designation:designationLookupTableName:designationName",
+        "defaults": "designation:DefaultDesignation"
     }
+}
+```
 
 
 If the transform receives as an input record:
 
 First Row:
 
-    +=========================================================+
-    | field name | type                | value                |
-    +=========================================================+
-    | id         | string              | "1234"               |
-    | name       | string              | "John"               |
-    | salary     | int                 | 9000                 |
-    | designation| string              | "2"                  |
-    +=========================================================+
+| field name | type                | value                |
+| ---------- | ------------------- | -------------------- |
+| id         | string              | "1234"               |
+| name       | string              | "John"               |
+| salary     | int                 | 9000                 |
+| designation| string              | "2"                  |
 
 Second Row:
 
-    +=========================================================+
-    | field name | type                | value                |
-    +=========================================================+
-    | id         | string              | "1967"               |
-    | name       | string              | "Kelly"              |
-    | salary     | int                 | 5000                 |
-    | designation| string              | "5"                  |
-    +=========================================================+
+| field name | type                | value                |
+| ---------- | ------------------- | -------------------- |
+| id         | string              | "1967"               |
+| name       | string              | "Kelly"              |
+| salary     | int                 | 5000                 |
+| designation| string              | "5"                  |
 
 with this as the mapping dataset, *designationLookupTableName*:
 
-    +======================+
-    | key       | value    |
-    +======================+
-    | "1"       | "SE"     |
-    | "2"       | "SSE"    |
-    | "3"       | "ML"     |
-    +======================+
+| key       | value    |
+| --------- | -------- |
+| "1"       | "SE"     |
+| "2"       | "SSE"    |
+| "3"       | "ML"     |
 
 
 After transformation by the ValueMapper plugin, the output will have this structure and contents, with the
@@ -101,22 +97,18 @@ mapping database and default key-value pair:
 
 First Row:
 
-    +=========================================================+
-    | field name      | type                | value           |
-    +=========================================================+
-    | id              | string              | "1234"          |
-    | name            | string              | "John"          |
-    | salary          | int                 | 9000            |
-    | designationName | string              | "SSE"           |
-    +=========================================================+
+| field name      | type                | value           |
+| --------------- | ------------------- | --------------- |
+| id              | string              | "1234"          |
+| name            | string              | "John"          |
+| salary          | int                 | 9000            |
+| designationName | string              | "SSE"           |
 
 Second Row:
 
-    +=============================================================+
-    | field name      | type                | value               |
-    +=============================================================+
-    | id              | string              | "1967"              |
-    | name            | string              | "Kelly"             |
-    | salary          | int                 | 5000                |
-    | designationName | string              | "DefaultDesignation"|
-    +=============================================================+
+| field name      | type                | value               |
+| --------------- | ------------------- | ------------------- |
+| id              | string              | "1967"              |
+| name            | string              | "Kelly"             |
+| salary          | int                 | 5000                |
+| designationName | string              | "DefaultDesignation"|

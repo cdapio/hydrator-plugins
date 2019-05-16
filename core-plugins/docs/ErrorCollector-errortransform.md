@@ -28,6 +28,7 @@ Example
 -------
 This example adds the error message, error code, and error stage as the 'errMsg', 'errCode', and 'errStage' fields.
 
+```json
     {
         "name": "ErrorCollector",
         "type": "errortransform",
@@ -37,25 +38,22 @@ This example adds the error message, error code, and error stage as the 'errMsg'
             "stageField": "errStage"
         }
     }
+```
 
 For example, suppose the plugin receives this error record:
 
-    +============================+
-    | field name | type | value  |
-    +============================+
-    | A          | int  | 10     |
-    | B          | int  | 20     |
-    +============================+
+| field name | type | value  |
+| ---------- | ---- | ------ |
+| A          | int  | 10     |
+| B          | int  | 20     |
 
 with error code 17, error message 'invalid', from stage 'parser'. It will add the error information
 to the record and output:
 
-    +===============================+
-    | field name | type   | value   |
-    +===============================+
-    | A          | int    | 10      |
-    | B          | int    | 20      |
-    | errMsg     | string | invalid |
-    | errCode    | int    | 17      |
-    | errStage   | string | parser  |
-    +===============================+
+| field name | type   | value   |
+| ---------- | ------ | ------- |
+| A          | int    | 10      |
+| B          | int    | 20      |
+| errMsg     | string | invalid |
+| errCode    | int    | 17      |
+| errStage   | string | parser  |

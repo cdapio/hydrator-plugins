@@ -64,26 +64,26 @@ elements of each item node in the xml.
 
 For example, for xml document:
 
-        <rss>
-            <channel>
-                <item>
-                    <guid>id123</guid>
-                    <title>Something Happened in the World</name>
-                    <pubDate>1970-01-01 12:00:00</pubDate>
-                </item>
-                <item>
-                    <guid>id456</guid>
-                    <title>Some Other Thing Happened in the World</name>
-                    <pubDate>1970-01-01 13:00:00</pubDate>
-                </item>
-            </channel>
-        </rss>
+```xml
+<rss>
+    <channel>
+        <item>
+            <guid>id123</guid>
+            <title>Something Happened in the World</name>
+            <pubDate>1970-01-01 12:00:00</pubDate>
+        </item>
+        <item>
+            <guid>id456</guid>
+            <title>Some Other Thing Happened in the World</name>
+            <pubDate>1970-01-01 13:00:00</pubDate>
+        </item>
+    </channel>
+</rss>
+```
 
 The transform will output records:
 
-    +======================================================================+
-    | guid  | title                                  | pubDate             |
-    +======================================================================+
-    | id123 | Something Happened in the World        | 1970-01-01 12:00:00 |
-    | id456 | Some Other Thing Happened in the World | 1970-01-01 13:00:00 |
-    +======================================================================+
+| guid  | title                                  | pubDate             |
+| ----- | -------------------------------------- | ------------------- |
+| id123 | Something Happened in the World        | 1970-01-01 12:00:00 |
+| id456 | Some Other Thing Happened in the World | 1970-01-01 13:00:00 |

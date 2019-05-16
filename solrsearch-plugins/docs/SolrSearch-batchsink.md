@@ -51,27 +51,27 @@ This example connects to a 'SinlgeNode Solr' server, running locally at the defa
 data to the specified collection (test_collection). The data is indexed using the id field coming in the input record
 . And also the fieldname 'office address' is mapped to the 'address' field in Solr's index.
 
-    {
-      "name": "SolrSearch",
-      "type": "batchsink",
-        "properties": {
-          "solrMode": "SingleNode",
-          "solrHost": "localhost:8983",
-          "collectionName": "test_collection",
-          "keyField": "id",
-          "batchSize": "10000",
-          "outputFieldMappings": "office address:address"
-        }
+```json
+{
+  "name": "SolrSearch",
+  "type": "batchsink",
+    "properties": {
+      "solrMode": "SingleNode",
+      "solrHost": "localhost:8983",
+      "collectionName": "test_collection",
+      "keyField": "id",
+      "batchSize": "10000",
+      "outputFieldMappings": "office address:address"
     }
+}
+```
 
 For example, suppose the Solr search sink receives the input record:
 
-    +===================================================================================================+
-    | id : STRING | firstname : STRING  | lastname : STRING |  office address : STRING  | pincode : INT |
-    +===================================================================================================+
-    | 100A        | John                | Wagh              |  NE Lakeside              | 480001        |
-    | 100B        | Brett               | Lee               |  SE Lakeside              | 480001        |
-    +===================================================================================================+
+| id : STRING | firstname : STRING  | lastname : STRING |  office address : STRING  | pincode : INT |
+| ----------- | ------------------- | ----------------- | ------------------------- | ------------- |
+| 100A        | John                | Wagh              |  NE Lakeside              | 480001        |
+| 100B        | Brett               | Lee               |  SE Lakeside              | 480001        |
 
  Once Solr search sink plugin execution is completed, all the rows from input data will be indexed in the
  test_collection with the fields id, firstname, lastname, address and pincode.

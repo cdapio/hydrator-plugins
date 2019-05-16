@@ -35,12 +35,10 @@ This example writes to a KeyValueTable named 'items':
 
 It takes records with the following schema as input:
 
-    +======================================+
-    | field name     | type                |
-    +======================================+
-    | id             | bytes               |
-    | description    | bytes               |
-    +======================================+
+| field name     | type                |
+| -------------- | ------------------- |
+| id             | bytes               |
+| description    | bytes               |
 
 When writing to the KeyValueTable, the 'id' field will be used as the key,
 and the 'description' field will be used as the value.

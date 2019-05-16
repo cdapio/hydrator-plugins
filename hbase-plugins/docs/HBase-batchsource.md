@@ -46,37 +46,37 @@ Example
 -------
 This example reads from the 'attr' column family of an HBase table named 'users':
 
-    {
-        "name": "HBase",
-        "type": "batchsource",
-        "properties": {
-            "tableName": "users",
-            "columnFamily": "attr",
-            "rowField": "id",
-            "zkQuorum": "host1,host2,host3",
-            "zkClientPort": "2181",
-            "schema": "{
-                \"type\":\"record\",
-                \"name\":\"user\",
-                \"fields\":[
-                    {\"name\":\"id\",\"type\":\"long\"},
-                    {\"name\":\"name\",\"type\":\"string\"},
-                    {\"name\":\"birthyear\",\"type\":\"int\"}
-                ]
-            }",
-            "schema.row.field": "id"
-        }
+```json
+{
+    "name": "HBase",
+    "type": "batchsource",
+    "properties": {
+        "tableName": "users",
+        "columnFamily": "attr",
+        "rowField": "id",
+        "zkQuorum": "host1,host2,host3",
+        "zkClientPort": "2181",
+        "schema": "{
+            \"type\":\"record\",
+            \"name\":\"user\",
+            \"fields\":[
+                {\"name\":\"id\",\"type\":\"long\"},
+                {\"name\":\"name\",\"type\":\"string\"},
+                {\"name\":\"birthyear\",\"type\":\"int\"}
+            ]
+        }",
+        "schema.row.field": "id"
     }
+}
+```
 
 It outputs records with this schema:
 
-    +======================================+
-    | field name     | type                |
-    +======================================+
-    | id             | long                |
-    | name           | string              |
-    | birthyear      | int                 |
-    +======================================+
+| field name     | type                |
+| -------------- | ------------------- |
+| id             | long                |
+| name           | string              |
+| birthyear      | int                 |
 
 The 'id' field will be read from the row key of the table. The 'name' field will be read from the
 'name' column in the table. The 'birthyear' field will be read from the 'birthyear' column in the

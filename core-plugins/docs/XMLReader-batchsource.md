@@ -56,57 +56,58 @@ This example reads data from the folder "hdfs:/cdap/source/xmls/" and emits XML 
 It will move the XML files to the target folder "hdfs:/cdap/target/xmls/" and update the processed file information
 in the table named "trackingTable".
 
-      {
-         "name": "XMLReaderBatchSource",
-         "plugin":{
-                    "name": "XMLReaderBatchSource",
-                    "type": "batchsource",
-                    "properties":{
-                                  "referenceName": "referenceName""
-                                  "path": "hdfs:/cdap/source/xmls/*",
-                                  "Pattern": "^catalog.*"
-                                  "nodePath": "/catalog/book/title"
-                                  "actionAfterProcess" : "Move",
-                                  "targetFolder":"hdfs:/cdap/target/xmls/",
-                                  "reprocessingRequired": "No",
-                                  "tableName": "trackingTable",
-                                  "temporaryFolder": "hdfs:/cdap/tmp/"
-                    }
-         }
+```json
+{
+    "name": "XMLReaderBatchSource",
+    "plugin":{
+      "name": "XMLReaderBatchSource",
+      "type": "batchsource",
+      "properties":{
+          "referenceName": "referenceName""
+          "path": "hdfs:/cdap/source/xmls/*",
+          "Pattern": "^catalog.*"
+          "nodePath": "/catalog/book/title"
+          "actionAfterProcess" : "Move",
+          "targetFolder":"hdfs:/cdap/target/xmls/",
+          "reprocessingRequired": "No",
+          "tableName": "trackingTable",
+          "temporaryFolder": "hdfs:/cdap/tmp/"
       }
-
+   }
+}
+```
 
  For this XML as an input:
 
-     <catalog>
-       <book id="bk104">
-         <author>Corets, Eva</author>
-         <title>Oberon's Legacy</title>
-         <genre>Fantasy</genre>
-         <price><base>5.95</base><tax><surcharge>13.00</surcharge><excise>13.00</excise></tax></price>
-         <publish_date>2001-03-10</publish_date>
-         <description><name><name>In post-apocalypse England, the mysterious
-         agent known only as Oberon helps to create a new life
-         for the inhabitants of London. Sequel to Maeve
-         Ascendant.</name></name></description>
-       </book>
-       <book id="bk105">
-         <author>Corets, Eva</author>
-         <title>The Sundered Grail</title>
-         <genre>Fantasy</genre>
-         <price><base>5.95</base><tax><surcharge>14.00</surcharge><excise>14.00</excise></tax></price>
-         <publish_date>2001-09-10</publish_date>
-         <description><name>The two daughters of Maeve, half-sisters,
-         battle one another for control of England. Sequel to
-         Oberon's Legacy.</name></description>
-       </book>
-     </catalog>
+```xml
+<catalog>
+  <book id="bk104">
+    <author>Corets, Eva</author>
+    <title>Oberon's Legacy</title>
+    <genre>Fantasy</genre>
+    <price><base>5.95</base><tax><surcharge>13.00</surcharge><excise>13.00</excise></tax></price>
+    <publish_date>2001-03-10</publish_date>
+    <description><name><name>In post-apocalypse England, the mysterious
+    agent known only as Oberon helps to create a new life
+    for the inhabitants of London. Sequel to Maeve
+    Ascendant.</name></name></description>
+  </book>
+  <book id="bk105">
+    <author>Corets, Eva</author>
+    <title>The Sundered Grail</title>
+    <genre>Fantasy</genre>
+    <price><base>5.95</base><tax><surcharge>14.00</surcharge><excise>14.00</excise></tax></price>
+    <publish_date>2001-09-10</publish_date>
+    <description><name>The two daughters of Maeve, half-sisters,
+    battle one another for control of England. Sequel to
+    Oberon's Legacy.</name></description>
+  </book>
+</catalog>
+```
 
  The output records will be:
 
-    +==================================================================================+
-    | offset | filename                            | record                            |
-    +==================================================================================+
-    | 2      | hdfs:/cdap/source/xmls/catalog.xml  | <title>Oberon's Legacy</title>    |
-    | 13     | hdfs:/cdap/source/xmls/catalog.xml  | <title>The Sundered Grail</title> |
-    +==================================================================================+
+| offset | filename                            | record                            |
+| ------ | ----------------------------------- | --------------------------------- |
+| 2      | hdfs:/cdap/source/xmls/catalog.xml  | <title>Oberon's Legacy</title>    |
+| 13     | hdfs:/cdap/source/xmls/catalog.xml  | <title>The Sundered Grail</title> |

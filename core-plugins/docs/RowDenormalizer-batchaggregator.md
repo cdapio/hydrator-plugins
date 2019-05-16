@@ -48,59 +48,52 @@ Example
 The transform takes input records that have columns id, attribute, value, denormalizes it on the basis of
 id, and then returns a denormalized table according to the output schema specified by the user.
 
-    {
-      "name": "RowDenormalizer",
-      "type": "batchaggregator",
-      "properties": {
-         "outputFields": "Firstname,Lastname,Address",
-         "fieldAliases": "Address:Office Address",
-         "keyField": "id",
-         "nameField": "attribute",
-         "valueField": "value"
-       }
+```json
+{
+    "name": "RowDenormalizer",
+    "type": "batchaggregator",
+    "properties": {
+        "outputFields": "Firstname,Lastname,Address",
+        "fieldAliases": "Address:Office Address",
+        "keyField": "id",
+        "nameField": "attribute",
+        "valueField": "value"
     }
-
+}
+```
 For example, suppose the aggregator receives the input record:
 
-    +======================================+
-    | id        | attribute   | value      |
-    +======================================+
-    | joltie    | Firstname   | John       |
-    | joltie    | Lastname    | Wagh       |
-    | joltie    | Address     | NE Lakeside|
-    +======================================+
+| id        | attribute   | value      |
+| --------- | ----------- | ---------- |
+| joltie    | Firstname   | John       |
+| joltie    | Lastname    | Wagh       |
+| joltie    | Address     | NE Lakeside|
 
 Output records will contain all the output fields specified by user:
 
-    +=========================================================+
-    | id        | Firstname   | Lastname   |  Office Address  |
-    +=========================================================+
-    | joltie    | John        | Wagh       |  NE Lakeside     |
-    +=========================================================+
+| id        | Firstname   | Lastname   |  Office Address  |
+| --------- | ----------- | ---------- | ---------------- |
+| joltie    | John        | Wagh       |  NE Lakeside     |
 
 
 Now, let's suppose the aggregator receives the input record with NULL values:
 
-    +======================================+
-    | id        | attribute   | value      |
-    +======================================+
-    | joltie    | Firstname   | John       |
-    | joltie    | Lastname    | Wagh       |
-    | joltie    | Address     | NE Lakeside|
-    | brett     | Firstname   | Brett      |
-    |           | Lastname    | Lee        |
-    | brett     | Address     | SE Lakeside|
-    | bob       | Firstname   | Bob        |
-    | bob       |             | Smith      |
-    | bob       | Address     |            |
-    +======================================+
+| id        | attribute   | value      |
+| --------- | ----------- | ---------- |
+| joltie    | Firstname   | John       |
+| joltie    | Lastname    | Wagh       |
+| joltie    | Address     | NE Lakeside|
+| brett     | Firstname   | Brett      |
+|           | Lastname    | Lee        |
+| brett     | Address     | SE Lakeside|
+| bob       | Firstname   | Bob        |
+| bob       |             | Smith      |
+| bob       | Address     |            |
 
 Output records will contain all the output fields specified by user:
 
-    +=========================================================+
-    | id        | Firstname   | Lastname   |  Office Address  |
-    +=========================================================+
-    | joltie    | John        | Wagh       |  NE Lakeside     |
-    | brett     | Brett       |            |  SE Lakeside     |
-    | bob       | Bob         |            |                  |
-    +=========================================================+
+| id        | Firstname   | Lastname   |  Office Address  |
+| --------- | ----------- | ---------- | ---------------- |
+| joltie    | John        | Wagh       |  NE Lakeside     |
+| brett     | Brett       |            |  SE Lakeside     |
+| bob       | Bob         |            |                  |

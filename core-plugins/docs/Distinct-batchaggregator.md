@@ -20,7 +20,7 @@ framework will decide on the number to use.
 
 Example
 -------
-
+```json
     {
         "name": "Distinct",
         "type": "batchaggregator"
@@ -28,30 +28,28 @@ Example
             "fields": "user,item,action"
         }
     }
-
+```
 
 This example takes the ``user``, ``action``, and ``item`` fields from input records and dedupes them so that every
 output record is a unique record with those three fields. For example, if the input to the plugin is:
 
-     +=====================================+
-     | user  | item   | action | timestamp |
-     +=====================================+
-     | bob   | donut  | buy    | 1000      |
-     | bob   | donut  | buy    | 1000      |
-     | bob   | donut  | buy    | 1001      |
-     | bob   | coffee | buy    | 1001      |
-     | bob   | coffee | drink  | 1010      |
-     | bob   | donut  | eat    | 1050      |
-     | bob   | donut  | eat    | 1080      |
-     +=====================================+
+
+| user  | item   | action | timestamp |
+| ----- | ------ | ------ | --------- |
+| bob   | donut  | buy    | 1000      |
+| bob   | donut  | buy    | 1000      |
+| bob   | donut  | buy    | 1001      |
+| bob   | coffee | buy    | 1001      |
+| bob   | coffee | drink  | 1010      |
+| bob   | donut  | eat    | 1050      |
+| bob   | donut  | eat    | 1080      |
 
 then records output will be:
 
-     +=========================+
-     | user  | item   | action |
-     +=========================+
-     | bob   | donut  | buy    |
-     | bob   | coffee | buy    |
-     | bob   | coffee | drink  |
-     | bob   | donut  | eat    |
-     +=========================+
+
+| user  | item   | action |
+| ----- | ------ | ------ |
+| bob   | donut  | buy    |
+| bob   | coffee | buy    |
+| bob   | coffee | drink  |
+| bob   | donut  | eat    |

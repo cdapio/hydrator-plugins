@@ -36,26 +36,26 @@ Example
 -------
 This example fetches data from a URL every hour using a custom user agent:
 
-    {
-        "name": "HTTPPoller",
-        "type": "streamingsource",
-        "properties": {
-            "url": "http://example.com/sampleEndpoint",
-            "interval": "60",
-            "requestHeaders": "User-Agent:HydratorPipeline\nAccept:application/json"
-        }
+```json
+{
+    "name": "HTTPPoller",
+    "type": "streamingsource",
+    "properties": {
+        "url": "http://example.com/sampleEndpoint",
+        "interval": "60",
+        "requestHeaders": "User-Agent:HydratorPipeline\nAccept:application/json"
     }
+}
+```
 
 The contents will output records with this schema:
 
-    +======================================+
-    | field name     | type                |
-    +======================================+
-    | ts             | long                |
-    | url            | string              |
-    | responseCode   | int                 |
-    | headers        | map<string, string> |
-    | body           | string              |
-    +======================================+
+| field name     | type                |
+| -------------- | ------------------- |
+| ts             | long                |
+| url            | string              |
+| responseCode   | int                 |
+| headers        | map<string, string> |
+| body           | string              |
 
 All fields will be always be included, but the body might be an empty string.

@@ -26,31 +26,33 @@ Arguments contain any preferences stored for the pipeline, overridden by runtime
 run, overridden by any arguments set by stages earlier in the pipeline.
 Consider the following example:
 
-    function transform(input, emitter, context) {
-        if (context.getLookup('blacklist').lookup(input.id) != null) {
-            emitter.emitError({
-                'errorCode': 31,
-                'errorMsg': 'blacklisted id',
-                'invalidRecord': input
-            });
-            return;
-        }
-
-        var threshold = context.getArguments().get('priceThreshold');
-        if (input.price > threshold) {
-            emitter.emitAlert({
-                'price': '' + input.price
-            });
-            return;
-        }
-
-        if (input.count < 0) {
-            context.getMetrics().count('negative.count', 1);
-            context.getLogger().debug('Received record with negative count');
-        }
-        input.count = input.count * 1024;
-        emitter.emit(input);
+```js
+function transform(input, emitter, context) {
+    if (context.getLookup('blacklist').lookup(input.id) != null) {
+        emitter.emitError({
+            'errorCode': 31,
+            'errorMsg': 'blacklisted id',
+            'invalidRecord': input
+        });
+        return;
     }
+
+    var threshold = context.getArguments().get('priceThreshold');
+    if (input.price > threshold) {
+        emitter.emitAlert({
+            'price': '' + input.price
+        });
+        return;
+    }
+
+    if (input.count < 0) {
+        context.getMetrics().count('negative.count', 1);
+        context.getLogger().debug('Received record with negative count');
+    }
+    input.count = input.count * 1024;
+    emitter.emit(input);
+}
+```
 
 This script will emit an error if the ``id`` field is present in blacklist table, read a price threshold from
 the pipeline arguments and emit an alert if the input price is greater than the threshold,
@@ -68,64 +70,62 @@ Currently supports ``KeyValueTable``.
 Example
 -------
 
-    {
-        "name": "JavaScript",
-        "type": "transform",
-        "properties": {
-            "script": "function transform(input, emitter, context) {
-                   var tax = input.subtotal * 0.0975;
-                   if (tax > 1000.0) {
-                     context.getMetrics().count("tax.above.1000", 1);
-                   }
-                   if (tax < 0.0) {
-                     context.getLogger().info("Received record with negative subtotal");
-                   }
-                   emitter.emit( {
-                     'subtotal': input.subtotal,
-                     'tax': tax,
-                     'total': input.subtotal + tax
-                   });
-                 }",
-            "schema": "{
-                \"type\":\"record\",
-                \"name\":\"expanded\",
-                \"fields\":[
-                    {\"name\":\"subtotal\",\"type\":\"double\"},
-                    {\"name\":\"tax\",\"type\":\"double\"},
-                    {\"name\":\"total\",\"type\":\"double\"}
-                ]
-            }",
-            "lookup": "{
-                \"tables\":{
-                    \"purchases\":{
-                        \"type\":\"DATASET\",
-                        \"datasetProperties\":{
-                            \"dataset_argument1\":\"foo\",
-                            \"dataset_argument2\":\"bar\"
-                        }
+```js
+{
+    "name": "JavaScript",
+    "type": "transform",
+    "properties": {
+        "script": "function transform(input, emitter, context) {
+                var tax = input.subtotal * 0.0975;
+                if (tax > 1000.0) {
+                    context.getMetrics().count("tax.above.1000", 1);
+                }
+                if (tax < 0.0) {
+                    context.getLogger().info("Received record with negative subtotal");
+                }
+                emitter.emit( {
+                    'subtotal': input.subtotal,
+                    'tax': tax,
+                    'total': input.subtotal + tax
+                });
+                }",
+        "schema": "{
+            \"type\":\"record\",
+            \"name\":\"expanded\",
+            \"fields\":[
+                {\"name\":\"subtotal\",\"type\":\"double\"},
+                {\"name\":\"tax\",\"type\":\"double\"},
+                {\"name\":\"total\",\"type\":\"double\"}
+            ]
+        }",
+        "lookup": "{
+            \"tables\":{
+                \"purchases\":{
+                    \"type\":\"DATASET\",
+                    \"datasetProperties\":{
+                        \"dataset_argument1\":\"foo\",
+                        \"dataset_argument2\":\"bar\"
                     }
                 }
-            }"
-        }
+            }
+        }"
     }
+}
+```
 
 The transform takes records that have a ``'subtotal'`` field, calculates ``'tax'`` and
 ``'total'`` fields based on the subtotal, and then returns a record containing those three
 fields. For example, if it receives as an input record:
 
-    +=========================================================+
-    | field name | type                | value                |
-    +=========================================================+
-    | subtotal   | double              | 100.0                |
-    | user       | string              | "samuel"             |
-    +=========================================================+
+| field name | type                | value                |
+| ---------- | ------------------- | -------------------- |
+| subtotal   | double              | 100.0                |
+| user       | string              | "samuel"             |
 
 it will transform it to this output record:
 
-    +=========================================================+
-    | field name | type                | value                |
-    +=========================================================+
-    | subtotal   | double              | 100.0                |
-    | tax        | double              | 9.75                 |
-    | total      | double              | 109.75               |
-    +=========================================================+
+| field name | type                | value                |
+| ---------- | ------------------- | -------------------- |
+| subtotal   | double              | 100.0                |
+| tax        | double              | 9.75                 |
+| total      | double              | 109.75               |
