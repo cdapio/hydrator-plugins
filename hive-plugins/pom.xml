@@ -155,7 +155,7 @@
         <artifactId>cdap-maven-plugin</artifactId>
         <configuration>
           <cdapArtifacts>
-            <parent>system:cdap-data-pipeline[5.1.0,6.0.0-SNAPSHOT)</parent>
+            <parent>system:cdap-data-pipeline[6.0.0,7.0.0)</parent>
           </cdapArtifacts>
         </configuration>
       </plugin>
