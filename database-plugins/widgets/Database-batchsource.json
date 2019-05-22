@@ -81,7 +81,10 @@
         {
           "widget-type": "textbox",
           "label": "Number of Splits to Generate",
-          "name": "numSplits"
+          "name": "numSplits",
+          "widget-attributes" : {
+             "default": "1"
+           }
         }
       ]
     },

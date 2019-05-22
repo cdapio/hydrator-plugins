@@ -43,7 +43,7 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
     StructuredRecord.Builder builder = StructuredRecord.builder(structuredSchema);
     for (Schema.Field field : structuredSchema.getFields()) {
       String fieldName = field.getName();
-      builder.set(fieldName, convertField(genericRecord.get(fieldName), field.getSchema()));
+      builder.set(fieldName, convertField(genericRecord.get(fieldName), field));
     }
     return builder.build();
   }
@@ -54,7 +54,7 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
     for (Schema.Field field : structuredSchema.getFields()) {
       String fieldName = field.getName();
       if (!fieldName.equals(skipField)) {
-        builder.set(fieldName, convertField(genericRecord.get(fieldName), field.getSchema()));
+        builder.set(fieldName, convertField(genericRecord.get(fieldName), field));
       }
     }
 
