@@ -14,7 +14,7 @@
  * the License.
  */
 
-package io.cdap.plugin.common.http;
+package io.cdap.plugin.spark;
 
 import com.google.common.base.Charsets;
 import io.cdap.cdap.api.annotation.Description;

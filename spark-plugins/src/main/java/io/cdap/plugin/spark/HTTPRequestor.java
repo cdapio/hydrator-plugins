@@ -14,7 +14,7 @@
  * the License.
  */
 
-package io.cdap.plugin.common.http;
+package io.cdap.plugin.spark;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
