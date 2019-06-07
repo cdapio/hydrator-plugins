@@ -19,8 +19,10 @@ package io.cdap.plugin;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.annotation.Requirements;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.dataset.lib.KeyValueTable;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.Lookup;
@@ -40,6 +42,7 @@ import java.util.Map;
 @Plugin(type = Transform.PLUGIN_TYPE)
 @Name("ValueMapper")
 @Description("Maps and converts record values using a mapping dataset")
+@Requirements(datasetTypes = KeyValueTable.TYPE)
 public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
 
   private final Config config;
@@ -80,7 +83,7 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
 
     /**
      * This method is meant to parse input configuration.
-     * It is required to use in configurePiperline as well as transform method.
+     * It is required to use in configurePipeline as well as transform method.
      * Hence this is implemented as a part of Config class to set configuration once and make it available for
      * subsequent methods.
      */
