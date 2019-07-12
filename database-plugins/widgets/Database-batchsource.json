@@ -35,7 +35,14 @@
         {
           "widget-type": "textbox",
           "label": "Connection String",
-          "name": "connectionString"
+          "name": "connectionString",
+          "plugin-function": {
+            "label": "Browse Database",
+            "widget": "connection-browser",
+            "widget-attributes": {
+              "connectionType": "DATABASE"
+            }
+          }
         },
         {
           "widget-type": "textarea",
