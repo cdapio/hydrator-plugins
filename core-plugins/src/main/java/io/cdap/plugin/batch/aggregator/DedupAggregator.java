@@ -31,6 +31,7 @@ import io.cdap.plugin.batch.aggregator.function.SelectionFunction;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import javax.annotation.Nullable;
 
 /**
  * Deduplicate aggregator.
@@ -142,7 +143,8 @@ public class DedupAggregator extends RecordAggregator {
     return Schema.recordOf(inputSchema.getRecordName() + ".dedup", inputSchema.getFields());
   }
 
-  private void validateSchema(Schema inputSchema, List<String> uniqueFields, DedupConfig.DedupFunctionInfo function) {
+  private void validateSchema(Schema inputSchema, List<String> uniqueFields,
+                              @Nullable DedupConfig.DedupFunctionInfo function) {
     for (String uniqueField : uniqueFields) {
       Schema.Field field = inputSchema.getField(uniqueField);
       if (field == null) {
@@ -151,11 +153,13 @@ public class DedupAggregator extends RecordAggregator {
       }
     }
 
-    Schema.Field field = inputSchema.getField(function.getField());
-    if (field == null) {
-      throw new IllegalArgumentException(String.format(
-        "Invalid filter %s(%s): Field '%s' does not exist in input schema '%s'",
-        function.getFunction(), function.getField(), function.getField(), inputSchema));
+    if (function != null) {
+      Schema.Field field = inputSchema.getField(function.getField());
+      if (field == null) {
+        throw new IllegalArgumentException(String.format(
+          "Invalid filter %s(%s): Field '%s' does not exist in input schema '%s'",
+          function.getFunction(), function.getField(), function.getField(), inputSchema));
+      }
     }
   }
 }
