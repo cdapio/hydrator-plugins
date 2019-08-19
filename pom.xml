@@ -800,7 +800,7 @@
               <consoleOutput>true</consoleOutput>
               <failsOnError>true</failsOnError>
               <includeTestSourceDirectory>true</includeTestSourceDirectory>
-              <excludes>**/org/apache/cassandra/**,**/org/apache/hadoop/**</excludes>
+              <excludes>**/org/apache/cassandra/**,**/org/apache/**</excludes>
             </configuration>
             <goals>
               <goal>check</goal>
