@@ -52,7 +52,7 @@ public class ParquetInputFormatProvider extends PathTrackingInputFormatProvider<
   protected void addFormatProperties(Map<String, String> properties) {
     Schema schema = conf.getSchema();
     if (schema != null) {
-      properties.put("parquet.avro.schema", schema.toString());
+      properties.put("parquet.avro.read.schema", schema.toString());
     }
   }
 }
