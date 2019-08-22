@@ -42,6 +42,8 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
 
+import javax.annotation.Nullable;
+
 /**
  * This {@link Converter} class materializes records as Avro
  * {@link IndexedRecord} instances. This is replaced by
@@ -101,14 +103,20 @@ class AvroIndexedRecordConverter<T extends IndexedRecord> extends GroupConverter
     int parquetFieldIndex = 0;
     for (Type parquetField: parquetSchema.getFields()) {
       Schema.Field avroField = getAvroField(parquetField.getName());
-      Schema nonNullSchema = AvroSchemaConverter.getNonNull(avroField.schema());
-      final int finalAvroIndex = avroFieldIndexes.remove(avroField.name());
-      converters[parquetFieldIndex++] = newConverter(nonNullSchema, parquetField, model, new ParentValueContainer() {
-        @Override
-        public void add(Object value) {
-          AvroIndexedRecordConverter.this.set(finalAvroIndex, value);
-        }
-      });
+      Converter converter;
+      if (avroField == null) {
+        converter = NoOpConverter.INSTANCE;
+      } else {
+        Schema nonNullSchema = AvroSchemaConverter.getNonNull(avroField.schema());
+        final int finalAvroIndex = avroFieldIndexes.remove(avroField.name());
+        converter = newConverter(nonNullSchema, parquetField, model, new ParentValueContainer() {
+          @Override
+          public void add(Object value) {
+            AvroIndexedRecordConverter.this.set(finalAvroIndex, value);
+          }
+        });
+      }
+      converters[parquetFieldIndex++] = converter;
     }
     // store defaults for any new Avro fields from avroSchema that are not in the writer schema (parquetSchema)
     for (String fieldName : avroFieldIndexes.keySet()) {
@@ -131,16 +139,13 @@ class AvroIndexedRecordConverter<T extends IndexedRecord> extends GroupConverter
     return null;
   }
 
+  @Nullable
   private Schema.Field getAvroField(String parquetFieldName) {
     Schema.Field avroField = avroSchema.getField(parquetFieldName);
     for (Schema.Field f : avroSchema.getFields()) {
       if (f.aliases().contains(parquetFieldName)) {
         return f;
       }
-    }
-    if (avroField == null) {
-      throw new InvalidRecordException(String.format("Parquet/Avro schema mismatch. Avro field '%s' not found.",
-          parquetFieldName));
     }
     return avroField;
   }
