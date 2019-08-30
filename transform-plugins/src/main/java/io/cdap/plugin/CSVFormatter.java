@@ -156,7 +156,7 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
         break;
 
       case "rfc4180":
-        csvFileFormat = CSVFormat.Predefined.TDF.getFormat();
+        csvFileFormat = CSVFormat.Predefined.RFC4180.getFormat();
         break;
 
       default:
