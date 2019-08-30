@@ -33,16 +33,17 @@
           }
         },
         {
+          "widget-type": "connection-browser",
+          "widget-category": "plugin",
+          "widget-attributes": {
+            "connectionType": "DATABASE",
+            "label": "Browse Database"
+          }
+        },
+        {
           "widget-type": "textbox",
           "label": "Connection String",
-          "name": "connectionString",
-          "plugin-function": {
-            "label": "Browse Database",
-            "widget": "connection-browser",
-            "widget-attributes": {
-              "connectionType": "DATABASE"
-            }
-          }
+          "name": "connectionString"
         },
         {
           "widget-type": "textarea",
