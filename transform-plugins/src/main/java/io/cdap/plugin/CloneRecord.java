@@ -24,7 +24,9 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
 
@@ -45,20 +47,24 @@ public final class CloneRecord extends Transform<StructuredRecord, StructuredRec
   }
 
   @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
-    config.validate();
+    config.validate(pipelineConfigurer.getStageConfigurer().getFailureCollector());
     pipelineConfigurer.getStageConfigurer().setOutputSchema(pipelineConfigurer.getStageConfigurer().getInputSchema());
+  }
+
+  @Override
+  public void prepareRun(StageSubmitterContext context) {
+    config.validate(context.getFailureCollector());
   }
 
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
-    config.validate();
   }
 
   @Override
-  public void transform(StructuredRecord in, Emitter<StructuredRecord> emitter) throws Exception {
+  public void transform(StructuredRecord in, Emitter<StructuredRecord> emitter) {
     List<Schema.Field> fields = in.getSchema().getFields();
     for (int i = 0; i < config.copies; ++i) {
       StructuredRecord.Builder builder = StructuredRecord.builder(in.getSchema());
@@ -83,10 +89,10 @@ public final class CloneRecord extends Transform<StructuredRecord, StructuredRec
       this.copies = copies;
     }
 
-    private void validate() {
-      if (!containsMacro("copies") && (copies == 0 || copies > Integer.MAX_VALUE)) {
-        throw new IllegalArgumentException("Number of copies specified '" + copies + "' is incorrect. Specify " +
-                                             "proper integer range");
+    private void validate(FailureCollector collector) {
+      if (!containsMacro("copies") && (copies <= 0)) {
+        collector.addFailure("Number of copies specified '" + copies + "' is incorrect.",
+            "Specify proper integer range.").withConfigProperty("copies");
       }
     }
   }

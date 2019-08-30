@@ -27,7 +27,10 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.data.schema.Schema.Field;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageConfigurer;
+import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
 import org.apache.commons.csv.CSVFormat;
@@ -102,11 +105,9 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-    config.validate();
-
-    // Check if schema specified is a valid schema or no.
-    try {
-      Schema schema = Schema.parseJson(config.schema);
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    config.validate(collector);
+    Schema schema = getSchema(collector);
       List<Schema.Field> fields = schema.getFields();
       if (fields.size() > 1) {
         throw new IllegalArgumentException("Output schema should have only one field of type String");
@@ -115,24 +116,18 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
         throw new IllegalArgumentException("Output field type should be String");
       }
       pipelineConfigurer.getStageConfigurer().setOutputSchema(schema);
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
-    }
+  }
 
+  @Override
+  public void prepareRun(StageSubmitterContext context) {
+    config.validate(context.getFailureCollector());
   }
 
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
-    config.validate();
-
-    try {
-      outSchema = Schema.parseJson(config.schema);
-      fields = outSchema.getFields();
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
-    }
-
+    outSchema = getSchema(context.getFailureCollector());
+    fields = outSchema.getFields();
     // Based on the delimiter name specified pick the delimiter to be used for the record.
     // This is only applicable when the format type is choosen as DELIMITER
     char delim = ',';
@@ -188,6 +183,15 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
     }
   }
 
+  private Schema getSchema(FailureCollector collector) {
+    try {
+      return Schema.parseJson(config.schema);
+    } catch (IOException e) {
+      collector.addFailure("Format of schema specified is invalid.", "Please check the format.");
+    }
+    throw collector.getOrThrowException();
+  }
+
   /**
    * Configuration for the plugin.
    */
@@ -211,23 +215,26 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
       this.schema = schema;
     }
 
-    private void validate() {
+    private void validate(FailureCollector collector) {
       if (!delimMap.containsKey(delimiter)) {
-        throw new IllegalArgumentException("Unknown delimiter '" + delimiter + "' specified. Allowed values are " +
-                                             Joiner.on(", ").join(delimMap.keySet()));
+        collector.addFailure("Unknown delimiter '" + delimiter + "' specified.",
+            "Please specify one of the following: " + Joiner.on(", ").join(delimMap.keySet()))
+        .withConfigProperty("delimiter");
       }
 
       // Check if the format specified is valid.
       if (format == null || format.isEmpty()) {
-        throw new IllegalArgumentException("Format is not specified. Allowed values are DELIMITED, EXCEL, MYSQL," +
-                                             " RFC4180 & TDF");
+        collector.addFailure("Format is not specified.",
+            "Please specify one of the following: DELIMITED, EXCEL, MYSQL, RFC4180 & TDF")
+        .withConfigProperty("format");
       }
 
       if (!format.equalsIgnoreCase("DELIMITED") && !format.equalsIgnoreCase("EXCEL") &&
         !format.equalsIgnoreCase("MYSQL") && !format.equalsIgnoreCase("RFC4180") &&
         !format.equalsIgnoreCase("TDF")) {
-        throw new IllegalArgumentException("Format specified is not one of the allowed values. Allowed values are " +
-                                             "DELIMITED, EXCEL, MYSQL, RFC4180 & TDF");
+        collector.addFailure("Format specified is not one of the allowed values.",
+            "Please specify one of the following: DELIMITED, EXCEL, MYSQL, RFC4180 & TDF")
+        .withConfigProperty("format");
       }
     }
   }

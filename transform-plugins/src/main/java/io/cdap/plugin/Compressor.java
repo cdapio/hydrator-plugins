@@ -26,7 +26,10 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.data.schema.Schema.Field;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageConfigurer;
+import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
 import org.slf4j.Logger;
@@ -64,15 +67,16 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
     this.config = config;
   }
 
-  private void parseConfiguration(String config) throws IllegalArgumentException {
+  private void parseConfiguration(String config, FailureCollector collector) throws IllegalArgumentException {
     String[] mappings = config.split(",");
     for (String mapping : mappings) {
       String[] params = mapping.split(":");
 
-      // If format is not right, then we throw an exception.
+      // If format is not right, then we add a failure.
       if (params.length < 2) {
-        throw new IllegalArgumentException("Configuration " + mapping + " is in-correctly formed. " +
-                                             "Format should be <fieldname>:<compressor-type>");
+        collector.addFailure("Configuration " + mapping + " is incorrectly formed.",
+            "Please specify the configuration in the format <fieldname>:<compressor-type>.")
+        .withConfigProperty("compressor");
       }
 
       String field = params[0];
@@ -80,7 +84,8 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
       CompressorType cType = CompressorType.valueOf(type);
 
       if (compMap.containsKey(field)) {
-        throw new IllegalArgumentException("Field " + field + " already has compressor set. Check the mapping.");
+        collector.addFailure("Field " + field + " already has compressor set.",
+            "Please check the mapping.").withConfigProperty("compressor");
       } else {
         compMap.put(field, cType);
       }
@@ -90,9 +95,8 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
-    parseConfiguration(config.compressor);
-    try {
-      outSchema = Schema.parseJson(config.schema);
+    parseConfiguration(config.compressor, context.getFailureCollector());
+      outSchema = getSchema(context.getFailureCollector());
       List<Field> outFields = outSchema.getFields();
       for (Field field : outFields) {
         outSchemaMap.put(field.getName(), field.getSchema().getType());
@@ -107,41 +111,25 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
           }
         }
       }
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
-    }
   }
 
   @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
-    parseConfiguration(config.compressor);
+    parseConfiguration(config.compressor, pipelineConfigurer.getStageConfigurer().getFailureCollector());
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
 
-    // Check if schema specified is a valid schema or no. 
-    try {
-      Schema outputSchema = Schema.parseJson(config.schema);
-      List<Field> outFields = outputSchema.getFields();
-      for (Field field : outFields) {
-        outSchemaMap.put(field.getName(), field.getSchema().getType());
-      }
+    Schema outputSchema = getSchema(collector);
+    List<Field> outFields = outputSchema.getFields();
+    for (Field field : outFields) {
+      outSchemaMap.put(field.getName(), field.getSchema().getType());
       pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
     }
 
-    Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
-    if (inputSchema != null) {
-      for (Schema.Field field : inputSchema.getFields()) {
-        if (outSchemaMap.containsKey(field.getName()) &&
-          compMap.containsKey(field.getName()) && compMap.get(field.getName()) != CompressorType.NONE &&
-          !Schema.Type.BYTES.equals(field.getSchema().getType()) &&
-          !Schema.Type.STRING.equals(field.getSchema().getType())) {
-          throw new IllegalArgumentException(
-            String.format("Input field  %s must be of type bytes or string. It is currently of type %s",
-                          field.getName(), field.getSchema().getType().toString()));
-        }
-      }
-    }
+    StageConfigurer configurer = pipelineConfigurer.getStageConfigurer();
+    FailureCollector failureCollector = configurer.getFailureCollector();
+
+    validateInputSchema(configurer.getInputSchema(), failureCollector);
   }
 
 
@@ -255,6 +243,31 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
     }
 
     return out.toByteArray();
+  }
+
+  private Schema getSchema(FailureCollector collector) {
+    try {
+      return Schema.parseJson(config.schema);
+    } catch (IOException e) {
+      collector.addFailure("Format of schema specified is invalid.", "Please check the format.");
+    }
+    throw collector.getOrThrowException();
+  }
+
+  private void validateInputSchema(Schema inputSchema, FailureCollector collector) {
+    if (inputSchema != null) {
+      for (Schema.Field field : inputSchema.getFields()) {
+        if (outSchemaMap.containsKey(field.getName()) &&
+            compMap.containsKey(field.getName()) && compMap.get(field.getName()) != CompressorType.NONE &&
+            !Schema.Type.BYTES.equals(field.getSchema().getType()) &&
+            !Schema.Type.STRING.equals(field.getSchema().getType())) {
+          collector.addFailure(String.format("Input field %s is of invalid type %s",
+              field.getName(), field.getSchema().getType().toString()),
+              "Please specify an input field of type bytes or string.")
+          .withInputSchemaField(field.getName(), null);
+        }
+      }
+    }
   }
 
   /**
