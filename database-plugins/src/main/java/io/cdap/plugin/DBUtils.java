@@ -121,12 +121,12 @@ public final class DBUtils {
       try {
         schema = Schema.parseJson(schemaStr);
       } catch (IOException e) {
-        throw new IllegalArgumentException(String.format("Unable to parse schema string %s", schemaStr), e);
+        throw new IllegalArgumentException(String.format("Unable to parse schema string '%s'.", schemaStr), e);
       }
       for (Schema.Field field : schema.getFields()) {
         Schema.Field resultsetField = resultsetSchema.getField(field.getName());
         if (resultsetField == null) {
-          throw new IllegalArgumentException(String.format("Schema field %s is not present in input record",
+          throw new IllegalArgumentException(String.format("Schema field '%s' is not present in input record.",
                                                            field.getName()));
         }
         Schema resultsetFieldSchema = resultsetField.getSchema().isNullable() ?
@@ -134,10 +134,10 @@ public final class DBUtils {
         Schema simpleSchema = field.getSchema().isNullable() ? field.getSchema().getNonNullable() : field.getSchema();
 
         if (!resultsetFieldSchema.equals(simpleSchema)) {
-          throw new IllegalArgumentException(String.format("Schema field %s has type %s but in input record found " +
-                                                             "type %s ",
-                                                           field.getName(), simpleSchema.getType(),
-                                                           resultsetFieldSchema.getType()));
+          throw new IllegalArgumentException(String.format("Schema field '%s' has type '%s' but in input record " +
+                                                             "found type '%s'.",
+                                                           field.getName(), simpleSchema.getDisplayName(),
+                                                           resultsetFieldSchema.getDisplayName()));
         }
       }
       return schema.getFields();
