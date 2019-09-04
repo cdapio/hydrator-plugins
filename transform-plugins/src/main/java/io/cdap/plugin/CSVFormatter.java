@@ -181,7 +181,7 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
     if (fields.size() > 1) {
       ValidationFailure failure = collector.addFailure("Output schema has more than one field of type String.",
       "Please specify a single field of type String.");
-      // Add a cause for
+      // Add a cause for each extra field
       for (int i = 1; i < fields.size(); i++) {
         failure.withOutputSchemaField(fields.get(i).getName(), null);
       }
