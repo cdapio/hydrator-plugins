@@ -107,14 +107,8 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
     FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
     config.validate(collector);
     Schema schema = getSchema(collector);
-      List<Schema.Field> fields = schema.getFields();
-      if (fields.size() > 1) {
-        throw new IllegalArgumentException("Output schema should have only one field of type String");
-      }
-      if (fields.get(0).getSchema().getType() != Schema.Type.STRING) {
-        throw new IllegalArgumentException("Output field type should be String");
-      }
-      pipelineConfigurer.getStageConfigurer().setOutputSchema(schema);
+    validateFields(schema.getFields(), collector);
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(schema);
   }
 
   @Override
@@ -179,6 +173,18 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
                      .set(outSchema.getFields().get(0).getName(), printer.getOut().toString())
                      .build());
       printer.close();
+    }
+  }
+
+  private void validateFields(List<Schema.Field> fields, FailureCollector collector) {
+    if (fields.size() > 1) {
+      collector.addFailure("Output schema has more than one field of type String.",
+      "Please specify a single field of type String.");
+    }
+    if (fields.get(0).getSchema().getType() != Schema.Type.STRING) {
+      collector.addFailure("Output field is of type" + fields.get(0).getSchema().getType().toString() +".",
+          "Please specify an output field of type String.")
+          .withOutputSchemaField(fields.get(0).toString(), null);
     }
   }
 
