@@ -66,7 +66,7 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
     this.config = config;
   }
 
-  private void parseConfiguration(String config, FailureCollector collector) throws IllegalArgumentException {
+  private void parseConfiguration(String config, FailureCollector collector) {
     String[] mappings = config.split(",");
     for (String mapping : mappings) {
       String[] params = mapping.split(":");
@@ -100,16 +100,6 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
       for (Field field : outFields) {
         outSchemaMap.put(field.getName(), field.getSchema().getType());
       }
-
-      for (String field : compMap.keySet()) {
-        if (compMap.containsKey(field)) {
-          Schema.Type type = outSchemaMap.get(field);
-          if (type != Schema.Type.BYTES) {
-            throw new IllegalArgumentException("Field '" + field + "' is not of type BYTES. It's currently" +
-                                                 "of type '" + type.toString() + "'.");
-          }
-        }
-      }
   }
 
   @Override
@@ -126,9 +116,9 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
     }
 
     StageConfigurer configurer = pipelineConfigurer.getStageConfigurer();
-    FailureCollector failureCollector = configurer.getFailureCollector();
 
-    validateInputSchema(configurer.getInputSchema(), failureCollector);
+    validateInputSchema(configurer.getInputSchema(), collector);
+    validateMap(collector);
   }
 
 
@@ -248,7 +238,8 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
     try {
       return Schema.parseJson(config.schema);
     } catch (IOException e) {
-      collector.addFailure("Format of schema specified is invalid.", "Please check the format.");
+      collector.addFailure("Format of schema specified is invalid.", "Please check the format.")
+      .withConfigProperty("schema");
     }
     throw collector.getOrThrowException();
   }
@@ -264,6 +255,18 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
               field.getName(), field.getSchema().getType().toString()),
               "Please specify an input field of type bytes or string.")
           .withInputSchemaField(field.getName(), null);
+        }
+      }
+    }
+  }
+
+  private void validateMap(FailureCollector collector) {
+    for (String field : compMap.keySet()) {
+      if (compMap.containsKey(field)) {
+        Schema.Type type = outSchemaMap.get(field);
+        if (type != Schema.Type.BYTES) {
+          collector.addFailure("Field '" + field + "' is of invalid type '" + type.toString() + "'.",
+              "Please ensure that the field is of type BYTES.").withOutputSchemaField(field, null);
         }
       }
     }

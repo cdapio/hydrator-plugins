@@ -32,6 +32,7 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.validation.ValidationFailure;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.slf4j.Logger;
@@ -178,8 +179,12 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
 
   private void validateFields(List<Schema.Field> fields, FailureCollector collector) {
     if (fields.size() > 1) {
-      collector.addFailure("Output schema has more than one field of type String.",
+      ValidationFailure failure = collector.addFailure("Output schema has more than one field of type String.",
       "Please specify a single field of type String.");
+      // Add a cause for
+      for (int i = 1; i < fields.size(); i++) {
+        failure.withOutputSchemaField(fields.get(i).getName(), null);
+      }
     }
     if (fields.get(0).getSchema().getType() != Schema.Type.STRING) {
       collector.addFailure("Output field is of type" + fields.get(0).getSchema().getType().toString() +".",
@@ -192,7 +197,8 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
     try {
       return Schema.parseJson(config.schema);
     } catch (IOException e) {
-      collector.addFailure("Format of schema specified is invalid.", "Please check the format.");
+      collector.addFailure("Format of schema specified is invalid.", "Please check the format.")
+      .withConfigProperty("schema");
     }
     throw collector.getOrThrowException();
   }

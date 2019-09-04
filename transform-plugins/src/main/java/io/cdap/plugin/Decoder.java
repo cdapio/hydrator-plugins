@@ -67,7 +67,7 @@ public final class Decoder extends Transform<StructuredRecord, StructuredRecord>
     this.config = config;
   }
 
-  private void parseConfiguration(String config, FailureCollector collector) throws IllegalArgumentException {
+  private void parseConfiguration(String config, FailureCollector collector) {
     String[] mappings = config.split(",");
     for (String mapping : mappings) {
       String[] params = mapping.split(":");
@@ -176,7 +176,8 @@ public final class Decoder extends Transform<StructuredRecord, StructuredRecord>
     try {
       return Schema.parseJson(config.schema);
     } catch (IOException e) {
-      collector.addFailure("Format of schema specified is invalid.", "Please check the format.");
+      collector.addFailure("Format of schema specified is invalid.", "Please check the format.")
+      .withConfigProperty("schema");
     }
     throw collector.getOrThrowException();
   }
