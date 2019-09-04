@@ -26,6 +26,7 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.data.schema.Schema.Field;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
@@ -57,13 +58,14 @@ public final class Decryptor extends Transform<StructuredRecord, StructuredRecor
   }
 
   @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
-    pipelineConfigurer.getStageConfigurer().setOutputSchema(conf.getSchema());
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(conf.getSchema(
+        pipelineConfigurer.getStageConfigurer().getFailureCollector()));
   }
 
   @Override
   public void initialize(TransformContext context) throws Exception {
-    schema = conf.getSchema();
+    schema = conf.getSchema(context.getFailureCollector());
     decryptFields = conf.getDecryptFields();
     fieldEncryptor = new FileBasedFieldEncryptor(conf, Cipher.DECRYPT_MODE);
     fieldEncryptor.initialize();
@@ -115,12 +117,12 @@ public final class Decryptor extends Transform<StructuredRecord, StructuredRecor
       return ImmutableSet.copyOf(set);
     }
 
-    private Schema getSchema() {
+    private Schema getSchema(FailureCollector collector) {
       try {
         return Schema.parseJson(schema);
       } catch (IOException e) {
-        throw new IllegalArgumentException(String.format("Error parsing schema %s. Reason: %s",
-                                                         schema, e.getMessage()));
+        collector.addFailure("Format of schema specified is invalid.", "Please check the format.");
+        throw collector.getOrThrowException();
       }
     }
   }

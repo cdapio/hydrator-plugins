@@ -23,6 +23,7 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
@@ -53,7 +54,7 @@ public final class Hasher extends Transform<StructuredRecord, StructuredRecord> 
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
-    config.validate();
+    config.validate(context.getFailureCollector());
     // Split the fields to be hashed.
     String[] fields = config.fields.split(",");
     for (String field : fields) {
@@ -64,7 +65,7 @@ public final class Hasher extends Transform<StructuredRecord, StructuredRecord> 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-    config.validate();
+    config.validate(pipelineConfigurer.getStageConfigurer().getFailureCollector());
     pipelineConfigurer.getStageConfigurer().setOutputSchema(pipelineConfigurer.getStageConfigurer().getInputSchema());
   }
 
@@ -124,13 +125,14 @@ public final class Hasher extends Transform<StructuredRecord, StructuredRecord> 
       this.fields = fields;
     }
 
-    private void validate() {
+    private void validate(FailureCollector collector) {
       // Checks if hash specified is one of the supported types.
       if (!hash.equalsIgnoreCase("md2") && !hash.equalsIgnoreCase("md5") &&
         !hash.equalsIgnoreCase("sha1") && !hash.equalsIgnoreCase("sha256") &&
         !hash.equalsIgnoreCase("sha384") && !hash.equalsIgnoreCase("sha512")) {
-        throw new IllegalArgumentException("Invalid hasher '" + hash + "' specified. Allowed hashers are md2, " +
-                                             "md5, sha1, sha256, sha384 and sha512");
+        collector.addFailure("Invalid hasher '" + hash + "' was specified.",
+            "Please specify one of the following hashers: md2, md5, sha1, sha256, sha384, sha512.")
+            .withConfigProperty("hash");
       }
     }
   }

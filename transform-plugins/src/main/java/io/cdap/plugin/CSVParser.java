@@ -26,6 +26,7 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.data.schema.Schema.Field;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.InvalidEntry;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
@@ -96,63 +97,77 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
   }
 
   @Override
-  public void configurePipeline(PipelineConfigurer configurer) throws IllegalArgumentException {
+  public void configurePipeline(PipelineConfigurer configurer) {
     super.configurePipeline(configurer);
-    config.validate();
+    FailureCollector collector = configurer.getStageConfigurer().getFailureCollector();
+    config.validate(collector);
     Schema inputSchema = configurer.getStageConfigurer().getInputSchema();
-    validateInputSchema(inputSchema);
-    configurer.getStageConfigurer().setOutputSchema(parseAndValidateOutputSchema(inputSchema));
+    validateInputSchema(inputSchema, collector);
+    configurer.getStageConfigurer().setOutputSchema(parseAndValidateOutputSchema(inputSchema, collector));
   }
 
-  void validateInputSchema(Schema inputSchema) {
+  void validateInputSchema(Schema inputSchema, FailureCollector collector) {
     if (inputSchema != null) {
       // Check the existence of field in input schema
       Schema.Field inputSchemaField = inputSchema.getField(config.field);
       if (inputSchemaField == null) {
-        throw new IllegalArgumentException(
-          "Field " + config.field + " is not present in the input schema");
+        collector.addFailure("Field " + config.field + " is not present in the input schema."
+        , "Please ensure that the field is present in the input schema.");
       }
 
       // Check that the field type is String or Nullable String
       Schema fieldSchema = inputSchemaField.getSchema();
       Schema.Type fieldType = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
       if (!fieldType.equals(Schema.Type.STRING)) {
-        throw new IllegalArgumentException(
-          "Type for field  " + config.field + " must be String");
+        collector.addFailure(config.field + " is of invalid type " + fieldType.toString() +".",
+            "Please ensure that the field is of type String.")
+            .withInputSchemaField(config.field, null);
       }
     }
   }
 
-  Schema parseAndValidateOutputSchema(Schema inputSchema) {
-    // Check if schema specified is a valid schema or no.
-    try {
-      Schema outputSchema = Schema.parseJson(this.config.schema);
-
-      // When a input field is passed through to output, the type and name should be the same.
-      // If the type is not the same, then we fail.
-      if (inputSchema != null) {
-        for (Field field : inputSchema.getFields()) {
-          if (outputSchema.getField(field.getName()) != null) {
-            Schema out = outputSchema.getField(field.getName()).getSchema();
-            Schema in = field.getSchema();
-            if (!in.equals(out)) {
-              throw new IllegalArgumentException(
-                "Input field '" + field.getName() + "' does not have same output schema as input."
-              );
-            }
+  Schema parseAndValidateOutputSchema(Schema inputSchema, FailureCollector collector) {
+    Schema outputSchema = getSchema(collector);
+    // Track whether we need to throw an exception at the end of the loop
+    boolean anyFailuresEncountered = false;
+    // When a input field is passed through to output, the type and name should be the same.
+    // If the type is not the same, then we fail.
+    if (inputSchema != null) {
+      for (Field field : inputSchema.getFields()) {
+        if (outputSchema.getField(field.getName()) != null) {
+          Schema out = outputSchema.getField(field.getName()).getSchema();
+          Schema in = field.getSchema();
+          if (!in.equals(out)) {
+            anyFailuresEncountered = true;
+            collector.addFailure("Input field '" + field.getName() + "' does not have the same output schema"
+                + "as input.", "Please ensure that the output schema and input schema are the same.")
+                .withInputSchemaField(field.getName(), null).withOutputSchemaField(field.getName(), null);
           }
         }
       }
-      return outputSchema;
+    }
+    if(anyFailuresEncountered) {
+      throw collector.getOrThrowException();
+    }
+    return outputSchema;
+  }
+
+  Schema getSchema(FailureCollector collector) {
+    try {
+      return Schema.parseJson(config.schema);
     } catch (IOException e) {
-      throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
+      collector.addFailure("Format of schema specified is invalid.",
+          "Please check the format.").withConfigProperty("schema");
+      throw collector.getOrThrowException();
     }
   }
 
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
-    init();
+    FailureCollector collector = context.getFailureCollector();
+    config.validate(collector);
+    init(collector);
     if (fields != null) {
       FieldOperation operation = new FieldTransformOperation("Parse", "Parsed field",
                                                              Collections.singletonList(config.field),
@@ -165,11 +180,10 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
-    init();
+    init(context.getFailureCollector());
   }
 
-  private void init() {
-    config.validate();
+  private void init(FailureCollector collector) {
 
     String csvFormatString = config.format == null ? "default" : config.format.toLowerCase();
     switch (csvFormatString) {
@@ -210,13 +224,8 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
                                              "DEFAULT, EXCEL, MYSQL, RFC4180, Pipe Delimited and Tab Delimited or " +
                                              "Custom");
     }
-
-    try {
-      outSchema = Schema.parseJson(config.schema);
-      fields = outSchema.getFields();
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
-    }
+    outSchema = getSchema(collector);
+    fields = outSchema.getFields();
   }
 
   @Override
@@ -316,7 +325,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
       format = "DEFAULT";
     }
 
-    private void validate() {
+    private void validate(FailureCollector collector) {
 
       // Check if format is one of the allowed types.
       if (!format.equalsIgnoreCase("DEFAULT") && !format.equalsIgnoreCase("EXCEL") &&
@@ -324,15 +333,20 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
         !format.equalsIgnoreCase("Tab Delimited") && !format.equalsIgnoreCase("Pipe Delimited") &&
         !format.equalsIgnoreCase("Custom") && !format.equalsIgnoreCase("PDL") &&
         !format.equalsIgnoreCase("TDF")) {
-        throw new IllegalArgumentException(String.format("Format %s is not one of the allowed values. Allowed values " +
-                                                           "are %s", format, Joiner.on(", ").join(FORMATS)));
+        collector.addFailure(String.format("Format %s is not one of the allowed values", format),
+            String.format("Please specify one of the following: ", Joiner.on(", ").join(FORMATS)))
+        .withConfigProperty("format");
       }
 
       if (format.equalsIgnoreCase("Custom") && (delimiter == null || delimiter == 0)) {
-        throw new IllegalArgumentException("Please specify the delimiter for format option 'Custom'.");
+        collector.addFailure("No delimiter is specified for format option 'Custom'.",
+            "Please specify a delimiter.")
+        .withConfigProperty("delimiter").withConfigProperty("format");
       }
       if (!format.equalsIgnoreCase("Custom") && delimiter != null && delimiter != 0) {
-        throw new IllegalArgumentException("Custom delimiter can only be used for format option 'Custom'.");
+        collector.addFailure("Custom delimiter can only be used for format option 'Custom'.",
+            "Please specify the format option 'Custom'.")
+        .withConfigProperty("delimiter").withConfigProperty("format");
       }
     }
   }
