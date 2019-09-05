@@ -19,6 +19,7 @@ package io.cdap.plugin;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.sun.xml.internal.ws.developer.MemberSubmissionAddressing.Validation;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
@@ -32,6 +33,7 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.validation.ValidationException;
 import io.cdap.cdap.etl.api.validation.ValidationFailure;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -187,7 +189,7 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
       }
     }
     if (fields.get(0).getSchema().getType() != Schema.Type.STRING) {
-      collector.addFailure("Output field is of type" + fields.get(0).getSchema().getType().toString() +".",
+      collector.addFailure("Output field is of invalid type" + fields.get(0).getSchema().getType().toString() +".",
           "Please specify an output field of type String.")
           .withOutputSchemaField(fields.get(0).toString(), null);
     }
@@ -240,7 +242,7 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
         .withConfigProperty("format");
       }
 
-      if (!format.equalsIgnoreCase("DELIMITED") && !format.equalsIgnoreCase("EXCEL") &&
+      if (format != null && !format.equalsIgnoreCase("DELIMITED") && !format.equalsIgnoreCase("EXCEL") &&
         !format.equalsIgnoreCase("MYSQL") && !format.equalsIgnoreCase("RFC4180") &&
         !format.equalsIgnoreCase("TDF")) {
         collector.addFailure("Format specified is not one of the allowed values.",

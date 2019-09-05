@@ -16,11 +16,17 @@
 
 package io.cdap.plugin;
 
+import com.google.common.collect.ImmutableList;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.Transform;
+import io.cdap.cdap.etl.api.validation.ValidationFailure;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
+import io.cdap.cdap.etl.mock.transform.MockTransformContext;
+import io.cdap.cdap.etl.mock.validation.MockFailureCollector;
+import java.util.List;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
@@ -69,7 +75,7 @@ public class DecoderTest {
 
     Transform<StructuredRecord, StructuredRecord> decoder =
       new Decoder(new Decoder.Config("a:BASE64", OUTPUTSTR.toString()));
-    decoder.initialize(null);
+    decoder.initialize(new MockTransformContext());
     MockEmitter<StructuredRecord> emitterDecoded = new MockEmitter<>();
     decoder.transform(emitterEncoded.getEmitted().get(0), emitterDecoded);
     Assert.assertEquals(2, emitterDecoded.getEmitted().get(0).getSchema().getFields().size());
@@ -99,7 +105,7 @@ public class DecoderTest {
 
     Transform<StructuredRecord, StructuredRecord> decoder =
       new Decoder(new Decoder.Config("a:STRING_BASE64", OUTPUTSTR.toString()));
-    decoder.initialize(null);
+    decoder.initialize(new MockTransformContext());
     MockEmitter<StructuredRecord> emitterDecoded = new MockEmitter<>();
     decoder.transform(emitterEncoded.getEmitted().get(0), emitterDecoded);
     Assert.assertEquals(2, emitterDecoded.getEmitted().get(0).getSchema().getFields().size());
@@ -129,7 +135,7 @@ public class DecoderTest {
 
     Transform<StructuredRecord, StructuredRecord> decoder =
       new Decoder(new Decoder.Config("a:BASE32", OUTPUTSTR.toString()));
-    decoder.initialize(null);
+    decoder.initialize(new MockTransformContext());
     MockEmitter<StructuredRecord> emitterDecoded = new MockEmitter<>();
     decoder.transform(emitterEncoded.getEmitted().get(0), emitterDecoded);
     Assert.assertEquals(2, emitterDecoded.getEmitted().get(0).getSchema().getFields().size());
@@ -159,7 +165,7 @@ public class DecoderTest {
 
     Transform<StructuredRecord, StructuredRecord> decoder =
       new Decoder(new Decoder.Config("a:STRING_BASE32", OUTPUTSTR.toString()));
-    decoder.initialize(null);
+    decoder.initialize(new MockTransformContext());
     MockEmitter<StructuredRecord> emitterDecoded = new MockEmitter<>();
     decoder.transform(emitterEncoded.getEmitted().get(0), emitterDecoded);
     Assert.assertEquals(2, emitterDecoded.getEmitted().get(0).getSchema().getFields().size());
@@ -189,7 +195,7 @@ public class DecoderTest {
 
     Transform<StructuredRecord, StructuredRecord> decoder =
       new Decoder(new Decoder.Config("a:HEX", OUTPUTSTR.toString()));
-    decoder.initialize(null);
+    decoder.initialize(new MockTransformContext());
     MockEmitter<StructuredRecord> emitterDecoded = new MockEmitter<>();
     decoder.transform(emitterEncoded.getEmitted().get(0), emitterDecoded);
     Assert.assertEquals(2, emitterDecoded.getEmitted().get(0).getSchema().getFields().size());
@@ -197,7 +203,7 @@ public class DecoderTest {
   }
 
   @Test
-  public void testSchemaValidation() throws Exception {
+  public void testSchemaValidation() {
     Transform<StructuredRecord, StructuredRecord> decoder =
       new Decoder(new Decoder.Config("a:BASE64", OUTPUT.toString()));
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT);
@@ -205,8 +211,8 @@ public class DecoderTest {
     Assert.assertEquals(OUTPUT, mockPipelineConfigurer.getOutputSchema());
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testSchemaValidationWithInvalidInputSchema() throws Exception {
+  @Test
+  public void testSchemaValidationWithInvalidInputSchema() {
     Transform<StructuredRecord, StructuredRecord> decoder =
       new Decoder(new Decoder.Config("a:BASE64", OUTPUT.toString()));
 
@@ -214,8 +220,16 @@ public class DecoderTest {
                                                 Schema.Field.of("a", Schema.of(Schema.Type.INT)),
                                                 Schema.Field.of("b", Schema.of(Schema.Type.STRING)),
                                                 Schema.Field.of("c", Schema.of(Schema.Type.STRING)));
+    // Error message here reflects information defined in the Decoder class for invalid schema.
+    // Any change to the error message presented in Decoder should be reflected here, and vice versa.
+    final List<ValidationFailure> expectedFailures = ImmutableList.of(
+        new ValidationFailure("Input field a is of invalid type INT",
+        "Please specify an input field of type bytes or string.").withInputSchemaField("a", null));
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(invalidInput);
     decoder.configurePipeline(mockPipelineConfigurer);
+    MockFailureCollector failureCollector
+        = (MockFailureCollector) mockPipelineConfigurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(expectedFailures, failureCollector.getValidationFailures());
   }
 }

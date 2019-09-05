@@ -16,11 +16,16 @@
 
 package io.cdap.plugin;
 
+import com.google.common.collect.ImmutableList;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.Transform;
+import io.cdap.cdap.etl.api.validation.ValidationFailure;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
+import io.cdap.cdap.etl.mock.transform.MockTransformContext;
+import io.cdap.cdap.etl.mock.validation.MockFailureCollector;
+import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -44,7 +49,7 @@ public class CSVFormatterTest {
   public void testDefaultCSVFormatter() throws Exception {
     CSVFormatter.Config config = new CSVFormatter.Config("DELIMITED", "VBAR", OUTPUT.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVFormatter(config);
-    transform.initialize(null);
+    transform.initialize(new MockTransformContext());
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
 
@@ -68,12 +73,37 @@ public class CSVFormatterTest {
   }
 
   @Test
-  public void testSchemaValidation() throws Exception {
+  public void testSchemaValidation() {
     CSVFormatter.Config config = new CSVFormatter.Config("DELIMITED", "VBAR", OUTPUT.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVFormatter(config);
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT1);
     transform.configurePipeline(mockPipelineConfigurer);
     Assert.assertEquals(OUTPUT, mockPipelineConfigurer.getOutputSchema());
+  }
+
+  @Test
+  public void testMultipleInvalidConfigProperties() {
+    CSVFormatter.Config config = new CSVFormatter.Config("", "INVALIDDELIM", OUTPUT.toString());
+    Transform<StructuredRecord, StructuredRecord> transform = new CSVFormatter(config);
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT1);
+    // Error message here reflects information defined in the CSVFormatter.Config class and CSVFormatter's delimMap.
+    // Any change to the error message presented in CSVFormatter.Config should be reflected here, and vice versa.
+    final List<ValidationFailure> expectedFailures = ImmutableList.of(
+        new ValidationFailure("Unknown delimiter 'INVALIDDELIM' specified.",
+            "Please specify one of the following: "
+                + "COMMA, CTRL-A, CARET, HASH, TAB, STAR, VBAR, CTRL-D, CTRL-E, DOLLAR, TILDE, CTRL-B, CTRL-C, CTRL-F")
+            .withConfigProperty("delimiter"),
+        new ValidationFailure("Format is not specified.",
+            "Please specify one of the following: DELIMITED, EXCEL, MYSQL, RFC4180 & TDF")
+            .withConfigProperty("format"),
+        new ValidationFailure("Format specified is not one of the allowed values.",
+            "Please specify one of the following: DELIMITED, EXCEL, MYSQL, RFC4180 & TDF")
+            .withConfigProperty("format"));
+
+    transform.configurePipeline(mockPipelineConfigurer);
+    MockFailureCollector failureCollector
+        = (MockFailureCollector) mockPipelineConfigurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(expectedFailures, failureCollector.getValidationFailures());
   }
 }

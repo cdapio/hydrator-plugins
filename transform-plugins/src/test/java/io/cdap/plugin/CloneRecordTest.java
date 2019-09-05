@@ -16,11 +16,16 @@
 
 package io.cdap.plugin;
 
+import com.google.common.collect.ImmutableList;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.Transform;
+import io.cdap.cdap.etl.api.validation.ValidationFailure;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
+import io.cdap.cdap.etl.mock.validation.MockFailureCollector;
+import io.cdap.plugin.CloneRecord.Config;
+import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -52,7 +57,7 @@ public class CloneRecordTest {
   }
 
   @Test
-  public void testSchemaValidation() throws Exception {
+  public void testSchemaValidation() {
     CloneRecord.Config config = new CloneRecord.Config(5);
     Transform<StructuredRecord, StructuredRecord> transform = new CloneRecord(config);
 
@@ -60,5 +65,22 @@ public class CloneRecordTest {
 
     transform.configurePipeline(mockPipelineConfigurer);
     Assert.assertEquals(INPUT, mockPipelineConfigurer.getOutputSchema());
+  }
+
+  @Test
+  public void testInvalidNumberOfCopies() {
+    CloneRecord.Config config = new CloneRecord.Config(0);
+    Transform<StructuredRecord, StructuredRecord> transform = new CloneRecord(config);
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT);
+    // Error message here reflects information defined in the CloneRecord.Config class.
+    // Any change to the error message presented in Config should be reflected here, and vice versa.
+    List<ValidationFailure> expectedFailures = ImmutableList.of(
+        new ValidationFailure("Number of copies specified '0' is incorrect.",
+        "Specify proper integer range.").withConfigProperty("copies"));
+
+    transform.configurePipeline(mockPipelineConfigurer);
+    MockFailureCollector failureCollector
+        = (MockFailureCollector) mockPipelineConfigurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(expectedFailures, failureCollector.getValidationFailures());
   }
 }
