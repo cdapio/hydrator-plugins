@@ -16,11 +16,15 @@
 
 package io.cdap.plugin;
 
+import com.google.common.collect.ImmutableList;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.Transform;
+import io.cdap.cdap.etl.api.validation.CauseAttributes;
+import io.cdap.cdap.etl.api.validation.ValidationFailure.Cause;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
+import io.cdap.cdap.etl.mock.validation.MockFailureCollector;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -175,11 +179,24 @@ public class HasherTest {
   }
 
   @Test
-  public void testSchemaValidation() throws Exception {
+  public void testSchemaValidation() {
     Transform<StructuredRecord, StructuredRecord> transform =
       new Hasher(new Hasher.Config("SHA512", "a,b,e"));
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT);
     transform.configurePipeline(mockPipelineConfigurer);
     Assert.assertEquals(INPUT, mockPipelineConfigurer.getOutputSchema());
+  }
+
+  @Test
+  public void testInvalidHash() {
+    Transform<StructuredRecord, StructuredRecord> transform =
+        new Hasher(new Hasher.Config("INVALIDHASH", "a,b,e"));
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT);
+    transform.configurePipeline(mockPipelineConfigurer);
+    MockFailureCollector mockFailureCollector =
+        (MockFailureCollector) mockPipelineConfigurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(1, mockFailureCollector.getValidationFailures().size());
+    Assert.assertEquals(ImmutableList.of(new Cause().addAttribute(CauseAttributes.STAGE_CONFIG, "hash")),
+        mockFailureCollector.getValidationFailures().get(0).getCauses());
   }
 }

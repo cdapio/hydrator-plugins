@@ -17,11 +17,16 @@
 package io.cdap.plugin;
 
 
+import com.google.common.collect.ImmutableList;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.Transform;
+import io.cdap.cdap.etl.api.validation.CauseAttributes;
+import io.cdap.cdap.etl.api.validation.ValidationFailure.Cause;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
+import io.cdap.cdap.etl.mock.transform.MockTransformContext;
+import io.cdap.cdap.etl.mock.validation.MockFailureCollector;
 import org.junit.Assert;
 import org.junit.Test;
 import org.xerial.snappy.Snappy;
@@ -52,7 +57,7 @@ public class DecompressorTest {
     String decompressTester = "This is a test for testing snappy compression";
     Transform<StructuredRecord, StructuredRecord> transform =
       new Decompressor(new Decompressor.Config("a:SNAPPY", OUTPUT.toString()));
-    transform.initialize(null);
+    transform.initialize(new MockTransformContext());
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     byte[] compressed = Snappy.compress(decompressTester.getBytes());
@@ -72,7 +77,7 @@ public class DecompressorTest {
     String decompressTester = "This is a test for testing zip compression";
     Transform<StructuredRecord, StructuredRecord> transform =
       new Decompressor(new Decompressor.Config("a:ZIP", OUTPUT.toString()));
-    transform.initialize(null);
+    transform.initialize(new MockTransformContext());
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     byte[] compressed = zip(decompressTester.getBytes());
@@ -92,7 +97,7 @@ public class DecompressorTest {
     String decompressTester = "This is a test for testing gzip compression";
     Transform<StructuredRecord, StructuredRecord> transform =
       new Decompressor(new Decompressor.Config("a:GZIP", OUTPUT.toString()));
-    transform.initialize(null);
+    transform.initialize(new MockTransformContext());
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     byte[] compressed = gzip(decompressTester.getBytes());
@@ -129,7 +134,7 @@ public class DecompressorTest {
   }
 
   @Test
-  public void testSchemaValidation() throws Exception {
+  public void testSchemaValidation() {
     Transform<StructuredRecord, StructuredRecord> transform =
       new Decompressor(new Decompressor.Config("a:ZIP", OUTPUT.toString()));
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT);
@@ -137,8 +142,8 @@ public class DecompressorTest {
     Assert.assertEquals(OUTPUT, mockPipelineConfigurer.getOutputSchema());
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testSchemaValidationWithInvalidInputSchema() throws Exception {
+  @Test
+  public void testSchemaValidationWithInvalidInputSchema() {
     Transform<StructuredRecord, StructuredRecord> transform =
       new Decompressor(new Decompressor.Config("a:ZIP", OUTPUT.toString()));
     Schema invalidInput = Schema.recordOf("input",
@@ -146,12 +151,19 @@ public class DecompressorTest {
                                           Schema.Field.of("b", Schema.of(Schema.Type.STRING)));
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(invalidInput);
+    MockFailureCollector mockFailureCollector =
+        (MockFailureCollector) mockPipelineConfigurer.getStageConfigurer().getFailureCollector();
     transform.configurePipeline(mockPipelineConfigurer);
+
     Assert.assertEquals(OUTPUT, mockPipelineConfigurer.getOutputSchema());
+    Assert.assertEquals(1, mockFailureCollector.getValidationFailures().size());
+    Assert.assertEquals(1, mockFailureCollector.getValidationFailures().get(0).getCauses().size());
+    Assert.assertEquals(ImmutableList.of(new Cause().addAttribute(CauseAttributes.INPUT_SCHEMA_FIELD, "a")),
+        mockFailureCollector.getValidationFailures().get(0).getCauses());
   }
 
   @Test
-  public void testSchemaValidationWithValidInputSchema() throws Exception {
+  public void testSchemaValidationWithValidInputSchema() {
     Transform<StructuredRecord, StructuredRecord> transform =
       new Decompressor(new Decompressor.Config("a:NONE", OUTPUT.toString()));
     Schema validInput = Schema.recordOf("input",

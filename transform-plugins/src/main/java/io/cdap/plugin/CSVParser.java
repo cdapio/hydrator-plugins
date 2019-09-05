@@ -140,7 +140,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
           if (!in.equals(out)) {
             anyFailuresEncountered = true;
             collector.addFailure("Input field '" + field.getName() + "' does not have the same output schema"
-                + "as input.", "Please ensure that the output schema and input schema are the same.")
+                + " as input.", "Please ensure that the output schema and input schema are the same.")
                 .withInputSchemaField(field.getName(), null).withOutputSchemaField(field.getName(), null);
           }
         }

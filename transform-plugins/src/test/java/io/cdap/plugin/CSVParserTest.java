@@ -16,13 +16,19 @@
 
 package io.cdap.plugin;
 
+import com.google.common.collect.ImmutableList;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.InvalidEntry;
 import io.cdap.cdap.etl.api.Transform;
+import io.cdap.cdap.etl.api.validation.CauseAttributes;
+import io.cdap.cdap.etl.api.validation.ValidationException;
+import io.cdap.cdap.etl.api.validation.ValidationFailure;
+import io.cdap.cdap.etl.api.validation.ValidationFailure.Cause;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
 import io.cdap.cdap.etl.mock.transform.MockTransformContext;
+import io.cdap.cdap.etl.mock.validation.MockFailureCollector;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -92,7 +98,7 @@ public class CSVParserTest {
                                     Schema.Field.of("string", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
     CSVParser.Config config = new CSVParser.Config("DEFAULT", null, "body", schema.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
-    transform.initialize(null);
+    transform.initialize(new MockTransformContext());
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
 
@@ -126,7 +132,7 @@ public class CSVParserTest {
   public void testNullFormat() throws Exception {
     CSVParser.Config config = new CSVParser.Config(null, null, "body", OUTPUT1.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
-    transform.initialize(null);
+    transform.initialize(new MockTransformContext());
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
 
     transform.transform(StructuredRecord.builder(INPUT1)
@@ -141,7 +147,7 @@ public class CSVParserTest {
   public void testDefaultCSVParser() throws Exception {
     CSVParser.Config config = new CSVParser.Config("DEFAULT", null, "body", OUTPUT1.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
-    transform.initialize(null);
+    transform.initialize(new MockTransformContext());
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
 
@@ -205,7 +211,7 @@ public class CSVParserTest {
     emitter.clear();
     CSVParser.Config config1 = new CSVParser.Config("DEFAULT", null, "body", OUTPUT2.toString());
     Transform<StructuredRecord, StructuredRecord> transform1 = new CSVParser(config1);
-    transform1.initialize(null);
+    transform1.initialize(new MockTransformContext());
 
     transform1.transform(StructuredRecord.builder(INPUT1)
                            .set("body", "10,stringA,3,4.32,true").build(), emitter);
@@ -221,7 +227,7 @@ public class CSVParserTest {
   public void testPDLforBackwardCompat() throws Exception {
     CSVParser.Config config = new CSVParser.Config("PDL", null, "body", OUTPUT1.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
-    transform.initialize(null);
+    transform.initialize(new MockTransformContext());
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
 
@@ -238,7 +244,7 @@ public class CSVParserTest {
   public void testTDFforBackwardCompat() throws Exception {
     CSVParser.Config config = new CSVParser.Config("TDF", null, "body", OUTPUT1.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
-    transform.initialize(null);
+    transform.initialize(new MockTransformContext());
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(StructuredRecord.builder(INPUT1)
@@ -254,7 +260,7 @@ public class CSVParserTest {
   public void testPDL() throws Exception {
     CSVParser.Config config = new CSVParser.Config("Pipe Delimited", null, "body", OUTPUT1.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
-    transform.initialize(null);
+    transform.initialize(new MockTransformContext());
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(StructuredRecord.builder(INPUT1)
@@ -270,7 +276,7 @@ public class CSVParserTest {
   public void testTDF() throws Exception {
     CSVParser.Config config = new CSVParser.Config("Tab Delimited", null, "body", OUTPUT1.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
-    transform.initialize(null);
+    transform.initialize(new MockTransformContext());
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(StructuredRecord.builder(INPUT1)
@@ -286,7 +292,7 @@ public class CSVParserTest {
   public void testCustomDelimiter() throws Exception {
     CSVParser.Config config = new CSVParser.Config("Custom", ';', "body", OUTPUT1.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
-    transform.initialize(null);
+    transform.initialize(new MockTransformContext());
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
 
@@ -306,7 +312,7 @@ public class CSVParserTest {
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     CSVParser.Config config = new CSVParser.Config("DEFAULT", null, "body", OUTPUT2.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
-    transform.initialize(null);
+    transform.initialize(new MockTransformContext());
     transform.transform(StructuredRecord.builder(INPUT1)
                           .set("body", "10,stringA,3,,true").build(), emitter);
   }
@@ -316,7 +322,7 @@ public class CSVParserTest {
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     CSVParser.Config config = new CSVParser.Config("DEFAULT", null, "body", OUTPUT2.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
-    transform.initialize(null);
+    transform.initialize(new MockTransformContext());
     transform.transform(StructuredRecord.builder(INPUT1)
                           .set("body", "10,stringA,,4.32,true").build(), emitter);
   }
@@ -326,7 +332,7 @@ public class CSVParserTest {
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     CSVParser.Config config = new CSVParser.Config("DEFAULT", null, "body", OUTPUT2.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
-    transform.initialize(null);
+    transform.initialize(new MockTransformContext());
     transform.transform(StructuredRecord.builder(INPUT1)
                           .set("body", ",stringA,3,4.32,true").build(), emitter);
   }
@@ -335,16 +341,16 @@ public class CSVParserTest {
   public void testSchemaValidation() throws Exception {
     CSVParser.Config config = new CSVParser.Config("DEFAULT", null, "body", OUTPUT1.toString());
     CSVParser csvParser = new CSVParser(config);
-    csvParser.validateInputSchema(INPUT1);
-    Assert.assertEquals(OUTPUT1, csvParser.parseAndValidateOutputSchema(INPUT1));
+    csvParser.validateInputSchema(INPUT1, new MockFailureCollector());
+    Assert.assertEquals(OUTPUT1, csvParser.parseAndValidateOutputSchema(INPUT1, new MockFailureCollector()));
   }
 
   @Test
   public void testNullableFieldSchemaValidation() throws Exception {
     CSVParser.Config config = new CSVParser.Config("DEFAULT", null, "body", OUTPUT1.toString());
     CSVParser csvParser = new CSVParser(config);
-    csvParser.validateInputSchema(NULLABLE_INPUT);
-    Assert.assertEquals(OUTPUT1, csvParser.parseAndValidateOutputSchema(NULLABLE_INPUT));
+    csvParser.validateInputSchema(NULLABLE_INPUT, new MockFailureCollector());
+    Assert.assertEquals(OUTPUT1, csvParser.parseAndValidateOutputSchema(NULLABLE_INPUT, new MockFailureCollector()));
   }
 
   @Test
@@ -354,7 +360,7 @@ public class CSVParserTest {
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT2);
     transform.configurePipeline(mockPipelineConfigurer);
-    transform.initialize(null);
+    transform.initialize(new MockTransformContext());
     transform.transform(StructuredRecord.builder(INPUT2)
                           .set("body", "10,stringA,3,4.32,true").set("offset", 10).build(), emitter);
     Assert.assertEquals(10L, emitter.getEmitted().get(0).<Long>get("a").longValue());
@@ -365,8 +371,8 @@ public class CSVParserTest {
     Assert.assertEquals(10, emitter.getEmitted().get(0).<Integer>get("offset").intValue()); // Pass through from input.
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testPassThroughTypeMisMatch() throws Exception {
+  @Test(expected = ValidationException.class)
+  public void testPassThroughTypeMisMatch() {
     CSVParser.Config config = new CSVParser.Config("DEFAULT", null, "body", OUTPUT4.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT2);
@@ -374,13 +380,21 @@ public class CSVParserTest {
   }
 
   @Test
-  public void testEmptyCustomDelimiter() throws Exception {
+  public void testEmptyCustomDelimiter() {
     CSVParser config = new CSVParser(new CSVParser.Config("Custom", null, "body", OUTPUT4.toString()));
+    MockPipelineConfigurer pipelineConfigurer = new MockPipelineConfigurer(INPUT2);
+    MockFailureCollector failureCollector
+        = (MockFailureCollector) pipelineConfigurer.getStageConfigurer().getFailureCollector();
     try {
-      config.configurePipeline(new MockPipelineConfigurer(INPUT2));
-      Assert.fail();
-    } catch (IllegalArgumentException e) {
-      Assert.assertEquals("Please specify the delimiter for format option 'Custom'.", e.getMessage());
+      config.configurePipeline(pipelineConfigurer);
+    } catch (ValidationException e) {
+      Assert.assertEquals(2, failureCollector.getValidationFailures().size());
+      // This test assumes the empty custom delimiter failure will occur first.
+      // If config.validate() is called before parseAndValidateOutputSchema, this should remain the case.
+      Assert.assertEquals(ImmutableList.of(
+          new Cause().addAttribute(CauseAttributes.STAGE_CONFIG, "delimiter").addAttribute("stage", "mockstage"),
+          new Cause().addAttribute(CauseAttributes.STAGE_CONFIG, "format").addAttribute("stage", "mockstage")),
+          failureCollector.getValidationFailures().get(0).getCauses());
     }
   }
 
