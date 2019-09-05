@@ -390,7 +390,7 @@ public class CSVParserTest {
     } catch (ValidationException e) {
       Assert.assertEquals(2, failureCollector.getValidationFailures().size());
       // This test assumes the empty custom delimiter failure will occur first.
-      // If config.validate() is called before parseAndValidateOutputSchema, this should remain the case.
+      // If config.validate is called before parseAndValidateOutputSchema, this should remain the case.
       Assert.assertEquals(ImmutableList.of(
           new Cause().addAttribute(CauseAttributes.STAGE_CONFIG, "delimiter").addAttribute("stage", "mockstage"),
           new Cause().addAttribute(CauseAttributes.STAGE_CONFIG, "format").addAttribute("stage", "mockstage")),
