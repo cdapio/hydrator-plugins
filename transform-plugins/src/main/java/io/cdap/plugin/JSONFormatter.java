@@ -23,9 +23,11 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.validation.ValidationFailure;
 import io.cdap.cdap.format.StructuredRecordStringConverter;
 
 import java.io.IOException;
@@ -61,39 +63,19 @@ public final class JSONFormatter extends Transform<StructuredRecord, StructuredR
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
-    try {
-      outSchema = Schema.parseJson(config.schema);
-      type = outSchema.getFields().get(0).getSchema().getType();
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Output Schema specified is not a valid JSON. Please check the Schema JSON");
-    }
+    FailureCollector collector = context.getFailureCollector();
+    outSchema = getSchema(collector);
+    type = outSchema.getFields().get(0).getSchema().getType();
   }
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-    try {
-      Schema out = Schema.parseJson(config.schema);
-      List<Schema.Field> fields = out.getFields();
-      
-      // For this plugin, the output schema needs to have only one field and it should 
-      // be of type BYTES or STRING.
-      if (fields.size() > 1) {
-        throw new IllegalArgumentException("Only one output field should exist for this transform and it should " +
-                                             "ne of type String");  
-      }
-      
-      // Check to make sure the field type specified in the output is only of type
-      // STRING or BYTES.
-      if (fields.get(0).getSchema().getType() != Schema.Type.STRING &&
-        fields.get(0).getSchema().getType() != Schema.Type.BYTES) {
-        throw new IllegalArgumentException("Output field name should be of type String. Please change type to " +
-                                             "String or Bytes");
-      }
-      pipelineConfigurer.getStageConfigurer().setOutputSchema(out);
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Output Schema specified is not a valid JSON. Please check the Schema JSON");
-    }
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    Schema out = getSchema(collector);
+    List<Schema.Field> fields = out.getFields();
+    validateFields(fields, collector);
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(out);
   }
 
   @Override
@@ -110,6 +92,38 @@ public final class JSONFormatter extends Transform<StructuredRecord, StructuredR
       record.set(outSchema.getFields().get(0).getName(), outputRecord);
     }
     emitter.emit(record.build());
+  }
+
+  private Schema getSchema(FailureCollector collector) {
+    try {
+      return Schema.parseJson(config.schema);
+    } catch (IOException e) {
+      collector.addFailure("Format of schema specified is not a valid JSON.",
+          "Please check the schema JSON.").withConfigProperty("schema");
+      throw collector.getOrThrowException();
+    }
+  }
+
+  private void validateFields(List<Schema.Field> fields, FailureCollector collector) {
+    // For this plugin, the output schema needs to have only one field and it should
+    // be of type BYTES or STRING.
+    if (fields.size() > 1) {
+      ValidationFailure failure = collector.addFailure("More than one output field exists for this transform.",
+          "Please specify a single field of type String.")
+      .withConfigProperty("schema");
+      for (int i = 1; i < fields.size(); i++) {
+        failure.withOutputSchemaField(fields.get(i).getName(), null);
+      }
+    }
+
+    // Check to make sure the field type specified in the output is only of type
+    // STRING or BYTES.
+    if (fields.get(0).getSchema().getType() != Schema.Type.STRING &&
+        fields.get(0).getSchema().getType() != Schema.Type.BYTES) {
+      collector.addFailure("Output field is of invalid type" + fields.get(0).getSchema().getType().toString() +".",
+          "Please specify an output field of type String or Bytes.")
+          .withOutputSchemaField(fields.get(0).toString(), null);
+    }
   }
 
   /**

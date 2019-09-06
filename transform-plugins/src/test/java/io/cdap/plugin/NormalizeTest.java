@@ -23,9 +23,13 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.table.Table;
 import io.cdap.cdap.datapipeline.SmartWorkflow;
 import io.cdap.cdap.etl.api.Transform;
+import io.cdap.cdap.etl.api.validation.CauseAttributes;
+import io.cdap.cdap.etl.api.validation.ValidationException;
+import io.cdap.cdap.etl.api.validation.ValidationFailure.Cause;
 import io.cdap.cdap.etl.mock.batch.MockSink;
 import io.cdap.cdap.etl.mock.batch.MockSource;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
+import io.cdap.cdap.etl.mock.validation.MockFailureCollector;
 import io.cdap.cdap.etl.proto.v2.ETLBatchConfig;
 import io.cdap.cdap.etl.proto.v2.ETLPlugin;
 import io.cdap.cdap.etl.proto.v2.ETLStage;
@@ -132,7 +136,7 @@ public class NormalizeTest extends TransformPluginsTestBase {
   }
 
   @Test
-  public void testOutputSchema() throws Exception {
+  public void testOutputSchema() {
     Normalize.NormalizeConfig config = new Normalize.NormalizeConfig(validFieldMapping, validFieldNormalizing,
                                                                      OUTPUT_SCHEMA.toString());
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(INPUT_SCHEMA);
@@ -140,49 +144,101 @@ public class NormalizeTest extends TransformPluginsTestBase {
     Assert.assertEquals(OUTPUT_SCHEMA, configurer.getOutputSchema());
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testEmptyFieldMapping() throws Exception {
+  @Test
+  public void testEmptyFieldMapping(){
     Normalize.NormalizeConfig config = new Normalize.NormalizeConfig(null, validFieldNormalizing,
                                                                      OUTPUT_SCHEMA.toString());
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(INPUT_SCHEMA);
-    new Normalize(config).configurePipeline(configurer);
+    try {
+      new Normalize(config).configurePipeline(configurer);
+      Assert.fail();
+    } catch (ValidationException e) {
+      MockFailureCollector collector =
+          (MockFailureCollector) configurer.getStageConfigurer().getFailureCollector();
+      Assert.assertEquals(1, collector.getValidationFailures().size());
+      Assert.assertEquals(ImmutableList.of(
+          new Cause().addAttribute(CauseAttributes.STAGE_CONFIG, "fieldMapping").addAttribute("stage", "mockstage")),
+          collector.getValidationFailures().get(0).getCauses());
+    }
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testEmptyFieldNormalizing() throws Exception {
+  @Test
+  public void testEmptyFieldNormalizing() {
     Normalize.NormalizeConfig config = new Normalize.NormalizeConfig(validFieldMapping, null,
                                                                      OUTPUT_SCHEMA.toString());
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(INPUT_SCHEMA);
-    new Normalize(config).configurePipeline(configurer);
+    try {
+      new Normalize(config).configurePipeline(configurer);
+      Assert.fail();
+    } catch (ValidationException e) {
+      MockFailureCollector collector =
+          (MockFailureCollector) configurer.getStageConfigurer().getFailureCollector();
+      Assert.assertEquals(1, collector.getValidationFailures().size());
+      Assert.assertEquals(ImmutableList.of(
+          new Cause().addAttribute(CauseAttributes.STAGE_CONFIG, "fieldNormalizing").addAttribute("stage", "mockstage")),
+          collector.getValidationFailures().get(0).getCauses());
+    }
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testEmptyOutputSchema() throws Exception {
+  @Test
+  public void testEmptyOutputSchema() {
     Normalize.NormalizeConfig config = new Normalize.NormalizeConfig(validFieldMapping, validFieldNormalizing, null);
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(INPUT_SCHEMA);
-    new Normalize(config).configurePipeline(configurer);
+    try {
+      new Normalize(config).configurePipeline(configurer);
+      Assert.fail();
+    } catch (ValidationException e) {
+      MockFailureCollector collector =
+          (MockFailureCollector) configurer.getStageConfigurer().getFailureCollector();
+      Assert.assertEquals(1, collector.getValidationFailures().size());
+      Assert.assertEquals(ImmutableList.of(
+          new Cause().addAttribute(CauseAttributes.STAGE_CONFIG, "outputSchema").addAttribute("stage", "mockstage")),
+          collector.getValidationFailures().get(0).getCauses());
+    }
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testInvalidMappingValues() throws Exception {
+  @Test
+  public void testInvalidMappingValues() {
     Normalize.NormalizeConfig config = new Normalize.NormalizeConfig("CustomerId,PurchaseDate:Date",
                                                                      validFieldNormalizing, OUTPUT_SCHEMA.toString());
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(INPUT_SCHEMA);
-    new Normalize(config).configurePipeline(configurer);
+    try {
+      new Normalize(config).configurePipeline(configurer);
+      Assert.fail();
+    } catch (ValidationException e) {
+      MockFailureCollector collector =
+          (MockFailureCollector) configurer.getStageConfigurer().getFailureCollector();
+      Assert.assertEquals(1, collector.getValidationFailures().size());
+      Assert.assertEquals(ImmutableList.of(
+          new Cause().addAttribute(CauseAttributes.STAGE_CONFIG, "fieldMapping").addAttribute("stage", "mockstage")),
+          collector.getValidationFailures().get(0).getCauses());
+    }
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testInvalidNormalizingValues() throws Exception {
+  @Test
+  public void testInvalidNormalizingValues() {
     Normalize.NormalizeConfig config = new Normalize.NormalizeConfig(validFieldMapping,
                                                                      "ItemId:AttributeType," +
                                                                        "ItemCost:AttributeType:AttributeValue",
                                                                      OUTPUT_SCHEMA.toString());
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(INPUT_SCHEMA);
-    new Normalize(config).configurePipeline(configurer);
+    try {
+      new Normalize(config).configurePipeline(configurer);
+      Assert.fail();
+    } catch (ValidationException e) {
+      MockFailureCollector collector =
+          (MockFailureCollector) configurer.getStageConfigurer().getFailureCollector();
+      Assert.assertEquals(1, collector.getValidationFailures().size());
+      Assert.assertEquals(ImmutableList.of(
+          new Cause().addAttribute(CauseAttributes.STAGE_CONFIG, "fieldNormalizing")
+              .addAttribute(CauseAttributes.CONFIG_ELEMENT, "ItemId:AttributeType")
+              .addAttribute("stage", "mockstage")),
+          collector.getValidationFailures().get(0).getCauses());
+    }
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testInvalidOutputSchema() throws Exception {
+  @Test
+  public void testInvalidOutputSchema() {
     //schema with no ID field
     Schema outputSchema =
       Schema.recordOf("outputSchema",
@@ -193,10 +249,18 @@ public class NormalizeTest extends TransformPluginsTestBase {
                                                                      outputSchema.toString());
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(INPUT_SCHEMA);
     new Normalize(config).configurePipeline(configurer);
+
+    MockFailureCollector collector =
+        (MockFailureCollector) configurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(1, collector.getValidationFailures().size());
+    Assert.assertEquals(ImmutableList.of(
+        new Cause().addAttribute(CauseAttributes.STAGE_CONFIG, "fieldMapping")
+        .addAttribute(CauseAttributes.CONFIG_ELEMENT, "Id")),
+        collector.getValidationFailures().get(0).getCauses());
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testInvalidOutputSchemaFieldType() throws Exception {
+  @Test
+  public void testInvalidOutputSchemaFieldType() {
     //schema with ID field as long
     Schema outputSchema =
       Schema.recordOf("outputSchema",
@@ -208,34 +272,67 @@ public class NormalizeTest extends TransformPluginsTestBase {
                                                                      outputSchema.toString());
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(INPUT_SCHEMA);
     new Normalize(config).configurePipeline(configurer);
+
+    MockFailureCollector collector =
+        (MockFailureCollector) configurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(1, collector.getValidationFailures().size());
+    Assert.assertEquals(ImmutableList.of(
+        new Cause().addAttribute(CauseAttributes.OUTPUT_SCHEMA_FIELD, "Id")),
+        collector.getValidationFailures().get(0).getCauses());
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testInvalidMappingsFromInputSchema() throws Exception {
+  @Test
+  public void testInvalidMappingsFromInputSchema() {
     Normalize.NormalizeConfig config = new Normalize.NormalizeConfig("Purchaser:Id,PurchaseDate:Date",
                                                                      validFieldNormalizing, OUTPUT_SCHEMA.toString());
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(INPUT_SCHEMA);
     new Normalize(config).configurePipeline(configurer);
+
+    MockFailureCollector collector =
+        (MockFailureCollector) configurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(1, collector.getValidationFailures().size());
+    Assert.assertEquals(ImmutableList.of(
+        new Cause().addAttribute(CauseAttributes.STAGE_CONFIG, "fieldMapping")
+        .addAttribute(CauseAttributes.CONFIG_ELEMENT, "Purchaser")),
+        collector.getValidationFailures().get(0).getCauses());
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testInvalidNormalizingFromInputSchema() throws Exception {
+  @Test
+  public void testInvalidNormalizingFromInputSchema() {
     Normalize.NormalizeConfig config = new Normalize.NormalizeConfig(validFieldMapping,
                                                                      "ObjectId:AttributeType:AttributeValue," +
                                                                        "ItemCost:AttributeType:AttributeValue",
                                                                      OUTPUT_SCHEMA.toString());
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(INPUT_SCHEMA);
     new Normalize(config).configurePipeline(configurer);
+
+    MockFailureCollector collector =
+        (MockFailureCollector) configurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(1, collector.getValidationFailures().size());
+    Assert.assertEquals(ImmutableList.of(
+        new Cause().addAttribute(CauseAttributes.STAGE_CONFIG, "fieldNormalizing")
+            .addAttribute(CauseAttributes.CONFIG_ELEMENT, "ObjectId")),
+        collector.getValidationFailures().get(0).getCauses());
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testInvalidNormalizeTypeAndValue() throws Exception {
+  @Test
+  public void testInvalidNormalizeTypeAndValue() {
     Normalize.NormalizeConfig config = new Normalize.NormalizeConfig(validFieldMapping,
                                                                      "ItemId:AttributeType:AttributeValue," +
                                                                        "ItemCost:ExpenseType:ExpenseValue",
                                                                      OUTPUT_SCHEMA.toString());
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(INPUT_SCHEMA);
     new Normalize(config).configurePipeline(configurer);
+    MockFailureCollector collector =
+        (MockFailureCollector) configurer.getStageConfigurer().getFailureCollector();
+    Assert.assertTrue(collector.getValidationFailures().size() >= 2);
+    // We expect two failures—one due to type and one due to value—resulting from the same cause.
+    List<Cause> expected =  ImmutableList.of(
+        new Cause().addAttribute(CauseAttributes.STAGE_CONFIG, "fieldNormalizing")
+            .addAttribute(CauseAttributes.CONFIG_ELEMENT, "ItemCost"));
+
+    Assert.assertEquals(expected, collector.getValidationFailures().get(0).getCauses());
+    Assert.assertEquals(expected, collector.getValidationFailures().get(1).getCauses());
   }
 
   @Test

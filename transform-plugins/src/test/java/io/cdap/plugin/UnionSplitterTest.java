@@ -19,8 +19,11 @@ package io.cdap.plugin;
 import com.google.common.collect.ImmutableList;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.validation.CauseAttributes;
+import io.cdap.cdap.etl.api.validation.ValidationFailure.Cause;
 import io.cdap.cdap.etl.mock.common.MockMultiOutputEmitter;
 import io.cdap.cdap.etl.mock.transform.MockTransformContext;
+import io.cdap.cdap.etl.mock.validation.MockFailureCollector;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -45,28 +48,30 @@ public class UnionSplitterTest {
                                           Schema.mapOf(Schema.of(Schema.Type.STRING), Schema.of(Schema.Type.STRING)))),
       Schema.Field.of("d", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
 
-    try {
-      UnionSplitter.getOutputSchemas(inputSchema, "a", true);
-      Assert.fail();
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
+    MockFailureCollector collector1 = new MockFailureCollector();
+    UnionSplitter.getOutputSchemas(inputSchema, "a", true, collector1);
+    Assert.assertEquals(1, collector1.getValidationFailures().size());
+    Assert.assertEquals(ImmutableList.of(
+        new Cause().addAttribute(CauseAttributes.INPUT_SCHEMA_FIELD, "a")),
+        collector1.getValidationFailures().get(0).getCauses());
 
-    try {
-      UnionSplitter.getOutputSchemas(inputSchema, "b", true);
-      Assert.fail();
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
+    MockFailureCollector collector2 = new MockFailureCollector();
+    UnionSplitter.getOutputSchemas(inputSchema, "b", true, collector2);
+    Assert.assertEquals(1, collector2.getValidationFailures().size());
+    Assert.assertEquals(ImmutableList.of(
+        new Cause().addAttribute(CauseAttributes.INPUT_SCHEMA_FIELD, "b")),
+        collector2.getValidationFailures().get(0).getCauses());
 
-    try {
-      UnionSplitter.getOutputSchemas(inputSchema, "c", true);
-      Assert.fail();
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
+    MockFailureCollector collector3 = new MockFailureCollector();
+    UnionSplitter.getOutputSchemas(inputSchema, "c", true, collector3);
+    Assert.assertEquals(1, collector3.getValidationFailures().size());
+    Assert.assertEquals(ImmutableList.of(
+        new Cause().addAttribute(CauseAttributes.INPUT_SCHEMA_FIELD, "c")),
+        collector3.getValidationFailures().get(0).getCauses());
 
-    UnionSplitter.getOutputSchemas(inputSchema, "d", true);
+    MockFailureCollector collector4 = new MockFailureCollector();
+    UnionSplitter.getOutputSchemas(inputSchema, "d", true, collector4);
+    Assert.assertEquals(0, collector4.getValidationFailures().size());
   }
 
   @Test
@@ -124,7 +129,7 @@ public class UnionSplitterTest {
     expected.put("rec2", Schema.recordOf("union.rec2",
                                          Schema.Field.of("a", Schema.of(Schema.Type.LONG)),
                                          Schema.Field.of("b", rec2Schema)));
-    Map<String, Schema> actual = UnionSplitter.getOutputSchemas(inputSchema, "b", true);
+    Map<String, Schema> actual = UnionSplitter.getOutputSchemas(inputSchema, "b", true, new MockFailureCollector());
     Assert.assertEquals(expected, actual);
 
     // test without schema modification
@@ -139,7 +144,7 @@ public class UnionSplitterTest {
     expected.put("string", inputSchema);
     expected.put("rec1", inputSchema);
     expected.put("rec2", inputSchema);
-    actual = UnionSplitter.getOutputSchemas(inputSchema, "b", false);
+    actual = UnionSplitter.getOutputSchemas(inputSchema, "b", false, new MockFailureCollector());
     Assert.assertEquals(expected, actual);
   }
 

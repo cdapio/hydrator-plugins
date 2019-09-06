@@ -24,6 +24,7 @@ import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.MultiOutputEmitter;
 import io.cdap.cdap.etl.api.MultiOutputPipelineConfigurer;
 import io.cdap.cdap.etl.api.MultiOutputStageConfigurer;
@@ -60,7 +61,8 @@ public class NullFieldSplitter extends SplitterTransform<StructuredRecord, Struc
     MultiOutputStageConfigurer stageConfigurer = multiOutputPipelineConfigurer.getMultiOutputStageConfigurer();
     Schema inputSchema = stageConfigurer.getInputSchema();
     if (inputSchema != null && !conf.containsMacro("field")) {
-      stageConfigurer.setOutputSchemas(getOutputSchemas(inputSchema, conf));
+      stageConfigurer.setOutputSchemas(getOutputSchemas(inputSchema, conf,
+          multiOutputPipelineConfigurer.getMultiOutputStageConfigurer().getFailureCollector()));
     }
   }
 
@@ -97,10 +99,12 @@ public class NullFieldSplitter extends SplitterTransform<StructuredRecord, Struc
     }
   }
 
-  private static Map<String, Schema> getOutputSchemas(Schema inputSchema, Conf conf) {
+  private static Map<String, Schema> getOutputSchemas(Schema inputSchema, Conf conf, FailureCollector collector) {
     Map<String, Schema> outputs = new HashMap<>();
     if (inputSchema.getField(conf.field) == null) {
-      throw new IllegalArgumentException("Field " + conf.field + " does not exist in input schema.");
+      collector.addFailure("Field '" + conf.field + "' does not exist in the input schema",
+          "Please ensure that all specified fields exist in the input schema.")
+          .withConfigProperty("field");
     }
 
     outputs.put(NULL_PORT, inputSchema);

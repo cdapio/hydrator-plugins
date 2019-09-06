@@ -23,6 +23,7 @@ import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.InvalidEntry;
 import io.cdap.cdap.etl.api.MultiOutputEmitter;
 import io.cdap.cdap.etl.api.MultiOutputPipelineConfigurer;
@@ -56,12 +57,13 @@ public class UnionSplitter extends SplitterTransform<StructuredRecord, Structure
   @Override
   public void configurePipeline(MultiOutputPipelineConfigurer multiOutputPipelineConfigurer) {
     MultiOutputStageConfigurer stageConfigurer = multiOutputPipelineConfigurer.getMultiOutputStageConfigurer();
+    FailureCollector collector = stageConfigurer.getFailureCollector();
     Schema inputSchema = stageConfigurer.getInputSchema();
     if (inputSchema == null) {
       return;
     }
 
-    stageConfigurer.setOutputSchemas(getOutputSchemas(inputSchema, conf.unionField, conf.modifySchema));
+    stageConfigurer.setOutputSchemas(getOutputSchemas(inputSchema, conf.unionField, conf.modifySchema, collector));
   }
 
   @Override
@@ -165,7 +167,8 @@ public class UnionSplitter extends SplitterTransform<StructuredRecord, Structure
   }
 
   @VisibleForTesting
-  static Map<String, Schema> getOutputSchemas(Schema inputSchema, String unionField, boolean modifySchema) {
+  static Map<String, Schema> getOutputSchemas(
+      Schema inputSchema, String unionField, boolean modifySchema, FailureCollector collector) {
     Map<String, Schema> outputPortSchemas = new HashMap<>();
     if (unionField == null) {
       outputPortSchemas.put(inputSchema.getRecordName(), inputSchema);
@@ -174,13 +177,14 @@ public class UnionSplitter extends SplitterTransform<StructuredRecord, Structure
 
     Schema.Field unionSchemaField = inputSchema.getField(unionField);
     if (unionSchemaField == null) {
-      throw new IllegalArgumentException(
-        String.format("Field '%s' does not exist in the input schema.", unionField));
+      collector.addFailure("Field '" + unionField + "' does not exist in the input schema.",
+          "Please ensure that the field exists in the input schema.").withConfigProperty("unionField");
+      throw collector.getOrThrowException();
     }
     Schema unionSchema = unionSchemaField.getSchema();
     if (unionSchema.getType() != Schema.Type.UNION) {
-      throw new IllegalArgumentException(
-        String.format("Field '%s' is not of type union, but is of type '%s'", unionField, unionSchema.getType()));
+      collector.addFailure("Field '" + unionField + "' is of invalid type " + unionSchema.getType() + ".",
+          "Please ensure that the field is of type union.").withConfigProperty("unionField");
     }
 
     int numFields = inputSchema.getFields().size();
@@ -204,7 +208,9 @@ public class UnionSplitter extends SplitterTransform<StructuredRecord, Structure
         case MAP:
         case ARRAY:
         case UNION:
-          throw new IllegalArgumentException(String.format("A type of '%s' within a union is not supported.", type));
+          collector.addFailure("A type of " + type + " within a union is not supported.",
+              "Please use a type that is not an enum, a map, an array, or a union.")
+              .withInputSchemaField(inputSchema.getField(unionField).getName(), null);
       }
 
       String port = type == Schema.Type.RECORD ? schema.getRecordName() : type.name().toLowerCase();

@@ -27,6 +27,7 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
@@ -38,6 +39,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
+import scala.util.Failure;
 
 /**
  * Transform parses a JSON Object into {@link StructuredRecord}.
@@ -69,19 +71,18 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-    try {
-      Schema outputSchema = Schema.parseJson(config.schema);
-      pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
-      fields = outputSchema.getFields();
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Output Schema specified is not a valid JSON. Please check the Schema JSON.");
-    }
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    Schema outputSchema = getSchema(collector);
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
+    fields = outputSchema.getFields();
 
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
     if (inputSchema != null && inputSchema.getField(config.field) == null) {
-      throw new IllegalArgumentException(String.format("Field %s is not present in input schema", config.field));
+      collector.addFailure("Field " + config.field + " is not present in the input schema",
+          "Please ensure that the input field is present in the input schema.")
+          .withConfigProperty("field");
     }
-    extractMappings();
+    extractMappings(collector);
   }
 
   // If there is no config mapping, then we attempt to directly map output schema fields
@@ -89,7 +90,7 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
   // populate the output schema fields.
   //
   // E.g. expensive:$.expensive maps the input Json path from root, field expensive to expensive.
-  private void extractMappings() {
+  private void extractMappings(FailureCollector collector) {
     if (config.mapping == null || config.mapping.isEmpty()) {
       isSimple = true;
     } else {
@@ -100,11 +101,14 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
         String field = mapParts[0];
         String expression = mapParts[1];
         if (field.isEmpty() && !expression.isEmpty()) {
-          throw new IllegalArgumentException("JSON path expression '" + expression +
-                  "' has no output field specified.");
+          collector.addFailure("JSON path expression '" + expression + "' has no output field specified.",
+              "Please specify an output field for the JSON path expression.")
+              .withConfigProperty("mapping");
         }
         if (expression.isEmpty() && !field.isEmpty()) {
-          throw new IllegalArgumentException("Field '" + field + "' doesn't have JSON path expression.");
+          collector.addFailure("Field '" + field + "' doesn't have a JSON path expression.",
+              "Please specify a JSON path expression.")
+              .withConfigProperty("mapping");
         }
         mapping.put(field, expression);
       }
@@ -114,13 +118,10 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
-    try {
-      outSchema = Schema.parseJson(config.schema);
-      fields = outSchema.getFields();
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Output Schema specified is not a valid JSON. Please check the Schema JSON.");
-    }
-    extractMappings();
+    FailureCollector collector = context.getFailureCollector();
+    outSchema = getSchema(collector);
+    fields = outSchema.getFields();
+    extractMappings(collector);
   }
 
   @Override
@@ -164,6 +165,16 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
       }
     }
     emitter.emit(builder.build());
+  }
+
+  private Schema getSchema(FailureCollector collector) {
+    try {
+      return Schema.parseJson(config.schema);
+    } catch (IOException e) {
+      collector.addFailure("Format of schema specified is not a valid JSON.",
+          "Please check the schema JSON.").withConfigProperty("schema");
+      throw collector.getOrThrowException();
+    }
   }
 
   /**

@@ -21,6 +21,7 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
+import io.cdap.cdap.etl.mock.transform.MockTransformContext;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -41,7 +42,7 @@ public class JSONFormatterTest {
   public void testJSONFormatter() throws Exception {
     JSONFormatter.Config config = new JSONFormatter.Config(OUTPUT1.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new JSONFormatter(config);
-    transform.initialize(null);
+    transform.initialize(new MockTransformContext());
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(StructuredRecord.builder(INPUT1)
                           .set("a", "1")
@@ -55,7 +56,7 @@ public class JSONFormatterTest {
   }
 
   @Test
-  public void testSchemaValidation() throws Exception {
+  public void testSchemaValidation() {
     JSONFormatter.Config config = new JSONFormatter.Config(OUTPUT1.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new JSONFormatter(config);
 
