@@ -39,7 +39,7 @@ public class RegexPathFilter extends Configured implements PathFilter {
   @Override
   public boolean accept(Path path) {
     try {
-      FileSystem fileSystem = path.getFileSystem(new Configuration());
+      FileSystem fileSystem = path.getFileSystem(getConf());
       if (fileSystem.isDirectory(path)) {
         return true;
       } else if (fileSystem.isFile(path)) {
