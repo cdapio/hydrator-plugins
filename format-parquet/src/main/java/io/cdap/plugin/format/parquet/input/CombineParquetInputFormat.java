@@ -20,6 +20,7 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.CombineFileInputFormat;
@@ -28,11 +29,23 @@ import org.apache.hadoop.mapreduce.lib.input.CombineFileRecordReaderWrapper;
 import org.apache.hadoop.mapreduce.lib.input.CombineFileSplit;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Combined input format that tracks which file each parquet record was read from.
  */
 public class CombineParquetInputFormat extends CombineFileInputFormat<NullWritable, StructuredRecord> {
+
+  @Override
+  public List<InputSplit> getSplits(JobContext job) throws IOException {
+    ClassLoader cl = job.getConfiguration().getClassLoader();
+    job.getConfiguration().setClassLoader(getClass().getClassLoader());
+    try {
+      return super.getSplits(job);
+    } finally {
+      job.getConfiguration().setClassLoader(cl);
+    }
+  }
 
   /**
    * Creates a RecordReader that delegates to some other RecordReader for each path in the input split.

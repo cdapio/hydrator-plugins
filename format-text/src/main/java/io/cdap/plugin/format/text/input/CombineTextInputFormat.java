@@ -56,7 +56,14 @@ public class CombineTextInputFormat extends CombineFileInputFormat<NullWritable,
    */
   @Override
   public List<InputSplit> getSplits(JobContext job) throws IOException {
-    List<InputSplit> fileSplits = super.getSplits(job);
+    ClassLoader cl = job.getConfiguration().getClassLoader();
+    job.getConfiguration().setClassLoader(getClass().getClassLoader());
+    List<InputSplit> fileSplits;
+    try {
+      fileSplits = super.getSplits(job);
+    } finally {
+      job.getConfiguration().setClassLoader(cl);
+    }
     Configuration hConf = job.getConfiguration();
 
     boolean shouldCopyHeader = hConf.getBoolean(PathTrackingInputFormat.COPY_HEADER, false);
