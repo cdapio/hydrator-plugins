@@ -81,7 +81,7 @@ public class EmailAction extends PostAction {
     private String password;
 
     @Nullable
-    @Description("The email protocol to use. smtp, smtps, and tls are supported. Defaults to SMTP.")
+    @Description("The email protocol to use. smtp, smtps, and tls are supported. Defaults to smtp.")
     @Macro
     private String protocol;
 
