@@ -25,17 +25,30 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 import java.io.IOException;
+import java.util.List;
 import javax.annotation.Nullable;
 
 /**
  * Blob input format
  */
 public class PathTrackingBlobInputFormat extends PathTrackingInputFormat {
+
+  @Override
+  public List<InputSplit> getSplits(JobContext job) throws IOException {
+    ClassLoader cl = job.getConfiguration().getClassLoader();
+    job.getConfiguration().setClassLoader(getClass().getClassLoader());
+    try {
+      return super.getSplits(job);
+    } finally {
+      job.getConfiguration().setClassLoader(cl);
+    }
+  }
 
   @Override
   protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(FileSplit split,
