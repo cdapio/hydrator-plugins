@@ -17,10 +17,10 @@
 language: java
 
 jdk:
-  - oraclejdk8
+  - openjdk8
 
-# Do not exceed Travis memory capacity
-before_install: echo "MAVEN_OPTS='-Xmx3g -XX:MaxPermSize=256m'" > ~/.mavenrc
+env:
+  - MAVEN_OPTS="-Xmx4096m" HADOOP_VERSION="2.4.1"
 
 script: mvn -U clean test
 
