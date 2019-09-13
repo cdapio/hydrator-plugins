@@ -73,6 +73,24 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
         Iterator<Schema.Field> fields = schema.getFields().iterator();
 
         for (String part : Splitter.on(delimiter).split(delimitedString)) {
+          if (!fields.hasNext()) {
+            int numDataFields = delimitedString.split(delimiter).length;
+            int numSchemaFields = schema.getFields().size();
+            String message = String.format("Found a row with %d fields when the schema only contains %d field%s.",
+                                           numDataFields, numSchemaFields, numSchemaFields == 1 ? "" : "s");
+            // special error handling for the case when the user most likely set the schema to delimited
+            // when they meant to use 'text'.
+            Schema.Field bodyField = schema.getField("body");
+            if (bodyField != null) {
+              Schema bodySchema = bodyField.getSchema();
+              bodySchema = bodySchema.isNullable() ? bodySchema.getNonNullable() : bodySchema;
+              if (bodySchema.getType() == Schema.Type.STRING) {
+                throw new IOException(message + " Did you mean to use the 'text' format?");
+              }
+            }
+            throw new IOException(message + " Check that the schema contains the right number of fields.");
+          }
+
           if (part.isEmpty()) {
             builder.set(fields.next().getName(), null);
           } else {
