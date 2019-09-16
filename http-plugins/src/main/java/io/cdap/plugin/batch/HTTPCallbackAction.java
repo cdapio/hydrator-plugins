@@ -23,6 +23,7 @@ import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchActionContext;
 import io.cdap.cdap.etl.api.batch.PostAction;
@@ -58,13 +59,16 @@ public class HTTPCallbackAction extends PostAction {
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    conf.validate();
+    conf.validate(pipelineConfigurer.getStageConfigurer().getFailureCollector());
   }
 
   @SuppressWarnings("ConstantConditions")
   @Override
   public void run(BatchActionContext batchActionContext) throws Exception {
-    conf.validate();
+    FailureCollector collector = batchActionContext.getFailureCollector();
+    conf.validate(collector);
+    collector.getOrThrowException();
+
     if (!conf.shouldRun(batchActionContext)) {
       return;
     }
@@ -115,6 +119,8 @@ public class HTTPCallbackAction extends PostAction {
   public static final class HttpRequestConf extends HTTPConfig {
     private static final Set<String> METHODS = ImmutableSet.of(HttpMethod.GET, HttpMethod.HEAD, HttpMethod.OPTIONS,
                                                                HttpMethod.PUT, HttpMethod.POST, HttpMethod.DELETE);
+    public static final String NAME_METHOD = "method";
+    public static final String NAME_NUM_RETRIES = "numRetries";
 
     @Nullable
     @Description("When to run the action. Must be 'completion', 'success', or 'failure'. Defaults to 'completion'. " +
@@ -125,6 +131,7 @@ public class HTTPCallbackAction extends PostAction {
     @Macro
     public String runCondition;
 
+    @Name(NAME_METHOD)
     @Description("The http request method.")
     @Macro
     private String method;
@@ -155,6 +162,20 @@ public class HTTPCallbackAction extends PostAction {
       if (!containsMacro("numRetries") && numRetries < 0) {
         throw new IllegalArgumentException(String.format(
           "Invalid numRetries %d. Retries cannot be a negative number.", numRetries));
+      }
+    }
+
+    public void validate(FailureCollector collector) {
+      super.validate(collector);
+      if (!containsMacro(NAME_METHOD) && !METHODS.contains(method.toUpperCase())) {
+        collector.addFailure(String.format("Invalid request method %s.", method),
+                             String.format("Supported methods are : %s", Joiner.on(',').join(METHODS)))
+          .withConfigProperty(NAME_METHOD);
+      }
+      if (!containsMacro(NAME_NUM_RETRIES) && numRetries < 0) {
+        collector.addFailure(String.format("Invalid numRetries %d.", numRetries),
+                             "Retries cannot be a negative number.")
+          .withConfigProperty(NAME_NUM_RETRIES);
       }
     }
 

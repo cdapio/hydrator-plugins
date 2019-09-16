@@ -18,6 +18,7 @@ package io.cdap.plugin.spark;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 import io.cdap.cdap.api.annotation.Description;
@@ -28,7 +29,9 @@ import io.cdap.cdap.api.data.format.FormatSpecification;
 import io.cdap.cdap.api.data.format.RecordFormat;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.streaming.StreamingContext;
 import io.cdap.cdap.etl.api.streaming.StreamingSource;
 import io.cdap.cdap.format.RecordFormats;
@@ -66,17 +69,22 @@ public class FileStreamingSource extends ReferenceStreamingSource<StructuredReco
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-    conf.validate();
-    pipelineConfigurer.getStageConfigurer().setOutputSchema(conf.getSchema());
+    StageConfigurer configurer = pipelineConfigurer.getStageConfigurer();
+    FailureCollector collector = configurer.getFailureCollector();
+    conf.validate(collector);
+    Schema schema = conf.getSchema(collector);
+    configurer.setOutputSchema(schema);
   }
 
   @Override
   public JavaDStream<StructuredRecord> getStream(StreamingContext context) throws Exception {
-    conf.validate();
+    FailureCollector collector = context.getFailureCollector();
+    conf.validate(collector);
+    conf.getSchema(collector);
+    collector.getOrThrowException();
+
     context.registerLineage(conf.referenceName);
-
     JavaStreamingContext jsc = context.getSparkStreamingContext();
-
     Function<Path, Boolean> filter =
       conf.extensions == null ? new NoFilter() : new ExtensionFilter(conf.getExtensions());
 
@@ -152,6 +160,8 @@ public class FileStreamingSource extends ReferenceStreamingSource<StructuredReco
    */
   public static class Conf extends ReferencePluginConfig {
     private static final Set<String> FORMATS = ImmutableSet.of("text", "csv", "tsv", "clf", "grok", "syslog");
+    private static final String NAME_EXTENSIONS = "extensions";
+    private static final String NAME_SCHEMA = "schema";
 
     @Macro
     @Description("The format of the source files. Must be text, csv, tsv, clf, grok, or syslog. Defaults to text.")
@@ -185,20 +195,28 @@ public class FileStreamingSource extends ReferenceStreamingSource<StructuredReco
       this.extensions = null;
     }
 
-    private void validate() {
+    private void validate(FailureCollector collector) {
       if (!containsMacro(format) && !FORMATS.contains(format)) {
-        throw new IllegalArgumentException(
-          String.format("Invalid format '%s'. Must be one of %s", format, Joiner.on(',').join(FORMATS)));
+        collector.addFailure(String.format("Invalid format '%s'.", format),
+                             String.format("Supported formats are: %s", Joiner.on(',').join(FORMATS)))
+          .withConfigProperty(NAME_EXTENSIONS);
       }
-      getSchema();
     }
 
-    private Schema getSchema() {
+    public Schema getSchema(FailureCollector collector) {
+      if (Strings.isNullOrEmpty(schema)) {
+        collector.addFailure("Schema must be specified.", null).withConfigProperty(NAME_SCHEMA);
+        throw collector.getOrThrowException();
+      }
+
       try {
         return Schema.parseJson(schema);
       } catch (IOException e) {
-        throw new IllegalArgumentException("Unable to parse schema. Reason: " + e.getMessage());
+        collector.addFailure("Invalid schema: " + e.getMessage(), null).withConfigProperty(NAME_SCHEMA);
       }
+      // if there was an error that was added, it will throw an exception, otherwise, this statement
+      // will not be executed
+      throw collector.getOrThrowException();
     }
 
     private Set<String> getExtensions() {
@@ -212,5 +230,4 @@ public class FileStreamingSource extends ReferenceStreamingSource<StructuredReco
       return extensionsSet;
     }
   }
-
 }

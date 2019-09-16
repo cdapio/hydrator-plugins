@@ -20,6 +20,8 @@ import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.etl.api.FailureCollector;
+import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.streaming.StreamingContext;
 import io.cdap.cdap.etl.api.streaming.StreamingSource;
 import io.cdap.plugin.common.http.HTTPPollConfig;
@@ -47,7 +49,18 @@ public class HTTPPollerSource extends StreamingSource<StructuredRecord> {
   }
 
   @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    conf.validate(collector);
+  }
+
+  @Override
   public JavaDStream<StructuredRecord> getStream(StreamingContext streamingContext) throws Exception {
+    FailureCollector collector = streamingContext.getFailureCollector();
+    conf.validate(collector);
+    collector.getOrThrowException();
+
     return streamingContext.getSparkStreamingContext()
       .receiverStream(new Receiver<StructuredRecord>(StorageLevel.MEMORY_ONLY()) {
 
@@ -66,6 +79,7 @@ public class HTTPPollerSource extends StreamingSource<StructuredRecord> {
               while (!isStopped()) {
 
                 try {
+
                   store(httpRequestor.get());
                 } catch (Exception e) {
                   LOG.error("Error getting content from {}.", conf.getUrl(), e);

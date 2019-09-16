@@ -19,6 +19,7 @@ package io.cdap.plugin.common.http;
 import com.google.common.base.Charsets;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Name;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.plugin.common.Constants;
 
 import java.nio.charset.Charset;
@@ -29,17 +30,24 @@ import javax.annotation.Nullable;
  * Config class for HTTP Poll plugin.
  */
 public class HTTPPollConfig extends HTTPConfig {
+  private static final String NAME_INTERVAL = "interval";
+  private static final String NAME_READ_TIMEOUT = "readTimeout";
+  private static final String NAME_CHARSET = "charset";
+
   @Name(Constants.Reference.REFERENCE_NAME)
   @Description(Constants.Reference.REFERENCE_NAME_DESCRIPTION)
   public String referenceName;
 
+  @Name(NAME_INTERVAL)
   @Description("The amount of time to wait between each poll in seconds.")
   private long interval;
 
+  @Name(NAME_READ_TIMEOUT)
   @Description("The charset used to decode the response. Defaults to UTF-8.")
   @Nullable
   private String charset;
 
+  @Name(NAME_CHARSET)
   @Description("Sets the read timeout in milliseconds. Set to 0 for infinite. Default is 60000 (1 minute).")
   @Nullable
   private Integer readTimeout;
@@ -87,6 +95,24 @@ public class HTTPPollConfig extends HTTPConfig {
       Charset.forName(charset);
     } catch (UnsupportedCharsetException e) {
       throw new IllegalArgumentException(String.format("Invalid charset %s.", charset));
+    }
+  }
+
+  public void validate(FailureCollector collector) {
+    if (!containsMacro(NAME_INTERVAL) && interval <= 0) {
+      collector.addFailure(String.format("Invalid interval %d.", interval),
+                           "Interval must be greater than 0.").withConfigProperty(NAME_INTERVAL);
+    }
+    if (readTimeout < 0) {
+      collector.addFailure(String.format("Invalid readTimeout %d.", readTimeout),
+                           "Timeout must be 0 or a positive number.").withConfigProperty(NAME_READ_TIMEOUT);
+    }
+    try {
+      Charset.forName(charset);
+    } catch (UnsupportedCharsetException e) {
+      collector.addFailure(String.format("Invalid charset %s.", charset),
+                           "Supported character sets are : ISO-8859-1, US-ASCII, UTF-8, UTF-16, UTF-16BE, UTF-16LE")
+        .withConfigProperty(NAME_CHARSET);
     }
   }
 }
