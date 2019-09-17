@@ -24,6 +24,7 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.InvalidEntry;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.Transform;
@@ -98,21 +99,26 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
+    // Get failure collector for updated validation API
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
     if (!S3_LOG.equals(config.logFormat) && !CLF_LOG.equals(config.logFormat) &&
       !CLOUDFRONT_LOG.equals(config.logFormat)) {
       LOG.error("Log format not currently supported.");
-      throw new IllegalStateException("Unsupported log format: " + config.logFormat);
+      collector.addFailure(String.format("Unsupported log format: '%s'", config.logFormat),
+          "Log format must be one of the following: S3, CLF, or CLOUDFRONT.").withConfigProperty("logFormat");
     }
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
     if (inputSchema != null) {
       if (!inputSchema.getType().equals(Schema.Type.RECORD)) {
-        throw new IllegalArgumentException("Only Input Schema of type Schema.Type.RECORD is supported");
+        collector.addFailure("Only Input Schema of type Schema.Type.RECORD is supported",
+            "Input Schema type should be of type Schema.Type.RECORD");
       }
       Schema.Field inputNameSchema = inputSchema.getField(config.inputName);
       if (inputNameSchema == null) {
-        throw new IllegalArgumentException("Field " + config.inputName + " is not present in the input schema");
+        collector.addFailure(String.format("Field '%s' is not present in the input schema", config.inputName),
+            String.format("The field '%s' must be provided", config.inputName)).withConfigProperty("inputName").withInputSchemaField(config.inputName);
       } else {
-        validateInputSchemaType(inputNameSchema.getSchema().getType());
+        validateInputSchemaType(inputNameSchema.getSchema().getType(), collector);
       }
     }
     pipelineConfigurer.getStageConfigurer().setOutputSchema(LOG_SCHEMA);
@@ -196,7 +202,7 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
     Schema.Type inputType = inputSchema.getType();
 
     try {
-      validateInputSchemaType(inputType);
+      validateInputSchemaType(inputType, getContext().getFailureCollector());
     } catch (Exception e) {
       LOG.error(e.getMessage());
     }
@@ -216,12 +222,12 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
     }
   }
 
-  private void validateInputSchemaType(Schema.Type inputSchemaType) {
+  private void validateInputSchemaType(Schema.Type inputSchemaType, FailureCollector collector) {
     if (!Schema.Type.STRING.equals(inputSchemaType) && !Schema.Type.BYTES.equals(inputSchemaType)) {
-      throw new IllegalArgumentException(String.format(
-        "Unsupported inputType in schema, only Schema.Type.BYTES and Schema.Type.STRING are supported " +
-          "InputType: %s", inputSchemaType.toString()));
-
+      collector.addFailure(
+          String.format("Unsupported inputType in schema, only Schema.Type.BYTES and Schema.Type.STRING are supported InputType: %s", inputSchemaType.toString()),
+          "Provided inputType must be of type Schema.Type.BYTES or Schema.Type.STRING").withInputSchemaField(config.inputName);
+      collector.getOrThrowException();
     }
   }
 
