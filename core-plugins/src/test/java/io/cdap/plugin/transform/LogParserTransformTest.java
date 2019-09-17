@@ -23,6 +23,7 @@ import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.InvalidEntry;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.validation.CauseAttributes;
+import io.cdap.cdap.etl.api.validation.ValidationException;
 import io.cdap.cdap.etl.api.validation.ValidationFailure.Cause;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
@@ -62,7 +63,6 @@ public class LogParserTransformTest {
     Schema.Field.of("httpStatus", Schema.of(Schema.Type.INT)),
     Schema.Field.of("ts", Schema.of(Schema.Type.LONG)));
 
-  private static final String validationExceptionMessage = "Errors were encountered during validation.";
   private static final String stage = "stage";
   private static final String mockStage = "mockstage";
 
@@ -108,20 +108,16 @@ public class LogParserTransformTest {
       // "body" is config.inputName and that should be of only type String or Bytes
       Schema.Field.of("body", Schema.of(Schema.Type.INT)));
     MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(inputSchemaString, Collections.emptyMap());
-    String caughtException = "";
     try {
       S3_TRANSFORM.configurePipeline(mockConfigurer);
-    } catch (Exception e) {
-      caughtException = e.getMessage();
+    } catch (ValidationException e) {
+      Assert.assertEquals(1, e.getFailures().size());
+      Assert.assertEquals(1, e.getFailures().get(0).getCauses().size());
+      Cause expectedCause = new Cause();
+      expectedCause.addAttribute(CauseAttributes.INPUT_SCHEMA_FIELD, "body");
+      expectedCause.addAttribute(stage, mockStage);
+      Assert.assertEquals(expectedCause, e.getFailures().get(0).getCauses().get(0));
     }
-    Assert.assertEquals(validationExceptionMessage, caughtException);
-    FailureCollector collector = mockConfigurer.getStageConfigurer().getFailureCollector();
-    Assert.assertEquals(1, collector.getValidationFailures().size());
-    Assert.assertEquals(1, collector.getValidationFailures().get(0).getCauses().size());
-    Cause expectedCause = new Cause();
-    expectedCause.addAttribute(CauseAttributes.INPUT_SCHEMA_FIELD, "body");
-    expectedCause.addAttribute(stage, mockStage);
-    Assert.assertEquals(expectedCause, collector.getValidationFailures().get(0).getCauses().get(0));
   }
 
   @Test
@@ -137,7 +133,7 @@ public class LogParserTransformTest {
     Assert.assertEquals(1, collector.getValidationFailures().size());
     Assert.assertEquals(1, collector.getValidationFailures().get(0).getCauses().size());
     Cause expectedCause = new Cause();
-    expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, "inputName");
+    expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, LogParserTransform.LogParserConfig.INPUT_NAME);
     Assert.assertEquals(expectedCause, collector.getValidationFailures().get(0).getCauses().get(0));
   }
 

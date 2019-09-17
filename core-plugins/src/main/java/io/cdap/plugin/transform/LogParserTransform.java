@@ -58,8 +58,6 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
     Schema.Field.of("httpStatus", Schema.of(Schema.Type.INT)),
     Schema.Field.of("ts", Schema.of(Schema.Type.LONG))
   );
-  private static final String LOG_FORMAT = "logFormat";
-  private static final String INPUT_NAME = "inputName";
   private static final String LOG_FORMAT_DESCRIPTION = "Log format to parse. Currently supports S3, " +
     "CLF, and Cloudfront formats.";
   private static final String INPUT_NAME_DESCRIPTION = "Name of the field in the input schema which encodes the " +
@@ -101,33 +99,28 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-    // Get failure collector for updated validation API
     FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
     if (!S3_LOG.equals(config.logFormat) && !CLF_LOG.equals(config.logFormat) &&
       !CLOUDFRONT_LOG.equals(config.logFormat)) {
       LOG.error("Log format not currently supported.");
       collector.addFailure(String.format("Format '%s' is not supported.", config.logFormat),
-          String.format("Supported formats are: %s, %s, and %s.", S3_LOG, CLF_LOG, CLOUDFRONT_LOG))
-          .withConfigProperty(LOG_FORMAT);
+                           String.format("Supported formats are: %s, %s, and %s.", S3_LOG, CLF_LOG, CLOUDFRONT_LOG))
+        .withConfigProperty(LogParserConfig.LOG_FORMAT);
     }
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
     if (inputSchema != null) {
       if (!inputSchema.getType().equals(Schema.Type.RECORD)) {
         collector.addFailure("Input schema must be of type record.", null);
+      } else if (inputSchema.getField(config.inputName) == null) {
+        collector.addFailure(
+          String.format("Field '%s' must be present in the input schema.", config.inputName), null)
+          .withConfigProperty(LogParserConfig.INPUT_NAME);
       } else {
-        Schema.Field inputNameSchema = inputSchema.getField(config.inputName);
-        if (inputNameSchema == null) {
-          collector.addFailure(
-              String.format("Field '%s' must be present in the input schema.", config.inputName),
-              null)
-              .withConfigProperty(INPUT_NAME);
-        } else {
-          Schema schema = inputNameSchema.getSchema();
-          if (schema.isNullable()) {
-            schema = schema.getNonNullable();
-          }
-          validateInputSchemaType(schema, config.inputName, collector);
+        Schema schema = inputSchema.getField(config.inputName).getSchema();
+        if (schema.isNullable()) {
+          schema = schema.getNonNullable();
         }
+        validateInputSchemaType(schema, config.inputName, collector);
       }
     }
     pipelineConfigurer.getStageConfigurer().setOutputSchema(LOG_SCHEMA);
@@ -242,10 +235,8 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
     Schema.Type inputSchemaType = inputSchema.getType();
     if (!Schema.Type.STRING.equals(inputSchemaType) && !Schema.Type.BYTES.equals(inputSchemaType)) {
       collector.addFailure(
-          String.format("Field '%s' of unsupported type '%s'.", inputName, inputSchema.getDisplayName()),
-          "Ensure it is of type bytes or string.").withInputSchemaField(inputName);
-
-      collector.getOrThrowException();
+        String.format("Field '%s' is of unsupported type '%s'.", inputName, inputSchema.getDisplayName()),
+        "Ensure it is of type bytes or string.").withInputSchemaField(inputName);
     }
   }
 
@@ -259,8 +250,8 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
     Schema.Type inputSchemaType = inputSchema.getType();
     if (!Schema.Type.STRING.equals(inputSchemaType) && !Schema.Type.BYTES.equals(inputSchemaType)) {
       throw new IllegalArgumentException(String.format(
-          "Unsupported inputType in schema, only Schema.Type.BYTES and Schema.Type.STRING are supported " +
-              "InputType: %s", inputSchemaType.toString()));
+        "Unsupported inputType in schema, only Schema.Type.BYTES and Schema.Type.STRING are supported " +
+          "InputType: %s", inputSchemaType.toString()));
     }
   }
 
@@ -310,6 +301,9 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
    * Config class for LogParserTransform
    */
   public static class LogParserConfig extends PluginConfig {
+    public static final String LOG_FORMAT = "logFormat";
+    public static final String INPUT_NAME = "inputName";
+
     @Name("logFormat")
     @Description(LOG_FORMAT_DESCRIPTION)
     private String logFormat;
