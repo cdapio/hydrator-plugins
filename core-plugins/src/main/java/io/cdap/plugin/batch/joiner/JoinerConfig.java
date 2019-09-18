@@ -39,6 +39,9 @@ import javax.annotation.Nullable;
  * Config for join plugin.
  */
 public class JoinerConfig extends PluginConfig {
+  public static final String SELECT_FIELDS = "selectedFields";
+  public static final String REQUIRED_INPUTS = "requiredInputs";
+  public static final String JOIN_KEYS = "joinKeys";
   private static final String NUM_PARTITIONS_DESC = "Number of partitions to use when joining. " +
     "If not specified, the execution framework will decide how many to use.";
   private static final String JOIN_KEY_DESC = "List of join keys to perform join operation. The list is " +
@@ -57,7 +60,6 @@ public class JoinerConfig extends PluginConfig {
     " Required input stages decide the type of the join. If all the input stages are present in required inputs, " +
     "inner join will be performed. Otherwise, outer join will be performed considering non-required inputs as " +
     "optional.";
-
 
   @Nullable
   @Description(NUM_PARTITIONS_DESC)

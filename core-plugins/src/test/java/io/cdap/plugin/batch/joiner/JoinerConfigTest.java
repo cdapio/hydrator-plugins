@@ -22,6 +22,11 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Table;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.FailureCollector;
+import io.cdap.cdap.etl.api.validation.CauseAttributes;
+import io.cdap.cdap.etl.api.validation.ValidationException;
+import io.cdap.cdap.etl.api.validation.ValidationFailure.Cause;
+import io.cdap.cdap.etl.mock.validation.MockFailureCollector;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -59,6 +64,9 @@ public class JoinerConfigTest {
   private static final String selectedFields = "film.film_id, film.film_name, " +
     "filmActor.actor_name as renamed_actor, filmCategory.category_name as renamed_category";
 
+  private static final String STAGE = "stage";
+  private static final String MOCK_STAGE = "mockstage";
+
   @Test
   public void testJoinerConfig() {
     JoinerConfig config = new JoinerConfig("film.film_id=filmActor.film_id=filmCategory.film_id&" +
@@ -68,9 +76,11 @@ public class JoinerConfigTest {
     Joiner joiner = new Joiner(config);
     Map<String, Schema> inputSchemas = ImmutableMap.of("film", filmSchema, "filmActor", filmActorSchema,
                                                        "filmCategory", filmCategorySchema);
-    joiner.init(inputSchemas);
-    Schema actualOutputSchema = joiner.getOutputSchema(inputSchemas);
+    FailureCollector collector = new MockFailureCollector();
+    joiner.init(inputSchemas, collector);
+    Schema actualOutputSchema = joiner.getOutputSchema(inputSchemas, collector);
     Assert.assertEquals(outputSchema, actualOutputSchema);
+    Assert.assertEquals(0, collector.getValidationFailures().size());
   }
 
   @Test
@@ -129,9 +139,11 @@ public class JoinerConfigTest {
     Joiner joiner = new Joiner(config);
     Map<String, Schema> inputSchemas = ImmutableMap.of("film", filmSchema, "filmActor", filmActorSchema,
                                                        "filmCategory", filmCategorySchema);
-    joiner.init(inputSchemas);
-    Schema actualOutputSchema = joiner.getOutputSchema(inputSchemas);
+    FailureCollector collector = new MockFailureCollector();
+    joiner.init(inputSchemas, collector);
+    Schema actualOutputSchema = joiner.getOutputSchema(inputSchemas, collector);
     Assert.assertEquals(outputSchema, actualOutputSchema);
+    Assert.assertEquals(0, collector.getValidationFailures().size());
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -171,7 +183,7 @@ public class JoinerConfigTest {
 
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testJoinerConfigWithDuplicateOutputFields() {
     String selectedFields = "film.film_id, film.film_name, " +
       "filmActor.actor_name as name, filmCategory.category_name as name";
@@ -182,11 +194,22 @@ public class JoinerConfigTest {
     Joiner joiner = new Joiner(config);
     Map<String, Schema> inputSchemas = ImmutableMap.of("film", filmSchema, "filmActor", filmActorSchema,
                                                        "filmCategory", filmCategorySchema);
-    joiner.init(inputSchemas);
-    joiner.getOutputSchema(inputSchemas);
+    FailureCollector collector = new MockFailureCollector();
+    try {
+      joiner.init(inputSchemas, collector);
+      joiner.getOutputSchema(inputSchemas, collector);
+      Assert.fail();
+    } catch (ValidationException e) {
+      Assert.assertEquals(1, e.getFailures().size());
+      Assert.assertEquals(1, e.getFailures().get(0).getCauses().size());
+      Cause expectedCause = new Cause();
+      expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, JoinerConfig.SELECT_FIELDS);
+      expectedCause.addAttribute(STAGE, MOCK_STAGE);
+      Assert.assertEquals(expectedCause, e.getFailures().get(0).getCauses().get(0));
+    }
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testJoinerConfigWithInvalidJoinKeys() {
     String selectedFields = "film.film_id, film.film_name, " +
       "filmActor.actor_name as renamed_actor, filmCategory.category_name as renamed_category";
@@ -202,8 +225,19 @@ public class JoinerConfigTest {
                                            selectedFields, "film,filmActor,filmCategory");
 
     Joiner joiner = new Joiner(config);
-    joiner.validateJoinKeySchemas(ImmutableMap.of("film", filmSchema, "filmActor", filmActorSchema,
-                                                  "filmCategory", filmCategorySchema), config.getPerStageJoinKeys());
+    FailureCollector collector = new MockFailureCollector();
+    joiner.validateJoinKeySchemas(
+        ImmutableMap.of("film", filmSchema, "filmActor", filmActorSchema,
+            "filmCategory", filmCategorySchema), config.getPerStageJoinKeys(), collector);
+    Assert.assertEquals(2, collector.getValidationFailures().size());
+    // Assert first failure
+    Assert.assertEquals(1, collector.getValidationFailures().get(0).getCauses().size());
+    Cause expectedCause = new Cause();
+    expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, JoinerConfig.JOIN_KEYS);
+    Assert.assertEquals(expectedCause, collector.getValidationFailures().get(0).getCauses().get(0));
+    // Assert second failure
+    Assert.assertEquals(1, collector.getValidationFailures().get(1).getCauses().size());
+    Assert.assertEquals(expectedCause, collector.getValidationFailures().get(1).getCauses().get(0));
   }
 
   @Test
@@ -217,10 +251,12 @@ public class JoinerConfigTest {
     JoinerConfig joinerConfig = new JoinerConfig(joinKeys, selectedFields, requiredInputs);
 
     Joiner joiner = new Joiner(joinerConfig);
-    Assert.assertEquals(outputSchema, joiner.getOutputSchema(inputSchemas));
+    FailureCollector collector = new MockFailureCollector();
+    Assert.assertEquals(outputSchema, joiner.getOutputSchema(inputSchemas, collector));
+    Assert.assertEquals(0, collector.getValidationFailures().size());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testOutputSchemaForInvalidKeys() {
     // film_id is Long but it should be String, OutputSchema call should throw an exception
     Schema filmCategorySchema = Schema.recordOf(
@@ -239,8 +275,22 @@ public class JoinerConfigTest {
     JoinerConfig config = new JoinerConfig(joinKeys, selectedFields, requiredInputs);
 
     Joiner joiner = new Joiner(config);
-    // should throw IllegalArgumentException exception
-    joiner.getOutputSchema(inputSchemas);
+    FailureCollector collector = new MockFailureCollector();
+    try {
+      joiner.getOutputSchema(inputSchemas, collector);
+      Assert.fail();
+    } catch (ValidationException e) {
+      Assert.assertEquals(2, e.getFailures().size());
+      // Assert first failure
+      Assert.assertEquals(1, e.getFailures().get(0).getCauses().size());
+      Cause expectedCause = new Cause();
+      expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, JoinerConfig.JOIN_KEYS);
+      expectedCause.addAttribute(STAGE, MOCK_STAGE);
+      Assert.assertEquals(expectedCause, e.getFailures().get(0).getCauses().get(0));
+      // Assert second failure
+      Assert.assertEquals(1, e.getFailures().get(1).getCauses().size());
+      Assert.assertEquals(expectedCause, e.getFailures().get(1).getCauses().get(0));
+    }
   }
 
   @Test
@@ -267,7 +317,9 @@ public class JoinerConfigTest {
       Schema.Field.of("renamed_category", filmCategorySchema.getField("category_name").getSchema()));
 
     Joiner joiner = new Joiner(conf);
-    Assert.assertEquals(outputSchema, joiner.getOutputSchema(inputSchemas));
+    FailureCollector collector = new MockFailureCollector();
+    Assert.assertEquals(outputSchema, joiner.getOutputSchema(inputSchemas, collector));
+    Assert.assertEquals(0, collector.getValidationFailures().size());
   }
 
 }
