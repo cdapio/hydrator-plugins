@@ -16,7 +16,6 @@
 
 package io.cdap.plugin.batch.action;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.io.ByteStreams;
@@ -26,7 +25,9 @@ import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.action.Action;
 import io.cdap.cdap.etl.api.action.ActionContext;
 import jcifs.smb.NtlmPasswordAuthentication;
@@ -68,11 +69,18 @@ public class WindowsShareCopy extends Action {
   }
 
   @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
+    FailureCollector collector = stageConfigurer.getFailureCollector();
+    config.validate(collector);
+  }
+
+  @Override
   public void run(ActionContext context) throws Exception {
     config.numThreads = (config.numThreads == null || config.numThreads < MIN_NUM_THREADS) ? MIN_NUM_THREADS :
-      config.numThreads;
+                        config.numThreads;
     config.bufferSize = (config.bufferSize == null || config.bufferSize < MIN_BUFFER_SIZE) ? MIN_BUFFER_SIZE :
-      config.bufferSize;
+                        config.bufferSize;
     StringBuilder sb = new StringBuilder("smb://");
     sb.append(config.netBiosHostname);
     sb.append("/");
@@ -175,26 +183,10 @@ public class WindowsShareCopy extends Action {
     return name;
   }
 
-  @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
-    Preconditions.checkArgument(!Strings.isNullOrEmpty(config.netBiosHostname),
-                                "NetBios hostname should be non-null, non-empty.");
-    Preconditions.checkArgument(!Strings.isNullOrEmpty(config.netBiosUsername),
-                                "NetBios username should be non-null, non-empty.");
-    Preconditions.checkArgument(!Strings.isNullOrEmpty(config.netBiosPassword),
-                                "NetBios password should be non-null, non-empty.");
-    Preconditions.checkArgument(!Strings.isNullOrEmpty(config.netBiosSharename),
-                                "NetBios share name should be non-null, non-empty.");
-    Preconditions.checkArgument(!Strings.isNullOrEmpty(config.sourceDirectory),
-                                "NetBios source directory should be non-null, non-empty.");
-    Preconditions.checkArgument(!Strings.isNullOrEmpty(config.destinationDirectory),
-                                "HDFS destination directory should be non-null, non-empty.");
-  }
-
   /**
    * Creates an {@link ExecutorService} that has the given number of threads.
    *
-   * @param threads number of core threads in the executor
+   * @param threads          number of core threads in the executor
    * @param terminationLatch a {@link CountDownLatch} that will be counted down when the executor terminated
    * @return a new {@link ExecutorService}.
    */
@@ -213,6 +205,14 @@ public class WindowsShareCopy extends Action {
    * Config class that contains all properties necessary to execute an HDFS move command.
    */
   public class WindowsShareCopyConfig extends PluginConfig {
+
+    //Constants for property names
+    private static final String NET_BIOS_HOSTNAME = "netBiosHostname";
+    private static final String NET_BIOS_USERNAME = "netBiosUsername";
+    private static final String NET_BIOS_PASSWORD = "netBiosPassword";
+    private static final String NET_BIOS_SHARENAME = "netBiosSharename";
+    private static final String SOURCE_DIRECTORY = "sourceDirectory";
+    private static final String DESTINATION_DIRECTORY = "destinationDirectory";
 
     @Description("Specifies the NetBios domain name.")
     @Nullable
@@ -277,6 +277,38 @@ public class WindowsShareCopy extends Action {
       this.bufferSize = bufferSize;
       this.numThreads = numThreads;
       this.overwrite = !("false".equals(overwrite));
+    }
+
+    public void validate(FailureCollector collector) {
+      if (Strings.isNullOrEmpty(netBiosHostname)) {
+        collector.addFailure("NetBios hostname must be non-null, non-empty.", null)
+          .withConfigProperty(NET_BIOS_HOSTNAME);
+      }
+
+      if (Strings.isNullOrEmpty(netBiosUsername)) {
+        collector.addFailure("NetBios username must be non-null, non-empty.", null)
+          .withConfigProperty(NET_BIOS_USERNAME);
+      }
+
+      if (Strings.isNullOrEmpty(netBiosPassword)) {
+        collector.addFailure("NetBios password must be non-null, non-empty.", null)
+          .withConfigProperty(NET_BIOS_PASSWORD);
+      }
+
+      if (Strings.isNullOrEmpty(netBiosSharename)) {
+        collector.addFailure("NetBios share name must be non-null, non-empty.", null)
+          .withConfigProperty(NET_BIOS_SHARENAME);
+      }
+
+      if (Strings.isNullOrEmpty(sourceDirectory)) {
+        collector.addFailure("NetBios source directory must be non-null, non-empty.", null)
+          .withConfigProperty(SOURCE_DIRECTORY);
+      }
+
+      if (Strings.isNullOrEmpty(destinationDirectory)) {
+        collector.addFailure("HDFS destination directory must be non-null, non-empty.", null)
+          .withConfigProperty(DESTINATION_DIRECTORY);
+      }
     }
   }
 }

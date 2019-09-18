@@ -22,7 +22,9 @@ import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.workflow.WorkflowToken;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchActionContext;
 import io.cdap.cdap.etl.api.batch.PostAction;
 import io.cdap.plugin.common.batch.action.ConditionConfig;
@@ -50,101 +52,15 @@ import javax.mail.internet.MimeMessage;
 public class EmailAction extends PostAction {
   private final Config config;
 
-  /**
-   * Config for the email action plugin.
-   */
-  public static class Config extends ConditionConfig {
-    @Description("Comma separated list of addresses to send the email to.")
-    @Macro
-    private String recipients;
-
-    @Description("The address to send the email from.")
-    @Macro
-    private String sender;
-
-    @Description("The message of the email.")
-    @Macro
-    private String message;
-
-    @Description("The subject of the email.")
-    @Macro
-    private String subject;
-
-    @Nullable
-    @Description("The username to use for authentication if the protocol requires it.")
-    @Macro
-    private String username;
-
-    @Nullable
-    @Description("The password to use for authentication if the protocol requires it.")
-    @Macro
-    private String password;
-
-    @Nullable
-    @Description("The email protocol to use. smtp, smtps, and tls are supported. Defaults to smtp.")
-    @Macro
-    private String protocol;
-
-    @Nullable
-    @Description("The SMTP host to use. Defaults to localhost.")
-    @Macro
-    private String host;
-
-    @Nullable
-    @Description("The SMTP port to use. Defaults to 587.")
-    @Macro
-    private Integer port;
-
-    @Nullable
-    @Description("Whether to include the contents of the workflow token in the email message. Defaults to false.")
-    @Macro
-    private Boolean includeWorkflowToken;
-
-    public Config() {
-      host = "localhost";
-      port = 587;
-      protocol = "smtp";
-      includeWorkflowToken = false;
-    }
-
-    public void validate() {
-      super.validate();
-
-      if (!containsMacro("username") && (Strings.isNullOrEmpty(username) ^ Strings.isNullOrEmpty(password))) {
-        throw new IllegalArgumentException("You must either set both username and password or " +
-                                             "neither username nor password.");
-      }
-
-      if (!containsMacro("sender")) {
-        try {
-          InternetAddress[] addresses = InternetAddress.parse(sender);
-          if (addresses.length == 0) {
-            throw new IllegalArgumentException("Must specify a sender email address.");
-          }
-          if (addresses.length > 1) {
-            throw new IllegalArgumentException(String.format(
-              "%s is an invalid sender email address. Only one sender is supported.", sender));
-          }
-        } catch (AddressException e) {
-          throw new IllegalArgumentException(
-            String.format("%s is an invalid sender email address. Reason: %s", sender, e.getMessage()));
-        }
-      }
-
-      if (!containsMacro("recipients")) {
-        try {
-          InternetAddress.parse(recipients);
-        } catch (AddressException e) {
-          throw new IllegalArgumentException(
-            String.format("%s is an invalid list of recipient email addresses. Reason: %s",
-                          recipients, e.getMessage()));
-        }
-      }
-    }
-  }
-
   public EmailAction(Config config) {
     this.config = config;
+  }
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
+    FailureCollector collector = stageConfigurer.getFailureCollector();
+    config.validate(collector);
   }
 
   // some config fields are not actually nullable even though they are annotated as such
@@ -155,7 +71,9 @@ public class EmailAction extends PostAction {
     if (!config.shouldRun(context)) {
       return;
     }
-    config.validate();
+    FailureCollector collector = context.getFailureCollector();
+    config.validate(collector);
+    collector.getOrThrowException();
 
     Authenticator authenticator = null;
 
@@ -215,9 +133,105 @@ public class EmailAction extends PostAction {
     }
   }
 
-  @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    config.validate();
-  }
+  /**
+   * Config for the email action plugin.
+   */
+  public static class Config extends ConditionConfig {
 
+    // Constants for property names
+    private static final String SENDER = "sender";
+    private static final String RECIPIENTS = "recipients";
+    private static final String USERNAME = "username";
+    private static final String PASSWORD = "password";
+
+    @Description("Comma separated list of addresses to send the email to.")
+    @Macro
+    private String recipients;
+
+    @Description("The address to send the email from.")
+    @Macro
+    private String sender;
+
+    @Description("The message of the email.")
+    @Macro
+    private String message;
+
+    @Description("The subject of the email.")
+    @Macro
+    private String subject;
+
+    @Nullable
+    @Description("The username to use for authentication if the protocol requires it.")
+    @Macro
+    private String username;
+
+    @Nullable
+    @Description("The password to use for authentication if the protocol requires it.")
+    @Macro
+    private String password;
+
+    @Nullable
+    @Description("The email protocol to use. smtp, smtps, and tls are supported. Defaults to smtp.")
+    @Macro
+    private String protocol;
+
+    @Nullable
+    @Description("The SMTP host to use. Defaults to localhost.")
+    @Macro
+    private String host;
+
+    @Nullable
+    @Description("The SMTP port to use. Defaults to 587.")
+    @Macro
+    private Integer port;
+
+    @Nullable
+    @Description("Whether to include the contents of the workflow token in the email message. Defaults to false.")
+    @Macro
+    private Boolean includeWorkflowToken;
+
+    public Config() {
+      host = "localhost";
+      port = 587;
+      protocol = "smtp";
+      includeWorkflowToken = false;
+    }
+
+    public void validate(FailureCollector collector) {
+      super.validate(collector);
+
+      if (!containsMacro(USERNAME) && (Strings.isNullOrEmpty(username) ^ Strings.isNullOrEmpty(password))) {
+        collector.addFailure("Both username and password must be given, or neither of them must be given.",
+                             "Leave username and password fields empty or provide values for both fields.")
+          .withConfigProperty(USERNAME).withConfigProperty(PASSWORD);
+      }
+
+      if (!containsMacro(SENDER)) {
+        try {
+          InternetAddress[] addresses = InternetAddress.parse(sender);
+          if (addresses.length == 0) {
+            collector.addFailure("Sender email was not specified.", null).withConfigProperty(SENDER);
+          }
+          if (addresses.length > 1) {
+            collector.addFailure(
+              String.format("%s is an invalid sender email address. Only one sender is supported.", sender),
+              "Only specify one sender email address.").withConfigProperty(SENDER);
+          }
+        } catch (AddressException e) {
+          collector.addFailure(String.format("%s is an invalid sender email address. Reason: %s", sender,
+                                             e.getMessage()), null).withConfigProperty(SENDER);
+        }
+      }
+
+      if (!containsMacro(RECIPIENTS)) {
+        try {
+          InternetAddress.parse(recipients);
+        } catch (AddressException e) {
+          collector.addFailure(String.format("%s is an invalid list of recipient email addresses. Reason: %s",
+                                             recipients, e.getMessage()), null)
+            .withConfigProperty(RECIPIENTS);
+        }
+      }
+    }
+  }
 }

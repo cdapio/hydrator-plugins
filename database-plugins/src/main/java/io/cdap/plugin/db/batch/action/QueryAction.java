@@ -20,7 +20,9 @@ import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchActionContext;
 import io.cdap.cdap.etl.api.batch.PostAction;
 import io.cdap.plugin.DBManager;
@@ -50,7 +52,8 @@ public class QueryAction extends PostAction {
 
   @Override
   public void run(BatchActionContext batchContext) throws Exception {
-    config.validate();
+    config.validate(batchContext.getFailureCollector());
+    batchContext.getFailureCollector().getOrThrowException();
 
     if (!config.shouldRun(batchContext)) {
       return;
@@ -63,7 +66,10 @@ public class QueryAction extends PostAction {
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
-    config.validate();
+    StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
+    FailureCollector collector = stageConfigurer.getFailureCollector();
+
+    config.validate(collector);
     DBManager dbManager = new DBManager(config);
     dbManager.validateJDBCPluginPipeline(pipelineConfigurer, JDBC_PLUGIN_ID);
   }
@@ -86,10 +92,10 @@ public class QueryAction extends PostAction {
       runCondition = Condition.SUCCESS.name();
     }
 
-    public void validate() {
+    public void validate(FailureCollector collector) {
       // have to delegate instead of inherit, since we can't extend both ConditionConfig and ConnectionConfig.
       if (!containsMacro("runCondition")) {
-        new ConditionConfig(runCondition).validate();
+        new ConditionConfig(runCondition).validate(collector);
       }
     }
 
