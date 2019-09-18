@@ -256,15 +256,6 @@ public class DatabasePluginTestBase extends HydratorTestBase {
     }
   }
 
-  protected static void assertRuntimeFailure(ApplicationId appId, ETLBatchConfig etlConfig,
-                                             String failureMessage, int runCount) throws Exception {
-    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(DATAPIPELINE_ARTIFACT, etlConfig);
-    ApplicationManager appManager = deployApplication(appId, appRequest);
-    final WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
-    workflowManager.start();
-    workflowManager.waitForRuns(ProgramRunStatus.FAILED, runCount, 3, TimeUnit.MINUTES);
-  }
-
   protected ApplicationManager deployETL(ETLPlugin sourcePlugin, ETLPlugin sinkPlugin, String appName)
     throws Exception {
     ETLStage source = new ETLStage("source", sourcePlugin);

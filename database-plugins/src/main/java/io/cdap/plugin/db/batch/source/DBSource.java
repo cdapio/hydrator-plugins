@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.db.batch.source;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
@@ -59,6 +60,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -70,6 +72,12 @@ import javax.annotation.Nullable;
   " Outputs one record for each row returned by the query.")
 public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(DBSource.class);
+  private static final Pattern CONDITIONS_AND = Pattern.compile("\\$conditions (and|or)\\s+",
+                                                                Pattern.CASE_INSENSITIVE);
+  private static final Pattern AND_CONDITIONS = Pattern.compile("\\s+(and|or) \\$conditions",
+                                                                Pattern.CASE_INSENSITIVE);
+  private static final Pattern WHERE_CONDITIONS = Pattern.compile("\\s+where \\$conditions",
+                                                                  Pattern.CASE_INSENSITIVE);
 
   private final DBSourceConfig sourceConfig;
   private final DBManager dbManager;
@@ -90,7 +98,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     Schema configuredSchema = sourceConfig.getSchema();
     if (configuredSchema != null) {
       pipelineConfigurer.getStageConfigurer().setOutputSchema(sourceConfig.getSchema());
-    } else if (sourceConfig.query != null) {
+    } else if (!sourceConfig.containsMacro(DBSourceConfig.IMPORT_QUERY)) {
       try {
         pipelineConfigurer.getStageConfigurer().setOutputSchema(getSchema(driverClass));
       } catch (IllegalAccessException | InstantiationException e) {
@@ -105,7 +113,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     throws IllegalAccessException, SQLException, InstantiationException {
     DriverCleanup driverCleanup = loadPluginClassAndGetDriver(driverClass);
     try (Connection connection = getConnection()) {
-      String query = sourceConfig.query;
+      String query = sourceConfig.importQuery;
       Statement statement = connection.createStatement();
       statement.setMaxRows(1);
       if (query.contains("$CONDITIONS")) {
@@ -118,16 +126,13 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     }
   }
 
-  private static String removeConditionsClause(String importQuerySring) {
-    importQuerySring = importQuerySring.replaceAll("\\s{2,}", " ").toUpperCase();
-    if (importQuerySring.contains("WHERE $CONDITIONS AND")) {
-      importQuerySring = importQuerySring.replace("$CONDITIONS AND", "");
-    } else if (importQuerySring.contains("WHERE $CONDITIONS")) {
-      importQuerySring = importQuerySring.replace("WHERE $CONDITIONS", "");
-    } else if (importQuerySring.contains("AND $CONDITIONS")) {
-      importQuerySring = importQuerySring.replace("AND $CONDITIONS", "");
-    }
-    return importQuerySring;
+  @VisibleForTesting
+  static String removeConditionsClause(String importQueryString) {
+    String query = importQueryString;
+    query = CONDITIONS_AND.matcher(query).replaceAll("");
+    query = AND_CONDITIONS.matcher(query).replaceAll("");
+    query = WHERE_CONDITIONS.matcher(query).replaceAll("");
+    return query;
   }
 
   private DriverCleanup loadPluginClassAndGetDriver(Class<? extends Driver> driverClass)
@@ -239,12 +244,6 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     public static final String SCHEMA = "schema";
     public static final String TRANSACTION_ISOLATION_LEVEL = "transactionIsolationLevel";
 
-    // this is a hidden property, only used to fetch schema
-    @Nullable
-    String query;
-
-    // only nullable for get schema button
-    @Nullable
     @Name(IMPORT_QUERY)
     @Description("The SELECT query to use to import data from the specified table. " +
       "You can specify an arbitrary number of columns to import, or import all columns using *. " +
@@ -316,12 +315,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
         TransactionIsolationLevel.validate(transactionIsolationLevel);
       }
 
-      if (query != null) {
-        return;
-      }
-
-      if (!containsMacro("importQuery") && (query == null || query.isEmpty())
-        && (importQuery == null || importQuery.isEmpty())) {
+      if (!containsMacro("importQuery") && (importQuery == null || importQuery.isEmpty())) {
         throw new InvalidConfigPropertyException("An Import Query must be specified.", "importQuery");
       }
 
@@ -345,7 +339,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     @Nullable
     private Schema getSchema() {
       try {
-        return schema == null ? null : Schema.parseJson(schema);
+        return schema == null || schema.isEmpty() ? null : Schema.parseJson(schema);
       } catch (IOException e) {
         throw new InvalidConfigPropertyException(String.format("Unable to parse schema: %s", e.getMessage()), e,
                                                  "schema");
