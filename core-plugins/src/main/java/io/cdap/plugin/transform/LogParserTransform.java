@@ -116,7 +116,8 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
       Schema.Field inputNameSchema = inputSchema.getField(config.inputName);
       if (inputNameSchema == null) {
         collector.addFailure(String.format("Field '%s' is not present in the input schema", config.inputName),
-            String.format("The field '%s' must be provided", config.inputName)).withConfigProperty("inputName").withInputSchemaField(config.inputName);
+            String.format("The field '%s' must be provided", config.inputName))
+            .withConfigProperty("inputName").withInputSchemaField(config.inputName);
       } else {
         validateInputSchemaType(inputNameSchema.getSchema().getType(), collector);
       }
@@ -225,8 +226,11 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
   private void validateInputSchemaType(Schema.Type inputSchemaType, FailureCollector collector) {
     if (!Schema.Type.STRING.equals(inputSchemaType) && !Schema.Type.BYTES.equals(inputSchemaType)) {
       collector.addFailure(
-          String.format("Unsupported inputType in schema, only Schema.Type.BYTES and Schema.Type.STRING are supported InputType: %s", inputSchemaType.toString()),
-          "Provided inputType must be of type Schema.Type.BYTES or Schema.Type.STRING").withInputSchemaField(config.inputName);
+          String.format(
+              "Unsupported inputType '%s' in schema, only Schema.Type.BYTES and Schema.Type.STRING are supported",
+              inputSchemaType.toString()),
+          "Provided inputType must be of type Schema.Type.BYTES or Schema.Type.STRING")
+          .withInputSchemaField(config.inputName);
       collector.getOrThrowException();
     }
   }
