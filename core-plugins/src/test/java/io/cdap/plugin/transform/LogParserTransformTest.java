@@ -86,16 +86,17 @@ public class LogParserTransformTest {
     Assert.assertEquals(LOG_SCHEMA, mockConfigurer.getOutputSchema());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConfigurePipelineSchemaValidationError() throws Exception {
     MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(Schema.of(Schema.Type.BYTES),
                                                                        ImmutableMap.of(
                                                                          CoreValidator.ID, new CoreValidator()));
     S3_TRANSFORM.configurePipeline(mockConfigurer);
     Assert.assertEquals(LOG_SCHEMA, mockConfigurer.getOutputSchema());
+    Assert.assertEquals(2, mockConfigurer.getStageConfigurer().getFailureCollector().getValidationFailures().size());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test(expected = io.cdap.cdap.etl.api.validation.ValidationException.class)
   public void testConfigurePipelineInvalidSchema() throws Exception {
     Schema inputSchemaString = Schema.recordOf(
       "event",
@@ -108,7 +109,7 @@ public class LogParserTransformTest {
     S3_TRANSFORM.configurePipeline(mockConfigurer);
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConfigurePipelineSchemaWithMissingInputNameField() throws Exception {
     Schema inputSchemaString = Schema.recordOf(
       "event",
@@ -119,6 +120,7 @@ public class LogParserTransformTest {
                                                                        ImmutableMap.of(
                                                                          CoreValidator.ID, new CoreValidator()));
     S3_TRANSFORM.configurePipeline(mockConfigurer);
+    Assert.assertEquals(1, mockConfigurer.getStageConfigurer().getFailureCollector().getValidationFailures().size());
   }
 
   @Test
