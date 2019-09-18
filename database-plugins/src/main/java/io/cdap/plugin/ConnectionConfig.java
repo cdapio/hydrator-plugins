@@ -114,6 +114,8 @@ public class ConnectionConfig extends PluginConfig {
 
     if (user != null) {
       connectionArgumentsMap.put("user", user);
+    }
+    if (password != null) {
       connectionArgumentsMap.put("password", password);
     }
     Properties properties = new Properties();

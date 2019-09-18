@@ -20,7 +20,7 @@ import io.cdap.cdap.common.test.TestSuite;
 import io.cdap.plugin.db.batch.action.DBActionTestRun;
 import io.cdap.plugin.db.batch.action.DBQueryActionTestRun;
 import io.cdap.plugin.db.batch.sink.DBSinkTestRun;
-import io.cdap.plugin.db.batch.sink.DBSourceTestRun;
+import io.cdap.plugin.db.batch.source.DBSourceTestRun;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
