@@ -31,6 +31,7 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Arguments;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.InvalidEntry;
 import io.cdap.cdap.etl.api.LookupConfig;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
@@ -91,6 +92,10 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
    * Configuration for the script transform.
    */
   public static class Config extends PluginConfig {
+    private static final String LOOKUP = "lookup";
+    private static final String SCHEMA = "schema";
+    private static final String SCRIPT = "script";
+
     @Description("JavaScript defining how to transform input record into zero or more records. " +
       "The script must implement a function " +
       "called 'transform', which takes as input a JSON object (representing the input record) " +
@@ -138,7 +143,7 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
     // try evaluating the script to fail application creation if the script is invalid
-    init(null);
+    init(null, pipelineConfigurer.getStageConfigurer().getFailureCollector());
 
     // init intializes schema if present in the config
     Schema outputSchema = (schema == null) ? pipelineConfigurer.getStageConfigurer().getInputSchema() : schema;
@@ -184,7 +189,7 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
       // Ignore -- we don't have Nashorn, so no need to handle Nashorn
     }
 
-    init(context);
+    init(context, context.getFailureCollector());
   }
 
   @VisibleForTesting
@@ -234,8 +239,8 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
     }
 
     public void emitError(Map invalidEntry) {
-      emitter.emitError(getErrorObject(invalidEntry,
-                                       decodeRecord((Map) invalidEntry.get("invalidRecord"), errSchema)));
+      emitter.emitError(
+        getErrorObject(invalidEntry, decodeRecord((Map) invalidEntry.get("invalidRecord"), errSchema)));
     }
   }
 
@@ -373,18 +378,18 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
         // could be ok, just move on and try the next schema
       }
     }
-
     throw new RuntimeException("Unable decode union with schema " + schemas);
   }
 
-  private void init(@Nullable TransformContext context) {
+  private void init(@Nullable TransformContext context, FailureCollector collector) {
     ScriptEngineManager manager = new ScriptEngineManager();
     engine = manager.getEngineByName("JavaScript");
     try {
       engine.eval(ScriptConstants.HELPER_DEFINITION);
     } catch (ScriptException e) {
       // shouldn't happen
-      throw new IllegalStateException("Couldn't define helper functions", e);
+      collector.addFailure("Failed to define helper functions.", null);
+      throw collector.getOrThrowException();
     }
 
     JavaTypeConverters js = ((Invocable) engine).getInterface(
@@ -394,7 +399,9 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
     try {
       lookupConfig = GSON.fromJson(config.lookup, LookupConfig.class);
     } catch (JsonSyntaxException e) {
-      throw new IllegalArgumentException("Invalid lookup config. Expected map of string to string", e);
+      collector.addFailure("Invalid lookup config.", "Expected JSON map of string to string.")
+        .withConfigProperty(Config.LOOKUP);
+      throw collector.getOrThrowException();
     }
 
     Arguments arguments = context == null ? null : context.getArguments();
@@ -410,15 +417,19 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
                                     FUNCTION_NAME, VARIABLE_NAME, EMITTER_NAME, CONTEXT_NAME, config.script);
       engine.eval(script);
     } catch (ScriptException e) {
-      throw new IllegalArgumentException("Invalid script: " + e.getMessage(), e);
+      collector.addFailure(String.format("Invalid script: %s.", e.getMessage()), null)
+        .withConfigProperty(Config.SCRIPT);
     }
     invocable = (Invocable) engine;
     if (config.schema != null) {
       try {
         schema = Schema.parseJson(config.schema);
       } catch (IOException e) {
-        throw new IllegalArgumentException("Unable to parse schema: " + e.getMessage(), e);
+        collector.addFailure(String.format("Invalid schema: %s.", e.getMessage()),
+                             "Output schema must be JSON parseable.")
+          .withConfigProperty(Config.SCHEMA);
       }
     }
+    collector.getOrThrowException();
   }
 }
