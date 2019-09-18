@@ -64,7 +64,9 @@ public final class Hasher extends Transform<StructuredRecord, StructuredRecord> 
 
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
-    config.validate(context.getInputSchema(), context.getFailureCollector());
+    FailureCollector failureCollector = context.getFailureCollector();
+    config.validate(context.getInputSchema(), failureCollector);
+    failureCollector.getOrThrowException();
   }
 
   @Override
