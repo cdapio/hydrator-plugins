@@ -33,6 +33,7 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
@@ -72,6 +73,11 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
    * Config class for ProjectionTransform
    */
   public static class ProjectionTransformConfig extends PluginConfig {
+    public static final String DROP = "drop";
+    public static final String KEEP = "keep";
+    public static final String RENAME = "rename";
+    public static final String CONVERT = "convert";
+
     @Description(DROP_DESC)
     @Nullable
     String drop;
@@ -112,12 +118,14 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
     // call init so any invalid config is caught here to fail application creation
-    init(pipelineConfigurer.getStageConfigurer().getInputSchema());
+    init(pipelineConfigurer.getStageConfigurer().getInputSchema(), collector);
+    collector.getOrThrowException();
     Schema outputSchema = null;
     if (pipelineConfigurer.getStageConfigurer().getInputSchema() != null) {
       //validate the input schema and get the output schema for it
-      outputSchema = getOutputSchema(pipelineConfigurer.getStageConfigurer().getInputSchema());
+      outputSchema = getOutputSchema(pipelineConfigurer.getStageConfigurer().getInputSchema(), collector);
     }
     pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
   }
@@ -125,13 +133,15 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
-    init(null);
+    FailureCollector collector = context.getFailureCollector();
+    init(null, collector);
+    collector.getOrThrowException();
   }
 
   @Override
   public void transform(StructuredRecord valueIn, Emitter<StructuredRecord> emitter) {
     Schema inputSchema = valueIn.getSchema();
-    Schema outputSchema = getOutputSchema(inputSchema);
+    Schema outputSchema = getOutputSchema(inputSchema, getContext().getFailureCollector());
     StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
     for (Schema.Field inputField : inputSchema.getFields()) {
       String inputFieldName = inputField.getName();
@@ -159,11 +169,12 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
     emitter.emit(builder.build());
   }
 
-  private void init(Schema inputSchema) {
+  private void init(Schema inputSchema, FailureCollector collector) {
 
     if (!Strings.isNullOrEmpty(projectionTransformConfig.drop) &&
       !Strings.isNullOrEmpty(projectionTransformConfig.keep)) {
-      throw new IllegalArgumentException("Cannot specify both drop and keep. One should be empty or null.");
+      collector.addFailure("Cannot specify both drop and keep.", null)
+        .withConfigProperty(ProjectionTransformConfig.DROP).withConfigProperty(ProjectionTransformConfig.KEEP);
     }
 
     if (!Strings.isNullOrEmpty(projectionTransformConfig.drop)) {
@@ -176,7 +187,8 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
           }
         }
         if (containAllFields) {
-          throw new IllegalArgumentException("'Fields to drop' cannot contain all the fields of input s chema.");
+          collector.addFailure("'Fields to drop' cannot contain all the fields of the input schema.", null)
+            .withConfigProperty(ProjectionTransformConfig.DROP);
         }
       }
     } else if (!Strings.isNullOrEmpty(projectionTransformConfig.keep)) {
@@ -184,8 +196,10 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
       if (inputSchema != null) {
         for (String field : fieldsToKeep) {
           if (inputSchema.getField(field) == null) {
-            throw new IllegalArgumentException(String.format("Field: '%s' provided in 'Fields to keep' input is not " +
-                    "present in the input schema.", field));
+            collector.addFailure(
+              String.format("Field '%s' provided in 'Fields to keep' must be present in the input schema.",
+                            field), null)
+              .withConfigElement(ProjectionTransformConfig.KEEP, field);
           }
         }
       }
@@ -194,19 +208,25 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
     if (!Strings.isNullOrEmpty(projectionTransformConfig.rename)) {
       for (KeyValue<String, String> keyVal : kvParser.parse(projectionTransformConfig.rename)) {
         String key = keyVal.getKey();
-        if (inputSchema != null && inputSchema.getField(key) ==  null) {
-          throw new IllegalArgumentException(String.format("Field: '%s' provided in 'Fields to rename' input is not " +
-                  "present in the input schema.", key));
-        }
         String val = keyVal.getValue();
+        if (inputSchema != null && inputSchema.getField(key) ==  null) {
+          collector.addFailure(
+            String.format("Field '%s' provided in 'Fields to rename' must be present in the input schema.", key), null)
+            .withConfigElement(ProjectionTransformConfig.RENAME, String.format("%s:%s", key, val));
+        }
         try {
           String oldVal = fieldsToRename.put(key, val);
           if (oldVal != null) {
-            throw new IllegalArgumentException(String.format("Cannot rename %s to both %s and %s.", key, oldVal, val));
+            collector.addFailure(
+              String.format("Cannot rename '%s' to both '%s' and '%s'.", key, oldVal, val), null)
+              .withConfigElement(ProjectionTransformConfig.RENAME, String.format("%s:%s", key, oldVal))
+              .withConfigElement(ProjectionTransformConfig.RENAME, String.format("%s:%s", key, val));
           }
         } catch (IllegalArgumentException e) {
           // purely so that we can give a more descriptive error message
-          throw new IllegalArgumentException(String.format("Cannot rename more than one field to %s.", val));
+          collector.addFailure(
+            String.format("Cannot rename more than one field to '%s'.", val), null)
+            .withConfigProperty(ProjectionTransformConfig.RENAME);
         }
       }
     }
@@ -214,17 +234,22 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
     if (!Strings.isNullOrEmpty(projectionTransformConfig.convert)) {
       for (KeyValue<String, String> keyVal : kvParser.parse(projectionTransformConfig.convert)) {
         String name = keyVal.getKey();
-        if (inputSchema != null && inputSchema.getField(name) ==  null) {
-          throw new IllegalArgumentException(String.format("Field: '%s' provided in 'Convert' input is not " +
-                  "present in the input schema.", name));
-        }
         String typeStr = keyVal.getValue();
+        if (inputSchema != null && inputSchema.getField(name) ==  null) {
+          collector.addFailure(
+            String.format("Field '%s' provided in 'Convert' is not present in the input schema.", name), null)
+            .withConfigElement(ProjectionTransformConfig.CONVERT, String.format("%s:%s", name, typeStr));
+        }
         Schema.Type type = Schema.Type.valueOf(typeStr.toUpperCase());
         if (!type.isSimpleType() || type == Schema.Type.NULL) {
-          throw new IllegalArgumentException("Only non-null simple types are supported.");
+          collector.addFailure(
+            String.format("Cannot convert field '%s' to a '%s'.", name, typeStr), "Only simple types are supported.")
+            .withConfigElement(ProjectionTransformConfig.CONVERT, String.format("%s:%s", name, typeStr));
         }
         if (fieldsToConvert.containsKey(name)) {
-          throw new IllegalArgumentException(String.format("Cannot convert %s to multiple types.", name));
+          collector.addFailure(
+            String.format("Cannot convert '%s' to multiple types.", name), null)
+            .withConfigProperty(ProjectionTransformConfig.CONVERT);
         }
         fieldsToConvert.put(name, type);
       }
@@ -250,11 +275,13 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
       builder.convertAndSet(fieldName, (String) val);
     } else {
       // otherwise, just try to cast it.
-      builder.set(fieldName, convertPrimitive(val, inputType, outputType));
+      builder.set(fieldName, convertPrimitive(fieldName, val, inputType, outputType,
+                                             getContext().getFailureCollector()));
     }
   }
 
-  private Object convertPrimitive(Object val, Schema.Type inputType, Schema.Type outputType) {
+  private Object convertPrimitive(String fieldName, Object val, Schema.Type inputType,
+      Schema.Type outputType, FailureCollector collector) {
     if (inputType == outputType) {
       return val;
     }
@@ -269,7 +296,7 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
         } else {
           bytesVal = (byte[]) val;
         }
-        switch(outputType) {
+        switch (outputType) {
           case BOOLEAN:
             return Bytes.toBoolean(bytesVal);
           case INT:
@@ -343,10 +370,14 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
         break;
     }
 
-    throw new IllegalArgumentException("Cannot convert type " + inputType + " to type " + outputType);
+    String typeStr = outputType.toString().toLowerCase();
+    collector.addFailure(
+      String.format("Cannot convert field '%s' from type '%s' to type '%s'.", fieldName, inputType, outputType), null)
+      .withConfigElement(ProjectionTransformConfig.CONVERT, String.format("%s:%s", fieldName, typeStr));
+    throw collector.getOrThrowException();
   }
 
-  private Schema getOutputSchema(Schema inputSchema) {
+  private Schema getOutputSchema(Schema inputSchema, FailureCollector collector) {
     Schema output = schemaCache.get(inputSchema);
     if (output != null) {
       return output;
@@ -375,7 +406,11 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
         }
 
         if (!inputFieldType.isSimpleType() || inputFieldType == Schema.Type.NULL) {
-          throw new IllegalArgumentException("Field " + inputFieldName + " is of unconvertable type " + inputFieldType);
+          String typeStr = outputFieldSchema.getType().toString().toLowerCase();
+          collector.addFailure(
+            String.format("Field '%s' is of unconvertible type '%s'.", inputFieldName, inputFieldType), null)
+            .withConfigElement(ProjectionTransformConfig.CONVERT, String.format("%s:%s", inputFieldName, typeStr));
+          collector.getOrThrowException();
         }
       }
 
