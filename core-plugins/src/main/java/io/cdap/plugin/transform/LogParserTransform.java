@@ -115,13 +115,16 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
     if (inputSchema != null) {
       if (!inputSchema.getType().equals(Schema.Type.RECORD)) {
         collector.addFailure("Input schema must be of type record.", null);
-      }
-      Schema.Field inputNameSchema = inputSchema.getField(config.inputName);
-      if (inputNameSchema == null) {
-        collector.addFailure(String.format("Field '%s' must be present in the input schema.", config.inputName), null)
-            .withConfigProperty(INPUT_NAME).withInputSchemaField(config.inputName);
       } else {
-        validateInputSchemaType(inputNameSchema.getSchema(), config.inputName, collector);
+        Schema.Field inputNameSchema = inputSchema.getField(config.inputName);
+        if (inputNameSchema == null) {
+          collector.addFailure(
+              String.format("Field '%s' must be present in the input schema.", config.inputName),
+              null)
+              .withConfigProperty(INPUT_NAME).withInputSchemaField(config.inputName);
+        } else {
+          validateInputSchemaType(inputNameSchema.getSchema(), config.inputName, collector);
+        }
       }
     }
     pipelineConfigurer.getStageConfigurer().setOutputSchema(LOG_SCHEMA);
