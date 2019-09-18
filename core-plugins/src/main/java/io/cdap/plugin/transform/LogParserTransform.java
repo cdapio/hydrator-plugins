@@ -39,6 +39,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -58,6 +59,8 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
     Schema.Field.of("httpStatus", Schema.of(Schema.Type.INT)),
     Schema.Field.of("ts", Schema.of(Schema.Type.LONG))
   );
+  private static final String LOG_FORMAT = "logFormat";
+  private static final String INPUT_NAME = "inputName";
   private static final String LOG_FORMAT_DESCRIPTION = "Log format to parse. Currently supports S3, " +
     "CLF, and Cloudfront formats.";
   private static final String INPUT_NAME_DESCRIPTION = "Name of the field in the input schema which encodes the " +
@@ -104,22 +107,21 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
     if (!S3_LOG.equals(config.logFormat) && !CLF_LOG.equals(config.logFormat) &&
       !CLOUDFRONT_LOG.equals(config.logFormat)) {
       LOG.error("Log format not currently supported.");
-      collector.addFailure(String.format("Unsupported log format: '%s'", config.logFormat),
-          "Log format must be one of the following: S3, CLF, or CLOUDFRONT.").withConfigProperty("logFormat");
+      collector.addFailure(String.format("Format '%s' is not supported.", config.logFormat),
+          String.format("Supported formats are: %s, %s, and %s.", S3_LOG, CLF_LOG, CLOUDFRONT_LOG))
+          .withConfigProperty(LOG_FORMAT);
     }
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
     if (inputSchema != null) {
       if (!inputSchema.getType().equals(Schema.Type.RECORD)) {
-        collector.addFailure("Only Input Schema of type Schema.Type.RECORD is supported",
-            "Input Schema type should be of type Schema.Type.RECORD");
+        collector.addFailure("Input schema must be of type record.", null);
       }
       Schema.Field inputNameSchema = inputSchema.getField(config.inputName);
       if (inputNameSchema == null) {
-        collector.addFailure(String.format("Field '%s' is not present in the input schema", config.inputName),
-            String.format("The field '%s' must be provided", config.inputName))
-            .withConfigProperty("inputName").withInputSchemaField(config.inputName);
+        collector.addFailure(String.format("Field '%s' must be present in the input schema.", config.inputName), null)
+            .withConfigProperty(INPUT_NAME).withInputSchemaField(config.inputName);
       } else {
-        validateInputSchemaType(inputNameSchema.getSchema().getType(), collector);
+        validateInputSchemaType(inputNameSchema.getSchema(), config.inputName, collector);
       }
     }
     pipelineConfigurer.getStageConfigurer().setOutputSchema(LOG_SCHEMA);
@@ -203,7 +205,7 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
     Schema.Type inputType = inputSchema.getType();
 
     try {
-      validateInputSchemaType(inputType, getContext().getFailureCollector());
+      validateInputSchemaType(inputSchema, config.inputName, getContext().getFailureCollector());
     } catch (Exception e) {
       LOG.error(e.getMessage());
     }
@@ -223,14 +225,13 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
     }
   }
 
-  private void validateInputSchemaType(Schema.Type inputSchemaType, FailureCollector collector) {
+  private void validateInputSchemaType(Schema inputSchema, String inputName, @Nonnull FailureCollector collector) {
+    Schema.Type inputSchemaType = inputSchema.getType();
     if (!Schema.Type.STRING.equals(inputSchemaType) && !Schema.Type.BYTES.equals(inputSchemaType)) {
       collector.addFailure(
-          String.format(
-              "Unsupported inputType '%s' in schema, only Schema.Type.BYTES and Schema.Type.STRING are supported",
-              inputSchemaType.toString()),
-          "Provided inputType must be of type Schema.Type.BYTES or Schema.Type.STRING")
-          .withInputSchemaField(config.inputName);
+          String.format("Field '%s' of unsupported type '%s'.", inputName, inputSchema.getDisplayName()),
+          String.format("Ensure it is of type %s or %s.", Schema.Type.BYTES, Schema.Type.STRING))
+          .withInputSchemaField(inputName);
       collector.getOrThrowException();
     }
   }
