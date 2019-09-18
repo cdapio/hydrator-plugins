@@ -100,7 +100,9 @@ public class LogParserTransformTest {
                                                                          CoreValidator.ID, new CoreValidator()));
     S3_TRANSFORM.configurePipeline(mockConfigurer);
     Assert.assertEquals(LOG_SCHEMA, mockConfigurer.getOutputSchema());
-    Assert.assertEquals(2, mockConfigurer.getStageConfigurer().getFailureCollector().getValidationFailures().size());
+    FailureCollector collector = mockConfigurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(1, mockConfigurer.getStageConfigurer().getFailureCollector().getValidationFailures().size());
+    Assert.assertEquals(0, collector.getValidationFailures().get(0).getCauses().size());
   }
 
   @Test
@@ -140,7 +142,15 @@ public class LogParserTransformTest {
                                                                        ImmutableMap.of(
                                                                          CoreValidator.ID, new CoreValidator()));
     S3_TRANSFORM.configurePipeline(mockConfigurer);
-    Assert.assertEquals(1, mockConfigurer.getStageConfigurer().getFailureCollector().getValidationFailures().size());
+    FailureCollector collector = mockConfigurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(1, collector.getValidationFailures().size());
+    Assert.assertEquals(2, collector.getValidationFailures().get(0).getCauses().size());
+    Cause expectedCause1 = new Cause();
+    Cause expectedCause2 = new Cause();
+    expectedCause1.addAttribute(CauseAttributes.STAGE_CONFIG, "inputName");
+    expectedCause2.addAttribute(CauseAttributes.INPUT_SCHEMA_FIELD, "body");
+    Assert.assertEquals(expectedCause1, collector.getValidationFailures().get(0).getCauses().get(0));
+    Assert.assertEquals(expectedCause2, collector.getValidationFailures().get(0).getCauses().get(1));
   }
 
   @Test
