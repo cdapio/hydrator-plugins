@@ -22,7 +22,9 @@ import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.action.Action;
 import io.cdap.cdap.etl.api.action.ActionContext;
 import org.apache.hadoop.conf.Configuration;
@@ -52,6 +54,13 @@ public class FileMoveAction extends Action {
 
   public FileMoveAction(Conf config) {
     this.config = config;
+  }
+
+  @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
+    FailureCollector collector = stageConfigurer.getFailureCollector();
+    config.validate(collector);
   }
 
   @Override
@@ -112,7 +121,7 @@ public class FileMoveAction extends Action {
     }
     fileSystem.mkdirs(dest); //create destination directory if necessary
 
-    for (FileStatus file: listFiles) {
+    for (FileStatus file : listFiles) {
       source = file.getPath();
 
       try {
@@ -131,15 +140,13 @@ public class FileMoveAction extends Action {
     }
   }
 
-  @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    config.validate();
-  }
-
   /**
    * Config class that contains all properties necessary to execute a file move command.
    */
   public class Conf extends PluginConfig {
+    // Constants for property names
+    private static final String FILE_REGEX = "fileRegex";
+
     @Description("The full HDFS path of the file or directory that is to be moved. In the case of a directory, if " +
       "fileRegex is set, then only files in the source directory matching the wildcard regex will be moved. " +
       "Otherwise, all files in the directory will be moved. For example: hdfs://hostname/tmp")
@@ -160,13 +167,13 @@ public class FileMoveAction extends Action {
     @Description("Indicates if the pipeline should continue if the move process fails")
     private boolean continueOnError;
 
-    public void validate() {
-      if (!containsMacro("fileRegex") && fileRegex != null) {
+    public void validate(FailureCollector collector) {
+      if (!containsMacro(FILE_REGEX) && fileRegex != null) {
         try {
           Pattern.compile(fileRegex);
         } catch (Exception e) {
-          throw new IllegalArgumentException(String.format("File regex %s is invalid: %s",
-                                                           fileRegex, e.getMessage()), e);
+          collector.addFailure(String.format("File regex '%s' is invalid: %s.", fileRegex, e.getMessage()),
+                               "Provide valid regex.").withConfigProperty(FILE_REGEX);
         }
       }
     }
