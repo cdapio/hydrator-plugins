@@ -121,7 +121,7 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
           collector.addFailure(
               String.format("Field '%s' must be present in the input schema.", config.inputName),
               null)
-              .withConfigProperty(INPUT_NAME).withInputSchemaField(config.inputName);
+              .withConfigProperty(INPUT_NAME);
         } else {
           validateInputSchemaType(inputNameSchema.getSchema(), config.inputName, collector);
         }
@@ -235,6 +235,7 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
           String.format("Field '%s' of unsupported type '%s'.", inputName, inputSchema.getDisplayName()),
           String.format("Ensure it is of type %s or %s.", Schema.Type.BYTES, Schema.Type.STRING))
           .withInputSchemaField(inputName);
+
       collector.getOrThrowException();
     }
   }
