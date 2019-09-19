@@ -39,7 +39,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -208,7 +207,7 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
     Schema.Type inputType = inputSchema.getType();
 
     try {
-      validateInputSchemaType(inputSchema, config.inputName, getContext().getFailureCollector());
+      validateInputSchemaType(inputSchema, config.inputName);
     } catch (Exception e) {
       LOG.error(e.getMessage());
     }
@@ -228,15 +227,36 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
     }
   }
 
-  private void validateInputSchemaType(Schema inputSchema, String inputName, @Nonnull FailureCollector collector) {
+  /**
+   * Validates an input schema type to be either bytes or string and passes an error to
+   * the FailureCollector if the validation fails
+   * @param inputSchema The input schema
+   * @param inputName The input name
+   * @param collector The FailureCollector to catch errors with
+   */
+  private void validateInputSchemaType(Schema inputSchema, String inputName, FailureCollector collector) {
     Schema.Type inputSchemaType = inputSchema.getType();
     if (!Schema.Type.STRING.equals(inputSchemaType) && !Schema.Type.BYTES.equals(inputSchemaType)) {
       collector.addFailure(
           String.format("Field '%s' of unsupported type '%s'.", inputName, inputSchema.getDisplayName()),
-          String.format("Ensure it is of type %s or %s.", Schema.Type.BYTES, Schema.Type.STRING))
-          .withInputSchemaField(inputName);
+          "Ensure it is of type bytes or string.").withInputSchemaField(inputName);
 
       collector.getOrThrowException();
+    }
+  }
+
+  /**
+   * Validates an input schema type to be either bytes or string and throws an exception
+   * if the validation falis
+   * @param inputSchema The input schema
+   * @param inputName The input name
+   */
+  private void validateInputSchemaType(Schema inputSchema, String inputName) {
+    Schema.Type inputSchemaType = inputSchema.getType();
+    if (!Schema.Type.STRING.equals(inputSchemaType) && !Schema.Type.BYTES.equals(inputSchemaType)) {
+      throw new IllegalArgumentException(String.format(
+          "Unsupported inputType in schema, only Schema.Type.BYTES and Schema.Type.STRING are supported " +
+              "InputType: %s", inputSchemaType.toString()));
     }
   }
 
