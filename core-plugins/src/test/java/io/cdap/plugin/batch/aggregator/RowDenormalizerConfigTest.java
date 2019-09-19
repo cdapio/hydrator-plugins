@@ -19,6 +19,7 @@ package io.cdap.plugin.batch.aggregator;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.validation.ValidationException;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
 import org.junit.Assert;
 import org.junit.Test;
@@ -60,8 +61,8 @@ public class RowDenormalizerConfigTest {
     config.validate();
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testDenormalizerWithWrongKeyField() {
+  @Test(expected = ValidationException.class)
+  public void testDenormalizerWithWrongKeyField() throws Exception {
     Schema inputSchema = Schema.recordOf(
       "record",
       Schema.Field.of("KeyField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
@@ -72,10 +73,11 @@ public class RowDenormalizerConfigTest {
       "Lastname,Address", "Lastname:lname,Address:addr");
     RowDenormalizerAggregator aggregator = new RowDenormalizerAggregator(config);
     aggregator.configurePipeline(configurer);
+    configurer.getStageConfigurer().getFailureCollector().getOrThrowException();
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testDenormalizerWithWrongNameField() {
+  @Test(expected = ValidationException.class)
+  public void testDenormalizerWithWrongNameField() throws Exception {
     Schema inputSchema = Schema.recordOf(
       "record",
       Schema.Field.of("KeyField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
@@ -86,10 +88,11 @@ public class RowDenormalizerConfigTest {
       "Lastname,Address", "Lastname:lname,Address:addr");
     RowDenormalizerAggregator aggregator = new RowDenormalizerAggregator(config);
     aggregator.configurePipeline(configurer);
+    configurer.getStageConfigurer().getFailureCollector().getOrThrowException();
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testDenormalizerWithWrongValueField() {
+  @Test(expected = ValidationException.class)
+  public void testDenormalizerWithWrongValueField() throws Exception {
     Schema inputSchema = Schema.recordOf(
       "record",
       Schema.Field.of("KeyField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
@@ -98,7 +101,9 @@ public class RowDenormalizerConfigTest {
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema, Collections.emptyMap());
     RowDenormalizerConfig config = new RowDenormalizerConfig("KeyField", "NameField", "WrongValueField", "Firstname," +
       "Lastname,Address", "Lastname:lname,Address:addr");
+
     RowDenormalizerAggregator aggregator = new RowDenormalizerAggregator(config);
     aggregator.configurePipeline(configurer);
+    configurer.getStageConfigurer().getFailureCollector().getOrThrowException();
   }
 }
