@@ -23,6 +23,7 @@ import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.batch.BatchSink;
 import io.cdap.cdap.etl.api.batch.BatchSinkContext;
 import io.cdap.plugin.format.plugin.AbstractFileSink;
@@ -58,6 +59,7 @@ public class FileSink extends AbstractFileSink<FileSink.Conf> {
   public static class Conf extends AbstractFileSinkConfig {
     private static final Gson GSON = new Gson();
     private static final Type MAP_TYPE = new TypeToken<Map<String, String>>() { }.getType();
+    private static final String NAME_FILE_SYSTEM_PROPERTIES = "fileSystemProperties";
 
     @Macro
     @Description("Destination path prefix. For example, 'hdfs://mycluster.net:8020/output'")
@@ -75,6 +77,17 @@ public class FileSink extends AbstractFileSink<FileSink.Conf> {
     @Override
     public String getPath() {
       return path;
+    }
+
+    @Override
+    public void validate(FailureCollector collector) {
+      super.validate(collector);
+      try {
+        getFSProperties();
+      } catch (IllegalArgumentException e) {
+        collector.addFailure("File system properties must be a valid json.", null)
+          .withConfigProperty(NAME_FILE_SYSTEM_PROPERTIES).withStacktrace(e.getStackTrace());
+      }
     }
 
     private Map<String, String> getFSProperties() {

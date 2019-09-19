@@ -21,6 +21,7 @@ import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginClass;
+import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
 import io.cdap.plugin.format.input.PathTrackingConfig;
 import io.cdap.plugin.format.input.PathTrackingInputFormatProvider;
 
@@ -29,14 +30,14 @@ import java.util.Map;
 /**
  * Provides and sets up configuration for an AvroInputFormat.
  */
-@Plugin(type = "inputformat")
+@Plugin(type = ValidatingInputFormat.PLUGIN_TYPE)
 @Name(AvroInputFormatProvider.NAME)
 @Description(AvroInputFormatProvider.DESC)
 public class AvroInputFormatProvider extends PathTrackingInputFormatProvider<PathTrackingConfig> {
   static final String NAME = "avro";
   static final String DESC = "Plugin for reading files in avro format.";
   public static final PluginClass PLUGIN_CLASS =
-    new PluginClass("inputformat", NAME, DESC, AvroInputFormatProvider.class.getName(),
+    new PluginClass(ValidatingInputFormat.PLUGIN_TYPE, NAME, DESC, AvroInputFormatProvider.class.getName(),
                     "conf", PathTrackingConfig.FIELDS);
 
   public AvroInputFormatProvider(PathTrackingConfig conf) {
@@ -55,5 +56,4 @@ public class AvroInputFormatProvider extends PathTrackingInputFormatProvider<Pat
       properties.put("avro.schema.input.key", schema.toString());
     }
   }
-
 }

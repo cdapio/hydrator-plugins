@@ -20,11 +20,12 @@ import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
-import io.cdap.cdap.api.data.batch.OutputFormatProvider;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginClass;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.api.plugin.PluginPropertyField;
+import io.cdap.cdap.etl.api.validation.ValidatingOutputFormat;
+import io.cdap.plugin.format.output.AbstractOutputFormatProvider;
 import org.apache.parquet.format.CompressionCodec;
 
 import java.io.IOException;
@@ -35,10 +36,10 @@ import javax.annotation.Nullable;
 /**
  * Output format plugin for parquet.
  */
-@Plugin(type = "outputformat")
+@Plugin(type = ValidatingOutputFormat.PLUGIN_TYPE)
 @Name(ParquetOutputFormatProvider.NAME)
 @Description(ParquetOutputFormatProvider.DESC)
-public class ParquetOutputFormatProvider implements OutputFormatProvider {
+public class ParquetOutputFormatProvider extends AbstractOutputFormatProvider {
   public static final PluginClass PLUGIN_CLASS = getPluginClass();
   static final String SCHEMA_KEY = "parquet.avro.schema";
   static final String NAME = "parquet";
@@ -108,7 +109,7 @@ public class ParquetOutputFormatProvider implements OutputFormatProvider {
     properties.put("schema", new PluginPropertyField("schema", Conf.SCHEMA_DESC, "string", false, true));
     properties.put("compressionCodec",
                    new PluginPropertyField("compressionCodec", Conf.CODEC_DESC, "string", false, true));
-    return new PluginClass("outputformat", NAME, DESC, ParquetOutputFormatProvider.class.getName(),
+    return new PluginClass(ValidatingOutputFormat.PLUGIN_TYPE, NAME, DESC, ParquetOutputFormatProvider.class.getName(),
                            "conf", properties);
   }
 }
