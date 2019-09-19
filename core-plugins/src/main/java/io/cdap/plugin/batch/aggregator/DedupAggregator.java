@@ -22,6 +22,7 @@ import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchAggregator;
@@ -69,7 +70,8 @@ public class DedupAggregator extends RecordAggregator {
 
     // otherwise, we have a constant input schema. Get the output schema and propagate the schema
     Schema outputSchema = getOutputSchema(inputSchema);
-    validateSchema(outputSchema, uniqueFields, functionInfo);
+    FailureCollector collector = stageConfigurer.getFailureCollector();
+    validateSchema(outputSchema, uniqueFields, functionInfo, collector);
     stageConfigurer.setOutputSchema(outputSchema);
   }
 
@@ -144,21 +146,22 @@ public class DedupAggregator extends RecordAggregator {
   }
 
   private void validateSchema(Schema inputSchema, List<String> uniqueFields,
-                              @Nullable DedupConfig.DedupFunctionInfo function) {
+                              @Nullable DedupConfig.DedupFunctionInfo function, FailureCollector collector) {
     for (String uniqueField : uniqueFields) {
       Schema.Field field = inputSchema.getField(uniqueField);
       if (field == null) {
-        throw new IllegalArgumentException(String.format("Cannot do an unique on field '%s' because it does " +
-                                                           "not exist in inputSchema '%s'", uniqueField, inputSchema));
+        collector.addFailure(String.format("Field '%s' does not exist in the input schema", uniqueField), "")
+          .withConfigElement("uniqueFields", uniqueField);
       }
     }
 
     if (function != null) {
       Schema.Field field = inputSchema.getField(function.getField());
       if (field == null) {
-        throw new IllegalArgumentException(String.format(
-          "Invalid filter %s(%s): Field '%s' does not exist in input schema '%s'",
-          function.getFunction(), function.getField(), function.getField(), inputSchema));
+       collector.addFailure(String.format("Invalid filter %s(%s): Field '%s' does not exist in input schema ",
+                                          function.getFunction(), function.getField(), function.getField()),
+                            null)
+         .withConfigProperty("filterOperation");
       }
     }
   }

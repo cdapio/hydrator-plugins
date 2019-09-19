@@ -22,6 +22,7 @@ import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchAggregator;
@@ -49,6 +50,20 @@ import java.util.Map;
   "Supports avg, count, count(*), first, last, max, min, and sum as aggregate functions.")
 public class GroupByAggregator extends RecordAggregator {
   private final GroupByConfig conf;
+  private final HashMap<String, String> functionNameMap = new HashMap<String, String>() {{
+    put("AVG", "Avg");
+    put("COUNT", "Count");
+    put("FIRST", "First");
+    put("LAST", "Last");
+    put("MAX", "Max");
+    put("MIN", "Min");
+    put("STDDEV", "Stddev");
+    put("SUM", "Sum");
+    put("VARIANCE", "Variance");
+    put("COLLECTLIST", "CollectList");
+    put("COLLECTSET", "CollectSet");
+  }};
+
   private List<String> groupByFields;
   private List<GroupByConfig.FunctionInfo> functionInfos;
   private Schema outputSchema;
@@ -74,9 +89,50 @@ public class GroupByAggregator extends RecordAggregator {
       return;
     }
 
+    validate(inputSchema, groupByFields, aggregates, stageConfigurer.getFailureCollector());
+    //Throw here to avoid throwing IllegalArgumentExceptions in the next function call
+    stageConfigurer.getFailureCollector().getOrThrowException();
+
     // otherwise, we have a constant input schema. Get the output schema and
     // propagate the schema, which is group by fields + aggregate fields
     stageConfigurer.setOutputSchema(getOutputSchema(inputSchema, groupByFields, aggregates));
+  }
+
+  public void validate(Schema inputSchema, List<String> groupByFields,
+                       List<GroupByConfig.FunctionInfo> aggregates, FailureCollector collector) {
+
+    for (String groupByField : groupByFields) {
+      Schema.Field field = inputSchema.getField(groupByField);
+      if (field == null) {
+        collector.addFailure(String.format("Cannot group by field '%s' because it does not exist in input schema.",
+                                           groupByField), null)
+          .withConfigElement("groupByFields", groupByField);
+      }
+    }
+
+    for (GroupByConfig.FunctionInfo functionInfo : aggregates) {
+      if (functionInfo.getField().equals("*")) {
+        continue;
+      }
+      Schema.Field inputField = inputSchema.getField(functionInfo.getField());
+      String collectorFieldName = String.format("%s:%s(%s)", functionInfo.getName(),
+                                              functionNameMap.get(functionInfo.getFunction().toString().toUpperCase()),
+                                              functionInfo.getField());
+
+      if (inputField == null) {
+        collector.addFailure(
+          String.format("Invalid aggregate %s(%s): Field '%s' does not exist in input schema.",
+                        functionInfo.getFunction(), functionInfo.getField(), functionInfo.getField()), null)
+          .withConfigElement("aggregates", collectorFieldName);
+      }
+      if (functionInfo.getField().equalsIgnoreCase(functionInfo.getName())) {
+        collector.addFailure(String.format("Name '%s' should not be same as aggregate field '%s'",
+                                           functionInfo.getName(), functionInfo.getField()), null)
+          .withConfigElement("aggregates", collectorFieldName);
+      }
+    }
+
+
   }
 
   @Override
