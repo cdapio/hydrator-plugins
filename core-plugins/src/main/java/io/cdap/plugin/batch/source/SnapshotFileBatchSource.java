@@ -32,6 +32,7 @@ import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.batch.BatchSourceContext;
 import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
 import io.cdap.cdap.etl.api.lineage.field.FieldReadOperation;
+import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
 import io.cdap.plugin.batch.sink.SnapshotFileBatchSink;
 import io.cdap.plugin.dataset.SnapshotFileSet;
 import org.apache.hadoop.io.NullWritable;
@@ -63,7 +64,8 @@ public abstract class SnapshotFileBatchSource<T extends SnapshotFileSetSourceCon
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     String inputFormatName = getInputFormatName();
     InputFormatProvider inputFormatProvider =
-      pipelineConfigurer.usePlugin("inputformat", inputFormatName, FORMAT_PLUGIN_ID, config.getProperties());
+      pipelineConfigurer.usePlugin(ValidatingInputFormat.PLUGIN_TYPE, inputFormatName, FORMAT_PLUGIN_ID,
+                                   config.getProperties());
     if (inputFormatProvider == null) {
       throw new IllegalArgumentException(
         String.format("Could not find the '%s' input format plugin. "

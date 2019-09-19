@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.format.input;
 
+import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.data.schema.Schema;
@@ -79,9 +80,9 @@ public class PathTrackingConfig extends PluginConfig {
   @Nullable
   public Schema getSchema() {
     try {
-      return schema == null ? null : Schema.parseJson(schema);
+      return Strings.isNullOrEmpty(schema) ? null : Schema.parseJson(schema);
     } catch (IOException e) {
-      throw new IllegalArgumentException("Could not parse schema: " + e.getMessage(), e);
+      throw new IllegalArgumentException("Invalid schema: " + e.getMessage(), e);
     }
   }
 }

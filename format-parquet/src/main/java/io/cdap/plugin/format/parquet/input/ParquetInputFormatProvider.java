@@ -21,6 +21,7 @@ import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginClass;
+import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
 import io.cdap.plugin.format.input.PathTrackingConfig;
 import io.cdap.plugin.format.input.PathTrackingInputFormatProvider;
 
@@ -29,14 +30,14 @@ import java.util.Map;
 /**
  * Provides and sets up configuration for an parquet input format.
  */
-@Plugin(type = "inputformat")
+@Plugin(type = ValidatingInputFormat.PLUGIN_TYPE)
 @Name(ParquetInputFormatProvider.NAME)
 @Description(ParquetInputFormatProvider.DESC)
 public class ParquetInputFormatProvider extends PathTrackingInputFormatProvider<PathTrackingConfig> {
   static final String NAME = "parquet";
   static final String DESC = "Plugin for reading files in text format.";
   public static final PluginClass PLUGIN_CLASS =
-    new PluginClass("inputformat", NAME, DESC, ParquetInputFormatProvider.class.getName(),
+    new PluginClass(ValidatingInputFormat.PLUGIN_TYPE, NAME, DESC, ParquetInputFormatProvider.class.getName(),
                     "conf", PathTrackingConfig.FIELDS);
 
   public ParquetInputFormatProvider(PathTrackingConfig conf) {

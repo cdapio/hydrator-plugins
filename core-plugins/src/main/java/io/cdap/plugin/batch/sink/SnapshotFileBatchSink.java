@@ -30,6 +30,7 @@ import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchSink;
 import io.cdap.cdap.etl.api.batch.BatchSinkContext;
+import io.cdap.cdap.etl.api.validation.ValidatingOutputFormat;
 import io.cdap.plugin.common.TimeParser;
 import io.cdap.plugin.dataset.SnapshotFileSet;
 import org.apache.hadoop.io.NullWritable;
@@ -64,8 +65,9 @@ public abstract class SnapshotFileBatchSink<T extends SnapshotFileSetBatchSinkCo
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     config.validate();
     String outputFormatName = getOutputFormatPlugin();
-    OutputFormatProvider outputFormatProvider = pipelineConfigurer.usePlugin("outputformat", outputFormatName,
-                                                                             FORMAT_PLUGIN_ID, config.getProperties());
+    OutputFormatProvider outputFormatProvider =
+      pipelineConfigurer.usePlugin(ValidatingOutputFormat.PLUGIN_TYPE, outputFormatName, FORMAT_PLUGIN_ID,
+                                   config.getProperties());
     if (outputFormatProvider == null) {
       throw new IllegalArgumentException(
         String.format("Could not find the '%s' output format plugin. "

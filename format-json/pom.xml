@@ -88,8 +88,10 @@
         <groupId>io.cdap</groupId>
         <artifactId>cdap-maven-plugin</artifactId>
         <configuration combine.self="override">
-          <!-- no parents -->
-          <cdapArtifacts></cdapArtifacts>
+          <cdapArtifacts>
+            <parent>system:cdap-data-pipeline[6.1.0-SNAPSHOT,7.0.0-SNAPSHOT)</parent>
+            <parent>system:cdap-data-streams[6.1.0-SNAPSHOT,7.0.0-SNAPSHOT)</parent>
+          </cdapArtifacts>
         </configuration>
       </plugin>
     </plugins>
