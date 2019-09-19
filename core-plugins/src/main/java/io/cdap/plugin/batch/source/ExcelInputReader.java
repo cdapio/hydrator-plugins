@@ -29,12 +29,14 @@ import io.cdap.cdap.api.common.Bytes;
 import io.cdap.cdap.api.data.batch.Input;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.dataset.DatasetManagementException;
 import io.cdap.cdap.api.dataset.DatasetProperties;
 import io.cdap.cdap.api.dataset.lib.CloseableIterator;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.api.dataset.lib.KeyValueTable;
 import io.cdap.cdap.api.dataset.table.Table;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
 import io.cdap.cdap.etl.api.batch.BatchSource;
@@ -75,6 +77,14 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
   private static final String KEY = "key";
   private static final String FILE = "file";
   private static final String SHEET = "sheet";
+  private static final String SHEET_VALUE = "sheetValue";
+  private static final String TABLE_EXPIRY_PERIOD = "tableExpiryPeriod";
+  private static final String ROWS_LIMIT = "rowsLimit";
+  private static final String COLUMN_LIST = "columnList";
+  private static final String OUTPUT_SCHEMA = "outputSchema";
+  private static final String COLUMN_MAPPING = "columnMapping";
+  private static final String IF_ERROR_RECORD = "ifErrorRecord";
+  private static final String ERROR_DATASET_NAME = "errorDatasetName";
   private static final String RECORD = "record";
   private static final String EXIT_ON_ERROR = "Exit on error";
   private static final String WRITE_ERROR_DATASET = "Write to error dataset";
@@ -112,13 +122,15 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
     batchRuntimeContext = context;
-    init();
+    FailureCollector collector = context.getFailureCollector();
+    init(collector);
+    collector.getOrThrowException();
   }
 
   /**
    * Initialize and set maps from input config object
    */
-  private void init() {
+  private void init(FailureCollector collector) {
     if (!Strings.isNullOrEmpty(excelInputreaderConfig.columnList)) {
       String[] columnsList = excelInputreaderConfig.columnList.split(",");
       inputColumns = Arrays.asList(columnsList);
@@ -128,13 +140,18 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
       String[] mappings = excelInputreaderConfig.columnMapping.split(",");
       for (String map : mappings) {
         String[] columns = map.split(":");
-        if (CollectionUtils.isNotEmpty(inputColumns) && !inputColumns.contains(columns[0])) {
-          throw new IllegalArgumentException("Column name: " + columns[0] + " in 'Column-Label Mapping' does not " +
-                                               "match the columns in the 'Column To Be Extracted' input text box. " +
-                                               "It has to be one of the columns in 'Column To Be Extracted' " +
-                                               "input text box.");
+        if (columns.length < 2 || Strings.isNullOrEmpty(columns[1])) {
+          collector.addFailure(
+            String.format("Column: '%s' in 'Column-Label Mapping' must have an alias specified.", columns[0]), null)
+            .withConfigElement(COLUMN_MAPPING, map);
+        } else if (CollectionUtils.isNotEmpty(inputColumns) && !inputColumns.contains(columns[0])) {
+          collector.addFailure(
+            String.format("Column: '%s' in 'Column-Label Mapping' " +
+                            "must be included in 'Column To Be Extracted'", columns[0]), null)
+            .withConfigElement(COLUMN_MAPPING, map);
+        } else {
+          columnMapping.put(columns[0], columns[1]);
         }
-        columnMapping.put(columns[0], columns[1]);
       }
     }
 
@@ -142,13 +159,18 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
       String[] schemaList = excelInputreaderConfig.outputSchema.split(",");
       for (String schema : schemaList) {
         String[] columns = schema.split(":");
-        if (CollectionUtils.isNotEmpty(inputColumns) && !inputColumns.contains(columns[0])) {
-          throw new IllegalArgumentException("Column name: " + columns[0] + " in 'Field Name Schema Type Mapping'" +
-                                               " does not match the columns in the 'Column To Be Extracted' input " +
-                                               "text box. It has to be one of the columns in " +
-                                               "'Column To Be Extracted' input text box.");
+        if (columns.length < 2 || Strings.isNullOrEmpty(columns[1])) {
+          collector.addFailure(
+            String.format("Column: '%s' in 'Field Name Schema Type Mapping' must have an type.", columns[0]), null)
+            .withConfigElement(OUTPUT_SCHEMA, schema);
+        } else if (CollectionUtils.isNotEmpty(inputColumns) && !inputColumns.contains(columns[0])) {
+          collector.addFailure(
+            String.format("Column: '%s' in 'Field Name Schema Type Mapping' " +
+                            "must be included in 'Column To Be Extracted'", columns[0]), null)
+            .withConfigElement(OUTPUT_SCHEMA, schema);
+        } else {
+          outputSchemaMapping.put(columns[0], columns[1]);
         }
-        outputSchemaMapping.put(columns[0], columns[1]);
       }
     }
   }
@@ -266,24 +288,26 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
 
-    excelInputreaderConfig.validate();
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    excelInputreaderConfig.validate(collector);
 
-    if (Strings.isNullOrEmpty(excelInputreaderConfig.columnList) &&
-      Strings.isNullOrEmpty(excelInputreaderConfig.outputSchema)) {
-      throw new IllegalArgumentException("'Field Name Schema Type Mapping' input cannot be empty when the empty " +
-                                           "input value of 'Columns To Be Extracted' is provided.");
-    }
-
-    createDatasets(pipelineConfigurer, null);
-    init();
+    createDatasets(pipelineConfigurer);
+    collector.getOrThrowException();
+    init(collector);
+    collector.getOrThrowException();
     getOutputSchema();
     pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
   }
 
   @Override
   public void prepareRun(BatchSourceContext batchSourceContext) throws Exception {
-    excelInputreaderConfig.validate();
-    createDatasets(null, batchSourceContext);
+    // Get failure collector for updated validation API
+    FailureCollector collector = batchSourceContext.getFailureCollector();
+    excelInputreaderConfig.validate(collector);
+    collector.getOrThrowException();
+
+    createDatasets(batchSourceContext);
+    collector.getOrThrowException();
 
     Job job = JobUtils.createInstance();
 
@@ -309,7 +333,31 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
 
   }
 
-  private void createDatasets(@Nullable PipelineConfigurer pipelineConfigurer, @Nullable BatchSourceContext context) {
+  private void createDatasets(PipelineConfigurer pipelineConfigurer) {
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    if (!excelInputreaderConfig.containsMacro("errorDatasetName") &&
+      !Strings.isNullOrEmpty(excelInputreaderConfig.errorDatasetName)) {
+      Map<String, String> properties = new HashMap<>();
+      properties.put(Properties.Table.PROPERTY_SCHEMA, errorRecordSchema.toString());
+      properties.put(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, KEY);
+      DatasetProperties datasetProperties = DatasetProperties.builder().addAll(properties).build();
+
+      pipelineConfigurer.createDataset(excelInputreaderConfig.errorDatasetName, Table.class, datasetProperties);
+    } else if (!excelInputreaderConfig.containsMacro("ifErrorRecord") &&
+      excelInputreaderConfig.ifErrorRecord.equalsIgnoreCase(WRITE_ERROR_DATASET)) {
+      collector.addFailure("Error dataset name should not be empty if choosing write to error "
+                             + "dataset for 'On Error' input.", null)
+        .withConfigProperty(IF_ERROR_RECORD).withConfigProperty(ERROR_DATASET_NAME);
+    }
+
+    if (!excelInputreaderConfig.containsMacro("memoryTableName") &&
+      !Strings.isNullOrEmpty(excelInputreaderConfig.memoryTableName)) {
+      pipelineConfigurer.createDataset(excelInputreaderConfig.memoryTableName, KeyValueTable.class);
+    }
+  }
+
+  private void createDatasets(BatchSourceContext context) {
+    FailureCollector collector = context.getFailureCollector();
     try {
       if (!excelInputreaderConfig.containsMacro("errorDatasetName") &&
         !Strings.isNullOrEmpty(excelInputreaderConfig.errorDatasetName)) {
@@ -318,29 +366,27 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
         properties.put(Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, KEY);
         DatasetProperties datasetProperties = DatasetProperties.builder().addAll(properties).build();
 
-        if (pipelineConfigurer != null) {
-          pipelineConfigurer.createDataset(excelInputreaderConfig.errorDatasetName, Table.class, datasetProperties);
-        } else if (context != null && !context.datasetExists(excelInputreaderConfig.errorDatasetName)) {
+        if (context != null && !context.datasetExists(excelInputreaderConfig.errorDatasetName)) {
           context.createDataset(excelInputreaderConfig.errorDatasetName, Table.class.getName(), datasetProperties);
         }
 
       } else if (!excelInputreaderConfig.containsMacro("ifErrorRecord") &&
         excelInputreaderConfig.ifErrorRecord.equalsIgnoreCase(WRITE_ERROR_DATASET)) {
-        throw new IllegalArgumentException("Error dataset name should not be empty while choosing write to error " +
-                                             "dataset for 'On Error' input.");
+        collector.addFailure("Error dataset name should not be empty if choosing write to error "
+                               + "dataset for 'On Error' input.", null)
+          .withConfigProperty(IF_ERROR_RECORD).withConfigProperty(ERROR_DATASET_NAME);
+        collector.getOrThrowException();
       }
 
       if (!excelInputreaderConfig.containsMacro("memoryTableName") &&
         !Strings.isNullOrEmpty(excelInputreaderConfig.memoryTableName)) {
-        if (pipelineConfigurer != null) {
-          pipelineConfigurer.createDataset(excelInputreaderConfig.memoryTableName, KeyValueTable.class);
-        } else if (context != null && !context.datasetExists(excelInputreaderConfig.memoryTableName)) {
+        if (context != null && !context.datasetExists(excelInputreaderConfig.memoryTableName)) {
           context.createDataset(excelInputreaderConfig.memoryTableName, KeyValueTable.class.getName(),
                                 DatasetProperties.EMPTY);
         }
       }
-    } catch (Exception e) {
-      throw new IllegalStateException("Exception while creating dataset.", e);
+    } catch (DatasetManagementException e) {
+      collector.addFailure(String.format("Exception while creating dataset: %s.", e.getMessage()), null);
     }
   }
 
@@ -471,37 +517,38 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
       "for 'columnList' has been provided.")
     private String outputSchema;
 
-    @Name("ifErrorRecord")
-    @Description("Specifies the action to be taken in case if an error occurs. Shift 'Options are' in next line: " +
-      "Ignore error and continue" +
-      "Exit on error: Stops processing upon encountering an error" +
-      "Write to error dataset:  Writes the error record to an error dataset and continues processing.")
-    @Macro
     private String ifErrorRecord;
 
-    @Nullable
-    @Name("errorDatasetName")
-    @Description("Name of the table to store error record; for example: 'error-table-name'.")
-    @Macro
     private String errorDatasetName;
 
     public ExcelInputReaderConfig() {
       super("ExcelInputReader");
     }
 
-    public void validate() {
+    public void validate(FailureCollector collector) {
       if (!containsMacro("sheetValue") && sheet.equalsIgnoreCase(SHEET_NO) && !StringUtils.isNumeric(sheetValue)) {
-        throw new IllegalArgumentException("Invalid sheet number. The value should be greater than or equals to zero.");
+        collector.addFailure(
+          String.format("Invalid sheet number: '%s'.", sheetValue),
+          "The value should be greater than or equal to zero.")
+          .withConfigProperty(SHEET_VALUE);
       }
 
       if (!(Strings.isNullOrEmpty(tableExpiryPeriod)) && (Strings.isNullOrEmpty(memoryTableName))) {
-        throw new IllegalArgumentException("Value for Table Expiry period is valid only when file tracking table " +
-                                             "is specified. Please specify file tracking table name.");
+        collector.addFailure(
+          "Value for Table Expiry Period is valid only when file tracking table is specified.", null)
+          .withConfigProperty(TABLE_EXPIRY_PERIOD);
       }
 
       if (!Strings.isNullOrEmpty(rowsLimit) && !StringUtils.isNumeric(rowsLimit)) {
-        throw new IllegalArgumentException(String.format("Invalid row limit: %s. " +
-                                                           "Numeric value expected.", rowsLimit));
+        collector.addFailure(String.format("Invalid row limit: '%s'.", rowsLimit), "Numeric value expected.")
+          .withConfigProperty(ROWS_LIMIT);
+      }
+
+      if (Strings.isNullOrEmpty(columnList) &&
+        Strings.isNullOrEmpty(outputSchema)) {
+        collector.addFailure(
+          "'Field Name Schema Type Mapping' and 'Columns To Be Extracted' cannot both be empty.", null)
+          .withConfigProperty(OUTPUT_SCHEMA).withConfigProperty(COLUMN_LIST);
       }
     }
   }

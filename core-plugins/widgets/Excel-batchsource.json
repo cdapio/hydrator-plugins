@@ -136,7 +136,7 @@
       "label": "Error Handling",
       "properties": [
         {
-          "widget-type": "select",
+          "widget-type": "hidden",
           "label": "On Error",
           "name": "ifErrorRecord",
           "widget-attributes": {
@@ -149,7 +149,7 @@
           }
         },
         {
-          "widget-type": "textbox",
+          "widget-type": "hidden",
           "label": "Error Dataset",
           "name": "errorDatasetName"
         }
