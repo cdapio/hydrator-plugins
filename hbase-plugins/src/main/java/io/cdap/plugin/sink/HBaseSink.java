@@ -16,7 +16,6 @@
 
 package io.cdap.plugin.sink;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Name;
@@ -28,12 +27,14 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.api.dataset.table.Put;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
 import io.cdap.cdap.etl.api.batch.BatchSink;
 import io.cdap.cdap.etl.api.batch.BatchSinkContext;
 import io.cdap.cdap.format.RecordPutTransformer;
 import io.cdap.plugin.HBaseConfig;
+import io.cdap.plugin.common.IdUtils;
 import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.common.ReferenceBatchSink;
 import io.cdap.plugin.common.SchemaValidator;
@@ -71,7 +72,22 @@ public class HBaseSink extends ReferenceBatchSink<StructuredRecord, NullWritable
   }
 
   @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    config.validate(collector);
+    Schema outputSchema =
+      SchemaValidator.validateOutputSchemaAndInputSchemaIfPresent(config.schema, config.rowField, pipelineConfigurer);
+    // NOTE: this is done only for testing, once CDAP-4575 is implemented, we can use this schema in initialize
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
+  }
+
+  @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
+    FailureCollector collector = context.getFailureCollector();
+    config.validate(collector);
+    collector.getOrThrowException();
+
     Job job;
     ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
     // Switch the context classloader to plugin class' classloader (PluginClassLoader) so that
@@ -91,18 +107,6 @@ public class HBaseSink extends ReferenceBatchSink<StructuredRecord, NullWritable
     LineageRecorder lineageRecorder = new LineageRecorder(context, config.referenceName);
     lineageRecorder.createExternalDataset(config.getSchema());
     context.addOutput(Output.of(config.referenceName, new HBaseOutputFormatProvider(config, conf)));
-  }
-
-  @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    super.configurePipeline(pipelineConfigurer);
-    Preconditions.checkArgument(!Strings.isNullOrEmpty(config.rowField),
-                                "Row field must be given as a property.");
-    Schema outputSchema =
-      SchemaValidator.validateOutputSchemaAndInputSchemaIfPresent(config.schema,
-                                                                  config.rowField, pipelineConfigurer);
-    // NOTE: this is done only for testing, once CDAP-4575 is implemented, we can use this schema in initialize
-    pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
   }
 
   private class HBaseOutputFormatProvider implements OutputFormatProvider {
@@ -167,6 +171,13 @@ public class HBaseSink extends ReferenceBatchSink<StructuredRecord, NullWritable
 
     public HBaseSinkConfig(String referenceName, String tableName, String rowField, @Nullable String schema) {
       super(referenceName, tableName, rowField, schema);
+    }
+
+    public void validate(FailureCollector collector) {
+      IdUtils.validateReferenceName(referenceName, collector);
+      if (Strings.isNullOrEmpty(rowField)) {
+        collector.addFailure("Row field must be given as a property.", null).withConfigProperty(NAME_ROWFIELD);
+      }
     }
   }
 }

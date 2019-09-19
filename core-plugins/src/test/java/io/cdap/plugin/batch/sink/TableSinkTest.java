@@ -21,6 +21,7 @@ import io.cdap.cdap.api.common.Bytes;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.table.Put;
 import io.cdap.cdap.api.dataset.table.Table;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.batch.BatchSink;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
@@ -43,7 +44,7 @@ import java.util.Map;
  */
 public class TableSinkTest extends ETLBatchTestBase {
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testTableSinkWithOutputSchemaExtraField() {
     Schema outputSchema = Schema.recordOf(
       "purchase",
@@ -63,9 +64,11 @@ public class TableSinkTest extends ETLBatchTestBase {
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
     tableSink.configurePipeline(mockPipelineConfigurer);
+    FailureCollector collector = mockPipelineConfigurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(1, collector.getValidationFailures().size());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testTableSinkWithMissingRowKeyField() {
     Schema outputSchema = Schema.recordOf(
       "purchase",
@@ -84,6 +87,8 @@ public class TableSinkTest extends ETLBatchTestBase {
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
     tableSink.configurePipeline(mockPipelineConfigurer);
+    FailureCollector collector = mockPipelineConfigurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(1, collector.getValidationFailures().size());
   }
 
   @Test
@@ -108,7 +113,7 @@ public class TableSinkTest extends ETLBatchTestBase {
     tableSink.configurePipeline(mockPipelineConfigurer);
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testTableSinkWithComplexTypeInOutputSchema() {
     Schema outputSchema = Schema.recordOf(
       "purchase",
@@ -129,9 +134,11 @@ public class TableSinkTest extends ETLBatchTestBase {
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
     tableSink.configurePipeline(mockPipelineConfigurer);
+    FailureCollector collector = mockPipelineConfigurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(1, collector.getValidationFailures().size());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testTableSinkWithFieldTypeMismatch() {
     Schema outputSchema = Schema.recordOf(
       "purchase",
@@ -152,6 +159,8 @@ public class TableSinkTest extends ETLBatchTestBase {
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
     tableSink.configurePipeline(mockPipelineConfigurer);
+    FailureCollector collector = mockPipelineConfigurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(1, collector.getValidationFailures().size());
   }
 
   @Test

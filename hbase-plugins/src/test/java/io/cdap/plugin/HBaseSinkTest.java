@@ -17,17 +17,21 @@
 package io.cdap.plugin;
 
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.FailureCollector;
+import io.cdap.cdap.etl.api.validation.ValidationFailure;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
 import io.cdap.plugin.sink.HBaseSink;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.List;
 
 /**
  * Tests for hbase sink, with valid and invalid (input, output) schemas
  */
 public class HBaseSinkTest {
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testTableSinkWithOutputSchemaExtraField() {
     Schema outputSchema = Schema.recordOf(
       "purchase",
@@ -48,9 +52,12 @@ public class HBaseSinkTest {
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
     tableSink.configurePipeline(mockPipelineConfigurer);
+
+    FailureCollector collector = mockPipelineConfigurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(1, collector.getValidationFailures().size());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testTableSinkWithMissingRowKeyField() {
     Schema outputSchema = Schema.recordOf(
       "purchase",
@@ -69,6 +76,9 @@ public class HBaseSinkTest {
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
     tableSink.configurePipeline(mockPipelineConfigurer);
+
+    FailureCollector collector = mockPipelineConfigurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(1, collector.getValidationFailures().size());
   }
 
   @Test
@@ -95,7 +105,7 @@ public class HBaseSinkTest {
   }
 
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testTableSinkWithComplexType() {
     Schema outputSchema = Schema.recordOf(
       "purchase",
@@ -117,9 +127,14 @@ public class HBaseSinkTest {
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
     tableSink.configurePipeline(mockPipelineConfigurer);
+
+    FailureCollector collector = mockPipelineConfigurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(1, collector.getValidationFailures().size());
+    List<ValidationFailure.Cause> causes = collector.getValidationFailures().get(0).getCauses();
+    Assert.assertEquals(2, causes.size());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testTableSinkWithFieldTypeMismatch() {
     Schema outputSchema = Schema.recordOf(
       "purchase",
@@ -141,6 +156,11 @@ public class HBaseSinkTest {
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(inputSchema);
     tableSink.configurePipeline(mockPipelineConfigurer);
+
+    FailureCollector collector = mockPipelineConfigurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(1, collector.getValidationFailures().size());
+    List<ValidationFailure.Cause> causes = collector.getValidationFailures().get(0).getCauses();
+    Assert.assertEquals(2, causes.size());
   }
 
   @Test

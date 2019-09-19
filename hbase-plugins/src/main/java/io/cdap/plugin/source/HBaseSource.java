@@ -26,6 +26,7 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.api.dataset.table.Row;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
 import io.cdap.cdap.etl.api.batch.BatchSourceContext;
@@ -58,7 +59,19 @@ public class HBaseSource extends ReferenceBatchSource<ImmutableBytesWritable, Re
   }
 
   @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    config.validate(collector);
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(config.getSchema());
+  }
+
+  @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
+    FailureCollector collector = context.getFailureCollector();
+    config.validate(collector);
+    collector.getOrThrowException();
+
     Configuration conf = new Configuration();
     String ioSerializations = conf.get("io.serializations");
     conf.clear();
@@ -75,16 +88,6 @@ public class HBaseSource extends ReferenceBatchSource<ImmutableBytesWritable, Re
     LineageRecorder lineageRecorder = new LineageRecorder(context, config.referenceName);
     lineageRecorder.createExternalDataset(config.getSchema());
     context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(HBaseTableInputFormat.class, conf)));
-  }
-
-  @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    super.configurePipeline(pipelineConfigurer);
-    try {
-      pipelineConfigurer.getStageConfigurer().setOutputSchema(Schema.parseJson(config.schema));
-    } catch (Exception e) {
-      throw new IllegalArgumentException("Invalid output schema: " + e.getMessage(), e);
-    }
   }
 
   @Override
