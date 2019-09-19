@@ -122,7 +122,11 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
               null)
               .withConfigProperty(INPUT_NAME);
         } else {
-          validateInputSchemaType(inputNameSchema.getSchema(), config.inputName, collector);
+          Schema schema = inputNameSchema.getSchema();
+          if (schema.isNullable()) {
+            schema = schema.getNonNullable();
+          }
+          validateInputSchemaType(schema, config.inputName, collector);
         }
       }
     }
