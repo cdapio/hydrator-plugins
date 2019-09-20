@@ -23,6 +23,7 @@ import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchActionContext;
 import io.cdap.cdap.etl.api.batch.PostAction;
@@ -58,13 +59,16 @@ public class HTTPCallbackAction extends PostAction {
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    conf.validate();
+    conf.validate(pipelineConfigurer.getStageConfigurer().getFailureCollector());
   }
 
   @SuppressWarnings("ConstantConditions")
   @Override
   public void run(BatchActionContext batchActionContext) throws Exception {
-    conf.validate();
+    FailureCollector collector = batchActionContext.getFailureCollector();
+    conf.validate(collector);
+    collector.getOrThrowException();
+
     if (!conf.shouldRun(batchActionContext)) {
       return;
     }
@@ -115,7 +119,11 @@ public class HTTPCallbackAction extends PostAction {
   public static final class HttpRequestConf extends HTTPConfig {
     private static final Set<String> METHODS = ImmutableSet.of(HttpMethod.GET, HttpMethod.HEAD, HttpMethod.OPTIONS,
                                                                HttpMethod.PUT, HttpMethod.POST, HttpMethod.DELETE);
+    static final String NAME_METHOD = "method";
+    static final String NAME_NUM_RETRIES = "numRetries";
+    static final String NAME_RUN_CONDITION = "runCondition";
 
+    @Name(NAME_RUN_CONDITION)
     @Nullable
     @Description("When to run the action. Must be 'completion', 'success', or 'failure'. Defaults to 'completion'. " +
       "If set to 'completion', the action will be executed regardless of whether " +
@@ -125,6 +133,7 @@ public class HTTPCallbackAction extends PostAction {
     @Macro
     public String runCondition;
 
+    @Name(NAME_METHOD)
     @Description("The http request method.")
     @Macro
     private String method;
@@ -145,21 +154,22 @@ public class HTTPCallbackAction extends PostAction {
       runCondition = Condition.COMPLETION.name();
     }
 
-    @SuppressWarnings("ConstantConditions")
-    public void validate() {
-      super.validate();
-      if (!containsMacro("method") && !METHODS.contains(method.toUpperCase())) {
-        throw new IllegalArgumentException(String.format("Invalid request method %s, must be one of %s.",
-                                                         method, Joiner.on(',').join(METHODS)));
+    public void validate(FailureCollector collector) {
+      super.validate(collector);
+      if (!containsMacro(NAME_METHOD) && !METHODS.contains(method.toUpperCase())) {
+        collector.addFailure(String.format("Invalid request method '%s'.", method),
+                             String.format("Supported methods are : %s", Joiner.on(',').join(METHODS)))
+          .withConfigProperty(NAME_METHOD);
       }
-      if (!containsMacro("numRetries") && numRetries < 0) {
-        throw new IllegalArgumentException(String.format(
-          "Invalid numRetries %d. Retries cannot be a negative number.", numRetries));
+      if (!containsMacro(NAME_NUM_RETRIES) && numRetries != null && numRetries < 0) {
+        collector.addFailure(String.format("Invalid numRetries '%d'.", numRetries),
+                             "Retries must be a positive number or zero.")
+          .withConfigProperty(NAME_NUM_RETRIES);
       }
     }
 
     public boolean shouldRun(BatchActionContext context) {
-      if (!containsMacro("runCondition")) {
+      if (!containsMacro(NAME_RUN_CONDITION)) {
         return new ConditionConfig(runCondition).shouldRun(context);
       } else {
         return false;
