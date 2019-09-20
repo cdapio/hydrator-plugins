@@ -20,13 +20,10 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.io.Files;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
-import io.cdap.cdap.api.data.format.FormatSpecification;
-import io.cdap.cdap.api.data.format.RecordFormat;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.FailureCollector;
@@ -34,20 +31,11 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.streaming.StreamingContext;
 import io.cdap.cdap.etl.api.streaming.StreamingSource;
-import io.cdap.cdap.format.RecordFormats;
 import io.cdap.plugin.common.ReferencePluginConfig;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
-import org.apache.spark.api.java.function.Function;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
-import scala.Tuple2;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -85,74 +73,7 @@ public class FileStreamingSource extends ReferenceStreamingSource<StructuredReco
 
     context.registerLineage(conf.referenceName);
     JavaStreamingContext jsc = context.getSparkStreamingContext();
-    Function<Path, Boolean> filter =
-      conf.extensions == null ? new NoFilter() : new ExtensionFilter(conf.getExtensions());
-
-    jsc.ssc().conf().set("spark.streaming.fileStream.minRememberDuration", conf.ignoreThreshold + "s");
-    return jsc.fileStream(conf.path, LongWritable.class, Text.class,
-                          TextInputFormat.class, filter, false)
-      .map(new FormatFunction(conf.format, conf.schema));
-  }
-
-  /**
-   * Doesn't filter any files.
-   */
-  private static class NoFilter implements Function<Path, Boolean> {
-    @Override
-    public Boolean call(Path path) throws Exception {
-      return true;
-    }
-  }
-
-  /**
-   * Filters out files that don't have one of the supported extensions.
-   */
-  private static class ExtensionFilter implements Function<Path, Boolean> {
-    private final Set<String> extensions;
-
-    ExtensionFilter(Set<String> extensions) {
-      this.extensions = extensions;
-    }
-
-    @Override
-    public Boolean call(Path path) throws Exception {
-      String extension = Files.getFileExtension(path.getName());
-      return extensions.contains(extension);
-    }
-  }
-
-  /**
-   * Transforms kafka key and message into a structured record when message format and schema are given.
-   * Everything here should be serializable, as Spark Streaming will serialize all functions.
-   */
-  private static class FormatFunction implements Function<Tuple2<LongWritable, Text>, StructuredRecord> {
-    private final String format;
-    private final String schemaStr;
-    private transient Schema schema;
-    private transient RecordFormat<ByteBuffer, StructuredRecord> recordFormat;
-
-    FormatFunction(String format, String schemaStr) {
-      this.format = format;
-      this.schemaStr = schemaStr;
-    }
-
-    @Override
-    public StructuredRecord call(Tuple2<LongWritable, Text> in) throws Exception {
-      // first time this was called, initialize schema and time, key, and message fields.
-      if (recordFormat == null) {
-        schema = Schema.parseJson(schemaStr);
-        FormatSpecification spec = new FormatSpecification(format, schema, new HashMap<String, String>());
-        recordFormat = RecordFormats.createInitializedFormat(spec);
-      }
-
-      StructuredRecord.Builder builder = StructuredRecord.builder(schema);
-      StructuredRecord messageRecord = recordFormat.read(ByteBuffer.wrap(in._2().copyBytes()));
-      for (Schema.Field messageField : messageRecord.getSchema().getFields()) {
-        String fieldName = messageField.getName();
-        builder.set(fieldName, messageRecord.get(fieldName));
-      }
-      return builder.build();
-    }
+    return FileStreamingSourceUtil.getJavaDStream(jsc, conf);
   }
 
   /**
@@ -195,6 +116,24 @@ public class FileStreamingSource extends ReferenceStreamingSource<StructuredReco
       this.extensions = null;
     }
 
+    @Nullable
+    public String getFormat() {
+      return format;
+    }
+
+    public String getSchema() {
+      return schema;
+    }
+
+    public String getPath() {
+      return path;
+    }
+
+    @Nullable
+    public Integer getIgnoreThreshold() {
+      return ignoreThreshold;
+    }
+
     private void validate(FailureCollector collector) {
       if (!containsMacro(format) && !FORMATS.contains(format)) {
         collector.addFailure(String.format("Invalid format '%s'.", format),
@@ -219,7 +158,7 @@ public class FileStreamingSource extends ReferenceStreamingSource<StructuredReco
       throw collector.getOrThrowException();
     }
 
-    private Set<String> getExtensions() {
+    public Set<String> getExtensions() {
       Set<String> extensionsSet = new HashSet<>();
       if (extensions == null) {
         return extensionsSet;
