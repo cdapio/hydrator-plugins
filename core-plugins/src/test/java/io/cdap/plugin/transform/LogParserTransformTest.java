@@ -20,8 +20,11 @@ import com.google.common.collect.ImmutableMap;
 import io.cdap.cdap.api.common.Bytes;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.InvalidEntry;
 import io.cdap.cdap.etl.api.Transform;
+import io.cdap.cdap.etl.api.validation.CauseAttributes;
+import io.cdap.cdap.etl.api.validation.ValidationFailure.Cause;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
 import io.cdap.plugin.validator.CoreValidator;
@@ -60,6 +63,10 @@ public class LogParserTransformTest {
     Schema.Field.of("httpStatus", Schema.of(Schema.Type.INT)),
     Schema.Field.of("ts", Schema.of(Schema.Type.LONG)));
 
+  private static final String validationExceptionMessage = "Errors were encountered during validation.";
+  private static final String stage = "stage";
+  private static final String mockStage = "mockstage";
+
   @Test
   public void testConfigurePipelineSchemaValidation() throws Exception {
     Schema inputSchemaString = Schema.recordOf(
@@ -86,16 +93,19 @@ public class LogParserTransformTest {
     Assert.assertEquals(LOG_SCHEMA, mockConfigurer.getOutputSchema());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConfigurePipelineSchemaValidationError() throws Exception {
     MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(Schema.of(Schema.Type.BYTES),
                                                                        ImmutableMap.of(
                                                                          CoreValidator.ID, new CoreValidator()));
     S3_TRANSFORM.configurePipeline(mockConfigurer);
     Assert.assertEquals(LOG_SCHEMA, mockConfigurer.getOutputSchema());
+    FailureCollector collector = mockConfigurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(1, mockConfigurer.getStageConfigurer().getFailureCollector().getValidationFailures().size());
+    Assert.assertEquals(0, collector.getValidationFailures().get(0).getCauses().size());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConfigurePipelineInvalidSchema() throws Exception {
     Schema inputSchemaString = Schema.recordOf(
       "event",
@@ -105,10 +115,23 @@ public class LogParserTransformTest {
     MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(inputSchemaString,
                                                                        ImmutableMap.of(
                                                                          CoreValidator.ID, new CoreValidator()));
-    S3_TRANSFORM.configurePipeline(mockConfigurer);
+    String caughtException = "";
+    try {
+      S3_TRANSFORM.configurePipeline(mockConfigurer);
+    } catch (Exception e) {
+      caughtException = e.getMessage();
+    }
+    Assert.assertEquals(validationExceptionMessage, caughtException);
+    FailureCollector collector = mockConfigurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(1, collector.getValidationFailures().size());
+    Assert.assertEquals(1, collector.getValidationFailures().get(0).getCauses().size());
+    Cause expectedCause = new Cause();
+    expectedCause.addAttribute(CauseAttributes.INPUT_SCHEMA_FIELD, "body");
+    expectedCause.addAttribute(stage, mockStage);
+    Assert.assertEquals(expectedCause, collector.getValidationFailures().get(0).getCauses().get(0));
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConfigurePipelineSchemaWithMissingInputNameField() throws Exception {
     Schema inputSchemaString = Schema.recordOf(
       "event",
@@ -119,6 +142,12 @@ public class LogParserTransformTest {
                                                                        ImmutableMap.of(
                                                                          CoreValidator.ID, new CoreValidator()));
     S3_TRANSFORM.configurePipeline(mockConfigurer);
+    FailureCollector collector = mockConfigurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(1, collector.getValidationFailures().size());
+    Assert.assertEquals(1, collector.getValidationFailures().get(0).getCauses().size());
+    Cause expectedCause = new Cause();
+    expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, "inputName");
+    Assert.assertEquals(expectedCause, collector.getValidationFailures().get(0).getCauses().get(0));
   }
 
   @Test
