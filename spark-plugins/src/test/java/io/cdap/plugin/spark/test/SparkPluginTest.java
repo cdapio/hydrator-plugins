@@ -278,7 +278,6 @@ public class SparkPluginTest extends HydratorTestBase {
     sparkManager.stop();
   }
 
-
   private int resetFeeds() throws IOException {
     URL url = new URL(httpBase + "/feeds");
     HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
