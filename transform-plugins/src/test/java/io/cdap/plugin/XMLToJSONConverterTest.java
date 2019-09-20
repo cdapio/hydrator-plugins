@@ -18,8 +18,13 @@ package io.cdap.plugin;
 
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.FailureCollector;
+import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.Transform;
+import io.cdap.cdap.etl.api.validation.CauseAttributes;
+import io.cdap.cdap.etl.api.validation.ValidationFailure.Cause;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
+import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -85,5 +90,36 @@ public class XMLToJSONConverterTest {
     } catch (Exception e) {
       Assert.assertTrue(e.getMessage().contains("Failed to convert XML to JSON"));
     }
+  }
+
+  @Test
+  public void testInvalidInputField() throws Exception {
+    XMLToJSON.Config config = new XMLToJSON.Config("does_not_exist", "jsonevent", OUTPUT.toString());
+    PipelineConfigurer configurer = new MockPipelineConfigurer(INPUT);
+    FailureCollector collector = configurer.getStageConfigurer().getFailureCollector();
+    XMLToJSON converter = new XMLToJSON(config);
+
+    converter.configurePipeline(configurer);
+
+    Assert.assertEquals(1, collector.getValidationFailures().size());
+    Assert.assertEquals(1, collector.getValidationFailures().get(0).getCauses().size());
+    Cause expectedCause = new Cause();
+    expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, "inputField");
+    Assert.assertEquals(expectedCause, collector.getValidationFailures().get(0).getCauses().get(0));
+  }
+
+  @Test
+  public void testInvalidInputFieldType() throws Exception {
+    Schema schema = Schema.recordOf("input1",
+        Schema.Field.of("body", Schema.of(Schema.Type.INT)));
+    XMLToJSON.Config config = new XMLToJSON.Config("body", "jsonevent", OUTPUT.toString());
+    PipelineConfigurer configurer = new MockPipelineConfigurer(schema);
+    FailureCollector collector = configurer.getStageConfigurer().getFailureCollector();
+    XMLToJSON converter = new XMLToJSON(config);
+
+    converter.configurePipeline(configurer);
+
+    Assert.assertEquals(1, collector.getValidationFailures().size());
+    Assert.assertEquals(2, collector.getValidationFailures().get(0).getCauses().size());
   }
 }
