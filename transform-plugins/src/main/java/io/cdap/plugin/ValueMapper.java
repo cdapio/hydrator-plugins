@@ -19,16 +19,18 @@ package io.cdap.plugin;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.annotation.Requirements;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.dataset.table.Table;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.Lookup;
 import io.cdap.cdap.etl.api.LookupTableConfig;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,25 +41,26 @@ import java.util.Map;
  */
 @Plugin(type = Transform.PLUGIN_TYPE)
 @Name("ValueMapper")
+@Requirements(datasetTypes = Table.TYPE)
 @Description("Maps and converts record values using a mapping dataset")
 public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
-
   private final Config config;
   private final Map<Schema, Schema> schemaCache = new HashMap<>();
-  private static final Map<String, ValueMapping> mappingValues = new HashMap<>();
-  private static Map<String, String> defaultsMapping = new HashMap<>();
+  private final Map<String, ValueMapping> mappingValues = new HashMap<>();
+  private Map<String, String> defaultsMapping = new HashMap<>();
   private Map<String, Lookup<String>> lookupTableCache = new HashMap<String, Lookup<String>>();
 
   //for unit tests, otherwise config is injected by plugin framework.
   public ValueMapper(Config config) {
     this.config = config;
-    this.config.parseConfiguration();
   }
 
   /**
    * Configuration for the ValueMapper transform.
    */
   public static class Config extends PluginConfig {
+    public static final String DEFAULTS = "defaults";
+    public static final String MAPPING = "mapping";
 
     @Name("mapping")
     @Description("Specify the source and target field mapping and lookup dataset name." +
@@ -77,55 +80,54 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
       this.mapping = mapping;
       this.defaults = defaults;
     }
+  }
 
-    /**
-     * This method is meant to parse input configuration.
-     * It is required to use in configurePiperline as well as transform method.
-     * Hence this is implemented as a part of Config class to set configuration once and make it available for
-     * subsequent methods.
-     */
-    private void parseConfiguration() {
-      if (!defaults.isEmpty()) {
-        String[] defaultsList = this.defaults.split(",");
-        for (String defaultValue : defaultsList) {
-          String[] defaultsArray = defaultValue.split(":");
-          if (defaultsArray.length != 2) {
-            throw new IllegalArgumentException("Invalid default " + defaultValue + ". Defaults should contain source" +
-                                                 " field and its corresponding default value in the format: " +
-                                                 "<source-field>:<default-value>[,<source-field>:<default-value>]*" +
-                                                 "For example: lang_code:English,country_code:Britain");
-          } else {
-            defaultsMapping.put(defaultsArray[0], defaultsArray[1]);
-          }
-        }
-      }
-      String[] mappingArray = this.mapping.split(",");
-      for (String mapping : mappingArray) {
-        String[] mappingValueArray = mapping.split(":");
-        if (mappingValueArray.length != 3) {
-          throw new IllegalArgumentException("Invalid mapping " + mapping + ". Mapping should contain source field, " +
-                                               "lookup table name and target field in the format: " +
-                                               "<source-field>:<lookup-table-name>:<target-field>" +
-                                               "[,<source-field>:<lookup-table-name>:<target-field>]*" +
-                                               "For example: lang_code:language_code_lookup:lang_desc," +
-                                               "country_code:country_lookup:country_name");
+  /**
+   * This method is meant to parse input configuration.
+   * It is required to use in configurePiperline as well as transform method (run in initialize).
+   */
+  private void parseConfiguration(Config config, FailureCollector collector) {
+    if (!config.defaults.isEmpty()) {
+      String[] defaultsList = config.defaults.split(",");
+      for (String defaultValue : defaultsList) {
+        String[] defaultsArray = defaultValue.split(":");
+        if (defaultsArray.length != 2) {
+          collector.addFailure(
+            String.format("Invalid default: %s.", defaultValue),
+            "Defaults should contain source field and its corresponding default " +
+              "value in the format: <source-field>:<default-value>[,<source-field>:<default-value>]* " +
+              "For example: lang_code:English,country_code:Britain").withConfigElement(Config.DEFAULTS, defaultValue);
         } else {
-          String defaultValue = null;
-          if (defaultsMapping.containsKey(mappingValueArray[0])) {
-            defaultValue = defaultsMapping.get(mappingValueArray[0]);
-          }
-          ValueMapping valueMapping = new ValueMapping(mappingValueArray[2], mappingValueArray[1], defaultValue);
-
-          mappingValues.put(mappingValueArray[0], valueMapping);
+          defaultsMapping.put(defaultsArray[0], defaultsArray[1]);
         }
       }
     }
+    String[] mappingArray = config.mapping.split(",");
+    for (String mapping : mappingArray) {
+      String[] mappingValueArray = mapping.split(":");
+      if (mappingValueArray.length != 3) {
+        collector.addFailure(String.format("Invalid mapping: %s.", mapping),
+                             "Mapping should contain source field, lookup table name, " +
+                               "and target field in the format: <source-field>:<lookup-table-name>:<target-field>" +
+                               "[,<source-field>:<lookup-table-name>:<target-field>]* " +
+                               "For example: lang_code:language_code_lookup:lang_desc," +
+                               "country_code:country_lookup:country_name").withConfigElement(Config.MAPPING, mapping);
+      } else {
+        String defaultValue = null;
+        if (defaultsMapping.containsKey(mappingValueArray[0])) {
+          defaultValue = defaultsMapping.get(mappingValueArray[0]);
+        }
+        ValueMapping valueMapping = new ValueMapping(mappingValueArray[2], mappingValueArray[1], defaultValue);
+        mappingValues.put(mappingValueArray[0], valueMapping);
+      }
+    }
+    collector.getOrThrowException();
   }
 
   /**
    * Creates output schema with the help of input schema and mapping
    */
-  private Schema getOutputSchema(Schema inputSchema) throws IllegalArgumentException {
+  private Schema getOutputSchema(Schema inputSchema, FailureCollector collector) throws IllegalArgumentException {
     Schema outputSchema = schemaCache.get(inputSchema);
     if (outputSchema != null) {
       return outputSchema;
@@ -139,8 +141,14 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
         Schema.Type fieldType = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema
           .getType();
         if (fieldType != Schema.Type.STRING) {
-          throw new IllegalArgumentException("Input field " + inputFieldName + " must be of type string, but is" +
-                                               " of type" + inputField.getSchema().getType().name());
+          ValueMapping mapping = mappingValues.get(inputFieldName);
+          collector.addFailure(
+            String.format("Invalid input field type '%s' for mapped field '%s'.",
+                          inputField.getSchema().getDisplayName(), inputFieldName),
+              "Only input fields of type string can be mapped.")
+            .withInputSchemaField(inputFieldName)
+            .withConfigElement(Config.MAPPING, String.format("%s:%s:%s", inputFieldName,
+                                                             mapping.getLookupTableName(), mapping.getTargetField()));
         } else {
           //Checks whether user has provided default value for source field
           if (defaultsMapping.containsKey(inputFieldName)) {
@@ -155,6 +163,7 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
         outputFields.add(inputField);
       }
     }
+    collector.getOrThrowException();
     outputSchema = Schema.recordOf(inputSchema.getRecordName() + ".formatted", outputFields);
     schemaCache.put(inputSchema, outputSchema);
     return outputSchema;
@@ -177,7 +186,8 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
 
   @Override
   public void transform(StructuredRecord input, Emitter<StructuredRecord> emitter) throws Exception {
-    StructuredRecord.Builder builder = StructuredRecord.builder(getOutputSchema(input.getSchema()));
+    StructuredRecord.Builder builder = StructuredRecord.builder(
+        getOutputSchema(input.getSchema(), getContext().getFailureCollector()));
     for (Schema.Field sourceField : input.getSchema().getFields()) {
       String sourceFieldName = sourceField.getName();
       if (mappingValues.containsKey(sourceFieldName)) {
@@ -211,6 +221,7 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
+    parseConfiguration(this.config, context.getFailureCollector());
     createLookupTableData(context);
   }
 
@@ -220,11 +231,32 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
    */
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    parseConfiguration(this.config, collector);
     super.configurePipeline(pipelineConfigurer);
     Schema outputSchema = null;
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
     if (inputSchema != null) {
-      outputSchema = getOutputSchema(inputSchema);
+      // validate that the mappings don't use input fields that don't exist
+      for (Map.Entry<String, ValueMapping> mappingPair: mappingValues.entrySet()) {
+        if (inputSchema.getField(mappingPair.getKey()) == null) {
+          collector.addFailure(
+            String.format("Map key '%s' must be present in the input schema.", mappingPair.getKey()), null)
+          .withConfigElement(
+            Config.MAPPING,
+            String.format("%s:%s:%s", mappingPair.getKey(), mappingPair.getValue().getLookupTableName(),
+                          mappingPair.getValue().getTargetField()));
+        }
+      }
+      // validate that the defaults don't use source fields that aren't mapped
+      for (Map.Entry<String, String> defaultPair: defaultsMapping.entrySet()) {
+        if (!mappingValues.containsKey(defaultPair.getKey())) {
+          collector.addFailure(
+            String.format("Defaults key '%s' must be present as a source in mapping.", defaultPair.getKey()), null)
+            .withConfigElement(Config.DEFAULTS, String.format("%s:%s", defaultPair.getKey(), defaultPair.getValue()));
+        }
+      }
+      outputSchema = getOutputSchema(inputSchema, collector);
     }
     pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
   }
