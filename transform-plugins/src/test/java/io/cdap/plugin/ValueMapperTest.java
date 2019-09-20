@@ -25,6 +25,9 @@ import io.cdap.cdap.api.dataset.lib.KeyValueTable;
 import io.cdap.cdap.api.dataset.table.Table;
 import io.cdap.cdap.datapipeline.SmartWorkflow;
 import io.cdap.cdap.etl.api.Transform;
+import io.cdap.cdap.etl.api.validation.CauseAttributes;
+import io.cdap.cdap.etl.api.validation.ValidationException;
+import io.cdap.cdap.etl.api.validation.ValidationFailure.Cause;
 import io.cdap.cdap.etl.mock.batch.MockSink;
 import io.cdap.cdap.etl.mock.batch.MockSource;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
@@ -65,6 +68,9 @@ public class ValueMapperTest extends TransformPluginsTestBase {
   private static final String DESIGNATIONID = "designationid";
   private static final String DESIGNATIONNAME = "designationName";
   private static final String SALARYDESC = "salaryDesc";
+
+  private static final String STAGE = "stage";
+  private static final String MOCK_STAGE = "mockstage";
 
   @Test
   public void testEmptyAndNull() throws Exception {
@@ -315,7 +321,7 @@ public class ValueMapperTest extends TransformPluginsTestBase {
       .get(SALARYDESC));
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testStringHandling() throws Exception {
     Schema inputSchema = Schema.recordOf("sourceRecord",
                                            Schema.Field.of(ID, Schema.of(Schema.Type.STRING)),
@@ -327,7 +333,13 @@ public class ValueMapperTest extends TransformPluginsTestBase {
                                                        "designationid:DEFAULTID");
 
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
-    new ValueMapper(config).configurePipeline(configurer);
+    try {
+      new ValueMapper(config).configurePipeline(configurer);
+      Assert.fail();
+    } catch (ValidationException e) {
+      Assert.assertEquals(1, e.getFailures().size());
+      Assert.assertEquals(2, e.getFailures().get(0).getCauses().size());
+    }
   }
 
   @Test
@@ -355,7 +367,7 @@ public class ValueMapperTest extends TransformPluginsTestBase {
     Assert.assertEquals(expectedOutputSchema, outputSchema);
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testMappingValidation() throws Exception {
     Schema inputSchema = Schema.recordOf("sourceRecord",
                                          Schema.Field.of(ID, Schema.of(Schema.Type.STRING)),
@@ -367,6 +379,72 @@ public class ValueMapperTest extends TransformPluginsTestBase {
                                                        "designationid:DEFAULTID");
 
     MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
-    new ValueMapper(config).configurePipeline(configurer);
+    try {
+      new ValueMapper(config).configurePipeline(configurer);
+      Assert.fail();
+    } catch (ValidationException e) {
+      Assert.assertEquals(1, e.getFailures().size());
+      Assert.assertEquals(1, e.getFailures().get(0).getCauses().size());
+      Cause expectedCause = new Cause();
+      expectedCause.addAttribute(STAGE, MOCK_STAGE);
+      expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, ValueMapper.Config.MAPPING);
+      expectedCause.addAttribute(CauseAttributes.CONFIG_ELEMENT, "designationid:designation_lookup_table");
+      Assert.assertEquals(expectedCause, e.getFailures().get(0).getCauses().get(0));
+    }
+  }
+
+  @Test
+  public void testMappingDoesNotExistInInput() throws Exception {
+    Schema inputSchema = Schema.recordOf("sourceRecord",
+        Schema.Field.of(ID, Schema.of(Schema.Type.STRING)),
+        Schema.Field.of(NAME, Schema.of(Schema.Type.STRING)),
+        Schema.Field.of(SALARY, Schema.of(Schema.Type.STRING)),
+        Schema.Field.of(DESIGNATIONID, Schema.of(Schema.Type.STRING)));
+
+    ValueMapper.Config config = new ValueMapper.Config("does_not_exist:designation_lookup_table:designationName",
+        "does_not_exist:DEFAULTID");
+
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
+    ValueMapper mapper = new ValueMapper(config);
+    try {
+      mapper.configurePipeline(configurer);
+      Assert.fail();
+    } catch (ValidationException e) {
+      Assert.assertEquals(1, e.getFailures().size());
+      Assert.assertEquals(1, e.getFailures().get(0).getCauses().size());
+      Cause expectedCause = new Cause();
+      expectedCause.addAttribute(STAGE, MOCK_STAGE);
+      expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, ValueMapper.Config.MAPPING);
+      expectedCause.addAttribute(CauseAttributes.CONFIG_ELEMENT,
+                                 "does_not_exist:designation_lookup_table:designationName");
+      Assert.assertEquals(expectedCause, e.getFailures().get(0).getCauses().get(0));
+    }
+  }
+
+  @Test
+  public void testDefaultDoesNotExistInMapping() throws Exception {
+    Schema inputSchema = Schema.recordOf("sourceRecord",
+        Schema.Field.of(ID, Schema.of(Schema.Type.STRING)),
+        Schema.Field.of(NAME, Schema.of(Schema.Type.STRING)),
+        Schema.Field.of(SALARY, Schema.of(Schema.Type.STRING)),
+        Schema.Field.of(DESIGNATIONID, Schema.of(Schema.Type.STRING)));
+
+    ValueMapper.Config config = new ValueMapper.Config("designationid:designation_lookup_table:designationName",
+        "does_not_exist:DEFAULTID");
+
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema);
+    ValueMapper mapper = new ValueMapper(config);
+    try {
+      mapper.configurePipeline(configurer);
+      Assert.fail();
+    } catch (ValidationException e) {
+      Assert.assertEquals(1, e.getFailures().size());
+      Assert.assertEquals(1, e.getFailures().get(0).getCauses().size());
+      Cause expectedCause = new Cause();
+      expectedCause.addAttribute(STAGE, MOCK_STAGE);
+      expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, ValueMapper.Config.DEFAULTS);
+      expectedCause.addAttribute(CauseAttributes.CONFIG_ELEMENT, "does_not_exist:DEFAULTID");
+      Assert.assertEquals(expectedCause, e.getFailures().get(0).getCauses().get(0));
+    }
   }
 }
