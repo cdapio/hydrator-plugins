@@ -21,6 +21,9 @@ import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginClass;
+import io.cdap.cdap.etl.api.FailureCollector;
+import io.cdap.cdap.etl.api.validation.FormatContext;
+import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
 import io.cdap.plugin.format.input.PathTrackingConfig;
 import io.cdap.plugin.format.input.PathTrackingInputFormatProvider;
 
@@ -31,14 +34,14 @@ import java.util.List;
 /**
  * Reads the entire contents of a File into a single record
  */
-@Plugin(type = "inputformat")
+@Plugin(type = ValidatingInputFormat.PLUGIN_TYPE)
 @Name(BlobInputFormatProvider.NAME)
 @Description(BlobInputFormatProvider.DESC)
 public class BlobInputFormatProvider extends PathTrackingInputFormatProvider<BlobInputFormatProvider.BlobConfig> {
   static final String NAME = "blob";
   static final String DESC = "Plugin for reading files in blob format.";
   public static final PluginClass PLUGIN_CLASS =
-    new PluginClass("inputformat", NAME, DESC, BlobInputFormatProvider.class.getName(),
+    new PluginClass(ValidatingInputFormat.PLUGIN_TYPE, NAME, DESC, BlobInputFormatProvider.class.getName(),
                     "conf", PathTrackingConfig.FIELDS);
 
   public BlobInputFormatProvider(BlobConfig conf) {
@@ -51,7 +54,7 @@ public class BlobInputFormatProvider extends PathTrackingInputFormatProvider<Blo
   }
 
   @Override
-  protected void validate() {
+  public void validate() {
     if (conf.containsMacro("schema")) {
       return;
     }
@@ -87,10 +90,67 @@ public class BlobInputFormatProvider extends PathTrackingInputFormatProvider<Blo
     }
   }
 
+  @Override
+  public void validate(FormatContext context) {
+    if (conf.containsMacro(BlobConfig.NAME_SCHEMA)) {
+      return;
+    }
+
+    FailureCollector collector = context.getFailureCollector();
+    Schema schema;
+    try {
+      schema = conf.getSchema();
+    } catch (Exception e) {
+      collector.addFailure(e.getMessage(), null).withConfigProperty(BlobConfig.NAME_SCHEMA)
+        .withStacktrace(e.getStackTrace());
+      throw collector.getOrThrowException();
+    }
+
+    String pathField = conf.getPathField();
+    Schema.Field bodyField = schema.getField(BlobConfig.NAME_BODY);
+    if (bodyField == null) {
+      collector.addFailure("The schema for the 'blob' format must have a field named 'body' of type 'bytes'.", null)
+        .withOutputSchemaField(BlobConfig.NAME_SCHEMA);
+    } else {
+      Schema bodySchema = bodyField.getSchema();
+      Schema nonNullableSchema = bodySchema.isNullable() ? bodySchema.getNonNullable() : bodySchema;
+      if (nonNullableSchema.getType() != Schema.Type.BYTES) {
+        collector.addFailure(
+          String.format("Field 'body' is of unexpected type '%s'.", nonNullableSchema.getDisplayName()),
+          "Change type to 'bytes'.").withOutputSchemaField(BlobConfig.NAME_BODY);
+      }
+    }
+
+    // blob must contain 'body' as type 'bytes'.
+    // it can optionally contain a path field of type 'string'
+    int numExpectedFields = pathField == null ? 1 : 2;
+    int numFields = schema.getFields().size();
+    if (numFields > numExpectedFields) {
+      for (Schema.Field field : schema.getFields()) {
+        if (pathField == null) {
+          if (!field.getName().equals(BlobConfig.NAME_BODY)) {
+            collector.addFailure("The schema for the 'blob' format must only contain the 'body' field.",
+                                 String.format("Remove additional field '%s'.", field.getName()))
+              .withOutputSchemaField(field.getName());
+          }
+        } else {
+          if (!field.getName().equals(BlobConfig.NAME_BODY) && !field.getName().equals(pathField)) {
+            collector.addFailure(
+              String.format("The schema for the 'blob' format must only contain the 'body' field and '%s' field.",
+                            pathField), String.format("Remove additional field '%s'.", field.getName()))
+              .withOutputSchemaField(field.getName());
+          }
+        }
+      }
+    }
+  }
+
   /**
    * Config for blob format. Overrides getSchema method to return the default schema if it is not provided.
    */
   public static class BlobConfig extends PathTrackingConfig {
+    static final String NAME_SCHEMA = "schema";
+    static final String NAME_BODY = "body";
 
     /**
      * Return the configured schema, or the default schema if none was given. Should never be called if the
@@ -98,7 +158,7 @@ public class BlobInputFormatProvider extends PathTrackingInputFormatProvider<Blo
      */
     @Override
     public Schema getSchema() {
-      if (containsMacro("schema")) {
+      if (containsMacro(NAME_SCHEMA)) {
         throw new IllegalStateException("schema should not be checked until macros are evaluated.");
       }
       if (schema == null) {
@@ -107,13 +167,13 @@ public class BlobInputFormatProvider extends PathTrackingInputFormatProvider<Blo
       try {
         return Schema.parseJson(schema);
       } catch (IOException e) {
-        throw new IllegalArgumentException("Unable to parse schema: " + e.getMessage(), e);
+        throw new IllegalArgumentException("Invalid schema: " + e.getMessage(), e);
       }
     }
 
     private Schema getDefaultSchema() {
       List<Schema.Field> fields = new ArrayList<>();
-      fields.add(Schema.Field.of("body", Schema.of(Schema.Type.BYTES)));
+      fields.add(Schema.Field.of(NAME_BODY, Schema.of(Schema.Type.BYTES)));
       if (pathField != null && !pathField.isEmpty()) {
         fields.add(Schema.Field.of(pathField, Schema.of(Schema.Type.STRING)));
       }

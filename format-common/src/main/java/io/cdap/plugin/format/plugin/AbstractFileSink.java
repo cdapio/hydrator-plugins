@@ -17,15 +17,17 @@
 package io.cdap.plugin.format.plugin;
 
 import io.cdap.cdap.api.data.batch.Output;
-import io.cdap.cdap.api.data.batch.OutputFormatProvider;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchSink;
 import io.cdap.cdap.etl.api.batch.BatchSinkContext;
+import io.cdap.cdap.etl.api.validation.FormatContext;
+import io.cdap.cdap.etl.api.validation.ValidatingOutputFormat;
 import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.common.batch.sink.SinkOutputFormatProvider;
 import io.cdap.plugin.format.FileFormat;
@@ -38,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 /**
  * Writes data to files on Google Cloud Storage.
@@ -55,23 +58,27 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    config.validate();
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    config.validate(collector);
+
     FileFormat format = config.getFormat();
-    OutputFormatProvider outputFormatProvider =
-      pipelineConfigurer.usePlugin("outputformat", format.name().toLowerCase(),
+    ValidatingOutputFormat validatingOutputFormat =
+      pipelineConfigurer.usePlugin(ValidatingOutputFormat.PLUGIN_TYPE, format.name().toLowerCase(),
                                    FORMAT_PLUGIN_ID, config.getProperties());
-    if (outputFormatProvider == null) {
-      throw new IllegalArgumentException(String.format("Could not find the '%s' output format plugin.",
-                                                       format.name().toLowerCase()));
-    }
+    FormatContext context = new FormatContext(collector, pipelineConfigurer.getStageConfigurer().getInputSchema());
+    validateOutputFormatProvider(context, format, validatingOutputFormat);
   }
 
   @Override
   public final void prepareRun(BatchSinkContext context) throws InstantiationException {
-    config.validate();
+    FailureCollector collector = context.getFailureCollector();
+    config.validate(collector);
+    ValidatingOutputFormat validatingOutputFormat = context.newPluginInstance(FORMAT_PLUGIN_ID);
+    FileFormat fileFormat = config.getFormat();
+    FormatContext formatContext = new FormatContext(collector, context.getInputSchema());
+    validateOutputFormatProvider(formatContext, fileFormat, validatingOutputFormat);
+    collector.getOrThrowException();
 
-    // set format specific properties.
-    OutputFormatProvider outputFormatProvider = context.newPluginInstance(FORMAT_PLUGIN_ID);
 
     // record field level lineage information
     // needs to happen before context.addOutput(), otherwise an external dataset without schema will be created.
@@ -86,12 +93,12 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
                     schema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList()));
     }
 
-    Map<String, String> outputProperties = new HashMap<>(outputFormatProvider.getOutputFormatConfiguration());
+    Map<String, String> outputProperties = new HashMap<>(validatingOutputFormat.getOutputFormatConfiguration());
     outputProperties.putAll(getFileSystemProperties(context));
     outputProperties.put(FileOutputFormat.OUTDIR, getOutputDir(context.getLogicalStartTime()));
 
     context.addOutput(Output.of(config.getReferenceName(),
-                                new SinkOutputFormatProvider(outputFormatProvider.getOutputFormatClassName(),
+                                new SinkOutputFormatProvider(validatingOutputFormat.getOutputFormatClassName(),
                                                              outputProperties)));
   }
 
@@ -121,5 +128,17 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
     String suffix = config.getSuffix();
     String timeSuffix = suffix == null || suffix.isEmpty() ? "" : new SimpleDateFormat(suffix).format(logicalStartTime);
     return String.format("%s/%s", config.getPath(), timeSuffix);
+  }
+
+  private void validateOutputFormatProvider(FormatContext context, FileFormat format,
+                                            @Nullable ValidatingOutputFormat validatingOutputFormat) {
+    FailureCollector collector = context.getFailureCollector();
+    if (validatingOutputFormat == null) {
+      collector.addFailure(
+        String.format("Could not find the '%s' output format plugin.", format.name().toLowerCase()), null)
+        .withPluginNotFound(FORMAT_PLUGIN_ID, format.name().toLowerCase(), ValidatingOutputFormat.PLUGIN_TYPE);
+    } else {
+      validatingOutputFormat.validate(context);
+    }
   }
 }

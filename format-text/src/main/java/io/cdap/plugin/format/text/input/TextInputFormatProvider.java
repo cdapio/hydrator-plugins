@@ -21,6 +21,9 @@ import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginClass;
+import io.cdap.cdap.etl.api.FailureCollector;
+import io.cdap.cdap.etl.api.validation.FormatContext;
+import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
 import io.cdap.plugin.format.input.PathTrackingConfig;
 import io.cdap.plugin.format.input.PathTrackingInputFormatProvider;
 
@@ -32,14 +35,14 @@ import javax.annotation.Nullable;
 /**
  * Input reading logic for text files.
  */
-@Plugin(type = "inputformat")
+@Plugin(type = ValidatingInputFormat.PLUGIN_TYPE)
 @Name(TextInputFormatProvider.NAME)
 @Description(TextInputFormatProvider.DESC)
 public class TextInputFormatProvider extends PathTrackingInputFormatProvider<TextInputFormatProvider.TextConfig> {
   static final String NAME = "text";
   static final String DESC = "Plugin for reading files in text format.";
   public static final PluginClass PLUGIN_CLASS =
-    new PluginClass("inputformat", NAME, DESC, TextInputFormatProvider.class.getName(),
+    new PluginClass(ValidatingInputFormat.PLUGIN_TYPE, NAME, DESC, TextInputFormatProvider.class.getName(),
                     "conf", PathTrackingConfig.FIELDS);
 
   public TextInputFormatProvider(TextConfig conf) {
@@ -114,7 +117,90 @@ public class TextInputFormatProvider extends PathTrackingInputFormatProvider<Tex
         String.format("The schema for the 'text' format must only contain the %s, but found %d other field%s",
                       expectedFields, numExtraFields, numExtraFields > 1 ? "s" : ""));
     }
+  }
 
+  @Override
+  public void validate(FormatContext context) {
+    if (conf.containsMacro(TextConfig.NAME_SCHEMA)) {
+      return;
+    }
+
+    FailureCollector collector = context.getFailureCollector();
+    Schema schema;
+    try {
+      schema = conf.getSchema();
+    } catch (Exception e) {
+      collector.addFailure(e.getMessage(), null).withConfigProperty(TextConfig.NAME_SCHEMA)
+        .withStacktrace(e.getStackTrace());
+      throw collector.getOrThrowException();
+    }
+
+    String pathField = conf.getPathField();
+    // text must contain 'body' as type 'string'.
+    // it can optionally contain a 'offset' field of type 'long'
+    // it can optionally contain a path field of type 'string'
+    Schema.Field offsetField = schema.getField(TextConfig.NAME_OFFSET);
+    if (offsetField != null) {
+      Schema offsetSchema = offsetField.getSchema();
+      offsetSchema = offsetSchema.isNullable() ? offsetSchema.getNonNullable() : offsetSchema;
+      Schema.Type offsetType = offsetSchema.getType();
+      if (offsetType != Schema.Type.LONG) {
+        collector.addFailure(
+          String.format("The 'offset' field is of unexpected type '%s'.", offsetSchema.getDisplayName()),
+          "Change type to 'long'.").withOutputSchemaField(TextConfig.NAME_OFFSET);
+      }
+    }
+
+    Schema.Field bodyField = schema.getField(TextConfig.NAME_BODY);
+    if (bodyField == null) {
+      collector.addFailure("The schema for the 'text' format must have a field named 'body'.", null)
+        .withConfigProperty(TextConfig.NAME_SCHEMA);
+    } else {
+      Schema bodySchema = bodyField.getSchema();
+      bodySchema = bodySchema.isNullable() ? bodySchema.getNonNullable() : bodySchema;
+      Schema.Type bodyType = bodySchema.getType();
+      if (bodyType != Schema.Type.STRING) {
+        collector.addFailure(
+          String.format("The 'body' field is of unexpected type '%s'.'", bodySchema.getDisplayName()),
+          "Change type to 'string'.").withOutputSchemaField(TextConfig.NAME_BODY);
+      }
+    }
+
+    // fields should be body (required), offset (optional), [pathfield] (optional)
+    boolean expectOffset = schema.getField(TextConfig.NAME_OFFSET) != null;
+    boolean expectPath = pathField != null;
+    int numExpectedFields = 1;
+    if (expectOffset) {
+      numExpectedFields++;
+    }
+    if (expectPath) {
+      numExpectedFields++;
+    }
+
+    int numFields = schema.getFields().size();
+    if (numFields > numExpectedFields) {
+      for (Schema.Field field : schema.getFields()) {
+        String expectedFields;
+        if (expectOffset && expectPath) {
+          expectedFields = String.format("'offset', 'body', and '%s' fields", pathField);
+        } else if (expectOffset) {
+          expectedFields = "'offset' and 'body' fields";
+        } else if (expectPath) {
+          expectedFields = String.format("'body' and '%s' fields", pathField);
+        } else {
+          expectedFields = "'body' field";
+        }
+
+        if (field.getName().equals(TextConfig.NAME_BODY) || (expectPath && field.getName().equals(pathField))
+          || field.getName().equals(TextConfig.NAME_OFFSET)) {
+          continue;
+        }
+
+        collector.addFailure(
+          String.format("The schema for the 'text' format must only contain the '%s'.", expectedFields),
+          String.format("Remove additional field '%s'.", field.getName())).withOutputSchemaField(field.getName());
+      }
+    }
   }
 
   public static Schema getDefaultSchema(@Nullable String pathField) {
@@ -131,6 +217,9 @@ public class TextInputFormatProvider extends PathTrackingInputFormatProvider<Tex
    * Text plugin config
    */
   public static class TextConfig extends PathTrackingConfig {
+    private static final String NAME_SCHEMA = "schema";
+    private static final String NAME_OFFSET = "offset";
+    private static final String NAME_BODY = "body";
 
     /**
      * Return the configured schema, or the default schema if none was given. Should never be called if the
@@ -138,7 +227,7 @@ public class TextInputFormatProvider extends PathTrackingInputFormatProvider<Tex
      */
     @Override
     public Schema getSchema() {
-      if (containsMacro("schema")) {
+      if (containsMacro(NAME_SCHEMA)) {
         throw new IllegalStateException("schema should not be checked until macros are evaluated.");
       }
       if (schema == null) {
@@ -147,7 +236,7 @@ public class TextInputFormatProvider extends PathTrackingInputFormatProvider<Tex
       try {
         return Schema.parseJson(schema);
       } catch (IOException e) {
-        throw new IllegalArgumentException("Unable to parse schema: " + e.getMessage(), e);
+        throw new IllegalArgumentException("Invalid schema: " + e.getMessage(), e);
       }
     }
   }

@@ -360,6 +360,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
                                 .put(Properties.File.FILESYSTEM, "Text")
                                 .put(Properties.File.PATH, filePath)
                                 .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
+                                .put(Properties.File.FORMAT, "text")
                                 .build(),
                               null));
 

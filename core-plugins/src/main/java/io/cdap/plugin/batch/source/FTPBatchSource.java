@@ -24,6 +24,7 @@ import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.batch.BatchSourceContext;
 import io.cdap.plugin.format.FileFormat;
@@ -45,6 +46,7 @@ import javax.annotation.Nullable;
 @Description("Batch source for an FTP or SFTP source. Prefix of the path ('ftp://...' or 'sftp://...') determines " +
   "the source server type, either FTP or SFTP.")
 public class FTPBatchSource extends AbstractFileSource {
+  private static final String NAME_FILE_SYSTEM_PROPERTIES = "fileSystemProperties";
   public static final Schema SCHEMA = Schema.recordOf("text",
                                                       Schema.Field.of("offset", Schema.of(Schema.Type.LONG)),
                                                       Schema.Field.of("body", Schema.of(Schema.Type.STRING)));
@@ -103,6 +105,15 @@ public class FTPBatchSource extends AbstractFileSource {
     @Override
     public void validate() {
       getFileSystemProperties();
+    }
+
+    public void validate(FailureCollector collector) {
+      try {
+        getFileSystemProperties();
+      } catch (IllegalArgumentException e) {
+        collector.addFailure("File system properties must be a valid json.", null)
+          .withConfigProperty(NAME_FILE_SYSTEM_PROPERTIES).withStacktrace(e.getStackTrace());
+      }
     }
 
     @Override
@@ -165,7 +176,7 @@ public class FTPBatchSource extends AbstractFileSource {
       try {
         return GSON.fromJson(fileSystemProperties, MAP_STRING_STRING_TYPE);
       } catch (Exception e) {
-        throw new IllegalArgumentException("Unable to parse filesystem properties: " + e.getMessage());
+        throw new IllegalArgumentException("Unable to parse filesystem properties: " + e.getMessage(), e);
       }
     }
   }

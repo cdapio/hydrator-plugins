@@ -19,9 +19,10 @@ package io.cdap.plugin.format.json.output;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
-import io.cdap.cdap.api.data.batch.OutputFormatProvider;
 import io.cdap.cdap.api.plugin.PluginClass;
 import io.cdap.cdap.api.plugin.PluginPropertyField;
+import io.cdap.cdap.etl.api.validation.ValidatingOutputFormat;
+import io.cdap.plugin.format.output.AbstractOutputFormatProvider;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,10 +31,10 @@ import java.util.Map;
 /**
  * Output format plugin for json.
  */
-@Plugin(type = "outputformat")
+@Plugin(type = ValidatingOutputFormat.PLUGIN_TYPE)
 @Name(JsonOutputFormatProvider.NAME)
 @Description(JsonOutputFormatProvider.DESC)
-public class JsonOutputFormatProvider implements OutputFormatProvider {
+public class JsonOutputFormatProvider extends AbstractOutputFormatProvider {
   public static final PluginClass PLUGIN_CLASS = getPluginClass();
   static final String NAME = "json";
   static final String DESC = "Plugin for writing files in json format.";
@@ -50,7 +51,7 @@ public class JsonOutputFormatProvider implements OutputFormatProvider {
 
   private static PluginClass getPluginClass() {
     Map<String, PluginPropertyField> properties = new HashMap<>();
-    return new PluginClass("outputformat", NAME, DESC, JsonOutputFormatProvider.class.getName(),
+    return new PluginClass(ValidatingOutputFormat.PLUGIN_TYPE, NAME, DESC, JsonOutputFormatProvider.class.getName(),
                            null, properties);
   }
 }
