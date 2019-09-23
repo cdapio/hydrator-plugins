@@ -20,6 +20,7 @@ import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.etl.api.FailureCollector;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -36,6 +37,10 @@ public class HTTPConfig extends PluginConfig {
   // Should be the same as the widgets json config
   private static final String KV_DELIMITER = ":";
   private static final String DELIMITER = "\n";
+
+  private static final String NAME_URL = "url";
+  private static final String NAME_REQUEST_HEADERS = "requestHeaders";
+  private static final String NAME_CONNECTION_TIMEOUT = "connectTimeout";
 
   @Description("The URL to fetch data from.")
   @Macro
@@ -83,22 +88,32 @@ public class HTTPConfig extends PluginConfig {
     return connectTimeout;
   }
 
+  /**
+   * Deprecated since 2.3.0.
+   */
   @SuppressWarnings("ConstantConditions")
+  @Deprecated
   public void validate() {
-    if (!containsMacro("url")) {
-      try {
-        new URL(url);
-      } catch (MalformedURLException e) {
-        throw new IllegalArgumentException(String.format("URL '%s' is malformed: %s", url, e.getMessage()), e);
-      }
+    validateURL();
+    validateConnectionTimeout();
+    validateRequestHeaders();
+  }
+
+  public void validate(FailureCollector collector) {
+    try {
+      validateURL();
+    } catch (IllegalArgumentException e) {
+      collector.addFailure(String.format("URL '%s' is malformed: %s", url, e.getMessage()), "Specify a valid url.")
+        .withConfigProperty(NAME_URL).withStacktrace(e.getStackTrace());
     }
-    if (!containsMacro("connectTimeout") && connectTimeout != null && connectTimeout < 0) {
-      throw new IllegalArgumentException(String.format(
-        "Invalid connectTimeout %d. Timeout must be 0 or a positive number.", connectTimeout));
+
+    try {
+      validateConnectionTimeout();
+    } catch (IllegalArgumentException e) {
+      collector.addFailure(e.getMessage(), null).withConfigProperty(NAME_CONNECTION_TIMEOUT);
     }
-    if (!containsMacro("requestHeaders")) {
-      convertHeadersToMap(requestHeaders);
-    }
+
+    convertHeadersToMap(requestHeaders, collector);
   }
 
   private Map<String, String> convertHeadersToMap(String headersString) {
@@ -110,6 +125,47 @@ public class HTTPConfig extends PluginConfig {
           headersMap.put(keyValue[0], keyValue[1]);
         } else {
           throw new IllegalArgumentException(String.format("Unable to parse key-value pair '%s'.", chunk));
+        }
+      }
+    }
+    return headersMap;
+  }
+
+  private void validateURL() {
+    if (!containsMacro(NAME_URL) && !Strings.isNullOrEmpty(url)) {
+      try {
+        new URL(url);
+      } catch (MalformedURLException e) {
+        throw new IllegalArgumentException(String.format("URL '%s' is malformed: %s", url, e.getMessage()), e);
+      }
+    }
+  }
+
+  private void validateConnectionTimeout() {
+    if (!containsMacro(NAME_CONNECTION_TIMEOUT) && connectTimeout != null && connectTimeout < 0) {
+      throw new IllegalArgumentException(String.format(
+        "Invalid connectTimeout '%d'. Timeout must be 0 or a positive number.", connectTimeout));
+    }
+  }
+
+  private void validateRequestHeaders() {
+    if (!containsMacro(NAME_REQUEST_HEADERS)) {
+      convertHeadersToMap(requestHeaders);
+    }
+  }
+
+  private Map<String, String> convertHeadersToMap(String headersString, FailureCollector collector) {
+    Map<String, String> headersMap = new HashMap<>();
+    if (!Strings.isNullOrEmpty(headersString)) {
+      for (String chunk : headersString.split(DELIMITER)) {
+        String[] keyValue = chunk.split(KV_DELIMITER, 2);
+        if (keyValue.length == 2) {
+          headersMap.put(keyValue[0], keyValue[1]);
+        } else {
+          collector.addFailure(String.format("Unable to parse key-value pair '%s'.", chunk),
+                               String.format("Ensure request headers are specified in <key>%s<value> format",
+                                             KV_DELIMITER))
+            .withConfigElement(NAME_REQUEST_HEADERS, chunk);
         }
       }
     }
