@@ -76,8 +76,6 @@ import io.cdap.plugin.format.parquet.output.ParquetOutputFormatProvider;
 import io.cdap.plugin.format.text.input.TextInputFormatProvider;
 import io.cdap.plugin.transform.JavaScriptTransform;
 import io.cdap.plugin.transform.ProjectionTransform;
-import io.cdap.plugin.transform.ValidatorTransform;
-import io.cdap.plugin.validator.CoreValidator;
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
@@ -142,7 +140,6 @@ public class ETLBatchTestBase extends HydratorTestBase {
                       SnapshotFileBatchAvroSource.class, SnapshotFileBatchParquetSource.class,
                       FTPBatchSource.class,
                       ProjectionTransform.class,
-                      ValidatorTransform.class, CoreValidator.class,
                       JavaScriptTransform.class,
                       GroupByAggregator.class,
                       DedupAggregator.class,

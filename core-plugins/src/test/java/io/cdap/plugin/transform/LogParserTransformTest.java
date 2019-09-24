@@ -16,7 +16,6 @@
 
 package io.cdap.plugin.transform;
 
-import com.google.common.collect.ImmutableMap;
 import io.cdap.cdap.api.common.Bytes;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
@@ -27,11 +26,11 @@ import io.cdap.cdap.etl.api.validation.CauseAttributes;
 import io.cdap.cdap.etl.api.validation.ValidationFailure.Cause;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
-import io.cdap.plugin.validator.CoreValidator;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
+import java.util.Collections;
 
 public class LogParserTransformTest {
   private static final Schema STRING_SCHEMA = Schema.recordOf(
@@ -68,16 +67,14 @@ public class LogParserTransformTest {
   private static final String mockStage = "mockstage";
 
   @Test
-  public void testConfigurePipelineSchemaValidation() throws Exception {
+  public void testConfigurePipelineSchemaValidation() {
     Schema inputSchemaString = Schema.recordOf(
       "event",
       Schema.Field.of("CLF", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("body", Schema.of(Schema.Type.STRING)));
 
 
-    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(inputSchemaString,
-                                                                       ImmutableMap.of(
-                                                                         CoreValidator.ID, new CoreValidator()));
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(inputSchemaString, Collections.emptyMap());
     S3_TRANSFORM.configurePipeline(mockConfigurer);
     Assert.assertEquals(LOG_SCHEMA, mockConfigurer.getOutputSchema());
 
@@ -87,17 +84,15 @@ public class LogParserTransformTest {
       Schema.Field.of("body", Schema.of(Schema.Type.BYTES)));
 
 
-    mockConfigurer = new MockPipelineConfigurer(inputSchemaBytes,
-                                                ImmutableMap.of(CoreValidator.ID, new CoreValidator()));
+    mockConfigurer = new MockPipelineConfigurer(inputSchemaBytes, Collections.emptyMap());
     CLF_TRANSFORM.configurePipeline(mockConfigurer);
     Assert.assertEquals(LOG_SCHEMA, mockConfigurer.getOutputSchema());
   }
 
   @Test
-  public void testConfigurePipelineSchemaValidationError() throws Exception {
+  public void testConfigurePipelineSchemaValidationError() {
     MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(Schema.of(Schema.Type.BYTES),
-                                                                       ImmutableMap.of(
-                                                                         CoreValidator.ID, new CoreValidator()));
+                                                                       Collections.emptyMap());
     S3_TRANSFORM.configurePipeline(mockConfigurer);
     Assert.assertEquals(LOG_SCHEMA, mockConfigurer.getOutputSchema());
     FailureCollector collector = mockConfigurer.getStageConfigurer().getFailureCollector();
@@ -106,15 +101,13 @@ public class LogParserTransformTest {
   }
 
   @Test
-  public void testConfigurePipelineInvalidSchema() throws Exception {
+  public void testConfigurePipelineInvalidSchema() {
     Schema inputSchemaString = Schema.recordOf(
       "event",
       Schema.Field.of("CLF", Schema.of(Schema.Type.STRING)),
       // "body" is config.inputName and that should be of only type String or Bytes
       Schema.Field.of("body", Schema.of(Schema.Type.INT)));
-    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(inputSchemaString,
-                                                                       ImmutableMap.of(
-                                                                         CoreValidator.ID, new CoreValidator()));
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(inputSchemaString, Collections.emptyMap());
     String caughtException = "";
     try {
       S3_TRANSFORM.configurePipeline(mockConfigurer);
@@ -132,15 +125,13 @@ public class LogParserTransformTest {
   }
 
   @Test
-  public void testConfigurePipelineSchemaWithMissingInputNameField() throws Exception {
+  public void testConfigurePipelineSchemaWithMissingInputNameField() {
     Schema inputSchemaString = Schema.recordOf(
       "event",
       Schema.Field.of("CLF", Schema.of(Schema.Type.STRING))
       // "body" is config.inputName and we skip that, causing that field to be null
     );
-    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(inputSchemaString,
-                                                                       ImmutableMap.of(
-                                                                         CoreValidator.ID, new CoreValidator()));
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(inputSchemaString, Collections.emptyMap());
     S3_TRANSFORM.configurePipeline(mockConfigurer);
     FailureCollector collector = mockConfigurer.getStageConfigurer().getFailureCollector();
     Assert.assertEquals(1, collector.getValidationFailures().size());
