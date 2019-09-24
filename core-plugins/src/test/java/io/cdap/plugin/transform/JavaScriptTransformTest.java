@@ -31,10 +31,10 @@ import io.cdap.cdap.etl.mock.common.MockEmitter;
 import io.cdap.cdap.etl.mock.common.MockLookupProvider;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
 import io.cdap.cdap.etl.mock.transform.MockTransformContext;
-import io.cdap.plugin.validator.CoreValidator;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -132,7 +132,7 @@ public class JavaScriptTransformTest {
 
     // check record1
     Assert.assertEquals(SCHEMA, output.getSchema());
-    Assert.assertTrue((Boolean) output.get("booleanField"));
+    Assert.assertTrue(output.get("booleanField"));
     Assert.assertEquals(28 * 1024, output.<Integer>get("intField").intValue());
     Assert.assertEquals(99L, output.<Long>get("longField").longValue());
     Assert.assertTrue(Math.abs(2.71f - (Float) output.get("floatField")) < 0.000001);
@@ -182,9 +182,7 @@ public class JavaScriptTransformTest {
       Schema.Field.of("y", Schema.of(Schema.Type.LONG)),
       Schema.Field.of("z", Schema.of(Schema.Type.DOUBLE)));
 
-    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema,
-                                                                   ImmutableMap.<String, Object>of(
-                                                                     CoreValidator.ID, new CoreValidator()));
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema, Collections.emptyMap());
     new JavaScriptTransform(config).configurePipeline(configurer);
     Assert.assertEquals(outputSchema, configurer.getOutputSchema());
 
