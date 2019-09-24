@@ -16,7 +16,6 @@
 
 package io.cdap.plugin.transform;
 
-import com.google.common.collect.ImmutableMap;
 import io.cdap.cdap.api.common.Bytes;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
@@ -25,9 +24,10 @@ import io.cdap.cdap.etl.api.TransformContext;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
 import io.cdap.cdap.etl.mock.transform.MockTransformContext;
-import io.cdap.plugin.validator.CoreValidator;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.Collections;
 
 /**
  */
@@ -52,15 +52,13 @@ public class ProjectionTransformTest {
     .build();
 
   @Test
-  public void testConfigurePipelineSchemaValidation() throws Exception {
+  public void testConfigurePipelineSchemaValidation() {
     Schema schema = Schema.recordOf("three",
                                     Schema.Field.of("x", Schema.of(Schema.Type.INT)),
                                     Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
                                     Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
 
-    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema,
-                                                                       ImmutableMap.<String, Object>of(
-                                                                         CoreValidator.ID, new CoreValidator()));
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema, Collections.emptyMap());
 
     // test drop
     ProjectionTransform.ProjectionTransformConfig config =
@@ -98,8 +96,7 @@ public class ProjectionTransformTest {
     Assert.assertEquals(expectedSchema, mockConfigurer.getOutputSchema());
 
     // null input schema
-    mockConfigurer = new MockPipelineConfigurer(null, ImmutableMap.<String, Object>of(CoreValidator.ID,
-                                                                                      new CoreValidator()));
+    mockConfigurer = new MockPipelineConfigurer(null, Collections.emptyMap());
     new ProjectionTransform(config).configurePipeline(mockConfigurer);
     Assert.assertNull(mockConfigurer.getOutputSchema());
   }
@@ -207,15 +204,13 @@ public class ProjectionTransformTest {
   }
 
   @Test(expected = IllegalArgumentException.class)
-  public void testKeepDropBothNonNull() throws Exception {
+  public void testKeepDropBothNonNull() {
     Schema schema = Schema.recordOf("three",
                                     Schema.Field.of("x", Schema.of(Schema.Type.INT)),
                                     Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
                                     Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
 
-    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema,
-                                                                       ImmutableMap.<String, Object>of(
-                                                                         CoreValidator.ID, new CoreValidator()));
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema, Collections.emptyMap());
 
     // This should give an Exception
     ProjectionTransform.ProjectionTransformConfig config =
@@ -549,8 +544,7 @@ public class ProjectionTransformTest {
             Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
             Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
 
-    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema,
-            ImmutableMap.<String, Object>of(CoreValidator.ID, new CoreValidator()));
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema, Collections.emptyMap());
     ProjectionTransform.ProjectionTransformConfig config =
             new ProjectionTransform.ProjectionTransformConfig("x,y,z", null, null, null);
     new ProjectionTransform(config).configurePipeline(mockConfigurer);
@@ -563,8 +557,7 @@ public class ProjectionTransformTest {
             Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
             Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
 
-    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema,
-            ImmutableMap.<String, Object>of(CoreValidator.ID, new CoreValidator()));
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema, Collections.emptyMap());
     ProjectionTransform.ProjectionTransformConfig config =
             new ProjectionTransform.ProjectionTransformConfig(null, null, null, "n");
     new ProjectionTransform(config).configurePipeline(mockConfigurer);
@@ -577,8 +570,7 @@ public class ProjectionTransformTest {
             Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
             Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
 
-    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema,
-            ImmutableMap.<String, Object>of(CoreValidator.ID, new CoreValidator()));
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema, Collections.emptyMap());
     ProjectionTransform.ProjectionTransformConfig config =
             new ProjectionTransform.ProjectionTransformConfig(null, null, "n:boolean", "x");
     new ProjectionTransform(config).configurePipeline(mockConfigurer);
@@ -591,8 +583,7 @@ public class ProjectionTransformTest {
             Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
             Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
 
-    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema,
-            ImmutableMap.<String, Object>of(CoreValidator.ID, new CoreValidator()));
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema, Collections.emptyMap());
     ProjectionTransform.ProjectionTransformConfig config =
             new ProjectionTransform.ProjectionTransformConfig(null, "n:m", null, "x");
     new ProjectionTransform(config).configurePipeline(mockConfigurer);
