@@ -16,7 +16,9 @@
 
 package io.cdap.plugin;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Name;
@@ -26,8 +28,10 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.data.schema.Schema.Field;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.InvalidEntry;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
@@ -98,60 +102,26 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
   @Override
   public void configurePipeline(PipelineConfigurer configurer) throws IllegalArgumentException {
     super.configurePipeline(configurer);
-    config.validate();
-    Schema inputSchema = configurer.getStageConfigurer().getInputSchema();
-    validateInputSchema(inputSchema);
-    configurer.getStageConfigurer().setOutputSchema(parseAndValidateOutputSchema(inputSchema));
-  }
+    StageConfigurer stageConfigurer = configurer.getStageConfigurer();
+    FailureCollector collector = stageConfigurer.getFailureCollector();
+    config.validate(collector);
 
-  void validateInputSchema(Schema inputSchema) {
-    if (inputSchema != null) {
-      // Check the existence of field in input schema
-      Schema.Field inputSchemaField = inputSchema.getField(config.field);
-      if (inputSchemaField == null) {
-        throw new IllegalArgumentException(
-          "Field " + config.field + " is not present in the input schema");
-      }
+    // perform schema validation
+    Schema inputSchema = stageConfigurer.getInputSchema();
+    validateInputSchema(inputSchema, collector);
+    Schema schema = parseAndValidateOutputSchema(inputSchema, collector);
+    collector.getOrThrowException();
 
-      // Check that the field type is String or Nullable String
-      Schema fieldSchema = inputSchemaField.getSchema();
-      Schema.Type fieldType = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
-      if (!fieldType.equals(Schema.Type.STRING)) {
-        throw new IllegalArgumentException(
-          "Type for field  " + config.field + " must be String");
-      }
-    }
-  }
-
-  Schema parseAndValidateOutputSchema(Schema inputSchema) {
-    // Check if schema specified is a valid schema or no.
-    try {
-      Schema outputSchema = Schema.parseJson(this.config.schema);
-
-      // When a input field is passed through to output, the type and name should be the same.
-      // If the type is not the same, then we fail.
-      if (inputSchema != null) {
-        for (Field field : inputSchema.getFields()) {
-          if (outputSchema.getField(field.getName()) != null) {
-            Schema out = outputSchema.getField(field.getName()).getSchema();
-            Schema in = field.getSchema();
-            if (!in.equals(out)) {
-              throw new IllegalArgumentException(
-                "Input field '" + field.getName() + "' does not have same output schema as input."
-              );
-            }
-          }
-        }
-      }
-      return outputSchema;
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
-    }
+    stageConfigurer.setOutputSchema(schema);
   }
 
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
+    FailureCollector collector = context.getFailureCollector();
+    config.validate(collector);
+    collector.getOrThrowException();
+
     init();
     if (fields != null) {
       FieldOperation operation = new FieldTransformOperation("Parse", "Parsed field",
@@ -169,8 +139,6 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
   }
 
   private void init() {
-    config.validate();
-
     String csvFormatString = config.format == null ? "default" : config.format.toLowerCase();
     switch (csvFormatString) {
       case "default":
@@ -279,28 +247,82 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
     return builder.build();
   }
 
+  @VisibleForTesting
+  void validateInputSchema(@Nullable Schema inputSchema, FailureCollector collector) {
+    if (inputSchema != null) {
+      // Check the existence of field in input schema
+      Schema.Field inputSchemaField = inputSchema.getField(config.field);
+      if (inputSchemaField == null) {
+        collector.addFailure(String.format("Field '%s' must be present in the input schema.", config.field), null)
+          .withConfigProperty(Config.NAME_FIELD);
+        return;
+      }
+
+      // Check that the field type is String or Nullable String
+      Schema fieldSchema = inputSchemaField.getSchema();
+      Schema nonNullableSchema = fieldSchema.isNullable() ? fieldSchema.getNonNullable() : fieldSchema;
+      Schema.Type fieldType = nonNullableSchema.getType();
+
+      if (!fieldType.equals(Schema.Type.STRING)) {
+        collector.addFailure(String.format("Field '%s' is of invalid type '%s'.",
+                                           inputSchemaField.getName(), nonNullableSchema.getDisplayName()),
+                             "Ensure it is of type 'string'.")
+          .withConfigProperty(Config.NAME_FIELD).withInputSchemaField(config.field);
+      }
+    }
+  }
+
+  @VisibleForTesting
+  Schema parseAndValidateOutputSchema(@Nullable Schema inputSchema, FailureCollector collector) {
+    Schema outputSchema = config.getSchema(collector);
+
+    // When a input field is passed through to output, the type and name should be the same.
+    // If the type is not the same, then we collect failure.
+    if (inputSchema != null) {
+      for (Field field : inputSchema.getFields()) {
+        if (outputSchema.getField(field.getName()) != null) {
+          Schema out = outputSchema.getField(field.getName()).getSchema();
+          Schema in = field.getSchema();
+          if (!in.equals(out)) {
+            collector.addFailure(
+              String.format("Output field '%s' must have same schema as input schema.", field.getName()),
+              "Ensure input and output schema for the field is same.")
+              .withInputSchemaField(field.getName()).withOutputSchemaField(field.getName());
+          }
+        }
+      }
+    }
+
+    return outputSchema;
+  }
+
   /**
    * Configuration for the plugin.
    */
   public static class Config extends PluginConfig {
+    private static final String NAME_FORMAT = "format";
+    private static final String NAME_DELIMITER = "delimiter";
+    private static final String NAME_FIELD = "field";
+    private static final String NAME_SCHEMA = "schema";
 
     @Nullable
-    @Name("format")
+    @Name(NAME_FORMAT)
     @Description("Specify one of the predefined formats. DEFAULT, EXCEL, MYSQL, RFC4180, Pipe Delimited, Tab " +
       "Delimited and Custom are supported formats.")
     private String format;
 
     @Nullable
+    @Name(NAME_DELIMITER)
     @Description("Custom delimiter to be used for parsing the fields. The custom delimiter can only be specified by " +
       "selecting the option 'Custom' from the format drop-down. In case of null, defaults to ','.")
     private Character delimiter;
 
-    @Name("field")
+    @Name(NAME_FIELD)
     @Description("Specify the field that should be used for parsing into CSV. Input records with a null input field " +
       "propagate all other fields and set fields that would otherwise be parsed by the CSVParser to null.")
     private String field;
 
-    @Name("schema")
+    @Name(NAME_SCHEMA)
     @Description("Specifies the schema that has to be output.")
     private String schema;
 
@@ -316,24 +338,38 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
       format = "DEFAULT";
     }
 
-    private void validate() {
-
+    private void validate(FailureCollector collector) {
       // Check if format is one of the allowed types.
       if (!format.equalsIgnoreCase("DEFAULT") && !format.equalsIgnoreCase("EXCEL") &&
         !format.equalsIgnoreCase("MYSQL") && !format.equalsIgnoreCase("RFC4180") &&
         !format.equalsIgnoreCase("Tab Delimited") && !format.equalsIgnoreCase("Pipe Delimited") &&
         !format.equalsIgnoreCase("Custom") && !format.equalsIgnoreCase("PDL") &&
         !format.equalsIgnoreCase("TDF")) {
-        throw new IllegalArgumentException(String.format("Format %s is not one of the allowed values. Allowed values " +
-                                                           "are %s", format, Joiner.on(", ").join(FORMATS)));
+        collector.addFailure(String.format("Format '%s' is unsupported.", format),
+                             String.format("Specify one of the following: %s.", Joiner.on(", ").join(FORMATS)))
+          .withConfigProperty(NAME_FORMAT);
       }
 
       if (format.equalsIgnoreCase("Custom") && (delimiter == null || delimiter == 0)) {
-        throw new IllegalArgumentException("Please specify the delimiter for format option 'Custom'.");
+        collector.addFailure("Delimiter must be specified for format option 'Custom'.", null)
+          .withConfigProperty(NAME_DELIMITER).withConfigProperty(NAME_FORMAT);
       }
+
       if (!format.equalsIgnoreCase("Custom") && delimiter != null && delimiter != 0) {
-        throw new IllegalArgumentException("Custom delimiter can only be used for format option 'Custom'.");
+        collector.addFailure("Custom delimiter can only be used for format option 'Custom'.",
+                             "Remove delimiter.")
+          .withConfigProperty(NAME_DELIMITER).withConfigProperty(NAME_FORMAT);
       }
+    }
+
+    @Nullable
+    private Schema getSchema(FailureCollector collector) {
+      try {
+        return Strings.isNullOrEmpty(schema) ? null : Schema.parseJson(schema);
+      } catch (IOException e) {
+        collector.addFailure("Invalid schema : " + e.getMessage(), null);
+      }
+      throw collector.getOrThrowException();
     }
   }
 }

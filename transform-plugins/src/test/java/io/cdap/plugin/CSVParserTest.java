@@ -20,9 +20,11 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.InvalidEntry;
 import io.cdap.cdap.etl.api.Transform;
+import io.cdap.cdap.etl.api.validation.ValidationException;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
 import io.cdap.cdap.etl.mock.transform.MockTransformContext;
+import io.cdap.cdap.etl.mock.validation.MockFailureCollector;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -332,19 +334,27 @@ public class CSVParserTest {
   }
 
   @Test
-  public void testSchemaValidation() throws Exception {
+  public void testSchemaValidation() {
     CSVParser.Config config = new CSVParser.Config("DEFAULT", null, "body", OUTPUT1.toString());
     CSVParser csvParser = new CSVParser(config);
-    csvParser.validateInputSchema(INPUT1);
-    Assert.assertEquals(OUTPUT1, csvParser.parseAndValidateOutputSchema(INPUT1));
+    MockFailureCollector collector = new MockFailureCollector();
+    csvParser.validateInputSchema(INPUT1, collector);
+    Assert.assertEquals(0, collector.getValidationFailures().size());
+    Schema schema = csvParser.parseAndValidateOutputSchema(INPUT1, collector);
+    Assert.assertEquals(0, collector.getValidationFailures().size());
+    Assert.assertEquals(OUTPUT1, schema);
   }
 
   @Test
-  public void testNullableFieldSchemaValidation() throws Exception {
+  public void testNullableFieldSchemaValidation() {
     CSVParser.Config config = new CSVParser.Config("DEFAULT", null, "body", OUTPUT1.toString());
     CSVParser csvParser = new CSVParser(config);
-    csvParser.validateInputSchema(NULLABLE_INPUT);
-    Assert.assertEquals(OUTPUT1, csvParser.parseAndValidateOutputSchema(NULLABLE_INPUT));
+    MockFailureCollector collector = new MockFailureCollector();
+    csvParser.validateInputSchema(NULLABLE_INPUT, collector);
+    Assert.assertEquals(0, collector.getValidationFailures().size());
+    Schema schema = csvParser.parseAndValidateOutputSchema(NULLABLE_INPUT, collector);
+    Assert.assertEquals(0, collector.getValidationFailures().size());
+    Assert.assertEquals(OUTPUT1, schema);
   }
 
   @Test
@@ -365,22 +375,27 @@ public class CSVParserTest {
     Assert.assertEquals(10, emitter.getEmitted().get(0).<Integer>get("offset").intValue()); // Pass through from input.
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testPassThroughTypeMisMatch() throws Exception {
+  @Test
+  public void testPassThroughTypeMisMatch() {
     CSVParser.Config config = new CSVParser.Config("DEFAULT", null, "body", OUTPUT4.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVParser(config);
-    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT2);
-    transform.configurePipeline(mockPipelineConfigurer);
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(INPUT2);
+    try {
+      transform.configurePipeline(configurer);
+    } catch (ValidationException e) {
+      Assert.assertEquals(1, configurer.getStageConfigurer().getFailureCollector().getValidationFailures().size());
+    }
   }
 
   @Test
-  public void testEmptyCustomDelimiter() throws Exception {
+  public void testEmptyCustomDelimiter() {
     CSVParser config = new CSVParser(new CSVParser.Config("Custom", null, "body", OUTPUT4.toString()));
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(INPUT2);
     try {
-      config.configurePipeline(new MockPipelineConfigurer(INPUT2));
+      config.configurePipeline(configurer);
       Assert.fail();
-    } catch (IllegalArgumentException e) {
-      Assert.assertEquals("Please specify the delimiter for format option 'Custom'.", e.getMessage());
+    } catch (ValidationException e) {
+      Assert.assertEquals(2, configurer.getStageConfigurer().getFailureCollector().getValidationFailures().size());
     }
   }
 
