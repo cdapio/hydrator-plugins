@@ -23,6 +23,7 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
@@ -61,17 +62,23 @@ public final class JSONFormatter extends Transform<StructuredRecord, StructuredR
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
+    // Get failure collector for updated validation API
+    FailureCollector collector = getContext().getFailureCollector();
     try {
       outSchema = Schema.parseJson(config.schema);
       type = outSchema.getFields().get(0).getSchema().getType();
     } catch (IOException e) {
-      throw new IllegalArgumentException("Output Schema specified is not a valid JSON. Please check the Schema JSON");
+      collector.addFailure("Invalid output schema.", "Output schema must be valid JSON.")
+        .withConfigProperty(Config.SCHEMA);
+      throw collector.getOrThrowException();
     }
   }
 
   @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
+    // Get failure collector for updated validation API
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
     try {
       Schema out = Schema.parseJson(config.schema);
       List<Schema.Field> fields = out.getFields();
@@ -79,20 +86,24 @@ public final class JSONFormatter extends Transform<StructuredRecord, StructuredR
       // For this plugin, the output schema needs to have only one field and it should 
       // be of type BYTES or STRING.
       if (fields.size() > 1) {
-        throw new IllegalArgumentException("Only one output field should exist for this transform and it should " +
-                                             "ne of type String");  
+        collector.addFailure("Output schema may only have one field.", null);
       }
       
       // Check to make sure the field type specified in the output is only of type
       // STRING or BYTES.
+      Schema.Field field = fields.get(0);
+      Schema.Type type = field.getSchema().getType();
       if (fields.get(0).getSchema().getType() != Schema.Type.STRING &&
         fields.get(0).getSchema().getType() != Schema.Type.BYTES) {
-        throw new IllegalArgumentException("Output field name should be of type String. Please change type to " +
-                                             "String or Bytes");
+        collector.addFailure(String.format("Invalid output field type '%s' for field '%s'.",
+                                           field.getName(), type.toString().toLowerCase()),
+                             "Output field type must be of type string or bytes.")
+          .withOutputSchemaField(field.getName());
       }
       pipelineConfigurer.getStageConfigurer().setOutputSchema(out);
     } catch (IOException e) {
-      throw new IllegalArgumentException("Output Schema specified is not a valid JSON. Please check the Schema JSON");
+      collector.addFailure("Invalid output schema.", "Output schema must be valid JSON.")
+        .withConfigProperty(Config.SCHEMA);
     }
   }
 
@@ -116,6 +127,8 @@ public final class JSONFormatter extends Transform<StructuredRecord, StructuredR
    * JSON Writer Plugin Configuration.
    */
   public static class Config extends PluginConfig {
+    public static final String SCHEMA = "schema";
+
     @Name("schema")
     @Description("Output schema")
     private String schema;
