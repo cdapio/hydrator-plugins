@@ -68,7 +68,7 @@ public class CSVFormatterTest {
   }
 
   @Test
-  public void testSchemaValidation() throws Exception {
+  public void testSchemaValidation() {
     CSVFormatter.Config config = new CSVFormatter.Config("DELIMITED", "VBAR", OUTPUT.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new CSVFormatter(config);
 
