@@ -21,6 +21,7 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
+import io.cdap.cdap.etl.mock.validation.MockFailureCollector;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -52,7 +53,7 @@ public class CloneRecordTest {
   }
 
   @Test
-  public void testSchemaValidation() throws Exception {
+  public void testSchemaValidation() {
     CloneRecord.Config config = new CloneRecord.Config(5);
     Transform<StructuredRecord, StructuredRecord> transform = new CloneRecord(config);
 
@@ -60,5 +61,16 @@ public class CloneRecordTest {
 
     transform.configurePipeline(mockPipelineConfigurer);
     Assert.assertEquals(INPUT, mockPipelineConfigurer.getOutputSchema());
+  }
+
+  @Test
+  public void testInvalidNumberOfCopies() {
+    CloneRecord.Config config = new CloneRecord.Config(0);
+    Transform<StructuredRecord, StructuredRecord> transform = new CloneRecord(config);
+    MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT);
+    transform.configurePipeline(mockPipelineConfigurer);
+    MockFailureCollector failureCollector
+      = (MockFailureCollector) mockPipelineConfigurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(1, failureCollector.getValidationFailures().size());
   }
 }

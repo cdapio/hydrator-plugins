@@ -38,7 +38,9 @@ public interface FileSinkProperties {
    * Deprecated since 2.3.0. Use {@link FileSinkProperties#validate(FailureCollector)} method instead.
    */
   @Deprecated
-  void validate();
+  default void validate() {
+    // no-op
+  }
 
   /**
    * Validates the properties and collects validation failures if anything is invalid.

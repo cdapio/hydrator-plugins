@@ -60,6 +60,9 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
     config.validate(collector);
+    // throw exception if there were any errors while validating the config. This could happen if format or schema is
+    // invalid
+    collector.getOrThrowException();
 
     FileFormat format = config.getFormat();
     ValidatingOutputFormat validatingOutputFormat =
