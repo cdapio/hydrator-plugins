@@ -24,6 +24,7 @@ import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.MultiOutputEmitter;
 import io.cdap.cdap.etl.api.MultiOutputPipelineConfigurer;
 import io.cdap.cdap.etl.api.MultiOutputStageConfigurer;
@@ -58,9 +59,10 @@ public class NullFieldSplitter extends SplitterTransform<StructuredRecord, Struc
   @Override
   public void configurePipeline(MultiOutputPipelineConfigurer multiOutputPipelineConfigurer) {
     MultiOutputStageConfigurer stageConfigurer = multiOutputPipelineConfigurer.getMultiOutputStageConfigurer();
+    FailureCollector collector = stageConfigurer.getFailureCollector();
     Schema inputSchema = stageConfigurer.getInputSchema();
     if (inputSchema != null && !conf.containsMacro("field")) {
-      stageConfigurer.setOutputSchemas(getOutputSchemas(inputSchema, conf));
+      stageConfigurer.setOutputSchemas(getOutputSchemas(inputSchema, conf, collector));
     }
   }
 
@@ -68,8 +70,10 @@ public class NullFieldSplitter extends SplitterTransform<StructuredRecord, Struc
   public void initialize(TransformContext context) {
     schemaMap = new HashMap<>();
     Schema inputSchema = context.getInputSchema();
+    FailureCollector collector = context.getFailureCollector();
     if (inputSchema != null) {
-      Schema nonNullSchema = getNonNullSchema(context.getInputSchema(), conf.field);
+      Schema nonNullSchema = getNonNullSchema(context.getInputSchema(), conf.field, collector);
+      collector.getOrThrowException();
       schemaMap.put(inputSchema, nonNullSchema);
     }
   }
@@ -85,7 +89,7 @@ public class NullFieldSplitter extends SplitterTransform<StructuredRecord, Struc
     } else {
       Schema outputSchema = schemaMap.get(recordSchema);
       if (outputSchema == null) {
-        outputSchema = getNonNullSchema(recordSchema, conf.field);
+        outputSchema = getNonNullSchema(recordSchema, conf.field, null);
         schemaMap.put(recordSchema, outputSchema);
       }
       StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
@@ -97,20 +101,21 @@ public class NullFieldSplitter extends SplitterTransform<StructuredRecord, Struc
     }
   }
 
-  private static Map<String, Schema> getOutputSchemas(Schema inputSchema, Conf conf) {
+  private static Map<String, Schema> getOutputSchemas(Schema inputSchema, Conf conf, FailureCollector collector) {
     Map<String, Schema> outputs = new HashMap<>();
     if (inputSchema.getField(conf.field) == null) {
-      throw new IllegalArgumentException("Field " + conf.field + " does not exist in input schema.");
+      collector.addFailure(String.format("Field '%s' must exist in the input schema.", conf.field), null)
+        .withConfigProperty(Conf.FIELD);
     }
 
     outputs.put(NULL_PORT, inputSchema);
-    outputs.put(NON_NULL_PORT, conf.modifySchema ? getNonNullSchema(inputSchema, conf.field) : inputSchema);
+    outputs.put(NON_NULL_PORT, conf.modifySchema ? getNonNullSchema(inputSchema, conf.field, collector) : inputSchema);
 
     return outputs;
   }
 
   @VisibleForTesting
-  static Schema getNonNullSchema(Schema nullableSchema, String fieldName) {
+  static Schema getNonNullSchema(Schema nullableSchema, String fieldName, @Nullable FailureCollector collector) {
     List<Schema.Field> fields = new ArrayList<>(nullableSchema.getFields().size());
     for (Schema.Field field : nullableSchema.getFields()) {
       Schema fieldSchema = field.getSchema();
@@ -128,8 +133,14 @@ public class NullFieldSplitter extends SplitterTransform<StructuredRecord, Struc
       }
 
       if (fieldSchemas.isEmpty()) {
-        throw new IllegalArgumentException(
-          String.format("Field '%s' does not contain a non-null type in its union schema.", fieldName));
+        if (collector != null) {
+          collector.addFailure(
+            String.format("Field '%s' does not contain a non-null type in its union schema.", fieldName), null)
+            .withInputSchemaField(fieldName);
+        } else {
+          throw new IllegalArgumentException(
+            String.format("Field '%s' does not contain a non-null type in its union schema.", fieldName));
+        }
       } else if (fieldSchemas.size() == 1) {
         fields.add(Schema.Field.of(fieldName, fieldSchemas.iterator().next()));
       } else {
@@ -143,6 +154,8 @@ public class NullFieldSplitter extends SplitterTransform<StructuredRecord, Struc
    * Configuration for the plugin.
    */
   public static class Conf extends PluginConfig {
+    public static final String FIELD = "field";
+
     @Macro
     @Description("Which field should be checked for null values.")
     private final String field;
