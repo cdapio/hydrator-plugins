@@ -19,8 +19,10 @@ package io.cdap.plugin;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.Transform;
+import io.cdap.cdap.etl.api.TransformContext;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
+import io.cdap.cdap.etl.mock.transform.MockTransformContext;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -41,7 +43,8 @@ public class JSONFormatterTest {
   public void testJSONFormatter() throws Exception {
     JSONFormatter.Config config = new JSONFormatter.Config(OUTPUT1.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new JSONFormatter(config);
-    transform.initialize(null);
+    TransformContext context = new MockTransformContext();
+    transform.initialize(context);
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(StructuredRecord.builder(INPUT1)
                           .set("a", "1")
