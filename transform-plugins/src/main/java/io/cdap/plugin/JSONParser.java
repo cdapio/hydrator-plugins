@@ -16,6 +16,7 @@
 
 package io.cdap.plugin;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
@@ -27,6 +28,7 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
@@ -67,21 +69,23 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
   }
 
   @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
     try {
       Schema outputSchema = Schema.parseJson(config.schema);
       pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
       fields = outputSchema.getFields();
     } catch (IOException e) {
-      throw new IllegalArgumentException("Output Schema specified is not a valid JSON. Please check the Schema JSON.");
+      collector.addFailure("Invalid output schema.", "Output schema must be valid JSON.");
     }
 
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
     if (inputSchema != null && inputSchema.getField(config.field) == null) {
-      throw new IllegalArgumentException(String.format("Field %s is not present in input schema", config.field));
+      collector.addFailure(String.format("Field '%s' must be present in the input schema.", config.field), null)
+        .withConfigProperty(Config.FIELD);
     }
-    extractMappings();
+    extractMappings(collector);
   }
 
   // If there is no config mapping, then we attempt to directly map output schema fields
@@ -89,7 +93,7 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
   // populate the output schema fields.
   //
   // E.g. expensive:$.expensive maps the input Json path from root, field expensive to expensive.
-  private void extractMappings() {
+  private void extractMappings(FailureCollector collector) {
     if (config.mapping == null || config.mapping.isEmpty()) {
       isSimple = true;
     } else {
@@ -97,16 +101,12 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
       String[] pathMaps = config.mapping.split(",");
       for (String pathMap : pathMaps) {
         String[] mapParts = pathMap.split(":");
-        String field = mapParts[0];
-        String expression = mapParts[1];
-        if (field.isEmpty() && !expression.isEmpty()) {
-          throw new IllegalArgumentException("JSON path expression '" + expression +
-                  "' has no output field specified.");
+        if (mapParts.length != 2 || Strings.isNullOrEmpty(mapParts[0]) || Strings.isNullOrEmpty(mapParts[1])) {
+          collector.addFailure("Both field name and JSON expression map must be provided.", null)
+            .withConfigElement(Config.MAPPING, pathMap);
+        } else {
+          mapping.put(mapParts[0], mapParts[1]);
         }
-        if (expression.isEmpty() && !field.isEmpty()) {
-          throw new IllegalArgumentException("Field '" + field + "' doesn't have JSON path expression.");
-        }
-        mapping.put(field, expression);
       }
     }
   }
@@ -114,13 +114,16 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
+    FailureCollector collector = getContext().getFailureCollector();
     try {
       outSchema = Schema.parseJson(config.schema);
       fields = outSchema.getFields();
     } catch (IOException e) {
-      throw new IllegalArgumentException("Output Schema specified is not a valid JSON. Please check the Schema JSON.");
+      collector.addFailure("Invalid output schema.", "Output schema must be valid JSON.");
+      throw collector.getOrThrowException();
     }
-    extractMappings();
+    extractMappings(collector);
+    collector.getOrThrowException();
   }
 
   @Override
@@ -170,6 +173,9 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
    * JSONParser Plugin Config.
    */
   public static class Config extends PluginConfig {
+    public static final String FIELD = "field";
+    public static final String MAPPING = "mapping";
+
     @Name("field")
     @Description("Input field to be parsed as JSON")
     private String field;
