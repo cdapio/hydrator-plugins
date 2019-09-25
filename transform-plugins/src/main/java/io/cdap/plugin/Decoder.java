@@ -16,6 +16,7 @@
 
 package io.cdap.plugin;
 
+import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
@@ -24,20 +25,21 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.data.schema.Schema.Field;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import javax.annotation.Nullable;
 
 /**
  * Decodes the input fields as BASE64, BASE32 or HEX.
@@ -47,7 +49,6 @@ import java.util.TreeMap;
 @Name("Decoder")
 @Description("Decodes the input field(s) using Base64, Base32, or Hex")
 public final class Decoder extends Transform<StructuredRecord, StructuredRecord> {
-  private static final Logger LOG = LoggerFactory.getLogger(Decoder.class);
   private final Config config;
   // Mapping of input field to decoder type.
   private final Map<String, DecoderType> decodeMap = new TreeMap<>();
@@ -65,64 +66,47 @@ public final class Decoder extends Transform<StructuredRecord, StructuredRecord>
     this.config = config;
   }
 
-  private void parseConfiguration(String config) throws IllegalArgumentException {
-    String[] mappings = config.split(",");
-    for (String mapping : mappings) {
-      String[] params = mapping.split(":");
-
-      // If format is not right, then we throw an exception.
-      if (params.length < 2) {
-        throw new IllegalArgumentException("Configuration '" + mapping + "' is incorrectly formed. " +
-                                             "Format should be <fieldname>:<decoder-type>");
-      }
-
-      String field = params[0];
-      String type = params[1].toUpperCase();
-      DecoderType eType = DecoderType.valueOf(type);
-
-      if (decodeMap.containsKey(field)) {
-        throw new IllegalArgumentException("Field " + field + " already has decoder set. Check the mapping.");
-      } else {
-        decodeMap.put(field, eType);
-      }
-    }
-  }
-
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-    parseConfiguration(config.decode);
+    StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
+    FailureCollector collector = stageConfigurer.getFailureCollector();
+    parseConfiguration(config.decode, collector);
+    validateInputSchema(stageConfigurer.getInputSchema(), collector);
 
-    Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
+    Schema outputSchema = config.getSchema(collector);
+    if (outputSchema != null) {
+      for (String fieldName : decodeMap.keySet()) {
+        if (outputSchema.getField(fieldName) == null) {
+          collector.addFailure(String.format("Field '%s' must be in output schema.", fieldName), null)
+            .withConfigElement(Config.NAME_DECODE, fieldName + Config.SEPARATOR + decodeMap.get(fieldName));
+          continue;
+        }
 
-    // for the fields in input schema, if they are to be decoded (if present in decodeMap)
-    // make sure their type is either String or Bytes and throw exception otherwise
-    if (inputSchema != null) {
-      for (Schema.Field field : inputSchema.getFields()) {
-        if (decodeMap.containsKey(field.getName())) {
-          if (!field.getSchema().getType().equals(Schema.Type.BYTES) &&
-            !field.getSchema().getType().equals(Schema.Type.STRING)) {
-            throw new IllegalArgumentException(
-              String.format("Input field  %s should be of type bytes or string. It is currently of type %s",
-                            field.getName(), field.getSchema().getType().toString()));
-          }
+        Field field = outputSchema.getField(fieldName);
+        Schema nonNullableSchema = field.getSchema().isNullable() ? field.getSchema().getNonNullable()
+          : field.getSchema();
+        if (nonNullableSchema.getType() != Schema.Type.BYTES && nonNullableSchema.getType() != Schema.Type.STRING
+          || nonNullableSchema.getLogicalType() != null) {
+          collector.addFailure(String.format("Decode field '%s' is of invalid type '%s'.",
+                                             field.getName(), nonNullableSchema.getDisplayName()),
+                               "Ensure the decode field is of type string or bytes.")
+            .withOutputSchemaField(field.getName())
+            .withConfigElement(Config.NAME_DECODE, fieldName + Config.SEPARATOR + decodeMap.get(fieldName));
         }
       }
     }
 
-    // Check if schema specified is a valid schema or no. 
-    try {
-      Schema outputSchema = Schema.parseJson(config.schema);
-      pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
-    }
+    stageConfigurer.setOutputSchema(outputSchema);
   }
 
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
-    parseConfiguration(config.decode);
+    FailureCollector collector = context.getFailureCollector();
+    parseConfiguration(config.decode, collector);
+    collector.getOrThrowException();
+
     try {
       outSchema = Schema.parseJson(config.schema);
       List<Field> outFields = outSchema.getFields();
@@ -190,6 +174,58 @@ public final class Decoder extends Transform<StructuredRecord, StructuredRecord>
     emitter.emit(builder.build());
   }
 
+  private void parseConfiguration(String config, FailureCollector collector) {
+    String[] mappings = config.split(",");
+    for (String mapping : mappings) {
+      String[] params = mapping.split(":");
+
+      // If format is not right, then we throw an exception.
+      if (params.length < 2) {
+        collector.addFailure(String.format("Configuration '%s' is incorrectly formed.", mapping),
+                             "Specify the configuration in the format <fieldname>:<decoder-type>.")
+          .withConfigProperty(Config.NAME_DECODE);
+        continue;
+      }
+
+      String field = params[0];
+      String type = params[1].toUpperCase();
+      DecoderType eType = DecoderType.valueOf(type);
+
+      if (decodeMap.containsKey(field)) {
+        collector.addFailure(String.format("Field '%s' already has decoder set.", field),
+                             "Ensure different fields are provided.")
+          .withConfigElement(Config.NAME_DECODE, mapping);
+        continue;
+      }
+
+      decodeMap.put(field, eType);
+    }
+  }
+
+  private void validateInputSchema(@Nullable Schema inputSchema, FailureCollector collector) {
+    if (inputSchema == null) {
+      return;
+    }
+    // for the fields in input schema, if they are to be decoded (if present in decodeMap)
+    // make sure their type is either String or Bytes and throw exception otherwise
+    for (Field field : inputSchema.getFields()) {
+      if (decodeMap.containsKey(field.getName())) {
+        String fieldName = field.getName();
+        Schema nonNullableSchema = field.getSchema().isNullable() ? field.getSchema().getNonNullable() :
+          field.getSchema();
+
+        if (!nonNullableSchema.getType().equals(Schema.Type.BYTES) &&
+          !nonNullableSchema.getType().equals(Schema.Type.STRING) || nonNullableSchema.getLogicalType() != null) {
+          collector.addFailure(String.format("Input field '%s' is of unsupported type '%s'.",
+                                             field.getName(), nonNullableSchema.getDisplayName()),
+                               "Supported input types are bytes and string.")
+            .withInputSchemaField(field.getName())
+            .withConfigElement(Config.NAME_DECODE, fieldName + Config.SEPARATOR + decodeMap.get(fieldName));
+        }
+      }
+    }
+  }
+
   /**
    * Defines decoding types supported.
    */
@@ -216,18 +252,32 @@ public final class Decoder extends Transform<StructuredRecord, StructuredRecord>
    * Decoder Plugin config.
    */
   public static class Config extends PluginConfig {
-    @Name("decode")
+    private static final String NAME_DECODE = "decode";
+    private static final String NAME_SCHEMA = "schema";
+    private static final String SEPARATOR = ":";
+
+    @Name(NAME_DECODE)
     @Description("Specify the field and decode type combination. " +
       "Format is <field>:<decode-type>[,<field>:<decode-type>]*")
     private final String decode;
 
-    @Name("schema")
+    @Name(NAME_SCHEMA)
     @Description("Specifies the output schema")
     private final String schema;
 
     public Config(String decode, String schema) {
       this.decode = decode;
       this.schema = schema;
+    }
+
+    @Nullable
+    private Schema getSchema(FailureCollector collector) {
+      try {
+        return Strings.isNullOrEmpty(schema) ? null : Schema.parseJson(schema);
+      } catch (IOException e) {
+        collector.addFailure("Invalid schema : " + e.getMessage(), null).withConfigProperty(NAME_SCHEMA);
+      }
+      throw collector.getOrThrowException();
     }
   }
 }
