@@ -19,8 +19,12 @@ package io.cdap.plugin;
 import com.google.common.collect.ImmutableList;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.InvalidEntry;
 import io.cdap.cdap.etl.api.Transform;
+import io.cdap.cdap.etl.api.validation.CauseAttributes;
+import io.cdap.cdap.etl.api.validation.ValidationException;
+import io.cdap.cdap.etl.api.validation.ValidationFailure.Cause;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
 import io.cdap.cdap.etl.mock.transform.MockTransformContext;
@@ -48,8 +52,14 @@ public class XMLParserTest {
     try {
       new XMLParser(config).configurePipeline(configurer);
       Assert.fail();
-    } catch (IllegalArgumentException e) {
-      Assert.assertEquals("Type cannot be null. Please specify type for category", e.getMessage());
+    } catch (ValidationException e) {
+      Assert.assertEquals(1, e.getFailures().size());
+      Assert.assertEquals(1, e.getFailures().get(0).getCauses().size());
+      Cause expectedCause = new Cause();
+      expectedCause.addAttribute("stage", "mockstage");
+      expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, XMLParser.Config.FIELD_TYPE_MAPPING);
+      expectedCause.addAttribute(CauseAttributes.CONFIG_ELEMENT, "category:");
+      Assert.assertEquals(expectedCause, e.getFailures().get(0).getCauses().get(0));
     }
   }
 
@@ -247,5 +257,27 @@ public class XMLParserTest {
     List<StructuredRecord> expected = ImmutableList.of(
       StructuredRecord.builder(schema).set("category", "cooking").set("title", "Everyday Italian").build());
     Assert.assertEquals(expected, emitter.getEmitted());
+  }
+
+  @Test
+  public void testInputFieldNotInSchema() throws Exception {
+    Schema schema = Schema.recordOf("record",
+        Schema.Field.of("title", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+        Schema.Field.of("author", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+        Schema.Field.of("year", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
+
+    XMLParser.Config config = new XMLParser.Config(
+        "x", "UTF-8",
+        "title:/book/title,author:/book/author,year:/book/year",
+        "title:string,author:string,year:string",
+        "Write to error dataset");
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(INPUT);
+    new XMLParser(config).configurePipeline(configurer);
+    FailureCollector collector = configurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(1, collector.getValidationFailures().size());
+    Assert.assertEquals(1, collector.getValidationFailures().get(0).getCauses().size());
+    Cause expectedCause = new Cause();
+    expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, XMLParser.Config.INPUT);
+    Assert.assertEquals(expectedCause, collector.getValidationFailures().get(0).getCauses().get(0));
   }
 }
