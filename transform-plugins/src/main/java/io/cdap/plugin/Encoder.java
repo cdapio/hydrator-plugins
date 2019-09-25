@@ -24,6 +24,7 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.data.schema.Schema.Field;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
@@ -68,25 +69,26 @@ public final class Encoder extends Transform<StructuredRecord, StructuredRecord>
     this.config = config;
   }
 
-  private void parseConfiguration(String config) throws IllegalArgumentException {
+  private void parseConfiguration(String config, FailureCollector collector) throws IllegalArgumentException {
     String[] mappings = config.split(",");
     for (String mapping : mappings) {
       String[] params = mapping.split(":");
 
       // If format is not right, then we throw an exception.
       if (params.length < 2) {
-        throw new IllegalArgumentException("Configuration " + mapping + " is in-correctly formed. " +
-                                             "Format should be <fieldname>:<encoder-type>");
-      }
-
-      String field = params[0];
-      String type = params[1].toUpperCase();
-      EncodeType eType = EncodeType.valueOf(type);
-
-      if (encodeMap.containsKey(field)) {
-        throw new IllegalArgumentException("Field " + field + " already has encoder set. Check the mapping.");
+        collector.addFailure("Both field name and encoder type must be specified.", null)
+          .withConfigElement(Config.ENCODE, mapping);
       } else {
-        encodeMap.put(field, eType);
+        String field = params[0];
+        String type = params[1].toUpperCase();
+        EncodeType eType = EncodeType.valueOf(type);
+
+        if (encodeMap.containsKey(field)) {
+          collector.addFailure(String.format("Field '%s' already has an encoder set.", field), null)
+            .withConfigElement(Config.ENCODE, mapping);
+        } else {
+          encodeMap.put(field, eType);
+        }
       }
     }
   }
@@ -94,7 +96,8 @@ public final class Encoder extends Transform<StructuredRecord, StructuredRecord>
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-    parseConfiguration(config.encode);
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    parseConfiguration(config.encode, collector);
 
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
     // for the fields in input schema, if they are to be encoded (if present in encodeMap)
@@ -102,11 +105,13 @@ public final class Encoder extends Transform<StructuredRecord, StructuredRecord>
     if (inputSchema != null) {
       for (Schema.Field field : inputSchema.getFields()) {
         if (encodeMap.containsKey(field.getName())) {
-          if (!field.getSchema().getType().equals(Schema.Type.BYTES) &&
-            !field.getSchema().getType().equals(Schema.Type.STRING)) {
-            throw new IllegalArgumentException(
-              String.format("Input field  %s should be of type bytes or string. It is currently of type %s",
-                            field.getName(), field.getSchema().getType().toString()));
+          Schema.Type type = field.getSchema().getType();
+          if (!type.equals(Schema.Type.BYTES) && !type.equals(Schema.Type.STRING)) {
+            collector.addFailure(String.format("Field '%s' has invalid input type '%s'.",
+                                               field.getName(), type.toString().toLowerCase()),
+                                 "Input schema field must be of type string or bytes.")
+              .withConfigElement(Config.ENCODE, String.format("%s:%s", field.getName(), type.toString().toLowerCase()))
+              .withInputSchemaField(field.getName());
           }
         }
       }
@@ -117,14 +122,16 @@ public final class Encoder extends Transform<StructuredRecord, StructuredRecord>
       Schema outputSchema = Schema.parseJson(config.schema);
       pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
     } catch (IOException e) {
-      throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
+      collector.addFailure("Invalid schema format.", null).withConfigProperty(Config.SCHEMA);
     }
   }
 
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
-    parseConfiguration(config.encode);
+    FailureCollector collector = getContext().getFailureCollector();
+    parseConfiguration(config.encode, collector);
+    collector.getOrThrowException();
     try {
       outSchema = Schema.parseJson(config.schema);
       List<Field> outFields = outSchema.getFields();
@@ -132,7 +139,8 @@ public final class Encoder extends Transform<StructuredRecord, StructuredRecord>
         outSchemaMap.put(field.getName(), field.getSchema().getType());
       }
     } catch (IOException e) {
-      throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
+      collector.addFailure("Invalid schema format.", null).withConfigProperty(Config.SCHEMA);
+      collector.getOrThrowException();
     }
   }
 
@@ -225,6 +233,9 @@ public final class Encoder extends Transform<StructuredRecord, StructuredRecord>
    * Encoder Plugin config.
    */
   public static class Config extends PluginConfig {
+    public static final String ENCODE = "encode";
+    public static final String SCHEMA = "schema";
+
     @Name("encode")
     @Description("Specify the field and encode type combination. " +
       "Format is <field>:<encode-type>[,<field>:<encode-type>]*")
