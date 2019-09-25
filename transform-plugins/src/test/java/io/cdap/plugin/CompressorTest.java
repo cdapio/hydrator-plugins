@@ -18,9 +18,11 @@ package io.cdap.plugin;
 
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
+import io.cdap.cdap.etl.mock.transform.MockTransformContext;
 import org.junit.Assert;
 import org.junit.Test;
 import org.xerial.snappy.Snappy;
@@ -50,7 +52,8 @@ public class CompressorTest {
   public void testSnappyCompress() throws Exception {
     Transform<StructuredRecord, StructuredRecord> transform = 
       new Compressor(new Compressor.Config("a:SNAPPY", OUTPUT.toString()));
-    transform.initialize(null);
+    MockTransformContext context = new MockTransformContext();
+    transform.initialize(context);
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(StructuredRecord.builder(INPUT)
@@ -70,7 +73,8 @@ public class CompressorTest {
   public void testZipCompress() throws Exception {
     Transform<StructuredRecord, StructuredRecord> transform =
       new Compressor(new Compressor.Config("a:ZIP", OUTPUT.toString()));
-    transform.initialize(null);
+    MockTransformContext context = new MockTransformContext();
+    transform.initialize(context);
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(StructuredRecord.builder(INPUT)
@@ -90,7 +94,8 @@ public class CompressorTest {
   public void testGZIPCompress() throws Exception {
     Transform<StructuredRecord, StructuredRecord> transform =
       new Compressor(new Compressor.Config("a:GZIP", OUTPUT.toString()));
-    transform.initialize(null);
+    MockTransformContext context = new MockTransformContext();
+    transform.initialize(context);
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(StructuredRecord.builder(INPUT)
@@ -107,7 +112,7 @@ public class CompressorTest {
   }
 
   @Test
-  public void testSchemaValidation() throws Exception {
+  public void testSchemaValidation() {
     Transform<StructuredRecord, StructuredRecord> transform =
       new Compressor(new Compressor.Config("a:GZIP", OUTPUT.toString()));
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT);
@@ -115,8 +120,8 @@ public class CompressorTest {
     Assert.assertEquals(OUTPUT, mockPipelineConfigurer.getOutputSchema());
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testSchemaValidationWithInvalidInputSchema() throws Exception {
+  @Test
+  public void testSchemaValidationWithInvalidInputSchema() {
     Transform<StructuredRecord, StructuredRecord> transform =
       new Compressor(new Compressor.Config("a:ZIP", OUTPUT.toString()));
     Schema invalidInput = Schema.recordOf("input",
@@ -124,11 +129,13 @@ public class CompressorTest {
                                           Schema.Field.of("b", Schema.of(Schema.Type.STRING)));
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(invalidInput);
+    FailureCollector collector = mockPipelineConfigurer.getStageConfigurer().getFailureCollector();
     transform.configurePipeline(mockPipelineConfigurer);
+    Assert.assertEquals(1, collector.getValidationFailures().size());
   }
 
   @Test
-  public void testSchemaValidationWithValidInputSchema() throws Exception {
+  public void testSchemaValidationWithValidInputSchema() {
     Transform<StructuredRecord, StructuredRecord> transform =
       new Compressor(new Compressor.Config("a:NONE", OUTPUT.toString()));
     Schema validInput = Schema.recordOf("input",

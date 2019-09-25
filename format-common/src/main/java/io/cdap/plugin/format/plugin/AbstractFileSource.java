@@ -75,6 +75,9 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
     config.validate(collector);
+    // throw exception if there were any errors while validating the config. This could happen if format or schema is
+    // invalid
+    collector.getOrThrowException();
 
     FileFormat fileFormat = config.getFormat();
     Schema schema = null;
@@ -102,7 +105,6 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
     validateInputFormatProvider(formatContext, fileFormat, validatingInputFormat);
     validatePathField(collector, validatingInputFormat.getSchema(formatContext));
     collector.getOrThrowException();
-
 
     Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();

@@ -40,7 +40,9 @@ public interface FileSourceProperties {
    * Deprecated since 2.3.0. Use {@link FileSourceProperties#validate(FailureCollector)} method instead.
    */
   @Deprecated
-  void validate();
+  default void validate() {
+    // no-op
+  }
 
   /**
    * Validates the properties and collects validation failures if anything is invalid.
