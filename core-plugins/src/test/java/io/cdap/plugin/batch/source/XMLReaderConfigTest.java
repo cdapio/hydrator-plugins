@@ -16,6 +16,10 @@
 package io.cdap.plugin.batch.source;
 
 
+import io.cdap.cdap.etl.api.FailureCollector;
+import io.cdap.cdap.etl.api.validation.CauseAttributes;
+import io.cdap.cdap.etl.api.validation.ValidationFailure.Cause;
+import io.cdap.cdap.etl.mock.validation.MockFailureCollector;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -39,27 +43,39 @@ public class XMLReaderConfigTest {
     Assert.assertEquals(tableName, config.getTableName());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testEmptyPath() {
     XMLReaderBatchSource.XMLReaderConfig config = new XMLReaderBatchSource.XMLReaderConfig("emptyPathReference", "",
                                                                                            null, "/catalog/book/",
                                                                                            null, null, "Yes",
                                                                                            "XMLTrackingTable", 30,
                                                                                            "/tmp");
-    config.validate();
+    FailureCollector collector = new MockFailureCollector();
+    config.validate(collector);
+    Assert.assertEquals(1, collector.getValidationFailures().size());
+    Assert.assertEquals(1, collector.getValidationFailures().get(0).getCauses().size());
+    Cause expectedCause = new Cause();
+    expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, XMLReaderBatchSource.XMLReaderConfig.PATH);
+    Assert.assertEquals(expectedCause, collector.getValidationFailures().get(0).getCauses().get(0));
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testEmptyNodePath() {
     XMLReaderBatchSource.XMLReaderConfig config = new XMLReaderBatchSource.XMLReaderConfig("emptyNodePathReference",
                                                                                            "/opt/hdfs/catalog.xml",
                                                                                            null, "", null, null,
                                                                                            "Yes", "XMLTrackingTable",
                                                                                            30, "/tmp");
-    config.validate();
+    FailureCollector collector = new MockFailureCollector();
+    config.validate(collector);
+    Assert.assertEquals(1, collector.getValidationFailures().size());
+    Assert.assertEquals(1, collector.getValidationFailures().get(0).getCauses().size());
+    Cause expectedCause = new Cause();
+    expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, XMLReaderBatchSource.XMLReaderConfig.NODE_PATH);
+    Assert.assertEquals(expectedCause, collector.getValidationFailures().get(0).getCauses().get(0));
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testActionAfterProcessAndReprocessingConflict() {
     XMLReaderBatchSource.XMLReaderConfig config = new XMLReaderBatchSource.XMLReaderConfig("conflictReference",
                                                                                            "/opt/hdfs/catalog.xml",
@@ -67,10 +83,13 @@ public class XMLReaderConfigTest {
                                                                                            "Delete", null, "Yes",
                                                                                            "XMLTrackingTable", 30,
                                                                                            "/tmp");
-    config.validate();
+    FailureCollector collector = new MockFailureCollector();
+    config.validate(collector);
+    Assert.assertEquals(1, collector.getValidationFailures().size());
+    Assert.assertEquals(2, collector.getValidationFailures().get(0).getCauses().size());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testEmptyTargetFolder() {
     XMLReaderBatchSource.XMLReaderConfig config = new XMLReaderBatchSource.XMLReaderConfig("emptyTargetFolderReference",
                                                                                            "/opt/hdfs/catalog.xml",
@@ -78,10 +97,16 @@ public class XMLReaderConfigTest {
                                                                                            "Move", "", "No",
                                                                                            "XMLTrackingTable", 30,
                                                                                            "/tmp");
-    config.validate();
+    FailureCollector collector = new MockFailureCollector();
+    config.validate(collector);
+    Assert.assertEquals(1, collector.getValidationFailures().size());
+    Assert.assertEquals(1, collector.getValidationFailures().get(0).getCauses().size());
+    Cause expectedCause = new Cause();
+    expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, XMLReaderBatchSource.XMLReaderConfig.TARGET_FOLDER);
+    Assert.assertEquals(expectedCause, collector.getValidationFailures().get(0).getCauses().get(0));
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testEmptyTemporaryFolder() {
     XMLReaderBatchSource.XMLReaderConfig config = new XMLReaderBatchSource.XMLReaderConfig("emptyNodePathReference",
                                                                                            "/opt/hdfs/catalog.xml",
@@ -89,6 +114,12 @@ public class XMLReaderConfigTest {
                                                                                            "Delete", null, "No",
                                                                                            "XMLTrackingTable", 30,
                                                                                            null);
-    config.validate();
+    FailureCollector collector = new MockFailureCollector();
+    config.validate(collector);
+    Assert.assertEquals(1, collector.getValidationFailures().size());
+    Assert.assertEquals(1, collector.getValidationFailures().get(0).getCauses().size());
+    Cause expectedCause = new Cause();
+    expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, XMLReaderBatchSource.XMLReaderConfig.TEMPORARY_FOLDER);
+    Assert.assertEquals(expectedCause, collector.getValidationFailures().get(0).getCauses().get(0));
   }
 }
