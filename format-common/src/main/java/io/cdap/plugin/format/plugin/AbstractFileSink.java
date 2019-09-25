@@ -34,6 +34,7 @@ import io.cdap.plugin.format.FileFormat;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.HashMap;
@@ -70,7 +71,7 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
   }
 
   @Override
-  public void prepareRun(BatchSinkContext context) throws InstantiationException {
+  public void prepareRun(BatchSinkContext context) throws InstantiationException, IOException {
     FailureCollector collector = context.getFailureCollector();
     config.validate(collector);
     ValidatingOutputFormat validatingOutputFormat = context.newPluginInstance(FORMAT_PLUGIN_ID);
