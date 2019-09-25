@@ -24,6 +24,7 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.data.schema.Schema.Field;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
@@ -41,6 +42,7 @@ import java.util.TreeMap;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import javax.annotation.Nullable;
 
 /**
  * Decompreses the configured fields using the algorithms specified.
@@ -66,79 +68,50 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
     this.config = config;
   }
 
-  private void parseConfiguration(String config) throws IllegalArgumentException {
-    String[] mappings = config.split(",");
-    for (String mapping : mappings) {
-      String[] params = mapping.split(":");
-
-      // If format is not right, then we throw an exception.
-      if (params.length < 2) {
-        throw new IllegalArgumentException("Configuration " + mapping + " is in-correctly formed. " +
-                                             "Format should be <fieldname>:<decompressor-type>");
-      }
-
-      String field = params[0];
-      String type = params[1].toUpperCase();
-      DecompressorType cType = DecompressorType.valueOf(type);
-
-      if (deCompMap.containsKey(field)) {
-        throw new IllegalArgumentException("Field " + field + " already has decompressor set. Check the mapping.");
-      } else {
-        deCompMap.put(field, cType);
-      }
-    }
-  }
-
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-    parseConfiguration(config.decompressor);
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    parseConfiguration(config.decompressor, collector);
 
-    // Check if schema specified is a valid schema or no.
-    try {
-      Schema outputSchema = Schema.parseJson(config.schema);
-      List<Field> outFields = outputSchema.getFields();
-      for (Field field : outFields) {
-        outSchemaMap.put(field.getName(), field.getSchema().getType());
-      }
-      pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format. " +
-                                           e.getMessage());
+    Schema outputSchema = config.getSchema(collector);
+    List<Field> outFields = outputSchema.getFields();
+    for (Field field : outFields) {
+      outSchemaMap.put(field.getName(), field.getSchema().getType());
     }
-
-    Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
-    if (inputSchema != null) {
-      for (Schema.Field field : inputSchema.getFields()) {
-        if (outSchemaMap.containsKey(field.getName()) &&
-          deCompMap.containsKey(field.getName()) && deCompMap.get(field.getName()) != DecompressorType.NONE &&
-          !Schema.Type.BYTES.equals(field.getSchema().getType())) {
-          throw new IllegalArgumentException(
-            String.format("Decompression is selected for the input field %s, but the field is of type %s. " +
-                            "Decompression is supported only for the type Bytes.",
-                          field.getName(), field.getSchema().getType().toString()));
-        }
-      }
-    }
+    validateInputSchema(pipelineConfigurer.getStageConfigurer().getInputSchema(), collector);
 
     for (Map.Entry<String, DecompressorType> entry : deCompMap.entrySet()) {
-      if (!outSchemaMap.containsKey(entry.getKey())) {
-        throw new IllegalArgumentException("Field '" + entry.getKey() + "' specified to be decompresed is not " +
-                                             "present in the output schema. Please add field '" + entry.getKey() + "'" +
-                                             "to output schema or remove it from decompress");
+      String fieldName = entry.getKey();
+      if (!outSchemaMap.containsKey(fieldName)) {
+        collector.addFailure(String.format("Decompress field '%s' must be present in output schema.", fieldName),
+                             "Add decompress field in output schema or remove it from decompress.")
+          .withConfigElement(Config.NAME_DECOMPRESSOR, fieldName + Config.SEPARATOR + entry.getValue());
+        continue;
       }
-      if (outSchemaMap.get(entry.getKey()) != Schema.Type.BYTES &&
-        outSchemaMap.get(entry.getKey()) != Schema.Type.STRING) {
-        throw new IllegalArgumentException("Field '" + entry.getKey() + "' should be of type BYTES or STRING in " +
-                                             "output schema.");
+
+      Schema fieldSchema = outputSchema.getField(fieldName).getSchema();
+      fieldSchema = fieldSchema.isNullable() ? fieldSchema.getNonNullable() : fieldSchema;
+
+      if (outSchemaMap.get(fieldName) != Schema.Type.BYTES && outSchemaMap.get(fieldName) != Schema.Type.STRING) {
+        collector.addFailure(String.format("Field '%s' is of unexpected type '%s'.",
+                                           fieldName, fieldSchema.getDisplayName()),
+                             "It must be of type 'bytes' or 'string'")
+          .withOutputSchemaField(fieldName).withConfigElement(Config.NAME_DECOMPRESSOR,
+                                                              fieldName + Config.SEPARATOR + entry.getValue());
       }
     }
+
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
   }
 
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
-    parseConfiguration(config.decompressor);
+    FailureCollector collector = context.getFailureCollector();
+    parseConfiguration(config.decompressor, collector);
+    collector.getOrThrowException();
+
     try {
       outSchema = Schema.parseJson(config.schema);
       List<Field> outFields = outSchema.getFields();
@@ -280,22 +253,87 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
     }
   }
 
+  private void parseConfiguration(String config, FailureCollector collector) {
+    String[] mappings = config.split(",");
+    for (String mapping : mappings) {
+      String[] params = mapping.split(Config.SEPARATOR);
+
+      // If format is not right, then we throw an exception.
+      if (params.length < 2) {
+        collector.addFailure(String.format("Configuration '%s' is incorrectly formed.", mapping),
+                             "Specify the configuration in the format <fieldname>:<decompressor-type>.")
+          .withConfigProperty(Config.NAME_DECOMPRESSOR);
+        continue;
+      }
+
+      String field = params[0];
+      String type = params[1].toUpperCase();
+      DecompressorType cType = DecompressorType.valueOf(type);
+
+      if (deCompMap.containsKey(field)) {
+        collector.addFailure(String.format("Field '%s' already has decompressor set.", field),
+                             "Ensure different fields are provided.")
+          .withConfigElement(Config.NAME_DECOMPRESSOR, mapping);
+        continue;
+      }
+
+      deCompMap.put(field, cType);
+    }
+  }
+
+  private void validateInputSchema(@Nullable Schema inputSchema, FailureCollector collector) {
+    if (inputSchema == null) {
+      return;
+    }
+
+    for (Field field : inputSchema.getFields()) {
+      String fieldName = field.getName();
+      Schema nonNullableSchema = field.getSchema().isNullable() ? field.getSchema().getNonNullable()
+        : field.getSchema();
+      Schema.Type type = nonNullableSchema.getType();
+      Schema.LogicalType logicalType = nonNullableSchema.getLogicalType();
+
+      if (outSchemaMap.containsKey(fieldName) &&
+        deCompMap.containsKey(fieldName) && deCompMap.get(fieldName) != DecompressorType.NONE &&
+        (!Schema.Type.BYTES.equals(type) || logicalType != null)) {
+        collector.addFailure(String.format("Input field '%s' is of unsupported type '%s'.",
+                                           field.getName(), nonNullableSchema.getDisplayName()),
+                             "Supported type is bytes.")
+          .withInputSchemaField(field.getName())
+          .withConfigElement(Config.NAME_DECOMPRESSOR, fieldName + Config.SEPARATOR + deCompMap.get(fieldName));
+      }
+    }
+  }
+
   /**
    * Decompressor Plugin configuration.
    */
   public static class Config extends PluginConfig {
-    @Name("decompressor")
+    private static final String NAME_DECOMPRESSOR = "decompressor";
+    private static final String NAME_SCHEMA = "schema";
+    private static final String SEPARATOR = ":";
+
+    @Name(NAME_DECOMPRESSOR)
     @Description("Specify the field and decompression type combination. " +
       "Format is <field>:<decompressor-type>[,<field>:<decompressor-type>]*")
     private final String decompressor;
 
-    @Name("schema")
+    @Name(NAME_SCHEMA)
     @Description("Specifies the output schema")
     private final String schema;
 
     public Config(String decompressor, String schema) {
       this.decompressor = decompressor;
       this.schema = schema;
+    }
+
+    private Schema getSchema(FailureCollector collector) {
+      try {
+        return Schema.parseJson(schema);
+      } catch (IOException e) {
+        collector.addFailure("Invalid schema : " + e.getMessage(), null).withConfigProperty(NAME_SCHEMA);
+      }
+      throw collector.getOrThrowException();
     }
   }
 }

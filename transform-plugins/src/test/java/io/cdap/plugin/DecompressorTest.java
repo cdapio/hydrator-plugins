@@ -19,9 +19,11 @@ package io.cdap.plugin;
 
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
+import io.cdap.cdap.etl.mock.transform.MockTransformContext;
 import org.junit.Assert;
 import org.junit.Test;
 import org.xerial.snappy.Snappy;
@@ -52,7 +54,8 @@ public class DecompressorTest {
     String decompressTester = "This is a test for testing snappy compression";
     Transform<StructuredRecord, StructuredRecord> transform =
       new Decompressor(new Decompressor.Config("a:SNAPPY", OUTPUT.toString()));
-    transform.initialize(null);
+    MockTransformContext context = new MockTransformContext();
+    transform.initialize(context);
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     byte[] compressed = Snappy.compress(decompressTester.getBytes());
@@ -72,7 +75,8 @@ public class DecompressorTest {
     String decompressTester = "This is a test for testing zip compression";
     Transform<StructuredRecord, StructuredRecord> transform =
       new Decompressor(new Decompressor.Config("a:ZIP", OUTPUT.toString()));
-    transform.initialize(null);
+    MockTransformContext context = new MockTransformContext();
+    transform.initialize(context);
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     byte[] compressed = zip(decompressTester.getBytes());
@@ -92,7 +96,8 @@ public class DecompressorTest {
     String decompressTester = "This is a test for testing gzip compression";
     Transform<StructuredRecord, StructuredRecord> transform =
       new Decompressor(new Decompressor.Config("a:GZIP", OUTPUT.toString()));
-    transform.initialize(null);
+    MockTransformContext context = new MockTransformContext();
+    transform.initialize(context);
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     byte[] compressed = gzip(decompressTester.getBytes());
@@ -129,7 +134,7 @@ public class DecompressorTest {
   }
 
   @Test
-  public void testSchemaValidation() throws Exception {
+  public void testSchemaValidation() {
     Transform<StructuredRecord, StructuredRecord> transform =
       new Decompressor(new Decompressor.Config("a:ZIP", OUTPUT.toString()));
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT);
@@ -137,8 +142,8 @@ public class DecompressorTest {
     Assert.assertEquals(OUTPUT, mockPipelineConfigurer.getOutputSchema());
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testSchemaValidationWithInvalidInputSchema() throws Exception {
+  @Test
+  public void testSchemaValidationWithInvalidInputSchema() {
     Transform<StructuredRecord, StructuredRecord> transform =
       new Decompressor(new Decompressor.Config("a:ZIP", OUTPUT.toString()));
     Schema invalidInput = Schema.recordOf("input",
@@ -147,11 +152,13 @@ public class DecompressorTest {
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(invalidInput);
     transform.configurePipeline(mockPipelineConfigurer);
+    FailureCollector collector = mockPipelineConfigurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(1, collector.getValidationFailures().size());
     Assert.assertEquals(OUTPUT, mockPipelineConfigurer.getOutputSchema());
   }
 
   @Test
-  public void testSchemaValidationWithValidInputSchema() throws Exception {
+  public void testSchemaValidationWithValidInputSchema() {
     Transform<StructuredRecord, StructuredRecord> transform =
       new Decompressor(new Decompressor.Config("a:NONE", OUTPUT.toString()));
     Schema validInput = Schema.recordOf("input",
@@ -162,5 +169,4 @@ public class DecompressorTest {
     transform.configurePipeline(mockPipelineConfigurer);
     Assert.assertEquals(OUTPUT, mockPipelineConfigurer.getOutputSchema());
   }
-
 }
