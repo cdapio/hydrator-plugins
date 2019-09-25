@@ -70,7 +70,7 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
   }
 
   @Override
-  public final void prepareRun(BatchSinkContext context) throws InstantiationException {
+  public void prepareRun(BatchSinkContext context) throws InstantiationException {
     FailureCollector collector = context.getFailureCollector();
     config.validate(collector);
     ValidatingOutputFormat validatingOutputFormat = context.newPluginInstance(FORMAT_PLUGIN_ID);
