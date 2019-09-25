@@ -18,6 +18,7 @@ package io.cdap.plugin;
 
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
@@ -72,7 +73,8 @@ public class DecoderTest {
 
     Transform<StructuredRecord, StructuredRecord> decoder =
       new Decoder(new Decoder.Config("a:BASE64", OUTPUTSTR.toString()));
-    decoder.initialize(null);
+    MockTransformContext context = new MockTransformContext();
+    decoder.initialize(context);
     MockEmitter<StructuredRecord> emitterDecoded = new MockEmitter<>();
     decoder.transform(emitterEncoded.getEmitted().get(0), emitterDecoded);
     Assert.assertEquals(2, emitterDecoded.getEmitted().get(0).getSchema().getFields().size());
@@ -104,7 +106,8 @@ public class DecoderTest {
 
     Transform<StructuredRecord, StructuredRecord> decoder =
       new Decoder(new Decoder.Config("a:STRING_BASE64", OUTPUTSTR.toString()));
-    decoder.initialize(null);
+    MockTransformContext context = new MockTransformContext();
+    decoder.initialize(context);
     MockEmitter<StructuredRecord> emitterDecoded = new MockEmitter<>();
     decoder.transform(emitterEncoded.getEmitted().get(0), emitterDecoded);
     Assert.assertEquals(2, emitterDecoded.getEmitted().get(0).getSchema().getFields().size());
@@ -136,7 +139,8 @@ public class DecoderTest {
 
     Transform<StructuredRecord, StructuredRecord> decoder =
       new Decoder(new Decoder.Config("a:BASE32", OUTPUTSTR.toString()));
-    decoder.initialize(null);
+    MockTransformContext context = new MockTransformContext();
+    decoder.initialize(context);
     MockEmitter<StructuredRecord> emitterDecoded = new MockEmitter<>();
     decoder.transform(emitterEncoded.getEmitted().get(0), emitterDecoded);
     Assert.assertEquals(2, emitterDecoded.getEmitted().get(0).getSchema().getFields().size());
@@ -168,7 +172,8 @@ public class DecoderTest {
 
     Transform<StructuredRecord, StructuredRecord> decoder =
       new Decoder(new Decoder.Config("a:STRING_BASE32", OUTPUTSTR.toString()));
-    decoder.initialize(null);
+    MockTransformContext context = new MockTransformContext();
+    decoder.initialize(context);
     MockEmitter<StructuredRecord> emitterDecoded = new MockEmitter<>();
     decoder.transform(emitterEncoded.getEmitted().get(0), emitterDecoded);
     Assert.assertEquals(2, emitterDecoded.getEmitted().get(0).getSchema().getFields().size());
@@ -200,7 +205,8 @@ public class DecoderTest {
 
     Transform<StructuredRecord, StructuredRecord> decoder =
       new Decoder(new Decoder.Config("a:HEX", OUTPUTSTR.toString()));
-    decoder.initialize(null);
+    MockTransformContext context = new MockTransformContext();
+    decoder.initialize(context);
     MockEmitter<StructuredRecord> emitterDecoded = new MockEmitter<>();
     decoder.transform(emitterEncoded.getEmitted().get(0), emitterDecoded);
     Assert.assertEquals(2, emitterDecoded.getEmitted().get(0).getSchema().getFields().size());
@@ -209,7 +215,7 @@ public class DecoderTest {
   }
 
   @Test
-  public void testSchemaValidation() throws Exception {
+  public void testSchemaValidation() {
     Transform<StructuredRecord, StructuredRecord> decoder =
       new Decoder(new Decoder.Config("a:BASE64", OUTPUT.toString()));
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT);
@@ -217,8 +223,8 @@ public class DecoderTest {
     Assert.assertEquals(OUTPUT, mockPipelineConfigurer.getOutputSchema());
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testSchemaValidationWithInvalidInputSchema() throws Exception {
+  @Test
+  public void testSchemaValidationWithInvalidInputSchema() {
     Transform<StructuredRecord, StructuredRecord> decoder =
       new Decoder(new Decoder.Config("a:BASE64", OUTPUT.toString()));
 
@@ -229,5 +235,7 @@ public class DecoderTest {
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(invalidInput);
     decoder.configurePipeline(mockPipelineConfigurer);
+    FailureCollector failureCollector = mockPipelineConfigurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(1, failureCollector.getValidationFailures().size());
   }
 }
