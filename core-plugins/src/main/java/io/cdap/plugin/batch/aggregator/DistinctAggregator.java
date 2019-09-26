@@ -23,9 +23,11 @@ import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchAggregator;
+import io.cdap.cdap.etl.api.batch.BatchAggregatorContext;
 import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
 
 import java.util.ArrayList;
@@ -77,7 +79,31 @@ public class DistinctAggregator extends RecordAggregator {
     }
 
     // otherwise, we have a constant input schema. Get the output schema and propagate the schema
+    validate(inputSchema, conf.getFields(), stageConfigurer.getFailureCollector());
     stageConfigurer.setOutputSchema(getOutputSchema(inputSchema, conf.getFields()));
+  }
+
+  public void validate(Schema inputSchema, Iterable<String> fields, FailureCollector collector) {
+    if (fields == null || !fields.iterator().hasNext()) {
+      return;
+    }
+
+    for (String fieldName : fields) {
+      Schema.Field field = inputSchema.getField(fieldName);
+      if (field == null) {
+        collector.addFailure(String.format("Field %s does not exist in input schema.", fieldName),
+                             "Remove this field.").withConfigElement("fields", fieldName);
+      }
+    }
+  }
+
+  @Override
+  public void prepareRun(BatchAggregatorContext context) throws Exception {
+    super.prepareRun(context);
+
+    validate(context.getInputSchema(), conf.getFields(), context.getFailureCollector());
+    context.getFailureCollector().getOrThrowException();
+
   }
 
   @Override
