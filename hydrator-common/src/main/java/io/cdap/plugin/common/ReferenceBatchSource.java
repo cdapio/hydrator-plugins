@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.common;
 
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 
@@ -36,7 +37,8 @@ public abstract class ReferenceBatchSource<KEY_IN, VAL_IN, OUT> extends BatchSou
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
-    // Verify that reference name meets dataset id constraints
-    IdUtils.validateId(config.referenceName);
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    IdUtils.validateReferenceName(config.referenceName, collector);
+    collector.getOrThrowException();
   }
 }

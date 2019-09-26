@@ -22,14 +22,11 @@ import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
-import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchActionContext;
 import io.cdap.cdap.etl.api.batch.PostAction;
 import io.cdap.plugin.DBManager;
 import io.cdap.plugin.common.batch.action.Condition;
 import io.cdap.plugin.common.batch.action.ConditionConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.Driver;
 import javax.annotation.Nullable;
@@ -43,7 +40,6 @@ import javax.annotation.Nullable;
 @Description("Runs a query after a pipeline run.")
 public class QueryAction extends PostAction {
   private static final String JDBC_PLUGIN_ID = "driver";
-  private static final Logger LOG = LoggerFactory.getLogger(QueryAction.class);
   private final QueryActionConfig config;
 
   public QueryAction(QueryActionConfig config) {
@@ -51,9 +47,18 @@ public class QueryAction extends PostAction {
   }
 
   @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    config.validate(collector);
+    DBManager dbManager = new DBManager(config);
+    dbManager.validateJDBCPluginPipeline(pipelineConfigurer, JDBC_PLUGIN_ID, collector);
+  }
+
+  @Override
   public void run(BatchActionContext batchContext) throws Exception {
-    config.validate(batchContext.getFailureCollector());
-    batchContext.getFailureCollector().getOrThrowException();
+    FailureCollector collector = batchContext.getFailureCollector();
+    config.validate(collector);
+    collector.getOrThrowException();
 
     if (!config.shouldRun(batchContext)) {
       return;
@@ -64,21 +69,12 @@ public class QueryAction extends PostAction {
     executeQuery.run();
   }
 
-  @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
-    StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
-    FailureCollector collector = stageConfigurer.getFailureCollector();
-
-    config.validate(collector);
-    DBManager dbManager = new DBManager(config);
-    dbManager.validateJDBCPluginPipeline(pipelineConfigurer, JDBC_PLUGIN_ID);
-  }
-
-
   /**
    * config for {@link QueryAction}
    */
   public class QueryActionConfig extends QueryConfig {
+    private static final String NAME_RUN_CONDITION = "runCondition";
+
     @Nullable
     @Description("When to run the action. Must be 'completion', 'success', or 'failure'. Defaults to 'success'. " +
       "If set to 'completion', the action will be executed regardless of whether the pipeline run succeeded or " +
