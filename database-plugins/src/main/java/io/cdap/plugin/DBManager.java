@@ -16,10 +16,10 @@
 
 package io.cdap.plugin;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import io.cdap.cdap.api.plugin.PluginProperties;
 import io.cdap.cdap.etl.api.Destroyable;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +30,7 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import javax.annotation.Nullable;
 
 /**
  * Class to manage common database operations for Database source and sink plugins.
@@ -43,19 +44,29 @@ public class DBManager implements Destroyable {
     this.config = config;
   }
 
+  @Nullable
   public Class<? extends Driver> validateJDBCPluginPipeline(PipelineConfigurer pipelineConfigurer,
-                                                            String jdbcPluginId) {
-    Preconditions.checkArgument(!(config.user == null && config.password != null),
-                                "user is null. Please provide both user name and password if database requires " +
-                                  "authentication. If not, please remove password and retry.");
+                                                            String jdbcPluginId, FailureCollector collector) {
+    if (!config.containsMacro(config.user) && !config.containsMacro(config.password)
+      && config.user == null && config.password != null) {
+      collector.addFailure("Username and password should be provided together.", "Please provide both " +
+        "user name and password, if database supports it or remove password.")
+        .withConfigProperty(ConnectionConfig.USER).withConfigProperty(ConnectionConfig.PASSWORD);
+    }
+
     Class<? extends Driver> jdbcDriverClass = pipelineConfigurer.usePluginClass(config.jdbcPluginType,
                                                                                 config.jdbcPluginName,
                                                                                 jdbcPluginId,
                                                                                 PluginProperties.builder().build());
-    Preconditions.checkArgument(
-      jdbcDriverClass != null, "Unable to load JDBC Driver class for plugin name '%s'. Please make sure that the " +
-        "plugin '%s' of type '%s' containing the driver has been installed correctly.", config.jdbcPluginName,
-      config.jdbcPluginName, config.jdbcPluginType);
+    if (jdbcDriverClass == null) {
+      collector.addFailure(
+        String.format("Unable to load JDBC Driver class for plugin name '%s'.", config.jdbcPluginName),
+        String.format("Ensure that plugin '%s' of type '%s' containing the driver has been " +
+                        "deployed.", config.jdbcPluginName, config.jdbcPluginType))
+        .withConfigProperty(ConnectionConfig.JDBC_PLUGIN_NAME)
+        .withPluginNotFound(jdbcPluginId, config.jdbcPluginName, config.jdbcPluginType);
+    }
+
     return jdbcDriverClass;
   }
 
