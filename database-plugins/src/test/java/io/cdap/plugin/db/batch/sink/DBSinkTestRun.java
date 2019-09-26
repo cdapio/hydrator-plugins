@@ -205,4 +205,9 @@ public class DBSinkTestRun extends DatabasePluginTestBase {
       stmt.execute("create table OUTPUT (a float, b double, c varchar(20))");
     }
   }
+
+  @Override
+  public void beforeTest() throws Exception {
+    super.beforeTest();
+  }
 }
