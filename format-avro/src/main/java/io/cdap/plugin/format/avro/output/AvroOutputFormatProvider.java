@@ -20,10 +20,11 @@ import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
-import io.cdap.cdap.api.data.batch.OutputFormatProvider;
 import io.cdap.cdap.api.plugin.PluginClass;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.api.plugin.PluginPropertyField;
+import io.cdap.cdap.etl.api.validation.ValidatingOutputFormat;
+import io.cdap.plugin.format.output.AbstractOutputFormatProvider;
 import org.apache.avro.file.CodecFactory;
 
 import java.util.HashMap;
@@ -33,10 +34,10 @@ import javax.annotation.Nullable;
 /**
  * Output format plugin for avro.
  */
-@Plugin(type = "outputformat")
+@Plugin(type = ValidatingOutputFormat.PLUGIN_TYPE)
 @Name(AvroOutputFormatProvider.NAME)
 @Description(AvroOutputFormatProvider.DESC)
-public class AvroOutputFormatProvider implements OutputFormatProvider {
+public class AvroOutputFormatProvider extends AbstractOutputFormatProvider {
   public static final PluginClass PLUGIN_CLASS = getPluginClass();
   static final String SCHEMA_KEY = "avro.schema.output.key";
   static final String NAME = "avro";
@@ -98,7 +99,7 @@ public class AvroOutputFormatProvider implements OutputFormatProvider {
     properties.put("schema", new PluginPropertyField("schema", Conf.SCHEMA_DESC, "string", true, true));
     properties.put("compressionCodec",
                    new PluginPropertyField("compressionCodec", Conf.CODEC_DESC, "string", false, true));
-    return new PluginClass("outputformat", NAME, DESC, AvroOutputFormatProvider.class.getName(),
+    return new PluginClass(ValidatingOutputFormat.PLUGIN_TYPE, NAME, DESC, AvroOutputFormatProvider.class.getName(),
                            "conf", properties);
   }
 }

@@ -16,18 +16,21 @@
 
 package io.cdap.plugin.transform;
 
-import com.google.common.collect.ImmutableMap;
 import io.cdap.cdap.api.common.Bytes;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.validation.CauseAttributes;
+import io.cdap.cdap.etl.api.validation.ValidationException;
+import io.cdap.cdap.etl.api.validation.ValidationFailure.Cause;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
 import io.cdap.cdap.etl.mock.transform.MockTransformContext;
-import io.cdap.plugin.validator.CoreValidator;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.Collections;
 
 /**
  */
@@ -51,16 +54,17 @@ public class ProjectionTransformTest {
     .set("stringField", "bar")
     .build();
 
+  private static final String STAGE = "stage";
+  private static final String MOCK_STAGE = "mockstage";
+
   @Test
-  public void testConfigurePipelineSchemaValidation() throws Exception {
+  public void testConfigurePipelineSchemaValidation() {
     Schema schema = Schema.recordOf("three",
                                     Schema.Field.of("x", Schema.of(Schema.Type.INT)),
                                     Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
                                     Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
 
-    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema,
-                                                                       ImmutableMap.<String, Object>of(
-                                                                         CoreValidator.ID, new CoreValidator()));
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema, Collections.emptyMap());
 
     // test drop
     ProjectionTransform.ProjectionTransformConfig config =
@@ -98,37 +102,62 @@ public class ProjectionTransformTest {
     Assert.assertEquals(expectedSchema, mockConfigurer.getOutputSchema());
 
     // null input schema
-    mockConfigurer = new MockPipelineConfigurer(null, ImmutableMap.<String, Object>of(CoreValidator.ID,
-                                                                                      new CoreValidator()));
+    mockConfigurer = new MockPipelineConfigurer(null, Collections.emptyMap());
     new ProjectionTransform(config).configurePipeline(mockConfigurer);
     Assert.assertNull(mockConfigurer.getOutputSchema());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testSameFieldMultipleConverts() throws Exception {
     ProjectionTransform.ProjectionTransformConfig config = new ProjectionTransform
       .ProjectionTransformConfig(null, null, "x:int,x:long", null);
     Transform<StructuredRecord, StructuredRecord> transform = new ProjectionTransform(config);
     TransformContext transformContext = new MockTransformContext();
-    transform.initialize(transformContext);
+    try {
+      transform.initialize(transformContext);
+      Assert.fail();
+    } catch (ValidationException e) {
+      Assert.assertEquals(1, e.getFailures().size());
+      Assert.assertEquals(1, e.getFailures().get(0).getCauses().size());
+      Cause expectedCause = new Cause();
+      expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, ProjectionTransform.ProjectionTransformConfig.CONVERT);
+      expectedCause.addAttribute(STAGE, MOCK_STAGE);
+      Assert.assertEquals(expectedCause, e.getFailures().get(0).getCauses().get(0));
+    }
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testSameFieldMultipleRenames() throws Exception {
     ProjectionTransform.ProjectionTransformConfig config = new ProjectionTransform
       .ProjectionTransformConfig(null, "x:z,x:y", null, null);
     Transform<StructuredRecord, StructuredRecord> transform = new ProjectionTransform(config);
     TransformContext transformContext = new MockTransformContext();
-    transform.initialize(transformContext);
+    try {
+      transform.initialize(transformContext);
+      Assert.fail();
+    } catch (ValidationException e) {
+      Assert.assertEquals(1, e.getFailures().size());
+      Assert.assertEquals(2, e.getFailures().get(0).getCauses().size());
+    }
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testMultipleRenamesToSameField() throws Exception {
     ProjectionTransform.ProjectionTransformConfig config = new ProjectionTransform
       .ProjectionTransformConfig(null, "x:z,y:z", null, null);
     Transform<StructuredRecord, StructuredRecord> transform = new ProjectionTransform(config);
     TransformContext transformContext = new MockTransformContext();
-    transform.initialize(transformContext);
+    try {
+      transform.initialize(transformContext);
+      Assert.fail();
+    } catch (ValidationException e) {
+      Assert.assertEquals(1, e.getFailures().size());
+      Assert.assertEquals(1, e.getFailures().get(0).getCauses().size());
+      Cause expectedCause = new Cause();
+      expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, ProjectionTransform.ProjectionTransformConfig.RENAME);
+      expectedCause.addAttribute(STAGE, MOCK_STAGE);
+      Assert.assertEquals(expectedCause, e.getFailures().get(0).getCauses().get(0));
+    }
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -140,18 +169,29 @@ public class ProjectionTransformTest {
     transform.initialize(transformContext);
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testInvalidConversion() throws Exception {
     ProjectionTransform.ProjectionTransformConfig config = new ProjectionTransform
       .ProjectionTransformConfig(null, null, "x:int", null);
     Transform<StructuredRecord, StructuredRecord> transform = new ProjectionTransform(config);
     TransformContext transformContext = new MockTransformContext();
-    transform.initialize(transformContext);
+    try {
+      transform.initialize(transformContext);
 
-    Schema schema = Schema.recordOf("record", Schema.Field.of("x", Schema.of(Schema.Type.LONG)));
-    StructuredRecord input = StructuredRecord.builder(schema).set("x", 5L).build();
-    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
-    transform.transform(input, emitter);
+      Schema schema = Schema.recordOf("record", Schema.Field.of("x", Schema.of(Schema.Type.LONG)));
+      StructuredRecord input = StructuredRecord.builder(schema).set("x", 5L).build();
+      MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+      transform.transform(input, emitter);
+      Assert.fail();
+    } catch (ValidationException e) {
+      Assert.assertEquals(1, e.getFailures().size());
+      Assert.assertEquals(1, e.getFailures().get(0).getCauses().size());
+      Cause expectedCause = new Cause();
+      expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, ProjectionTransform.ProjectionTransformConfig.CONVERT);
+      expectedCause.addAttribute(CauseAttributes.CONFIG_ELEMENT, "x:int");
+      expectedCause.addAttribute(STAGE, MOCK_STAGE);
+      Assert.assertEquals(expectedCause, e.getFailures().get(0).getCauses().get(0));
+    }
   }
 
   @Test
@@ -206,23 +246,24 @@ public class ProjectionTransformTest {
     Assert.assertEquals(1, output.<Integer>get("x").intValue());
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testKeepDropBothNonNull() throws Exception {
+  @Test
+  public void testKeepDropBothNonNull() {
     Schema schema = Schema.recordOf("three",
                                     Schema.Field.of("x", Schema.of(Schema.Type.INT)),
                                     Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
                                     Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
 
-    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema,
-                                                                       ImmutableMap.<String, Object>of(
-                                                                         CoreValidator.ID, new CoreValidator()));
-
-    // This should give an Exception
-    ProjectionTransform.ProjectionTransformConfig config =
-      new ProjectionTransform.ProjectionTransformConfig("y, z", null, null, "x,y");
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema, Collections.emptyMap());
+    try {
+      ProjectionTransform.ProjectionTransformConfig config =
+          new ProjectionTransform.ProjectionTransformConfig("y, z", null, null, "x,y");
 
       new ProjectionTransform(config).configurePipeline(mockConfigurer);
-
+      Assert.fail();
+    } catch (ValidationException e) {
+      Assert.assertEquals(1, e.getFailures().size());
+      Assert.assertEquals(2, e.getFailures().get(0).getCauses().size());
+    }
   }
 
   @Test
@@ -542,59 +583,97 @@ public class ProjectionTransformTest {
     Assert.assertNull(output.get("x"));
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testDropFieldsValidations() {
     Schema schema = Schema.recordOf("three",
             Schema.Field.of("x", Schema.of(Schema.Type.INT)),
             Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
             Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
 
-    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema,
-            ImmutableMap.<String, Object>of(CoreValidator.ID, new CoreValidator()));
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema, Collections.emptyMap());
     ProjectionTransform.ProjectionTransformConfig config =
             new ProjectionTransform.ProjectionTransformConfig("x,y,z", null, null, null);
-    new ProjectionTransform(config).configurePipeline(mockConfigurer);
+    try {
+      new ProjectionTransform(config).configurePipeline(mockConfigurer);
+      Assert.fail();
+    } catch (ValidationException e) {
+      Assert.assertEquals(1, e.getFailures().size());
+      Assert.assertEquals(1, e.getFailures().get(0).getCauses().size());
+      Cause expectedCause = new Cause();
+      expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, ProjectionTransform.ProjectionTransformConfig.DROP);
+      expectedCause.addAttribute(STAGE, MOCK_STAGE);
+      Assert.assertEquals(expectedCause, e.getFailures().get(0).getCauses().get(0));
+    }
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testKeepFieldsValidations() {
     Schema schema = Schema.recordOf("three",
             Schema.Field.of("x", Schema.of(Schema.Type.INT)),
             Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
             Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
 
-    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema,
-            ImmutableMap.<String, Object>of(CoreValidator.ID, new CoreValidator()));
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema, Collections.emptyMap());
     ProjectionTransform.ProjectionTransformConfig config =
             new ProjectionTransform.ProjectionTransformConfig(null, null, null, "n");
-    new ProjectionTransform(config).configurePipeline(mockConfigurer);
+    try {
+      new ProjectionTransform(config).configurePipeline(mockConfigurer);
+      Assert.fail();
+    } catch (ValidationException e) {
+      Assert.assertEquals(1, e.getFailures().size());
+      Assert.assertEquals(1, e.getFailures().get(0).getCauses().size());
+      Cause expectedCause = new Cause();
+      expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, ProjectionTransform.ProjectionTransformConfig.KEEP);
+      expectedCause.addAttribute(CauseAttributes.CONFIG_ELEMENT, "n");
+      expectedCause.addAttribute(STAGE, MOCK_STAGE);
+      Assert.assertEquals(expectedCause, e.getFailures().get(0).getCauses().get(0));
+    }
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testConvertFieldsValidations() {
     Schema schema = Schema.recordOf("three",
             Schema.Field.of("x", Schema.of(Schema.Type.INT)),
             Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
             Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
 
-    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema,
-            ImmutableMap.<String, Object>of(CoreValidator.ID, new CoreValidator()));
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema, Collections.emptyMap());
     ProjectionTransform.ProjectionTransformConfig config =
             new ProjectionTransform.ProjectionTransformConfig(null, null, "n:boolean", "x");
-    new ProjectionTransform(config).configurePipeline(mockConfigurer);
+    try {
+      new ProjectionTransform(config).configurePipeline(mockConfigurer);
+      Assert.fail();
+    } catch (ValidationException e) {
+      Assert.assertEquals(1, e.getFailures().size());
+      Assert.assertEquals(1, e.getFailures().get(0).getCauses().size());
+      Cause expectedCause = new Cause();
+      expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, ProjectionTransform.ProjectionTransformConfig.CONVERT);
+      expectedCause.addAttribute(CauseAttributes.CONFIG_ELEMENT, "n:boolean");
+      expectedCause.addAttribute(STAGE, MOCK_STAGE);
+      Assert.assertEquals(expectedCause, e.getFailures().get(0).getCauses().get(0));
+    }
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testRenameFieldsValidations() {
     Schema schema = Schema.recordOf("three",
             Schema.Field.of("x", Schema.of(Schema.Type.INT)),
             Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
             Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
 
-    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema,
-            ImmutableMap.<String, Object>of(CoreValidator.ID, new CoreValidator()));
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema, Collections.emptyMap());
     ProjectionTransform.ProjectionTransformConfig config =
             new ProjectionTransform.ProjectionTransformConfig(null, "n:m", null, "x");
-    new ProjectionTransform(config).configurePipeline(mockConfigurer);
+    try {
+      new ProjectionTransform(config).configurePipeline(mockConfigurer);
+    } catch (ValidationException e) {
+      Assert.assertEquals(1, e.getFailures().size());
+      Assert.assertEquals(1, e.getFailures().get(0).getCauses().size());
+      Cause expectedCause = new Cause();
+      expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, ProjectionTransform.ProjectionTransformConfig.RENAME);
+      expectedCause.addAttribute(CauseAttributes.CONFIG_ELEMENT, "n:m");
+      expectedCause.addAttribute(STAGE, MOCK_STAGE);
+      Assert.assertEquals(expectedCause, e.getFailures().get(0).getCauses().get(0));
+    }
   }
 }

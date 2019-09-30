@@ -51,7 +51,7 @@ public class NullFieldSplitterTest {
                                                         Schema.of(Schema.Type.BYTES),
                                                         Schema.of(Schema.Type.INT),
                                                         Schema.of(Schema.Type.LONG))));
-    Assert.assertEquals(expected, NullFieldSplitter.getNonNullSchema(schema, "a"));
+    Assert.assertEquals(expected, NullFieldSplitter.getNonNullSchema(schema, "a", null));
 
     expected = Schema.recordOf("abc.nonull",
                                Schema.Field.of("a", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
@@ -62,7 +62,7 @@ public class NullFieldSplitterTest {
                                                  Schema.of(Schema.Type.BYTES),
                                                  Schema.of(Schema.Type.INT),
                                                  Schema.of(Schema.Type.LONG))));
-    Assert.assertEquals(expected, NullFieldSplitter.getNonNullSchema(schema, "b"));
+    Assert.assertEquals(expected, NullFieldSplitter.getNonNullSchema(schema, "b", null));
 
     expected = Schema.recordOf("abc.nonull",
                                Schema.Field.of("a", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
@@ -72,7 +72,7 @@ public class NullFieldSplitterTest {
                                                  Schema.of(Schema.Type.BYTES),
                                                  Schema.of(Schema.Type.INT),
                                                  Schema.of(Schema.Type.LONG))));
-    Assert.assertEquals(expected, NullFieldSplitter.getNonNullSchema(schema, "c"));
+    Assert.assertEquals(expected, NullFieldSplitter.getNonNullSchema(schema, "c", null));
   }
 
   @Test

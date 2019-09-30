@@ -16,7 +16,9 @@
 
 package io.cdap.plugin;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import io.cdap.cdap.api.annotation.Description;
@@ -27,7 +29,9 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.data.schema.Schema.Field;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
 import org.apache.commons.csv.CSVFormat;
@@ -39,6 +43,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * Transform that formats a {@link StructuredRecord} to CSV.
@@ -102,29 +107,21 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-    config.validate();
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    config.validate(collector);
+    Schema schema = config.getSchema(collector);
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(schema);
+  }
 
-    // Check if schema specified is a valid schema or no.
-    try {
-      Schema schema = Schema.parseJson(config.schema);
-      List<Schema.Field> fields = schema.getFields();
-      if (fields.size() > 1) {
-        throw new IllegalArgumentException("Output schema should have only one field of type String");
-      }
-      if (fields.get(0).getSchema().getType() != Schema.Type.STRING) {
-        throw new IllegalArgumentException("Output field type should be String");
-      }
-      pipelineConfigurer.getStageConfigurer().setOutputSchema(schema);
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Format of schema specified is invalid. Please check the format.");
-    }
-
+  @Override
+  public void prepareRun(StageSubmitterContext context) throws Exception {
+    super.prepareRun(context);
+    config.validate(context.getFailureCollector());
   }
 
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
-    config.validate();
 
     try {
       outSchema = Schema.parseJson(config.schema);
@@ -134,8 +131,8 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
     }
 
     // Based on the delimiter name specified pick the delimiter to be used for the record.
-    // This is only applicable when the format type is choosen as DELIMITER
-    char delim = ',';
+    // This is only applicable when the format type is chosen as DELIMITER
+    char delim;
     if (delimMap.containsKey(config.delimiter)) {
       delim = delimMap.get(config.delimiter).charAt(0);
     } else {
@@ -162,13 +159,12 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
         break;
 
       case "rfc4180":
-        csvFileFormat = CSVFormat.Predefined.TDF.getFormat();
+        csvFileFormat = CSVFormat.Predefined.RFC4180.getFormat();
         break;
 
       default:
         throw new RuntimeException("Unknown format specified for CSV. Please check the format.");
     }
-
   }
 
   @Override
@@ -192,16 +188,19 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
    * Configuration for the plugin.
    */
   public static class Config extends PluginConfig {
+    private static final String NAME_FORMAT = "format";
+    private static final String NAME_DELIMITER = "delimiter";
+    private static final String NAME_SCHEMA = "schema";
 
-    @Name("format")
+    @Name(NAME_FORMAT)
     @Description("Specify one of the predefined formats. DEFAULT, EXCEL, MYSQL, RFC4180 & TDF are supported formats.")
     private final String format;
 
-    @Name("delimiter")
+    @Name(NAME_DELIMITER)
     @Description("Specify delimiter to be used for separating fields.")
     private final String delimiter;
 
-    @Name("schema")
+    @Name(NAME_SCHEMA)
     @Description("Specifies the schema that has to be output.")
     private final String schema;
 
@@ -211,24 +210,61 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
       this.schema = schema;
     }
 
-    private void validate() {
+    @VisibleForTesting
+    void validate(FailureCollector collector) {
       if (!delimMap.containsKey(delimiter)) {
-        throw new IllegalArgumentException("Unknown delimiter '" + delimiter + "' specified. Allowed values are " +
-                                             Joiner.on(", ").join(delimMap.keySet()));
+        collector.addFailure(String.format("Delimiter '%s' is unsupported.", delimiter),
+                             "Specify one of the following: " + Joiner.on(", ").join(delimMap.keySet()))
+          .withConfigProperty(NAME_DELIMITER);
       }
 
       // Check if the format specified is valid.
-      if (format == null || format.isEmpty()) {
-        throw new IllegalArgumentException("Format is not specified. Allowed values are DELIMITED, EXCEL, MYSQL," +
-                                             " RFC4180 & TDF");
+      if (Strings.isNullOrEmpty(format)) {
+        collector.addFailure("Format must be specified.", null)
+          .withConfigProperty(NAME_FORMAT);
+      } else {
+        if (!format.equalsIgnoreCase("DELIMITED") && !format.equalsIgnoreCase("EXCEL") &&
+          !format.equalsIgnoreCase("MYSQL") && !format.equalsIgnoreCase("RFC4180") &&
+          !format.equalsIgnoreCase("TDF")) {
+          collector.addFailure(String.format("Format '%s' is not supported.", format),
+                               "Supported formats are : DELIMITED, EXCEL, MYSQL, RFC4180 & TDF")
+            .withConfigProperty(NAME_FORMAT);
+        }
       }
 
-      if (!format.equalsIgnoreCase("DELIMITED") && !format.equalsIgnoreCase("EXCEL") &&
-        !format.equalsIgnoreCase("MYSQL") && !format.equalsIgnoreCase("RFC4180") &&
-        !format.equalsIgnoreCase("TDF")) {
-        throw new IllegalArgumentException("Format specified is not one of the allowed values. Allowed values are " +
-                                             "DELIMITED, EXCEL, MYSQL, RFC4180 & TDF");
+      Schema schema = getSchema(collector);
+      if (schema != null) {
+        List<Schema.Field> fields = schema.getFields();
+        if (fields.size() > 1) {
+          // Add a validation failure for each extra field considering first field is the correct field
+          for (int i = 1; i < fields.size(); i++) {
+            collector.addFailure("Output schema must only contain single field of type 'string'.",
+                                 String.format("Remove '%s' field.", fields.get(i).getName()))
+              .withOutputSchemaField(fields.get(i).getName());
+          }
+        }
+
+        Schema nonNullableSchema = fields.get(0).getSchema().isNullable() ?
+          fields.get(0).getSchema().getNonNullable() : fields.get(0).getSchema();
+
+        if (nonNullableSchema.getType() != Schema.Type.STRING) {
+          collector.addFailure(String.format("Output field '%s' is of invalid type '%s'.",
+                                             fields.get(0).getName(), nonNullableSchema.getDisplayName()),
+                               "Specify output field of type 'string'.")
+            .withOutputSchemaField(fields.get(0).getName(), null);
+        }
       }
+      collector.getOrThrowException();
+    }
+
+    @Nullable
+    private Schema getSchema(FailureCollector collector) {
+      try {
+        return Strings.isNullOrEmpty(schema) ? null : Schema.parseJson(this.schema);
+      } catch (IOException e) {
+        collector.addFailure("Invalid schema: " + e.getMessage(), null).withConfigProperty(NAME_SCHEMA);
+      }
+      throw collector.getOrThrowException();
     }
   }
 }

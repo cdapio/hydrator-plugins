@@ -24,6 +24,7 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
@@ -41,6 +42,8 @@ import java.util.List;
 @Name("XMLToJSON")
 @Description("Converts an XML string to a JSON string")
 public final class XMLToJSON extends Transform<StructuredRecord, StructuredRecord> {
+  private static final String INPUT_FIELD = "inputField";
+
   private final Config config;
   public static final Schema DEFAULT_SCHEMA = Schema.recordOf(
     "event",
@@ -80,14 +83,17 @@ public final class XMLToJSON extends Transform<StructuredRecord, StructuredRecor
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
     pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
 
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
     if (inputSchema != null) {
-      if (inputSchema.getField(config.inputField) == null) {
-        throw new IllegalArgumentException(String.format("Field %s is not present in input schema", config.inputField));
-      }
-      if (inputSchema.getField(config.inputField).getSchema().getType() != Schema.Type.STRING) {
-        throw new IllegalArgumentException(String.format("Field %s must be of type string.", config.inputField));
+      Schema.Field field = inputSchema.getField(config.inputField);
+      if (field == null) {
+        collector.addFailure(String.format("Field '%s' must be present in input schema.", config.inputField), null)
+          .withConfigProperty(INPUT_FIELD);
+      } else if (field.getSchema().getType() != Schema.Type.STRING) {
+        collector.addFailure(String.format("Field '%s' must be of type string.", config.inputField), null)
+          .withConfigProperty(INPUT_FIELD).withInputSchemaField(config.inputField);
       }
     }
   }
@@ -132,7 +138,8 @@ public final class XMLToJSON extends Transform<StructuredRecord, StructuredRecor
     private String inputField;
 
     @Name("outputField")
-    @Description("The field containing the XML string to convert into a JSON string.")
+    @Description("Specifies the output field where the JSON string will be stored. "
+        + "If it is not present in the output schema, it will be added.")
     @Macro
     private String outputField;
 

@@ -17,6 +17,7 @@
 package io.cdap.plugin;
 
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
@@ -26,17 +27,18 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.data.schema.Schema.Field;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
 import io.cdap.plugin.common.FieldEncryptor;
 import io.cdap.plugin.common.KeystoreConf;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import javax.annotation.Nullable;
 import javax.crypto.Cipher;
 
 /**
@@ -46,7 +48,6 @@ import javax.crypto.Cipher;
 @Name("Decryptor")
 @Description("Decrypts fields of records.")
 public final class Decryptor extends Transform<StructuredRecord, StructuredRecord> {
-  private static final Logger LOG = LoggerFactory.getLogger(Decryptor.class);
   private final Conf conf;
   private Set<String> decryptFields;
   private Schema schema;
@@ -57,13 +58,22 @@ public final class Decryptor extends Transform<StructuredRecord, StructuredRecor
   }
 
   @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
-    pipelineConfigurer.getStageConfigurer().setOutputSchema(conf.getSchema());
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    StageConfigurer configurer = pipelineConfigurer.getStageConfigurer();
+    FailureCollector collector = configurer.getFailureCollector();
+    Schema schema = conf.getSchema(collector);
+    Schema inputSchema = configurer.getInputSchema();
+
+    validateDecryptFields(collector, inputSchema);
+    configurer.setOutputSchema(schema);
   }
 
   @Override
   public void initialize(TransformContext context) throws Exception {
-    schema = conf.getSchema();
+    FailureCollector collector = context.getFailureCollector();
+    schema = conf.getSchema(collector);
+    collector.getOrThrowException();
+
     decryptFields = conf.getDecryptFields();
     fieldEncryptor = new FileBasedFieldEncryptor(conf, Cipher.DECRYPT_MODE);
     fieldEncryptor.initialize();
@@ -96,10 +106,41 @@ public final class Decryptor extends Transform<StructuredRecord, StructuredRecor
     emitter.emit(recordBuilder.build());
   }
 
+  private void validateDecryptFields(FailureCollector collector, @Nullable Schema inputSchema) {
+    if (inputSchema == null) {
+      return;
+    }
+
+    Set<String> decryptFields = conf.getDecryptFields();
+    for (Field inField : inputSchema.getFields()) {
+      if (!decryptFields.contains(inField.getName())) {
+        continue;
+      }
+      Schema nonNullableSchema = inField.getSchema().isNullable() ?
+        inField.getSchema().getNonNullable() : inField.getSchema();
+      if (nonNullableSchema.getType() != Schema.Type.BYTES || nonNullableSchema.getLogicalType() != null) {
+        collector.addFailure(
+          String.format("Decrypt field '%s' is of unsupported type '%s'.", inField.getName(),
+                        nonNullableSchema.getDisplayName()), "It must be of type bytes.")
+          .withConfigElement(Conf.NAME_DECRYPT_FIELDS, inField.getName()).withInputSchemaField(inField.getName());
+      }
+    }
+
+    for (String decryptField : decryptFields) {
+      if (inputSchema.getField(decryptField) == null) {
+        collector.addFailure(String.format("Decrypt field '%s' must be present in input schema.", decryptField), null)
+          .withConfigElement(Conf.NAME_DECRYPT_FIELDS, decryptField);
+      }
+    }
+  }
+
   /**
    * Decryptor Plugin config.
    */
   public static class Conf extends KeystoreConf {
+    private static final String NAME_SCHEMA = "schema";
+    private static final String NAME_DECRYPT_FIELDS = "decryptFields";
+
     @Description("The fields to decrypt, separated by commas")
     private String decryptFields;
 
@@ -115,13 +156,14 @@ public final class Decryptor extends Transform<StructuredRecord, StructuredRecor
       return ImmutableSet.copyOf(set);
     }
 
-    private Schema getSchema() {
+    @Nullable
+    private Schema getSchema(FailureCollector collector) {
       try {
-        return Schema.parseJson(schema);
+        return Strings.isNullOrEmpty(schema) ? null : Schema.parseJson(schema);
       } catch (IOException e) {
-        throw new IllegalArgumentException(String.format("Error parsing schema %s. Reason: %s",
-                                                         schema, e.getMessage()));
+        collector.addFailure("Invalid schema : " + e.getMessage(), null).withConfigProperty(NAME_SCHEMA);
       }
+      throw collector.getOrThrowException();
     }
   }
 }

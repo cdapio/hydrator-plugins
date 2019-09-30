@@ -16,6 +16,8 @@
 
 package io.cdap.plugin.db.batch.source;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
@@ -26,11 +28,10 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
 import io.cdap.cdap.etl.api.batch.BatchSourceContext;
-import io.cdap.cdap.etl.api.validation.InvalidConfigPropertyException;
-import io.cdap.cdap.etl.api.validation.InvalidStageException;
 import io.cdap.plugin.ConnectionConfig;
 import io.cdap.plugin.DBConfig;
 import io.cdap.plugin.DBManager;
@@ -59,6 +60,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -70,6 +72,12 @@ import javax.annotation.Nullable;
   " Outputs one record for each row returned by the query.")
 public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(DBSource.class);
+  private static final Pattern CONDITIONS_AND = Pattern.compile("\\$conditions (and|or)\\s+",
+                                                                Pattern.CASE_INSENSITIVE);
+  private static final Pattern AND_CONDITIONS = Pattern.compile("\\s+(and|or) \\$conditions",
+                                                                Pattern.CASE_INSENSITIVE);
+  private static final Pattern WHERE_CONDITIONS = Pattern.compile("\\s+where \\$conditions",
+                                                                  Pattern.CASE_INSENSITIVE);
 
   private final DBSourceConfig sourceConfig;
   private final DBManager dbManager;
@@ -84,86 +92,40 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
-    sourceConfig.validate();
-    Class<? extends Driver> driverClass = dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId());
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    sourceConfig.validate(collector);
+    Class<? extends Driver> driverClass = dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId(),
+                                                                               collector);
+    // throw exception before deriving schema from database. This is because database schema is derived using import
+    // query and its possible that validation failed for import query.
+    collector.getOrThrowException();
 
-    Schema configuredSchema = sourceConfig.getSchema();
+    Schema configuredSchema = sourceConfig.getSchema(collector);
     if (configuredSchema != null) {
-      pipelineConfigurer.getStageConfigurer().setOutputSchema(sourceConfig.getSchema());
-    } else if (sourceConfig.query != null) {
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(configuredSchema);
+    } else if (!sourceConfig.containsMacro(DBSourceConfig.IMPORT_QUERY)) {
       try {
         pipelineConfigurer.getStageConfigurer().setOutputSchema(getSchema(driverClass));
       } catch (IllegalAccessException | InstantiationException e) {
-        throw new InvalidStageException("Unable to instantiate JDBC driver: " + e.getMessage(), e);
+        collector.addFailure(String.format("Failed to instantiate JDBC driver: %s", e.getMessage()), null);
       } catch (SQLException e) {
-        throw new IllegalArgumentException("SQL error while getting query schema: " + e.getMessage(), e);
+        collector.addFailure(
+          String.format("Encountered SQL error while getting query schema: %s", e.getMessage()), null);
       }
     }
-  }
-
-  private Schema getSchema(Class<? extends Driver> driverClass)
-    throws IllegalAccessException, SQLException, InstantiationException {
-    DriverCleanup driverCleanup = loadPluginClassAndGetDriver(driverClass);
-    try (Connection connection = getConnection()) {
-      String query = sourceConfig.query;
-      Statement statement = connection.createStatement();
-      statement.setMaxRows(1);
-      if (query.contains("$CONDITIONS")) {
-        query = removeConditionsClause(query);
-      }
-      ResultSet resultSet = statement.executeQuery(query);
-      return Schema.recordOf("outputSchema", DBUtils.getSchemaFields(resultSet));
-    } finally {
-      driverCleanup.destroy();
-    }
-  }
-
-  private static String removeConditionsClause(String importQuerySring) {
-    importQuerySring = importQuerySring.replaceAll("\\s{2,}", " ").toUpperCase();
-    if (importQuerySring.contains("WHERE $CONDITIONS AND")) {
-      importQuerySring = importQuerySring.replace("$CONDITIONS AND", "");
-    } else if (importQuerySring.contains("WHERE $CONDITIONS")) {
-      importQuerySring = importQuerySring.replace("WHERE $CONDITIONS", "");
-    } else if (importQuerySring.contains("AND $CONDITIONS")) {
-      importQuerySring = importQuerySring.replace("AND $CONDITIONS", "");
-    }
-    return importQuerySring;
-  }
-
-  private DriverCleanup loadPluginClassAndGetDriver(Class<? extends Driver> driverClass)
-    throws IllegalAccessException, InstantiationException, SQLException {
-
-    if (driverClass == null) {
-      throw new InstantiationException(
-        String.format("Unable to load Driver class with plugin type %s and plugin name %s",
-                      sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName));
-    }
-
-    try {
-      return DBUtils.ensureJDBCDriverIsAvailable(driverClass, sourceConfig.connectionString,
-                                                 sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName);
-    } catch (IllegalAccessException | InstantiationException | SQLException e) {
-      LOG.error("Unable to load or register driver {}", driverClass, e);
-      throw e;
-    }
-  }
-
-  private Connection getConnection() throws SQLException {
-    Properties properties =
-      ConnectionConfig.getConnectionArguments(sourceConfig.connectionArguments,
-                                              sourceConfig.user,
-                                              sourceConfig.password);
-    return DriverManager.getConnection(sourceConfig.connectionString, properties);
   }
 
   @Override
-  public void prepareRun(BatchSourceContext context) throws Exception {
-    sourceConfig.validate();
+  public void prepareRun(BatchSourceContext context) {
+    FailureCollector collector = context.getFailureCollector();
+    sourceConfig.validate(collector);
+    collector.getOrThrowException();
 
     LOG.debug("pluginType = {}; pluginName = {}; connectionString = {}; importQuery = {}; " +
                 "boundingQuery = {}; transaction isolation level: {}",
               sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName,
-              sourceConfig.connectionString, sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery());
+              sourceConfig.connectionString, sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery(),
+              sourceConfig.transactionIsolationLevel);
     Configuration hConf = new Configuration();
     hConf.clear();
 
@@ -198,7 +160,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
       hConf.set(DBUtils.OVERRIDE_SCHEMA, sourceConfig.schema);
     }
     LineageRecorder lineageRecorder = new LineageRecorder(context, sourceConfig.referenceName);
-    lineageRecorder.createExternalDataset(sourceConfig.getSchema());
+    lineageRecorder.createExternalDataset(sourceConfig.getSchema(collector));
     context.setInput(Input.of(sourceConfig.referenceName,
                               new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf)));
   }
@@ -228,6 +190,58 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     return String.format("%s.%s.%s", "source", sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName);
   }
 
+  private Schema getSchema(Class<? extends Driver> driverClass)
+    throws IllegalAccessException, SQLException, InstantiationException {
+    DriverCleanup driverCleanup = loadPluginClassAndGetDriver(driverClass);
+    try (Connection connection = getConnection()) {
+      String query = sourceConfig.importQuery;
+      Statement statement = connection.createStatement();
+      statement.setMaxRows(1);
+      if (query.contains("$CONDITIONS")) {
+        query = removeConditionsClause(query);
+      }
+      ResultSet resultSet = statement.executeQuery(query);
+      return Schema.recordOf("outputSchema", DBUtils.getSchemaFields(resultSet));
+    } finally {
+      driverCleanup.destroy();
+    }
+  }
+
+  @VisibleForTesting
+  static String removeConditionsClause(String importQueryString) {
+    String query = importQueryString;
+    query = CONDITIONS_AND.matcher(query).replaceAll("");
+    query = AND_CONDITIONS.matcher(query).replaceAll("");
+    query = WHERE_CONDITIONS.matcher(query).replaceAll("");
+    return query;
+  }
+
+  private DriverCleanup loadPluginClassAndGetDriver(Class<? extends Driver> driverClass)
+    throws IllegalAccessException, InstantiationException, SQLException {
+
+    if (driverClass == null) {
+      throw new InstantiationException(
+        String.format("Unable to load Driver class with plugin type %s and plugin name %s",
+                      sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName));
+    }
+
+    try {
+      return DBUtils.ensureJDBCDriverIsAvailable(driverClass, sourceConfig.connectionString,
+                                                 sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName);
+    } catch (IllegalAccessException | InstantiationException | SQLException e) {
+      LOG.error("Unable to load or register driver {}", driverClass, e);
+      throw e;
+    }
+  }
+
+  private Connection getConnection() throws SQLException {
+    Properties properties =
+      ConnectionConfig.getConnectionArguments(sourceConfig.connectionArguments,
+                                              sourceConfig.user,
+                                              sourceConfig.password);
+    return DriverManager.getConnection(sourceConfig.connectionString, properties);
+  }
+
   /**
    * {@link PluginConfig} for {@link DBSource}
    */
@@ -239,12 +253,6 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     public static final String SCHEMA = "schema";
     public static final String TRANSACTION_ISOLATION_LEVEL = "transactionIsolationLevel";
 
-    // this is a hidden property, only used to fetch schema
-    @Nullable
-    String query;
-
-    // only nullable for get schema button
-    @Nullable
     @Name(IMPORT_QUERY)
     @Description("The SELECT query to use to import data from the specified table. " +
       "You can specify an arbitrary number of columns to import, or import all columns using *. " +
@@ -292,6 +300,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
       "is not correctly getting marked as nullable.")
     String schema;
 
+    @Nullable
     private String getImportQuery() {
       return cleanQuery(importQuery);
     }
@@ -300,56 +309,52 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
       return cleanQuery(boundingQuery);
     }
 
-    private void validate() {
+    @SuppressWarnings("checkstyle:WhitespaceAround")
+    private void validate(FailureCollector collector) {
       boolean hasOneSplit = false;
-      if (!containsMacro("numSplits") && numSplits != null) {
+      if (!containsMacro(NUM_SPLITS) && numSplits != null) {
         if (numSplits < 1) {
-          throw new InvalidConfigPropertyException(
-            "Invalid value for numSplits. Must be at least 1, but got " + numSplits, "numSplits");
+          collector.addFailure("Number of Splits must be a positive number.", null).withConfigProperty(NUM_SPLITS);
         }
         if (numSplits == 1) {
           hasOneSplit = true;
         }
       }
 
-      if (!containsMacro("transactionIsolationLevel") && transactionIsolationLevel != null) {
-        TransactionIsolationLevel.validate(transactionIsolationLevel);
+      if (!containsMacro(TRANSACTION_ISOLATION_LEVEL) && transactionIsolationLevel != null) {
+        TransactionIsolationLevel.validate(transactionIsolationLevel, collector);
       }
 
-      if (query != null) {
-        return;
+      if (!containsMacro(IMPORT_QUERY) && Strings.isNullOrEmpty(importQuery)) {
+        collector.addFailure("Import Query must be specified.", null).withConfigProperty(IMPORT_QUERY);
       }
 
-      if (!containsMacro("importQuery") && (query == null || query.isEmpty())
-        && (importQuery == null || importQuery.isEmpty())) {
-        throw new InvalidConfigPropertyException("An Import Query must be specified.", "importQuery");
+      if (!hasOneSplit && !containsMacro(IMPORT_QUERY) && !Strings.isNullOrEmpty(importQuery) &&
+        !getImportQuery().contains("$CONDITIONS")) {
+        collector.addFailure("Invalid Import Query.", String.format("Import Query %s must contain the " +
+                                                                      "string '$CONDITIONS'.", importQuery))
+          .withConfigProperty(IMPORT_QUERY);
       }
 
-      if (!hasOneSplit && !containsMacro("importQuery") && !getImportQuery().contains("$CONDITIONS")) {
-        throw new InvalidConfigPropertyException(String.format("Import Query %s must contain the string '$CONDITIONS'.",
-                                                               importQuery), "importQuery");
+      if (!hasOneSplit && !containsMacro(SPLIT_BY) && Strings.isNullOrEmpty(splitBy)) {
+        collector.addFailure("Split-By Field Name must be specified if Number of Splits is not set to 1.",
+                             null).withConfigProperty(SPLIT_BY).withConfigProperty(NUM_SPLITS);
       }
 
-      if (!hasOneSplit && !containsMacro("splitBy") && (splitBy == null || splitBy.isEmpty())) {
-        throw new InvalidConfigPropertyException("The splitBy property must be specified if numSplits is not set to 1.",
-                                                 "splitBy");
+      if (!hasOneSplit && !containsMacro(BOUNDING_QUERY) && Strings.isNullOrEmpty(boundingQuery)) {
+        collector.addFailure("Bounding Query must be specified if Number of Splits is not set to 1.", null)
+          .withConfigProperty(BOUNDING_QUERY).withConfigProperty(NUM_SPLITS);
       }
-
-      if (!hasOneSplit && !containsMacro("boundingQuery") && (boundingQuery == null || boundingQuery.isEmpty())) {
-        throw new InvalidConfigPropertyException("The boundingQuery must be specified if numSplits is not set to 1.",
-                                                 "boundingQuery");
-      }
-
     }
 
     @Nullable
-    private Schema getSchema() {
+    private Schema getSchema(FailureCollector collector) {
       try {
-        return schema == null ? null : Schema.parseJson(schema);
+        return Strings.isNullOrEmpty(schema) ? null : Schema.parseJson(schema);
       } catch (IOException e) {
-        throw new InvalidConfigPropertyException(String.format("Unable to parse schema: %s", e.getMessage()), e,
-                                                 "schema");
+        collector.addFailure(String.format("Invalid Schema : %s", e.getMessage()), null);
       }
+      throw collector.getOrThrowException();
     }
   }
 }

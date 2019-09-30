@@ -19,7 +19,11 @@ package io.cdap.plugin.format.delimited.input;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginClass;
+import io.cdap.cdap.etl.api.FailureCollector;
+import io.cdap.cdap.etl.api.validation.FormatContext;
+import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
 import io.cdap.plugin.format.input.PathTrackingConfig;
 import io.cdap.plugin.format.input.PathTrackingInputFormatProvider;
 
@@ -28,14 +32,14 @@ import java.util.Map;
 /**
  * Reads delimited text into StructuredRecords.
  */
-@Plugin(type = "inputformat")
+@Plugin(type = ValidatingInputFormat.PLUGIN_TYPE)
 @Name(CSVInputFormatProvider.NAME)
 @Description(CSVInputFormatProvider.DESC)
 public class CSVInputFormatProvider extends PathTrackingInputFormatProvider<PathTrackingConfig> {
   static final String NAME = "csv";
   static final String DESC = "Plugin for reading files in csv format.";
   public static final PluginClass PLUGIN_CLASS =
-    new PluginClass("inputformat", NAME, DESC, CSVInputFormatProvider.class.getName(),
+    new PluginClass(ValidatingInputFormat.PLUGIN_TYPE, NAME, DESC, CSVInputFormatProvider.class.getName(),
                     "conf", PathTrackingConfig.FIELDS);
 
   public CSVInputFormatProvider(PathTrackingConfig conf) {
@@ -51,6 +55,16 @@ public class CSVInputFormatProvider extends PathTrackingInputFormatProvider<Path
   protected void validate() {
     if (conf.getSchema() == null) {
       throw new IllegalArgumentException("CSV format cannot be used without specifying a schema.");
+    }
+  }
+
+  @Override
+  public void validate(FormatContext context) {
+    Schema schema = super.getSchema(context);
+    FailureCollector collector = context.getFailureCollector();
+    if (schema == null) {
+      collector.addFailure("CSV format cannot be used without specifying a schema.", "Schema must be specified.")
+        .withConfigProperty("schema");
     }
   }
 

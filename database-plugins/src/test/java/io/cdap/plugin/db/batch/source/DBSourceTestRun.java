@@ -14,7 +14,7 @@
  * the License.
  */
 
-package io.cdap.plugin.db.batch.sink;
+package io.cdap.plugin.db.batch.source;
 
 import com.google.common.collect.ImmutableMap;
 import io.cdap.cdap.api.common.Bytes;
@@ -34,7 +34,6 @@ import io.cdap.plugin.ConnectionConfig;
 import io.cdap.plugin.DBConfig;
 import io.cdap.plugin.DatabasePluginTestBase;
 import io.cdap.plugin.common.Constants;
-import io.cdap.plugin.db.batch.source.DBSource;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -91,7 +90,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
   public void testDBSource() throws Exception {
     String importQuery = "SELECT ID, NAME, SCORE, GRADUATED, TINY, SMALL, BIG, FLOAT_COL, REAL_COL, NUMERIC_COL, " +
       "DECIMAL_COL, BIT_COL, DATE_COL, TIME_COL, TIMESTAMP_COL, BINARY_COL, LONGVARBINARY_COL, BLOB_COL, " +
-      "CLOB_COL, CHAR_COL, LONGVARCHAR_COL, VARBINARY_COL FROM \"my_table\"" +
+      "CLOB_COL, CHAR_COL, LONGVARCHAR_COL, VARBINARY_COL FROM \"my_table\" " +
       "WHERE ID < 3 AND $CONDITIONS";
     String boundingQuery = "SELECT MIN(ID),MAX(ID) from \"my_table\"";
     String splitBy = "ID";
@@ -130,8 +129,8 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     Assert.assertEquals("longvarchar2", row2.get("LONGVARCHAR_COL"));
     Assert.assertEquals("char1", ((String) row1.get("CHAR_COL")).trim());
     Assert.assertEquals("char2", ((String) row2.get("CHAR_COL")).trim());
-    Assert.assertEquals(124.45, (double) row1.get("SCORE"), 0.000001);
-    Assert.assertEquals(125.45, (double) row2.get("SCORE"), 0.000001);
+    Assert.assertEquals(124.45, row1.get("SCORE"), 0.000001);
+    Assert.assertEquals(125.45, row2.get("SCORE"), 0.000001);
     Assert.assertEquals(false, row1.get("GRADUATED"));
     Assert.assertEquals(true, row2.get("GRADUATED"));
     Assert.assertNull(row1.get("NOT_IMPORTED"));
@@ -144,16 +143,16 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     Assert.assertEquals(1, (long) row1.get("BIG"));
     Assert.assertEquals(2, (long) row2.get("BIG"));
     // TODO: Reading from table as FLOAT seems to be giving back the wrong value.
-    Assert.assertEquals(124.45, (double) row1.get("FLOAT_COL"), 0.00001);
-    Assert.assertEquals(125.45, (double) row2.get("FLOAT_COL"), 0.00001);
-    Assert.assertEquals(124.45, (double) row1.get("REAL_COL"), 0.00001);
-    Assert.assertEquals(125.45, (double) row2.get("REAL_COL"), 0.00001);
-    Assert.assertEquals(124.45, (double) row1.get("NUMERIC_COL"), 0.000001);
-    Assert.assertEquals(125.45, (double) row2.get("NUMERIC_COL"), 0.000001);
-    Assert.assertEquals(124.45, (double) row1.get("DECIMAL_COL"), 0.000001);
+    Assert.assertEquals(124.45, row1.get("FLOAT_COL"), 0.00001);
+    Assert.assertEquals(125.45, row2.get("FLOAT_COL"), 0.00001);
+    Assert.assertEquals(124.45, row1.get("REAL_COL"), 0.00001);
+    Assert.assertEquals(125.45, row2.get("REAL_COL"), 0.00001);
+    Assert.assertEquals(124.45, row1.get("NUMERIC_COL"), 0.000001);
+    Assert.assertEquals(125.45, row2.get("NUMERIC_COL"), 0.000001);
+    Assert.assertEquals(124.45, row1.get("DECIMAL_COL"), 0.000001);
     Assert.assertNull(row2.get("DECIMAL_COL"));
-    Assert.assertTrue((boolean) row1.get("BIT_COL"));
-    Assert.assertFalse((boolean) row2.get("BIT_COL"));
+    Assert.assertTrue(row1.get("BIT_COL"));
+    Assert.assertFalse(row2.get("BIT_COL"));
     // Verify time columns
     java.util.Date date = new java.util.Date(CURRENT_TS);
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -285,7 +284,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     ETLPlugin dbConfig = new ETLPlugin("Database", BatchSource.PLUGIN_TYPE, baseSourceProps, null);
     ETLStage table = new ETLStage("uniqueTableSink" , sinkConfig);
     ETLStage database = new ETLStage("databaseSource" , dbConfig);
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(database)
       .addStage(table)
       .addConnection(database.getName(), table.getName())
@@ -298,7 +297,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     Map<String, String> noUser = new HashMap<>(baseSourceProps);
     noUser.put(DBConfig.PASSWORD, "password");
     database = new ETLStage("databaseSource", new ETLPlugin("Database", BatchSource.PLUGIN_TYPE, noUser, null));
-    etlConfig = ETLBatchConfig.builder("* * * * *")
+    etlConfig = ETLBatchConfig.builder()
       .addStage(database)
       .addStage(table)
       .addConnection(database.getName(), table.getName())
@@ -312,7 +311,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     emptyPassword.put(DBConfig.USER, "emptyPwdUser");
     emptyPassword.put(DBConfig.PASSWORD, "");
     database = new ETLStage("databaseSource", new ETLPlugin("Database", BatchSource.PLUGIN_TYPE, emptyPassword, null));
-    etlConfig = ETLBatchConfig.builder("* * * * *")
+    etlConfig = ETLBatchConfig.builder()
       .addStage(database)
       .addStage(table)
       .addConnection(database.getName(), table.getName())
@@ -344,14 +343,14 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     ETLStage sink = new ETLStage("sink", sinkConfig);
     ETLStage sourceBadName = new ETLStage("sourceBadName", sourceBadNameConfig);
 
-    ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
       .addStage(sourceBadName)
       .addStage(sink)
       .addConnection(sourceBadName.getName(), sink.getName())
       .build();
     ApplicationId appId = NamespaceId.DEFAULT.app("dbSourceNonExistingTest");
-    assertRuntimeFailure(appId, etlConfig, "ETL Application with DB Source should have failed because of a " +
-      "non-existent source table.", 1);
+    assertDeploymentFailure(appId, etlConfig, "ETL Application with DB Source should have failed because of a " +
+      "non-existent source table.");
 
     // Bad connection
     String badConnection = String.format("jdbc:hsqldb:hsql://localhost/%sWRONG", getDatabase());
@@ -368,12 +367,12 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
         .build(),
       null);
     ETLStage sourceBadConn = new ETLStage("sourceBadConn", sourceBadConnConfig);
-    etlConfig = ETLBatchConfig.builder("* * * * *")
+    etlConfig = ETLBatchConfig.builder()
       .addStage(sourceBadConn)
       .addStage(sink)
       .addConnection(sourceBadConn.getName(), sink.getName())
       .build();
-    assertRuntimeFailure(appId, etlConfig, "ETL Application with DB Source should have failed because of a " +
-      "non-existent source database.", 2);
+    assertDeploymentFailure(appId, etlConfig, "ETL Application with DB Source should have failed because of a " +
+      "non-existent source database.");
   }
 }

@@ -19,10 +19,12 @@ package io.cdap.plugin.batch.aggregator;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.validation.ValidationException;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
-import io.cdap.plugin.validator.CoreValidator;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.Collections;
 
 /**
  * Test cases for {@link RowDenormalizerConfig}.
@@ -59,51 +61,49 @@ public class RowDenormalizerConfigTest {
     config.validate();
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test(expected = ValidationException.class)
   public void testDenormalizerWithWrongKeyField() throws Exception {
     Schema inputSchema = Schema.recordOf(
       "record",
       Schema.Field.of("KeyField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
       Schema.Field.of("NameField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
       Schema.Field.of("ValueField", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
-    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema,
-                                                                   ImmutableMap.<String, Object>of(
-                                                                     CoreValidator.ID, new CoreValidator()));
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema, Collections.emptyMap());
     RowDenormalizerConfig config = new RowDenormalizerConfig("WrongKeyField", "NameField", "ValueField", "Firstname," +
       "Lastname,Address", "Lastname:lname,Address:addr");
     RowDenormalizerAggregator aggregator = new RowDenormalizerAggregator(config);
     aggregator.configurePipeline(configurer);
+    configurer.getStageConfigurer().getFailureCollector().getOrThrowException();
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test(expected = ValidationException.class)
   public void testDenormalizerWithWrongNameField() throws Exception {
     Schema inputSchema = Schema.recordOf(
       "record",
       Schema.Field.of("KeyField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
       Schema.Field.of("NameField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
       Schema.Field.of("ValueField", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
-    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema,
-                                                                   ImmutableMap.<String, Object>of(
-                                                                     CoreValidator.ID, new CoreValidator()));
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema, Collections.emptyMap());
     RowDenormalizerConfig config = new RowDenormalizerConfig("KeyField", "WrongNameField", "ValueField", "Firstname," +
       "Lastname,Address", "Lastname:lname,Address:addr");
     RowDenormalizerAggregator aggregator = new RowDenormalizerAggregator(config);
     aggregator.configurePipeline(configurer);
+    configurer.getStageConfigurer().getFailureCollector().getOrThrowException();
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test(expected = ValidationException.class)
   public void testDenormalizerWithWrongValueField() throws Exception {
     Schema inputSchema = Schema.recordOf(
       "record",
       Schema.Field.of("KeyField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
       Schema.Field.of("NameField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
       Schema.Field.of("ValueField", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
-    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema,
-                                                                   ImmutableMap.<String, Object>of(
-                                                                     CoreValidator.ID, new CoreValidator()));
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(inputSchema, Collections.emptyMap());
     RowDenormalizerConfig config = new RowDenormalizerConfig("KeyField", "NameField", "WrongValueField", "Firstname," +
       "Lastname,Address", "Lastname:lname,Address:addr");
+
     RowDenormalizerAggregator aggregator = new RowDenormalizerAggregator(config);
     aggregator.configurePipeline(configurer);
+    configurer.getStageConfigurer().getFailureCollector().getOrThrowException();
   }
 }

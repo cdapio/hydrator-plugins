@@ -17,6 +17,7 @@
 package io.cdap.plugin.format.plugin;
 
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.plugin.format.FileFormat;
 
 import java.util.regex.Pattern;
@@ -33,9 +34,24 @@ public interface FileSourceProperties {
   String PATH_FIELD = "pathField";
 
   /**
-   * Validates the properties, throwing an IllegalArgumentException if anything is invalid.
+   * Validates the properties.
+   *
+   * @throws IllegalArgumentException if anything is invalid
+   * Deprecated since 2.3.0. Use {@link FileSourceProperties#validate(FailureCollector)} method instead.
    */
-  void validate();
+  @Deprecated
+  default void validate() {
+    // no-op
+  }
+
+  /**
+   * Validates the properties and collects validation failures if anything is invalid.
+   *
+   * @param collector failure collector
+   */
+  default void validate(FailureCollector collector) {
+    // no-op
+  }
 
   /**
    * Get the name that will be used to identify the source for lineage and metadata.
@@ -50,7 +66,6 @@ public interface FileSourceProperties {
   /**
    * Get the format of the data to read.
    */
-  @Nullable
   FileFormat getFormat();
 
   /**
