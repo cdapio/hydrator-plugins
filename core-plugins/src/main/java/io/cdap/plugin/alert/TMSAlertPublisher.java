@@ -28,7 +28,9 @@ import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Alert;
 import io.cdap.cdap.etl.api.AlertPublisher;
 import io.cdap.cdap.etl.api.AlertPublisherContext;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageConfigurer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,12 +57,18 @@ public class TMSAlertPublisher extends AlertPublisher {
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
-    conf.validate();
+    StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
+    FailureCollector collector = stageConfigurer.getFailureCollector();
+
+    conf.validate(collector);
   }
 
   @Override
   public void initialize(AlertPublisherContext context) throws Exception {
     super.initialize(context);
+    conf.validate(context.getFailureCollector());
+    context.getFailureCollector().getOrThrowException();
+
     try {
       context.getTopicProperties(conf.topic);
     } catch (TopicNotFoundException e) {
@@ -136,13 +144,15 @@ public class TMSAlertPublisher extends AlertPublisher {
       maxAlertsPerSecond = 100;
     }
 
-    private void validate() {
+    private void validate(FailureCollector collector) {
       if (autoCreateTopic && namespace != null) {
-        throw new IllegalArgumentException("Cannot auto-create topic when namespace is set.");
+        collector.addFailure("Cannot auto-create topic when namespace is set.",
+                             "Namespace must not be set to auto-create topic.").withConfigProperty("namespace")
+          .withConfigProperty("autoCreateTopic");
       }
       if (maxAlertsPerSecond < 1) {
-        throw new IllegalArgumentException(
-          String.format("Invalid maxAlertsPerSecond %d. Must be at least 1.", maxAlertsPerSecond));
+        collector.addFailure(String.format("Invalid maxAlertsPerSecond %d. Must be at least 1.", maxAlertsPerSecond),
+                             "").withConfigProperty("maxAlertsPerSecond");
       }
     }
   }

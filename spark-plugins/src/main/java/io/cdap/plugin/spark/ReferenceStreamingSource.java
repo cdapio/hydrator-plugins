@@ -17,6 +17,7 @@
 package io.cdap.plugin.spark;
 
 import io.cdap.cdap.api.dataset.DatasetProperties;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.streaming.StreamingSource;
 import io.cdap.plugin.common.Constants;
@@ -40,7 +41,10 @@ public abstract class ReferenceStreamingSource<T> extends StreamingSource<T> {
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
     // Verify that reference name meets dataset id constraints
-    IdUtils.validateId(conf.referenceName);
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    IdUtils.validateReferenceName(conf.referenceName, collector);
+    // if reference name is not valid, throw an exception before creating external dataset
+    collector.getOrThrowException();
     pipelineConfigurer.createDataset(conf.referenceName, Constants.EXTERNAL_DATASET_TYPE, DatasetProperties.EMPTY);
   }
 }

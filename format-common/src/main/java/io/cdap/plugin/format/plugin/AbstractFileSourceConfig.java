@@ -16,11 +16,13 @@
 
 package io.cdap.plugin.format.plugin;
 
+import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.plugin.common.IdUtils;
 import io.cdap.plugin.format.FileFormat;
 
@@ -33,6 +35,10 @@ import javax.annotation.Nullable;
  */
 @SuppressWarnings({"unused", "ConstantConditions"})
 public abstract class AbstractFileSourceConfig extends PluginConfig implements FileSourceProperties {
+  public static final String NAME_FORMAT = "format";
+  public static final String NAME_SCHEMA = "schema";
+
+
   @Description("Name be used to uniquely identify this source for lineage, annotating metadata, etc.")
   private String referenceName;
 
@@ -45,8 +51,6 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
     + "the regular expression syntax.")
   private String fileRegex;
 
-  @Macro
-  @Nullable
   @Description("Format of the data to read. Supported formats are 'avro', 'blob', 'csv', 'delimited', 'json', "
     + "'parquet', 'text', or 'tsv'. ")
   private String format;
@@ -107,14 +111,31 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
 
   public void validate() {
     IdUtils.validateId(referenceName);
-    FileFormat fileFormat = null;
-    if (!containsMacro("format")) {
+    getFormat();
+    getSchema();
+  }
+
+  public void validate(FailureCollector collector) {
+    IdUtils.validateReferenceName(referenceName, collector);
+    try {
       getFormat();
+    } catch (IllegalArgumentException e) {
+      collector.addFailure(e.getMessage(), null).withConfigProperty(NAME_FORMAT).withStacktrace(e.getStackTrace());
+    }
+    try {
+      getSchema();
+    } catch (IllegalArgumentException e) {
+      collector.addFailure(e.getMessage(), null).withConfigProperty(NAME_SCHEMA).withStacktrace(e.getStackTrace());
     }
 
-    Schema schema = null;
-    if (!containsMacro("schema")) {
-      getSchema();
+    // if failure collector has not collected any errors, that would mean either validation has succeeded or config
+    // is using deprecated validate method without collector. In that case, call deprecated validate method.
+    if (collector.getValidationFailures().isEmpty()) {
+      try {
+        validate();
+      } catch (Exception e) {
+        collector.addFailure(e.getMessage(), null).withStacktrace(e.getStackTrace());
+      }
     }
   }
 
@@ -125,13 +146,13 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
 
   @Override
   public FileFormat getFormat() {
-    return containsMacro("format") ? null : FileFormat.from(format, x -> true);
+    return FileFormat.from(format, x -> true);
   }
 
   @Nullable
   @Override
   public Pattern getFilePattern() {
-    return fileRegex == null ? null : Pattern.compile(fileRegex);
+    return Strings.isNullOrEmpty(fileRegex) ? null : Pattern.compile(fileRegex);
   }
 
   @Override
@@ -163,9 +184,9 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
   @Nullable
   public Schema getSchema() {
     try {
-      return containsMacro("schema") || schema == null ? null : Schema.parseJson(schema);
+      return containsMacro(NAME_SCHEMA) || Strings.isNullOrEmpty(schema) ? null : Schema.parseJson(schema);
     } catch (Exception e) {
-      throw new IllegalArgumentException("Unable to parse schema with error: " + e.getMessage(), e);
+      throw new IllegalArgumentException("Invalid schema: " + e.getMessage(), e);
     }
   }
 

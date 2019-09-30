@@ -35,6 +35,7 @@ import io.cdap.cdap.etl.api.batch.BatchSink;
 import io.cdap.cdap.etl.api.batch.BatchSinkContext;
 import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
 import io.cdap.cdap.etl.api.lineage.field.FieldWriteOperation;
+import io.cdap.cdap.etl.api.validation.ValidatingOutputFormat;
 import io.cdap.plugin.common.TimeParser;
 import org.apache.hadoop.io.NullWritable;
 import org.slf4j.Logger;
@@ -67,7 +68,8 @@ public abstract class TimePartitionedFileSetSink<T extends TPFSSinkConfig>
     tpfsSinkConfig.validate();
     String outputFormatName = getOutputFormatName();
     OutputFormatProvider outputFormatProvider =
-      pipelineConfigurer.usePlugin("outputformat", outputFormatName, FORMAT_PLUGIN_ID, tpfsSinkConfig.getProperties());
+      pipelineConfigurer.usePlugin(ValidatingOutputFormat.PLUGIN_TYPE, outputFormatName, FORMAT_PLUGIN_ID,
+                                   tpfsSinkConfig.getProperties());
     if (outputFormatProvider == null) {
       throw new IllegalArgumentException(
         String.format("Could not find the '%s' output format plugin. "

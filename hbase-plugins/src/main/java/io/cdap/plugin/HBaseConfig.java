@@ -16,9 +16,12 @@
 
 package io.cdap.plugin;
 
+import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.FailureCollector;
+import io.cdap.plugin.common.IdUtils;
 import io.cdap.plugin.common.ReferencePluginConfig;
 import io.cdap.plugin.sink.HBaseSink;
 import io.cdap.plugin.source.HBaseSource;
@@ -30,6 +33,9 @@ import javax.annotation.Nullable;
 * Base HBase Config for use in {@link HBaseSource} and {@link HBaseSink}.
 */
 public class HBaseConfig extends ReferencePluginConfig {
+  protected static final String NAME_SCHEMA = "schema";
+  protected static final String NAME_ROWFIELD = "rowField";
+
   @Description("Name of the HBase Table")
   @Macro
   public String tableName;
@@ -66,14 +72,26 @@ public class HBaseConfig extends ReferencePluginConfig {
    * @throws IllegalArgumentException if the schema is null or not as valid JSON
    */
   public Schema getSchema() {
-    if (schema == null) {
-      throw new IllegalArgumentException("Schema cannot be null");
+    if (Strings.isNullOrEmpty(schema)) {
+      throw new IllegalArgumentException("Schema must be provided.");
     }
     try {
       return Schema.parseJson(schema);
     } catch (IOException e) {
-      throw new IllegalArgumentException(String.format("Unable to parse schema '%s'. Reason: %s",
-                                                       schema, e.getMessage()), e);
+      throw new IllegalArgumentException(String.format("Invalid schema : %s", e.getMessage()), e);
+    }
+  }
+
+  public void validate(FailureCollector collector) {
+    IdUtils.validateReferenceName(referenceName, collector);
+    try {
+      getSchema();
+    } catch (IllegalArgumentException e) {
+      collector.addFailure(e.getMessage(), null).withConfigProperty(NAME_SCHEMA);
+    }
+
+    if (Strings.isNullOrEmpty(rowField)) {
+      collector.addFailure("Row field must be given as a property.", null).withConfigProperty(NAME_ROWFIELD);
     }
   }
 }

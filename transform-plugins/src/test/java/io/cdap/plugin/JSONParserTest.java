@@ -19,9 +19,14 @@ package io.cdap.plugin;
 import com.google.common.base.Joiner;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.Transform;
+import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.validation.CauseAttributes;
+import io.cdap.cdap.etl.api.validation.ValidationFailure;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
+import io.cdap.cdap.etl.mock.transform.MockTransformContext;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -107,7 +112,8 @@ public class JSONParserTest {
 
   private void testJsonParserConfig(JSONParser.Config config) throws Exception {
     Transform<StructuredRecord, StructuredRecord> transform = new JSONParser(config);
-    transform.initialize(null);
+    TransformContext context = new MockTransformContext();
+    transform.initialize(context);
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(StructuredRecord.builder(INPUT1)
                           .set("body", "{\"a\": \"1\", \"b\": \"2\", \"c\" : \"3\", \"d\" : \"4\", \"e\" : \"5\" }")
@@ -129,7 +135,8 @@ public class JSONParserTest {
   public void testJSONParserProjections() throws Exception {
     JSONParser.Config config = new JSONParser.Config("body", "", OUTPUT2.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new JSONParser(config);
-    transform.initialize(null);
+    TransformContext context = new MockTransformContext();
+    transform.initialize(context);
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(StructuredRecord.builder(INPUT1)
                           .set("body", "{\"a\": \"1\", \"b\": \"2\", \"c\" : \"3\", \"d\" : \"4\", \"e\" : \"5\" }")
@@ -139,13 +146,19 @@ public class JSONParserTest {
     Assert.assertEquals("5", emitter.getEmitted().get(0).get("e"));
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testSchemaInvalidSchema() throws Exception {
     JSONParser.Config config = new JSONParser.Config("body2", "", OUTPUT2.toString());
     Transform<StructuredRecord, StructuredRecord> transform = new JSONParser(config);
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT1);
     transform.configurePipeline(mockPipelineConfigurer);
+    FailureCollector collector = mockPipelineConfigurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(1, collector.getValidationFailures().size());
+    Assert.assertEquals(1, collector.getValidationFailures().get(0).getCauses().size());
+    ValidationFailure.Cause expectedCause = new ValidationFailure.Cause();
+    expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, JSONParser.Config.FIELD);
+    Assert.assertEquals(expectedCause, collector.getValidationFailures().get(0).getCauses().get(0));
   }
 
   @Test
@@ -174,7 +187,8 @@ public class JSONParserTest {
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT1);
     transform.configurePipeline(mockPipelineConfigurer);
-    transform.initialize(null);
+    TransformContext context = new MockTransformContext();
+    transform.initialize(context);
     transform.transform(StructuredRecord.builder(INPUT1)
                           .set("body", json)
                           .build(), emitter);
@@ -199,7 +213,8 @@ public class JSONParserTest {
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT1);
     transform.configurePipeline(mockPipelineConfigurer);
-    transform.initialize(null);
+    TransformContext context = new MockTransformContext();
+    transform.initialize(context);
     transform.transform(StructuredRecord.builder(INPUT1)
                           .set("body", json)
                           .build(), emitter);
@@ -222,7 +237,8 @@ public class JSONParserTest {
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT1);
     transform.configurePipeline(mockPipelineConfigurer);
-    transform.initialize(null);
+    TransformContext context = new MockTransformContext();
+    transform.initialize(context);
     transform.transform(StructuredRecord.builder(INPUT1)
                           .set("body", json)
                           .build(), emitter);
@@ -244,7 +260,8 @@ public class JSONParserTest {
 
     mockPipelineConfigurer = new MockPipelineConfigurer(INPUT1);
     transform.configurePipeline(mockPipelineConfigurer);
-    transform.initialize(null);
+    context = new MockTransformContext();
+    transform.initialize(context);
     transform.transform(StructuredRecord.builder(INPUT1)
                           .set("body", json)
                           .build(), emitter);

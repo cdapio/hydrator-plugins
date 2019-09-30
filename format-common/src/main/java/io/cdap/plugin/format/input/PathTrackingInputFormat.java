@@ -122,5 +122,4 @@ public abstract class PathTrackingInputFormat extends FileInputFormat<NullWritab
       delegate.close();
     }
   }
-
 }

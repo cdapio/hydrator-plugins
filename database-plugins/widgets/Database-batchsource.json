@@ -46,31 +46,15 @@
           "name": "connectionString"
         },
         {
+          "widget-type": "get-schema",
+          "widget-category": "plugin"
+        },
+        {
           "widget-type": "textarea",
           "label": "Import Query",
           "name": "importQuery",
           "widget-attributes": {
             "rows": "4"
-          },
-          "plugin-function": {
-            "widget": "outputSchema",
-            "output-property": "schema",
-            "omit-properties": [
-              {
-                "name": "schema"
-              }
-            ],
-            "add-properties": [
-              {
-                "name": "query",
-                "plugin-property-for-value": "importQuery",
-                "widget-type": "textarea",
-                "label": "Query",
-                "widget-attributes": {
-                  "rows": "4"
-                }
-              }
-            ]
           }
         },
         {

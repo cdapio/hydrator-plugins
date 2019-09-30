@@ -46,6 +46,7 @@ public class DBConfig extends ConnectionConfig {
     return enableAutoCommit;
   }
 
+  @Nullable
   protected String cleanQuery(@Nullable String query) {
     if (query == null) {
       return null;

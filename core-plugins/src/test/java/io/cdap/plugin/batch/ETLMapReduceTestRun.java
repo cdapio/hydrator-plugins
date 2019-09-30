@@ -24,7 +24,6 @@ import io.cdap.cdap.api.dataset.lib.TimePartitionedFileSet;
 import io.cdap.cdap.api.dataset.table.Put;
 import io.cdap.cdap.api.dataset.table.Row;
 import io.cdap.cdap.api.dataset.table.Table;
-import io.cdap.cdap.etl.api.ErrorTransform;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.batch.BatchSink;
 import io.cdap.cdap.etl.api.batch.BatchSource;
@@ -126,7 +125,6 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
 
   @Test
   public void testDAG() throws Exception {
-
     Schema schema = Schema.recordOf(
       "userNames",
       Schema.Field.of("rowkey", Schema.of(Schema.Type.STRING)),
@@ -157,26 +155,12 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
                                Properties.Table.PROPERTY_SCHEMA, schema.toString()),
                              null));
 
-    String validationScript = "function isValid(input, context) {  " +
-      "var errCode = 0; var errMsg = 'none'; var isValid = true;" +
-      "if (!coreValidator.maxLength(input.userid, 4)) " +
-      "{ errCode = 10; errMsg = 'user name greater than 6 characters'; isValid = false; }; " +
-      "return {'isValid': isValid, 'errorCode': errCode, 'errorMsg': errMsg}; " +
-      "};";
-    ETLStage transform = new ETLStage(
-      "transform", new ETLPlugin("Validator", Transform.PLUGIN_TYPE,
-                                 ImmutableMap.of("validators", "core",
-                                                 "validationScript", validationScript),
-                                 null));
-
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
       .addStage(source)
-      .addStage(transform)
       .addStage(sink1)
       .addStage(sink2)
-      .addConnection(source.getName(), transform.getName())
+      .addConnection(source.getName(), sink2.getName())
       .addConnection(source.getName(), sink1.getName())
-      .addConnection(transform.getName(), sink2.getName())
       .build();
 
     ApplicationManager appManager = deployETL(etlConfig, "DagApp");
@@ -191,12 +175,6 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
       put.add("userid", "sam" + i);
       inputTable.put(put);
       inputManager.flush();
-
-      Put put2 = new Put(Bytes.toBytes("row" + (i + 10)));
-      // invalid record, user name "sam[10-19]" is 5 chars long and invalid according to validator transform
-      put2.add("userid", "sam" + (i + 10));
-      inputTable.put(put2);
-      inputManager.flush();
     }
 
     runETLOnce(appManager);
@@ -204,7 +182,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     // all records are passed to this table (validation not performed)
     DataSetManager<Table> outputManager1 = getDataset("dagOutputTable1");
     Table outputTable1 = outputManager1.get();
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 10; i++) {
       Row row = outputTable1.get(Bytes.toBytes("row" + i));
       Assert.assertEquals("sam" + i, row.getString("userid"));
     }
@@ -215,10 +193,6 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     for (int i = 0; i < 10; i++) {
       Row row = outputTable2.get(Bytes.toBytes("row" + i));
       Assert.assertEquals("sam" + i, row.getString("userid"));
-    }
-    for (int i = 10; i < 20; i++) {
-      Row row = outputTable2.get(Bytes.toBytes("row" + i));
-      Assert.assertNull(row.getString("userid"));
     }
   }
 
@@ -244,19 +218,6 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
                                 Properties.Table.PROPERTY_SCHEMA, schema.toString()),
                               null));
 
-    String validationScript = "function isValid(input) {  " +
-      "var errCode = 0; var errMsg = 'none'; var isValid = true;" +
-      "if (!coreValidator.maxLength(input.user, 6)) " +
-      "{ errCode = 10; errMsg = 'user name greater than 6 characters'; isValid = false; }; " +
-      "return {'isValid': isValid, 'errorCode': errCode, 'errorMsg': errMsg}; " +
-      "};";
-    ETLStage transform = new ETLStage(
-      "transform",
-      new ETLPlugin("Validator",
-                    Transform.PLUGIN_TYPE,
-                    ImmutableMap.of("validators", "core",
-                                    "validationScript", validationScript)));
-
     ETLStage sink1 = new ETLStage(
       "sink1", new ETLPlugin("Table",
                              BatchSink.PLUGIN_TYPE,
@@ -265,29 +226,10 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
                                Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "rowkey",
                                Properties.Table.PROPERTY_SCHEMA, schema.toString())));
 
-    ETLStage sink2 = new ETLStage(
-      "sink2", new ETLPlugin("Table",
-                             BatchSink.PLUGIN_TYPE,
-                             ImmutableMap.of(
-                               Properties.BatchReadableWritable.NAME, "keyErrors",
-                               Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "rowkey",
-                               Properties.Table.PROPERTY_SCHEMA, schema.toString())));
-
-    ETLStage errorCollector = new ETLStage(
-      "errors", new ETLPlugin("ErrorCollector",
-                              ErrorTransform.PLUGIN_TYPE,
-                              ImmutableMap.of()));
-
     ETLBatchConfig etlConfig = ETLBatchConfig.builder("* * * * *")
       .addStage(source)
-      .addStage(transform)
-      .addStage(errorCollector)
       .addStage(sink1)
-      .addStage(sink2)
-      .addConnection(source.getName(), transform.getName())
-      .addConnection(transform.getName(), sink1.getName())
-      .addConnection(transform.getName(), errorCollector.getName())
-      .addConnection(errorCollector.getName(), sink2.getName())
+      .addConnection(source.getName(), sink1.getName())
       .build();
 
     ApplicationManager appManager = deployETL(etlConfig, "TableToTable");
@@ -324,20 +266,6 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
     Assert.assertEquals(5, (int) row.getInt("count"));
     Assert.assertTrue(Math.abs(123.45 - row.getDouble("price")) < 0.000001);
     Assert.assertEquals("scotch", row.getString("item"));
-
-    row = outputTable.get(Bytes.toBytes("row2"));
-    Assert.assertTrue(row.isEmpty());
-
-    DataSetManager<Table> errorManager = getDataset("keyErrors");
-    try (Table errorTable = errorManager.get()) {
-      row = errorTable.get(Bytes.toBytes("row1"));
-      Assert.assertTrue(row.isEmpty());
-      row = errorTable.get(Bytes.toBytes("row2"));
-      Assert.assertEquals("jackson", row.getString("user"));
-      Assert.assertEquals(10, (int) row.getInt("count"));
-      Assert.assertTrue(Math.abs(123456789d - row.getDouble("price")) < 0.000001);
-      Assert.assertEquals("island", row.getString("item"));
-    }
   }
 
   @Test
@@ -360,6 +288,7 @@ public class ETLMapReduceTestRun extends ETLBatchTestBase {
                                 .put(Properties.File.FILESYSTEM, "Text")
                                 .put(Properties.File.PATH, filePath)
                                 .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
+                                .put(Properties.File.FORMAT, "text")
                                 .build(),
                               null));
 

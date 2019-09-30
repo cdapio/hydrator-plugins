@@ -74,12 +74,12 @@
           "name": "targetFolder"
         },
         {
-          "widget-type": "textbox",
+          "widget-type": "hidden",
           "label": "Table Name",
           "name": "tableName"
         },
         {
-          "widget-type": "textbox",
+          "widget-type": "hidden",
           "label": "Table Data Expiry Period (Days)",
           "name": "tableExpiryPeriod"
         }

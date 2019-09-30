@@ -25,6 +25,7 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.InvalidEntry;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.Transform;
@@ -60,6 +61,9 @@ import javax.xml.xpath.XPathFactory;
 public class XMLMultiParser extends Transform<StructuredRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(XMLMultiParser.class);
 
+  private static final String FIELD = "field";
+  private static final String XPATH = "xPath";
+
   private final Config config;
   private final DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
   private Schema schema;
@@ -73,15 +77,17 @@ public class XMLMultiParser extends Transform<StructuredRecord, StructuredRecord
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
-    config.validate(pipelineConfigurer.getStageConfigurer().getInputSchema());
-    pipelineConfigurer.getStageConfigurer().setOutputSchema(config.getSchema());
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    config.validate(pipelineConfigurer.getStageConfigurer().getInputSchema(), collector);
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(config.getSchema(collector));
   }
 
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
-    schema = config.getSchema();
-    xPathExpression = config.getXPathExpression();
+    FailureCollector collector = getContext().getFailureCollector();
+    schema = config.getSchema(collector);
+    xPathExpression = config.getXPathExpression(collector);
     fieldNames = new HashSet<>();
     for (Schema.Field field : schema.getFields()) {
       fieldNames.add(field.getName());
@@ -183,42 +189,47 @@ public class XMLMultiParser extends Transform<StructuredRecord, StructuredRecord
       this.schema = schema;
     }
 
-    public void validate(@Nullable Schema inputSchema) {
+    public void validate(@Nullable Schema inputSchema, FailureCollector collector) {
       if (inputSchema != null && !containsMacro(field)) {
         Schema.Field parseField = inputSchema.getField(field);
         if (parseField == null) {
-          throw new IllegalArgumentException(String.format("Field %s does not exist in the input schema.", field));
+          collector.addFailure(String.format("Field '%s' must exist in the input schema.", field), null)
+            .withConfigProperty(FIELD);
         }
       }
 
       if (!containsMacro(xPath)) {
-        getXPathExpression();
+        getXPathExpression(collector);
       }
 
-      for (Schema.Field field : getSchema().getFields()) {
+      for (Schema.Field field : getSchema(collector).getFields()) {
         Schema fieldSchema = field.getSchema();
         Schema.Type type = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
         if (!type.isSimpleType()) {
-          throw new IllegalArgumentException(String.format(
-            "Unsupported schema. The schema can only contain simple types, but field %s is of type %s.",
-            field.getName(), type));
+          collector.addFailure(
+            String.format("Unsupported schema type %s for field '%s'.", type, field.getName()),
+            "The schema may only contain simple types.")
+            .withOutputSchemaField(field.getName());
         }
       }
     }
 
-    public XPathExpression getXPathExpression() {
+    public XPathExpression getXPathExpression(FailureCollector collector) {
       try {
         return X_PATH_FACTORY.newXPath().compile(xPath);
       } catch (XPathExpressionException e) {
-        throw new IllegalArgumentException("Could not compile xpath " + xPath);
+        collector.addFailure(String.format("Failed to compile xpath: %s", xPath), null)
+          .withConfigProperty(XPATH);
+        throw collector.getOrThrowException();
       }
     }
 
-    public Schema getSchema() {
+    public Schema getSchema(FailureCollector collector) {
       try {
         return Schema.parseJson(schema);
       } catch (IOException e) {
-        throw new IllegalArgumentException("Could not parse schema " + schema);
+        collector.addFailure(String.format("Failed to parse schema: %s", schema), null);
+        throw collector.getOrThrowException();
       }
     }
   }

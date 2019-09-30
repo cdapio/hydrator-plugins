@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.plugin.format.plugin.AbstractFileSourceConfig;
 
 import java.lang.reflect.Type;
@@ -34,6 +35,7 @@ public class FileSourceConfig extends AbstractFileSourceConfig {
 
   private static final Gson GSON = new Gson();
   private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
+  private static final String NAME_FILE_SYSTEM_PROPERTIES = "fileSystemProperties";
 
   @Macro
   @Description("Path to file(s) to be read. If a directory is specified, " +
@@ -59,6 +61,16 @@ public class FileSourceConfig extends AbstractFileSourceConfig {
     getFileSystemProperties();
   }
 
+  public void validate(FailureCollector collector) {
+    super.validate(collector);
+    try {
+      getFileSystemProperties();
+    } catch (IllegalArgumentException e) {
+      collector.addFailure("File system properties must be a valid json.", null)
+        .withConfigProperty(NAME_FILE_SYSTEM_PROPERTIES).withStacktrace(e.getStackTrace());
+    }
+  }
+
   Map<String, String> getFileSystemProperties() {
     if (fileSystemProperties == null) {
       return new HashMap<>();
@@ -66,7 +78,7 @@ public class FileSourceConfig extends AbstractFileSourceConfig {
     try {
       return GSON.fromJson(fileSystemProperties, MAP_STRING_STRING_TYPE);
     } catch (Exception e) {
-      throw new IllegalArgumentException("Unable to parse filesystem properties: " + e.getMessage());
+      throw new IllegalArgumentException("Unable to parse filesystem properties: " + e.getMessage(), e);
     }
   }
 

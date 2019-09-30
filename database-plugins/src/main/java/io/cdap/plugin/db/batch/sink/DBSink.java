@@ -31,6 +31,7 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
 import io.cdap.cdap.etl.api.batch.BatchSink;
@@ -90,7 +91,8 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
-    dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId());
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId(), collector);
   }
 
   @Override

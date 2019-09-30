@@ -19,12 +19,11 @@ package io.cdap.plugin.db.batch.action;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.action.Action;
 import io.cdap.cdap.etl.api.action.ActionContext;
 import io.cdap.plugin.DBManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.Driver;
 
@@ -35,7 +34,6 @@ import java.sql.Driver;
 @Name("Database")
 @Description("Action that runs a db command")
 public class DBAction extends Action {
-  private static final Logger LOG = LoggerFactory.getLogger(DBAction.class);
   private static final String JDBC_PLUGIN_ID = "driver";
   private final QueryConfig config;
 
@@ -44,16 +42,16 @@ public class DBAction extends Action {
   }
 
   @Override
-  public void run(ActionContext context) throws Exception {
-
-    Class<? extends Driver> driverClass = context.loadPluginClass(JDBC_PLUGIN_ID);
-    DBRun executeQuery = new DBRun(config, driverClass);
-    executeQuery.run();
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    DBManager dbManager = new DBManager(config);
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    dbManager.validateJDBCPluginPipeline(pipelineConfigurer, JDBC_PLUGIN_ID, collector);
   }
 
   @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
-    DBManager dbManager = new DBManager(config);
-    dbManager.validateJDBCPluginPipeline(pipelineConfigurer, JDBC_PLUGIN_ID);
+  public void run(ActionContext context) throws Exception {
+    Class<? extends Driver> driverClass = context.loadPluginClass(JDBC_PLUGIN_ID);
+    DBRun executeQuery = new DBRun(config, driverClass);
+    executeQuery.run();
   }
 }

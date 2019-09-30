@@ -20,17 +20,12 @@ import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.etl.api.FailureCollector;
+import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.streaming.StreamingContext;
 import io.cdap.cdap.etl.api.streaming.StreamingSource;
 import io.cdap.plugin.common.http.HTTPPollConfig;
-import io.cdap.plugin.common.http.HTTPRequestor;
-import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.api.java.JavaDStream;
-import org.apache.spark.streaming.receiver.Receiver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * Polls a http endpoints and outputs a record for each url response.
@@ -39,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 @Name("HTTPPoller")
 @Description("Fetch data by performing an HTTP request at a regular interval.")
 public class HTTPPollerSource extends StreamingSource<StructuredRecord> {
-  private static final Logger LOG = LoggerFactory.getLogger(HTTPPollerSource.class);
   private final HTTPPollConfig conf;
 
   public HTTPPollerSource(HTTPPollConfig conf) {
@@ -47,49 +41,18 @@ public class HTTPPollerSource extends StreamingSource<StructuredRecord> {
   }
 
   @Override
-  public JavaDStream<StructuredRecord> getStream(StreamingContext streamingContext) throws Exception {
-    return streamingContext.getSparkStreamingContext()
-      .receiverStream(new Receiver<StructuredRecord>(StorageLevel.MEMORY_ONLY()) {
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    conf.validate(collector);
+  }
 
-        @Override
-        public StorageLevel storageLevel() {
-          return StorageLevel.MEMORY_ONLY();
-        }
+  @Override
+  public JavaDStream<StructuredRecord> getStream(StreamingContext streamingContext) {
+    FailureCollector collector = streamingContext.getFailureCollector();
+    conf.validate(collector);
+    collector.getOrThrowException();
 
-        @Override
-        public void onStart() {
-          new Thread() {
-
-            @Override
-            public void run() {
-              HTTPRequestor httpRequestor = new HTTPRequestor(conf);
-              while (!isStopped()) {
-
-                try {
-                  store(httpRequestor.get());
-                } catch (Exception e) {
-                  LOG.error("Error getting content from {}.", conf.getUrl(), e);
-                }
-
-                try {
-                  TimeUnit.SECONDS.sleep(conf.getInterval());
-                } catch (InterruptedException e) {
-                  throw new RuntimeException(e);
-                }
-              }
-            }
-
-            @Override
-            public void interrupt() {
-              super.interrupt();
-            }
-          }.start();
-        }
-
-        @Override
-        public void onStop() {
-
-        }
-      });
+    return HTTPPollerSourceUtil.getJavaDStream(streamingContext, conf);
   }
 }

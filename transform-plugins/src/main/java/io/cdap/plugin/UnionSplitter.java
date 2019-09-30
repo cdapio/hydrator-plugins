@@ -23,6 +23,7 @@ import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.InvalidEntry;
 import io.cdap.cdap.etl.api.MultiOutputEmitter;
 import io.cdap.cdap.etl.api.MultiOutputPipelineConfigurer;
@@ -61,7 +62,8 @@ public class UnionSplitter extends SplitterTransform<StructuredRecord, Structure
       return;
     }
 
-    stageConfigurer.setOutputSchemas(getOutputSchemas(inputSchema, conf.unionField, conf.modifySchema));
+    stageConfigurer.setOutputSchemas(getOutputSchemas(inputSchema, conf.unionField,
+                                                      conf.modifySchema, stageConfigurer.getFailureCollector()));
   }
 
   @Override
@@ -165,7 +167,8 @@ public class UnionSplitter extends SplitterTransform<StructuredRecord, Structure
   }
 
   @VisibleForTesting
-  static Map<String, Schema> getOutputSchemas(Schema inputSchema, String unionField, boolean modifySchema) {
+  static Map<String, Schema> getOutputSchemas(Schema inputSchema, String unionField, boolean modifySchema,
+                                              FailureCollector collector) {
     Map<String, Schema> outputPortSchemas = new HashMap<>();
     if (unionField == null) {
       outputPortSchemas.put(inputSchema.getRecordName(), inputSchema);
@@ -174,15 +177,17 @@ public class UnionSplitter extends SplitterTransform<StructuredRecord, Structure
 
     Schema.Field unionSchemaField = inputSchema.getField(unionField);
     if (unionSchemaField == null) {
-      throw new IllegalArgumentException(
-        String.format("Field '%s' does not exist in the input schema.", unionField));
+      collector.addFailure(String.format("Field '%s' must exist in the input schema.", unionField), null)
+        .withConfigProperty(Conf.UNION_FIELD);
+      collector.getOrThrowException();
     }
     Schema unionSchema = unionSchemaField.getSchema();
     if (unionSchema.getType() != Schema.Type.UNION) {
-      throw new IllegalArgumentException(
-        String.format("Field '%s' is not of type union, but is of type '%s'", unionField, unionSchema.getType()));
+      collector.addFailure(String.format("Field '%s' must be of type union, but is of type '%s'.",
+                                         unionField, unionSchema.getType()), null)
+        .withConfigProperty(Conf.UNION_FIELD);
+      collector.getOrThrowException();
     }
-
     int numFields = inputSchema.getFields().size();
     ArrayList<Schema.Field> outputFields = new ArrayList<>(numFields);
     int i = 0;
@@ -199,12 +204,12 @@ public class UnionSplitter extends SplitterTransform<StructuredRecord, Structure
 
     for (Schema schema : unionSchema.getUnionSchemas()) {
       Schema.Type type = schema.getType();
-      switch (type) {
-        case ENUM:
-        case MAP:
-        case ARRAY:
-        case UNION:
-          throw new IllegalArgumentException(String.format("A type of '%s' within a union is not supported.", type));
+      if (type.equals(Schema.Type.ENUM) || type.equals(Schema.Type.MAP)
+        || type.equals(Schema.Type.ARRAY) || type.equals(Schema.Type.UNION)) {
+        collector.addFailure(String.format("Unsupported type '%s' within union field '%s'.", type, unionField),
+                             "The following types are not supported: enum, map, array, and union.")
+          .withConfigProperty(Conf.UNION_FIELD).withInputSchemaField(unionField);
+        break;
       }
 
       String port = type == Schema.Type.RECORD ? schema.getRecordName() : type.name().toLowerCase();
@@ -219,6 +224,8 @@ public class UnionSplitter extends SplitterTransform<StructuredRecord, Structure
    * Plugin conf
    */
   public static class Conf extends PluginConfig {
+    public static final String UNION_FIELD = "unionField";
+
     @Description("The union field to split on. Each possible schema in the union will be emitted to a different " +
       "port. Only unions of records and simple types are supported. In other words, " +
       "enums, maps, and arrays in the union are not supported.")

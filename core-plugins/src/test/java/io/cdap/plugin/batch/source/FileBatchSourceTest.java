@@ -101,6 +101,7 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put(Properties.File.PATH, "/src/test/resources/path_one/")
       .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "true")
+      .put(Properties.File.FORMAT, "text")
       .build();
 
     ETLStage source = new ETLStage("FileInput", new ETLPlugin("File", BatchSource.PLUGIN_TYPE, sourceProperties, null));
@@ -135,6 +136,7 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
       .put(Constants.Reference.REFERENCE_NAME, "TestCase")
       .put(Properties.File.PATH, "/src/test/resources/path_one/")
       .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
+      .put(Properties.File.FORMAT, "text")
       .build();
 
     ETLStage source = new ETLStage("FileInput", new ETLPlugin("File", BatchSource.PLUGIN_TYPE, sourceProperties, null));
@@ -173,6 +175,7 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
       .put("pathField", "file")
       .put("filenameOnly", "true")
       .put(Properties.File.SCHEMA, schema.toString())
+      .put(Properties.File.FORMAT, "text")
       .build();
 
     ETLStage source = new ETLStage("FileInput", new ETLPlugin("File", BatchSource.PLUGIN_TYPE, sourceProperties, null));
@@ -212,6 +215,7 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
       .put(Properties.File.FILE_REGEX, ".+fileBatchSource.*")
       .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
       .put(Properties.File.RECURSIVE, "false")
+      .put(Properties.File.FORMAT, "text")
       .build();
 
     ETLStage source = new ETLStage("FileInput", new ETLPlugin("File", BatchSource.PLUGIN_TYPE, sourceProperties, null));
@@ -253,6 +257,7 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
       .put(Properties.File.FILE_REGEX, ".+test.*")
       .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
       .put(Properties.File.RECURSIVE, "false")
+      .put(Properties.File.FORMAT, "text")
       .build();
 
     ETLStage source = new ETLStage("FileInput", new ETLPlugin("File", BatchSource.PLUGIN_TYPE, sourceProperties, null));
@@ -293,6 +298,7 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
       .put(Properties.File.FILE_REGEX, ".+fileBatchSource.*")
       .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
       .put(Properties.File.RECURSIVE, "true")
+      .put(Properties.File.FORMAT, "text")
       .build();
 
     ETLStage source = new ETLStage("FileInput", new ETLPlugin("File", BatchSource.PLUGIN_TYPE, sourceProperties, null));
@@ -333,6 +339,7 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
       .put(Properties.File.FILE_REGEX, ".+.txt")
       .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
       .put(Properties.File.RECURSIVE, "false")
+      .put(Properties.File.FORMAT, "text")
       .build();
 
     ETLStage source = new ETLStage("FileInput", new ETLPlugin("File", BatchSource.PLUGIN_TYPE, sourceProperties, null));
@@ -380,6 +387,7 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
       .put(Constants.Reference.REFERENCE_NAME, "CopyHeader")
       .put("copyHeader", "true")
       .put("maxSplitSize", "10")
+      .put(Properties.File.FORMAT, "text")
       .put(Properties.File.PATH, inputFile.getAbsolutePath())
       .build();
 

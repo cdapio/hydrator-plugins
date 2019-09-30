@@ -27,7 +27,9 @@ import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.plugin.PluginConfig;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.action.Action;
 import io.cdap.cdap.etl.api.action.ActionContext;
 import org.slf4j.Logger;
@@ -57,9 +59,20 @@ public class SSHAction extends Action {
   }
 
   @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    if (!config.containsMacro(SSHActionConfig.PORT)) {
+      StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
+      FailureCollector collector = stageConfigurer.getFailureCollector();
+      config.validate(collector);
+    }
+  }
+
+  @Override
   public void run(final ActionContext context) throws Exception {
     // Now that macros have been substituted, try validation again
-    config.validate();
+    FailureCollector collector = context.getFailureCollector();
+    config.validate(collector);
+    collector.getOrThrowException();
 
     Connection connection = new Connection(config.host, config.port);
     try {
@@ -102,17 +115,14 @@ public class SSHAction extends Action {
     }
   }
 
-  @Override
-  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    if (!config.containsMacro("port")) {
-      config.validate();
-    }
-  }
-
   /**
    * Config class that contains all the properties needed to SSH into the remote machine and run the script.
    */
   public static class SSHActionConfig extends PluginConfig {
+
+    //Constants for property names
+    private static final String PORT = "port";
+
     @Description("Command to be executed on the remote host, including file path of script and any arguments")
     @Macro
     private String command;
@@ -164,10 +174,10 @@ public class SSHAction extends Action {
       this.outputKey = outputKey;
     }
 
-    public void validate() {
+    public void validate(FailureCollector collector) {
       // Check that port is not negative
-      if (!containsMacro("port") && port < 0) {
-        throw new IllegalArgumentException("Port cannot be negative");
+      if (!containsMacro(PORT) && port != null && port < 0) {
+        collector.addFailure("Port must be a positive number.", null).withConfigProperty(PORT);
       }
     }
   }

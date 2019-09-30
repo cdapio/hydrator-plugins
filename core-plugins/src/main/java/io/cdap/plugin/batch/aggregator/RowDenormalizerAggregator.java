@@ -22,6 +22,7 @@ import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchAggregator;
 import io.cdap.cdap.etl.api.batch.BatchAggregatorContext;
@@ -45,6 +46,9 @@ import java.util.Set;
   "'ADDRESS' in the input is mapped to 'addr' in the output schema. The denormalized data is easier to query.")
 public class RowDenormalizerAggregator extends BatchAggregator<String, StructuredRecord, StructuredRecord> {
 
+  private static final String KEY_FIELD = "keyField";
+  private static final String NAME_FIELD = "nameField";
+  private static final String VALUE_FIELD = "valueField";
   private final RowDenormalizerConfig conf;
   private Map<String, String> outputMappings;
   private Set<String> outputFields;
@@ -66,7 +70,8 @@ public class RowDenormalizerAggregator extends BatchAggregator<String, Structure
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    validateInputFields(pipelineConfigurer.getStageConfigurer().getInputSchema());
+    validateInputFields(pipelineConfigurer.getStageConfigurer().getInputSchema(),
+                        pipelineConfigurer.getStageConfigurer().getFailureCollector());
     pipelineConfigurer.getStageConfigurer().setOutputSchema(initializeOutputSchema());
   }
 
@@ -138,40 +143,57 @@ public class RowDenormalizerAggregator extends BatchAggregator<String, Structure
   /**
    * @param inputSchema Validates whether the keyfield, fieldname, and fieldvalue entered by the user is of type
    *                    String or Nullable String and present in the input schema or not.
+   * @param collector FailureCollector used to log all errors and return them to the user.
    * @return true
    */
-  private void validateInputFields(Schema inputSchema) {
+  private void validateInputFields(Schema inputSchema, FailureCollector collector) {
 
     if (inputSchema.getField(conf.getKeyField()) == null) {
-      throw new IllegalArgumentException(
-        String.format("Keyfield '%s' does not exist in input schema %s", conf.getKeyField(), inputSchema));
-    } else if (inputSchema.getField(conf.getNameField()) == null) {
-      throw new IllegalArgumentException(
-        String.format("Namefield '%s' does not exist in input schema %s", conf.getNameField(), inputSchema));
-    } else if (inputSchema.getField(conf.getValueField()) == null) {
-      throw new IllegalArgumentException(
-        String.format("Valuefield '%s' does not exist in input schema %s", conf.getValueField(), inputSchema));
+      collector.addFailure(String.format("Key field '%s' does not exist in input schema", conf.getKeyField()), null)
+        .withConfigProperty(KEY_FIELD);
+    } else {
+      Schema keyFieldSchema = inputSchema.getField(conf.getKeyField()).getSchema();
+
+      final Schema.Type schemaType = keyFieldSchema.isNullable() ?
+                                    keyFieldSchema.getNonNullable().getType() :
+                                    keyFieldSchema.getType();
+
+      if (!schemaType.equals(Schema.Type.STRING)) {
+        collector.addFailure(String.format("Key field '%s' in the input record must be a String", conf.getKeyField()),
+                             null)
+          .withConfigProperty(KEY_FIELD);
+      }
     }
 
-    Schema keyFieldSchema = inputSchema.getField(conf.getKeyField()).getSchema();
-    Schema nameFieldSchema = inputSchema.getField(conf.getNameField()).getSchema();
-    Schema valueFieldSchema = inputSchema.getField(conf.getValueField()).getSchema();
+    if (inputSchema.getField(conf.getNameField()) == null) {
+      collector.addFailure(String.format("Name field '%s' does not exist in input schema", conf.getNameField()),
+                           null)
+        .withConfigProperty(NAME_FIELD);
+    } else {
+      Schema nameFieldSchema = inputSchema.getField(conf.getNameField()).getSchema();
 
-    if (!((keyFieldSchema.isNullable() ? keyFieldSchema.getNonNullable().getType() : keyFieldSchema
-      .getType()).equals(Schema.Type.STRING))) {
-      throw new IllegalArgumentException(
-        String.format("Keyfield '%s' in the input record must be of type String or Nullable String",
-                      conf.getKeyField()));
-    } else if (!((nameFieldSchema.isNullable() ? nameFieldSchema.getNonNullable().getType() : nameFieldSchema
-      .getType()).equals(Schema.Type.STRING))) {
-      throw new IllegalArgumentException(
-        String.format("Namefield '%s' in the input record must be of type String or Nullable String",
-                      conf.getNameField()));
-    } else if (!((valueFieldSchema.isNullable() ? valueFieldSchema.getNonNullable().getType() : valueFieldSchema
-      .getType()).equals(Schema.Type.STRING))) {
-      throw new IllegalArgumentException(
-        String.format("Valuefield '%s' in the input record must be of type String or Nullable String",
-                      conf.getValueField()));
+      if (!((nameFieldSchema.isNullable() ? nameFieldSchema.getNonNullable().getType() : nameFieldSchema
+              .getType()).equals(Schema.Type.STRING))) {
+        collector.addFailure(String.format("Name field '%s' in the input record must be a String", conf.getNameField()),
+                             null)
+          .withConfigProperty(NAME_FIELD);
+      }
     }
+
+    if (inputSchema.getField(conf.getValueField()) == null) {
+      collector.addFailure(String.format("Value field '%s' does not exist in input schema", conf.getValueField()),
+                           null)
+        .withConfigProperty(VALUE_FIELD);
+    } else {
+      Schema valueFieldSchema = inputSchema.getField(conf.getValueField()).getSchema();
+
+      if (!((valueFieldSchema.isNullable() ? valueFieldSchema.getNonNullable().getType() : valueFieldSchema
+              .getType()).equals(Schema.Type.STRING))) {
+        collector.addFailure(String.format("Value field '%s' in the input record must a String", conf.getValueField()),
+                             null)
+          .withConfigProperty(VALUE_FIELD);
+      }
+    }
+
   }
 }

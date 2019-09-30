@@ -18,9 +18,12 @@ package io.cdap.plugin;
 
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.Transform;
+import io.cdap.cdap.etl.api.TransformContext;
 import io.cdap.cdap.etl.mock.common.MockEmitter;
 import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
+import io.cdap.cdap.etl.mock.transform.MockTransformContext;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
@@ -51,7 +54,8 @@ public class EncoderTest {
     String test = "This is a test for testing base64 encoding";
     Transform<StructuredRecord, StructuredRecord> transform =
       new Encoder(new Encoder.Config("a:BASE64", OUTPUT.toString()));
-    transform.initialize(null);
+    TransformContext context = new MockTransformContext();
+    transform.initialize(context);
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(StructuredRecord.builder(INPUT)
@@ -66,6 +70,7 @@ public class EncoderTest {
     byte[] actual = emitter.getEmitted().get(0).get("a");
     Assert.assertEquals(2, emitter.getEmitted().get(0).getSchema().getFields().size());
     Assert.assertArrayEquals(expected, actual);
+    Assert.assertEquals(0, context.getFailureCollector().getValidationFailures().size());
   }
 
   @Test
@@ -73,7 +78,8 @@ public class EncoderTest {
     String test = "This is a test for testing base64 encoding";
     Transform<StructuredRecord, StructuredRecord> transform =
       new Encoder(new Encoder.Config("a:STRING_BASE64", OUTPUTSTR.toString()));
-    transform.initialize(null);
+    TransformContext context = new MockTransformContext();
+    transform.initialize(context);
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(StructuredRecord.builder(INPUT)
@@ -88,6 +94,7 @@ public class EncoderTest {
     String actual = emitter.getEmitted().get(0).get("a");
     Assert.assertEquals(2, emitter.getEmitted().get(0).getSchema().getFields().size());
     Assert.assertEquals(expected, actual);
+    Assert.assertEquals(0, context.getFailureCollector().getValidationFailures().size());
   }
 
   @Test
@@ -95,7 +102,8 @@ public class EncoderTest {
     String test = "This is a test for testing base32 encoding";
     Transform<StructuredRecord, StructuredRecord> transform =
       new Encoder(new Encoder.Config("a:BASE32", OUTPUT.toString()));
-    transform.initialize(null);
+    TransformContext context = new MockTransformContext();
+    transform.initialize(context);
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(StructuredRecord.builder(INPUT)
@@ -110,6 +118,7 @@ public class EncoderTest {
     byte[] actual = emitter.getEmitted().get(0).get("a");
     Assert.assertEquals(2, emitter.getEmitted().get(0).getSchema().getFields().size());
     Assert.assertArrayEquals(expected, actual);
+    Assert.assertEquals(0, context.getFailureCollector().getValidationFailures().size());
   }
 
   @Test
@@ -117,7 +126,8 @@ public class EncoderTest {
     String test = "This is a test for testing base32 encoding";
     Transform<StructuredRecord, StructuredRecord> transform =
       new Encoder(new Encoder.Config("a:BASE32", OUTPUTSTR.toString()));
-    transform.initialize(null);
+    TransformContext context = new MockTransformContext();
+    transform.initialize(context);
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(StructuredRecord.builder(INPUT)
@@ -132,6 +142,7 @@ public class EncoderTest {
     String actual = emitter.getEmitted().get(0).get("a");
     Assert.assertEquals(2, emitter.getEmitted().get(0).getSchema().getFields().size());
     Assert.assertEquals(expected, actual);
+    Assert.assertEquals(0, context.getFailureCollector().getValidationFailures().size());
   }
 
   @Test
@@ -139,7 +150,8 @@ public class EncoderTest {
     String test = "This is a test for testing hex encoding";
     Transform<StructuredRecord, StructuredRecord> transform =
       new Encoder(new Encoder.Config("a:HEX", OUTPUT.toString()));
-    transform.initialize(null);
+    TransformContext context = new MockTransformContext();
+    transform.initialize(context);
 
     MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
     transform.transform(StructuredRecord.builder(INPUT)
@@ -154,6 +166,7 @@ public class EncoderTest {
     byte[] actual = emitter.getEmitted().get(0).get("a");
     Assert.assertEquals(2, emitter.getEmitted().get(0).getSchema().getFields().size());
     Assert.assertArrayEquals(expected, actual);
+    Assert.assertEquals(0, context.getFailureCollector().getValidationFailures().size());
   }
 
   @Test
@@ -163,9 +176,11 @@ public class EncoderTest {
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(INPUT);
     transform.configurePipeline(mockPipelineConfigurer);
     Assert.assertEquals(OUTPUTSTR, mockPipelineConfigurer.getOutputSchema());
+    FailureCollector collector = mockPipelineConfigurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(0, collector.getValidationFailures().size());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testSchemaValidationWithInvalidInputSchema() throws Exception {
 
     Transform<StructuredRecord, StructuredRecord> transform =
@@ -177,5 +192,8 @@ public class EncoderTest {
 
     MockPipelineConfigurer mockPipelineConfigurer = new MockPipelineConfigurer(invalidInput);
     transform.configurePipeline(mockPipelineConfigurer);
+    FailureCollector collector = mockPipelineConfigurer.getStageConfigurer().getFailureCollector();
+    Assert.assertEquals(1, collector.getValidationFailures().size());
+    Assert.assertEquals(2, collector.getValidationFailures().get(0).getCauses().size());
   }
 }

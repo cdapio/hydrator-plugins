@@ -17,15 +17,17 @@
 package io.cdap.plugin.format.plugin;
 
 import io.cdap.cdap.api.data.batch.Input;
-import io.cdap.cdap.api.data.batch.InputFormatProvider;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.batch.BatchSourceContext;
+import io.cdap.cdap.etl.api.validation.FormatContext;
+import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
 import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.common.SourceInputFormatProvider;
 import io.cdap.plugin.common.batch.JobUtils;
@@ -46,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 /**
  * Common logic for a source that reads from a Hadoop FileSystem. Supports functionality that is common across any
@@ -70,45 +73,38 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    config.validate();
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    config.validate(collector);
+    // throw exception if there were any errors while validating the config. This could happen if format or schema is
+    // invalid
+    collector.getOrThrowException();
 
-    Schema schema = config.getSchema();
     FileFormat fileFormat = config.getFormat();
-    if (fileFormat != null) {
-      InputFormatProvider inputFormatProvider =
-        pipelineConfigurer.usePlugin("inputformat", fileFormat.name().toLowerCase(), FORMAT_PLUGIN_ID,
-                                     config.getProperties());
-      if (inputFormatProvider == null) {
-        throw new IllegalArgumentException(String.format("Could not find the '%s' input format.",
-                                                         fileFormat.name().toLowerCase()));
-      }
+    Schema schema = null;
+    ValidatingInputFormat validatingInputFormat =
+      pipelineConfigurer.usePlugin(ValidatingInputFormat.PLUGIN_TYPE, fileFormat.name().toLowerCase(), FORMAT_PLUGIN_ID,
+                                   config.getProperties());
+    FormatContext context = new FormatContext(collector, null);
+    validateInputFormatProvider(context, fileFormat, validatingInputFormat);
+
+    if (validatingInputFormat != null) {
+      schema = validatingInputFormat.getSchema(context);
     }
 
-    String pathField = config.getPathField();
-    if (pathField != null && schema != null) {
-      Schema.Field schemaPathField = schema.getField(pathField);
-      if (schemaPathField == null) {
-        throw new IllegalArgumentException(
-          String.format("Path field '%s' is not present in the schema. Please add it to the schema as a string field.",
-                        pathField));
-      }
-      Schema pathFieldSchema = schemaPathField.getSchema();
-      Schema.Type pathFieldType = pathFieldSchema.isNullable() ? pathFieldSchema.getNonNullable().getType() :
-        pathFieldSchema.getType();
-      if (pathFieldType != Schema.Type.STRING) {
-        throw new IllegalArgumentException(
-          String.format("Path field '%s' must be of type 'string', but found '%s'.", pathField, pathFieldType));
-      }
-    }
-
-    pipelineConfigurer.getStageConfigurer().setOutputSchema(config.getSchema());
+    validatePathField(collector, schema);
+    pipelineConfigurer.getStageConfigurer().setOutputSchema(schema);
   }
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
-    config.validate();
-
-    InputFormatProvider inputFormatProvider = context.newPluginInstance(FORMAT_PLUGIN_ID);
+    FailureCollector collector = context.getFailureCollector();
+    config.validate(collector);
+    ValidatingInputFormat validatingInputFormat = context.newPluginInstance(FORMAT_PLUGIN_ID);
+    FileFormat fileFormat = config.getFormat();
+    FormatContext formatContext = new FormatContext(collector, context.getInputSchema());
+    validateInputFormatProvider(formatContext, fileFormat, validatingInputFormat);
+    validatePathField(collector, validatingInputFormat.getSchema(formatContext));
+    collector.getOrThrowException();
 
     Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();
@@ -149,9 +145,10 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
     } else {
       FileInputFormat.addInputPath(job, path);
       FileInputFormat.setMaxInputSplitSize(job, config.getMaxSplitSize());
-      inputFormatClass = inputFormatProvider.getInputFormatClassName();
+      inputFormatClass = validatingInputFormat.getInputFormatClassName();
       Configuration hConf = job.getConfiguration();
-      for (Map.Entry<String, String> propertyEntry : inputFormatProvider.getInputFormatConfiguration().entrySet()) {
+      Map<String, String> inputFormatConfiguration = validatingInputFormat.getInputFormatConfiguration();
+      for (Map.Entry<String, String> propertyEntry : inputFormatConfiguration.entrySet()) {
         hConf.set(propertyEntry.getKey(), propertyEntry.getValue());
       }
     }
@@ -185,5 +182,39 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
   protected void recordLineage(LineageRecorder lineageRecorder, List<String> outputFields) {
     lineageRecorder.recordRead("Read", String.format("Read from %s files.",
                                                      config.getFormat().name().toLowerCase()), outputFields);
+  }
+
+  private void validateInputFormatProvider(FormatContext context, FileFormat fileFormat,
+                                           @Nullable ValidatingInputFormat validatingInputFormat) {
+    FailureCollector collector = context.getFailureCollector();
+    if (validatingInputFormat == null) {
+      collector.addFailure(
+        String.format("Could not find the '%s' input format.", fileFormat.name().toLowerCase()), null)
+        .withPluginNotFound(FORMAT_PLUGIN_ID, fileFormat.name().toLowerCase(), ValidatingInputFormat.PLUGIN_TYPE);
+    } else {
+      validatingInputFormat.validate(context);
+    }
+  }
+
+  private void validatePathField(FailureCollector collector, Schema schema) {
+    String pathField = config.getPathField();
+    if (pathField != null && schema != null) {
+      Schema.Field schemaPathField = schema.getField(pathField);
+      if (schemaPathField == null) {
+        collector.addFailure(String.format("Path field '%s' must exist in input schema.", pathField), null)
+          .withConfigProperty(AbstractFileSourceConfig.PATH_FIELD);
+        throw collector.getOrThrowException();
+      }
+      Schema pathFieldSchema = schemaPathField.getSchema();
+      Schema nonNullableSchema = pathFieldSchema.isNullable() ? pathFieldSchema.getNonNullable() : pathFieldSchema;
+
+      if (nonNullableSchema.getType() != Schema.Type.STRING) {
+        collector.addFailure(String.format("Path field '%s' is of unsupported type '%s'.", pathField,
+                                           nonNullableSchema.getDisplayName()),
+                             "It must be of type 'string'.")
+          .withConfigProperty(AbstractFileSourceConfig.PATH_FIELD)
+          .withOutputSchemaField(schemaPathField.getName());
+      }
+    }
   }
 }

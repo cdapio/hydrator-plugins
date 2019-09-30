@@ -16,6 +16,9 @@
 
 package io.cdap.plugin.db.batch;
 
+import io.cdap.cdap.etl.api.FailureCollector;
+import io.cdap.plugin.db.batch.sink.DBSink;
+
 import java.sql.Connection;
 import java.util.Arrays;
 import javax.annotation.Nullable;
@@ -68,17 +71,20 @@ public final class TransactionIsolationLevel {
    * Validates that the given level is either null or one of the possible transaction isolation levels.
    *
    * @param level the level to check
+   * @param collector failure collector.
    */
-  public static void validate(@Nullable String level) {
+  public static void validate(@Nullable String level, FailureCollector collector) {
     if (level == null) {
       return;
     }
     try {
       Level.valueOf(level.toUpperCase());
     } catch (IllegalArgumentException e) {
-      throw new IllegalArgumentException(String.format(
-        "Transaction isolation level must be one of the following values: %s, but got: %s.",
-        Arrays.toString(Level.values()), level));
+      collector.addFailure(
+        "Unsupported Transaction Isolation Level.",
+        String.format("Transaction Isolation Level must be one of the following values: %s",
+                      Arrays.toString(Level.values())))
+        .withConfigProperty(DBSink.DBSinkConfig.TRANSACTION_ISOLATION_LEVEL);
     }
   }
 }

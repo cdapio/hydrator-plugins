@@ -20,12 +20,13 @@ import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
-import io.cdap.cdap.api.data.batch.OutputFormatProvider;
 import io.cdap.cdap.api.data.schema.UnsupportedTypeException;
 import io.cdap.cdap.api.plugin.PluginClass;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.api.plugin.PluginPropertyField;
+import io.cdap.cdap.etl.api.validation.ValidatingOutputFormat;
 import io.cdap.plugin.common.HiveSchemaConverter;
+import io.cdap.plugin.format.output.AbstractOutputFormatProvider;
 import org.apache.orc.CompressionKind;
 
 import java.io.IOException;
@@ -36,10 +37,10 @@ import javax.annotation.Nullable;
 /**
  * Output format plugin for ORC.
  */
-@Plugin(type = "outputformat")
+@Plugin(type = ValidatingOutputFormat.PLUGIN_TYPE)
 @Name(OrcOutputFormatProvider.NAME)
 @Description(OrcOutputFormatProvider.DESC)
-public class OrcOutputFormatProvider implements OutputFormatProvider {
+public class OrcOutputFormatProvider extends AbstractOutputFormatProvider {
   public static final PluginClass PLUGIN_CLASS = getPluginClass();
   static final String NAME = "orc";
   static final String DESC = "Plugin for writing files in orc format.";
@@ -156,7 +157,7 @@ public class OrcOutputFormatProvider implements OutputFormatProvider {
     properties.put("indexStride", new PluginPropertyField("indexStride", Conf.INDEX_STRIDE_DESC, "long", false, true));
     properties.put("createIndex",
                    new PluginPropertyField("createIndex", Conf.INDEX_CREATE_DESC, "boolean", false, true));
-    return new PluginClass("outputformat", NAME, DESC, OrcOutputFormatProvider.class.getName(),
+    return new PluginClass(ValidatingOutputFormat.PLUGIN_TYPE, NAME, DESC, OrcOutputFormatProvider.class.getName(),
                            "conf", properties);
   }
 }

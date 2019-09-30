@@ -16,7 +16,9 @@
 
 package io.cdap.plugin.common;
 
+import com.google.common.base.Strings;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +46,8 @@ public final class SchemaValidator {
   public static Schema validateOutputSchemaAndInputSchemaIfPresent(String outputSchemaString, String rowKeyField,
                                                                    PipelineConfigurer pipelineConfigurer) {
     Schema inputSchema = pipelineConfigurer.getStageConfigurer().getInputSchema();
-    if (inputSchema == null && outputSchemaString == null) {
+    FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    if (inputSchema == null && Strings.isNullOrEmpty(outputSchemaString)) {
        return null;
     }
 
@@ -56,24 +59,38 @@ public final class SchemaValidator {
       try {
         outputSchema = Schema.parseJson(outputSchemaString);
       } catch (IOException e) {
-        throw new IllegalArgumentException("Unable to parse output schema : " + e.getMessage(), e);
+        collector.addFailure("Invalid schema : " + e.getMessage(), null)
+          .withConfigProperty("schema");
+        throw collector.getOrThrowException();
       }
     }
 
     // check that all fields in output schema are simple
-    validateSchemaFieldsAreSimple(outputSchema);
+    for (Schema.Field field : outputSchema.getFields()) {
+      // simple type check for fields
+      Schema nonNullableSchema = field.getSchema().isNullable() ? field.getSchema().getNonNullable() :
+        field.getSchema();
+      if (!nonNullableSchema.isSimpleOrNullableSimple()) {
+        collector.addFailure(
+          String.format("Field '%s' is of unexpected type '%s'.", field.getName(), nonNullableSchema.getDisplayName()),
+          "Supported types are : boolean, int, long, float, double, bytes, string.")
+          .withOutputSchemaField(field.getName())
+          .withInputSchemaField(field.getName());
+      }
+    }
 
     if (inputSchema != null) {
       // check if output schema is a subset of input schema and check if rowkey field is present in input schema
-      validateOutputSchemaIsSubsetOfInputSchema(inputSchema, outputSchema);
+      validateOutputSchemaIsSubsetOfInputSchema(inputSchema, outputSchema, collector);
     }
     return outputSchema;
   }
 
   /**
    * Checks that all the fields in output schema is part of input schema and the fields schema type matches.
-   * @param inputSchema
-   * @param outputSchema
+   *
+   * @param inputSchema input schema
+   * @param outputSchema output schema
    */
   public static void validateOutputSchemaIsSubsetOfInputSchema(Schema inputSchema, Schema outputSchema) {
     // check if input schema contains all the fields expected in the output schema
@@ -87,6 +104,37 @@ public final class SchemaValidator {
           String.format("Field type mismatch, field '%s' type in input schema is %s, " +
                           "while in output schema its of type %s", field.getName(),
                         inputSchema.getField(field.getName()).getSchema(), field.getSchema()));
+      }
+    }
+  }
+
+  /**
+   * Checks that all the fields in output schema is part of input schema and the fields schema type matches.
+   *
+   * @param inputSchema input schema
+   * @param outputSchema output schema
+   * @param collector collects validation failures
+   */
+  public static void validateOutputSchemaIsSubsetOfInputSchema(Schema inputSchema, Schema outputSchema,
+                                                               FailureCollector collector) {
+    // check if input schema contains all the fields expected in the output schema
+    for (Schema.Field field : outputSchema.getFields()) {
+      String fieldName = field.getName();
+      if (inputSchema.getField(fieldName) == null) {
+        collector.addFailure(String.format("Field '%s' is present in output schema but not present in input schema.",
+                                           fieldName), null).withOutputSchemaField(fieldName);
+        continue;
+      }
+
+      Schema inFieldSchema = inputSchema.getField(fieldName).getSchema();
+      inFieldSchema = inFieldSchema.isNullable() ? inFieldSchema.getNonNullable() : inFieldSchema;
+      Schema fieldSchema = field.getSchema().isNullable() ? field.getSchema().getNonNullable() : field.getSchema();
+
+      if (!inFieldSchema.equals(fieldSchema)) {
+        collector.addFailure(
+          String.format("Field '%s' has type mismatch with input schema type '%s'.",
+                        fieldName, inFieldSchema.getDisplayName()), "Change type to match input schema type.")
+          .withOutputSchemaField(fieldName).withInputSchemaField(fieldName);
       }
     }
   }

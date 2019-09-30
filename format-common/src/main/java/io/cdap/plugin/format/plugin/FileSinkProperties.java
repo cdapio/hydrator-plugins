@@ -17,6 +17,7 @@
 package io.cdap.plugin.format.plugin;
 
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.plugin.format.FileFormat;
 
 import javax.annotation.Nullable;
@@ -34,8 +35,21 @@ public interface FileSinkProperties {
    * Validates the properties.
    *
    * @throws IllegalArgumentException if anything is invalid
+   * Deprecated since 2.3.0. Use {@link FileSinkProperties#validate(FailureCollector)} method instead.
    */
-  void validate();
+  @Deprecated
+  default void validate() {
+    // no-op
+  }
+
+  /**
+   * Validates the properties and collects validation failures if anything is invalid.
+   *
+   * @param collector failure collector
+   */
+  default void validate(FailureCollector collector) {
+    // no-op
+  }
 
   /**
    * Get the name that will be used to identify the sink for lineage and metadata.
