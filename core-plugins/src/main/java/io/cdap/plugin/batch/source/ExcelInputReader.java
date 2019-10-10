@@ -392,7 +392,6 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
 
   /**
    * Get the output schema from the Excel Input Reader specified by the user.
-   * @return outputSchema
    */
   private void getOutputSchema() {
     if (outputSchema == null) {
@@ -519,6 +518,7 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
 
     private String ifErrorRecord;
 
+    @Nullable
     private String errorDatasetName;
 
     public ExcelInputReaderConfig() {
