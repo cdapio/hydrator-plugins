@@ -47,7 +47,7 @@ public class DBManager implements Destroyable {
   @Nullable
   public Class<? extends Driver> validateJDBCPluginPipeline(PipelineConfigurer pipelineConfigurer,
                                                             String jdbcPluginId, FailureCollector collector) {
-    if (!config.containsMacro(config.user) && !config.containsMacro(config.password)
+    if (!config.containsMacro(DBConfig.USER) && !config.containsMacro(DBConfig.PASSWORD)
       && config.user == null && config.password != null) {
       collector.addFailure("Username and password should be provided together.", "Please provide both " +
         "user name and password, if database supports it or remove password.")

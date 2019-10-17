@@ -190,7 +190,7 @@ public class XMLMultiParser extends Transform<StructuredRecord, StructuredRecord
     }
 
     public void validate(@Nullable Schema inputSchema, FailureCollector collector) {
-      if (inputSchema != null && !containsMacro(field)) {
+      if (inputSchema != null && !containsMacro(FIELD)) {
         Schema.Field parseField = inputSchema.getField(field);
         if (parseField == null) {
           collector.addFailure(String.format("Field '%s' must exist in the input schema.", field), null)
@@ -198,7 +198,7 @@ public class XMLMultiParser extends Transform<StructuredRecord, StructuredRecord
         }
       }
 
-      if (!containsMacro(xPath)) {
+      if (!containsMacro(XPATH)) {
         getXPathExpression(collector);
       }
 
