@@ -30,7 +30,9 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.batch.BatchSourceContext;
 import io.cdap.plugin.common.LineageRecorder;
@@ -81,12 +83,18 @@ public class BatchCassandraSource extends ReferenceBatchSource<Long, Row, Struct
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
-    Preconditions.checkArgument(!Strings.isNullOrEmpty(config.schema), "Schema must be specified.");
+    StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
+    FailureCollector collector = stageConfigurer.getFailureCollector();
+    if (Strings.isNullOrEmpty(config.schema)) {
+      collector.addFailure("Schema must be specified.", null).withConfigProperty(Cassandra.SCHEMA);
+      throw collector.getOrThrowException();
+    }
     try {
       Schema schema = Schema.parseJson(config.schema);
-      pipelineConfigurer.getStageConfigurer().setOutputSchema(schema);
+      stageConfigurer.setOutputSchema(schema);
     } catch (Exception e) {
-      throw new IllegalArgumentException("Invalid output schema: " + e.getMessage(), e);
+      collector.addFailure("Invalid output schema: " + e.getMessage(), null)
+        .withConfigProperty(Cassandra.SCHEMA).withStacktrace(e.getStackTrace());
     }
   }
 
