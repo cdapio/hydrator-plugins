@@ -18,24 +18,24 @@
 [submodule "wrangler-transform"]
 	path = wrangler-transform
 	url = https://github.com/Guavus/wrangler.git
-	branch = develop_guavus_2.6.5
+	branch = release/build_guavus_3.2_5.1.2042
 [submodule "google-cloud"]
 	path = google-cloud
 	url = https://github.com/Guavus/google-cloud.git
-	branch = develop_guavus_2.6.5
+	branch = release/build_guavus_0.11_5.1.2042
 [submodule "kafka-plugins"]
 	path = kafka-plugins
 	url = https://github.com/Guavus/kafka-plugins.git
-	branch = develop_guavus_2.6.5
+	branch = release/build_guavus_1.9_5.1.2042
 [submodule "amazon-s3-plugins"]
 	path = amazon-s3-plugins
 	url = https://github.com/Guavus/amazon-s3-plugins.git
-	branch = develop_guavus_2.6.5
+	branch = release/build_guavus_1.9_5.1.2042
 [submodule "realtime-stream-source"]
 	path = realtime-stream-source
 	url = https://github.com/Guavus/realtime-stream-source.git
-	branch = develop_guavus_2.6.5
+	branch = release/build_guavus_1.5_5.1.2042
 [submodule "condition-plugins"]
 	path = condition-plugins
 	url = https://github.com/Guavus/condition-plugins.git
-	branch = develop_guavus_2.6.5
+	branch = release/build_guavus_1.2_5.1.2042
