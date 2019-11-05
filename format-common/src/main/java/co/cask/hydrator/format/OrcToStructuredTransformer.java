@@ -43,12 +43,7 @@ public class OrcToStructuredTransformer extends RecordConverter<OrcStruct, Struc
 
   @Override
   public StructuredRecord transform(OrcStruct orcStruct, Schema structuredSchema) throws IOException {
-    StructuredRecord.Builder builder = StructuredRecord.builder(structuredSchema);
-    for (Schema.Field field : structuredSchema.getFields()) {
-      String fieldName = field.getName();
-      builder.set(fieldName, convertField(orcStruct.getFieldValue(fieldName), field.getSchema()));
-    }
-    return builder.build();
+    return transform(orcStruct, structuredSchema, null).build();
   }
 
   public StructuredRecord.Builder transform(OrcStruct orcStruct, Schema structuredSchema,
@@ -64,7 +59,7 @@ public class OrcToStructuredTransformer extends RecordConverter<OrcStruct, Struc
     return builder;
   }
 
-  public Schema convertSchema(TypeDescription schema) {
+  private Schema convertSchema(TypeDescription schema) {
     int hashCode = schema.hashCode();
     Schema structuredSchema;
 
@@ -77,7 +72,7 @@ public class OrcToStructuredTransformer extends RecordConverter<OrcStruct, Struc
     return structuredSchema;
   }
 
-  public Schema toSchema(TypeDescription schema) {
+  private Schema toSchema(TypeDescription schema) {
     List<Schema.Field> fields = Lists.newArrayList();
     List<String> fieldNames = schema.getFieldNames();
     int index = 0;

@@ -31,14 +31,17 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.orc.TypeDescription;
+import org.apache.orc.mapred.OrcList;
 import org.apache.orc.mapred.OrcStruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 
 /**
  * Creates ORCStruct records from StructuredRecords
@@ -56,7 +59,7 @@ public class StructuredToOrcTransformer extends RecordConverter<StructuredRecord
     for (int i = 0; i < fields.size(); i++) {
       Schema.Field field = fields.get(i);
       try {
-        WritableComparable writable = convertToWritable(field, input);
+        WritableComparable writable = convertToWritable(field.getSchema(), field.getName(), input.get(field.getName()));
         orcRecord.setFieldValue(fields.get(i).getName(), writable);
       } catch (UnsupportedTypeException e) {
         throw new IllegalArgumentException(String.format("%s is not a supported type", field.getName()), e);
@@ -65,11 +68,10 @@ public class StructuredToOrcTransformer extends RecordConverter<StructuredRecord
     return orcRecord;
   }
 
-  private OrcStruct parseOrcSchema(Schema inputSchema) {
-    OrcStruct orcRecord;
+  private TypeDescription parseOrcTypeDescription(Schema inputSchema) {
+    TypeDescription schema = null;
     if (schemaCache.containsKey(inputSchema)) {
-      TypeDescription schema = schemaCache.get(inputSchema);
-      orcRecord = (OrcStruct) OrcStruct.createValue(schema);
+      schema = schemaCache.get(inputSchema);
     } else {
       StringBuilder builder = new StringBuilder();
       try {
@@ -77,17 +79,18 @@ public class StructuredToOrcTransformer extends RecordConverter<StructuredRecord
       } catch (UnsupportedTypeException e) {
         throw new IllegalArgumentException(String.format("Not a valid Schema %s", inputSchema), e);
       }
-      TypeDescription schema = TypeDescription.fromString(builder.toString());
-      orcRecord = (OrcStruct) OrcStruct.createValue(schema);
-      schemaCache.put(inputSchema, schema);
+      schema = TypeDescription.fromString(builder.toString());
     }
+    return schema;
+  }
+
+  private OrcStruct parseOrcSchema(Schema inputSchema) {
+    OrcStruct orcRecord = (OrcStruct) OrcStruct.createValue(parseOrcTypeDescription(inputSchema));
     return orcRecord;
   }
 
-  private WritableComparable convertToWritable(Schema.Field field, StructuredRecord input)
+  private WritableComparable convertToWritable(Schema fieldSchema, String fieldName, Object fieldVal)
           throws UnsupportedTypeException {
-    Object fieldVal = input.get(field.getName());
-    Schema fieldSchema = field.getSchema();
     Schema.Type fieldType = fieldSchema.getType();
     if (fieldSchema.isNullable()) {
       if (fieldVal == null) {
@@ -118,10 +121,26 @@ public class StructuredToOrcTransformer extends RecordConverter<StructuredRecord
         } else {
           return new BytesWritable(Bytes.getBytes((ByteBuffer) fieldVal));
         }
+      case ARRAY: {
+        Collection<Object> collection = (Collection<Object>) fieldVal;
+        OrcList result = new OrcList(parseOrcTypeDescription(fieldSchema));
+        Schema componentSchema = fieldSchema.getComponentSchema();
+        Schema valueSchema = getNonNullIfNullable(componentSchema);
+        for (Object element : collection) {
+          if (element == null && !componentSchema.isNullable()) {
+            throw new IllegalArgumentException("Null value is not allowed for array element");
+          }
+          result.add(convertToWritable(valueSchema, valueSchema.getRecordName(), element));
+        }
+        return result;
+      }
       default:
         throw new UnsupportedTypeException(String.format("Type '%s' of field '%s' is currently not supported in ORC",
-                fieldType.name(), field.getName()));
+                fieldType.name(), fieldName));
     }
   }
 
+  private Schema getNonNullIfNullable(Schema schema) {
+    return schema.isNullable() ? schema.getNonNullable() : schema;
+  }
 }
