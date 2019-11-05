@@ -35,7 +35,8 @@
               "json",
               "parquet",
               "text",
-              "tsv"
+              "tsv",
+              "orc"
             ],
             "default": "text"
           },

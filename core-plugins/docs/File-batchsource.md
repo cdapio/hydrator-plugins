@@ -15,7 +15,7 @@ Properties
 **Path:** Path to read from. For example, s3a://<bucket>/path/to/input
 
 **Format:** Format of the data to read.
-The format must be one of 'avro', 'blob', 'csv', 'delimited', 'json', 'parquet', 'text', or 'tsv'.
+The format must be one of 'avro', 'blob', 'csv', 'delimited', 'json', 'parquet', 'text', 'tsv' or 'orc'.
 If the format is 'blob', every input file will be read into a separate record.
 The 'blob' format also requires a schema that contains a field named 'body' of type 'bytes'.
 If the format is 'text', the schema must contain a field named 'body' of type 'string'.
