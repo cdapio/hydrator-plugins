@@ -101,13 +101,12 @@ public class OrcInputFormatter implements FileInputFormatter {
       OrcStruct orcStruct = delegate.getCurrentValue();
       // if schema is null, but we're still able to read, that means the file contains the schema information
       // set the schema based on the schema of the record
-      //TODO: handle this
       if (schema == null) {
         if (pathField == null) {
-          schema = Schema.parseJson(orcStruct.getSchema().toString());
+          schema = recordTransformer.convertSchema(orcStruct.getSchema());
         } else {
           // if there is a path field, add the path as a field in the schema
-          Schema schemaWithoutPath = Schema.parseJson(orcStruct.getSchema().toString());
+          Schema schemaWithoutPath = recordTransformer.convertSchema(orcStruct.getSchema());
           List<Schema.Field> fields = new ArrayList<>(schemaWithoutPath.getFields().size() + 1);
           fields.addAll(schemaWithoutPath.getFields());
           fields.add(Schema.Field.of(pathField, Schema.of(Schema.Type.STRING)));

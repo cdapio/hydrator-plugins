@@ -59,7 +59,7 @@ public class OrcToStructuredTransformer extends RecordConverter<OrcStruct, Struc
     return builder;
   }
 
-  private Schema convertSchema(TypeDescription schema) {
+  public Schema convertSchema(TypeDescription schema) {
     int hashCode = schema.hashCode();
     Schema structuredSchema;
 
@@ -105,10 +105,8 @@ public class OrcToStructuredTransformer extends RecordConverter<OrcStruct, Struc
       case DECIMAL:
         return Schema.nullableOf(Schema.of(Schema.Type.DOUBLE));
       case CHAR:
-      case DATE:
       case STRING:
       case VARCHAR:
-      case TIMESTAMP:
         return Schema.nullableOf(Schema.of(Schema.Type.STRING));
       case BINARY:
         return Schema.nullableOf(Schema.of(Schema.Type.BYTES));
@@ -116,6 +114,8 @@ public class OrcToStructuredTransformer extends RecordConverter<OrcStruct, Struc
       case LIST:
       case UNION:
       case STRUCT:
+      case TIMESTAMP:
+      case DATE:
       default:
         throw new IllegalArgumentException(
                 String.format("Schema contains field type %s which is currently not supported",
