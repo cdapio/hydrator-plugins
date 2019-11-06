@@ -27,4 +27,4 @@ The format must be one of 'json', 'avro', 'parquet', 'csv', 'tsv', 'delimited' o
 
 **Delimiter:** Delimiter to use if the format is 'delimited'.
 
-**File System Properties:** Additional properties to use with the OutputFormat when reading the data.
+**File System Properties:** Additional properties in json format to use with the OutputFormat when reading the data.
