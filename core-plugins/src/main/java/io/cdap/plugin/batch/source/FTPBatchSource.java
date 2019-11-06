@@ -47,6 +47,9 @@ import javax.annotation.Nullable;
   "the source server type, either FTP or SFTP.")
 public class FTPBatchSource extends AbstractFileSource {
   private static final String NAME_FILE_SYSTEM_PROPERTIES = "fileSystemProperties";
+  private static final String FS_SFTP_IMPL = "fs.sftp.impl";
+  private static final String SFTP_FS_CLASS = "org.apache.hadoop.fs.sftp.SFTPFileSystem";
+
   public static final Schema SCHEMA = Schema.recordOf("text",
                                                       Schema.Field.of("offset", Schema.of(Schema.Type.LONG)),
                                                       Schema.Field.of("body", Schema.of(Schema.Type.STRING)));
@@ -60,6 +63,10 @@ public class FTPBatchSource extends AbstractFileSource {
   @Override
   protected Map<String, String> getFileSystemProperties(BatchSourceContext context) {
     Map<String, String> properties = new HashMap<>(config.getFileSystemProperties());
+
+    if (!properties.containsKey(FS_SFTP_IMPL)) {
+      properties.put(FS_SFTP_IMPL, SFTP_FS_CLASS);
+    }
     // Limit the number of splits to 1 since FTPInputStream does not support seek;
     properties.put(FileInputFormat.SPLIT_MINSIZE, Long.toString(Long.MAX_VALUE));
     return properties;
