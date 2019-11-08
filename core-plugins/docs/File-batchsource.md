@@ -39,3 +39,8 @@ The default value is false.
 will error when there is no data to read. When set to true, no error will be thrown and zero records will be read.
 
 **File System Properties:** Additional properties in json format to use with the InputFormat when reading the data.
+
+
+Note
+----
+It is mandatory to provide output schema when using format other than `text`. Default schema used in this plugin is for `text` format where body represents line read from the file and offset represent offset of line in the file. 
