@@ -212,6 +212,7 @@
               org.apache.avro.mapreduce;
               org.apache.parquet.avro.*;
               org.apache.parquet.hadoop.*;
+              org.apache.orc.mapreduce.*;
               org.apache.orc.*;
               <!-- Used by S3 source/sink -->
               org.apache.http.*

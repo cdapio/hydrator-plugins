@@ -23,6 +23,7 @@ import co.cask.hydrator.format.input.DelimitedInputProvider;
 import co.cask.hydrator.format.input.FileInputFormatter;
 import co.cask.hydrator.format.input.FileInputFormatterProvider;
 import co.cask.hydrator.format.input.JsonInputProvider;
+import co.cask.hydrator.format.input.OrcInputProvider;
 import co.cask.hydrator.format.input.ParquetInputProvider;
 import co.cask.hydrator.format.input.TextInputProvider;
 import co.cask.hydrator.format.output.AvroOutputProvider;
@@ -30,6 +31,7 @@ import co.cask.hydrator.format.output.DelimitedTextOutputProvider;
 import co.cask.hydrator.format.output.FileOutputFormatter;
 import co.cask.hydrator.format.output.FileOutputFormatterProvider;
 import co.cask.hydrator.format.output.JsonOutputProvider;
+import co.cask.hydrator.format.output.OrcOutputProvider;
 import co.cask.hydrator.format.output.ParquetOutputProvider;
 
 import java.util.Arrays;
@@ -52,7 +54,8 @@ public enum FileFormat {
   JSON(new JsonInputProvider(), new JsonOutputProvider()),
   PARQUET(new ParquetInputProvider(), new ParquetOutputProvider()),
   TEXT(new TextInputProvider(), null),
-  TSV(new DelimitedInputProvider("\t"), new DelimitedTextOutputProvider("\t"));
+  TSV(new DelimitedInputProvider("\t"), new DelimitedTextOutputProvider("\t")),
+  ORC(new OrcInputProvider(), new OrcOutputProvider());
   private final FileInputFormatterProvider inputProvider;
   private final FileOutputFormatterProvider outputProvider;
   private final boolean canWrite;

@@ -38,7 +38,7 @@ public abstract class RecordConverter<INPUT, OUTPUT> {
 
   public abstract OUTPUT transform(INPUT record, Schema schema) throws IOException;
 
-  private Object convertUnion(Object value, List<Schema> schemas) {
+  protected Object convertUnion(Object value, List<Schema> schemas) {
     boolean isNullable = false;
     for (Schema possibleSchema : schemas) {
       if (possibleSchema.getType() == Schema.Type.NULL) {
@@ -60,7 +60,7 @@ public abstract class RecordConverter<INPUT, OUTPUT> {
     throw new UnexpectedFormatException("unable to determine union type.");
   }
 
-  private List<Object> convertArray(Object values, Schema elementSchema) throws IOException {
+  protected List<Object> convertArray(Object values, Schema elementSchema) throws IOException {
     List<Object> output;
     if (values instanceof List) {
       List<Object> valuesList = (List<Object>) values;
@@ -78,7 +78,7 @@ public abstract class RecordConverter<INPUT, OUTPUT> {
     return output;
   }
 
-  private Map<Object, Object> convertMap(Map<Object, Object> map,
+  protected Map<Object, Object> convertMap(Map<Object, Object> map,
                                          Schema keySchema, Schema valueSchema) throws IOException {
     Map<Object, Object> converted = Maps.newHashMap();
     for (Map.Entry<Object, Object> entry : map.entrySet()) {

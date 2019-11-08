@@ -28,22 +28,15 @@
           "name": "format",
           "widget-attributes": {
             "values": [
-              "avro",
-              "blob",
               "csv",
               "delimited",
               "json",
               "parquet",
               "text",
-              "tsv"
+              "tsv",
+              "orc"
             ],
             "default": "text"
-          },
-          "plugin-function": {
-            "method": "POST",
-            "widget": "outputSchema",
-            "output-property": "schema",
-            "plugin-method": "getSchema"
           }
         },
         {
