@@ -27,7 +27,12 @@ import io.cdap.cdap.etl.api.ErrorRecord;
 import io.cdap.cdap.etl.api.ErrorTransform;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageSubmitterContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
+import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
 
@@ -41,6 +46,40 @@ public class ErrorCollector extends ErrorTransform<StructuredRecord, StructuredR
 
   public ErrorCollector(Config config) {
     this.config = config;
+  }
+
+  @Override
+  public void prepareRun(StageSubmitterContext context) throws Exception {
+    super.prepareRun(context);
+
+    Schema inputSchema = context.getInputSchema();
+    if (inputSchema == null || inputSchema.getFields() == null) {
+     return;
+    }
+
+    List<FieldOperation> fieldOperations = new ArrayList<>();
+    // the originial fields will not change in transform
+    inputSchema.getFields().forEach(
+      field -> fieldOperations.add(new FieldTransformOperation(String.format("Error collector for field %s",
+                                                                             field.getName()),
+                                                              "Error collector identity transform",
+                                                               Collections.singletonList(field.getName()),
+                                                               field.getName())));
+
+    // emit records for generated fields
+    if (config.messageField != null && !config.messageField.isEmpty()) {
+      fieldOperations.add(new FieldTransformOperation("Error collector message field", "Generated field",
+                                                      Collections.emptyList(), config.messageField));
+    }
+    if (config.codeField != null && !config.codeField.isEmpty()) {
+      fieldOperations.add(new FieldTransformOperation("Error collector code field", "Generated field",
+                                                      Collections.emptyList(), config.codeField));
+    }
+    if (config.stageField != null && !config.stageField.isEmpty()) {
+      fieldOperations.add(new FieldTransformOperation("Error collector stage field", "Generated field",
+                                                      Collections.emptyList(), config.stageField));
+    }
+    context.record(fieldOperations);
   }
 
   @Override
