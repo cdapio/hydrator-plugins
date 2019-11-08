@@ -21,12 +21,8 @@
           "widget-attributes": {
             "values": [
               "DEFAULT",
-              "EXCEL",
-              "MYSQL",
               "Pipe Delimited",
-              "RFC4180",
-              "Tab Delimited",
-              "Custom"
+              "Tab Delimited"
             ],
             "default": "DEFAULT"
           }
