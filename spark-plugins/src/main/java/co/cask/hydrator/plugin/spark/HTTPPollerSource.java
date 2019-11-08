@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Polls a http endpoints and outputs a record for each url response.
  */
-@Plugin(type = StreamingSource.PLUGIN_TYPE)
+//@Plugin(type = StreamingSource.PLUGIN_TYPE)
 @Name("HTTPPoller")
 @Description("Fetch data by performing an HTTP request at a regular interval.")
 public class HTTPPollerSource extends StreamingSource<StructuredRecord> {

@@ -52,7 +52,7 @@ import java.util.Map;
  * mapping configuration is required, following {@link StructuredRecordToCubeFact} documentation.
  */
 // todo: add unit-test once CDAP-2156 is resolved
-@Plugin(type = "batchsink")
+//@Plugin(type = "batchsink")
 @Name("Cube")
 @Description("CDAP Cube Dataset Batch Sink")
 @Requirements(datasetTypes = Cube.TYPE)

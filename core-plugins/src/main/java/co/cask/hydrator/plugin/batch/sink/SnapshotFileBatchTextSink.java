@@ -39,7 +39,7 @@ import javax.annotation.Nullable;
 /**
  * {@link SnapshotFileBatchSink} that stores data in text format.
  */
-@Plugin(type = BatchSink.PLUGIN_TYPE)
+//@Plugin(type = BatchSink.PLUGIN_TYPE)
 @Name("SnapshotText")
 @Description("Sink for a SnapshotFileSet that writes data in Text format.")
 @Requirements(datasetTypes = PartitionedFileSet.TYPE)

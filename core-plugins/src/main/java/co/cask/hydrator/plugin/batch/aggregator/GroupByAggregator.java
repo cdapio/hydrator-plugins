@@ -44,7 +44,7 @@ import javax.ws.rs.Path;
 /**
  * Batch group by aggregator.
  */
-@Plugin(type = BatchAggregator.PLUGIN_TYPE)
+//@Plugin(type = BatchAggregator.PLUGIN_TYPE)
 @Name("GroupByAggregate")
 @Description("Groups by one or more fields, then performs one or more aggregate functions on each group. " +
   "Supports avg, count, count(*), first, last, max, min, and sum as aggregate functions.")

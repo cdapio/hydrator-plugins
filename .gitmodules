@@ -19,10 +19,6 @@
 	path = wrangler-transform
 	url = https://github.com/Guavus/wrangler.git
 	branch = release/build_guavus_3.2_5.1.2044
-[submodule "google-cloud"]
-	path = google-cloud
-	url = https://github.com/Guavus/google-cloud.git
-	branch = release/build_guavus_0.11_5.1.2044
 [submodule "kafka-plugins"]
 	path = kafka-plugins
 	url = https://github.com/Guavus/kafka-plugins.git

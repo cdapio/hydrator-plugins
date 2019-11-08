@@ -43,7 +43,7 @@ import javax.annotation.Nullable;
 /**
  * Parses log formats to extract access information
  */
-@Plugin(type = "transform")
+//@Plugin(type = "transform")
 @Name("LogParser")
 @Description("Parses logs from any input source for relevant information such as URI, IP, browser, device, " +
   "HTTP status code, and timestamp.")

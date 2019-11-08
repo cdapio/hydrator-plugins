@@ -44,7 +44,7 @@ import javax.mail.internet.MimeMessage;
  * Optional properties are the host and port (defaults to localhost:25),
  * a protocol (defaults to SMTP), and a username and password.
  */
-@Plugin(type = PostAction.PLUGIN_TYPE)
+//@Plugin(type = PostAction.PLUGIN_TYPE)
 @Name("Email")
 @Description("Sends an email after a pipeline run.")
 public class EmailAction extends PostAction {

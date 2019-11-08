@@ -29,7 +29,7 @@ import co.cask.cdap.etl.api.action.ActionContext;
  * A user must specify file/directory path and destination file/directory path
  * Optionals include fileRegex
  */
-@Plugin(type = Action.PLUGIN_TYPE)
+//@Plugin(type = Action.PLUGIN_TYPE)
 @Name("HDFSMove")
 @Description("Action to move files within HDFS. (Deprecated. Use File Move instead.)")
 @Deprecated
