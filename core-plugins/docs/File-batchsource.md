@@ -15,7 +15,7 @@ Properties
 **Path:** Path to read from. For example, s3a://<bucket>/path/to/input
 
 **Format:** Format of the data to read.
-The format must be one of 'avro', 'blob', 'csv', 'delimited', 'json', 'parquet', 'text', or 'tsv'.
+The format must be one of 'avro', 'blob', 'csv', 'delimited', 'json', 'parquet', 'text', 'tsv' or 'orc'.
 If the format is 'blob', every input file will be read into a separate record.
 The 'blob' format also requires a schema that contains a field named 'body' of type 'bytes'.
 If the format is 'text', the schema must contain a field named 'body' of type 'string'.
@@ -38,4 +38,9 @@ The default value is false.
 **Allow Empty Input:** Whether to allow an input path that contains no data. When set to false, the plugin
 will error when there is no data to read. When set to true, no error will be thrown and zero records will be read.
 
-**File System Properties:** Additional properties to use with the InputFormat when reading the data.
+**File System Properties:** Additional properties in json format to use with the InputFormat when reading the data.
+
+
+Note
+----
+It is mandatory to provide output schema when using format other than `text`. Default schema used in this plugin is for `text` format where body represents line read from the file and offset represent offset of line in the file. 

@@ -41,7 +41,8 @@
               "delimited",
               "json",
               "parquet",
-              "tsv"
+              "tsv",
+              "orc"
             ],
             "default": "json"
           }

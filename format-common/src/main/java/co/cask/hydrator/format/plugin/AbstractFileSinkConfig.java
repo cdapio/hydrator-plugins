@@ -43,7 +43,7 @@ public abstract class AbstractFileSinkConfig extends PluginConfig implements Fil
   private String suffix;
 
   @Macro
-  @Description("The format to write in. The format must be one of 'json', 'avro', 'parquet', 'csv', 'tsv', "
+  @Description("The format to write in. The format must be one of 'json', 'avro', 'parquet', 'csv', 'tsv', 'orc', "
     + "or 'delimited'.")
   private String format;
 
