@@ -5,9 +5,7 @@ Description
 -----------
 Parses an input field as a CSV Record into a Structured Record. Supports multi-line CSV Record parsing
 into multiple Structured Records. Different formats of CSV Record can be parsed using this plugin.
-Supports these CSV Record types: ``DEFAULT``, ``EXCEL``, ``MYSQL``, ``RFC4180``, ``Tab Delimited``, ``Pipe Delimited``
-and ``Custom``.
-
+Supports these CSV Record types: ``DEFAULT``, ``Tab Delimited``, ``Pipe Delimited``.
 
 Configuration
 -------------
