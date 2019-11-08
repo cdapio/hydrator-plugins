@@ -17,10 +17,18 @@
 package co.cask.hydrator.format;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
+import co.cask.cdap.api.data.format.UnexpectedFormatException;
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.common.RecordConverter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.hadoop.io.BooleanWritable;
+import org.apache.hadoop.io.BytesWritable;
+import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.orc.TypeDescription;
 import org.apache.orc.mapred.OrcStruct;
 
@@ -72,6 +80,39 @@ public class OrcToStructuredTransformer extends RecordConverter<OrcStruct, Struc
     return structuredSchema;
   }
 
+  @Override
+  protected Object convertField(Object field, Schema fieldSchema) throws IOException {
+    if (field == null) {
+      return null;
+    }
+    Schema.Type fieldType = fieldSchema.getType();
+    switch (fieldType) {
+      case RECORD:
+        return transform((OrcStruct) field, fieldSchema);
+      case ARRAY:
+        return convertArray(field, fieldSchema.getComponentSchema());
+      case UNION:
+        return convertUnion(field, fieldSchema.getUnionSchemas());
+      case NULL:
+        return null;
+      case STRING:
+        return ((Text) field).toString();
+      case BYTES:
+        return ((BytesWritable) field).getBytes();
+      case INT:
+        return ((IntWritable) field).get();
+      case LONG:
+        return ((LongWritable) field).get();
+      case FLOAT:
+        return ((FloatWritable) field).get();
+      case DOUBLE:
+        return ((DoubleWritable) field).get();
+      case BOOLEAN:
+        return ((BooleanWritable) field).get();
+      default:
+        throw new UnexpectedFormatException("field type " + fieldType + " is not supported.");
+    }
+  }
 
   // TODO: add array support
   private Schema toSchema(TypeDescription schema) {
