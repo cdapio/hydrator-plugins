@@ -37,7 +37,7 @@ import javax.annotation.Nullable;
 /**
  * A {@link BatchSink} to write ORC records to a {@link TimePartitionedFileSet}.
  */
-@Plugin(type = BatchSink.PLUGIN_TYPE)
+//@Plugin(type = BatchSink.PLUGIN_TYPE)
 @Name("TPFSOrc")
 @Description("Sink for a TimePartitionedFileSet that writes data in ORC format.")
 @Requirements(datasetTypes = TimePartitionedFileSet.TYPE)

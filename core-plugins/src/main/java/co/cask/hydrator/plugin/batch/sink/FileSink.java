@@ -36,7 +36,7 @@ import javax.annotation.Nullable;
 /**
  * Writes to the FileSystem.
  */
-@Plugin(type = BatchSink.PLUGIN_TYPE)
+//@Plugin(type = BatchSink.PLUGIN_TYPE)
 @Name("File")
 @Description("Writes to the FileSystem.")
 public class FileSink extends AbstractFileSink<FileSink.Conf> {

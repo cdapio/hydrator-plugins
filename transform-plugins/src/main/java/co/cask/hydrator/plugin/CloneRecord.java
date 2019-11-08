@@ -33,7 +33,7 @@ import java.util.List;
 /**
  * Clones Input Record 'n' number of times into output.
  */
-@Plugin(type = "transform")
+//@Plugin(type = "transform")
 @Name("CloneRecord")
 @Description("Clone input records 'n' number of times into output")
 public final class CloneRecord extends Transform<StructuredRecord, StructuredRecord> {

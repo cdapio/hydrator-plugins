@@ -41,7 +41,7 @@ import java.util.Date;
 
 /**
  */
-@Plugin(type = StreamingSource.PLUGIN_TYPE)
+//@Plugin(type = StreamingSource.PLUGIN_TYPE)
 @Name("Twitter")
 @Description("Twitter streaming source.")
 public class TwitterStreamingSource extends ReferenceStreamingSource<StructuredRecord> {

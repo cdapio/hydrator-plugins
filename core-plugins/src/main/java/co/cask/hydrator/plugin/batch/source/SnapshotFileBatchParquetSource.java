@@ -40,7 +40,7 @@ import javax.annotation.Nullable;
 /**
  * Reads data written by a {@link SnapshotFileBatchParquetSource}. Reads only the most recent partition.
  */
-@Plugin(type = "batchsource")
+//@Plugin(type = "batchsource")
 @Name("SnapshotParquet")
 @Description("Reads the most recent snapshot that was written to a SnapshotParquet sink.")
 @Requirements(datasetTypes = PartitionedFileSet.TYPE)

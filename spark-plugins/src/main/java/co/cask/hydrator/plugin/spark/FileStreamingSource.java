@@ -53,7 +53,7 @@ import javax.annotation.Nullable;
 /**
  * Source that monitors a directory and reads files from it.
  */
-@Plugin(type = StreamingSource.PLUGIN_TYPE)
+//@Plugin(type = StreamingSource.PLUGIN_TYPE)
 @Name("File")
 @Description("File streaming source. Streams data from files that are atomically moved into a specified directory.")
 public class FileStreamingSource extends ReferenceStreamingSource<StructuredRecord> {

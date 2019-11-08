@@ -41,7 +41,7 @@ import javax.annotation.Nullable;
 /**
  * {@link BatchSource} that reads from an FTP or SFTP server.
  */
-@Plugin(type = "batchsource")
+//@Plugin(type = "batchsource")
 @Name("FTP")
 @Description("Batch source for an FTP or SFTP source. Prefix of the path ('ftp://...' or 'sftp://...') determines " +
   "the source server type, either FTP or SFTP.")

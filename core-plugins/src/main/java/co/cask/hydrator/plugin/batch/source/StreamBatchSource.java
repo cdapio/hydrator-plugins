@@ -55,7 +55,7 @@ import javax.annotation.Nullable;
  * A {@link BatchSource} for {@link Stream} to use {@link Stream} as Source.
  */
 @SuppressWarnings("unused")
-@Plugin(type = "batchsource")
+//@Plugin(type = "batchsource")
 @Name("Stream")
 @Description("Batch source for a stream.")
 @Requirements(datasetTypes = "stream")
