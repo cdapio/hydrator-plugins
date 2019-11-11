@@ -41,7 +41,6 @@
     <module>spark-plugins</module>
     <module>transform-plugins</module>
     <module>wrangler-transform</module>
-    <module>google-cloud</module>
     <module>kafka-plugins</module>
     <module>amazon-s3-plugins</module>
     <module>condition-plugins</module>
@@ -100,7 +99,7 @@
     <commons-codec.version>1.10</commons-codec.version>
     <commons-httpclient.version>3.1</commons-httpclient.version>
     <commons-lang-version>2.6</commons-lang-version>
-    <cdap.version>5.1.2043</cdap.version>
+    <cdap.version>5.1.2044</cdap.version>
     <datastax.version>2.0.5</datastax.version>
     <dumbster.version>1.6</dumbster.version>
     <es.version>1.6.0</es.version>

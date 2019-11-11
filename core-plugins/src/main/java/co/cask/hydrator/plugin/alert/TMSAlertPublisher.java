@@ -39,7 +39,7 @@ import javax.annotation.Nullable;
 /**
  * Publishes alerts to TMS.
  */
-@Plugin(type = AlertPublisher.PLUGIN_TYPE)
+//@Plugin(type = AlertPublisher.PLUGIN_TYPE)
 @Name("TMS")
 @Description("Publishes alerts to the CDAP Transaction Messaging System. Alerts will be formatted as json objects.")
 public class TMSAlertPublisher extends AlertPublisher {

@@ -41,7 +41,7 @@ import javax.annotation.Nullable;
 /**
  * {@link SnapshotFileBatchSink} that stores data in Avro format.
  */
-@Plugin(type = "batchsink")
+//@Plugin(type = "batchsink")
 @Name("SnapshotAvro")
 @Description("Sink for a SnapshotFileSet that writes data in Avro format.")
 @Requirements(datasetTypes = PartitionedFileSet.TYPE)

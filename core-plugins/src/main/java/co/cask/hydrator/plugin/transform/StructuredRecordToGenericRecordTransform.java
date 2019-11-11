@@ -29,7 +29,7 @@ import org.apache.avro.generic.GenericRecord;
 /**
  * Transform {@link StructuredRecord} to {@link GenericRecord}
  */
-@Plugin(type = "transform")
+//@Plugin(type = "transform")
 @Name("StructuredRecordToGenericRecord")
 @Description("Transforms a StructuredRecord into an Avro GenericRecord.")
 public class StructuredRecordToGenericRecordTransform extends Transform<StructuredRecord, GenericRecord> {

@@ -40,7 +40,7 @@ import javax.annotation.Nullable;
 /**
  * Reads data written by a {@link SnapshotFileBatchAvroSource}. Reads only the most recent partition.
  */
-@Plugin(type = "batchsource")
+//@Plugin(type = "batchsource")
 @Name("SnapshotAvro")
 @Description("Reads the most recent snapshot that was written to a SnapshotAvro sink.")
 @Requirements(datasetTypes = PartitionedFileSet.TYPE)

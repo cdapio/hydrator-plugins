@@ -27,7 +27,7 @@ import co.cask.cdap.etl.api.streaming.Windower;
 /**
  * Window plugin.
  */
-@Plugin(type = Windower.PLUGIN_TYPE)
+//@Plugin(type = Windower.PLUGIN_TYPE)
 @Name("Window")
 @Description("Windows a pipeline.")
 public class Window extends Windower {

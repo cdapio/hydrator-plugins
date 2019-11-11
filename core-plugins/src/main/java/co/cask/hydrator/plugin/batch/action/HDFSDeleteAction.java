@@ -29,7 +29,7 @@ import co.cask.cdap.etl.api.action.ActionContext;
  * A user must specify file/directory path.
  * Optionals include fileRegex
  */
-@Plugin(type = Action.PLUGIN_TYPE)
+//@Plugin(type = Action.PLUGIN_TYPE)
 @Name("HDFSDelete")
 @Description("Action to delete files on HDFS. (Deprecated. Use File Delete instead.)")
 @Deprecated

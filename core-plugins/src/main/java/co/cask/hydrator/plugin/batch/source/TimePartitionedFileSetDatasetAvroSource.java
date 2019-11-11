@@ -48,7 +48,7 @@ import java.util.stream.Collectors;
 /**
  * A {@link BatchSource} to read Avro record from {@link TimePartitionedFileSet}
  */
-@Plugin(type = "batchsource")
+//@Plugin(type = "batchsource")
 @Name("TPFSAvro")
 @Description("Reads from a TimePartitionedFileSet whose data is in Avro format.")
 @Requirements(datasetTypes = TimePartitionedFileSet.TYPE)
