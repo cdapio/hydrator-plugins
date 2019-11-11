@@ -28,6 +28,8 @@
           "name": "format",
           "widget-attributes": {
             "values": [
+              "avro",
+              "blob",
               "csv",
               "delimited",
               "json",

@@ -15,7 +15,8 @@ Properties
 **Path:** Path to read from. For example, s3a://<bucket>/path/to/input
 
 **Format:** Format of the data to read.
-The format must be one of 'csv', 'delimited', 'json', 'parquet', 'text', 'tsv' or 'orc'.
+The format must be one of 'avro', 'blob', 'csv', 'delimited', 'json', 'parquet', 'text', 'tsv' or 'orc'.
+
 
 **Delimiter:** Delimiter to use when the format is 'delimited'. This will be ignored for other formats.
 
@@ -40,6 +41,10 @@ will error when there is no data to read. When set to true, no error will be thr
 
 Note
 ----
-It is mandatory to provide output schema when using format other than `text`. Default schema used in this plugin is for `text` format where body represents line read from the file and offset represent offset of line in the file.
+It is mandatory to provide output schema when using format other than `text`. 
+Default schema used in this plugin is for `text` format where body represents line read from the file and offset represent offset of line in the file.
+
+If the format is `blob`, every input file will be read into a separate record.
+The `blob` format also requires a schema that contains a field named `body` of type `bytes`.
 
 If the format is `orc` then only string, long, int, double, float, boolean and array types are supported in output schema.
