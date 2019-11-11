@@ -5,12 +5,15 @@ Description
 -----------
 Writes to a filesystem in various formats format.
 
-For the csv, delimited, and tsv formats, each record is written out as delimited text.
-Complex types like arrays, maps, and records will be converted to strings using their
-``toString()`` Java method, so for practical use, fields should be limited to the
-string, long, int, double, float, and boolean types.
+For the
 
-All types are supported when using the avro or parquet format.
+`csv`, `delimited`, and `tsv` formats: each record is written out as delimited text. Complex types like arrays, maps, and records will be converted to strings using their
+                                       ``toString()`` Java method, so for practical use, fields should be limited to the
+                                       string, long, int, double, float, and boolean types.
+
+`avro` or `parquet` formats :  all types are supported.
+
+`orc` format : string, long, int, double, float, boolean and array types are supported 
 
 Properties
 ----------
@@ -23,7 +26,7 @@ For example, the format 'yyyy-MM-dd-HH-mm' will result in a directory of the for
 If not specified, nothing will be appended to the path."
 
 **Format:** Format to write the records in.
-The format must be one of 'json', 'avro', 'parquet', 'csv', 'tsv', 'delimited' or 'avro'.
+The format must be one of 'json', 'avro', 'parquet', 'csv', 'tsv', 'delimited' or 'orc'.
 
 **Delimiter:** Delimiter to use if the format is 'delimited'.
 
