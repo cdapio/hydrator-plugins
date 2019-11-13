@@ -33,7 +33,7 @@ import io.cdap.plugin.common.KeyValueListParser;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -66,9 +66,9 @@ public class JoinerConfig extends PluginConfig {
     "inner join will be performed. Otherwise, outer join will be performed considering non-required inputs as " +
     "optional.";
 
-  @Macro
   @Nullable
   @Description(NUM_PARTITIONS_DESC)
+  @Macro
   protected Integer numPartitions;
 
   @Description(JOIN_KEY_DESC)
@@ -133,10 +133,13 @@ public class JoinerConfig extends PluginConfig {
   }
 
   Map<String, List<String>> getPerStageJoinKeys() {
-    Map<String, List<String>> stageToKey = new HashMap<>();
+    // Use a LinkedHashMap to maintain the ordering as the input config.
+    // This helps making error report deterministic.
+    Map<String, List<String>> stageToKey = new LinkedHashMap<>();
     if (containsMacro(JoinerConfig.JOIN_KEYS)) {
       return stageToKey;
     }
+
 
     if (Strings.isNullOrEmpty(joinKeys)) {
       throw new IllegalArgumentException("Join keys can not be empty");

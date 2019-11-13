@@ -18,6 +18,7 @@ package io.cdap.plugin.batch.joiner;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Table;
 import io.cdap.cdap.api.annotation.Description;
@@ -47,10 +48,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+
 /**
  * Batch joiner to join records from multiple inputs
  */
+@SuppressWarnings("ThrowableNotThrown")
 @Plugin(type = BatchJoiner.PLUGIN_TYPE)
 @Name("Joiner")
 @Description("Performs join operation on records from each input based on required inputs. If all the inputs are " +
@@ -59,17 +65,15 @@ import java.util.Set;
   "inputs, outer join will be performed")
 public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, StructuredRecord> {
 
-  public static final String JOIN_OPERATION_DESCRIPTION = "Used as a key in a join";
-  public static final String IDENTITY_OPERATION_DESCRIPTION = "Unchanged as part of a join";
-  public static final String RENAME_OPERATION_DESCRIPTION = "Renamed as a part of a join";
+  static final String JOIN_OPERATION_DESCRIPTION = "Used as a key in a join";
+  static final String IDENTITY_OPERATION_DESCRIPTION = "Unchanged as part of a join";
+  static final String RENAME_OPERATION_DESCRIPTION = "Renamed as a part of a join";
 
   private final JoinerConfig conf;
   private Schema outputSchema;
-  private Map<String, List<String>> perStageJoinKeys;
+  private Map<String, StageKeyInfo> stageKeyInfos;
   private Table<String, String, String> perStageSelectedFields;
-  private Set<String> requiredInputs;
-  private Multimap<String, String> duplicateFields = ArrayListMultimap.create();
-  private Map<String, Schema> keySchemas = new HashMap<>();
+  private JoinConfig joinConfig;
 
   public Joiner(JoinerConfig conf) {
     this.conf = conf;
@@ -80,20 +84,19 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     MultiInputStageConfigurer stageConfigurer = pipelineConfigurer.getMultiInputStageConfigurer();
     Map<String, Schema> inputSchemas = stageConfigurer.getInputSchemas();
     List<String> inputStages = stageConfigurer.getInputStages();
-    FailureCollector collector = pipelineConfigurer.getMultiInputStageConfigurer().getFailureCollector();
-    init(inputSchemas, inputStages, collector);
+    FailureCollector collector = init(inputSchemas, inputStages,
+                                      pipelineConfigurer.getMultiInputStageConfigurer().getFailureCollector());
     collector.getOrThrowException();
-    if (!inputSchemasAvailable(inputSchemas, inputStages) && !conf.containsMacro(JoinerConfig.OUTPUT_SCHEMA) &&
-      conf.getOutputSchema(collector) == null) {
+
+    if (!isInputSchemasAvailable(inputSchemas, inputStages)
+        && !conf.containsMacro(JoinerConfig.OUTPUT_SCHEMA)
+        && conf.getOutputSchema(collector) == null) {
       // If input schemas are unknown, an output schema must be provided.
       collector.addFailure("Output schema must be specified", null).withConfigProperty(JoinerConfig.OUTPUT_SCHEMA);
     }
 
-    Schema outputSchema = getOutputSchema(inputSchemas, inputStages, collector);
-    if (outputSchema != null) {
-      // Set output schema if it's not a macro.
-      stageConfigurer.setOutputSchema(outputSchema);
-    }
+    Optional.ofNullable(getOutputSchema(inputSchemas, inputStages, collector))
+      .ifPresent(stageConfigurer::setOutputSchema);
   }
 
   @Override
@@ -101,19 +104,21 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     if (conf.getNumPartitions() != null) {
       context.setNumPartitions(conf.getNumPartitions());
     }
-    FailureCollector collector = context.getFailureCollector();
+
     Map<String, Schema> inputSchemas = context.getInputSchemas();
     List<String> inputStages = context.getInputStages();
-    if (!inputSchemasAvailable(inputSchemas, inputStages)) {
+    if (!isInputSchemasAvailable(inputSchemas, inputStages)) {
       // inputSchemas will be empty if the output schema of a previous node is a macro
       return;
     }
 
-    init(inputSchemas, inputStages, collector);
+    FailureCollector collector = init(inputSchemas, inputStages, context.getFailureCollector());
     collector.getOrThrowException();
     Collection<OutputFieldInfo> outputFieldInfos = createOutputFieldInfos(inputSchemas, inputStages, collector);
     collector.getOrThrowException();
-    context.record(createFieldOperations(outputFieldInfos, perStageJoinKeys));
+
+    Map<String, List<String>> stageJoinKeys = Maps.transformValues(stageKeyInfos, StageKeyInfo::getKeyFields);
+    context.record(createFieldOperations(outputFieldInfos, stageJoinKeys));
   }
 
   /**
@@ -135,8 +140,8 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
    * @return List of field operations
    */
   @VisibleForTesting
-  public static List<FieldOperation> createFieldOperations(Collection<OutputFieldInfo> outputFieldInfos,
-                                                           Map<String, List<String>> perStageJoinKeys) {
+  static List<FieldOperation> createFieldOperations(Collection<OutputFieldInfo> outputFieldInfos,
+                                                    Map<String, List<String>> perStageJoinKeys) {
     LinkedList<FieldOperation> operations = new LinkedList<>();
 
     // Add JOIN operation
@@ -187,10 +192,9 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
 
   @Override
   public void initialize(BatchJoinerRuntimeContext context) {
-    FailureCollector collector = context.getFailureCollector();
     Map<String, Schema> inputSchemas = context.getInputSchemas();
     List<String> inputStages = context.getInputStages();
-    init(inputSchemas, inputStages, collector);
+    FailureCollector collector = init(inputSchemas, inputStages, context.getFailureCollector());
     collector.getOrThrowException();
     outputSchema = getOutputSchema(inputSchemas, inputStages, collector);
     collector.getOrThrowException();
@@ -198,40 +202,14 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
 
   @Override
   public StructuredRecord joinOn(String stageName, StructuredRecord record) {
-    Schema keySchema;
-    List<String> joinKeys = perStageJoinKeys.get(stageName);
-
-    if (keySchemas.containsKey(stageName)) {
-      keySchema = keySchemas.get(stageName);
-    } else {
-      List<Schema.Field> fields = new ArrayList<>();
-      Schema schema = record.getSchema();
-
-      int i = 1;
-      for (String joinKey : joinKeys) {
-        Schema.Field field = schema.getField(joinKey);
-        if (field == null) {
-          throw new IllegalArgumentException(String.format("Join key field '%s' does not exist in schema from '%s'.",
-                  joinKey, stageName));
-        }
-        Schema.Field joinField = Schema.Field.of(String.valueOf(i++), field.getSchema());
-        fields.add(joinField);
-      }
-      keySchema = Schema.recordOf("join.key", fields);
-      keySchemas.put(stageName, keySchema);
-    }
-    StructuredRecord.Builder keyRecordBuilder = StructuredRecord.builder(keySchema);
-    int i = 1;
-    for (String joinKey : joinKeys) {
-      keyRecordBuilder.set(String.valueOf(i++), record.get(joinKey));
-    }
-
-    return keyRecordBuilder.build();
+    StageKeyInfo stageKeyInfo = stageKeyInfos.computeIfAbsent(
+      stageName, s -> new StageKeyInfo(s, record.getSchema(), conf.getPerStageJoinKeys().get(s), null));
+    return stageKeyInfo.createJoinKeyRecord(record);
   }
 
   @Override
   public JoinConfig getJoinConfig() {
-    return new JoinConfig(requiredInputs);
+    return joinConfig;
   }
 
   @Override
@@ -244,7 +222,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
 
       Map<String, String> selectedFields = perStageSelectedFields.row(stageName);
 
-      for (Schema.Field field : record.getSchema().getFields()) {
+      for (Schema.Field field : Objects.requireNonNull(record.getSchema().getFields())) {
         String inputFieldName = field.getName();
 
         // drop the field if not part of fieldsToRename
@@ -259,49 +237,40 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     return outRecordBuilder.build();
   }
 
-  void init(Map<String, Schema> inputSchemas, List<String> inputStages, FailureCollector collector) {
-    validateJoinKeySchemas(inputSchemas, inputStages, conf.getPerStageJoinKeys(), collector);
-    requiredInputs = conf.getInputs();
-    perStageSelectedFields = conf.getPerStageSelectedFields();
-  }
+  FailureCollector init(Map<String, Schema> inputSchemas, List<String> inputStages, FailureCollector collector) {
+    conf.validateJoinKeySchemas(inputSchemas, inputStages, conf.getPerStageJoinKeys(), collector);
 
-  void validateJoinKeySchemas(Map<String, Schema> inputSchemas, List<String> inputStages,
-                              Map<String, List<String>> joinKeys, FailureCollector collector) {
-    perStageJoinKeys = joinKeys;
-    conf.validateJoinKeySchemas(inputSchemas, inputStages, joinKeys, collector);
-
-    List<Schema> prevSchemaList = null;
-    for (Map.Entry<String, List<String>> entry : perStageJoinKeys.entrySet()) {
-      ArrayList<Schema> schemaList = new ArrayList<>();
+    Map<String, StageKeyInfo> keyInfos = new HashMap<>();
+    StageKeyInfo prevKeyInfo = null;
+    for (Map.Entry<String, List<String>> entry : conf.getPerStageJoinKeys().entrySet()) {
       String stageName = entry.getKey();
-
       Schema schema = inputSchemas.get(stageName);
       if (schema == null) {
-        // Input schema will be null if the output schema of the previous node is a macro
-        return;
+        // Input schema will be null if the output schema of the previous node is a macro.
+        // We skip the validation of this stage.
+        continue;
       }
 
-      for (String joinKey : entry.getValue()) {
-        Schema.Field field = schema.getField(joinKey);
-        if (field == null) {
-          collector.addFailure(
-            String.format("Join key field '%s' is not present in input stage of '%s'.", joinKey, stageName), null)
-            .withConfigProperty(JoinerConfig.JOIN_KEYS);
-        }
-        schemaList.add(field.getSchema());
-      }
-      if (prevSchemaList != null && !prevSchemaList.equals(schemaList)) {
+      StageKeyInfo keyInfo = new StageKeyInfo(stageName, schema, entry.getValue(), collector);
+      if (prevKeyInfo != null && !prevKeyInfo.getSchema().equals(keyInfo.getSchema())) {
         collector.addFailure(
           String.format("For stage '%s', Schemas of join keys '%s' are expected to be: '%s', but found: '%s'.",
-                        stageName, entry.getValue(), prevSchemaList.toString(), schemaList.toString()), null)
+                        stageName, entry.getValue(), prevKeyInfo.getFieldSchemas(), keyInfo.getFieldSchemas()), null)
           .withConfigProperty(JoinerConfig.JOIN_KEYS);
+      } else {
+        prevKeyInfo = keyInfo;
       }
-      prevSchemaList = schemaList;
+      keyInfos.put(stageName, keyInfo);
     }
+
+    stageKeyInfos = keyInfos;
+    joinConfig = new JoinConfig(conf.getInputs());
+    perStageSelectedFields = conf.getPerStageSelectedFields();
+    return collector;
   }
 
   Schema getOutputSchema(Map<String, Schema> inputSchemas, List<String> inputStages, FailureCollector collector) {
-    if (!inputSchemasAvailable(inputSchemas, inputStages)) {
+    if (!isInputSchemasAvailable(inputSchemas, inputStages)) {
       // Cannot derive output schema from input schema. Try to get it from config.
       return conf.getOutputSchema(collector);
     }
@@ -323,6 +292,8 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
 
     // order of fields in output schema will be same as order of selectedFields
     Set<Table.Cell<String, String, String>> rows = perStageSelectedFields.cellSet();
+    Multimap<String, String> duplicateFields = ArrayListMultimap.create();
+
     for (Table.Cell<String, String, String> row : rows) {
       String stageName = row.getRowKey();
       String inputFieldName = row.getColumnKey();
@@ -331,14 +302,13 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
 
       if (inputSchema == null) {
         collector.addFailure(String.format("Input schema for input stage '%s' cannot be null.", stageName), null);
-        collector.getOrThrowException();
+        throw collector.getOrThrowException();
       }
 
       if (outputFieldInfo.containsKey(alias)) {
         OutputFieldInfo outInfo = outputFieldInfo.get(alias);
-        if (duplicateAliases.add(alias)) {
-          duplicateFields.put(outInfo.getStageName(), outInfo.getInputFieldName());
-        }
+        duplicateAliases.add(alias);
+        duplicateFields.put(outInfo.getStageName(), outInfo.getInputFieldName());
         duplicateFields.put(stageName, inputFieldName);
         continue;
       }
@@ -349,7 +319,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
           String.format("Field '%s' of stage '%s' must be present in input schema.", inputFieldName, stageName), null)
           .withConfigElement("selectedFields",
                              String.format("%s.%s as %s", stageName, inputFieldName, alias));
-      } else if (requiredInputs.contains(stageName) || inputField.getSchema().isNullable()) {
+      } else if (conf.getInputs().contains(stageName) || inputField.getSchema().isNullable()) {
         outputFieldInfo.put(alias, new OutputFieldInfo(alias, stageName, inputFieldName,
                                                        Schema.Field.of(alias, inputField.getSchema())));
       } else {
@@ -363,7 +333,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
       collector.addFailure(String.format("Output schema must not contain duplicate fields: '%s' for aliases: '%s'.",
                                          duplicateFields, duplicateAliases), null)
         .withConfigProperty(JoinerConfig.SELECTED_FIELDS);
-      collector.getOrThrowException();
+      throw collector.getOrThrowException();
     }
 
     return outputFieldInfo.values();
@@ -377,9 +347,79 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     return outputFields;
   }
 
-  private boolean inputSchemasAvailable(Map<String, Schema> inputSchemas, List<String> inputStages) {
+  private boolean isInputSchemasAvailable(Map<String, Schema> inputSchemas, List<String> inputStages) {
     return inputSchemas.keySet().containsAll(inputStages) &&
       inputSchemas.values().stream().noneMatch(Objects::isNull);
+  }
+
+  /**
+   * Class to hold information about the join key of a given input stage.
+   */
+  private static final class StageKeyInfo {
+    private final Schema schema;
+    // Map from the key field name to source field name
+    private final Map<String, String> sourceFieldNames;
+
+    StageKeyInfo(String stageName, Schema inputSchema,
+                 List<String> keyFieldNames, @Nullable FailureCollector failureCollector) {
+      List<Schema.Field> fields = new ArrayList<>();
+      Map<String, String> sourceFieldNames = new LinkedHashMap<>();
+      int i = 1;
+
+      // Create the Schema for the join key for this input stage
+      for (String fieldName : keyFieldNames) {
+        Schema.Field field = inputSchema.getField(fieldName);
+        if (field == null) {
+          String message = String.format("Join key field '%s' is not present in input stage of '%s'.",
+                                         fieldName, stageName);
+          if (failureCollector == null) {
+            throw new IllegalArgumentException(message);
+          } else {
+            failureCollector.addFailure(message, null).withConfigProperty(JoinerConfig.JOIN_KEYS);
+            throw failureCollector.getOrThrowException();
+          }
+        }
+        Schema.Field keyField = Schema.Field.of(String.valueOf(i++), field.getSchema());
+        fields.add(keyField);
+        sourceFieldNames.put(keyField.getName(), field.getName());
+      }
+      this.schema = Schema.recordOf("join.key", fields);
+      this.sourceFieldNames = sourceFieldNames;
+    }
+
+    /**
+     * Creates a {@link StructuredRecord} with the join key schema and with fields data from the given input record.
+     */
+    StructuredRecord createJoinKeyRecord(StructuredRecord input) {
+      StructuredRecord.Builder builder = StructuredRecord.builder(schema);
+      for (Schema.Field keyField : Objects.requireNonNull(schema.getFields())) {
+        builder.set(keyField.getName(), input.get(sourceFieldNames.get(keyField.getName())));
+      }
+      return builder.build();
+    }
+
+    /**
+     * Returns the join key schema.
+     */
+    Schema getSchema() {
+      return schema;
+    }
+
+    /**
+     * Returns the list of {@link Schema} for each join key, in the order they were being specified.
+     */
+    List<Schema> getFieldSchemas() {
+      return Objects.requireNonNull(schema.getFields()).stream()
+        .map(Schema.Field::getSchema)
+        .collect(Collectors.toList());
+    }
+
+    /**
+     * Returns a list of the join key fields.
+     */
+    List<String> getKeyFields() {
+      return Collections.unmodifiableList(new ArrayList<>(sourceFieldNames.values()));
+    }
   }
 
   /**
@@ -475,7 +515,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
   }
 
   private void validateRequiredInputs(List<String> inputStages, FailureCollector collector) {
-    for (String requiredInput : requiredInputs) {
+    for (String requiredInput : conf.getInputs()) {
       if (!inputStages.contains(requiredInput)) {
         collector.addFailure(String.format("Provided input '%s' must be an input stage name.", requiredInput), null)
           .withConfigElement(JoinerConfig.REQUIRED_INPUTS, requiredInput);
