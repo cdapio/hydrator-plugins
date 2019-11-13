@@ -51,7 +51,7 @@ import javax.ws.rs.Path;
 /**
  * Batch joiner to join records from multiple inputs
  */
-//@Plugin(type = BatchJoiner.PLUGIN_TYPE)
+@Plugin(type = BatchJoiner.PLUGIN_TYPE)
 @Name("Joiner")
 @Description("Performs join operation on records from each input based on required inputs. If all the inputs are " +
   "required inputs, inner join will be performed. Otherwise inner join will be performed on required inputs and " +
