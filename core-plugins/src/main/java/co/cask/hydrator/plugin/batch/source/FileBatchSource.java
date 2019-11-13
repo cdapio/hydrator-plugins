@@ -49,7 +49,7 @@ import javax.ws.rs.Path;
 /**
  * A {@link BatchSource} to use any distributed file system as a Source.
  */
-//@Plugin(type = "batchsource")
+@Plugin(type = "batchsource")
 @Name("File")
 @Description("Batch source for File Systems")
 public class FileBatchSource extends AbstractFileSource<FileSourceConfig> {
