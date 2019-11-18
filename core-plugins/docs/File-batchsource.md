@@ -1,22 +1,24 @@
 # File Batch Source
 
 
-Description
------------
+## Description
+
 This source is used whenever you need to read from a distributed file system.
 For example, you may want to read in log files from S3 every hour and then store
 the logs in a TimePartitionedFileSet.
 
 
-Properties
-----------
+## Properties
+
 **Reference Name:** Name used to uniquely identify this source for lineage, annotating metadata, etc.
 
 **Path:** Path to read from. For example, s3a://<bucket>/path/to/input
 
 **Format:** Format of the data to read.
 The format must be one of 'avro', 'blob', 'csv', 'delimited', 'json', 'parquet', 'text', 'tsv' or 'orc'.
-
+If the format is 'blob', every input file will be read into a separate record.
+The 'blob' format also requires a schema that contains a field named 'body' of type 'bytes'.
+If the format is 'text', the schema must contain a field named 'body' of type 'string'.
 
 **Delimiter:** Delimiter to use when the format is 'delimited'. This will be ignored for other formats.
 
@@ -39,12 +41,27 @@ will error when there is no data to read. When set to true, no error will be thr
 **File System Properties:** Additional properties in json format to use with the InputFormat when reading the data.
 
 
-Note
-----
-It is mandatory to provide output schema when using format other than `text`. 
-Default schema used in this plugin is for `text` format where body represents line read from the file and offset represent offset of line in the file.
+## How to get Output Schema?
 
-If the format is `blob`, every input file will be read into a separate record.
-The `blob` format also requires a schema that contains a field named `body` of type `bytes`.
+Formats supported in File plugin can be categorised into - `hadoop` formats and `non-hadoop` formats
+
+1. For `non-hadoop` file formats - 'csv', 'delimited', 'tsv', 'json', 'avro' :
+
+   Pls use DataPrep to identify the
+   schema of the file by applying `parse-as-<format>` directive or `Parse-><format>` on the `body` column.
+   one can click on create pipeline, select batch, and then open wrangler stage and export the schema.
+   Once exported, go back to file plugin, select `Format` as the case is and import this schema file.
+
+2. For `hadoop` file formats - `orc`, `parquet` :
+
+   User needs to provide the expected columns to be extracted from underlying orc/parquet files. Only the 
+   columns specified in output schema will be passed to next stage. If hive tables also exist for these
+   file formats, then prefer using `Hive Source`.
+
+
+## Note
+
+It is mandatory to provide output schema when using format other than `text`. Default schema used in this plugin is for `text` format where body represents line read from the file and offset represent offset of line in the file.
 
 If the format is `orc` then only string, long, int, double, float, boolean and array types are supported in output schema.
+
