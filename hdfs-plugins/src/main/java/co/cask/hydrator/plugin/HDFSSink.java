@@ -51,7 +51,7 @@ import javax.annotation.Nullable;
 /**
  * HDFS Sink
  */
-@Plugin(type = BatchSink.PLUGIN_TYPE)
+//@Plugin(type = BatchSink.PLUGIN_TYPE)
 @Name("HDFS")
 @Description("Batch HDFS Sink. (Deprecated. Use File Sink instead.)")
 public class HDFSSink extends ReferenceBatchSink<StructuredRecord, Text, NullWritable> {
