@@ -141,7 +141,7 @@ public class FTPBatchSource extends AbstractFileSource {
     @Nullable
     @Override
     public Pattern getFilePattern() {
-      return null;
+      return Pattern.compile("(ftp|sftp)://.+:.+@.+:\\d+/.+", Pattern.CASE_INSENSITIVE);
     }
 
     @Override
