@@ -39,6 +39,13 @@
               "orc"
             ],
             "default": "text"
+          },
+          "plugin-function": {
+            "method": "POST",
+            "label": "Get Schema",
+            "widget": "outputSchema",
+            "output-property": "schema",
+            "plugin-method": "getSchema"
           }
         },
         {
