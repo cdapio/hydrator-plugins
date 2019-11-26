@@ -19,10 +19,6 @@
 	path = wrangler-transform
 	url = https://github.com/Guavus/wrangler.git
 	branch = develop_guavus_2.6.5
-[submodule "kafka-plugins"]
-	path = kafka-plugins
-	url = https://github.com/Guavus/kafka-plugins.git
-	branch = develop_guavus_2.6.5
 [submodule "amazon-s3-plugins"]
 	path = amazon-s3-plugins
 	url = https://github.com/Guavus/amazon-s3-plugins.git
