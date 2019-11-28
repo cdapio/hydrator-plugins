@@ -51,6 +51,7 @@ import javax.annotation.Nullable;
 /**
  * HDFS Sink
  */
+//Removing this plugin from build as its deprecated and instead FileSink plugin been used.
 //@Plugin(type = BatchSink.PLUGIN_TYPE)
 @Name("HDFS")
 @Description("Batch HDFS Sink. (Deprecated. Use File Sink instead.)")
