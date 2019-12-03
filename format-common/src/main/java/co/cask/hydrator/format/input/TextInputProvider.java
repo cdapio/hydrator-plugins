@@ -31,7 +31,7 @@ public class TextInputProvider implements FileInputFormatterProvider {
 
   @Nullable
   @Override
-  public Schema getSchema(@Nullable String pathField) {
+  public Schema getSchema(@Nullable String pathField, String filePath) {
     return getDefaultSchema(pathField);
   }
 
@@ -39,7 +39,7 @@ public class TextInputProvider implements FileInputFormatterProvider {
   public FileInputFormatter create(Map<String, String> properties, @Nullable Schema schema) {
     String pathField = properties.get(FileSourceProperties.PATH_FIELD);
     if (schema == null) {
-      return new TextInputFormatter(getSchema(pathField));
+      return new TextInputFormatter(getSchema(pathField, null));
     }
 
     // text must contain 'body' as type 'string'.

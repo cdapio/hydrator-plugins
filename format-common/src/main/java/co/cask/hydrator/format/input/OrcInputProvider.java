@@ -27,8 +27,10 @@ import org.apache.orc.TypeDescription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Provides Orc formatters.
@@ -39,16 +41,21 @@ public class OrcInputProvider implements FileInputFormatterProvider {
 
     @Nullable
     @Override
-    public Schema getSchema(@Nullable String pathField) {
+    public Schema getSchema(@Nullable String pathField, String filePath) {
         Configuration configuration = new Configuration();
-        if (Strings.isNullOrEmpty(pathField)) {
-            throw new IllegalArgumentException("Path is a required field for fetching Schema");
-        }
-        Path path = new Path(pathField);
+        Path path = new Path(filePath);
         try {
             Reader reader = OrcFile.createReader(path, new OrcFile.ReaderOptions(configuration));
             TypeDescription typeDescription = reader.getSchema();
-            return OrcToStructuredTransformer.convertSchema(typeDescription);
+            if(Strings.isNullOrEmpty(pathField)) {
+                return OrcToStructuredTransformer.convertSchema(typeDescription);
+            } else {
+                Schema schemaWithoutPath = OrcToStructuredTransformer.convertSchema(typeDescription);
+                List<Schema.Field> fields = new ArrayList<>(schemaWithoutPath.getFields().size() + 1);
+                fields.addAll(schemaWithoutPath.getFields());
+                fields.add(Schema.Field.of(pathField, Schema.of(Schema.Type.STRING)));
+                return Schema.recordOf(schemaWithoutPath.getRecordName(), fields);
+            }
         } catch (Exception e) {
             LOG.error("Error in fetching orc schema => " + e.getMessage(), e);
             throw new RuntimeException("Error in fetching orc schema => " + e.getMessage(), e);

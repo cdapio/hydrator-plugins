@@ -23,22 +23,12 @@
           }
         },
         {
-          "widget-type": "select",
+          "widget-type": "content-filter",
           "label": "Format",
           "name": "format",
           "widget-attributes": {
-            "values": [
-              "avro",
-              "blob",
-              "csv",
-              "delimited",
-              "json",
-              "parquet",
-              "text",
-              "tsv",
-              "orc"
-            ],
-            "default": "text"
+            "default": "json",
+            "options": ["avro","csv","delimited","json","parquet","tsv","orc"]
           },
           "plugin-function": {
             "method": "POST",
@@ -53,7 +43,13 @@
           "label": "Delimiter",
           "name": "delimiter",
           "widget-attributes": {
-            "placeholder": "Delimiter if the format is 'delimited'"
+            "placeholder": "Delimiter if the format is 'delimited'",
+            "filters": [
+              {
+                "widget-name": "format",
+                "filter-values": ["delimited"]
+              }
+            ]
           }
         }
       ]
