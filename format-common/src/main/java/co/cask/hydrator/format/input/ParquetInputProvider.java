@@ -18,6 +18,7 @@ package co.cask.hydrator.format.input;
 
 import co.cask.cdap.api.data.schema.Schema;
 import co.cask.hydrator.format.AvroSchemaConverter;
+import co.cask.hydrator.format.FileFormat;
 import com.google.common.base.Strings;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -44,8 +45,12 @@ public class ParquetInputProvider implements FileInputFormatterProvider {
     @Nullable
     @Override
     public Schema getSchema(@Nullable String pathField, String filePath) {
-        Path path = new Path(filePath);
         try {
+            filePath = FileFormat.getFilePath(filePath,".parquet");
+            if(Strings.isNullOrEmpty(filePath)) {
+                throw new IllegalArgumentException("File Path is a mandatory field for fetching Schema");
+            }
+            Path path = new Path(filePath);
             Configuration conf = new Configuration();
             conf.setBoolean(AvroSchemaConverter.ADD_LIST_ELEMENT_RECORDS, false);
             ParquetMetadata readFooter = ParquetFileReader.readFooter(conf, path, ParquetMetadataConverter.NO_FILTER);

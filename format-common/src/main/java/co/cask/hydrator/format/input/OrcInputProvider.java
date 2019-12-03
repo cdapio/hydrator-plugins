@@ -17,6 +17,7 @@
 package co.cask.hydrator.format.input;
 
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.hydrator.format.FileFormat;
 import co.cask.hydrator.format.OrcToStructuredTransformer;
 import com.google.common.base.Strings;
 import org.apache.hadoop.conf.Configuration;
@@ -43,8 +44,12 @@ public class OrcInputProvider implements FileInputFormatterProvider {
     @Override
     public Schema getSchema(@Nullable String pathField, String filePath) {
         Configuration configuration = new Configuration();
-        Path path = new Path(filePath);
         try {
+            filePath = FileFormat.getFilePath(filePath,".orc");
+            if(Strings.isNullOrEmpty(filePath)) {
+                throw new IllegalArgumentException("File Path is a mandatory field for fetching Schema");
+            }
+            Path path = new Path(filePath);
             Reader reader = OrcFile.createReader(path, new OrcFile.ReaderOptions(configuration));
             TypeDescription typeDescription = reader.getSchema();
             if(Strings.isNullOrEmpty(pathField)) {

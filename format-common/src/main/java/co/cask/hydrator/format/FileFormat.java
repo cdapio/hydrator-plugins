@@ -35,10 +35,7 @@ import co.cask.hydrator.format.output.OrcOutputProvider;
 import co.cask.hydrator.format.output.ParquetOutputProvider;
 import com.google.common.base.Strings;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocatedFileStatus;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.RemoteIterator;
+import org.apache.hadoop.fs.*;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -119,32 +116,36 @@ public enum FileFormat {
   }
 
     /**
-     * Returns the actual filePath in case user enters directory.
+     * Returns one of the file present in user directory.
      *
      * @param filePath properties
      * @return the Actual File Path.
      * @throws IllegalArgumentException if the given filePath can't be opened by FileSystem
      */
-   public static String getActualFilePath(String filePath) {
-       if (Strings.isNullOrEmpty(filePath)) {
-           throw new IllegalArgumentException("Path is a required field for fetching Schema");
-       }
-       Configuration configuration = new Configuration();
-       Path path = new Path(filePath);
-       try {
+   public static String getFilePath(String filePath, String regex) throws IOException{
+       if (!Strings.isNullOrEmpty(filePath)) {
+           Configuration configuration = new Configuration();
+           Path path = new Path(filePath);
            FileSystem fs = FileSystem.get(configuration);
-           if(fs.isDirectory(path)) {
-               RemoteIterator<LocatedFileStatus> directoryIter =  fs.listFiles(path, false);
-               LocatedFileStatus locatedFileStatus = directoryIter.next();
-               path = locatedFileStatus.getPath();
-               return getActualFilePath(path.toString());
+           if (fs.exists(path)) {
+               if(fs.isDirectory(path)) {
+                   RemoteIterator<LocatedFileStatus> iter = fs.listFiles(path, true);
+                   while (iter.hasNext()) {
+                       LocatedFileStatus fileStatus = iter.next();
+                       if (fileStatus.getPath().getName().endsWith(regex)) {
+                           return fileStatus.getPath().toString();
+                       }
+                   }
+               } else {
+                   if (filePath.endsWith(regex)) {
+                       return filePath;
+                   }
+               }
            } else {
-               return filePath;
+               throw new IllegalArgumentException("Invalid path " + filePath);
            }
-       } catch (IOException ioe) {
-           throw new IllegalArgumentException("Exception occurred while recursively checking filePath : " +
-                   ioe.getMessage() + " Please check and try again");
        }
+       return null;
    }
 
 
@@ -161,7 +162,8 @@ public enum FileFormat {
       throw new IllegalArgumentException(String.format("Format '%s' cannot be used for reading.", this.name()));
     }
     if (getSchemaSupport) {
-        return inputProvider.getSchema(pathField, getActualFilePath(filePath));
+        return inputProvider.getSchema(pathField, filePath);
+
     } else {
         throw new IllegalArgumentException("Get Schema Functionality is supported for Parquet and Orc format only");
     }
