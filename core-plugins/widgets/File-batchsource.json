@@ -35,6 +35,7 @@
             "label": "Get Schema",
             "widget": "outputSchema",
             "output-property": "schema",
+            "position": "bottom",
             "plugin-method": "getSchema"
           }
         },
