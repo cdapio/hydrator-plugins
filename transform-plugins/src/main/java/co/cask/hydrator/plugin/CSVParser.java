@@ -235,7 +235,7 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
           emitter.emit(createStructuredRecord(record, in));
         }
       }
-    } catch (IOException e) {
+    } catch (Exception e) {
       emitter.emitError(new InvalidEntry<>(31, e.getStackTrace()[0].toString() + " : " + e.getMessage(), in));
     }
   }
