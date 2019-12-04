@@ -28,6 +28,7 @@ import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.PipelineConfigurer;
 import co.cask.cdap.etl.api.Transform;
 import co.cask.cdap.etl.api.TransformContext;
+import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,11 +36,14 @@ import org.xerial.snappy.Snappy;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import javax.ws.rs.Path;
 
 /**
  * Compresses the configured fields using the algorithms specified.
@@ -72,7 +76,7 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
       // If format is not right, then we throw an exception.
       if (params.length < 2) {
         throw new IllegalArgumentException("Configuration " + mapping + " is in-correctly formed. " +
-                                             "Format should be <fieldname>:<compressor-type>");
+            "Format should be <fieldname>:<compressor-type>");
       }
 
       String field = params[0];
@@ -103,7 +107,7 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
           Schema.Type type = outSchemaMap.get(field);
           if (type != Schema.Type.BYTES) {
             throw new IllegalArgumentException("Field '" + field + "' is not of type BYTES. It's currently" +
-                                                 "of type '" + type.toString() + "'.");
+                "of type '" + type.toString() + "'.");
           }
         }
       }
@@ -133,12 +137,18 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
     if (inputSchema != null) {
       for (Schema.Field field : inputSchema.getFields()) {
         if (outSchemaMap.containsKey(field.getName()) &&
-          compMap.containsKey(field.getName()) && compMap.get(field.getName()) != CompressorType.NONE &&
-          !Schema.Type.BYTES.equals(field.getSchema().getType()) &&
-          !Schema.Type.STRING.equals(field.getSchema().getType())) {
-          throw new IllegalArgumentException(
-            String.format("Input field  %s must be of type bytes or string. It is currently of type %s",
-                          field.getName(), field.getSchema().getType().toString()));
+            compMap.containsKey(field.getName()) && compMap.get(field.getName()) != CompressorType.NONE &&
+            !Schema.Type.BYTES.equals(field.getSchema().getType()) &&
+            !Schema.Type.STRING.equals(field.getSchema().getType())) {
+          if (field.getSchema().getType().name().equalsIgnoreCase("UNION")) {
+            throw new IllegalArgumentException(
+                String.format("Input compressor field  %s must be of non-nullable type . It is currently of type %s",
+                    field.getName(), "nullable"));
+          } else {
+            throw new IllegalArgumentException(
+                String.format("Input field  %s must be of type bytes or string. It is currently of type %s",
+                    field.getName(), field.getSchema().getType().toString()));
+          }
         }
       }
     }
@@ -200,7 +210,7 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
           }
         } else {
           LOG.warn("Output field '" + name + "' is not of BYTES. In order to emit compressed data, you should set " +
-                     "it to type BYTES.");
+              "it to type BYTES.");
         }
       }
     }
@@ -258,7 +268,7 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
   }
 
   /**
-   * Enum specifying the compressor type.  
+   * Enum specifying the compressor type.
    */
   private enum CompressorType {
     SNAPPY("SNAPPY"),
@@ -278,12 +288,29 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
   }
 
   /**
+   * END
+   */
+
+  public static class GetSchemaRequest extends Config {
+    private Schema inputSchema;
+
+    public GetSchemaRequest(String compressor, String schema) {
+      super(compressor, schema);
+    }
+  }
+
+  @Path("outputSchema")
+  public Schema getOutputSchema(GetSchemaRequest request) {
+    return request.getOutputSchema(request.inputSchema);
+  }
+
+  /**
    * Plugin configuration.
    */
   public static class Config extends PluginConfig {
     @Name("compressor")
     @Description("Specify the field and compression type combination. " +
-      "Format is <field>:<compressor-type>[,<field>:<compressor-type>]*")
+        "Format is <field>:<compressor-type>[,<field>:<compressor-type>]*")
     private final String compressor;
 
     @Name("schema")
@@ -294,5 +321,50 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
       this.compressor = compressor;
       this.schema = schema;
     }
+
+    public Schema getOutputSchema(Schema inputSchema) {
+      try {
+        List<Schema.Field> fields = new ArrayList<>();
+        Map<String, CompressorType> compressorTypeMap = parseConfiguration(compressor);
+        if (inputSchema != null && inputSchema.getFields() != null) {
+          for (Schema.Field field : inputSchema.getFields()) {
+            if (compressorTypeMap.containsKey(field.getName())) {
+              fields.add(Schema.Field.of(field.getName(), Schema.of(Schema.Type.BYTES)));
+            } else {
+              fields.add(field);
+            }
+          }
+        }
+        return Schema.recordOf("outputSchema", fields);
+      } catch (Exception e) {
+        throw new IllegalArgumentException("Unable to create output schema ==> " + e.getMessage(), e);
+      }
+    }
+
+    private Map<String, CompressorType> parseConfiguration(String config) throws IllegalArgumentException {
+      Map<String, CompressorType> compMap = Maps.newTreeMap();
+      String[] mappings = config.split(",");
+      for (String mapping : mappings) {
+        String[] params = mapping.split(":");
+
+        // If format is not right, then we throw an exception.
+        if (params.length < 2) {
+          throw new IllegalArgumentException("Configuration " + mapping + " is in-correctly formed. " +
+              "Format should be <fieldname>:<compressor-type>");
+        }
+
+        String field = params[0];
+        String type = params[1].toUpperCase();
+        CompressorType cType = CompressorType.valueOf(type);
+
+        if (compMap.containsKey(field)) {
+          throw new IllegalArgumentException("Field " + field + " already has compressor set. Check the mapping.");
+        } else {
+          compMap.put(field, cType);
+        }
+      }
+      return compMap;
+    }
   }
+
 }

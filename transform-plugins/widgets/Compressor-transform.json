@@ -19,6 +19,15 @@
               "NONE"
             ],
             "key-placeholder": "Field Name"
+          },
+          "plugin-function":{
+            "method": "POST",
+            "widget": "outputSchema",
+            "output-property": "schema",
+            "required-fields": [
+              "mode"
+            ],
+            "plugin-method": "outputSchema"
           }
         }
       ]
