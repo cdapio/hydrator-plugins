@@ -44,6 +44,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
+import javax.ws.rs.Path;
 
 /**
  * Projection transform that allows dropping, keeping, renaming, and converting field types.
@@ -87,6 +88,11 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
     @Description(KEEP_DESC)
     @Nullable
     String keep;
+
+    public ProjectionTransformConfig() {
+
+    }
+
     public ProjectionTransformConfig(String drop, String rename, String convert, String keep) {
       this.drop = drop;
       this.rename = rename;
@@ -102,18 +108,18 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
   }
 
   private static final Pattern fieldDelimiter = Pattern.compile("\\s*,\\s*");
-  private Set<String> fieldsToDrop = Sets.newHashSet();
-  private Set<String> fieldsToKeep = Sets.newHashSet();
-  private BiMap<String, String> fieldsToRename = HashBiMap.create();
-  private Map<String, Schema.Type> fieldsToConvert = Maps.newHashMap();
+  private Set<String> fieldsToDrop;
+  private Set<String> fieldsToKeep;
+  private BiMap<String, String> fieldsToRename;
+  private Map<String, Schema.Type> fieldsToConvert;
   // cache input schema hash to output schema so we don't have to build it each time
-  private Map<Schema, Schema> schemaCache = Maps.newHashMap();
+  private Map<Schema, Schema> schemaCache;
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
     // call init so any invalid config is caught here to fail application creation
-    init(pipelineConfigurer.getStageConfigurer().getInputSchema());
+    init(pipelineConfigurer.getStageConfigurer().getInputSchema(), projectionTransformConfig);
     Schema outputSchema = null;
     if (pipelineConfigurer.getStageConfigurer().getInputSchema() != null) {
       //validate the input schema and get the output schema for it
@@ -125,7 +131,7 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
-    init(null);
+    init(null, projectionTransformConfig);
   }
 
   @Override
@@ -159,8 +165,13 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
     emitter.emit(builder.build());
   }
 
-  private void init(Schema inputSchema) {
+  private void init(Schema inputSchema, ProjectionTransformConfig projectionTransformConfig) {
 
+    fieldsToDrop = Sets.newHashSet();
+    fieldsToKeep = Sets.newHashSet();
+    fieldsToRename = HashBiMap.create();
+    fieldsToConvert = Maps.newHashMap();
+    schemaCache = Maps.newHashMap();
     if (!Strings.isNullOrEmpty(projectionTransformConfig.drop) &&
       !Strings.isNullOrEmpty(projectionTransformConfig.keep)) {
       throw new IllegalArgumentException("Cannot specify both drop and keep. One should be empty or null.");
@@ -345,6 +356,17 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
 
     throw new IllegalArgumentException("Cannot convert type " + inputType + " to type " + outputType);
   }
+
+  @Path("outputSchema")
+  public Schema getOutputSchema(GetSchemaRequest request) {
+    init(request.inputSchema, request);
+    return getOutputSchema(request.inputSchema);
+  }
+
+  public class GetSchemaRequest extends ProjectionTransformConfig {
+    private Schema inputSchema;
+  }
+
 
   private Schema getOutputSchema(Schema inputSchema) {
     Schema output = schemaCache.get(inputSchema);
