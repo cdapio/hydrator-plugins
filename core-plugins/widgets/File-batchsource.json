@@ -27,8 +27,18 @@
           "label": "Format",
           "name": "format",
           "widget-attributes": {
-            "default": "json",
-            "options": ["avro","csv","delimited","json","parquet","tsv","orc"]
+            "default": "text",
+            "options": [
+              "avro",
+              "blob",
+              "csv",
+              "delimited",
+              "json",
+              "parquet",
+              "text",
+              "tsv",
+              "orc"
+            ]
           },
           "plugin-function": {
             "method": "POST",
