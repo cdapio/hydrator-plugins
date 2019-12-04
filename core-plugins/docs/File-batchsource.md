@@ -48,7 +48,7 @@ Formats supported in File plugin can be categorised into - `hadoop` formats and 
 1. For `hadoop` file formats - `orc`, `parquet` :
 
    `GetSchema` button is provided in plugin's configuration UI to help user fetch the schema.
-   If value provided in `Path` config is a directory then schema would be fetched from any file present in directory
+   If value provided in `Path` config is a directory then schema would be fetched from any random file picked from specified path
    matching extension `.orc` or `.parquet` (depending on selected `Format`).
 
 
