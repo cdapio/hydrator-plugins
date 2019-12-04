@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
 import javax.crypto.Cipher;
@@ -87,13 +88,28 @@ public final class Decryptor extends Transform<StructuredRecord, StructuredRecor
               "Cannot decrypt field '%s' because it is of type '%s' instead of bytes.",
               field.getName(), fieldType));
           }
-          recordBuilder.set(field.getName(), fieldEncryptor.decrypt((byte[]) val, targetSchema));
+          recordBuilder.set(field.getName(), fieldEncryptor.decrypt(getBytes(val), targetSchema));
         }
       } else {
         recordBuilder.set(field.getName(), in.get(field.getName()));
       }
     }
     emitter.emit(recordBuilder.build());
+  }
+
+  public byte[] getBytes(Object obj) {
+    byte[] bytes = null;
+    if(obj instanceof ByteBuffer) {
+      // https://stackoverflow.com/a/679325/4652875
+      ByteBuffer bf = (ByteBuffer) obj;
+      bytes = new byte[bf.slice().remaining()];
+      bf.get(bytes);
+
+    } else {
+      bytes = (byte[]) obj;
+    }
+
+    return bytes;
   }
 
   /**
