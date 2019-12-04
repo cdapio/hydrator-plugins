@@ -57,7 +57,7 @@ public enum FileFormat {
   DELIMITED(new DelimitedInputProvider(null), new DelimitedTextOutputProvider(null), false),
   JSON(new JsonInputProvider(), new JsonOutputProvider(), false),
   PARQUET(new ParquetInputProvider(), new ParquetOutputProvider(), true),
-  TEXT(new TextInputProvider(), null, false),
+  TEXT(new TextInputProvider(), null, true),
   TSV(new DelimitedInputProvider("\t"), new DelimitedTextOutputProvider("\t"), false),
   ORC(new OrcInputProvider(), new OrcOutputProvider(), true);
   public final FileInputFormatterProvider inputProvider;
