@@ -39,6 +39,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.crypto.Cipher;
+import javax.ws.rs.Path;
 
 /**
  * Encrypts record fields.
@@ -49,7 +50,6 @@ import javax.crypto.Cipher;
 public final class Encryptor extends Transform<StructuredRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(Encryptor.class);
   private final Conf conf;
-  private Set<String> encryptFields;
   private FieldEncryptor fieldEncryptor;
 
   public Encryptor(Conf conf) {
@@ -60,24 +60,22 @@ public final class Encryptor extends Transform<StructuredRecord, StructuredRecor
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
     Schema inputSchema = stageConfigurer.getInputSchema();
-    encryptFields = conf.getEncryptFields();
-    Schema outputSchema = inputSchema == null ? null : getOutputSchema(inputSchema);
+    Schema outputSchema = inputSchema == null ? null : getOutputSchema(inputSchema, conf);
     stageConfigurer.setOutputSchema(outputSchema);
   }
 
   @Override
   public void initialize(TransformContext context) throws Exception {
-    encryptFields = conf.getEncryptFields();
     fieldEncryptor = new FileBasedFieldEncryptor(conf, Cipher.ENCRYPT_MODE);
     fieldEncryptor.initialize();
   }
 
   @Override
   public void transform(StructuredRecord in, Emitter<StructuredRecord> emitter) throws Exception {
-    Schema schema = getOutputSchema(in.getSchema());
+    Schema schema = getOutputSchema(in.getSchema(), conf);
     StructuredRecord.Builder recordBuilder = StructuredRecord.builder(schema);
     for (Field field : in.getSchema().getFields()) {
-      if (encryptFields.contains(field.getName())) {
+      if (conf.getEncryptFields().contains(field.getName())) {
         recordBuilder.set(field.getName(), fieldEncryptor.encrypt(in.get(field.getName()), field.getSchema()));
       } else {
         recordBuilder.set(field.getName(), in.get(field.getName()));
@@ -86,16 +84,39 @@ public final class Encryptor extends Transform<StructuredRecord, StructuredRecor
     emitter.emit(recordBuilder.build());
   }
 
-  private Schema getOutputSchema(Schema schema) {
+  @Path("outputSchema")
+  public Schema getOutputSchema(GetSchemaRequest request) {
+    return getOutputSchema(request.inputSchema, request);
+  }
+
+  private Schema getOutputSchema(Schema inputSchema, Conf conf) {
+    validategetEncryptFields(conf.getEncryptFields(), inputSchema);
     List<Field> outputFields = new ArrayList<>();
-    for (Schema.Field field : schema.getFields()) {
-      if (encryptFields.contains(field.getName())) {
-        outputFields.add(Schema.Field.of(field.getName(), Schema.nullableOf(Schema.of(Schema.Type.BYTES))));
-      } else {
-        outputFields.add(field);
+    if (inputSchema != null) {
+      for (Schema.Field field : inputSchema.getFields()) {
+        if (conf.getEncryptFields().contains(field.getName())) {
+          outputFields.add(Schema.Field.of(field.getName(), Schema.nullableOf(Schema.of(Schema.Type.BYTES))));
+        } else {
+          outputFields.add(field);
+        }
       }
     }
-    return Schema.recordOf(schema.getRecordName(), outputFields);
+    return Schema.recordOf(inputSchema.getRecordName(), outputFields);
+  }
+
+  private boolean validategetEncryptFields(Set<String> encryptFields, Schema inputSchema) {
+    if (encryptFields != null && !encryptFields.isEmpty()) {
+      for (String field: encryptFields) {
+        if (inputSchema.getField(field) == null) {
+          throw new IllegalArgumentException(String.format("%s is not present in inputSchema.", field));
+        }
+      }
+    }
+    return true;
+  }
+
+  public static class GetSchemaRequest extends Conf {
+    private Schema inputSchema;
   }
 
   /**
