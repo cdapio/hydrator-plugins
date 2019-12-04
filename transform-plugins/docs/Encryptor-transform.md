@@ -27,6 +27,6 @@ Configuration
 
 
 **Note**: Do not use sink plugins that store data in textual format because Field Encryptor converts the field values to `bytes` and text based sink plugin will convert bytes to string at the time of writing the data.
-Prefer using any columnar storage like ORC, Parquet etc. 
+Use any columnar storage like ORC, Parquet etc. 
 
 
