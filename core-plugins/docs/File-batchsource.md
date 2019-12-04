@@ -52,7 +52,7 @@ Formats supported in File plugin can be categorised into - `hadoop` formats and 
    matching extension `.orc` or `.parquet` (depending on selected `Format`).
 
 
-2. For `non-hadoop` file formats - 'csv', 'delimited', 'tsv', 'json', 'avro' :
+2. For `non-hadoop` file formats - `csv`, `delimited`, `tsv`, `json`, `avro` :
 
    Pls use DataPrep to identify the
    schema of the file by applying `parse-as-<format>` directive or `Parse-><format>` on the `body` column.
