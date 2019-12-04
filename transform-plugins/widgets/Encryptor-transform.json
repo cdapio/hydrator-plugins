@@ -19,7 +19,13 @@
         {
           "widget-type": "textbox",
           "label": "transformation",
-          "name": "transformation"
+          "name": "transformation",
+          "plugin-function": {
+            "method": "POST",
+            "widget": "outputSchema",
+            "output-property": "schema",
+            "plugin-method": "outputSchema"
+          }
         },
         {
           "widget-type": "textbox",

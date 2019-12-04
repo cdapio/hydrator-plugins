@@ -82,7 +82,7 @@ public class KeystoreConf extends PluginConfig {
   }
 
   public String getKeystorePath() {
-    return keystorePath;
+    return KeyStoreUtil.getValidPath(keystorePath);
   }
 
   public String getKeystorePassword() {

@@ -24,3 +24,9 @@ Configuration
 **keyAlias** The alias of the key to use in the keystore.
 
 **keyPassword** The password for the key to use in the keystore.
+
+
+**Note**: Do not use sink plugins that store data in textual format because Field Encryptor converts the field values to `bytes` and text based sink plugin will convert bytes to string at the time of writing the data.
+Use any columnar format like ORC, Parquet etc. 
+
+
