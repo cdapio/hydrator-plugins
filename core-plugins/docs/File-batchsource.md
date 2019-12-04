@@ -45,18 +45,20 @@ will error when there is no data to read. When set to true, no error will be thr
 
 Formats supported in File plugin can be categorised into - `hadoop` formats and `non-hadoop` formats
 
-1. For `non-hadoop` file formats - 'csv', 'delimited', 'tsv', 'json', 'avro' :
+1. For `hadoop` file formats - `orc`, `parquet` :
+
+   `GetSchema` button is provided in plugin's configuration UI to help user fetch the schema.
+   If value provided in `Path` config is a directory then schema would be fetched from any random file picked from specified path
+   matching extension `.orc` or `.parquet` (depending on selected `Format`).
+
+
+2. For `non-hadoop` file formats - `csv`, `delimited`, `tsv`, `json`, `avro` :
 
    Pls use DataPrep to identify the
    schema of the file by applying `parse-as-<format>` directive or `Parse-><format>` on the `body` column.
    one can click on create pipeline, select batch, and then open wrangler stage and export the schema.
    Once exported, go back to file plugin, select `Format` as the case is and import this schema file.
 
-2. For `hadoop` file formats - `orc`, `parquet` :
-
-   User needs to provide the expected columns to be extracted from underlying orc/parquet files. Only the 
-   columns specified in output schema will be passed to next stage. If hive tables also exist for these
-   file formats, then prefer using `Hive Source`.
 
 
 ## Note

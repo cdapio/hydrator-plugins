@@ -33,7 +33,11 @@ import co.cask.hydrator.format.output.FileOutputFormatterProvider;
 import co.cask.hydrator.format.output.JsonOutputProvider;
 import co.cask.hydrator.format.output.OrcOutputProvider;
 import co.cask.hydrator.format.output.ParquetOutputProvider;
+import com.google.common.base.Strings;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.*;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -47,25 +51,28 @@ import javax.annotation.Nullable;
  * plugins can easily support the same set of formats without re-implementing logic.
  */
 public enum FileFormat {
-  AVRO(new AvroInputProvider(), new AvroOutputProvider()),
-  BLOB(new BlobInputProvider(), null),
-  CSV(new DelimitedInputProvider(","), new DelimitedTextOutputProvider(",")),
-  DELIMITED(new DelimitedInputProvider(null), new DelimitedTextOutputProvider(null)),
-  JSON(new JsonInputProvider(), new JsonOutputProvider()),
-  PARQUET(new ParquetInputProvider(), new ParquetOutputProvider()),
-  TEXT(new TextInputProvider(), null),
-  TSV(new DelimitedInputProvider("\t"), new DelimitedTextOutputProvider("\t")),
-  ORC(new OrcInputProvider(), new OrcOutputProvider());
-  private final FileInputFormatterProvider inputProvider;
+  AVRO(new AvroInputProvider(), new AvroOutputProvider(), false),
+  BLOB(new BlobInputProvider(), null, false),
+  CSV(new DelimitedInputProvider(","), new DelimitedTextOutputProvider(","), false),
+  DELIMITED(new DelimitedInputProvider(null), new DelimitedTextOutputProvider(null), false),
+  JSON(new JsonInputProvider(), new JsonOutputProvider(), false),
+  PARQUET(new ParquetInputProvider(), new ParquetOutputProvider(), true),
+  TEXT(new TextInputProvider(), null, true),
+  TSV(new DelimitedInputProvider("\t"), new DelimitedTextOutputProvider("\t"), false),
+  ORC(new OrcInputProvider(), new OrcOutputProvider(), true);
+  public final FileInputFormatterProvider inputProvider;
   private final FileOutputFormatterProvider outputProvider;
+  private boolean getSchemaSupport = false;
   private final boolean canWrite;
   private final boolean canRead;
 
-  FileFormat(@Nullable FileInputFormatterProvider inputProvider, @Nullable FileOutputFormatterProvider outputProvider) {
-    this.inputProvider = inputProvider;
-    this.outputProvider = outputProvider;
-    this.canWrite = outputProvider != null;
-    this.canRead = inputProvider != null;
+
+  FileFormat(@Nullable FileInputFormatterProvider inputProvider, @Nullable FileOutputFormatterProvider outputProvider, boolean getSchemaSupport) {
+      this.inputProvider = inputProvider;
+      this.outputProvider = outputProvider;
+      this.canWrite = outputProvider != null;
+      this.canRead = inputProvider != null;
+      this.getSchemaSupport = getSchemaSupport;
   }
 
   public boolean canWrite() {
@@ -108,7 +115,41 @@ public enum FileFormat {
     return inputProvider.create(properties, schema);
   }
 
-  /**
+    /**
+     * Returns one of the file present in user directory.
+     *
+     * @param filePath properties
+     * @return the Actual File Path.
+     * @throws IllegalArgumentException if the given filePath can't be opened by FileSystem
+     */
+   public static String getFilePath(String filePath, String regex) throws IOException{
+       if (!Strings.isNullOrEmpty(filePath)) {
+           Configuration configuration = new Configuration();
+           Path path = new Path(filePath);
+           FileSystem fs = FileSystem.get(configuration);
+           if (fs.exists(path)) {
+               if(fs.isDirectory(path)) {
+                   RemoteIterator<LocatedFileStatus> iter = fs.listFiles(path, true);
+                   while (iter.hasNext()) {
+                       LocatedFileStatus fileStatus = iter.next();
+                       if (fileStatus.getPath().getName().endsWith(regex)) {
+                           return fileStatus.getPath().toString();
+                       }
+                   }
+               } else {
+                   if (filePath.endsWith(regex)) {
+                       return filePath;
+                   }
+               }
+           } else {
+               throw new IllegalArgumentException("Invalid path " + filePath);
+           }
+       }
+       return null;
+   }
+
+
+    /**
    * Return the schema for this format, if the format requires a specific schema. Returns null if the format does
    * not require a specific schema. Should only be called for formats that can read.
    *
@@ -116,11 +157,16 @@ public enum FileFormat {
    * @return the schema required by the format, if it exists
    */
   @Nullable
-  public Schema getSchema(@Nullable String pathField) {
+  public Schema getSchema(@Nullable String pathField, String filePath) {
     if (inputProvider == null) {
       throw new IllegalArgumentException(String.format("Format '%s' cannot be used for reading.", this.name()));
     }
-    return inputProvider.getSchema(pathField);
+    if (getSchemaSupport) {
+        return inputProvider.getSchema(pathField, filePath);
+
+    } else {
+        throw new IllegalArgumentException("Get Schema Functionality is supported for Parquet and Orc format only");
+    }
   }
 
   /**

@@ -30,7 +30,7 @@ public interface FileInputFormatterProvider {
    * Get the schema that the format requires, if it requires a specific schema.
    */
   @Nullable
-  Schema getSchema(@Nullable String pathField);
+  Schema getSchema(@Nullable String pathField, String filePath);
 
   /**
    * Creates a FileInputFormatter.

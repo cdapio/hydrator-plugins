@@ -31,7 +31,7 @@ public class BlobInputProvider implements FileInputFormatterProvider {
 
   @Nullable
   @Override
-  public Schema getSchema(@Nullable String pathField) {
+  public Schema getSchema(@Nullable String pathField, String filePath) {
     List<Schema.Field> fields = new ArrayList<>();
     fields.add(Schema.Field.of("body", Schema.of(Schema.Type.BYTES)));
     if (pathField != null && !pathField.isEmpty()) {
@@ -44,7 +44,7 @@ public class BlobInputProvider implements FileInputFormatterProvider {
   public FileInputFormatter create(Map<String, String> properties, @Nullable Schema schema) {
     String pathField = properties.get(FileSourceProperties.PATH_FIELD);
     if (schema == null) {
-      return new BlobInputFormatter(getSchema(pathField));
+      return new BlobInputFormatter(getSchema(pathField, null));
     }
 
     Schema.Field bodyField = schema.getField("body");

@@ -91,7 +91,7 @@ public class FileBatchSource extends AbstractFileSource<FileSourceConfig> {
     if (fileFormat == null) {
       return config.getSchema();
     }
-    Schema schema = fileFormat.getSchema(config.getPathField());
+    Schema schema = fileFormat.getSchema(config.getPathField(), config.getPath());
     return schema == null ? config.getSchema() : schema;
   }
 

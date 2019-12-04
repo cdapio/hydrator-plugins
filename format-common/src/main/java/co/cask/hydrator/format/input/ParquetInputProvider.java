@@ -17,7 +17,21 @@
 package co.cask.hydrator.format.input;
 
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.hydrator.format.AvroSchemaConverter;
+import co.cask.hydrator.format.FileFormat;
+import com.google.common.base.Strings;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 
+import org.apache.parquet.format.converter.ParquetMetadataConverter;
+import org.apache.parquet.hadoop.ParquetFileReader;
+import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.schema.MessageType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -26,14 +40,40 @@ import javax.annotation.Nullable;
  */
 public class ParquetInputProvider implements FileInputFormatterProvider {
 
-  @Nullable
-  @Override
-  public Schema getSchema(@Nullable String pathField) {
-    return null;
-  }
+    private static final Logger LOG = LoggerFactory.getLogger(ParquetInputProvider.class);
 
-  @Override
-  public FileInputFormatter create(Map<String, String> properties, @Nullable Schema schema) {
-    return new ParquetInputFormatter(schema);
-  }
+    @Nullable
+    @Override
+    public Schema getSchema(@Nullable String pathField, String filePath) {
+        try {
+            filePath = FileFormat.getFilePath(filePath,".parquet");
+            if(Strings.isNullOrEmpty(filePath)) {
+                throw new IllegalArgumentException("File Path is a mandatory field for fetching Schema");
+            }
+            Path path = new Path(filePath);
+            Configuration conf = new Configuration();
+            conf.setBoolean(AvroSchemaConverter.ADD_LIST_ELEMENT_RECORDS, false);
+            ParquetMetadata readFooter = ParquetFileReader.readFooter(conf, path, ParquetMetadataConverter.NO_FILTER);
+            MessageType mt = readFooter.getFileMetaData().getSchema();
+            org.apache.avro.Schema avroSchema = new AvroSchemaConverter(conf).convert(mt);
+            if(Strings.isNullOrEmpty(pathField)) {
+                return Schema.parseJson(avroSchema.toString());
+            } else {
+                Schema schemaWithoutPath = Schema.parseJson(avroSchema.toString());
+                List<Schema.Field> fields = new ArrayList<>(schemaWithoutPath.getFields().size() + 1);
+                fields.addAll(schemaWithoutPath.getFields());
+                fields.add(Schema.Field.of(pathField, Schema.of(Schema.Type.STRING)));
+                return Schema.recordOf(schemaWithoutPath.getRecordName(), fields);
+            }
+        } catch (Exception e) {
+            LOG.error(e.getMessage(), e);
+            throw new RuntimeException("Error in reading parquet schema => " + e.getMessage(), e);
+        }
+    }
+
+
+    @Override
+    public FileInputFormatter create(Map<String, String> properties, @Nullable Schema schema) {
+        return new ParquetInputFormatter(schema);
+    }
 }

@@ -18,6 +18,7 @@ package co.cask.hydrator.format.input;
 
 import co.cask.cdap.api.data.format.StructuredRecord;
 import co.cask.cdap.api.data.schema.Schema;
+import co.cask.hydrator.format.AvroSchemaConverter;
 import co.cask.hydrator.format.AvroToStructuredTransformer;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.conf.Configuration;
@@ -51,6 +52,7 @@ public class ParquetInputFormatter implements FileInputFormatter {
     if (schema != null) {
       properties.put("parquet.avro.schema", schema.toString());
     }
+    properties.put(AvroSchemaConverter.ADD_LIST_ELEMENT_RECORDS, "false");
     return properties;
   }
 

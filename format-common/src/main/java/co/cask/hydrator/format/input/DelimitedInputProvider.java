@@ -33,7 +33,7 @@ public class DelimitedInputProvider implements FileInputFormatterProvider {
 
   @Nullable
   @Override
-  public Schema getSchema(@Nullable String pathField) {
+  public Schema getSchema(@Nullable String pathField, String filePath) {
     return null;
   }
 
