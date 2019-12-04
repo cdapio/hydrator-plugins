@@ -88,6 +88,11 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
     @Description(KEEP_DESC)
     @Nullable
     String keep;
+
+    public ProjectionTransformConfig() {
+
+    }
+
     public ProjectionTransformConfig(String drop, String rename, String convert, String keep) {
       this.drop = drop;
       this.rename = rename;
@@ -103,18 +108,18 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
   }
 
   private static final Pattern fieldDelimiter = Pattern.compile("\\s*,\\s*");
-  private Set<String> fieldsToDrop = Sets.newHashSet();
-  private Set<String> fieldsToKeep = Sets.newHashSet();
-  private BiMap<String, String> fieldsToRename = HashBiMap.create();
-  private Map<String, Schema.Type> fieldsToConvert = Maps.newHashMap();
+  private Set<String> fieldsToDrop;
+  private Set<String> fieldsToKeep;
+  private BiMap<String, String> fieldsToRename;
+  private Map<String, Schema.Type> fieldsToConvert;
   // cache input schema hash to output schema so we don't have to build it each time
-  private Map<Schema, Schema> schemaCache = Maps.newHashMap();
+  private Map<Schema, Schema> schemaCache;
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) throws IllegalArgumentException {
     super.configurePipeline(pipelineConfigurer);
     // call init so any invalid config is caught here to fail application creation
-    init(pipelineConfigurer.getStageConfigurer().getInputSchema(), projectionTransformConfig.keep, projectionTransformConfig.drop, projectionTransformConfig.rename, projectionTransformConfig.convert);
+    init(pipelineConfigurer.getStageConfigurer().getInputSchema(), projectionTransformConfig);
     Schema outputSchema = null;
     if (pipelineConfigurer.getStageConfigurer().getInputSchema() != null) {
       //validate the input schema and get the output schema for it
@@ -126,7 +131,7 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
-    init(context.getInputSchema(), projectionTransformConfig.keep, projectionTransformConfig.drop, projectionTransformConfig.rename, projectionTransformConfig.convert);
+    init(null, projectionTransformConfig);
   }
 
   @Override
@@ -160,19 +165,20 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
     emitter.emit(builder.build());
   }
 
-  private void init(Schema inputSchema, String keep, String drop, String rename, String convert) {
+  private void init(Schema inputSchema, ProjectionTransformConfig projectionTransformConfig) {
 
-    fieldsToDrop = (fieldsToDrop == null) ? Sets.newHashSet() : fieldsToDrop;
-    fieldsToKeep = (fieldsToKeep == null) ? Sets.newHashSet() : fieldsToKeep;
-    fieldsToRename = (fieldsToRename == null) ? HashBiMap.create() : fieldsToRename;
-    fieldsToConvert = (fieldsToConvert == null) ? Maps.newHashMap() : fieldsToConvert;
-    if (!Strings.isNullOrEmpty(drop) &&
-      !Strings.isNullOrEmpty(keep)) {
+    fieldsToDrop = Sets.newHashSet();
+    fieldsToKeep = Sets.newHashSet();
+    fieldsToRename = HashBiMap.create();
+    fieldsToConvert = Maps.newHashMap();
+    schemaCache = Maps.newHashMap();
+    if (!Strings.isNullOrEmpty(projectionTransformConfig.drop) &&
+      !Strings.isNullOrEmpty(projectionTransformConfig.keep)) {
       throw new IllegalArgumentException("Cannot specify both drop and keep. One should be empty or null.");
     }
 
-    if (!Strings.isNullOrEmpty(drop)) {
-      Iterables.addAll(fieldsToDrop, Splitter.on(fieldDelimiter).split(drop));
+    if (!Strings.isNullOrEmpty(projectionTransformConfig.drop)) {
+      Iterables.addAll(fieldsToDrop, Splitter.on(fieldDelimiter).split(projectionTransformConfig.drop));
       if (inputSchema != null) {
         boolean containAllFields = true;
         for (Schema.Field fieldName : inputSchema.getFields()) {
@@ -184,8 +190,8 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
           throw new IllegalArgumentException("'Fields to drop' cannot contain all the fields of input s chema.");
         }
       }
-    } else if (!Strings.isNullOrEmpty(keep)) {
-      Iterables.addAll(fieldsToKeep, Splitter.on(fieldDelimiter).split(keep));
+    } else if (!Strings.isNullOrEmpty(projectionTransformConfig.keep)) {
+      Iterables.addAll(fieldsToKeep, Splitter.on(fieldDelimiter).split(projectionTransformConfig.keep));
       if (inputSchema != null) {
         for (String field : fieldsToKeep) {
           if (inputSchema.getField(field) == null) {
@@ -196,8 +202,8 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
       }
     }
     KeyValueListParser kvParser = new KeyValueListParser("\\s*,\\s*", ":");
-    if (!Strings.isNullOrEmpty(rename)) {
-      for (KeyValue<String, String> keyVal : kvParser.parse(rename)) {
+    if (!Strings.isNullOrEmpty(projectionTransformConfig.rename)) {
+      for (KeyValue<String, String> keyVal : kvParser.parse(projectionTransformConfig.rename)) {
         String key = keyVal.getKey();
         if (inputSchema != null && inputSchema.getField(key) ==  null) {
           throw new IllegalArgumentException(String.format("Field: '%s' provided in 'Fields to rename' input is not " +
@@ -216,8 +222,8 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
       }
     }
 
-    if (!Strings.isNullOrEmpty(convert)) {
-      for (KeyValue<String, String> keyVal : kvParser.parse(convert)) {
+    if (!Strings.isNullOrEmpty(projectionTransformConfig.convert)) {
+      for (KeyValue<String, String> keyVal : kvParser.parse(projectionTransformConfig.convert)) {
         String name = keyVal.getKey();
         if (inputSchema != null && inputSchema.getField(name) ==  null) {
           throw new IllegalArgumentException(String.format("Field: '%s' provided in 'Convert' input is not " +
@@ -353,16 +359,16 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
 
   @Path("outputSchema")
   public Schema getOutputSchema(GetSchemaRequest request) {
-    init(request.inputSchema, request.keep, request.drop, request.rename, request.convert);
-    return extracted(request.inputSchema);
-  }
-  
-  public Schema getOutputSchema(Schema inputSchema) {
-    return extracted(inputSchema);
+    init(request.inputSchema, request);
+    return getOutputSchema(request.inputSchema);
   }
 
-  private Schema extracted(Schema inputSchema) {
-    schemaCache = (schemaCache == null) ? Maps.newHashMap() : schemaCache;
+  public class GetSchemaRequest extends ProjectionTransformConfig {
+    private Schema inputSchema;
+  }
+
+
+  private Schema getOutputSchema(Schema inputSchema) {
     Schema output = schemaCache.get(inputSchema);
     if (output != null) {
       return output;
@@ -406,12 +412,5 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
     output = Schema.recordOf(inputSchema.getRecordName() + ".projected", outputFields);
     schemaCache.put(inputSchema, output);
     return output;
-}
-  
-  public class GetSchemaRequest extends ProjectionTransformConfig {
-      private Schema inputSchema;
-      public GetSchemaRequest(String drop, String rename, String convert, String keep) {
-    	  super(drop, rename, convert, keep);
-      }
   }
 }
