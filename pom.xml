@@ -837,6 +837,7 @@
         <module>google-cloud</module>
         <module>kafka-plugins</module>
         <module>amazon-s3-plugins</module>
+        <module>azure</module>
         <module>condition-plugins</module>
       </modules>
     </profile>
