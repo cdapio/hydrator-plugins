@@ -141,7 +141,14 @@ public class FTPBatchSource extends AbstractFileSource {
     @Nullable
     @Override
     public Pattern getFilePattern() {
-      return Pattern.compile(fileRegex);
+      Pattern p;
+      try{
+        p = Pattern.compile(fileRegex);
+      }
+      catch(NullPointerException exception){
+        p = null;
+      }
+      return p;
     }
 
     @Override
