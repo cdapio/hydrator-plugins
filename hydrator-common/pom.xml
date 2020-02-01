@@ -30,7 +30,7 @@
   <packaging>jar</packaging>
 
   <properties>
-    <spark.version>1.6.1</spark.version>
+    <spark.version>2.2.3</spark.version>
   </properties>
 
   <dependencies>
