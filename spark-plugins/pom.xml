@@ -24,7 +24,7 @@
   </parent>
 
   <properties>
-    <spark.version>1.6.1</spark.version>
+    <spark.version>99.9.9</spark.version>
   </properties>
 
   <name>Spark Hydrator Plugins</name>
