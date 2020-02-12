@@ -41,6 +41,7 @@ import io.cdap.plugin.DBManager;
 import io.cdap.plugin.DBRecord;
 import io.cdap.plugin.DBUtils;
 import io.cdap.plugin.FieldCase;
+import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.common.ReferenceBatchSink;
 import io.cdap.plugin.common.ReferencePluginConfig;
 import io.cdap.plugin.db.batch.TransactionIsolationLevel;
@@ -56,6 +57,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -115,6 +117,9 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
       DBUtils.cleanup(driverClass);
     }
     context.addOutput(Output.of(dbSinkConfig.referenceName, new DBOutputFormatProvider(dbSinkConfig, driverClass)));
+
+    recordLineage(context, dbSinkConfig.referenceName, Schema.of(Schema.Type.STRING),
+        Arrays.asList(dbSinkConfig.columns.split(",")));
   }
 
   @Override
@@ -187,6 +192,17 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
       String name = columns.get(i);
       Preconditions.checkArgument(columnToType.containsKey(name), "Missing column '%s' in SQL table", name);
       columnTypes[i] = columnToType.get(name);
+    }
+  }
+
+  private void recordLineage(BatchSinkContext context,
+                             String outputName,
+                             Schema tableSchema,
+                             List<String> fieldNames) {
+    LineageRecorder lineageRecorder = new LineageRecorder(context, outputName);
+    lineageRecorder.createExternalDataset(tableSchema);
+    if (!fieldNames.isEmpty()) {
+      lineageRecorder.recordWrite("Write", "Wrote to Database.", fieldNames);
     }
   }
 
