@@ -57,11 +57,11 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 
@@ -118,8 +118,9 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
     }
     context.addOutput(Output.of(dbSinkConfig.referenceName, new DBOutputFormatProvider(dbSinkConfig, driverClass)));
 
-    recordLineage(context, dbSinkConfig.referenceName, Schema.of(Schema.Type.STRING),
-        Arrays.asList(dbSinkConfig.columns.split(",")));
+    Schema schema = context.getInputSchema();
+    recordLineage(context, dbSinkConfig.referenceName, schema,
+                  schema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList()));
   }
 
   @Override
@@ -195,10 +196,7 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
     }
   }
 
-  private void recordLineage(BatchSinkContext context,
-                             String outputName,
-                             Schema tableSchema,
-                             List<String> fieldNames) {
+  private void recordLineage(BatchSinkContext context, String outputName, Schema tableSchema, List<String> fieldNames) {
     LineageRecorder lineageRecorder = new LineageRecorder(context, outputName);
     lineageRecorder.createExternalDataset(tableSchema);
     if (!fieldNames.isEmpty()) {
