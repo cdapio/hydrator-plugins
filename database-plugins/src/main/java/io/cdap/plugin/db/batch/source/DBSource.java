@@ -361,13 +361,14 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
 
   private void emitLineage(BatchSourceContext context) {
     Schema schema = sourceConfig.getSchema(context.getFailureCollector());
+    if (schema == null)
+      schema = context.getOutputSchema();
     LineageRecorder lineageRecorder = new LineageRecorder(context, sourceConfig.referenceName);
     lineageRecorder.createExternalDataset(schema);
 
     if (schema != null && schema.getFields() != null) {
       lineageRecorder.recordRead("Read", "Read from DB.",
-          schema.getFields().stream().map(Schema.Field::getName).collect(
-              Collectors.toList()));
+                                 schema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList()));
     }
   }
 }
