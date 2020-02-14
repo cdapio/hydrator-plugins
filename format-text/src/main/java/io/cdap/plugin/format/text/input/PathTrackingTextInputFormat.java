@@ -35,6 +35,16 @@ import javax.annotation.Nullable;
  * Text format that tracks which file each record was read from.
  */
 public class PathTrackingTextInputFormat extends PathTrackingInputFormat {
+  private final boolean emittedHeader;
+
+  /**
+   * @param emittedHeader whether the header was already emitted. This is the case when there are multiple files in
+   *   the same split. The delegate RecordReader for the first split will emit it, and we will need the delegate
+   *   RecordReaders for the other files to skip it.
+   */
+  public PathTrackingTextInputFormat(boolean emittedHeader) {
+    this.emittedHeader = emittedHeader;
+  }
 
   @Override
   protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(FileSplit split,
@@ -43,7 +53,7 @@ public class PathTrackingTextInputFormat extends PathTrackingInputFormat {
                                                                                     Schema schema) {
     RecordReader<LongWritable, Text> delegate = (new TextInputFormat()).createRecordReader(split, context);
     String header = context.getConfiguration().get(CombineTextInputFormat.HEADER);
-    return new TextRecordReader(delegate, schema, header);
+    return new TextRecordReader(delegate, schema, emittedHeader, header);
   }
 
   /**
@@ -56,9 +66,11 @@ public class PathTrackingTextInputFormat extends PathTrackingInputFormat {
     private final boolean setOffset;
     private boolean emittedHeader;
 
-    TextRecordReader(RecordReader<LongWritable, Text> delegate, Schema schema, @Nullable String header) {
+    TextRecordReader(RecordReader<LongWritable, Text> delegate, Schema schema, boolean emittedHeader,
+                     @Nullable String header) {
       this.delegate = delegate;
       this.schema = schema;
+      this.emittedHeader = emittedHeader;
       this.header = header;
       this.setOffset = schema.getField("offset") != null;
     }
@@ -66,7 +78,6 @@ public class PathTrackingTextInputFormat extends PathTrackingInputFormat {
     @Override
     public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
       delegate.initialize(split, context);
-      emittedHeader = false;
     }
 
     @Override
@@ -76,9 +87,8 @@ public class PathTrackingTextInputFormat extends PathTrackingInputFormat {
       }
 
       if (delegate.nextKeyValue()) {
-        // if this record is the actual header and we've already emitted the copied header,
-        // skip this record so that the header is not emitted twice.
-        if (emittedHeader && delegate.getCurrentKey().get() == 0L) {
+        // if this record is the actual header and we've already emitted the copied header
+        if (header != null && emittedHeader && delegate.getCurrentKey().get() == 0L) {
           return delegate.nextKeyValue();
         }
         return true;
