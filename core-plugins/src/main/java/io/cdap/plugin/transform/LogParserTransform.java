@@ -27,7 +27,9 @@ import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.InvalidEntry;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import net.sf.uadetector.ReadableUserAgent;
 import net.sf.uadetector.UserAgentStringParser;
 import net.sf.uadetector.service.UADetectorServiceFactory;
@@ -37,8 +39,10 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
@@ -124,6 +128,19 @@ public class LogParserTransform extends Transform<StructuredRecord, StructuredRe
       }
     }
     pipelineConfigurer.getStageConfigurer().setOutputSchema(LOG_SCHEMA);
+  }
+
+  @Override
+  public void prepareRun(StageSubmitterContext context) {
+    if (context.getInputSchema() == null || context.getInputSchema().getFields() == null) {
+      return;
+    }
+    String inputField = config.inputName;
+    List<String> outputs = LOG_SCHEMA.getFields().stream().map(Schema.Field::getName).collect(
+      Collectors.toList());
+
+    context.record(TransformLineageRecorderUtils.generateOneToMany(inputField, outputs, "logParserTransform",
+      "Parse the logs into outputs."));
   }
 
   @Override
