@@ -35,6 +35,7 @@ import io.cdap.cdap.etl.api.batch.BatchJoinerContext;
 import io.cdap.cdap.etl.api.batch.BatchJoinerRuntimeContext;
 import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
 import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -100,6 +101,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     Collection<OutputFieldInfo> outputFieldInfos = createOutputFieldInfos(context.getInputSchemas(), collector);
     collector.getOrThrowException();
     context.record(createFieldOperations(outputFieldInfos, perStageJoinKeys));
+
   }
 
   /**

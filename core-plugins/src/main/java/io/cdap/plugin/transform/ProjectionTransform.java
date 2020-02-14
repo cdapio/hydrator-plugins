@@ -35,15 +35,22 @@ import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
+import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
 import io.cdap.plugin.common.KeyValueListParser;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
@@ -136,6 +143,20 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
     FailureCollector collector = context.getFailureCollector();
     init(null, collector);
     collector.getOrThrowException();
+  }
+
+  @Override
+  public void prepareRun(StageSubmitterContext context) {
+    init(context.getInputSchema(), context.getFailureCollector());
+
+    List<FieldOperation> output = TransformLineageRecorderUtils.generateOneToOnes(new ArrayList<>(fieldsToKeep),
+      "identity", TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION);
+    output.addAll(TransformLineageRecorderUtils.generateDrops(new ArrayList<>(fieldsToDrop)));
+    output.addAll(fieldsToRename.keySet().stream().map(field -> new FieldTransformOperation("renameField" + field,
+      "Renamed fields as specified.",
+      Collections.singletonList(field), fieldsToRename.get(field))).collect(Collectors.toList()));
+
+    context.record(output);
   }
 
   @Override

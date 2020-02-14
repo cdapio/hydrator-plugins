@@ -30,6 +30,9 @@ import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchAggregator;
 import io.cdap.cdap.etl.api.batch.BatchAggregatorContext;
 import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
+import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -105,7 +108,6 @@ public class DistinctAggregator extends RecordAggregator {
 
     validate(context.getInputSchema(), conf.getFields(), context.getFailureCollector());
     context.getFailureCollector().getOrThrowException();
-
   }
 
   @Override

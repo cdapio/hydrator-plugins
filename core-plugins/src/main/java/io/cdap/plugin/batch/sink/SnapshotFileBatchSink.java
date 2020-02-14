@@ -21,6 +21,7 @@ import com.google.gson.reflect.TypeToken;
 import io.cdap.cdap.api.data.batch.Output;
 import io.cdap.cdap.api.data.batch.OutputFormatProvider;
 import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.DatasetManagementException;
 import io.cdap.cdap.api.dataset.DatasetProperties;
 import io.cdap.cdap.api.dataset.lib.FileSetProperties;
@@ -31,7 +32,9 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchSink;
 import io.cdap.cdap.etl.api.batch.BatchSinkContext;
 import io.cdap.cdap.etl.api.validation.ValidatingOutputFormat;
+import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.common.TimeParser;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import io.cdap.plugin.dataset.SnapshotFileSet;
 import org.apache.hadoop.io.NullWritable;
 import org.slf4j.Logger;
@@ -40,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -108,6 +112,16 @@ public abstract class SnapshotFileBatchSink<T extends SnapshotFileSetBatchSinkCo
     }
     context.addOutput(Output.ofDataset(config.getName(),
                                        snapshotFileSet.getOutputArguments(context.getLogicalStartTime(), arguments)));
+
+    Schema schema = context.getInputSchema();
+    if (schema != null && schema.getFields() != null) {
+      LineageRecorder lineageRecorder = new LineageRecorder(context, config.getName());
+      lineageRecorder.createExternalDataset(schema);
+      List<String> fieldNames = TransformLineageRecorderUtils.getFields(schema);
+      if (!fieldNames.isEmpty()) {
+        lineageRecorder.recordWrite("Write", "Wrote to Snapshot file.", fieldNames);
+      }
+    }
   }
 
   @Override

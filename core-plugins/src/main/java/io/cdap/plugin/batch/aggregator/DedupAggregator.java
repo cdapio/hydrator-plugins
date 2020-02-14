@@ -26,8 +26,10 @@ import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchAggregator;
+import io.cdap.cdap.etl.api.batch.BatchAggregatorContext;
 import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
 import io.cdap.plugin.batch.aggregator.function.SelectionFunction;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -49,6 +51,14 @@ public class DedupAggregator extends RecordAggregator {
   public DedupAggregator(DedupConfig dedupConfig) {
     super(dedupConfig.numPartitions);
     this.dedupConfig = dedupConfig;
+  }
+
+  @Override
+  public void prepareRun(BatchAggregatorContext context) throws Exception {
+    super.prepareRun(context);
+
+    TransformLineageRecorderUtils.generateOneToOnes(dedupConfig.getUniqueFields(), "dedup",
+      "Removed duplicate records..");
   }
 
   @Override
