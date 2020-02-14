@@ -119,8 +119,10 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
     context.addOutput(Output.of(dbSinkConfig.referenceName, new DBOutputFormatProvider(dbSinkConfig, driverClass)));
 
     Schema schema = context.getInputSchema();
-    recordLineage(context, dbSinkConfig.referenceName, schema,
-                  schema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList()));
+    if (schema != null && schema.getFields() != null) {
+      recordLineage(context, dbSinkConfig.referenceName, schema,
+          schema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList()));
+    }
   }
 
   @Override
