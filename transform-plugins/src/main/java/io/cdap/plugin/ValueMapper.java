@@ -29,12 +29,19 @@ import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.Lookup;
 import io.cdap.cdap.etl.api.LookupTableConfig;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
+import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Transforms records using custom mapping provided by the config.
@@ -80,6 +87,32 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
       this.mapping = mapping;
       this.defaults = defaults;
     }
+  }
+
+  @Override
+  public void prepareRun(StageSubmitterContext context) throws Exception {
+    super.prepareRun(context);
+    if (context.getInputSchema() == null || context.getInputSchema().getFields() == null) {
+      return;
+    }
+    parseConfiguration(this.config, context.getFailureCollector());
+
+    // After extracting the mappings, store a list of operations containing identity transforms for every output
+    // field also present in the mappings list.
+    List<String> mappedFields = TransformLineageRecorderUtils.getFields(context.getInputSchema())
+      .stream().filter(mappingValues::containsKey).collect(Collectors.toList());
+
+    List<String> identityFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
+    identityFields.removeAll(mappedFields);
+
+    List<FieldOperation> output = new ArrayList<>();
+    output.addAll(mappedFields.stream().map(sourceFieldName -> new FieldTransformOperation(
+      "mapValueOf" + sourceFieldName, "Mapped values of fields based on the lookup table.",
+      Collections.singletonList(sourceFieldName), mappingValues.get(sourceFieldName).getDefaultValue())).collect(
+        Collectors.toList()));
+    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(identityFields, "identity",
+      TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));
+    context.record(output);
   }
 
   /**

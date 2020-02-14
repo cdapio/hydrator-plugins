@@ -122,9 +122,11 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
     config.validate(collector);
     collector.getOrThrowException();
 
+    // Read from config.field and output to fields
     init();
     if (fields != null) {
-      FieldOperation operation = new FieldTransformOperation("Parse", "Parsed field",
+      FieldOperation operation = new FieldTransformOperation("Parse",
+                                                             "Parsed CSV data from expected field.",
                                                              Collections.singletonList(config.field),
                                                              fields.stream().map(Schema.Field::getName)
                                                                .collect(Collectors.toList()));

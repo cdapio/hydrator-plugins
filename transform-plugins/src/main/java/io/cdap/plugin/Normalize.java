@@ -26,8 +26,10 @@ import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -167,6 +169,21 @@ public class Normalize extends Transform<StructuredRecord, StructuredRecord> {
           .withConfigElement(NormalizeConfig.FIELD_NORMALIZING, fieldNormalizing);
       }
     }
+  }
+
+  @Override
+  public void prepareRun(StageSubmitterContext context) throws Exception {
+    super.prepareRun(context);
+    initializeFieldData();
+    if (context.getOutputSchema() == null || context.getOutputSchema().getFields() == null) {
+      return;
+    }
+
+    context.record(
+      TransformLineageRecorderUtils.generateManyToMany(normalizeFieldList,
+        TransformLineageRecorderUtils.getFields(context.getOutputSchema()),
+        "normalize",
+        "Normalize wide rows and reduce data to canonical form."));
   }
 
   private void initializeFieldData() {
