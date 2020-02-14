@@ -28,9 +28,11 @@ import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.InvalidEntry;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
 import io.cdap.cdap.etl.api.validation.ValidationFailure;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -91,6 +93,19 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
     }
     validateXpathAndSchema(collector);
     pipelineConfigurer.getStageConfigurer().setOutputSchema(outSchema);
+  }
+
+  @Override
+  public void prepareRun(StageSubmitterContext context) throws Exception {
+    super.prepareRun(context);
+    FailureCollector collector = context.getFailureCollector();
+    collector.getOrThrowException();
+
+    context.record(
+      TransformLineageRecorderUtils.generateOneToMany(config.inputField,
+        TransformLineageRecorderUtils.getFields(context.getOutputSchema()),
+        "XMLParse",
+        "Parsed XML data into a full row."));
   }
 
   @Override
