@@ -34,6 +34,7 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.slf4j.Logger;
@@ -41,8 +42,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
@@ -66,7 +69,7 @@ import javax.annotation.Nullable;
 public final class CSVFormatter extends Transform<StructuredRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(CSVFormatter.class);
 
-  // Transform configuraiton.
+  // Transform configuration.
   private final Config config;
 
   // Output Schema associated with transform output.
@@ -116,6 +119,17 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
+
+    Schema schema = context.getInputSchema();
+    if (schema == null || schema.getFields() == null) {
+      return;
+    }
+    List<String> input = schema.getFields().stream()
+        .map(Schema.Field::getName).collect(Collectors.toList());
+    context.record(Collections.singletonList(
+                                             new FieldTransformOperation("csvFormat", "CSV formatter", input,
+                                                                         fields.stream().map(Schema.Field::getName)
+                                                                             .collect(Collectors.toList()))));
     config.validate(context.getFailureCollector());
   }
 

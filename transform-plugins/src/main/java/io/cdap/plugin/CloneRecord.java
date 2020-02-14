@@ -29,8 +29,16 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.batch.BatchContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
+import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
+import io.cdap.plugin.common.LineageRecorder;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Clones Input Record 'n' number of times into output.
@@ -59,6 +67,25 @@ public final class CloneRecord extends Transform<StructuredRecord, StructuredRec
     FailureCollector collector = context.getFailureCollector();
     config.validate(collector);
     collector.getOrThrowException();
+
+    Schema inputSchema = context.getInputSchema();
+    if (inputSchema == null || inputSchema.getFields() == null || inputSchema.getFields().isEmpty()) {
+      return;
+    }
+    Set<String> input = inputSchema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toSet());
+
+    List<FieldOperation> operationList = new ArrayList<>();
+    for (String inputField : input) {
+      List<String> outputs = new ArrayList<>();
+      for (int i = 0; i < config.copies; i++) {
+        outputs.add(inputField);
+      }
+      FieldTransformOperation operation =
+          new FieldTransformOperation("clone" + inputField, "Clone field " + inputField,
+                                      Collections.singletonList(inputField), outputs);
+      operationList.add(operation);
+    }
+    context.record(operationList);
   }
 
   @Override
@@ -98,6 +125,14 @@ public final class CloneRecord extends Transform<StructuredRecord, StructuredRec
       if (!containsMacro("copies") && (copies <= 0)) {
         collector.addFailure("Number of copies must be a positive number.", null).withConfigProperty(NAME_COPIES);
       }
+    }
+  }
+
+  private void recordLineage(BatchContext context, String outputName, Schema tableSchema, List<String> fieldNames) {
+    LineageRecorder lineageRecorder = new LineageRecorder(context, outputName);
+    lineageRecorder.createExternalDataset(tableSchema);
+    if (!fieldNames.isEmpty()) {
+      lineageRecorder.recordWrite("Write", "Wrote to Database.", fieldNames);
     }
   }
 }

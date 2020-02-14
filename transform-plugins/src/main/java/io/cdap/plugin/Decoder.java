@@ -28,17 +28,24 @@ import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageConfigurer;
+import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
+import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
@@ -98,6 +105,31 @@ public final class Decoder extends Transform<StructuredRecord, StructuredRecord>
     }
 
     stageConfigurer.setOutputSchema(outputSchema);
+  }
+
+  @Override
+  public void prepareRun(StageSubmitterContext context) throws Exception {
+    super.prepareRun(context);
+
+    Schema inputSchema = context.getInputSchema();
+    if (inputSchema == null || inputSchema.getFields() == null || inputSchema.getFields().isEmpty()) {
+      return;
+    }
+    Set<String> input = inputSchema.getFields().stream().map(Schema.Field::getName).collect(
+        Collectors.toSet());
+    if (outSchema == null || outSchema.getFields() == null || outSchema.getFields().isEmpty()) {
+      return;
+    }
+    List<String> output = outSchema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList());
+
+    List<FieldOperation> operationList = new ArrayList<>();
+    for (String inputField : input) {
+      FieldTransformOperation operation =
+          new FieldTransformOperation("decode" + inputField, "Decode field " + inputField,
+                                      Collections.singletonList(inputField), output);
+      operationList.add(operation);
+    }
+    context.record(operationList);
   }
 
   @Override
