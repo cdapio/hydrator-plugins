@@ -361,8 +361,9 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
 
   private void emitLineage(BatchSourceContext context) {
     Schema schema = sourceConfig.getSchema(context.getFailureCollector());
-    if (schema == null)
+    if (schema == null) {
       schema = context.getOutputSchema();
+    }
     LineageRecorder lineageRecorder = new LineageRecorder(context, sourceConfig.referenceName);
     lineageRecorder.createExternalDataset(schema);
 
