@@ -61,6 +61,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
@@ -159,10 +160,10 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     if (sourceConfig.schema != null) {
       hConf.set(DBUtils.OVERRIDE_SCHEMA, sourceConfig.schema);
     }
-    LineageRecorder lineageRecorder = new LineageRecorder(context, sourceConfig.referenceName);
-    lineageRecorder.createExternalDataset(sourceConfig.getSchema(collector));
     context.setInput(Input.of(sourceConfig.referenceName,
                               new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf)));
+
+    emitLineage(context);
   }
 
   @Override
@@ -355,6 +356,20 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
         collector.addFailure(String.format("Invalid Schema : %s", e.getMessage()), null);
       }
       throw collector.getOrThrowException();
+    }
+  }
+
+  private void emitLineage(BatchSourceContext context) {
+    Schema schema = sourceConfig.getSchema(context.getFailureCollector());
+    if (schema == null) {
+      schema = context.getOutputSchema();
+    }
+    LineageRecorder lineageRecorder = new LineageRecorder(context, sourceConfig.referenceName);
+    lineageRecorder.createExternalDataset(schema);
+
+    if (schema != null && schema.getFields() != null) {
+      lineageRecorder.recordRead("Read", "Read from DB.",
+                                 schema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList()));
     }
   }
 }
