@@ -26,14 +26,21 @@ import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
+import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.XML;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * A transform that parses an XML String field into a stringified JSON Object.
@@ -55,6 +62,27 @@ public final class XMLToJSON extends Transform<StructuredRecord, StructuredRecor
   // Used only for testing.
   public XMLToJSON(Config config) {
     this.config = config;
+  }
+
+  @Override
+  public void prepareRun(StageSubmitterContext context) throws Exception {
+    super.prepareRun(context);
+
+    Schema inputSchema = context.getInputSchema();
+    if (inputSchema == null || inputSchema.getFields() == null || inputSchema.getFields().isEmpty()) {
+      return;
+    }
+    Set<String> input = inputSchema.getFields().stream().map(Schema.Field::getName).collect(
+        Collectors.toSet());
+
+    List<FieldOperation> operationList = new ArrayList<>();
+    for (String inputField : input) {
+      FieldTransformOperation operation =
+          new FieldTransformOperation("xmlToJson" + inputField, "XML to JSON for field " + inputField,
+              Collections.singletonList(inputField), Collections.singletonList(inputField));
+      operationList.add(operation);
+    }
+    context.record(operationList);
   }
 
   @Override
