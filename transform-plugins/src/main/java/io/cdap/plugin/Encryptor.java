@@ -27,10 +27,15 @@ import io.cdap.cdap.api.data.schema.Schema.Field;
 import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageConfigurer;
+import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
+import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
 import io.cdap.plugin.common.FieldEncryptor;
 import io.cdap.plugin.common.KeystoreConf;
+import java.util.Collections;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +75,27 @@ public final class Encryptor extends Transform<StructuredRecord, StructuredRecor
     encryptFields = conf.getEncryptFields();
     fieldEncryptor = new FileBasedFieldEncryptor(conf, Cipher.ENCRYPT_MODE);
     fieldEncryptor.initialize();
+  }
+
+  @Override
+  public void prepareRun(StageSubmitterContext context) throws Exception {
+    super.prepareRun(context);
+
+    Schema inputSchema = context.getInputSchema();
+    if (inputSchema == null || inputSchema.getFields() == null || inputSchema.getFields().isEmpty()) {
+      return;
+    }
+    Set<String> input = inputSchema.getFields().stream().map(Schema.Field::getName).collect(
+        Collectors.toSet());
+
+    List<FieldOperation> operationList = new ArrayList<>();
+    for (String inputField : input) {
+      FieldTransformOperation operation =
+          new FieldTransformOperation("encrypt" + inputField, "Encrypt field " + inputField,
+              Collections.singletonList(inputField), Collections.singletonList(inputField));
+      operationList.add(operation);
+    }
+    context.record(operationList);
   }
 
   @Override

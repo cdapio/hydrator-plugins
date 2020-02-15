@@ -26,8 +26,15 @@ import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
+import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
@@ -91,6 +98,30 @@ public final class Encoder extends Transform<StructuredRecord, StructuredRecord>
         }
       }
     }
+  }
+
+  @Override
+  public void prepareRun(StageSubmitterContext context) throws Exception {
+    super.prepareRun(context);
+
+    Schema inputSchema = context.getInputSchema();
+    if (inputSchema == null || inputSchema.getFields() == null || inputSchema.getFields().isEmpty()) {
+      return;
+    }
+    Set<String> input = inputSchema.getFields().stream().map(Schema.Field::getName).collect(
+        Collectors.toSet());
+    if (outSchema == null || outSchema.getFields() == null || outSchema.getFields().isEmpty()) {
+      return;
+    }
+
+    List<FieldOperation> operationList = new ArrayList<>();
+    for (String inputField : input) {
+      FieldTransformOperation operation =
+          new FieldTransformOperation("encode" + inputField, "Encode field " + inputField,
+              Collections.singletonList(inputField), Collections.singletonList(inputField));
+      operationList.add(operation);
+    }
+    context.record(operationList);
   }
 
   @Override

@@ -83,16 +83,12 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
     }
     Set<String> input = inputSchema.getFields().stream().map(Schema.Field::getName).collect(
         Collectors.toSet());
-    if (outSchema == null || outSchema.getFields() == null || outSchema.getFields().isEmpty()) {
-      return;
-    }
-    List<String> output = outSchema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList());
 
     List<FieldOperation> operationList = new ArrayList<>();
     for (String inputField : input) {
       FieldTransformOperation operation =
           new FieldTransformOperation("compress" + inputField, "Compress field " + inputField,
-                                      Collections.singletonList(inputField), output);
+                                      Collections.singletonList(inputField), Collections.singletonList(inputField));
       operationList.add(operation);
     }
     context.record(operationList);

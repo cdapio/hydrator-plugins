@@ -76,13 +76,9 @@ public final class CloneRecord extends Transform<StructuredRecord, StructuredRec
 
     List<FieldOperation> operationList = new ArrayList<>();
     for (String inputField : input) {
-      List<String> outputs = new ArrayList<>();
-      for (int i = 0; i < config.copies; i++) {
-        outputs.add(inputField);
-      }
       FieldTransformOperation operation =
           new FieldTransformOperation("clone" + inputField, "Clone field " + inputField,
-                                      Collections.singletonList(inputField), outputs);
+                                      Collections.singletonList(inputField), Collections.singletonList(inputField));
       operationList.add(operation);
     }
     context.record(operationList);
@@ -125,14 +121,6 @@ public final class CloneRecord extends Transform<StructuredRecord, StructuredRec
       if (!containsMacro("copies") && (copies <= 0)) {
         collector.addFailure("Number of copies must be a positive number.", null).withConfigProperty(NAME_COPIES);
       }
-    }
-  }
-
-  private void recordLineage(BatchContext context, String outputName, Schema tableSchema, List<String> fieldNames) {
-    LineageRecorder lineageRecorder = new LineageRecorder(context, outputName);
-    lineageRecorder.createExternalDataset(tableSchema);
-    if (!fieldNames.isEmpty()) {
-      lineageRecorder.recordWrite("Write", "Wrote to Database.", fieldNames);
     }
   }
 }

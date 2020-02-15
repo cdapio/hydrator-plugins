@@ -120,13 +120,12 @@ public final class Decoder extends Transform<StructuredRecord, StructuredRecord>
     if (outSchema == null || outSchema.getFields() == null || outSchema.getFields().isEmpty()) {
       return;
     }
-    List<String> output = outSchema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList());
 
     List<FieldOperation> operationList = new ArrayList<>();
     for (String inputField : input) {
       FieldTransformOperation operation =
           new FieldTransformOperation("decode" + inputField, "Decode field " + inputField,
-                                      Collections.singletonList(inputField), output);
+                                      Collections.singletonList(inputField), Collections.singletonList(inputField));
       operationList.add(operation);
     }
     context.record(operationList);

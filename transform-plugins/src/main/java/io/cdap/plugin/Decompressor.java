@@ -26,8 +26,15 @@ import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
+import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xerial.snappy.Snappy;
@@ -66,6 +73,27 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
   // This is used only for tests, otherwise this is being injected by the ingestion framework.
   public Decompressor(Config config) {
     this.config = config;
+  }
+
+  @Override
+  public void prepareRun(StageSubmitterContext context) throws Exception {
+    super.prepareRun(context);
+
+    Schema inputSchema = context.getInputSchema();
+    if (inputSchema == null || inputSchema.getFields() == null || inputSchema.getFields().isEmpty()) {
+      return;
+    }
+    Set<String> input = inputSchema.getFields().stream().map(Schema.Field::getName).collect(
+        Collectors.toSet());
+
+    List<FieldOperation> operationList = new ArrayList<>();
+    for (String inputField : input) {
+      FieldTransformOperation operation =
+          new FieldTransformOperation("decompress" + inputField, "Decompress field " + inputField,
+              Collections.singletonList(inputField), Collections.singletonList(inputField));
+      operationList.add(operation);
+    }
+    context.record(operationList);
   }
 
   @Override
