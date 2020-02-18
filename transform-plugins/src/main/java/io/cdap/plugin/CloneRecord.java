@@ -60,7 +60,7 @@ public final class CloneRecord extends Transform<StructuredRecord, StructuredRec
     config.validate(collector);
     collector.getOrThrowException();
 
-    TransformFLLUtils.oneToOneIn(context, "clone", "Clone field");
+    TransformFLLUtils.oneToOneIn(context, "copy", "Copy the field named");
   }
 
   @Override
