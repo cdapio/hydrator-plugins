@@ -28,15 +28,10 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
-import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
-import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
 import io.cdap.cdap.format.StructuredRecordStringConverter;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * JSON Formatter formats {@link StructuredRecord} into JSON Object.
@@ -83,26 +78,7 @@ public final class JSONFormatter extends Transform<StructuredRecord, StructuredR
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
-
-    Schema schema = context.getInputSchema();
-    if (schema == null || schema.getFields() == null) {
-      return;
-    }
-    List<String> input = schema.getFields().stream()
-        .map(Schema.Field::getName).collect(Collectors.toList());
-    Schema outputSchema = context.getOutputSchema();
-    if (outputSchema == null || outputSchema.getFields() == null) {
-      return;
-    }
-    List<String> output = outputSchema.getFields().stream()
-        .map(Schema.Field::getName).collect(Collectors.toList());
-
-    List<FieldOperation> operations = new ArrayList<>();
-    FieldTransformOperation operation =
-        new FieldTransformOperation("jsonFormat" , "JSON formatter", input,
-            Collections.singletonList(output.get(0)));
-    operations.add(operation);
-    context.record(operations);
+    TransformFLLUtils.allInToFirstOut(context, "jsonFormat", "JSON formatter");
   }
 
   @Override

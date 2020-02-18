@@ -33,18 +33,12 @@ import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
-import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
-import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
 import io.cdap.plugin.common.FieldEncryptor;
 import io.cdap.plugin.common.KeystoreConf;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.crypto.Cipher;
 
@@ -89,22 +83,7 @@ public final class Decryptor extends Transform<StructuredRecord, StructuredRecor
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
-
-    Schema inputSchema = context.getInputSchema();
-    if (inputSchema == null || inputSchema.getFields() == null || inputSchema.getFields().isEmpty()) {
-      return;
-    }
-    Set<String> input = inputSchema.getFields().stream().map(Schema.Field::getName).collect(
-        Collectors.toSet());
-
-    List<FieldOperation> operationList = new ArrayList<>();
-    for (String inputField : input) {
-      FieldTransformOperation operation =
-          new FieldTransformOperation("decrypt" + inputField, "Decrypt field " + inputField,
-              Collections.singletonList(inputField), Collections.singletonList(inputField));
-      operationList.add(operation);
-    }
-    context.record(operationList);
+    TransformFLLUtils.oneToOneIn(context, "decrpyt", "Decrypt field");
   }
 
   @Override

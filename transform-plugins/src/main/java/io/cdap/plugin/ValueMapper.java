@@ -29,6 +29,7 @@ import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.Lookup;
 import io.cdap.cdap.etl.api.LookupTableConfig;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
 import java.util.ArrayList;
@@ -80,6 +81,12 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
       this.mapping = mapping;
       this.defaults = defaults;
     }
+  }
+
+  @Override
+  public void prepareRun(StageSubmitterContext context) throws Exception {
+    super.prepareRun(context);
+    TransformFLLUtils.oneToOneIn(context, "mapValueOf", "Map values of field");
   }
 
   /**

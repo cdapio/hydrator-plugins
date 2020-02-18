@@ -29,8 +29,6 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
-import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
-import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xerial.snappy.Snappy;
@@ -38,14 +36,10 @@ import org.xerial.snappy.Snappy;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -78,22 +72,7 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
-
-    Schema inputSchema = context.getInputSchema();
-    if (inputSchema == null || inputSchema.getFields() == null || inputSchema.getFields().isEmpty()) {
-      return;
-    }
-    Set<String> input = inputSchema.getFields().stream().map(Schema.Field::getName).collect(
-        Collectors.toSet());
-
-    List<FieldOperation> operationList = new ArrayList<>();
-    for (String inputField : input) {
-      FieldTransformOperation operation =
-          new FieldTransformOperation("decompress" + inputField, "Decompress field " + inputField,
-              Collections.singletonList(inputField), Collections.singletonList(inputField));
-      operationList.add(operation);
-    }
-    context.record(operationList);
+    TransformFLLUtils.oneToOneIn(context, "decompress", "Decompress field");
   }
 
   @Override

@@ -31,8 +31,6 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
-import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
-import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -44,12 +42,8 @@ import org.xml.sax.SAXException;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -92,22 +86,7 @@ public class XMLMultiParser extends Transform<StructuredRecord, StructuredRecord
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
-
-    Schema inputSchema = context.getInputSchema();
-    if (inputSchema == null || inputSchema.getFields() == null || inputSchema.getFields().isEmpty()) {
-      return;
-    }
-    Set<String> input = inputSchema.getFields().stream().map(Schema.Field::getName).collect(
-        Collectors.toSet());
-
-    List<FieldOperation> operationList = new ArrayList<>();
-    for (String inputField : input) {
-      FieldTransformOperation operation =
-          new FieldTransformOperation("multiParse" + inputField, "Multi Parse field " + inputField,
-              Collections.singletonList(inputField), Collections.singletonList(inputField));
-      operationList.add(operation);
-    }
-    context.record(operationList);
+    TransformFLLUtils.oneToOneIn(context, "multiParse", "Multi parse field");
   }
 
   @Override

@@ -29,13 +29,9 @@ import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
-import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
-import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
 import org.apache.commons.codec.digest.DigestUtils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -71,22 +67,7 @@ public final class Hasher extends Transform<StructuredRecord, StructuredRecord> 
     FailureCollector failureCollector = context.getFailureCollector();
     config.validate(context.getInputSchema(), failureCollector);
     failureCollector.getOrThrowException();
-
-    Schema inputSchema = context.getInputSchema();
-    if (inputSchema == null || inputSchema.getFields() == null || inputSchema.getFields().isEmpty()) {
-      return;
-    }
-    Set<String> input = inputSchema.getFields().stream().map(Schema.Field::getName).collect(
-        Collectors.toSet());
-
-    List<FieldOperation> operationList = new ArrayList<>();
-    for (String inputField : input) {
-      FieldTransformOperation operation =
-          new FieldTransformOperation("hash" + inputField, "Hash field " + inputField,
-              Collections.singletonList(inputField), Collections.singletonList(inputField));
-      operationList.add(operation);
-    }
-    context.record(operationList);
+    TransformFLLUtils.oneToOneIn(context, "hash", "Hash field");
   }
 
   @Override

@@ -31,8 +31,6 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
-import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
-import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
 import io.cdap.cdap.etl.api.validation.ValidationFailure;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -44,11 +42,9 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -104,16 +100,7 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
     FailureCollector collector = context.getFailureCollector();
     collector.getOrThrowException();
 
-    Schema outputSchema = context.getOutputSchema();
-
-    if (outputSchema != null && outputSchema.getFields() != null) {
-      List<Schema.Field> fields = outputSchema.getFields();
-      FieldOperation operation = new FieldTransformOperation("XML Parse", "Parsed XML data",
-          Collections.singletonList(config.inputField),
-          fields.stream().map(Schema.Field::getName)
-              .collect(Collectors.toList()));
-      context.record(Collections.singletonList(operation));
-    }
+    TransformFLLUtils.firstInToAllOut(context, "XML Parse", "Parsed XML data");
   }
 
   @Override
