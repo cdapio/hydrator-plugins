@@ -1,3 +1,19 @@
+/*
+ * Copyright © 2016-2020 Cask Data, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package io.cdap.plugin;
 
 import io.cdap.cdap.api.data.schema.Schema;
@@ -37,7 +53,9 @@ public class TransformFLLUtils {
 
   public static void oneToOneIn(StageSubmitterContext context, String namePrefix, String descriptionPrefix) {
     Set<String> input = getInputFields(context, Collectors.toSet());
-    if (input == null) return;
+    if (input == null) {
+      return;
+    }
 
     List<FieldOperation> operationList = new ArrayList<>();
     for (String inputField : input) {
@@ -52,7 +70,9 @@ public class TransformFLLUtils {
   public static void allInToFirstOut(StageSubmitterContext context, String name, String description) {
     List<String> input = getInputFields(context, Collectors.toList());
     List<String> output = getOutputFields(context, Collectors.toList());
-    if (input == null || output == null) return;
+    if (input == null || output == null) {
+      return;
+    }
 
     List<FieldOperation> operations = Collections
         .singletonList(new FieldTransformOperation(name, description, input,
@@ -63,7 +83,9 @@ public class TransformFLLUtils {
   public static void firstInToAllOut(StageSubmitterContext context, String name, String description) {
     List<String> input = getInputFields(context, Collectors.toList());
     List<String> output = getOutputFields(context, Collectors.toList());
-    if (input == null || output == null) return;
+    if (input == null || output == null) {
+      return;
+    }
 
     List<FieldOperation> operations = Collections
         .singletonList(new FieldTransformOperation(name, description, Collections.singletonList(input.get(0)),
@@ -74,7 +96,9 @@ public class TransformFLLUtils {
   public static void allInToAllOut(StageSubmitterContext context, String name, String description) {
     List<String> input = getInputFields(context, Collectors.toList());
     List<String> output = getOutputFields(context, Collectors.toList());
-    if (input == null || output == null) return;
+    if (input == null || output == null) {
+      return;
+    }
 
     List<FieldOperation> operations = Collections
         .singletonList(new FieldTransformOperation(name, description, input, output));
@@ -84,7 +108,9 @@ public class TransformFLLUtils {
   public static void firstInToFirstOut(StageSubmitterContext context, String name, String description) {
     List<String> input = getInputFields(context, Collectors.toList());
     List<String> output = getOutputFields(context, Collectors.toList());
-    if (input == null || output == null) return;
+    if (input == null || output == null) {
+      return;
+    }
 
     List<FieldOperation> operations = Collections
         .singletonList(new FieldTransformOperation(name, description, Collections.singletonList(input.get(0)),
