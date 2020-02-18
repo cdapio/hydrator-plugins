@@ -35,12 +35,16 @@ import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
+import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
@@ -119,7 +123,13 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
     collector.getOrThrowException();
 
     init();
-    TransformFLLUtils.firstInToAllOut(context, "Parse", "Parse fields");
+    if (fields != null) {
+      FieldOperation operation = new FieldTransformOperation("Parse", "Parsed field",
+                                                             Collections.singletonList(config.field),
+                                                             fields.stream().map(Schema.Field::getName)
+                                                               .collect(Collectors.toList()));
+      context.record(Collections.singletonList(operation));
+    }
   }
 
   @Override
