@@ -33,7 +33,8 @@ import java.util.stream.Collectors;
  * Utility class for recording field-level lineage for transform operations.
  */
 public class TransformFLLUtils {
-  public static <C extends Collection<String>> C getInputFields(StageSubmitterContext context, Collector<String, ?, C> collector) {
+  public static <C extends Collection<String>> C getInputFields(StageSubmitterContext context,
+                                                                Collector<String, ?, C> collector) {
     Schema inputSchema = context.getInputSchema();
     if (inputSchema == null || inputSchema.getFields() == null || inputSchema.getFields().isEmpty()) {
       return null;
@@ -42,7 +43,8 @@ public class TransformFLLUtils {
     return inputSchema.getFields().stream().map(Schema.Field::getName).collect(collector);
   }
 
-  public static <C extends Collection<String>> C getOutputFields(StageSubmitterContext context, Collector<String, ?, C> collector) {
+  public static <C extends Collection<String>> C getOutputFields(StageSubmitterContext context,
+                                                                  Collector<String, ?, C> collector) {
     Schema outputSchema = context.getInputSchema();
     if (outputSchema == null || outputSchema.getFields() == null || outputSchema.getFields().isEmpty()) {
       return null;
