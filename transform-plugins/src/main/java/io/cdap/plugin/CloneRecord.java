@@ -29,6 +29,7 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 
 import java.util.List;
 
@@ -60,7 +61,10 @@ public final class CloneRecord extends Transform<StructuredRecord, StructuredRec
     config.validate(collector);
     collector.getOrThrowException();
 
-    TransformFLLUtils.oneToOneIn(context, "copy", "Copy the field named");
+    context.record(
+      TransformLineageRecorderUtils.oneToOneIn(TransformLineageRecorderUtils.getFields(context.getInputSchema()),
+                                               "clone",
+                                               "Copy the input record."));
   }
 
   @Override

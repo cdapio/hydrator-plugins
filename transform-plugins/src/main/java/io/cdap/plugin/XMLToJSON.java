@@ -29,6 +29,7 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.XML;
@@ -61,7 +62,9 @@ public final class XMLToJSON extends Transform<StructuredRecord, StructuredRecor
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
-    TransformFLLUtils.firstInToFirstOut(context, "xmlToJson", "XML to JSON");
+    context.record(
+      TransformLineageRecorderUtils.oneInToOneOut(config.inputField, config.outputField,
+        "xmlToJson", "Convert XML string to JSON string.`"));
   }
 
   @Override

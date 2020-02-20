@@ -31,6 +31,7 @@ import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
@@ -104,7 +105,10 @@ public final class Decoder extends Transform<StructuredRecord, StructuredRecord>
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
-    TransformFLLUtils.oneToOneIn(context, "decode", "Decode field");
+    context.record(
+      TransformLineageRecorderUtils.oneToOneIn(TransformLineageRecorderUtils.getFields(context.getInputSchema()),
+                                               "decode",
+                                               "Decode the input fields based on expected decoder."));
   }
 
   @Override

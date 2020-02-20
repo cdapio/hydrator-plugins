@@ -29,8 +29,10 @@ import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import org.apache.commons.codec.digest.DigestUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -67,7 +69,10 @@ public final class Hasher extends Transform<StructuredRecord, StructuredRecord> 
     FailureCollector failureCollector = context.getFailureCollector();
     config.validate(context.getInputSchema(), failureCollector);
     failureCollector.getOrThrowException();
-    TransformFLLUtils.oneToOneIn(context, "hash", "Hash field");
+    context.record(
+      TransformLineageRecorderUtils.oneToOneIn(new ArrayList<>(fieldSet),
+                                               "hash",
+                                               "Use the digest algorithm to hash the fields."));
   }
 
   @Override

@@ -31,6 +31,7 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -42,6 +43,7 @@ import org.xml.sax.SAXException;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -86,7 +88,9 @@ public class XMLMultiParser extends Transform<StructuredRecord, StructuredRecord
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
-    TransformFLLUtils.oneToOneIn(context, "multiParse", "Multi parse field");
+    context.record(TransformLineageRecorderUtils
+      .oneToOneIn(new ArrayList<>(fieldNames), "multiParse",
+        "Parse an XML event using XPath."));
   }
 
   @Override

@@ -31,6 +31,7 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xerial.snappy.Snappy;
@@ -71,7 +72,10 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
 
-    TransformFLLUtils.oneToOneIn(context, "compress", "Compress field");
+    context.record(
+        TransformLineageRecorderUtils.oneToOneIn(TransformLineageRecorderUtils.getFields(outSchema),
+            "compress",
+            "Use the specified algorithm to compress the field."));
   }
 
   @Override

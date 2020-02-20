@@ -32,6 +32,7 @@ import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
 import io.cdap.cdap.etl.api.validation.ValidationFailure;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -100,7 +101,11 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
     FailureCollector collector = context.getFailureCollector();
     collector.getOrThrowException();
 
-    TransformFLLUtils.firstInToAllOut(context, "XML Parse", "Parsed XML data");
+    context.record(
+      TransformLineageRecorderUtils.oneInToAllOut(config.inputField,
+        TransformLineageRecorderUtils.getFields(outSchema),
+        "XMLParse",
+        "Parsed XML data into a full row."));
   }
 
   @Override

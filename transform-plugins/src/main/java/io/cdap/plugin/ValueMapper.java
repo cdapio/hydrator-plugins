@@ -32,6 +32,8 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -86,7 +88,10 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
-    TransformFLLUtils.oneToOneIn(context, "mapValueOf", "Map values of field");
+    context.record(
+        TransformLineageRecorderUtils.oneToOneIn(TransformLineageRecorderUtils.getFields(context.getInputSchema()),
+            "mapValueOf",
+            "Map values of fields based on the lookup table."));
   }
 
   /**

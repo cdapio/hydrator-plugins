@@ -35,8 +35,10 @@ import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
 import io.cdap.plugin.common.FieldEncryptor;
 import io.cdap.plugin.common.KeystoreConf;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -83,7 +85,10 @@ public final class Decryptor extends Transform<StructuredRecord, StructuredRecor
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
-    TransformFLLUtils.oneToOneIn(context, "decrpyt", "Decrypt field");
+    context.record(
+      TransformLineageRecorderUtils.oneToOneIn(new ArrayList<>(decryptFields),
+                                               "decrypt",
+                                               "Decrypt the requested fields."));
   }
 
   @Override

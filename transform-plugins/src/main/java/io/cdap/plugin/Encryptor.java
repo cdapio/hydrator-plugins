@@ -32,6 +32,7 @@ import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
 import io.cdap.plugin.common.FieldEncryptor;
 import io.cdap.plugin.common.KeystoreConf;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,7 +77,10 @@ public final class Encryptor extends Transform<StructuredRecord, StructuredRecor
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
-    TransformFLLUtils.oneToOneIn(context, "encrypt", "Encrypt field");
+    context.record(
+      TransformLineageRecorderUtils.oneToOneIn(new ArrayList<>(encryptFields),
+                                               "encrypt",
+                                               "Encrypt specified fields using given algorithm."));
   }
 
   @Override

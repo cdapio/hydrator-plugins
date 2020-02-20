@@ -29,6 +29,7 @@ import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
 import io.cdap.cdap.format.StructuredRecordStringConverter;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 
 import java.io.IOException;
 import java.util.List;
@@ -78,7 +79,11 @@ public final class JSONFormatter extends Transform<StructuredRecord, StructuredR
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
-    TransformFLLUtils.allInToFirstOut(context, "jsonFormat", "JSON formatter");
+    context.record(
+      TransformLineageRecorderUtils.allInToOneOut(TransformLineageRecorderUtils.getFields(context.getInputSchema()),
+                                                  TransformLineageRecorderUtils.getFields(context.getOutputSchema())
+                                                    .get(0),
+                                                  "jsonFormat", "Format data as a JSON string."));
   }
 
   @Override
