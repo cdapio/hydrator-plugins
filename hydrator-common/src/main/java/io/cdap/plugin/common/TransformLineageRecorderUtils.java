@@ -59,7 +59,8 @@ public final class TransformLineageRecorderUtils {
                                                                  Collections.singletonList(input), output));
   }
 
-  public static List<FieldOperation> allInToAllOut(List<String> input, List<String> output, String name, String description) {
+  public static List<FieldOperation> allInToAllOut(List<String> input, List<String> output, String name,
+    String description) {
     return Collections
       .singletonList(new FieldTransformOperation(name, description, input, output));
   }
