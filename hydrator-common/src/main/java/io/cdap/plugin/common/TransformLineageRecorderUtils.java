@@ -55,10 +55,9 @@ public final class TransformLineageRecorderUtils {
    */
   public static List<FieldOperation> oneToOneIn(List<String> input, String name, String description) {
     return input.stream()
-                .map(inputField -> new FieldTransformOperation(name, description,
-                                                               Collections.singletonList(inputField),
-                                                               Collections.singletonList(inputField)))
-                .collect(Collectors.toList());
+      .map(inputField -> new FieldTransformOperation(name, description, Collections.singletonList(inputField),
+        Collections.singletonList(inputField)))
+      .collect(Collectors.toList());
   }
 
   /**
@@ -87,8 +86,7 @@ public final class TransformLineageRecorderUtils {
    * @return
    */
   public static List<FieldOperation> allInToOneOut(List<String> input, String output, String name, String description) {
-    return Collections
-      .singletonList(new FieldTransformOperation(name, description, input, output));
+    return Collections.singletonList(new FieldTransformOperation(name, description, input, output));
   }
 
   public static List<FieldOperation> oneInToAllOut(String input, List<String> output, String name, String description) {
@@ -98,12 +96,11 @@ public final class TransformLineageRecorderUtils {
 
   public static List<FieldOperation> allInToAllOut(List<String> input, List<String> output, String name,
     String description) {
-    return Collections
-      .singletonList(new FieldTransformOperation(name, description, input, output));
+    return Collections.singletonList(new FieldTransformOperation(name, description, input, output));
   }
 
   public static List<FieldOperation> oneInToOneOut(String input, String output, String name, String description) {
-    return Collections
-      .singletonList(new FieldTransformOperation(name, description, Collections.singletonList(input), output));
+    return Collections.singletonList(new FieldTransformOperation(name, description,
+                                                                 Collections.singletonList(input), output));
   }
 }
