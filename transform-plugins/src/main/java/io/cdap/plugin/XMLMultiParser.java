@@ -43,7 +43,6 @@ import org.xml.sax.SAXException;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -85,11 +84,16 @@ public class XMLMultiParser extends Transform<StructuredRecord, StructuredRecord
     pipelineConfigurer.getStageConfigurer().setOutputSchema(config.getSchema(collector));
   }
 
+  /**
+   * Map the single config XML field to all output fields.
+   * @param context
+   * @throws Exception
+   */
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
     context.record(TransformLineageRecorderUtils
-      .oneToOneIn(new ArrayList<>(fieldNames), "multiParse",
+      .oneInToAllOut(config.field, TransformLineageRecorderUtils.getFields(context.getOutputSchema()), "multiParse",
         "Parse an XML event using XPath."));
   }
 

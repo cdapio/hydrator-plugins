@@ -95,13 +95,28 @@ public final class Encoder extends Transform<StructuredRecord, StructuredRecord>
     }
   }
 
+  /**
+   * Initialize the required member maps and then: if a field is in input and output and encode, then
+   * set it to transform; if it's in input and output but not encode, ignore it; if it's in input and
+   * not output, drop it.
+   * @param context
+   * @throws Exception
+   */
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
+    parseConfiguration(config.encode, context.getFailureCollector());
+
+    List<String> inFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
+    List<String> outFields = TransformLineageRecorderUtils.getFields(context.getOutputSchema());
+    // remove from both lists the ignored fields (ones that aren't marked for operation or set to NONE)
+    // make sure not to remove the inFields that aren't in outFields, so we'll know to drop them
+    inFields.removeIf(field -> outFields.contains(field) && (!encodeMap.containsKey(field) || encodeMap.get(field) == EncodeType.NONE));
+    outFields.removeIf(field -> !encodeMap.containsKey(field) || encodeMap.get(field) == EncodeType.NONE);
+
     context.record(
-      TransformLineageRecorderUtils.oneToOneIn(TransformLineageRecorderUtils.getFields(outSchema),
-                                               "encode",
-                                               "Encode the input fields based on specified encoder."));
+      TransformLineageRecorderUtils.eachInToSomeOut(inFields, outFields, "encode",
+        "Encode the input fields based on specified encoder."));
   }
 
   @Override

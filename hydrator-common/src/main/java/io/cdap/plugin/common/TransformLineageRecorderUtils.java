@@ -33,6 +33,11 @@ public final class TransformLineageRecorderUtils {
 
   }
 
+  /**
+   * Returns the list of fields as a list of strings.
+   * @param schema input or output schema
+   * @return
+   */
   public static List<String> getFields(@Nullable Schema schema) {
     if (schema == null || schema.getFields() == null || schema.getFields().isEmpty()) {
       return Collections.emptyList();
@@ -41,6 +46,13 @@ public final class TransformLineageRecorderUtils {
     return schema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList());
   }
 
+  /**
+   * Use the list of input fields to generate a one-to-one on the same list.
+   * @param input a list of input fields
+   * @param name
+   * @param description
+   * @return list of FTOs where each is just input(i) -> input(i)
+   */
   public static List<FieldOperation> oneToOneIn(List<String> input, String name, String description) {
     return input.stream()
                 .map(inputField -> new FieldTransformOperation(name, description,
@@ -49,6 +61,31 @@ public final class TransformLineageRecorderUtils {
                 .collect(Collectors.toList());
   }
 
+  /**
+   * Map each input to itself as an FTO if present in the output; else, map to an empty list (drop)
+   * @param input
+   * @param output
+   * @param name
+   * @param description
+   * @return
+   */
+  public static List<FieldOperation> eachInToSomeOut(List<String> input, List<String> output, String name, String description) {
+    return input.stream()
+      .map(inputField -> output.contains(inputField) ? new FieldTransformOperation(name, description,
+        Collections.singletonList(inputField),
+        Collections.singletonList(inputField)) : new FieldTransformOperation(name, description,
+          Collections.singletonList(inputField)))
+      .collect(Collectors.toList());
+  }
+
+  /**
+   * Return a single FTO with every input mapping to the single output.
+   * @param input
+   * @param output
+   * @param name
+   * @param description
+   * @return
+   */
   public static List<FieldOperation> allInToOneOut(List<String> input, String output, String name, String description) {
     return Collections
       .singletonList(new FieldTransformOperation(name, description, input, output));

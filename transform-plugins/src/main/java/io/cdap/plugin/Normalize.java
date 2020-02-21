@@ -174,9 +174,14 @@ public class Normalize extends Transform<StructuredRecord, StructuredRecord> {
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
+    initializeFieldData();
+    if (context.getOutputSchema() == null || context.getOutputSchema().getFields() == null) {
+      return;
+    }
+
     context.record(
       TransformLineageRecorderUtils.allInToAllOut(normalizeFieldList,
-        TransformLineageRecorderUtils.getFields(outputSchema),
+        TransformLineageRecorderUtils.getFields(context.getOutputSchema()),
         "normalize",
         "Normalize wide rows and reduce data to canonical form."));
   }

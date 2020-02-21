@@ -54,6 +54,11 @@ public final class CloneRecord extends Transform<StructuredRecord, StructuredRec
     pipelineConfigurer.getStageConfigurer().setOutputSchema(pipelineConfigurer.getStageConfigurer().getInputSchema());
   }
 
+  /**
+   * Return list of FTOs for 1-1 for every input field.
+   * @param context
+   * @throws Exception
+   */
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);

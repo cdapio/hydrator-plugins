@@ -29,9 +29,7 @@ import io.cdap.cdap.etl.api.MultiOutputEmitter;
 import io.cdap.cdap.etl.api.MultiOutputPipelineConfigurer;
 import io.cdap.cdap.etl.api.MultiOutputStageConfigurer;
 import io.cdap.cdap.etl.api.SplitterTransform;
-import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.TransformContext;
-import io.cdap.plugin.common.TransformLineageRecorderUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -66,16 +64,6 @@ public class NullFieldSplitter extends SplitterTransform<StructuredRecord, Struc
     if (inputSchema != null && !conf.containsMacro("field")) {
       stageConfigurer.setOutputSchemas(getOutputSchemas(inputSchema, conf, collector));
     }
-  }
-
-  @Override
-  public void prepareRun(StageSubmitterContext context) throws Exception {
-    super.prepareRun(context);
-    context.record(
-      TransformLineageRecorderUtils.allInToAllOut(TransformLineageRecorderUtils.getFields(context.getInputSchema()),
-                                                  TransformLineageRecorderUtils.getFields(context.getOutputSchema()),
-                                                  "nullSplitter",
-                                                  "Split records based on appearance of null value."));
   }
 
   @Override

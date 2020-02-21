@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.crypto.Cipher;
 
 /**
@@ -74,13 +75,25 @@ public final class Encryptor extends Transform<StructuredRecord, StructuredRecor
     fieldEncryptor.initialize();
   }
 
+  /**
+   * Use all encryptFields from conf that also exist in input schema.
+   * Transform only modifies those fields, and has a null check, but we don't know the field values here.
+   * @param context
+   * @throws Exception
+   */
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
-    context.record(
-      TransformLineageRecorderUtils.oneToOneIn(new ArrayList<>(encryptFields),
-                                               "encrypt",
-                                               "Encrypt specified fields using given algorithm."));
+    initialize(context);
+    if (context.getInputSchema() == null || context.getInputSchema().getFields() == null) {
+      return;
+    }
+    List<String> fields = TransformLineageRecorderUtils.getFields(context.getInputSchema()).stream()
+      .filter(encryptFields::contains)
+      .collect(Collectors.toList());
+    context.record(TransformLineageRecorderUtils.oneToOneIn(fields,
+      "encrypt",
+      "Encrypt specified fields using given algorithm."));
   }
 
   @Override

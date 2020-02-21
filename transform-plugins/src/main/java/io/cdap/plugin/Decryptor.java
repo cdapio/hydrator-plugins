@@ -38,9 +38,10 @@ import io.cdap.plugin.common.KeystoreConf;
 import io.cdap.plugin.common.TransformLineageRecorderUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.crypto.Cipher;
 
@@ -82,13 +83,25 @@ public final class Decryptor extends Transform<StructuredRecord, StructuredRecor
     fieldEncryptor.initialize();
   }
 
+  /**
+   * Use all decryptFields from conf that also exist in input schema.
+   * Transform only modifies those fields, and has a null check, but we don't know the field values here.
+   * @param context
+   * @throws Exception
+   */
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
-    context.record(
-      TransformLineageRecorderUtils.oneToOneIn(new ArrayList<>(decryptFields),
-                                               "decrypt",
-                                               "Decrypt the requested fields."));
+    initialize(context);
+    if (context.getInputSchema() == null || context.getInputSchema().getFields() == null) {
+      return;
+    }
+    List<String> fields = TransformLineageRecorderUtils.getFields(context.getInputSchema()).stream()
+      .filter(decryptFields::contains)
+      .collect(Collectors.toList());
+    context.record(TransformLineageRecorderUtils.oneToOneIn(fields,
+      "decrypt",
+      "Decrypt the requested fields."));
   }
 
   @Override

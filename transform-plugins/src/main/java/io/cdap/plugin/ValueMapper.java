@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Transforms records using custom mapping provided by the config.
@@ -85,13 +86,23 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
     }
   }
 
+  /**
+   * After extracting the mappings, store a list of FTOs containing identity transforms for every output
+   * field also present in the mappings list.
+   * @param context
+   * @throws Exception
+   */
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
+    if (context.getInputSchema() == null || context.getInputSchema().getFields() == null) {
+      return;
+    }
+    parseConfiguration(this.config, context.getFailureCollector());
     context.record(
-        TransformLineageRecorderUtils.oneToOneIn(TransformLineageRecorderUtils.getFields(context.getInputSchema()),
-            "mapValueOf",
-            "Map values of fields based on the lookup table."));
+      TransformLineageRecorderUtils.oneToOneIn(TransformLineageRecorderUtils.getFields(context.getInputSchema())
+        .stream().filter(mappingValues::containsKey).collect(Collectors.toList()),
+          "mapValueOf","Map values of fields based on the lookup table."));
   }
 
   /**

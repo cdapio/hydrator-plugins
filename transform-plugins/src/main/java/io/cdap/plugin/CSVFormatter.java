@@ -114,14 +114,21 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
     pipelineConfigurer.getStageConfigurer().setOutputSchema(schema);
   }
 
+  /**
+   * Map all the input fields to the first output field.
+   * @param context
+   * @throws Exception
+   */
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
-    context.record(
-      TransformLineageRecorderUtils
-        .allInToOneOut(TransformLineageRecorderUtils.getFields(context.getInputSchema()),
-                       TransformLineageRecorderUtils.getFields(context.getOutputSchema()).get(0), "csvFormat",
-                       "CSV formatter"));
+    List<String> outputFields = TransformLineageRecorderUtils.getFields(context.getOutputSchema());
+    if (!outputFields.isEmpty()) {
+      context.record(
+        TransformLineageRecorderUtils
+          .allInToOneOut(TransformLineageRecorderUtils.getFields(context.getInputSchema()), outputFields.get(0),
+            "csvFormat", "Format the input data as CSV."));
+    }
     config.validate(context.getFailureCollector());
   }
 

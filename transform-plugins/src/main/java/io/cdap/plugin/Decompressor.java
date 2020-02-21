@@ -70,13 +70,27 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
     this.config = config;
   }
 
+  /**
+   * Initialize the required member maps and then have a one-to-one transform on all fields present in
+   * outSchemaMap and deCompMap and aren't set to NONE as decompressorType.
+   * @param context
+   * @throws Exception
+   */
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
+    parseConfiguration(config.decompressor, context.getFailureCollector());
+
+    List<String> inFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
+    List<String> outFields = TransformLineageRecorderUtils.getFields(context.getOutputSchema());
+    // remove from both lists the ignored fields (ones that aren't marked for operation or set to NONE)
+    // make sure not to remove the inFields that aren't in outFields, so we'll know to drop them
+    inFields.removeIf(field -> outFields.contains(field) && (!deCompMap.containsKey(field) || deCompMap.get(field) == DecompressorType.NONE));
+    outFields.removeIf(field -> !deCompMap.containsKey(field) || deCompMap.get(field) == DecompressorType.NONE);
+
     context.record(
-      TransformLineageRecorderUtils.oneToOneIn(TransformLineageRecorderUtils.getFields(outSchema),
-                                               "decompress",
-                                               "Use the specified algorithm to decompress specific fields."));
+      TransformLineageRecorderUtils.eachInToSomeOut(inFields, outFields, "decompress",
+        "Use the specified algorithm to decompress specific fields."));
   }
 
   @Override

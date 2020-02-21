@@ -33,14 +33,12 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
-import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
-import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
 import io.cdap.cdap.format.StructuredRecordStringConverter;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -93,19 +91,22 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
     extractMappings(collector);
   }
 
+  /**
+   * After extracting the mappings, store a list of FTOs containing identity transforms for every output
+   * field also present in the mappings list.
+   * @param context
+   * @throws Exception
+   */
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
     FailureCollector collector = context.getFailureCollector();
     collector.getOrThrowException();
+    extractMappings(context.getFailureCollector());
 
-    if (fields != null) {
-      FieldOperation operation = new FieldTransformOperation("Parse", "Parsed field",
-          Collections.singletonList(config.field),
-          fields.stream().map(Schema.Field::getName)
-              .collect(Collectors.toList()));
-      context.record(Collections.singletonList(operation));
-    }
+    List<String> fields = TransformLineageRecorderUtils.getFields(context.getOutputSchema()).stream()
+      .filter(mapping::containsKey).collect(Collectors.toList());
+    context.record(TransformLineageRecorderUtils.oneToOneIn(fields, "Parse", "Parsed field"));
   }
 
   // If there is no config mapping, then we attempt to directly map output schema fields

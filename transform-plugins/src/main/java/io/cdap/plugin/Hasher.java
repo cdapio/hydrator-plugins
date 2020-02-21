@@ -64,15 +64,25 @@ public final class Hasher extends Transform<StructuredRecord, StructuredRecord> 
     stageConfigurer.setOutputSchema(stageConfigurer.getInputSchema());
   }
 
+  /**
+   * Set a list of FTOs only for the fields in outputSchema and with type string.
+   * @param context
+   * @throws Exception
+   */
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     FailureCollector failureCollector = context.getFailureCollector();
     config.validate(context.getInputSchema(), failureCollector);
     failureCollector.getOrThrowException();
+    if (context.getInputSchema() == null || context.getInputSchema().getFields() == null) {
+      return;
+    }
+    List<String> fields = context.getInputSchema().getFields().stream()
+      .filter(field -> config.getFields()
+        .contains(field.getName()) && field.getSchema().getType() == Schema.Type.STRING)
+      .map(Schema.Field::getName).collect(Collectors.toList());
     context.record(
-      TransformLineageRecorderUtils.oneToOneIn(new ArrayList<>(fieldSet),
-                                               "hash",
-                                               "Use the digest algorithm to hash the fields."));
+      TransformLineageRecorderUtils.oneToOneIn(fields, "hash", "Use the digest algorithm to hash the fields."));
   }
 
   @Override

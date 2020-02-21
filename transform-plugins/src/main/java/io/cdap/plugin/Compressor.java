@@ -68,14 +68,28 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
     this.config = config;
   }
 
+  /**
+   * Initialize the required member maps and then: if a field is in input and output and comp, then
+   * set it to transform; if it's in input and output but not comp, ignore it; if it's in input and
+   * not output, drop it.
+   * @param context
+   * @throws Exception
+   */
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
+    parseConfiguration(config.compressor, context.getFailureCollector());
+
+    List<String> inFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
+    List<String> outFields = TransformLineageRecorderUtils.getFields(context.getOutputSchema());
+    // remove from both lists the ignored fields (ones that aren't marked for operation or set to NONE)
+    // make sure not to remove the inFields that aren't in outFields, so we'll know to drop them
+    inFields.removeIf(field -> outFields.contains(field) && (!compMap.containsKey(field) || compMap.get(field) == CompressorType.NONE));
+    outFields.removeIf(field -> !compMap.containsKey(field) || compMap.get(field) == CompressorType.NONE);
 
     context.record(
-        TransformLineageRecorderUtils.oneToOneIn(TransformLineageRecorderUtils.getFields(outSchema),
-            "compress",
-            "Use the specified algorithm to compress the field."));
+      TransformLineageRecorderUtils.eachInToSomeOut(inFields, outFields, "compress",
+        "Use the specified algorithm to compress the field."));
   }
 
   @Override
