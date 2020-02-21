@@ -158,10 +158,10 @@ public class DedupAggregator extends RecordAggregator {
     if (function != null) {
       Schema.Field field = inputSchema.getField(function.getField());
       if (field == null) {
-       collector.addFailure(String.format("Invalid filter %s(%s): Field '%s' does not exist in input schema ",
-                                          function.getFunction(), function.getField(), function.getField()),
-                            null)
-         .withConfigProperty("filterOperation");
+        collector.addFailure(String.format("Invalid filter %s(%s): Field '%s' does not exist in input schema ",
+                                           function.getFunction(), function.getField(), function.getField()),
+                             null)
+          .withConfigProperty("filterOperation");
       }
     }
   }
