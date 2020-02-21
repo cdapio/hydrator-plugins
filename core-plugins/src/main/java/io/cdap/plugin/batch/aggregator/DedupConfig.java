@@ -20,6 +20,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.plugin.batch.aggregator.function.First;
 import io.cdap.plugin.batch.aggregator.function.Last;
@@ -42,6 +43,7 @@ public class DedupConfig extends AggregatorConfig {
     "'fname', 'lname', 'item', and 'cost' and we want to deduplicate the records by name, then this property should " +
     "be set to 'fname,lname'.")
   @Nullable
+  @Macro
   private String uniqueFields;
 
   @Description("Optional property that can be set to predictably choose one or more records from the set of records " +
@@ -52,6 +54,7 @@ public class DedupConfig extends AggregatorConfig {
     "of field and function is allowed. If this property is not set, one random record will be chosen from the " +
     "group of 'duplicate' records.")
   @Nullable
+  @Macro
   private String filterOperation;
 
   public DedupConfig() {
