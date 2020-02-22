@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -70,27 +71,23 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
     this.config = config;
   }
 
-  /**
-   * Initialize the required member maps and then have a one-to-one transform on all fields present in
-   * outSchemaMap and deCompMap and aren't set to NONE as decompressorType.
-   * @param context
-   * @throws Exception
-   */
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
     parseConfiguration(config.decompressor, context.getFailureCollector());
 
+    // Initialize the required member maps and then have a one-to-one transform on all fields present in
+    //    outSchemaMap and deCompMap and aren't set to NONE as decompressorType.
     List<String> inFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
     List<String> outFields = TransformLineageRecorderUtils.getFields(context.getOutputSchema());
-    // remove from both lists the ignored fields (ones that aren't marked for operation or set to NONE)
-    // make sure not to remove the inFields that aren't in outFields, so we'll know to drop them
-    inFields.removeIf(field -> outFields.contains(field) && (!deCompMap.containsKey(field) || deCompMap.get(field) == DecompressorType.NONE));
-    outFields.removeIf(field -> !deCompMap.containsKey(field) || deCompMap.get(field) == DecompressorType.NONE);
+    List<String> idFields = outFields.stream()
+      .filter(field -> !deCompMap.containsKey(field) || deCompMap.get(field) == DecompressorType.NONE)
+      .collect(Collectors.toList());
 
-    context.record(
-      TransformLineageRecorderUtils.eachInToSomeOut(inFields, outFields, "decompress",
-        "Use the specified algorithm to decompress specific fields."));
+    context.record(TransformLineageRecorderUtils.eachInToSomeOut(inFields, outFields, idFields,
+      "decompress", "Used the specified algorithm to decompress the field.",
+      "drop", "Dropped fields not included in the output.",
+      "identity", "Copied values of fields not marked for operation."));
   }
 
   @Override

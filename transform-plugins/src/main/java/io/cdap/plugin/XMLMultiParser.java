@@ -84,17 +84,13 @@ public class XMLMultiParser extends Transform<StructuredRecord, StructuredRecord
     pipelineConfigurer.getStageConfigurer().setOutputSchema(config.getSchema(collector));
   }
 
-  /**
-   * Map the single config XML field to all output fields.
-   * @param context
-   * @throws Exception
-   */
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
+    // Map the single config XML field to all output fields.
     context.record(TransformLineageRecorderUtils
       .oneInToAllOut(config.field, TransformLineageRecorderUtils.getFields(context.getOutputSchema()), "multiParse",
-        "Parse an XML event using XPath."));
+        "Parsed an XML event using XPath."));
   }
 
   @Override

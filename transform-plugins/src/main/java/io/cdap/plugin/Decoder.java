@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
@@ -102,28 +103,24 @@ public final class Decoder extends Transform<StructuredRecord, StructuredRecord>
     stageConfigurer.setOutputSchema(outputSchema);
   }
 
-  /**
-   * Initialize the required member maps and then: if a field is in input and output and decode, then
-   * set it to transform; if it's in input and output but not decode, ignore it; if it's in input and
-   * not output, drop it.
-   * @param context
-   * @throws Exception
-   */
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
     parseConfiguration(config.decode, context.getFailureCollector());
 
+    // Initialize the required member maps and then: if a field is in input and output and decode, then
+    //    set it to transform; if it's in input and output but not decode, ignore it; if it's in input and
+    //    not output, drop it.
     List<String> inFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
     List<String> outFields = TransformLineageRecorderUtils.getFields(context.getOutputSchema());
-    // remove from both lists the ignored fields (ones that aren't marked for operation or set to NONE)
-    // make sure not to remove the inFields that aren't in outFields, so we'll know to drop them
-    inFields.removeIf(field -> outFields.contains(field) && (!decodeMap.containsKey(field) || decodeMap.get(field) == DecoderType.NONE));
-    outFields.removeIf(field -> !decodeMap.containsKey(field) || decodeMap.get(field) == DecoderType.NONE);
+    List<String> idFields = outFields.stream()
+      .filter(field -> !decodeMap.containsKey(field) || decodeMap.get(field) == DecoderType.NONE)
+      .collect(Collectors.toList());
 
-    context.record(
-      TransformLineageRecorderUtils.eachInToSomeOut(inFields, outFields, "decode",
-        "Decode the input fields based on expected decoder."));
+    context.record(TransformLineageRecorderUtils.eachInToSomeOut(inFields, outFields, idFields,
+      "decode", "Decoded the input fields based on expected decoder.",
+      "drop", "Dropped fields not included in the output.",
+      "identity", "Copied values of fields not marked for operation."));
   }
 
   @Override
