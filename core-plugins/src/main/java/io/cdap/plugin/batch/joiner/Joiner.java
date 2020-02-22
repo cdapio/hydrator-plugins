@@ -82,7 +82,11 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     init(inputSchemas, collector);
     collector.getOrThrowException();
     //validate the input schema and get the output schema for it
-    stageConfigurer.setOutputSchema(getOutputSchema(inputSchemas, collector));
+    Schema outputSchema = getOutputSchema(inputSchemas, collector);
+    if (outputSchema != null) {
+      // Set output schema if it's not a macro.
+      stageConfigurer.setOutputSchema(outputSchema);
+    }
   }
 
   @Override
@@ -105,10 +109,10 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
    * of one of the stage, the field is added as {@code stage_name.field_name}. We keep track of fields
    * outputted by operation (in {@code outputsSoFar set}, so that any operation uses that field as
    * input later, we add it without the stage name.
-   *
+   * <p>
    * Join transform operation is added with join keys as input tagged with the stage name, and join keys
    * without stage name as output.
-   *
+   * <p>
    * For other fields which are not renamed in join, Identity transform is added, while for fields which
    * are renamed Rename transform is added.
    *
@@ -170,11 +174,11 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
   @Override
   public void initialize(BatchJoinerRuntimeContext context) {
     FailureCollector collector = context.getFailureCollector();
-    init(context.getInputSchemas(), collector);
-    collector.getOrThrowException();
-
     Map<String, Schema> inputSchemas = context.getInputSchemas();
-    outputSchema = context.getOutputSchema();
+    init(inputSchemas, collector);
+    collector.getOrThrowException();
+    outputSchema = getOutputSchema(inputSchemas, collector);
+    collector.getOrThrowException();
   }
 
   @Override
@@ -237,12 +241,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
   void validateJoinKeySchemas(Map<String, Schema> inputSchemas, Map<String, List<String>> joinKeys,
                               FailureCollector collector) {
     perStageJoinKeys = joinKeys;
-
-    if (perStageJoinKeys.size() != inputSchemas.size()) {
-      collector.addFailure("There should be join keys present from each stage.",
-                           "Ensure join keys are present from each stage.")
-        .withConfigProperty(conf.JOIN_KEYS);
-    }
+    conf.validateJoinKeySchemas(inputSchemas, joinKeys, collector);
 
     List<Schema> prevSchemaList = null;
     for (Map.Entry<String, List<String>> entry : perStageJoinKeys.entrySet()) {
@@ -267,7 +266,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
       if (prevSchemaList != null && !prevSchemaList.equals(schemaList)) {
         collector.addFailure(
           String.format("For stage '%s', Schemas of join keys '%s' are expected to be: '%s', but found: '%s'.",
-                          stageName, entry.getValue(), prevSchemaList.toString(), schemaList.toString()), null)
+                        stageName, entry.getValue(), prevSchemaList.toString(), schemaList.toString()), null)
           .withConfigProperty(conf.JOIN_KEYS);
       }
       prevSchemaList = schemaList;
@@ -279,7 +278,12 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     requiredInputs = conf.getInputs();
     perStageSelectedFields = conf.getPerStageSelectedFields();
     duplicateFields = ArrayListMultimap.create();
-    return Schema.recordOf("join.output", getOutputFields(createOutputFieldInfos(inputSchemas, collector)));
+    List<Schema.Field> outputFields = getOutputFields(createOutputFieldInfos(inputSchemas, collector));
+    if (outputFields.isEmpty()) {
+      return null;
+    } else {
+      return Schema.recordOf("join.output", outputFields);
+    }
   }
 
   private Collection<OutputFieldInfo> createOutputFieldInfos(Map<String, Schema> inputSchemas,
@@ -335,7 +339,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     if (!duplicateFields.isEmpty()) {
       collector.addFailure(String.format("Output schema must not contain duplicate fields: '%s' for aliases: '%s'.",
                                          duplicateFields, duplicateAliases), null)
-        .withConfigProperty(conf.SELECT_FIELDS);
+        .withConfigProperty(conf.SELECTED_FIELDS);
       collector.getOrThrowException();
     }
 

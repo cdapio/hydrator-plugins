@@ -18,6 +18,7 @@ package io.cdap.plugin.batch.aggregator;
 
 import com.google.common.base.Splitter;
 import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.format.StructuredRecord;
@@ -56,6 +57,7 @@ public class DistinctAggregator extends RecordAggregator {
     @Nullable
     @Description("Optional comma-separated list of fields to perform the distinct on. If none is given, each record " +
       "will be taken as is. Otherwise, only fields in this list will be considered.")
+    @Macro
     private String fields;
 
     Iterable<String> getFields() {
