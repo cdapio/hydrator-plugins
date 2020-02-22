@@ -61,24 +61,37 @@ public final class TransformLineageRecorderUtils {
   }
 
   /**
-   * Map each input to itself as an FTO if present in the output; else, map to an empty list (drop)
-   * @param input
-   * @param output
-   * @param name
-   * @param description
+   * Map each input to itself as an FTO if present in the output; else, map to an empty list (drop).
+   * Have one name/description for modified fields; another for untouched (identity) fields;
+   * another for dropped fields. The dropped fields are the difference between input and output.
+   * @param input fields straight from inputSchema
+   * @param output fields straight from outputSchema
+   * @param identity fields not modified by this transform
+   * @param name for transformed fields
+   * @param description for transformed fields
+   * @param dropName for dropped fields
+   * @param dropDescription for dropped fields
+   * @param idName for identity fields
+   * @param idDescription for identity fields
    * @return
    */
-  public static List<FieldOperation> eachInToSomeOut(List<String> input, List<String> output, String name, String description) {
+  public static List<FieldOperation> eachInToSomeOut(List<String> input, List<String> output, List<String> identity,
+    String name, String description, String dropName, String dropDescription, String idName, String idDescription) {
     return input.stream()
-      .map(inputField -> output.contains(inputField) ? new FieldTransformOperation(name, description,
-        Collections.singletonList(inputField),
-        Collections.singletonList(inputField)) : new FieldTransformOperation(name, description,
-          Collections.singletonList(inputField)))
+      .map(inputField -> {
+        if (identity.contains(inputField)) {
+          return new FieldTransformOperation(idName, idDescription, Collections.singletonList(inputField), inputField);
+        } else if (output.contains(inputField)) {
+          return new FieldTransformOperation(name, description, Collections.singletonList(inputField), inputField);
+        } else {
+          return new FieldTransformOperation(dropName, dropDescription, Collections.singletonList(inputField));
+        }
+      })
       .collect(Collectors.toList());
   }
 
   /**
-   * Return a single FTO with every input mapping to the single output.
+   * Return a single FTO with all input mappings to the single output.
    * @param input
    * @param output
    * @param name

@@ -115,11 +115,6 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
     stageConfigurer.setOutputSchema(schema);
   }
 
-  /**
-   * Read from config.field and output to fields
-   * @param context
-   * @throws Exception
-   */
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
@@ -127,10 +122,11 @@ public final class CSVParser extends Transform<StructuredRecord, StructuredRecor
     config.validate(collector);
     collector.getOrThrowException();
 
+    // Read from config.field and output to fields
     init();
     if (fields != null) {
       FieldOperation operation = new FieldTransformOperation("Parse",
-                                                             "Parse CSV data from expected field.",
+                                                             "Parsed CSV data from expected field.",
                                                              Collections.singletonList(config.field),
                                                              fields.stream().map(Schema.Field::getName)
                                                                .collect(Collectors.toList()));

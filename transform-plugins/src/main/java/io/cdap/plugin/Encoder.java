@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 /**
  * Encodes the input fields as BASE64, BASE32 or HEX.
@@ -95,28 +96,24 @@ public final class Encoder extends Transform<StructuredRecord, StructuredRecord>
     }
   }
 
-  /**
-   * Initialize the required member maps and then: if a field is in input and output and encode, then
-   * set it to transform; if it's in input and output but not encode, ignore it; if it's in input and
-   * not output, drop it.
-   * @param context
-   * @throws Exception
-   */
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
     parseConfiguration(config.encode, context.getFailureCollector());
 
+    // Initialize the required member maps and then: if a field is in input and output and encode, then
+    //    set it to transform; if it's in input and output but not encode, ignore it; if it's in input and
+    //    not output, drop it.
     List<String> inFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
     List<String> outFields = TransformLineageRecorderUtils.getFields(context.getOutputSchema());
-    // remove from both lists the ignored fields (ones that aren't marked for operation or set to NONE)
-    // make sure not to remove the inFields that aren't in outFields, so we'll know to drop them
-    inFields.removeIf(field -> outFields.contains(field) && (!encodeMap.containsKey(field) || encodeMap.get(field) == EncodeType.NONE));
-    outFields.removeIf(field -> !encodeMap.containsKey(field) || encodeMap.get(field) == EncodeType.NONE);
+    List<String> idFields = outFields.stream()
+      .filter(field -> !encodeMap.containsKey(field) || encodeMap.get(field) == EncodeType.NONE)
+      .collect(Collectors.toList());
 
-    context.record(
-      TransformLineageRecorderUtils.eachInToSomeOut(inFields, outFields, "encode",
-        "Encode the input fields based on specified encoder."));
+    context.record(TransformLineageRecorderUtils.eachInToSomeOut(inFields, outFields, idFields,
+      "encode", "Encoded the input fields based on expected encoder.",
+      "drop", "Dropped fields not included in the output.",
+      "identity", "Copied values of fields not marked for operation."));
   }
 
   @Override

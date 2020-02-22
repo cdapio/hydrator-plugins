@@ -40,6 +40,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -68,28 +69,24 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
     this.config = config;
   }
 
-  /**
-   * Initialize the required member maps and then: if a field is in input and output and comp, then
-   * set it to transform; if it's in input and output but not comp, ignore it; if it's in input and
-   * not output, drop it.
-   * @param context
-   * @throws Exception
-   */
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
     parseConfiguration(config.compressor, context.getFailureCollector());
 
+    // Initialize the required member maps and then: if a field is in input and output and comp, then
+    //    set it to transform; if it's in input and output but not comp, ignore it; if it's in input and
+    //    not output, drop it.
     List<String> inFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
     List<String> outFields = TransformLineageRecorderUtils.getFields(context.getOutputSchema());
-    // remove from both lists the ignored fields (ones that aren't marked for operation or set to NONE)
-    // make sure not to remove the inFields that aren't in outFields, so we'll know to drop them
-    inFields.removeIf(field -> outFields.contains(field) && (!compMap.containsKey(field) || compMap.get(field) == CompressorType.NONE));
-    outFields.removeIf(field -> !compMap.containsKey(field) || compMap.get(field) == CompressorType.NONE);
+    List<String> idFields = outFields.stream()
+      .filter(field -> !compMap.containsKey(field) || compMap.get(field) == CompressorType.NONE)
+      .collect(Collectors.toList());
 
-    context.record(
-      TransformLineageRecorderUtils.eachInToSomeOut(inFields, outFields, "compress",
-        "Use the specified algorithm to compress the field."));
+    context.record(TransformLineageRecorderUtils.eachInToSomeOut(inFields, outFields, idFields,
+      "compress", "Used the specified algorithm to compress the field.",
+      "drop", "Dropped fields not included in the output.",
+      "identity", "Copied values of fields not marked for operation."));
   }
 
   @Override

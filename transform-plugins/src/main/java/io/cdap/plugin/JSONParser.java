@@ -91,22 +91,23 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
     extractMappings(collector);
   }
 
-  /**
-   * After extracting the mappings, store a list of FTOs containing identity transforms for every output
-   * field also present in the mappings list.
-   * @param context
-   * @throws Exception
-   */
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
-    FailureCollector collector = context.getFailureCollector();
-    collector.getOrThrowException();
     extractMappings(context.getFailureCollector());
 
+    // After extracting the mappings, store a list of FTOs containing identity transforms for every output
+    //    field also present in the mappings list. No fields are dropped.
     List<String> fields = TransformLineageRecorderUtils.getFields(context.getOutputSchema()).stream()
       .filter(mapping::containsKey).collect(Collectors.toList());
-    context.record(TransformLineageRecorderUtils.oneToOneIn(fields, "Parse", "Parsed field"));
+
+    List<String> idFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
+    idFields.removeAll(fields);
+
+    context.record(TransformLineageRecorderUtils.eachInToSomeOut(fields, fields, idFields,
+        "Parse", "Parsed fields as JSON.",
+        "", "",
+        "identity", "Copied values of fields not marked for operation."));
   }
 
   // If there is no config mapping, then we attempt to directly map output schema fields

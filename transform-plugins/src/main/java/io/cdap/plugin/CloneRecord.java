@@ -54,11 +54,6 @@ public final class CloneRecord extends Transform<StructuredRecord, StructuredRec
     pipelineConfigurer.getStageConfigurer().setOutputSchema(pipelineConfigurer.getStageConfigurer().getInputSchema());
   }
 
-  /**
-   * Return list of FTOs for 1-1 for every input field.
-   * @param context
-   * @throws Exception
-   */
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
@@ -66,10 +61,11 @@ public final class CloneRecord extends Transform<StructuredRecord, StructuredRec
     config.validate(collector);
     collector.getOrThrowException();
 
+    // Return list of FTOs for 1-1 for every input field.
     context.record(
       TransformLineageRecorderUtils.oneToOneIn(TransformLineageRecorderUtils.getFields(context.getInputSchema()),
                                                "clone",
-                                               "Copy the input record."));
+                                               "Copied the input record."));
   }
 
   @Override

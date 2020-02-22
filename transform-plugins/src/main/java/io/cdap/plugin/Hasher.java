@@ -64,11 +64,6 @@ public final class Hasher extends Transform<StructuredRecord, StructuredRecord> 
     stageConfigurer.setOutputSchema(stageConfigurer.getInputSchema());
   }
 
-  /**
-   * Set a list of FTOs only for the fields in outputSchema and with type string.
-   * @param context
-   * @throws Exception
-   */
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     FailureCollector failureCollector = context.getFailureCollector();
@@ -77,12 +72,21 @@ public final class Hasher extends Transform<StructuredRecord, StructuredRecord> 
     if (context.getInputSchema() == null || context.getInputSchema().getFields() == null) {
       return;
     }
+
+    // Set a list of FTOs only for the fields in inputSchema and with type string, and identity for
+    //    the non-string ones present in the output.
     List<String> fields = context.getInputSchema().getFields().stream()
       .filter(field -> config.getFields()
         .contains(field.getName()) && field.getSchema().getType() == Schema.Type.STRING)
       .map(Schema.Field::getName).collect(Collectors.toList());
-    context.record(
-      TransformLineageRecorderUtils.oneToOneIn(fields, "hash", "Use the digest algorithm to hash the fields."));
+
+    List<String> idFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
+    idFields.removeAll(fields);
+
+    context.record(TransformLineageRecorderUtils.eachInToSomeOut(fields, fields, idFields,
+        "hash", "Used the digest algorithm to hash the fields.",
+        "", "",
+        "identity", "Copied values of fields not marked for operation."));
   }
 
   @Override

@@ -61,13 +61,6 @@ public final class XMLToJSON extends Transform<StructuredRecord, StructuredRecor
     this.config = config;
   }
 
-  /**
-   * Output FTO list includes:
-   * - config.inputField mapping to all output fields (one-to-many)
-   * - other fields in inputSchema that map to themselves (1-to-1)
-   * @param context
-   * @throws Exception
-   */
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
@@ -76,6 +69,10 @@ public final class XMLToJSON extends Transform<StructuredRecord, StructuredRecor
       context.getOutputSchema() == null || context.getOutputSchema().getFields() == null) {
       return;
     }
+
+    // Output FTO list includes:
+    //    - config.inputField mapping to all output fields (one-to-many)
+    //    - other fields in inputSchema that map to themselves (1-to-1)
     List<String> identityFields = context.getInputSchema().getFields().stream().map(Schema.Field::getName)
       .filter(field -> outputSchema.getField(field) != null && !field.equals(config.inputField))
       .collect(Collectors.toList());
@@ -83,8 +80,9 @@ public final class XMLToJSON extends Transform<StructuredRecord, StructuredRecor
     List<FieldOperation> outputList = new java.util.ArrayList<>(
       TransformLineageRecorderUtils.oneInToAllOut(config.inputField,
         TransformLineageRecorderUtils.getFields(context.getOutputSchema()),
-        "xmlToJson", "Convert XML string to JSON string."));
-    outputList.addAll(TransformLineageRecorderUtils.oneToOneIn(identityFields, "xmlToJson", "Convert XML string to JSON string."));
+        "xmlToJson", "Converted XML string to JSON string."));
+    outputList.addAll(TransformLineageRecorderUtils.oneToOneIn(identityFields, "identity",
+      "Ignored fields not marked for operation."));
     context.record(outputList);
   }
 

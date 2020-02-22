@@ -86,12 +86,6 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
     }
   }
 
-  /**
-   * After extracting the mappings, store a list of FTOs containing identity transforms for every output
-   * field also present in the mappings list.
-   * @param context
-   * @throws Exception
-   */
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
@@ -99,10 +93,19 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
       return;
     }
     parseConfiguration(this.config, context.getFailureCollector());
-    context.record(
-      TransformLineageRecorderUtils.oneToOneIn(TransformLineageRecorderUtils.getFields(context.getInputSchema())
-        .stream().filter(mappingValues::containsKey).collect(Collectors.toList()),
-          "mapValueOf","Map values of fields based on the lookup table."));
+
+    // After extracting the mappings, store a list of FTOs containing identity transforms for every output
+    //    field also present in the mappings list.
+    List<String> fields = TransformLineageRecorderUtils.getFields(context.getInputSchema())
+      .stream().filter(mappingValues::containsKey).collect(Collectors.toList());
+
+    List<String> idFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
+    idFields.removeAll(fields);
+
+    context.record(TransformLineageRecorderUtils.eachInToSomeOut(fields, fields, idFields,
+        "mapValueOf", "Mapped values of fields based on the lookup table.",
+        "", "",
+        "identity", "Copied values of fields not marked for operation."));
   }
 
   /**

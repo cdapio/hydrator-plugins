@@ -75,25 +75,27 @@ public final class Encryptor extends Transform<StructuredRecord, StructuredRecor
     fieldEncryptor.initialize();
   }
 
-  /**
-   * Use all encryptFields from conf that also exist in input schema.
-   * Transform only modifies those fields, and has a null check, but we don't know the field values here.
-   * @param context
-   * @throws Exception
-   */
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
-    initialize(context);
+    encryptFields = conf.getEncryptFields();
     if (context.getInputSchema() == null || context.getInputSchema().getFields() == null) {
       return;
     }
+
+    // Use all encryptFields from conf that also exist in input schema.
+    //    Transform only modifies those fields, and has a null check, but we don't know the field values here.
     List<String> fields = TransformLineageRecorderUtils.getFields(context.getInputSchema()).stream()
       .filter(encryptFields::contains)
       .collect(Collectors.toList());
-    context.record(TransformLineageRecorderUtils.oneToOneIn(fields,
-      "encrypt",
-      "Encrypt specified fields using given algorithm."));
+
+    List<String> idFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
+    idFields.removeAll(fields);
+
+    context.record(TransformLineageRecorderUtils.eachInToSomeOut(fields, fields, idFields,
+      "encrypt", "Encrypted the requested fields.",
+      "", "",
+      "identity", "Copied values of fields not marked for operation."));
   }
 
   @Override
