@@ -28,8 +28,10 @@ import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.InvalidEntry;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -80,6 +82,15 @@ public class XMLMultiParser extends Transform<StructuredRecord, StructuredRecord
     FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
     config.validate(pipelineConfigurer.getStageConfigurer().getInputSchema(), collector);
     pipelineConfigurer.getStageConfigurer().setOutputSchema(config.getSchema(collector));
+  }
+
+  @Override
+  public void prepareRun(StageSubmitterContext context) throws Exception {
+    super.prepareRun(context);
+    // Map the single config XML field to all output fields.
+    context.record(TransformLineageRecorderUtils
+      .generateOneToMany(config.field, TransformLineageRecorderUtils.getFields(context.getOutputSchema()), "multiParse",
+        "Parsed an XML event using XPath."));
   }
 
   @Override
