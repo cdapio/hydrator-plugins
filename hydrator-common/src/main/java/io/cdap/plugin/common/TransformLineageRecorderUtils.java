@@ -86,7 +86,8 @@ public final class TransformLineageRecorderUtils {
    * @param description complete sentence description of operation
    * @return the FieldOperation as a list
    */
-  public static List<FieldOperation> generateManyToOne(List<String> input, String output, String name, String description) {
+  public static List<FieldOperation> generateManyToOne(List<String> input, String output, String name,
+    String description) {
     return Collections.singletonList(new FieldTransformOperation(name, description, input, output));
   }
 
@@ -98,7 +99,8 @@ public final class TransformLineageRecorderUtils {
    * @param description complete sentence description of operation
    * @return the FieldOperation as a list
    */
-  public static List<FieldOperation> generateOneToMany(String input, List<String> output, String name, String description) {
+  public static List<FieldOperation> generateOneToMany(String input, List<String> output, String name,
+    String description) {
     return Collections.singletonList(new FieldTransformOperation(name, description,
                                                                  Collections.singletonList(input), output));
   }

@@ -80,11 +80,10 @@ public final class JSONFormatter extends Transform<StructuredRecord, StructuredR
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
     if (!TransformLineageRecorderUtils.getFields(context.getOutputSchema()).isEmpty()) {
-      context.record(
-        TransformLineageRecorderUtils.generateManyToOne(TransformLineageRecorderUtils.getFields(context.getInputSchema()),
-                                                    TransformLineageRecorderUtils.getFields(context.getOutputSchema())
-                                                      .get(0),
-                                                    "jsonFormat", "Format data as a JSON string."));
+      context.record(TransformLineageRecorderUtils.generateManyToOne(
+        TransformLineageRecorderUtils.getFields(context.getInputSchema()),
+        TransformLineageRecorderUtils.getFields(context.getOutputSchema()).get(0),
+        "jsonFormat", "Format data as a JSON string."));
     }
   }
 
