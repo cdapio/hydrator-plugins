@@ -102,7 +102,7 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
     collector.getOrThrowException();
 
     context.record(
-      TransformLineageRecorderUtils.oneInToAllOut(config.inputField,
+      TransformLineageRecorderUtils.generateOneToMany(config.inputField,
         TransformLineageRecorderUtils.getFields(context.getOutputSchema()),
         "XMLParse",
         "Parsed XML data into a full row."));

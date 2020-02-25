@@ -29,10 +29,10 @@ import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
 import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import org.apache.commons.codec.digest.DigestUtils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -73,20 +73,21 @@ public final class Hasher extends Transform<StructuredRecord, StructuredRecord> 
       return;
     }
 
-    // Set a list of FTOs only for the fields in inputSchema and with type string, and identity for
-    //    the non-string ones present in the output.
-    List<String> fields = context.getInputSchema().getFields().stream()
+    // Set a list of operations only for the fields in inputSchema and with type string, and identity for
+    // the non-string ones present in the output.
+    List<String> hashedFields = context.getInputSchema().getFields().stream()
       .filter(field -> config.getFields()
         .contains(field.getName()) && field.getSchema().getType() == Schema.Type.STRING)
       .map(Schema.Field::getName).collect(Collectors.toList());
 
-    List<String> idFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
-    idFields.removeAll(fields);
+    List<String> identityFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
+    identityFields.removeAll(hashedFields);
 
-    context.record(TransformLineageRecorderUtils.eachInToSomeOut(fields, fields, idFields,
-        "hash", "Used the digest algorithm to hash the fields.",
-        "", "",
-        "identity", "Copied values of fields not marked for operation."));
+    List<FieldOperation> output = TransformLineageRecorderUtils.generateOneToOnes(hashedFields, "hash",
+      "Used the digest algorithm to hash the fields.");
+    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(identityFields, "identity",
+      TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));
+    context.record(output);
   }
 
   @Override

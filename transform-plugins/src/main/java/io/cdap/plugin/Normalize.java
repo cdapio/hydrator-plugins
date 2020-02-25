@@ -180,7 +180,7 @@ public class Normalize extends Transform<StructuredRecord, StructuredRecord> {
     }
 
     context.record(
-      TransformLineageRecorderUtils.allInToAllOut(normalizeFieldList,
+      TransformLineageRecorderUtils.generateManyToMany(normalizeFieldList,
         TransformLineageRecorderUtils.getFields(context.getOutputSchema()),
         "normalize",
         "Normalize wide rows and reduce data to canonical form."));

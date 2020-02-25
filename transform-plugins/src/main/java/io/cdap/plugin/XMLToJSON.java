@@ -36,6 +36,7 @@ import org.json.JSONObject;
 import org.json.XML;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -64,24 +65,24 @@ public final class XMLToJSON extends Transform<StructuredRecord, StructuredRecor
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
-    setInputFields();
+    generateOutputSchema();
     if (context.getInputSchema() == null || context.getInputSchema().getFields() == null ||
       context.getOutputSchema() == null || context.getOutputSchema().getFields() == null) {
       return;
     }
 
-    // Output FTO list includes:
-    //    - config.inputField mapping to all output fields (one-to-many)
-    //    - other fields in inputSchema that map to themselves (1-to-1)
+    // Output operation list includes:
+    // - config.inputField mapping to all output fields (one-to-many)
+    // - other fields in inputSchema that map to themselves (1-to-1)
     List<String> identityFields = context.getInputSchema().getFields().stream().map(Schema.Field::getName)
       .filter(field -> outputSchema.getField(field) != null && !field.equals(config.inputField))
       .collect(Collectors.toList());
 
-    List<FieldOperation> outputList = new java.util.ArrayList<>(
-      TransformLineageRecorderUtils.oneInToAllOut(config.inputField,
+    List<FieldOperation> outputList = new ArrayList<>(
+      TransformLineageRecorderUtils.generateOneToMany(config.inputField,
         TransformLineageRecorderUtils.getFields(context.getOutputSchema()),
         "xmlToJson", "Converted XML string to JSON string."));
-    outputList.addAll(TransformLineageRecorderUtils.oneToOneIn(identityFields, "identity",
+    outputList.addAll(TransformLineageRecorderUtils.generateOneToOnes(identityFields, "identity",
       "Ignored fields not marked for operation."));
     context.record(outputList);
   }
@@ -89,10 +90,10 @@ public final class XMLToJSON extends Transform<StructuredRecord, StructuredRecor
   @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
-    setInputFields();
+    generateOutputSchema();
   }
 
-  private void setInputFields() {
+  private void generateOutputSchema() {
     try {
       outputSchema = Schema.parseJson(config.schema);
       if (outputSchema != null) {

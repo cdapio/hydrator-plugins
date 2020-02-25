@@ -29,6 +29,7 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
 import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Base64;
@@ -37,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -102,18 +104,25 @@ public final class Encoder extends Transform<StructuredRecord, StructuredRecord>
     parseConfiguration(config.encode, context.getFailureCollector());
 
     // Initialize the required member maps and then: if a field is in input and output and encode, then
-    //    set it to transform; if it's in input and output but not encode, ignore it; if it's in input and
-    //    not output, drop it.
+    // set it to transform; if it's in input and output but not encode, ignore it; if it's in input and
+    // not output, drop it.
     List<String> inFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
     List<String> outFields = TransformLineageRecorderUtils.getFields(context.getOutputSchema());
-    List<String> idFields = outFields.stream()
+    List<String> identityFields = outFields.stream()
       .filter(field -> !encodeMap.containsKey(field) || encodeMap.get(field) == EncodeType.NONE)
       .collect(Collectors.toList());
 
-    context.record(TransformLineageRecorderUtils.eachInToSomeOut(inFields, outFields, idFields,
-      "encode", "Encoded the input fields based on expected encoder.",
-      "drop", "Dropped fields not included in the output.",
-      "identity", "Copied values of fields not marked for operation."));
+    List<String> processedFields = new ArrayList<>(outFields);
+    processedFields.removeAll(identityFields);
+    List<String> droppedFields = new ArrayList<>(inFields);
+    droppedFields.removeAll(outFields);
+
+    List<FieldOperation> output = TransformLineageRecorderUtils.generateOneToOnes(processedFields, "encode",
+      "Encoded the input fields based on expected encoder.");
+    output.addAll(TransformLineageRecorderUtils.generateDrops(droppedFields));
+    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(identityFields, "identity",
+      TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));
+    context.record(output);
   }
 
   @Override

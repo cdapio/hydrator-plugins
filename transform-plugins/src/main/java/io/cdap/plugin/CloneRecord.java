@@ -61,9 +61,9 @@ public final class CloneRecord extends Transform<StructuredRecord, StructuredRec
     config.validate(collector);
     collector.getOrThrowException();
 
-    // Return list of FTOs for 1-1 for every input field.
+    // Return list of operations for 1-1 for every input field.
     context.record(
-      TransformLineageRecorderUtils.oneToOneIn(TransformLineageRecorderUtils.getFields(context.getInputSchema()),
+      TransformLineageRecorderUtils.generateOneToOnes(TransformLineageRecorderUtils.getFields(context.getInputSchema()),
                                                "clone",
                                                "Copied the input record."));
   }

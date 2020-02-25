@@ -89,7 +89,7 @@ public class XMLMultiParser extends Transform<StructuredRecord, StructuredRecord
     super.prepareRun(context);
     // Map the single config XML field to all output fields.
     context.record(TransformLineageRecorderUtils
-      .oneInToAllOut(config.field, TransformLineageRecorderUtils.getFields(context.getOutputSchema()), "multiParse",
+      .generateOneToMany(config.field, TransformLineageRecorderUtils.getFields(context.getOutputSchema()), "multiParse",
         "Parsed an XML event using XPath."));
   }
 

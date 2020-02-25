@@ -33,6 +33,7 @@ import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
 import io.cdap.plugin.common.FieldEncryptor;
 import io.cdap.plugin.common.KeystoreConf;
 import io.cdap.plugin.common.TransformLineageRecorderUtils;
@@ -92,18 +93,18 @@ public final class Decryptor extends Transform<StructuredRecord, StructuredRecor
     }
 
     // Use all decryptFields from conf that also exist in input schema.
-    //    Transform only modifies those fields, and has a null check, but we don't know the field values here.
-    List<String> fields = TransformLineageRecorderUtils.getFields(context.getInputSchema()).stream()
+    List<String> decryptedFields = TransformLineageRecorderUtils.getFields(context.getInputSchema()).stream()
       .filter(decryptFields::contains)
       .collect(Collectors.toList());
 
-    List<String> idFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
-    idFields.removeAll(fields);
+    List<String> identityFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
+    identityFields.removeAll(decryptedFields);
 
-    context.record(TransformLineageRecorderUtils.eachInToSomeOut(fields, fields, idFields,
-      "decrypt", "Decrypted the requested fields.",
-      "", "",
-      "identity", "Copied values of fields not marked for operation."));
+    List<FieldOperation> output = TransformLineageRecorderUtils.generateOneToOnes(decryptedFields, "decrypt",
+      "Decrypted the requested fields.");
+    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(identityFields, "identity",
+      TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));
+    context.record(output);
   }
 
   @Override

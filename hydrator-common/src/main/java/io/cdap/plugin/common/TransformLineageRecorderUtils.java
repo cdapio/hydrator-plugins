@@ -29,6 +29,10 @@ import javax.annotation.Nullable;
  * Utility class for recording field-level lineage for transform operations.
  */
 public final class TransformLineageRecorderUtils {
+
+  public static final String IDENTITY_TRANSFORM_DESCRIPTION = "Copied values of fields not marked for operation.";
+  public static final String DROP_TRANSFORM_DESCRIPTION = "Dropped fields not included in the output.";
+
   private TransformLineageRecorderUtils() {
 
   }
@@ -36,7 +40,7 @@ public final class TransformLineageRecorderUtils {
   /**
    * Returns the list of fields as a list of strings.
    * @param schema input or output schema
-   * @return
+   * @return String list of fields from the schema
    */
   public static List<String> getFields(@Nullable Schema schema) {
     if (schema == null || schema.getFields() == null || schema.getFields().isEmpty()) {
@@ -49,70 +53,78 @@ public final class TransformLineageRecorderUtils {
   /**
    * Use the list of input fields to generate a one-to-one on the same list.
    * @param input a list of input fields
-   * @param name
-   * @param description
-   * @return list of FTOs where each is just input(i) -> input(i)
+   * @param name prefix of name of each operation. Real name is name_inputField
+   * @param description Description to be used for every operation in this transform list
+   * @return list of operations where each is just input(i) -> input(i)
    */
-  public static List<FieldOperation> oneToOneIn(List<String> input, String name, String description) {
+  public static List<FieldOperation> generateOneToOnes(List<String> input, String name, String description) {
     return input.stream()
-      .map(inputField -> new FieldTransformOperation(name, description, Collections.singletonList(inputField),
+      .map(inputField -> new FieldTransformOperation(name + "_" + inputField, description,
+        Collections.singletonList(inputField),
         Collections.singletonList(inputField)))
       .collect(Collectors.toList());
   }
 
   /**
-   * Map each input to itself as an FTO if present in the output; else, map to an empty list (drop).
-   * Have one name/description for modified fields; another for untouched (identity) fields;
-   * another for dropped fields. The dropped fields are the difference between input and output.
-   * @param input fields straight from inputSchema
-   * @param output fields straight from outputSchema
-   * @param identity fields not modified by this transform
-   * @param name for transformed fields
-   * @param description for transformed fields
-   * @param dropName for dropped fields
-   * @param dropDescription for dropped fields
-   * @param idName for identity fields
-   * @param idDescription for identity fields
-   * @return
+   * Use the list of input fields to generate a list of drop operations.
+   * @param input a list of input fields
+   * @return list of operations where each is just input(i) -> []
    */
-  public static List<FieldOperation> eachInToSomeOut(List<String> input, List<String> output, List<String> identity,
-    String name, String description, String dropName, String dropDescription, String idName, String idDescription) {
+  public static List<FieldOperation> generateDrops(List<String> input) {
     return input.stream()
-      .map(inputField -> {
-        if (identity.contains(inputField)) {
-          return new FieldTransformOperation(idName, idDescription, Collections.singletonList(inputField), inputField);
-        } else if (output.contains(inputField)) {
-          return new FieldTransformOperation(name, description, Collections.singletonList(inputField), inputField);
-        } else {
-          return new FieldTransformOperation(dropName, dropDescription, Collections.singletonList(inputField));
-        }
-      })
+      .map(inputField -> new FieldTransformOperation("drop_" + inputField, DROP_TRANSFORM_DESCRIPTION,
+        Collections.singletonList(inputField),
+        Collections.emptyList()))
       .collect(Collectors.toList());
   }
 
   /**
-   * Return a single FTO with all input mappings to the single output.
-   * @param input
-   * @param output
-   * @param name
-   * @param description
-   * @return
+   * Return a single operation with all input mappings to the single output.
+   * @param input list of input fields
+   * @param output single output field
+   * @param name name of operation
+   * @param description complete sentence description of operation
+   * @return the FieldOperation as a list
    */
-  public static List<FieldOperation> allInToOneOut(List<String> input, String output, String name, String description) {
+  public static List<FieldOperation> generateManyToOne(List<String> input, String output, String name, String description) {
     return Collections.singletonList(new FieldTransformOperation(name, description, input, output));
   }
 
-  public static List<FieldOperation> oneInToAllOut(String input, List<String> output, String name, String description) {
+  /**
+   * Return a single operation with the input mapping to all outputs.
+   * @param input single input field
+   * @param output list of output fields
+   * @param name name of operation
+   * @param description complete sentence description of operation
+   * @return the FieldOperation as a list
+   */
+  public static List<FieldOperation> generateOneToMany(String input, List<String> output, String name, String description) {
     return Collections.singletonList(new FieldTransformOperation(name, description,
                                                                  Collections.singletonList(input), output));
   }
 
-  public static List<FieldOperation> allInToAllOut(List<String> input, List<String> output, String name,
+  /**
+   * Returns a single operation mapping all inputs to all outputs.
+   * @param input list of input fields
+   * @param output list of input fields
+   * @param name name of operation
+   * @param description complete sentence description of operation
+   * @return the FieldOperation as a list
+   */
+  public static List<FieldOperation> generateManyToMany(List<String> input, List<String> output, String name,
     String description) {
     return Collections.singletonList(new FieldTransformOperation(name, description, input, output));
   }
 
-  public static List<FieldOperation> oneInToOneOut(String input, String output, String name, String description) {
+  /**
+   * Returns a single operation mapping the input to the output.
+   * @param input single input field
+   * @param output single output fields
+   * @param name name of operation
+   * @param description complete sentence description of operation
+   * @return the FieldOperation as a list
+   */
+  public static List<FieldOperation> generateOneToOne(String input, String output, String name, String description) {
     return Collections.singletonList(new FieldTransformOperation(name, description,
                                                                  Collections.singletonList(input), output));
   }

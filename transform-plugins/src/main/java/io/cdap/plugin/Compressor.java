@@ -31,6 +31,7 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
 import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,7 @@ import org.xerial.snappy.Snappy;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -53,6 +55,7 @@ import javax.annotation.Nullable;
 @Name("Compressor")
 @Description("Compresses configured fields using the algorithms specified.")
 public final class Compressor extends Transform<StructuredRecord, StructuredRecord> {
+
   private static final Logger LOG = LoggerFactory.getLogger(Compressor.class);
   private final Config config;
 
@@ -75,18 +78,25 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
     parseConfiguration(config.compressor, context.getFailureCollector());
 
     // Initialize the required member maps and then: if a field is in input and output and comp, then
-    //    set it to transform; if it's in input and output but not comp, ignore it; if it's in input and
-    //    not output, drop it.
+    // set it to transform; if it's in input and output but not comp, ignore it; if it's in input and
+    // not output, drop it.
     List<String> inFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
     List<String> outFields = TransformLineageRecorderUtils.getFields(context.getOutputSchema());
-    List<String> idFields = outFields.stream()
+    List<String> identityFields = outFields.stream()
       .filter(field -> !compMap.containsKey(field) || compMap.get(field) == CompressorType.NONE)
       .collect(Collectors.toList());
 
-    context.record(TransformLineageRecorderUtils.eachInToSomeOut(inFields, outFields, idFields,
-      "compress", "Used the specified algorithm to compress the field.",
-      "drop", "Dropped fields not included in the output.",
-      "identity", "Copied values of fields not marked for operation."));
+    List<String> processedFields = new ArrayList<>(outFields);
+    processedFields.removeAll(identityFields);
+    List<String> droppedFields = new ArrayList<>(inFields);
+    droppedFields.removeAll(outFields);
+
+    List<FieldOperation> output = TransformLineageRecorderUtils.generateOneToOnes(processedFields, "compress",
+      "Used the specified algorithm to compress the field.");
+    output.addAll(TransformLineageRecorderUtils.generateDrops(droppedFields));
+    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(identityFields, "identity",
+      TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));
+    context.record(output);
   }
 
   @Override

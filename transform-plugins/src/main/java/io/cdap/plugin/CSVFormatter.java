@@ -123,7 +123,7 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
     if (!outputFields.isEmpty()) {
       context.record(
         TransformLineageRecorderUtils
-          .allInToOneOut(TransformLineageRecorderUtils.getFields(context.getInputSchema()), outputFields.get(0),
+          .generateManyToOne(TransformLineageRecorderUtils.getFields(context.getInputSchema()), outputFields.get(0),
             "csvFormat", "Formatted the input data as CSV."));
     }
     config.validate(context.getFailureCollector());

@@ -32,6 +32,7 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
 import io.cdap.plugin.common.TransformLineageRecorderUtils;
 
 import java.util.ArrayList;
@@ -94,18 +95,19 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
     }
     parseConfiguration(this.config, context.getFailureCollector());
 
-    // After extracting the mappings, store a list of FTOs containing identity transforms for every output
-    //    field also present in the mappings list.
-    List<String> fields = TransformLineageRecorderUtils.getFields(context.getInputSchema())
+    // After extracting the mappings, store a list of operations containing identity transforms for every output
+    // field also present in the mappings list.
+    List<String> mappedFields = TransformLineageRecorderUtils.getFields(context.getInputSchema())
       .stream().filter(mappingValues::containsKey).collect(Collectors.toList());
 
-    List<String> idFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
-    idFields.removeAll(fields);
+    List<String> identityFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
+    identityFields.removeAll(mappedFields);
 
-    context.record(TransformLineageRecorderUtils.eachInToSomeOut(fields, fields, idFields,
-        "mapValueOf", "Mapped values of fields based on the lookup table.",
-        "", "",
-        "identity", "Copied values of fields not marked for operation."));
+    List<FieldOperation> output = TransformLineageRecorderUtils.generateOneToOnes(mappedFields, "mapValueOf",
+      "Mapped values of fields based on the lookup table.");
+    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(identityFields, "identity",
+      TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));
+    context.record(output);
   }
 
   /**
