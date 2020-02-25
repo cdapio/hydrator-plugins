@@ -83,7 +83,7 @@ public final class JSONFormatter extends Transform<StructuredRecord, StructuredR
       context.record(TransformLineageRecorderUtils.generateManyToOne(
         TransformLineageRecorderUtils.getFields(context.getInputSchema()),
         TransformLineageRecorderUtils.getFields(context.getOutputSchema()).get(0),
-        "jsonFormat", "Format data as a JSON string."));
+        "jsonFormat", "Formatted data as a JSON string."));
     }
   }
 

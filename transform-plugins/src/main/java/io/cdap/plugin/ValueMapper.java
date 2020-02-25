@@ -33,9 +33,11 @@ import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
 import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
+import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
 import io.cdap.plugin.common.TransformLineageRecorderUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -103,8 +105,11 @@ public class ValueMapper extends Transform<StructuredRecord, StructuredRecord> {
     List<String> identityFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
     identityFields.removeAll(mappedFields);
 
-    List<FieldOperation> output = TransformLineageRecorderUtils.generateOneToOnes(mappedFields, "mapValueOf",
-      "Mapped values of fields based on the lookup table.");
+    List<FieldOperation> output = new ArrayList<>();
+    output.addAll(mappedFields.stream().map(sourceFieldName -> new FieldTransformOperation(
+      "mapValueOf" + sourceFieldName, "Mapped values of fields based on the lookup table.",
+      Collections.singletonList(sourceFieldName), mappingValues.get(sourceFieldName).getDefaultValue())).collect(
+        Collectors.toList()));
     output.addAll(TransformLineageRecorderUtils.generateOneToOnes(identityFields, "identity",
       TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));
     context.record(output);

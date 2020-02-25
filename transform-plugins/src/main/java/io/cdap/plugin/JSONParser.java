@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -111,8 +112,9 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
     List<String> identityFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
     identityFields.removeAll(mappedFields);
 
-    List<FieldOperation> output = TransformLineageRecorderUtils.generateOneToOnes(mappedFields, "Parse",
-      "Parsed fields as JSON.");
+    List<FieldOperation> output = new ArrayList<>();
+    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(mappedFields, "Parse",
+      "Parsed fields as JSON."));
     output.addAll(TransformLineageRecorderUtils.generateOneToOnes(identityFields, "identity",
       TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));
     context.record(output);

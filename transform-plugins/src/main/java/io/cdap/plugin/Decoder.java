@@ -124,8 +124,9 @@ public final class Decoder extends Transform<StructuredRecord, StructuredRecord>
     List<String> droppedFields = new ArrayList<>(inFields);
     droppedFields.removeAll(outFields);
 
-    List<FieldOperation> output = TransformLineageRecorderUtils.generateOneToOnes(processedFields, "decode",
-      "Decoded the input fields based on expected decoder.");
+    List<FieldOperation> output = new ArrayList<>();
+    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(processedFields, "decode",
+      "Decoded the input fields based on expected decoder."));
     output.addAll(TransformLineageRecorderUtils.generateDrops(droppedFields));
     output.addAll(TransformLineageRecorderUtils.generateOneToOnes(identityFields, "identity",
       TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));

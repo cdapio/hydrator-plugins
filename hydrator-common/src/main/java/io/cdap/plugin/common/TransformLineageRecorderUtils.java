@@ -30,7 +30,7 @@ import javax.annotation.Nullable;
  */
 public final class TransformLineageRecorderUtils {
 
-  public static final String IDENTITY_TRANSFORM_DESCRIPTION = "Copied values of fields not marked for operation.";
+  public static final String IDENTITY_TRANSFORM_DESCRIPTION = "Unchanged fields in the transform.";
   public static final String DROP_TRANSFORM_DESCRIPTION = "Dropped fields not included in the output.";
 
   private TransformLineageRecorderUtils() {

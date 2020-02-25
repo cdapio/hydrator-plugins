@@ -117,8 +117,9 @@ public final class Encoder extends Transform<StructuredRecord, StructuredRecord>
     List<String> droppedFields = new ArrayList<>(inFields);
     droppedFields.removeAll(outFields);
 
-    List<FieldOperation> output = TransformLineageRecorderUtils.generateOneToOnes(processedFields, "encode",
-      "Encoded the input fields based on expected encoder.");
+    List<FieldOperation> output = new ArrayList<>();
+    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(processedFields, "encode",
+      "Encoded the input fields based on expected encoder."));
     output.addAll(TransformLineageRecorderUtils.generateDrops(droppedFields));
     output.addAll(TransformLineageRecorderUtils.generateOneToOnes(identityFields, "identity",
       TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));

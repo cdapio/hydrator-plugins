@@ -39,6 +39,7 @@ import io.cdap.plugin.common.KeystoreConf;
 import io.cdap.plugin.common.TransformLineageRecorderUtils;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -100,8 +101,9 @@ public final class Decryptor extends Transform<StructuredRecord, StructuredRecor
     List<String> identityFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
     identityFields.removeAll(decryptedFields);
 
-    List<FieldOperation> output = TransformLineageRecorderUtils.generateOneToOnes(decryptedFields, "decrypt",
-      "Decrypted the requested fields.");
+    List<FieldOperation> output = new ArrayList<>();
+    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(decryptedFields, "decrypt",
+      "Decrypted the requested fields."));
     output.addAll(TransformLineageRecorderUtils.generateOneToOnes(identityFields, "identity",
       TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));
     context.record(output);

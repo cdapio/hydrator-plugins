@@ -91,8 +91,9 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
     List<String> droppedFields = new ArrayList<>(inFields);
     droppedFields.removeAll(outFields);
 
-    List<FieldOperation> output = TransformLineageRecorderUtils.generateOneToOnes(processedFields, "decompress",
-      "Used the specified algorithm to decompress the field.");
+    List<FieldOperation> output = new ArrayList<>();
+    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(processedFields, "decompress",
+      "Used the specified algorithm to decompress the field."));
     output.addAll(TransformLineageRecorderUtils.generateDrops(droppedFields));
     output.addAll(TransformLineageRecorderUtils.generateOneToOnes(identityFields, "identity",
       TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));

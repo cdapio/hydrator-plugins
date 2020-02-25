@@ -91,8 +91,9 @@ public final class Compressor extends Transform<StructuredRecord, StructuredReco
     List<String> droppedFields = new ArrayList<>(inFields);
     droppedFields.removeAll(outFields);
 
-    List<FieldOperation> output = TransformLineageRecorderUtils.generateOneToOnes(processedFields, "compress",
-      "Used the specified algorithm to compress the field.");
+    List<FieldOperation> output = new ArrayList<>();
+    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(processedFields, "compress",
+      "Used the specified algorithm to compress the field."));
     output.addAll(TransformLineageRecorderUtils.generateDrops(droppedFields));
     output.addAll(TransformLineageRecorderUtils.generateOneToOnes(identityFields, "identity",
       TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));

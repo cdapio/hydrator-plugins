@@ -77,13 +77,14 @@ public final class XMLToJSON extends Transform<StructuredRecord, StructuredRecor
     List<String> identityFields = context.getInputSchema().getFields().stream().map(Schema.Field::getName)
       .filter(field -> outputSchema.getField(field) != null && !field.equals(config.inputField))
       .collect(Collectors.toList());
+    List<String> processedFields = new ArrayList<>(TransformLineageRecorderUtils.getFields(context.getOutputSchema()));
+    processedFields.removeAll(identityFields);
 
     List<FieldOperation> outputList = new ArrayList<>(
-      TransformLineageRecorderUtils.generateOneToMany(config.inputField,
-        TransformLineageRecorderUtils.getFields(context.getOutputSchema()),
-        "xmlToJson", "Converted XML string to JSON string."));
+      TransformLineageRecorderUtils.generateOneToMany(config.inputField, processedFields, "xmlToJson",
+        "Converted XML string to JSON string."));
     outputList.addAll(TransformLineageRecorderUtils.generateOneToOnes(identityFields, "identity",
-      "Ignored fields not marked for operation."));
+      TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));
     context.record(outputList);
   }
 

@@ -33,6 +33,7 @@ import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
 import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import org.apache.commons.codec.digest.DigestUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -83,8 +84,9 @@ public final class Hasher extends Transform<StructuredRecord, StructuredRecord> 
     List<String> identityFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
     identityFields.removeAll(hashedFields);
 
-    List<FieldOperation> output = TransformLineageRecorderUtils.generateOneToOnes(hashedFields, "hash",
-      "Used the digest algorithm to hash the fields.");
+    List<FieldOperation> output = new ArrayList<>();
+    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(hashedFields, "hash",
+      "Used the digest algorithm to hash the fields."));
     output.addAll(TransformLineageRecorderUtils.generateOneToOnes(identityFields, "identity",
       TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));
     context.record(output);

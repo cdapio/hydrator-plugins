@@ -92,8 +92,9 @@ public final class Encryptor extends Transform<StructuredRecord, StructuredRecor
     List<String> identityFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
     identityFields.removeAll(encryptedFields);
 
-    List<FieldOperation> output = TransformLineageRecorderUtils.generateOneToOnes(encryptedFields, "encrypt",
-      "Encrypted the requested fields.");
+    List<FieldOperation> output = new ArrayList<>();
+    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(encryptedFields, "encrypt",
+      "Encrypted the requested fields."));
     output.addAll(TransformLineageRecorderUtils.generateOneToOnes(identityFields, "identity",
       TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));
     context.record(output);
