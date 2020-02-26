@@ -338,7 +338,7 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
     lineageRecorder.createExternalDataset(schema);
 
     if (schema != null && schema.getFields() != null) {
-      lineageRecorder.recordRead("Read", "Read from spreadsheet.", TransformLineageRecorderUtils.getFields(schema));
+      lineageRecorder.recordRead("Read", "Read from Excel files.", TransformLineageRecorderUtils.getFields(schema));
     }
 
   }

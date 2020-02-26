@@ -116,7 +116,6 @@ public abstract class SnapshotFileBatchSink<T extends SnapshotFileSetBatchSinkCo
     Schema schema = context.getInputSchema();
     if (schema != null && schema.getFields() != null) {
       LineageRecorder lineageRecorder = new LineageRecorder(context, config.getName());
-      lineageRecorder.createExternalDataset(schema);
       List<String> fieldNames = TransformLineageRecorderUtils.getFields(schema);
       if (!fieldNames.isEmpty()) {
         lineageRecorder.recordWrite("Write", "Wrote to Snapshot file.", fieldNames);

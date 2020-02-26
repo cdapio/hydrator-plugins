@@ -17,6 +17,7 @@
 package io.cdap.plugin.batch.aggregator;
 
 import com.google.common.base.Splitter;
+import com.google.common.collect.Lists;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
@@ -30,8 +31,6 @@ import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchAggregator;
 import io.cdap.cdap.etl.api.batch.BatchAggregatorContext;
 import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
-import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
-import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
 import io.cdap.plugin.common.TransformLineageRecorderUtils;
 
 import java.util.ArrayList;
@@ -108,6 +107,18 @@ public class DistinctAggregator extends RecordAggregator {
 
     validate(context.getInputSchema(), conf.getFields(), context.getFailureCollector());
     context.getFailureCollector().getOrThrowException();
+
+    if (conf.getFields() == null) {
+      context.record(TransformLineageRecorderUtils.generateOneToOnes(
+        TransformLineageRecorderUtils.getFields(context.getInputSchema()),
+        "distinctAggregator",
+        "Removed duplicates in input records."));
+    } else {
+      context.record(TransformLineageRecorderUtils.generateOneToOnes(
+        Lists.newArrayList(conf.getFields()),
+        "distinctAggregator",
+        "Removed duplicates in input records."));
+    }
   }
 
   @Override

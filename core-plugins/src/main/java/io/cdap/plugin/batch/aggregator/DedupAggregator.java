@@ -58,7 +58,7 @@ public class DedupAggregator extends RecordAggregator {
     super.prepareRun(context);
 
     TransformLineageRecorderUtils.generateOneToOnes(dedupConfig.getUniqueFields(), "dedup",
-      "Removed duplicate records..");
+      "Removed duplicate records based on unique fields.");
   }
 
   @Override

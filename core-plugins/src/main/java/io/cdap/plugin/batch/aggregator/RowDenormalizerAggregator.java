@@ -27,7 +27,6 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchAggregator;
 import io.cdap.cdap.etl.api.batch.BatchAggregatorContext;
 import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
-import io.cdap.plugin.common.TransformLineageRecorderUtils;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -67,7 +66,6 @@ public class RowDenormalizerAggregator extends BatchAggregator<String, Structure
     if (conf.numPartitions != null) {
       context.setNumPartitions(conf.numPartitions);
     }
-
   }
 
   @Override
