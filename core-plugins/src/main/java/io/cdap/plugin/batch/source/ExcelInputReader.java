@@ -41,9 +41,11 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.batch.BatchSourceContext;
+import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.common.Properties;
 import io.cdap.plugin.common.ReferencePluginConfig;
 import io.cdap.plugin.common.SourceInputFormatProvider;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import io.cdap.plugin.common.batch.JobUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -330,6 +332,14 @@ public class ExcelInputReader extends BatchSource<LongWritable, Object, Structur
     SourceInputFormatProvider inputFormatProvider = new SourceInputFormatProvider(ExcelInputFormat.class,
                                                                                   job.getConfiguration());
     batchSourceContext.setInput(Input.of(excelInputreaderConfig.referenceName, inputFormatProvider));
+
+    Schema schema = batchSourceContext.getOutputSchema();
+    LineageRecorder lineageRecorder = new LineageRecorder(batchSourceContext, excelInputreaderConfig.referenceName);
+    lineageRecorder.createExternalDataset(schema);
+
+    if (schema != null && schema.getFields() != null) {
+      lineageRecorder.recordRead("Read", "Read from Excel files.", TransformLineageRecorderUtils.getFields(schema));
+    }
 
   }
 

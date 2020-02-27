@@ -43,6 +43,7 @@ import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.common.ReferenceBatchSource;
 import io.cdap.plugin.common.ReferencePluginConfig;
 import io.cdap.plugin.common.SourceInputFormatProvider;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import io.cdap.plugin.common.batch.JobUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -154,6 +155,10 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     // create the external dataset with the given schema
     LineageRecorder lineageRecorder = new LineageRecorder(context, config.referenceName);
     lineageRecorder.createExternalDataset(DEFAULT_XML_SCHEMA);
+    Schema schema = context.getOutputSchema();
+    if (schema != null && schema.getFields() != null) {
+      lineageRecorder.recordRead("Read", "Read from XML.", TransformLineageRecorderUtils.getFields(schema));
+    }
     context.setInput(Input.of(config.referenceName, new SourceInputFormatProvider(XMLInputFormat.class, conf)));
   }
 
