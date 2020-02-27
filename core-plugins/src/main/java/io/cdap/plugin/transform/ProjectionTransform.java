@@ -159,7 +159,7 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
       fieldsToDrop = new ArrayList<>(TransformLineageRecorderUtils.getFields(context.getInputSchema()));
       fieldsToDrop.removeAll(fieldsToKeep);
     }
-    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(fieldsToKeep,"identity",
+    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(fieldsToKeep, "identity",
       TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));
     output.addAll(TransformLineageRecorderUtils.generateDrops(fieldsToDrop));
     output.addAll(fieldsToRename.keySet().stream().map(field -> new FieldTransformOperation("renameField" + field,
