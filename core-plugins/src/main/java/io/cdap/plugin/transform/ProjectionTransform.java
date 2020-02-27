@@ -151,13 +151,17 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
     init(context.getInputSchema(), context.getFailureCollector());
 
     List<FieldOperation> output = new ArrayList<>();
-    Collection<String> fieldsToKeep = this.fieldsToKeep;
+    List<String> fieldsToKeep = new ArrayList<>(this.fieldsToKeep);
+    List<String> fieldsToDrop = new ArrayList<>(this.fieldsToDrop);
     if (fieldsToKeep.isEmpty()) {
       fieldsToKeep = TransformLineageRecorderUtils.getFields(context.getInputSchema());
+    } else {
+      fieldsToDrop = new ArrayList<>(TransformLineageRecorderUtils.getFields(context.getInputSchema()));
+      fieldsToDrop.removeAll(fieldsToKeep);
     }
-    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(new ArrayList<>(fieldsToKeep),
-      "identity", TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));
-    output.addAll(TransformLineageRecorderUtils.generateDrops(new ArrayList<>(fieldsToDrop)));
+    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(fieldsToKeep,"identity",
+      TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));
+    output.addAll(TransformLineageRecorderUtils.generateDrops(fieldsToDrop));
     output.addAll(fieldsToRename.keySet().stream().map(field -> new FieldTransformOperation("renameField" + field,
       "Renamed fields as specified.",
       Collections.singletonList(field), fieldsToRename.get(field))).collect(Collectors.toList()));

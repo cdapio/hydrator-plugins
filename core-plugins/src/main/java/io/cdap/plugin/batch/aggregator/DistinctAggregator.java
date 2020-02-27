@@ -108,17 +108,10 @@ public class DistinctAggregator extends RecordAggregator {
     validate(context.getInputSchema(), conf.getFields(), context.getFailureCollector());
     context.getFailureCollector().getOrThrowException();
 
-    if (conf.getFields() == null) {
-      context.record(TransformLineageRecorderUtils.generateOneToOnes(
-        TransformLineageRecorderUtils.getFields(context.getInputSchema()),
-        "distinctAggregator",
-        "Removed duplicates in input records."));
-    } else {
-      context.record(TransformLineageRecorderUtils.generateOneToOnes(
-        Lists.newArrayList(conf.getFields()),
-        "distinctAggregator",
-        "Removed duplicates in input records."));
-    }
+    List<String> fields = conf.getFields() == null ?
+      TransformLineageRecorderUtils.getFields(context.getInputSchema()) : Lists.newArrayList(conf.getFields());
+    context.record(TransformLineageRecorderUtils.generateOneToOnes(fields, "distinctAggregator",
+      "Removed duplicates in input records."));
   }
 
   @Override
