@@ -27,18 +27,15 @@ import io.cdap.cdap.api.dataset.DatasetManagementException;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.api.dataset.table.Row;
 import io.cdap.cdap.api.dataset.table.Table;
-import io.cdap.cdap.api.lineage.field.EndPoint;
 import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
 import io.cdap.cdap.etl.api.batch.BatchSourceContext;
-import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
-import io.cdap.cdap.etl.api.lineage.field.FieldReadOperation;
+import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.common.Properties;
 import io.cdap.plugin.common.RowRecordTransformer;
 import io.cdap.plugin.common.TableSourceConfig;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -87,12 +84,9 @@ public class TableSource extends BatchReadableSource<byte[], Row, StructuredReco
     super.prepareRun(context);
     Schema schema = tableConfig.getSchema();
     if (schema != null && schema.getFields() != null) {
-      FieldOperation operation =
-        new FieldReadOperation("Read", "Read from Table dataset",
-                               EndPoint.of(context.getNamespace(), tableConfig.getName()),
-                               schema.getFields().stream().map(Schema.Field::getName)
-                                 .collect(Collectors.toList()));
-      context.record(Collections.singletonList(operation));
+      LineageRecorder recorder = new LineageRecorder(context, tableConfig.getName());
+      recorder.recordRead("Read", "Read from Table dataset",
+                          schema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList()));
     }
   }
 

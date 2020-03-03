@@ -85,10 +85,11 @@ public class LineageRecorder {
    * @param fields output fields of this read operation
    */
   public void recordRead(String operationName, String operationDescription, List<String> fields) {
-    context.record(Collections.singletonList(new FieldReadOperation(operationName,
-                                                                    operationDescription,
-                                                                    EndPoint.of(context.getNamespace(), dataset),
-                                                                    fields)));
+    fields.forEach(field -> context.record(
+      Collections.singletonList(new FieldReadOperation(operationName + field,
+                                                       operationDescription,
+                                                       EndPoint.of(context.getNamespace(), dataset),
+                                                       field))));
   }
 
   /**
@@ -96,12 +97,13 @@ public class LineageRecorder {
    *
    * @param operationName the name of the operation
    * @param operationDescription description for the operation
-   * @param fields input fields of this read operation
+   * @param fields input fields of this write operation
    */
   public void recordWrite(String operationName, String operationDescription, List<String> fields) {
-    context.record(Collections.singletonList(new FieldWriteOperation(operationName,
-                                                                     operationDescription,
-                                                                     EndPoint.of(context.getNamespace(), dataset),
-                                                                     fields)));
+    fields.forEach(field -> context.record(
+      Collections.singletonList(new FieldWriteOperation(operationName + field,
+                                                        operationDescription,
+                                                        EndPoint.of(context.getNamespace(), dataset),
+                                                        field))));
   }
 }

@@ -28,21 +28,18 @@ import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.api.dataset.lib.TimePartitionDetail;
 import io.cdap.cdap.api.dataset.lib.TimePartitionedFileSet;
 import io.cdap.cdap.api.dataset.lib.TimePartitionedFileSetArguments;
-import io.cdap.cdap.api.lineage.field.EndPoint;
 import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchSink;
 import io.cdap.cdap.etl.api.batch.BatchSinkContext;
-import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
-import io.cdap.cdap.etl.api.lineage.field.FieldWriteOperation;
 import io.cdap.cdap.etl.api.validation.ValidatingOutputFormat;
+import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.common.TimeParser;
 import org.apache.hadoop.io.NullWritable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -120,12 +117,9 @@ public abstract class TimePartitionedFileSetSink<T extends TPFSSinkConfig>
       try {
         Schema schema = Schema.parseJson(tpfsSinkConfig.schema);
         if (schema.getFields() != null) {
-          FieldOperation operation =
-            new FieldWriteOperation("Write", "Wrote to TPFS dataset",
-                                    EndPoint.of(context.getNamespace(), tpfsSinkConfig.name),
-                                    schema.getFields().stream().map(Schema.Field::getName)
-                                      .collect(Collectors.toList()));
-          context.record(Collections.singletonList(operation));
+          LineageRecorder recorder = new LineageRecorder(context, tpfsSinkConfig.name);
+          recorder.recordWrite("Write", "Wrote to TPFS dataset",
+                               schema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList()));
         }
       } catch (IOException e) {
         throw new IllegalStateException("Failed to parse schema.", e);

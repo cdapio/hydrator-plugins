@@ -28,20 +28,17 @@ import io.cdap.cdap.api.dataset.DatasetManagementException;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.api.dataset.table.Put;
 import io.cdap.cdap.api.dataset.table.Table;
-import io.cdap.cdap.api.lineage.field.EndPoint;
 import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
 import io.cdap.cdap.etl.api.batch.BatchSinkContext;
-import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
-import io.cdap.cdap.etl.api.lineage.field.FieldWriteOperation;
 import io.cdap.cdap.format.RecordPutTransformer;
+import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.common.Properties;
 import io.cdap.plugin.common.SchemaValidator;
 import io.cdap.plugin.common.TableSinkConfig;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -100,12 +97,9 @@ public class TableSink extends BatchWritableSink<StructuredRecord, byte[], Put> 
       try {
         Schema schema = Schema.parseJson(schemaString);
         if (schema.getFields() != null) {
-          FieldOperation operation =
-            new FieldWriteOperation("Write", "Wrote to CDAP Table",
-                                    EndPoint.of(context.getNamespace(), tableSinkConfig.getName()),
-                                    schema.getFields().stream().map(Schema.Field::getName)
-                                      .collect(Collectors.toList()));
-          context.record(Collections.singletonList(operation));
+          LineageRecorder recorder = new LineageRecorder(context, tableSinkConfig.getName());
+          recorder.recordWrite("Write", "Wrote to CDAP Table",
+                               schema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList()));
         }
       } catch (IOException e) {
         throw new IllegalStateException("Failed to parse schema.", e);

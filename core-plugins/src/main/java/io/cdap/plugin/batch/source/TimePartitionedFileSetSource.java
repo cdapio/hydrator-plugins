@@ -27,17 +27,14 @@ import io.cdap.cdap.api.dataset.DatasetProperties;
 import io.cdap.cdap.api.dataset.lib.FileSetProperties;
 import io.cdap.cdap.api.dataset.lib.TimePartitionedFileSet;
 import io.cdap.cdap.api.dataset.lib.TimePartitionedFileSetArguments;
-import io.cdap.cdap.api.lineage.field.EndPoint;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.batch.BatchSourceContext;
-import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
-import io.cdap.cdap.etl.api.lineage.field.FieldReadOperation;
 import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
+import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.common.TimeParser;
 import org.apache.hadoop.io.NullWritable;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -99,11 +96,9 @@ public abstract class TimePartitionedFileSetSource<T extends TPFSConfig>
     Schema schema = config.getSchema();
     if (schema.getFields() != null) {
       String formatName = getInputFormatName();
-      FieldOperation operation =
-        new FieldReadOperation("Read", String.format("Read from TimePartitionedFileSet in %s format.", formatName),
-                               EndPoint.of(context.getNamespace(), config.getName()),
-                               schema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList()));
-      context.record(Collections.singletonList(operation));
+      LineageRecorder recorder = new LineageRecorder(context, config.getName());
+      recorder.recordRead("Read", String.format("Read from TimePartitionedFileSet in %s format.", formatName),
+                          schema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList()));
     }
 
     long duration = TimeParser.parseDuration(config.getDuration());
