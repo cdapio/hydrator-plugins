@@ -16,17 +16,17 @@
 
 package io.cdap.plugin.batch.joiner;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import io.cdap.cdap.api.common.Bytes;
+import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.lib.TimePartitionedFileSet;
-import io.cdap.cdap.api.dataset.table.Put;
 import io.cdap.cdap.api.dataset.table.Table;
 import io.cdap.cdap.etl.api.batch.BatchJoiner;
 import io.cdap.cdap.etl.api.batch.BatchSink;
-import io.cdap.cdap.etl.api.batch.BatchSource;
+import io.cdap.cdap.etl.mock.batch.MockSource;
 import io.cdap.cdap.etl.proto.v2.ETLBatchConfig;
 import io.cdap.cdap.etl.proto.v2.ETLPlugin;
 import io.cdap.cdap.etl.proto.v2.ETLStage;
@@ -40,7 +40,11 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.List;
 import java.util.Set;
+import java.util.UUID;
+import java.util.function.BiFunction;
 
 /**
  * Tests for Joiner.
@@ -66,8 +70,10 @@ public class JoinerTestRun extends ETLBatchTestBase {
   private static final String selectedFields = "film.film_id, film.film_name, filmActor.actor_name as renamed_actor, " +
     "filmCategory.category_name as renamed_category";
 
-  @Test
-  public void testInnerJoin() throws Exception {
+  private void joinHelper(ETLStage filmStage, ETLStage filmActorStage, ETLStage filmCategoryStage, ETLStage joinStage,
+                          ETLStage joinSinkStage, String filmDatasetName, String filmActorDatasetName,
+                          String filmCategoryDatasetName, String joinedDatasetName, Schema outputSchema,
+                          BiFunction<Schema, TimePartitionedFileSet, Void> verifyOutput) throws Exception {
     /*
      * film         ---------------
      *                              |
@@ -77,64 +83,7 @@ public class JoinerTestRun extends ETLBatchTestBase {
      *
      */
 
-    String filmDatasetName = "film-innerjoin";
-    String filmCategoryDatasetName = "film-category-innerjoin";
-    String filmActorDatasetName = "film-actor-innerjoin";
-    String joinedDatasetName = "innerjoin-output";
-
-    ETLStage filmStage =
-      new ETLStage("film",
-                   new ETLPlugin("Table",
-                                 BatchSource.PLUGIN_TYPE,
-                                 ImmutableMap.of(
-                                   Properties.BatchReadableWritable.NAME, filmDatasetName,
-                                   Properties.Table.PROPERTY_SCHEMA, FILM_SCHEMA.toString()),
-                                 null));
-
-    ETLStage filmActorStage =
-      new ETLStage("filmActor",
-                   new ETLPlugin("Table",
-                                 BatchSource.PLUGIN_TYPE,
-                                 ImmutableMap.of(
-                                   Properties.BatchReadableWritable.NAME, filmActorDatasetName,
-                                   Properties.Table.PROPERTY_SCHEMA, FILM_ACTOR_SCHEMA.toString()),
-                                 null));
-
-    ETLStage filmCategoryStage =
-      new ETLStage("filmCategory",
-                   new ETLPlugin("Table",
-                                 BatchSource.PLUGIN_TYPE,
-                                 ImmutableMap.of(
-                                   Properties.BatchReadableWritable.NAME, filmCategoryDatasetName,
-                                   Properties.Table.PROPERTY_SCHEMA, FILM_CATEGORY_SCHEMA.toString()),
-                                 null));
-
-    ETLStage joinStage =
-      new ETLStage("joiner",
-                   new ETLPlugin("Joiner",
-                                 BatchJoiner.PLUGIN_TYPE,
-                                 ImmutableMap.of(
-                                   "joinKeys", "film.film_id=filmActor.film_id=filmCategory.film_id&" +
-                                     "film.film_name=filmActor.film_name=filmCategory.film_name",
-                                   "selectedFields", selectedFields,
-                                   "requiredInputs", "film,filmActor,filmCategory"),
-                                 null));
-
-    // output schema sorted by input stage names
-    Schema outputSchema = Schema.recordOf(
-      "joined",
-      Schema.Field.of("film_id", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("renamed_actor", Schema.of(Schema.Type.STRING)),
-      Schema.Field.of("renamed_category", Schema.of(Schema.Type.STRING)));
-
-    ETLStage joinSinkStage = new ETLStage(
-      "sink", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
-                            ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA, outputSchema.toString(),
-                                            Properties.TimePartitionedFileSetDataset.TPFS_NAME, joinedDatasetName),
-                            null));
-
-    ETLBatchConfig config = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig config = ETLBatchConfig.builder()
       .addStage(filmStage)
       .addStage(filmActorStage)
       .addStage(filmCategoryStage)
@@ -145,7 +94,7 @@ public class JoinerTestRun extends ETLBatchTestBase {
       .addConnection(filmCategoryStage.getName(), joinStage.getName())
       .addConnection(joinStage.getName(), joinSinkStage.getName())
       .build();
-    ApplicationManager appManager = deployETL(config, "inner-joiner-test");
+    ApplicationManager appManager = deployETL(config, UUID.randomUUID().toString());
 
     // ingest data
     ingestToFilmTable(filmDatasetName);
@@ -158,52 +107,116 @@ public class JoinerTestRun extends ETLBatchTestBase {
     DataSetManager<TimePartitionedFileSet> outputManager = getDataset(joinedDatasetName);
     TimePartitionedFileSet fileSet = outputManager.get();
 
-    // verfiy innerjoin output
-    verifyInnerJoinOutput(outputSchema, fileSet);
+    // verify join output
+    verifyOutput.apply(outputSchema, fileSet);
+  }
+
+
+  @Test
+  public void testInnerJoin() throws Exception {
+    String filmDatasetName = "film-innerjoin";
+    String filmCategoryDatasetName = "film-category-innerjoin";
+    String filmActorDatasetName = "film-actor-innerjoin";
+    String joinedDatasetName = "innerjoin-output";
+
+
+    ETLStage filmStage = new ETLStage("film", MockSource.getPlugin(filmDatasetName, FILM_SCHEMA));
+    ETLStage filmActorStage = new ETLStage("filmActor", MockSource.getPlugin(filmActorDatasetName, FILM_ACTOR_SCHEMA));
+    ETLStage filmCategoryStage = new ETLStage("filmCategory",
+                                              MockSource.getPlugin(filmCategoryDatasetName, FILM_CATEGORY_SCHEMA));
+
+    // output schema sorted by input stage names
+    Schema outputSchema = Schema.recordOf(
+      "joined",
+      Schema.Field.of("film_id", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("renamed_actor", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("renamed_category", Schema.of(Schema.Type.STRING)));
+
+    ETLStage joinStage =
+      new ETLStage("joiner",
+                   new ETLPlugin("Joiner",
+                                 BatchJoiner.PLUGIN_TYPE,
+                                 ImmutableMap.of(
+                                   "joinKeys", "film.film_id=filmActor.film_id=filmCategory.film_id&" +
+                                     "film.film_name=filmActor.film_name=filmCategory.film_name",
+                                   "selectedFields", selectedFields,
+                                   "requiredInputs", "film,filmActor,filmCategory"),
+                                 null));
+    ETLStage joinSinkStage = new ETLStage(
+      "sink", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
+                            ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA, outputSchema.toString(),
+                                            Properties.TimePartitionedFileSetDataset.TPFS_NAME, joinedDatasetName),
+                            null));
+
+    joinHelper(filmStage, filmActorStage, filmCategoryStage, joinStage, joinSinkStage,
+               filmDatasetName, filmActorDatasetName, filmCategoryDatasetName, joinedDatasetName,
+               outputSchema, this::verifyInnerJoinOutput);
+
   }
 
   @Test
-  public void testOuterJoin() throws Exception {
-    /*
-     * film         ---------------
-     *                              |
-     * filmActor    ---------------   joiner ------- sink
-     *                              |
-     * filmCategory ---------------
-     *
-     */
+  public void testInnerJoinWithUnknownInputSchemas() throws Exception {
+    String filmDatasetName = "film-innerjoin-unknown-inputschemas";
+    String filmCategoryDatasetName = "film-category-innerjoin-unknown-inputschemas";
+    String filmActorDatasetName = "film-actor-innerjoin-unknown-inputschemas";
+    String joinedDatasetName = "innerjoin-output-unknown-inputschemas";
 
+
+    ETLStage filmStage = new ETLStage("film", MockSource.getPlugin(filmDatasetName));
+    ETLStage filmActorStage = new ETLStage("filmActor", MockSource.getPlugin(filmActorDatasetName));
+    ETLStage filmCategoryStage = new ETLStage("filmCategory", MockSource.getPlugin(filmCategoryDatasetName));
+
+    // output schema sorted by input stage names
+    Schema outputSchema = Schema.recordOf(
+      "joined",
+      Schema.Field.of("film_id", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("renamed_actor", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("renamed_category", Schema.of(Schema.Type.STRING)));
+
+    ETLStage joinStage =
+      new ETLStage("joiner",
+                   new ETLPlugin("Joiner",
+                                 BatchJoiner.PLUGIN_TYPE,
+                                 ImmutableMap.of(
+                                   "joinKeys", "film.film_id=filmActor.film_id=filmCategory.film_id&" +
+                                     "film.film_name=filmActor.film_name=filmCategory.film_name",
+                                   "selectedFields", selectedFields,
+                                   "requiredInputs", "film,filmActor,filmCategory",
+                                   Properties.Table.PROPERTY_SCHEMA, outputSchema.toString()),
+                                 null));
+    ETLStage joinSinkStage = new ETLStage(
+      "sink", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
+                            ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA, outputSchema.toString(),
+                                            Properties.TimePartitionedFileSetDataset.TPFS_NAME, joinedDatasetName),
+                            null));
+
+    joinHelper(filmStage, filmActorStage, filmCategoryStage, joinStage, joinSinkStage,
+               filmDatasetName, filmActorDatasetName, filmCategoryDatasetName, joinedDatasetName,
+               outputSchema, this::verifyInnerJoinOutput);
+  }
+
+
+  @Test
+  public void testOuterJoin() throws Exception {
     String filmDatasetName = "film-outerjoin";
     String filmCategoryDatasetName = "film-category-outerjoin";
     String filmActorDatasetName = "film-actor-outerjoin";
     String joinedDatasetName = "outerjoin-output";
 
-    ETLStage filmStage =
-      new ETLStage("film",
-                   new ETLPlugin("Table",
-                                 BatchSource.PLUGIN_TYPE,
-                                 ImmutableMap.of(
-                                   Properties.BatchReadableWritable.NAME, filmDatasetName,
-                                   Properties.Table.PROPERTY_SCHEMA, FILM_SCHEMA.toString()),
-                                 null));
+    ETLStage filmStage = new ETLStage("film", MockSource.getPlugin(filmDatasetName, FILM_SCHEMA));
+    ETLStage filmActorStage = new ETLStage("filmActor", MockSource.getPlugin(filmActorDatasetName, FILM_ACTOR_SCHEMA));
+    ETLStage filmCategoryStage = new ETLStage("filmCategory",
+                                              MockSource.getPlugin(filmCategoryDatasetName, FILM_CATEGORY_SCHEMA));
 
-    ETLStage filmActorStage =
-      new ETLStage("filmActor",
-                   new ETLPlugin("Table",
-                                 BatchSource.PLUGIN_TYPE,
-                                 ImmutableMap.of(
-                                   Properties.BatchReadableWritable.NAME, filmActorDatasetName,
-                                   Properties.Table.PROPERTY_SCHEMA, FILM_ACTOR_SCHEMA.toString()),
-                                 null));
-
-    ETLStage filmCategoryStage =
-      new ETLStage("filmCategory",
-                   new ETLPlugin("Table",
-                                 BatchSource.PLUGIN_TYPE,
-                                 ImmutableMap.of(
-                                   Properties.BatchReadableWritable.NAME, filmCategoryDatasetName,
-                                   Properties.Table.PROPERTY_SCHEMA, FILM_CATEGORY_SCHEMA.toString()),
-                                 null));
+    // output schema sorted by input stage names
+    Schema outputSchema = Schema.recordOf(
+      "joined",
+      Schema.Field.of("film_id", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("renamed_actor", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("renamed_category", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
 
     ETLStage joinStage =
       new ETLStage("joiner",
@@ -216,6 +229,30 @@ public class JoinerTestRun extends ETLBatchTestBase {
                                    "requiredInputs", "film,filmActor"),
                                  null));
 
+    ETLStage joinSinkStage = new ETLStage(
+      "sink", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
+                            ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA, outputSchema.toString(),
+                                            Properties.TimePartitionedFileSetDataset.TPFS_NAME, joinedDatasetName),
+                            null));
+
+    joinHelper(filmStage, filmActorStage, filmCategoryStage, joinStage, joinSinkStage,
+               filmDatasetName, filmActorDatasetName, filmCategoryDatasetName, joinedDatasetName,
+               outputSchema, this::verifyOuterJoinOutput);
+  }
+
+  @Test
+  public void testOuterJoinWithUnknownInputSchemas() throws Exception {
+    String filmDatasetName = "film-outerjoin-unknown-inputschemas";
+    String filmCategoryDatasetName = "film-category-outerjoin-unknown-inputschemas";
+    String filmActorDatasetName = "film-actor-outerjoin-unknown-inputschemas";
+    String joinedDatasetName = "outerjoin-output-unknown-inputschemas";
+
+
+    ETLStage filmStage = new ETLStage("film", MockSource.getPlugin(filmDatasetName));
+    ETLStage filmActorStage = new ETLStage("filmActor", MockSource.getPlugin(filmActorDatasetName));
+    ETLStage filmCategoryStage = new ETLStage("filmCategory",
+                                              MockSource.getPlugin(filmCategoryDatasetName));
+
     // output schema sorted by input stage names
     Schema outputSchema = Schema.recordOf(
       "joined",
@@ -223,83 +260,6 @@ public class JoinerTestRun extends ETLBatchTestBase {
       Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("renamed_actor", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("renamed_category", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
-
-    ETLStage joinSinkStage = new ETLStage(
-      "sink", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
-                            ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA, outputSchema.toString(),
-                                            Properties.TimePartitionedFileSetDataset.TPFS_NAME, joinedDatasetName),
-                            null));
-
-    ETLBatchConfig config = ETLBatchConfig.builder("* * * * *")
-      .addStage(filmStage)
-      .addStage(filmActorStage)
-      .addStage(filmCategoryStage)
-      .addStage(joinStage)
-      .addStage(joinSinkStage)
-      .addConnection(filmStage.getName(), joinStage.getName())
-      .addConnection(filmActorStage.getName(), joinStage.getName())
-      .addConnection(filmCategoryStage.getName(), joinStage.getName())
-      .addConnection(joinStage.getName(), joinSinkStage.getName())
-      .build();
-    ApplicationManager appManager = deployETL(config, "outer-joiner-test");
-
-    // ingest data
-    ingestToFilmTable(filmDatasetName);
-    ingestToFilmActorTable(filmActorDatasetName);
-    ingestToFilmCategoryTable(filmCategoryDatasetName);
-
-    // run the pipeline
-    runETLOnce(appManager);
-
-    DataSetManager<TimePartitionedFileSet> outputManager = getDataset(joinedDatasetName);
-    TimePartitionedFileSet fileSet = outputManager.get();
-
-    // verfiy output
-    verifyOuterJoinOutput(outputSchema, fileSet);
-  }
-
-  @Test
-  public void testOuterJoinWithoutRequiredInputs() throws Exception {
-    /*
-     * film         ---------------
-     *                              |
-     * filmActor    ---------------   joiner ------- sink
-     *                              |
-     * filmCategory ---------------
-     *
-     */
-
-    String filmDatasetName = "film-outerjoin-no-requiredinputs";
-    String filmCategoryDatasetName = "film-category-outerjoin-no-requiredinputs";
-    String filmActorDatasetName = "film-actor-outerjoin-no-requiredinputs";
-    String joinedDatasetName = "outerjoin-no-requiredinputs-output";
-
-    ETLStage filmStage =
-      new ETLStage("film",
-                   new ETLPlugin("Table",
-                                 BatchSource.PLUGIN_TYPE,
-                                 ImmutableMap.of(
-                                   Properties.BatchReadableWritable.NAME, filmDatasetName,
-                                   Properties.Table.PROPERTY_SCHEMA, FILM_SCHEMA.toString()),
-                                 null));
-
-    ETLStage filmActorStage =
-      new ETLStage("filmActor",
-                   new ETLPlugin("Table",
-                                 BatchSource.PLUGIN_TYPE,
-                                 ImmutableMap.of(
-                                   Properties.BatchReadableWritable.NAME, filmActorDatasetName,
-                                   Properties.Table.PROPERTY_SCHEMA, FILM_ACTOR_SCHEMA.toString()),
-                                 null));
-
-    ETLStage filmCategoryStage =
-      new ETLStage("filmCategory",
-                   new ETLPlugin("Table",
-                                 BatchSource.PLUGIN_TYPE,
-                                 ImmutableMap.of(
-                                   Properties.BatchReadableWritable.NAME, filmCategoryDatasetName,
-                                   Properties.Table.PROPERTY_SCHEMA, FILM_CATEGORY_SCHEMA.toString()),
-                                 null));
 
     ETLStage joinStage =
       new ETLStage("joiner",
@@ -309,8 +269,31 @@ public class JoinerTestRun extends ETLBatchTestBase {
                                    "joinKeys", "film.film_id=filmActor.film_id=filmCategory.film_id&" +
                                      "film.film_name=filmActor.film_name=filmCategory.film_name",
                                    "selectedFields", selectedFields,
-                                   "requiredInputs", ""),
+                                   "requiredInputs", "film,filmActor",
+                                   Properties.Table.PROPERTY_SCHEMA, outputSchema.toString()),
                                  null));
+
+    ETLStage joinSinkStage = new ETLStage(
+      "sink", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
+                            ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA, outputSchema.toString(),
+                                            Properties.TimePartitionedFileSetDataset.TPFS_NAME, joinedDatasetName),
+                            null));
+
+    joinHelper(filmStage, filmActorStage, filmCategoryStage, joinStage, joinSinkStage,
+               filmDatasetName, filmActorDatasetName, filmCategoryDatasetName, joinedDatasetName,
+               outputSchema, this::verifyOuterJoinOutput);
+  }
+
+  @Test
+  public void testOuterJoinWithoutRequiredInputs() throws Exception {
+    String filmDatasetName = "film-outerjoin-no-requiredinputs-unknown-inputschemas";
+    String filmCategoryDatasetName = "film-category-outerjoin-no-requiredinputs-unknown-inputschemas";
+    String filmActorDatasetName = "film-actor-outerjoin-no-requiredinputs-unknown-inputschemas";
+    String joinedDatasetName = "outerjoin-no-requiredinputs-output-unknown-inputschemas";
+
+    ETLStage filmStage = new ETLStage("film", MockSource.getPlugin(filmDatasetName));
+    ETLStage filmActorStage = new ETLStage("filmActor", MockSource.getPlugin(filmActorDatasetName));
+    ETLStage filmCategoryStage = new ETLStage("filmCategory", MockSource.getPlugin(filmCategoryDatasetName));
 
     // output schema sorted by input stage names
     Schema outputSchema = Schema.recordOf(
@@ -320,38 +303,27 @@ public class JoinerTestRun extends ETLBatchTestBase {
       Schema.Field.of("renamed_actor", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
       Schema.Field.of("renamed_category", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
 
+    ETLStage joinStage =
+      new ETLStage("joiner",
+                   new ETLPlugin("Joiner",
+                                 BatchJoiner.PLUGIN_TYPE,
+                                 ImmutableMap.of(
+                                   "joinKeys", "film.film_id=filmActor.film_id=filmCategory.film_id&" +
+                                     "film.film_name=filmActor.film_name=filmCategory.film_name",
+                                   "selectedFields", selectedFields,
+                                   "requiredInputs", "",
+                                   "schema", outputSchema.toString()),
+                                 null));
+
     ETLStage joinSinkStage = new ETLStage(
       "sink", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
                             ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA, outputSchema.toString(),
                                             Properties.TimePartitionedFileSetDataset.TPFS_NAME, joinedDatasetName),
                             null));
 
-    ETLBatchConfig config = ETLBatchConfig.builder("* * * * *")
-      .addStage(filmStage)
-      .addStage(filmActorStage)
-      .addStage(filmCategoryStage)
-      .addStage(joinStage)
-      .addStage(joinSinkStage)
-      .addConnection(filmStage.getName(), joinStage.getName())
-      .addConnection(filmActorStage.getName(), joinStage.getName())
-      .addConnection(filmCategoryStage.getName(), joinStage.getName())
-      .addConnection(joinStage.getName(), joinSinkStage.getName())
-      .build();
-    ApplicationManager appManager = deployETL(config, "outer-joiner-without-required-inputs-test");
-
-    // ingest data
-    ingestToFilmTable(filmDatasetName);
-    ingestToFilmActorTable(filmActorDatasetName);
-    ingestToFilmCategoryTable(filmCategoryDatasetName);
-
-    // run the pipeline
-    runETLOnce(appManager);
-
-    DataSetManager<TimePartitionedFileSet> outputManager = getDataset(joinedDatasetName);
-    TimePartitionedFileSet fileSet = outputManager.get();
-
-    // verfiy output
-    verifyOuterJoinWithoutRequiredInputs(outputSchema, fileSet);
+    joinHelper(filmStage, filmActorStage, filmCategoryStage, joinStage, joinSinkStage,
+               filmDatasetName, filmActorDatasetName, filmCategoryDatasetName, joinedDatasetName,
+               outputSchema, this::verifyOuterJoinWithoutRequiredInputs);
   }
 
   private void ingestToFilmCategoryTable(String filmCategoryDatasetName) throws Exception {
@@ -359,32 +331,29 @@ public class JoinerTestRun extends ETLBatchTestBase {
     // 2: 1, matrix, thriller
     // 3: 2, equilibrium, action
     DataSetManager<Table> filmCategoryManager = getDataset(filmCategoryDatasetName);
-    Table filmCategoryTable = filmCategoryManager.get();
-    Put put = new Put(Bytes.toBytes(1));
-    put.add("film_id", "1");
-    put.add("film_name", "matrix");
-    put.add("category_name", "action");
-    filmCategoryTable.put(put);
+    List<StructuredRecord> input = ImmutableList.of(
+      StructuredRecord.builder(FILM_CATEGORY_SCHEMA)
+        .set("film_id", "1")
+        .set("film_name", "matrix")
+        .set("category_name", "action")
+        .build(),
+      StructuredRecord.builder(FILM_CATEGORY_SCHEMA)
+        .set("film_id", "1")
+        .set("film_name", "matrix")
+        .set("category_name", "thriller")
+        .build(),
+      StructuredRecord.builder(FILM_CATEGORY_SCHEMA)
+        .set("film_id", "2")
+        .set("film_name", "equilibrium")
+        .set("category_name", "action")
+        .build(),
+      StructuredRecord.builder(FILM_CATEGORY_SCHEMA)
+        .set("film_id", "5")
+        .set("film_name", "sultan")
+        .set("category_name", "comedy")
+        .build());
+    MockSource.writeInput(filmCategoryManager, input);
 
-    put = new Put(Bytes.toBytes(2));
-    put.add("film_id", "1");
-    put.add("film_name", "matrix");
-    put.add("category_name", "thriller");
-    filmCategoryTable.put(put);
-
-    put = new Put(Bytes.toBytes(3));
-    put.add("film_id", "2");
-    put.add("film_name", "equilibrium");
-    put.add("category_name", "action");
-    filmCategoryTable.put(put);
-    filmCategoryManager.flush();
-
-    put = new Put(Bytes.toBytes(4));
-    put.add("film_id", "5");
-    put.add("film_name", "sultan");
-    put.add("category_name", "comedy");
-    filmCategoryTable.put(put);
-    filmCategoryManager.flush();
   }
 
   private void ingestToFilmActorTable(String filmActorDatasetName) throws Exception {
@@ -393,31 +362,28 @@ public class JoinerTestRun extends ETLBatchTestBase {
     // 3: 2, equilibrium, cathie
     // 4: 3, avatar, samuel
     DataSetManager<Table> filmActorManager = getDataset(filmActorDatasetName);
-    Table filmActorTable = filmActorManager.get();
-    Put put = new Put(Bytes.toBytes(1));
-    put.add("film_id", "1");
-    put.add("film_name", "matrix");
-    put.add("actor_name", "alex");
-    filmActorTable.put(put);
-
-    put = new Put(Bytes.toBytes(2));
-    put.add("film_id", "1");
-    put.add("film_name", "matrix");
-    put.add("actor_name", "bob");
-    filmActorTable.put(put);
-
-    put = new Put(Bytes.toBytes(3));
-    put.add("film_id", "2");
-    put.add("film_name", "equilibrium");
-    put.add("actor_name", "cathie");
-    filmActorTable.put(put);
-
-    put = new Put(Bytes.toBytes(4));
-    put.add("film_id", "3");
-    put.add("film_name", "avatar");
-    put.add("actor_name", "samuel");
-    filmActorTable.put(put);
-    filmActorManager.flush();
+    List<StructuredRecord> input = ImmutableList.of(
+      StructuredRecord.builder(FILM_ACTOR_SCHEMA)
+        .set("film_id", "1")
+        .set("film_name", "matrix")
+        .set("actor_name", "alex")
+        .build(),
+      StructuredRecord.builder(FILM_ACTOR_SCHEMA)
+        .set("film_id", "1")
+        .set("film_name", "matrix")
+        .set("actor_name", "bob")
+        .build(),
+      StructuredRecord.builder(FILM_ACTOR_SCHEMA)
+        .set("film_id", "2")
+        .set("film_name", "equilibrium")
+        .set("actor_name", "cathie")
+        .build(),
+      StructuredRecord.builder(FILM_ACTOR_SCHEMA)
+        .set("film_id", "3")
+        .set("film_name", "avatar")
+        .set("actor_name", "samuel")
+        .build());
+    MockSource.writeInput(filmActorManager, input);
   }
 
   private void ingestToFilmTable(String filmDatasetName) throws Exception {
@@ -426,82 +392,93 @@ public class JoinerTestRun extends ETLBatchTestBase {
     // 2: 2, equilibrium
     // 3: 3, avatar
     DataSetManager<Table> filmManager = getDataset(filmDatasetName);
-    Table filmTable = filmManager.get();
-    Put put = new Put(Bytes.toBytes(1));
-    put.add("film_id", "1");
-    put.add("film_name", "matrix");
-    filmTable.put(put);
-
-    put = new Put(Bytes.toBytes(2));
-    put.add("film_id", "2");
-    put.add("film_name", "equilibrium");
-    filmTable.put(put);
-
-    put = new Put(Bytes.toBytes(3));
-    put.add("film_id", "3");
-    put.add("film_name", "avatar");
-    filmTable.put(put);
-
-    put = new Put(Bytes.toBytes(4));
-    put.add("film_id", "4");
-    put.add("film_name", "humtum");
-    filmTable.put(put);
-    filmManager.flush();
+    List<StructuredRecord> input = ImmutableList.of(
+      StructuredRecord.builder(FILM_SCHEMA)
+        .set("film_id", "1")
+        .set("film_name", "matrix")
+        .build(),
+      StructuredRecord.builder(FILM_SCHEMA)
+        .set("film_id", "2")
+        .set("film_name", "equilibrium")
+        .build(),
+      StructuredRecord.builder(FILM_SCHEMA)
+        .set("film_id", "3")
+        .set("film_name", "avatar")
+        .build(),
+      StructuredRecord.builder(FILM_SCHEMA)
+        .set("film_id", "4")
+        .set("film_name", "humtum")
+        .build());
+    MockSource.writeInput(filmManager, input);
   }
 
-  private void verifyInnerJoinOutput(Schema outputSchema, TimePartitionedFileSet fileSet) throws IOException {
-    Set<GenericRecord> actual = Sets.newHashSet(readOutput(fileSet, outputSchema));
-    Assert.assertEquals(5, actual.size());
-    org.apache.avro.Schema avroOutputSchema = new org.apache.avro.Schema.Parser().parse(outputSchema.toString());
-    Set<GenericRecord> expected = ImmutableSet.of(getBobRecord1(avroOutputSchema),
-                                                  getBobRecord2(avroOutputSchema),
-                                                  getAlexRecord1(avroOutputSchema),
-                                                  getAlexRecord2(avroOutputSchema),
-                                                  getCathieRecord1(avroOutputSchema));
-    Assert.assertEquals(expected, actual);
+  private Void verifyInnerJoinOutput(Schema outputSchema, TimePartitionedFileSet fileSet) {
+    try {
+      Set<GenericRecord> actual = Sets.newHashSet(readOutput(fileSet, outputSchema));
+      Assert.assertEquals(5, actual.size());
+      org.apache.avro.Schema avroOutputSchema = new org.apache.avro.Schema.Parser().parse(outputSchema.toString());
+      Set<GenericRecord> expected = ImmutableSet.of(getBobRecord1(avroOutputSchema),
+                                                    getBobRecord2(avroOutputSchema),
+                                                    getAlexRecord1(avroOutputSchema),
+                                                    getAlexRecord2(avroOutputSchema),
+                                                    getCathieRecord1(avroOutputSchema));
+      Assert.assertEquals(expected, actual);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    return null;
   }
 
-  private void verifyOuterJoinOutput(Schema outputSchema, TimePartitionedFileSet fileSet) throws IOException {
-    Set<GenericRecord> actual = Sets.newHashSet(readOutput(fileSet, outputSchema));
-    Assert.assertEquals(6, actual.size());
-    org.apache.avro.Schema avroOutputSchema = new org.apache.avro.Schema.Parser().parse(outputSchema.toString());
-    Set<GenericRecord> expected = ImmutableSet.of(getBobRecord1(avroOutputSchema),
-                                                  getBobRecord2(avroOutputSchema),
-                                                  getAlexRecord1(avroOutputSchema),
-                                                  getAlexRecord2(avroOutputSchema),
-                                                  getCathieRecord1(avroOutputSchema),
-                                                  getAvatarRecord1(avroOutputSchema));
-    Assert.assertEquals(expected, actual);
+  private Void verifyOuterJoinOutput(Schema outputSchema, TimePartitionedFileSet fileSet) {
+    try {
+      Set<GenericRecord> actual = Sets.newHashSet(readOutput(fileSet, outputSchema));
+      Assert.assertEquals(6, actual.size());
+      org.apache.avro.Schema avroOutputSchema = new org.apache.avro.Schema.Parser().parse(outputSchema.toString());
+      Set<GenericRecord> expected = ImmutableSet.of(getBobRecord1(avroOutputSchema),
+                                                    getBobRecord2(avroOutputSchema),
+                                                    getAlexRecord1(avroOutputSchema),
+                                                    getAlexRecord2(avroOutputSchema),
+                                                    getCathieRecord1(avroOutputSchema),
+                                                    getAvatarRecord1(avroOutputSchema));
+      Assert.assertEquals(expected, actual);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    return null;
   }
 
-  private void verifyOuterJoinWithoutRequiredInputs(Schema outputSchema, TimePartitionedFileSet fileSet)
-    throws IOException {
-    Set<GenericRecord> actual = Sets.newHashSet(readOutput(fileSet, outputSchema));
-    Assert.assertEquals(8, actual.size());
-    org.apache.avro.Schema avroOutputSchema = new org.apache.avro.Schema.Parser().parse(outputSchema.toString());
+  private Void verifyOuterJoinWithoutRequiredInputs(Schema outputSchema, TimePartitionedFileSet fileSet) {
+    try {
+      Set<GenericRecord> actual = Sets.newHashSet(readOutput(fileSet, outputSchema));
+      Assert.assertEquals(8, actual.size());
+      org.apache.avro.Schema avroOutputSchema = new org.apache.avro.Schema.Parser().parse(outputSchema.toString());
 
-    GenericRecord humtumRecord = new GenericRecordBuilder(avroOutputSchema)
-      .set("film_id", "4")
-      .set("film_name", "humtum")
-      .set("renamed_actor", null)
-      .set("renamed_category", null)
-      .build();
+      GenericRecord humtumRecord = new GenericRecordBuilder(avroOutputSchema)
+        .set("film_id", "4")
+        .set("film_name", "humtum")
+        .set("renamed_actor", null)
+        .set("renamed_category", null)
+        .build();
 
-    GenericRecord sultanRecord = new GenericRecordBuilder(avroOutputSchema)
-      .set("film_id", null)
-      .set("film_name", null)
-      .set("renamed_actor", null)
-      .set("renamed_category", "comedy")
-      .build();
+      GenericRecord sultanRecord = new GenericRecordBuilder(avroOutputSchema)
+        .set("film_id", null)
+        .set("film_name", null)
+        .set("renamed_actor", null)
+        .set("renamed_category", "comedy")
+        .build();
 
-    Set<GenericRecord> expected = ImmutableSet.of(getBobRecord1(avroOutputSchema),
-                                                  getBobRecord2(avroOutputSchema),
-                                                  getAlexRecord1(avroOutputSchema),
-                                                  getAlexRecord2(avroOutputSchema),
-                                                  getCathieRecord1(avroOutputSchema),
-                                                  getAvatarRecord1(avroOutputSchema),
-                                                  humtumRecord, sultanRecord);
-    Assert.assertEquals(expected, actual);
+      Set<GenericRecord> expected = ImmutableSet.of(getBobRecord1(avroOutputSchema),
+                                                    getBobRecord2(avroOutputSchema),
+                                                    getAlexRecord1(avroOutputSchema),
+                                                    getAlexRecord2(avroOutputSchema),
+                                                    getCathieRecord1(avroOutputSchema),
+                                                    getAvatarRecord1(avroOutputSchema),
+                                                    humtumRecord, sultanRecord);
+      Assert.assertEquals(expected, actual);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    return null;
   }
 
   private GenericRecord getBobRecord1(org.apache.avro.Schema avroOutputSchema) {

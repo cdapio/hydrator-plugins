@@ -31,6 +31,7 @@ import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.plugin.common.KeyValueListParser;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +46,7 @@ public class JoinerConfig extends PluginConfig {
   public static final String SELECTED_FIELDS = "selectedFields";
   public static final String REQUIRED_INPUTS = "requiredInputs";
   public static final String JOIN_KEYS = "joinKeys";
+  public static final String OUTPUT_SCHEMA = "schema";
   private static final String NUM_PARTITIONS_DESC = "Number of partitions to use when joining. " +
     "If not specified, the execution framework will decide how many to use.";
   private static final String JOIN_KEY_DESC = "List of join keys to perform join operation. The list is " +
@@ -81,6 +83,12 @@ public class JoinerConfig extends PluginConfig {
   @Macro
   protected String requiredInputs;
 
+  @Nullable
+  @Macro
+  @Description(OUTPUT_SCHEMA)
+  private String schema;
+
+
   public JoinerConfig() {
     this.joinKeys = "";
     this.selectedFields = "";
@@ -111,6 +119,23 @@ public class JoinerConfig extends PluginConfig {
   public String getRequiredInputs() {
     return requiredInputs;
   }
+
+  @Nullable
+  public Schema getOutputSchema(FailureCollector collector) {
+    try {
+      return Strings.isNullOrEmpty(schema) ? null : Schema.parseJson(schema);
+    } catch (IOException e) {
+      collector.addFailure("Invalid schema: " + e.getMessage(), null).withConfigProperty(OUTPUT_SCHEMA);
+    }
+    // if there was an error that was added, it will throw an exception, otherwise, this statement will not be executed
+    throw collector.getOrThrowException();
+  }
+
+  public boolean inputSchemasAvailable(Map<String, Schema> inputSchemas) {
+    // TODO: Remove isEmpty() check when CDAP-16351 is fixed
+    return !inputSchemas.isEmpty() && !inputSchemas.values().stream().anyMatch(v -> v == null);
+  }
+
 
   Map<String, List<String>> getPerStageJoinKeys() {
     Map<String, List<String>> stageToKey = new HashMap<>();
@@ -197,7 +222,10 @@ public class JoinerConfig extends PluginConfig {
 
   void validateJoinKeySchemas(Map<String, Schema> inputSchemas, Map<String, List<String>> joinKeys,
                               FailureCollector collector) {
-    if (!containsMacro(JoinerConfig.JOIN_KEYS) && joinKeys.size() != inputSchemas.size()) {
+    // Skip validation if joinKeys is a macro, or if any input's output schema is a macro.
+    if (!containsMacro(JoinerConfig.JOIN_KEYS) &&
+      inputSchemasAvailable(inputSchemas) &&
+      joinKeys.size() != inputSchemas.size()) {
       collector.addFailure("There should be join keys present from each stage.",
                            "Ensure join keys are present from each stage.")
         .withConfigProperty(JoinerConfig.JOIN_KEYS);

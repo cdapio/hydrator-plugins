@@ -108,7 +108,7 @@ public class JoinerConfigTest {
     JoinerConfig config = new JoinerConfig("film.film_id=filmActor.film_id=filmCategory.film_id&" +
                                              "film.film_name=filmActor.film_name=filmCategory.film_name",
                                            selectedFields, "film,filmActor,filmCategory");
-    ImmutableTable.Builder<String, String, String> expected =  new ImmutableTable.Builder<>();
+    ImmutableTable.Builder<String, String, String> expected = new ImmutableTable.Builder<>();
     expected.put("film", "film_id", "film_id");
     expected.put("film", "film_name", "film_name");
     expected.put("filmActor", "actor_name", "renamed_actor");
@@ -227,8 +227,8 @@ public class JoinerConfigTest {
     Joiner joiner = new Joiner(config);
     FailureCollector collector = new MockFailureCollector();
     joiner.validateJoinKeySchemas(
-        ImmutableMap.of("film", filmSchema, "filmActor", filmActorSchema,
-            "filmCategory", filmCategorySchema), config.getPerStageJoinKeys(), collector);
+      ImmutableMap.of("film", filmSchema, "filmActor", filmActorSchema,
+                      "filmCategory", filmCategorySchema), config.getPerStageJoinKeys(), collector);
     Assert.assertEquals(2, collector.getValidationFailures().size());
     // Assert first failure
     Assert.assertEquals(1, collector.getValidationFailures().get(0).getCauses().size());
@@ -241,9 +241,23 @@ public class JoinerConfigTest {
   }
 
   @Test
+  public void testJoinerConfigWithUnknownInputSchema() {
+    String selectedFields = "film.film_id, film.film_name, " +
+      "filmActor.actor_name as renamed_actor, filmCategory.category_name as renamed_category";
+    JoinerConfig config = new JoinerConfig("film.film_id=filmActor.film_id=filmCategory.film_id&" +
+                                             "film.film_name=filmActor.film_name=filmCategory.film_name",
+                                           selectedFields, "film,filmActor,filmCategory");
+
+    Joiner joiner = new Joiner(config);
+    FailureCollector collector = new MockFailureCollector();
+    joiner.validateJoinKeySchemas(ImmutableMap.of(), config.getPerStageJoinKeys(), collector);
+    Assert.assertEquals(0, collector.getValidationFailures().size());
+  }
+
+  @Test
   public void testJoinerOutputSchema() {
     Map<String, Schema> inputSchemas = ImmutableMap.of("film", filmSchema, "filmActor", filmActorSchema,
-                                                    "filmCategory", filmCategorySchema);
+                                                       "filmCategory", filmCategorySchema);
     String joinKeys = "film.film_id=filmActor.film_id=filmCategory.film_id";
     String selectedFields = "film.film_id, film.film_name, filmActor.actor_name as renamed_actor, " +
       "filmCategory.category_name as renamed_category";
@@ -302,7 +316,7 @@ public class JoinerConfigTest {
       Schema.Field.of("category_name", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
 
     Map<String, Schema> inputSchemas = ImmutableMap.of("film", filmSchema, "filmActor", filmActorSchema,
-                                                    "filmCategory", filmCategorySchema);
+                                                       "filmCategory", filmCategorySchema);
     String joinKeys = "film.film_id=filmActor.film_id=filmCategory.film_id";
     String selectedFields = "film.film_id, film.film_name, filmActor.actor_name as renamed_actor, " +
       "filmCategory.category_name as renamed_category";
