@@ -196,7 +196,7 @@ public class DBRecord implements Writable, DBWritable, Configurable {
         out.write((byte[]) fieldValue);
         break;
       default:
-        throw new IOException(String.format("Unsupported datatype: %s with value: %s.", fieldType, fieldValue));
+        throw new IOException(String.format("Unsupported datatype: %s with value: %s and name: %s.", fieldType, fieldValue, field.getName()));
     }
   }
 
@@ -259,7 +259,7 @@ public class DBRecord implements Writable, DBWritable, Configurable {
         writeBytes(stmt, fieldIndex, sqlIndex, fieldValue);
         break;
       default:
-        throw new SQLException(String.format("Unsupported datatype: %s with value: %s.", fieldType, fieldValue));
+        throw new SQLException(String.format("Unsupported datatype: %s with value: %s and name: %s.", fieldType, fieldValue, field.getName()));
     }
   }
 
