@@ -144,6 +144,7 @@ public class ETLBatchTestBase extends HydratorTestBase {
                       GroupByAggregator.class,
                       DedupAggregator.class,
                       Joiner.class,
+                      GroupByAggregator.class,
                       EmailAction.class,
                       SSHAction.class,
                       TMSAlertPublisher.class,

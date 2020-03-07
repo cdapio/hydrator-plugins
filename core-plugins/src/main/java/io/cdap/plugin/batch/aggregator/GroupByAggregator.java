@@ -1,5 +1,5 @@
 /*
- * Copyright © 2016-2019 Cask Data, Inc.
+ * Copyright © 2016-2020 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -62,6 +62,7 @@ public class GroupByAggregator extends RecordAggregator {
     put("VARIANCE", "Variance");
     put("COLLECTLIST", "CollectList");
     put("COLLECTSET", "CollectSet");
+    put("COUNTDISTINCT", "CountDistinct");
   }};
 
   private List<String> groupByFields;
@@ -130,9 +131,27 @@ public class GroupByAggregator extends RecordAggregator {
                                            functionInfo.getName(), functionInfo.getField()), null)
           .withConfigElement("aggregates", collectorFieldName);
       }
+
+      // TODO: CDAP-16401 - Push down validation to individual aggregate functions
+      if (GroupByConfig.Function.COUNTDISTINCT == functionInfo.getFunction()) {
+        validateCountDistinct(inputField, collector, collectorFieldName);
+      }
     }
+  }
 
-
+  private void validateCountDistinct(Schema.Field inputField, FailureCollector collector, String validationFieldName) {
+    if (inputField != null) {
+      Schema.Type type = inputField.getSchema().isNullable() ?
+        inputField.getSchema().getNonNullable().getType() :
+        inputField.getSchema().getType();
+      if (type != Schema.Type.STRING && type != Schema.Type.INT && type != Schema.Type.LONG
+        && type != Schema.Type.BOOLEAN) {
+        collector.addFailure(
+          String.format("Distinct counting is not supported for the field %s of type %s.", inputField.getName(), type),
+          "Please specify a string, integer, long or boolean field.")
+          .withConfigElement("aggregates", validationFieldName);
+      }
+    }
   }
 
   @Override

@@ -45,7 +45,8 @@
               "Sum",
               "Variance",
               "CollectList",
-              "CollectSet"
+              "CollectSet",
+              "CountDistinct"
             ]
           }
         },
