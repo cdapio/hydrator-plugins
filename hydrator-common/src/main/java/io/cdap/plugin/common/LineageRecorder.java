@@ -25,8 +25,6 @@ import io.cdap.cdap.api.lineage.field.WriteOperation;
 import io.cdap.cdap.etl.api.batch.BatchContext;
 import io.cdap.cdap.etl.api.lineage.field.FieldReadOperation;
 import io.cdap.cdap.etl.api.lineage.field.FieldWriteOperation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
@@ -36,8 +34,6 @@ import javax.annotation.Nullable;
  * A helper class for creating external dataset and recording it's lineage
  */
 public class LineageRecorder {
-
-  private static final Logger LOG = LoggerFactory.getLogger(LineageRecorder.class);
 
   private final BatchContext context;
   private final String dataset;
