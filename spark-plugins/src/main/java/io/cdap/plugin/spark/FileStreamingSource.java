@@ -31,6 +31,8 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.streaming.StreamingContext;
 import io.cdap.cdap.etl.api.streaming.StreamingSource;
+import io.cdap.cdap.etl.api.streaming.StreamingSourceContext;
+import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.common.ReferencePluginConfig;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
@@ -38,6 +40,7 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
@@ -65,13 +68,25 @@ public class FileStreamingSource extends ReferenceStreamingSource<StructuredReco
   }
 
   @Override
+  public void prepareRun(StreamingSourceContext context) throws Exception {
+    Schema schema = conf.getSchema(context.getFailureCollector());
+    // record dataset lineage
+    context.registerLineage(conf.referenceName, schema);
+
+    if (schema.getFields() != null) {
+      LineageRecorder recorder = new LineageRecorder(context, conf.referenceName);
+      recorder.recordRead("Read", String.format("Read from files in path %s", conf.getPath()),
+                          schema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList()));
+    }
+  }
+
+  @Override
   public JavaDStream<StructuredRecord> getStream(StreamingContext context) throws Exception {
     FailureCollector collector = context.getFailureCollector();
     conf.validate(collector);
     conf.getSchema(collector);
     collector.getOrThrowException();
 
-    context.registerLineage(conf.referenceName);
     JavaStreamingContext jsc = context.getSparkStreamingContext();
     return FileStreamingSourceUtil.getJavaDStream(jsc, conf);
   }
