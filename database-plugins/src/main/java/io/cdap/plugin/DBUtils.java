@@ -246,8 +246,8 @@ public final class DBUtils {
       case Types.REF:
       case Types.SQLXML:
       case Types.STRUCT:
-        throw new SQLException(new UnsupportedTypeException("Unsupported SQL Type: " + sqlType
-          + " of column " + columnName));
+        throw new SQLException(new UnsupportedTypeException(String.format("Column %s has unsupported SQL type of %s."
+          , columnName, sqlType)));
     }
 
     return Schema.of(type);
