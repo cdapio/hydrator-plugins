@@ -28,6 +28,7 @@ import io.cdap.plugin.batch.aggregator.function.CollectList;
 import io.cdap.plugin.batch.aggregator.function.CollectSet;
 import io.cdap.plugin.batch.aggregator.function.Count;
 import io.cdap.plugin.batch.aggregator.function.CountAll;
+import io.cdap.plugin.batch.aggregator.function.CountDistinct;
 import io.cdap.plugin.batch.aggregator.function.First;
 import io.cdap.plugin.batch.aggregator.function.Last;
 import io.cdap.plugin.batch.aggregator.function.Max;
@@ -185,6 +186,8 @@ public class GroupByConfig extends AggregatorConfig {
             return new CountAll();
           }
           return new Count(field);
+        case COUNTDISTINCT:
+          return new CountDistinct(field);
         case SUM:
           return new Sum(field, fieldSchema);
         case AVG:
@@ -243,6 +246,7 @@ public class GroupByConfig extends AggregatorConfig {
 
   enum Function {
     COUNT,
+    COUNTDISTINCT,
     SUM,
     AVG,
     MIN,

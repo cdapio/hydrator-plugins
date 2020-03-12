@@ -20,9 +20,9 @@ For example, if grouping by the ``user`` field and calculating an aggregate ``nu
 output records will have a ``user`` field and a ``numActions`` field. (Macro-enabled)
 
 **aggregates:** Aggregates to compute on each group of records.
-Supported aggregate functions are `avg`, `count`, `count(*)`, `first`, `last`, `max`, `min`,`sum`,`collectList`,`collectSet`.
-A function must specify the field it should be applied on, as well as the name it should be called.
-Aggregates are specified using the syntax `name:function(field)[, other aggregates]`.
+Supported aggregate functions are `avg`, `count`, `count(*)`, `first`, `last`, `max`, `min`,`sum`,`collectList`,
+`collectSet`, `countDistinct`. A function must specify the field it should be applied on, as well as the name it should 
+be called. Aggregates are specified using the syntax `name:function(field)[, other aggregates]`.
 For example, ``avgPrice:avg(price),cheapest:min(price)`` will calculate two aggregates.
 The first will create a field called ``avgPrice`` that is the average of all ``price`` fields in the group.
 The second will create a field called ``cheapest`` that contains the minimum ``price`` field in the group.
