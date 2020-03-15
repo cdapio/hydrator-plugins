@@ -179,7 +179,6 @@ public class FileSinkTestRun extends ETLBatchTestBase {
     properties.put("referenceName", format.name());
     properties.put("format", format.name());
     properties.put("schema", "${schema}");
-    // properties.put("schema", SCHEMA.toString());
     properties.put("delimiter", delimiter);
 
     ETLBatchConfig conf = ETLBatchConfig.builder()
