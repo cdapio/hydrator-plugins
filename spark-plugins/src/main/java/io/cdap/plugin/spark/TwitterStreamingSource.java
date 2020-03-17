@@ -22,13 +22,17 @@ import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.streaming.StreamingContext;
 import io.cdap.cdap.etl.api.streaming.StreamingSource;
+import io.cdap.cdap.etl.api.streaming.StreamingSourceContext;
+import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.common.ReferencePluginConfig;
 import org.apache.spark.streaming.api.java.JavaDStream;
 
 import java.io.Serializable;
+import java.util.stream.Collectors;
 
 /**
  * Twitter streaming source.
@@ -51,8 +55,20 @@ public class TwitterStreamingSource extends ReferenceStreamingSource<StructuredR
   }
 
   @Override
+  public void prepareRun(StreamingSourceContext context) throws Exception {
+    Schema schema = TwitterStreamingSourceUtil.getTwitterSourceSchema();
+    // record dataset lineage
+    context.registerLineage(config.referenceName, schema);
+
+    if (schema.getFields() != null) {
+      LineageRecorder recorder = new LineageRecorder(context, config.referenceName);
+      recorder.recordRead("Read", "Read from twitter",
+                          schema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList()));
+    }
+  }
+
+  @Override
   public JavaDStream<StructuredRecord> getStream(StreamingContext context) throws Exception {
-    context.registerLineage(config.referenceName);
     return TwitterStreamingSourceUtil.getJavaDStream(context, config);
   }
 
