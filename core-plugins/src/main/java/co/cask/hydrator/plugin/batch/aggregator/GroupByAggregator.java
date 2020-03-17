@@ -1,5 +1,5 @@
 /*
- * Copyright © 2016 Cask Data, Inc.
+ * Copyright © 2016-2020 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -14,23 +14,24 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.aggregator;
+package io.cdap.plugin.batch.aggregator;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Name;
-import co.cask.cdap.api.annotation.Plugin;
-import co.cask.cdap.api.data.format.StructuredRecord;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.etl.api.Emitter;
-import co.cask.cdap.etl.api.PipelineConfigurer;
-import co.cask.cdap.etl.api.StageConfigurer;
-import co.cask.cdap.etl.api.batch.BatchAggregator;
-import co.cask.cdap.etl.api.batch.BatchAggregatorContext;
-import co.cask.cdap.etl.api.batch.BatchRuntimeContext;
-import co.cask.cdap.etl.api.lineage.field.FieldOperation;
-import co.cask.cdap.etl.api.lineage.field.FieldTransformOperation;
-import co.cask.hydrator.common.SchemaValidator;
-import co.cask.hydrator.plugin.batch.aggregator.function.AggregateFunction;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Name;
+import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
+import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageConfigurer;
+import io.cdap.cdap.etl.api.batch.BatchAggregator;
+import io.cdap.cdap.etl.api.batch.BatchAggregatorContext;
+import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
+import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
+import io.cdap.plugin.batch.aggregator.function.AggregateFunction;
+import io.cdap.plugin.common.SchemaValidator;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,7 +40,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.Path;
 
 /**
  * Batch group by aggregator.
@@ -50,6 +50,21 @@ import javax.ws.rs.Path;
   "Supports avg, count, count(*), first, last, max, min, and sum as aggregate functions.")
 public class GroupByAggregator extends RecordAggregator {
   private final GroupByConfig conf;
+  private final HashMap<String, String> functionNameMap = new HashMap<String, String>() {{
+    put("AVG", "Avg");
+    put("COUNT", "Count");
+    put("FIRST", "First");
+    put("LAST", "Last");
+    put("MAX", "Max");
+    put("MIN", "Min");
+    put("STDDEV", "Stddev");
+    put("SUM", "Sum");
+    put("VARIANCE", "Variance");
+    put("COLLECTLIST", "CollectList");
+    put("COLLECTSET", "CollectSet");
+    put("COUNTDISTINCT", "CountDistinct");
+  }};
+
   private List<String> groupByFields;
   private List<GroupByConfig.FunctionInfo> functionInfos;
   private Schema outputSchema;
@@ -75,9 +90,68 @@ public class GroupByAggregator extends RecordAggregator {
       return;
     }
 
+    validate(inputSchema, groupByFields, aggregates, stageConfigurer.getFailureCollector());
+    //Throw here to avoid throwing IllegalArgumentExceptions in the next function call
+    stageConfigurer.getFailureCollector().getOrThrowException();
+
     // otherwise, we have a constant input schema. Get the output schema and
     // propagate the schema, which is group by fields + aggregate fields
     stageConfigurer.setOutputSchema(getOutputSchema(inputSchema, groupByFields, aggregates));
+  }
+
+  public void validate(Schema inputSchema, List<String> groupByFields,
+                       List<GroupByConfig.FunctionInfo> aggregates, FailureCollector collector) {
+
+    for (String groupByField : groupByFields) {
+      Schema.Field field = inputSchema.getField(groupByField);
+      if (field == null) {
+        collector.addFailure(String.format("Cannot group by field '%s' because it does not exist in input schema.",
+                                           groupByField), null)
+          .withConfigElement("groupByFields", groupByField);
+      }
+    }
+
+    for (GroupByConfig.FunctionInfo functionInfo : aggregates) {
+      if (functionInfo.getField().equals("*")) {
+        continue;
+      }
+      Schema.Field inputField = inputSchema.getField(functionInfo.getField());
+      String collectorFieldName = String.format("%s:%s(%s)", functionInfo.getName(),
+                                              functionNameMap.get(functionInfo.getFunction().toString().toUpperCase()),
+                                              functionInfo.getField());
+
+      if (inputField == null) {
+        collector.addFailure(
+          String.format("Invalid aggregate %s(%s): Field '%s' does not exist in input schema.",
+                        functionInfo.getFunction(), functionInfo.getField(), functionInfo.getField()), null)
+          .withConfigElement("aggregates", collectorFieldName);
+      }
+      if (functionInfo.getField().equalsIgnoreCase(functionInfo.getName())) {
+        collector.addFailure(String.format("Name '%s' should not be same as aggregate field '%s'",
+                                           functionInfo.getName(), functionInfo.getField()), null)
+          .withConfigElement("aggregates", collectorFieldName);
+      }
+
+      // TODO: CDAP-16401 - Push down validation to individual aggregate functions
+      if (GroupByConfig.Function.COUNTDISTINCT == functionInfo.getFunction()) {
+        validateCountDistinct(inputField, collector, collectorFieldName);
+      }
+    }
+  }
+
+  private void validateCountDistinct(Schema.Field inputField, FailureCollector collector, String validationFieldName) {
+    if (inputField != null) {
+      Schema.Type type = inputField.getSchema().isNullable() ?
+        inputField.getSchema().getNonNullable().getType() :
+        inputField.getSchema().getType();
+      if (type != Schema.Type.STRING && type != Schema.Type.INT && type != Schema.Type.LONG
+        && type != Schema.Type.BOOLEAN) {
+        collector.addFailure(
+          String.format("Distinct counting is not supported for the field %s of type %s.", inputField.getName(), type),
+          "Please specify a string, integer, long or boolean field.")
+          .withConfigElement("aggregates", validationFieldName);
+      }
+    }
   }
 
   @Override
@@ -141,11 +215,6 @@ public class GroupByAggregator extends RecordAggregator {
       builder.set(aggregateFunction.getKey(), aggregateFunction.getValue().getAggregate());
     }
     emitter.emit(builder.build());
-  }
-
-  @Path("outputSchema")
-  public Schema getOutputSchema(GetSchemaRequest request) {
-    return getOutputSchema(request.inputSchema, request.getGroupByFields(), request.getAggregates());
   }
 
   private Schema getOutputSchema(Schema inputSchema, List<String> groupByFields,
@@ -226,12 +295,5 @@ public class GroupByAggregator extends RecordAggregator {
       fields.add(fieldSchema);
     }
     return Schema.recordOf("group.key.schema", fields);
-  }
-
-  /**
-   * Endpoint request for output schema.
-   */
-  public static class GetSchemaRequest extends GroupByConfig {
-    private Schema inputSchema;
   }
 }

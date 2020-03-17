@@ -4,7 +4,7 @@
 Description
 -----------
 Groups by one or more fields, then performs one or more aggregate functions on each group.
-Supports `avg`, `count`, `count(*)`, `first`, `last`, `max`, `min`,`sum` as aggregate functions.
+Supports `avg`, `count`, `count(*)`, `first`, `last`, `max`, `min`,`sum`,`collectList`,`collectSet` as aggregate functions.
 
 Use Case
 --------
@@ -20,9 +20,9 @@ For example, if grouping by the ``user`` field and calculating an aggregate ``nu
 output records will have a ``user`` field and a ``numActions`` field. (Macro-enabled)
 
 **aggregates:** Aggregates to compute on each group of records.
-Supported aggregate functions are `avg`, `count`, `count(*)`, `first`, `last`, `max`, `min`,`sum`.
-A function must specify the field it should be applied on, as well as the name it should be called.
-Aggregates are specified using the syntax `name:function(field)[, other aggregates]`.
+Supported aggregate functions are `avg`, `count`, `count(*)`, `first`, `last`, `max`, `min`,`sum`,`collectList`,
+`collectSet`, `countDistinct`. A function must specify the field it should be applied on, as well as the name it should 
+be called. Aggregates are specified using the syntax `name:function(field)[, other aggregates]`.
 For example, ``avgPrice:avg(price),cheapest:min(price)`` will calculate two aggregates.
 The first will create a field called ``avgPrice`` that is the average of all ``price`` fields in the group.
 The second will create a field called ``cheapest`` that contains the minimum ``price`` field in the group.
@@ -38,6 +38,7 @@ This example groups records by their ``user`` and ``item`` fields.
 It then calculates two aggregates for each group. The first is a sum on ``price``
 and the second counts the number of records in the group.
 
+```json
     {
         "name": "GroupByAggregate",
         "type": "batchaggregator",
@@ -46,28 +47,24 @@ and the second counts the number of records in the group.
             "aggregates": "totalSpent:sum(price),numPurchased:count(*)"
         }
     }
-
+```
 
 For example, suppose the aggregator receives input records where each record represents a purchase:
 
-    +========================+
-    | user  | item   | price |
-    +========================+
-    | bob   | donut  | 0.80  |
-    | bob   | coffee | 2.05  |
-    | bob   | donut  | 1.50  |
-    | bob   | donut  | 0.50  |
-    | alice | tea    | 1.99  |
-    | alice | cookie | 0.50  |
-    +========================+
+| user  | item   | price |
+| ----- | ------ | ----- |
+| bob   | donut  | 0.80  |
+| bob   | coffee | 2.05  |
+| bob   | donut  | 1.50  |
+| bob   | donut  | 0.50  |
+| alice | tea    | 1.99  |
+| alice | cookie | 0.50  |
 
 Output records will contain all group fields in addition to a field for each aggregate:
 
-    +============================================+
-    | user  | item   | totalSpent | numPurchased |
-    +============================================+
-    | bob   | donut  | 2.80       | 3            |
-    | bob   | coffee | 2.05       | 1            |
-    | alice | tea    | 1.99       | 1            |
-    | alice | cookie | 0.50       | 1            |
-    +============================================+
+| user  | item   | totalSpent | numPurchased |
+| ----- | ------ | ---------- | ------------ |
+| bob   | donut  | 2.80       | 3            |
+| bob   | coffee | 2.05       | 1            |
+| alice | tea    | 1.99       | 1            |
+| alice | cookie | 0.50       | 1            |

@@ -43,7 +43,10 @@
               "Min",
               "Stddev",
               "Sum",
-              "Variance"
+              "Variance",
+              "CollectList",
+              "CollectSet",
+              "CountDistinct"
             ]
           }
         },

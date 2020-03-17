@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015-2018 Cask Data, Inc.
+ * Copyright © 2015-2019 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -14,12 +14,12 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin;
+package io.cdap.plugin;
 
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.data.schema.UnsupportedTypeException;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.data.schema.UnsupportedTypeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,8 +52,8 @@ import javax.management.ReflectionException;
  */
 public final class DBUtils {
   private static final Logger LOG = LoggerFactory.getLogger(DBUtils.class);
-  public static final String OVERRIDE_SCHEMA = "co.cask.hydrator.db.override.schema";
-  public static final String CONNECTION_ARGUMENTS = "co.cask.hydrator.db.connection.arguments";
+  public static final String OVERRIDE_SCHEMA = "io.cdap.hydrator.db.override.schema";
+  public static final String CONNECTION_ARGUMENTS = "io.cdap.hydrator.db.connection.arguments";
 
   /**
    * Performs any Database related cleanup
@@ -102,7 +102,7 @@ public final class DBUtils {
 
   /**
    * Given the result set, get the metadata of the result set and return
-   * list of {@link co.cask.cdap.api.data.schema.Schema.Field},
+   * list of {@link io.cdap.cdap.api.data.schema.Schema.Field},
    * where name of the field is same as column name and type of the field is obtained using
    * {@link DBUtils#getSchema(int, int, int)}
    *
@@ -121,12 +121,12 @@ public final class DBUtils {
       try {
         schema = Schema.parseJson(schemaStr);
       } catch (IOException e) {
-        throw new IllegalArgumentException(String.format("Unable to parse schema string %s", schemaStr), e);
+        throw new IllegalArgumentException(String.format("Unable to parse schema string '%s'.", schemaStr), e);
       }
       for (Schema.Field field : schema.getFields()) {
         Schema.Field resultsetField = resultsetSchema.getField(field.getName());
         if (resultsetField == null) {
-          throw new IllegalArgumentException(String.format("Schema field %s is not present in input record",
+          throw new IllegalArgumentException(String.format("Schema field '%s' is not present in input record.",
                                                            field.getName()));
         }
         Schema resultsetFieldSchema = resultsetField.getSchema().isNullable() ?
@@ -134,10 +134,10 @@ public final class DBUtils {
         Schema simpleSchema = field.getSchema().isNullable() ? field.getSchema().getNonNullable() : field.getSchema();
 
         if (!resultsetFieldSchema.equals(simpleSchema)) {
-          throw new IllegalArgumentException(String.format("Schema field %s has type %s but in input record found " +
-                                                             "type %s ",
-                                                           field.getName(), simpleSchema.getType(),
-                                                           resultsetFieldSchema.getType()));
+          throw new IllegalArgumentException(String.format("Schema field '%s' has type '%s' but in input record " +
+                                                             "found type '%s'.",
+                                                           field.getName(), simpleSchema.getDisplayName(),
+                                                           resultsetFieldSchema.getDisplayName()));
         }
       }
       return schema.getFields();
@@ -148,9 +148,9 @@ public final class DBUtils {
 
   /**
    * Given the result set, get the metadata of the result set and return
-   * list of {@link co.cask.cdap.api.data.schema.Schema.Field},
+   * list of {@link io.cdap.cdap.api.data.schema.Schema.Field},
    * where name of the field is same as column name and type of the field is obtained using
-   * {@link DBUtils#getSchema(int, int, int)}
+   * {@link DBUtils#getSchema(String, int, int, int, String)}
    *
    * @param resultSet result set of executed query
    * @return list of schema fields
@@ -165,7 +165,8 @@ public final class DBUtils {
       int columnSqlType = metadata.getColumnType(i);
       int columnSqlPrecision = metadata.getPrecision(i); // total number of digits
       int columnSqlScale = metadata.getScale(i); // digits after the decimal point
-      Schema columnSchema = getSchema(columnSqlType, columnSqlPrecision, columnSqlScale);
+      String columnTypeName = metadata.getColumnTypeName(i);
+      Schema columnSchema = getSchema(columnTypeName, columnSqlType, columnSqlPrecision, columnSqlScale, columnName);
       if (ResultSetMetaData.columnNullable == metadata.isNullable(i)) {
         columnSchema = Schema.nullableOf(columnSchema);
       }
@@ -176,7 +177,8 @@ public final class DBUtils {
   }
 
   // given a sql type return schema type
-  private static Schema getSchema(int sqlType, int precision, int scale) throws SQLException {
+  private static Schema getSchema(String typeName, int sqlType, int precision, int scale, String columnName)
+    throws SQLException {
     // Type.STRING covers sql types - VARCHAR,CHAR,CLOB,LONGNVARCHAR,LONGVARCHAR,NCHAR,NCLOB,NVARCHAR
     Schema.Type type = Schema.Type.STRING;
     switch (sqlType) {
@@ -194,8 +196,11 @@ public final class DBUtils {
 
       case Types.TINYINT:
       case Types.SMALLINT:
-      case Types.INTEGER:
         type = Schema.Type.INT;
+        break;
+      case Types.INTEGER:
+        // CDAP-12211 - handling unsigned integers in mysql
+        type = "int unsigned".equalsIgnoreCase(typeName) ? Schema.Type.LONG : Schema.Type.INT;
         break;
 
       case Types.BIGINT:
@@ -241,7 +246,8 @@ public final class DBUtils {
       case Types.REF:
       case Types.SQLXML:
       case Types.STRUCT:
-        throw new SQLException(new UnsupportedTypeException("Unsupported SQL Type: " + sqlType));
+        throw new SQLException(new UnsupportedTypeException(String.format("Column %s has unsupported SQL type of %s."
+          , columnName, sqlType)));
     }
 
     return Schema.of(type);

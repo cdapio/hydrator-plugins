@@ -1,5 +1,5 @@
 /*
- * Copyright © 2016 Cask Data, Inc.
+ * Copyright © 2016-2019 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -14,25 +14,28 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.aggregator;
+package io.cdap.plugin.batch.aggregator;
 
-import co.cask.cdap.api.annotation.Description;
-import co.cask.cdap.api.annotation.Macro;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.hydrator.plugin.batch.aggregator.function.AggregateFunction;
-import co.cask.hydrator.plugin.batch.aggregator.function.Avg;
-import co.cask.hydrator.plugin.batch.aggregator.function.Count;
-import co.cask.hydrator.plugin.batch.aggregator.function.CountAll;
-import co.cask.hydrator.plugin.batch.aggregator.function.First;
-import co.cask.hydrator.plugin.batch.aggregator.function.Last;
-import co.cask.hydrator.plugin.batch.aggregator.function.Max;
-import co.cask.hydrator.plugin.batch.aggregator.function.Min;
-import co.cask.hydrator.plugin.batch.aggregator.function.Stddev;
-import co.cask.hydrator.plugin.batch.aggregator.function.Sum;
-import co.cask.hydrator.plugin.batch.aggregator.function.Variance;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
+import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.plugin.batch.aggregator.function.AggregateFunction;
+import io.cdap.plugin.batch.aggregator.function.Avg;
+import io.cdap.plugin.batch.aggregator.function.CollectList;
+import io.cdap.plugin.batch.aggregator.function.CollectSet;
+import io.cdap.plugin.batch.aggregator.function.Count;
+import io.cdap.plugin.batch.aggregator.function.CountAll;
+import io.cdap.plugin.batch.aggregator.function.CountDistinct;
+import io.cdap.plugin.batch.aggregator.function.First;
+import io.cdap.plugin.batch.aggregator.function.Last;
+import io.cdap.plugin.batch.aggregator.function.Max;
+import io.cdap.plugin.batch.aggregator.function.Min;
+import io.cdap.plugin.batch.aggregator.function.Stddev;
+import io.cdap.plugin.batch.aggregator.function.Sum;
+import io.cdap.plugin.batch.aggregator.function.Variance;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -183,6 +186,8 @@ public class GroupByConfig extends AggregatorConfig {
             return new CountAll();
           }
           return new Count(field);
+        case COUNTDISTINCT:
+          return new CountDistinct(field);
         case SUM:
           return new Sum(field, fieldSchema);
         case AVG:
@@ -199,6 +204,10 @@ public class GroupByConfig extends AggregatorConfig {
           return new Stddev(field, fieldSchema);
         case VARIANCE:
           return new Variance(field, fieldSchema);
+        case COLLECTLIST:
+          return new CollectList(field, fieldSchema);
+        case COLLECTSET:
+          return new CollectSet(field, fieldSchema);
       }
       // should never happen
       throw new IllegalStateException("Unknown function type " + function);
@@ -237,6 +246,7 @@ public class GroupByConfig extends AggregatorConfig {
 
   enum Function {
     COUNT,
+    COUNTDISTINCT,
     SUM,
     AVG,
     MIN,
@@ -244,6 +254,8 @@ public class GroupByConfig extends AggregatorConfig {
     FIRST,
     LAST,
     STDDEV,
-    VARIANCE
+    VARIANCE,
+    COLLECTLIST,
+    COLLECTSET
   }
 }

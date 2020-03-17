@@ -1,5 +1,5 @@
 /*
- * Copyright © 2016 Cask Data, Inc.
+ * Copyright © 2016-2020 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -14,26 +14,44 @@
  * the License.
  */
 
-package co.cask.hydrator.plugin.batch.aggregator;
+package io.cdap.plugin.batch.aggregator;
 
-import co.cask.cdap.api.common.Bytes;
-import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.table.Put;
-import co.cask.cdap.api.dataset.table.Row;
-import co.cask.cdap.api.dataset.table.Table;
-import co.cask.cdap.etl.api.batch.BatchAggregator;
-import co.cask.cdap.etl.api.batch.BatchSink;
-import co.cask.cdap.etl.api.batch.BatchSource;
-import co.cask.cdap.etl.proto.v2.ETLBatchConfig;
-import co.cask.cdap.etl.proto.v2.ETLPlugin;
-import co.cask.cdap.etl.proto.v2.ETLStage;
-import co.cask.cdap.test.ApplicationManager;
-import co.cask.cdap.test.DataSetManager;
-import co.cask.hydrator.plugin.batch.ETLBatchTestBase;
-import co.cask.hydrator.plugin.common.Properties;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+import io.cdap.cdap.api.common.Bytes;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.api.dataset.lib.TimePartitionedFileSet;
+import io.cdap.cdap.api.dataset.table.Put;
+import io.cdap.cdap.api.dataset.table.Row;
+import io.cdap.cdap.api.dataset.table.Table;
+import io.cdap.cdap.etl.api.batch.BatchAggregator;
+import io.cdap.cdap.etl.api.batch.BatchSink;
+import io.cdap.cdap.etl.api.batch.BatchSource;
+import io.cdap.cdap.etl.api.validation.ValidationException;
+import io.cdap.cdap.etl.mock.batch.MockSource;
+import io.cdap.cdap.etl.mock.common.MockPipelineConfigurer;
+import io.cdap.cdap.etl.proto.v2.ETLBatchConfig;
+import io.cdap.cdap.etl.proto.v2.ETLPlugin;
+import io.cdap.cdap.etl.proto.v2.ETLStage;
+import io.cdap.cdap.test.ApplicationManager;
+import io.cdap.cdap.test.DataSetManager;
+import io.cdap.plugin.batch.ETLBatchTestBase;
+import io.cdap.plugin.common.Properties;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.generic.GenericRecordBuilder;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Tests for GroupBy Aggregator.
@@ -114,7 +132,7 @@ public class GroupByTestRun extends ETLBatchTestBase {
                                    "aggregates", "totalPurchases:count(user), latestPurchase:max(ts)"),
                                  null));
 
-    ETLBatchConfig config = ETLBatchConfig.builder("* * * * *")
+    ETLBatchConfig config = ETLBatchConfig.builder()
       .addStage(purchaseStage)
       .addStage(userSinkStage)
       .addStage(itemSinkStage)
@@ -176,27 +194,231 @@ public class GroupByTestRun extends ETLBatchTestBase {
     // users table should have:
     // samuel: 3, 1000000 + 15.34 + 3.14
     Row row = usersTable.get(Bytes.toBytes("samuel"));
-    Assert.assertEquals(row.getLong("totalPurchases").longValue(), 3L);
-    Assert.assertTrue(Math.abs(row.getDouble("totalSpent") - 1000000d - 15.34d - 3.14d) < 0.0000001);
+    Assert.assertEquals(Objects.requireNonNull(row.getLong("totalPurchases")).longValue(), 3L);
+    Assert.assertTrue(
+      Math.abs(Objects.requireNonNull(row.getDouble("totalSpent")) - 1000000d - 15.34d - 3.14d) < 0.0000001
+    );
     // john: 2, 3.14 + 20.53
     row = usersTable.get(Bytes.toBytes("john"));
-    Assert.assertEquals(row.getLong("totalPurchases").longValue(), 2L);
-    Assert.assertTrue(Math.abs(row.getDouble("totalSpent") - 3.14d - 20.53d) < 0.0000001);
+    Assert.assertEquals(Objects.requireNonNull(row.getLong("totalPurchases")).longValue(), 2L);
+    Assert.assertTrue(Math.abs(Objects.requireNonNull(row.getDouble("totalSpent")) - 3.14d - 20.53d) < 0.0000001);
 
     DataSetManager<Table> itemsManager = getDataset(itemsDatasetName);
     Table itemsTable = itemsManager.get();
     // items table should have:
     // island: 1, 1234567890000
     row = itemsTable.get(Bytes.toBytes("island"));
-    Assert.assertEquals(row.getLong("totalPurchases").longValue(), 1L);
-    Assert.assertEquals(row.getLong("latestPurchase").longValue(), 1234567890000L);
+    Assert.assertEquals(Objects.requireNonNull(row.getLong("totalPurchases")).longValue(), 1L);
+    Assert.assertEquals(Objects.requireNonNull(row.getLong("latestPurchase")).longValue(), 1234567890000L);
     // pie: 2, 1234567890002
     row = itemsTable.get(Bytes.toBytes("pie"));
-    Assert.assertEquals(row.getLong("totalPurchases").longValue(), 2L);
-    Assert.assertEquals(row.getLong("latestPurchase").longValue(), 1234567890002L);
+    Assert.assertEquals(Objects.requireNonNull(row.getLong("totalPurchases")).longValue(), 2L);
+    Assert.assertEquals(Objects.requireNonNull(row.getLong("latestPurchase")).longValue(), 1234567890002L);
     // shirt: 2, 1234567890003
     row = itemsTable.get(Bytes.toBytes("shirt"));
-    Assert.assertEquals(row.getLong("totalPurchases").longValue(), 2L);
-    Assert.assertEquals(row.getLong("latestPurchase").longValue(), 1234567890003L);
+    Assert.assertEquals(Objects.requireNonNull(row.getLong("totalPurchases")).longValue(), 2L);
+    Assert.assertEquals(Objects.requireNonNull(row.getLong("latestPurchase")).longValue(), 1234567890003L);
+  }
+
+  @Test
+  public void testGroupByCollectList() {
+      /*
+        <ts, user, item, price> --> group by user, itemList:CollectList(item) --> user table
+     */
+    Schema purchaseSchema = Schema.recordOf(
+            "purchase",
+            Schema.Field.of("ts", Schema.of(Schema.Type.LONG)),
+            Schema.Field.of("user", Schema.of(Schema.Type.STRING)),
+            Schema.Field.of("item", Schema.of(Schema.Type.STRING)),
+            Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
+    Schema userSchema = Schema.recordOf(
+            "user",
+            Schema.Field.of("user", Schema.of(Schema.Type.STRING)),
+            Schema.Field.of("itemList", Schema.arrayOf(Schema.of(Schema.Type.STRING))));
+    GroupByConfig groupByConfig = new GroupByConfig("user",  "itemList:CollectList(item)");
+    GroupByAggregator groupByAggregator = new GroupByAggregator(groupByConfig);
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(purchaseSchema, Collections.emptyMap());
+    groupByAggregator.configurePipeline(mockConfigurer);
+    Assert.assertEquals(userSchema, mockConfigurer.getOutputSchema());
+  }
+
+  @Test
+  public void testGroupByCollectSet() {
+      /*
+        <ts, user, item, price> --> group by item, uniqueUsers:CollectSet(user) --> item table
+     */
+    Schema purchaseSchema = Schema.recordOf(
+            "purchase",
+            Schema.Field.of("ts", Schema.of(Schema.Type.LONG)),
+            Schema.Field.of("user", Schema.of(Schema.Type.STRING)),
+            Schema.Field.of("item", Schema.of(Schema.Type.STRING)),
+            Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
+    Schema itemSchema = Schema.recordOf(
+            "item",
+            Schema.Field.of("item", Schema.of(Schema.Type.STRING)),
+            Schema.Field.of("uniqueUsers", Schema.arrayOf(Schema.of(Schema.Type.STRING))));
+
+    GroupByConfig groupByConfig = new GroupByConfig("item",  "uniqueUsers:CollectSet(user)");
+    GroupByAggregator groupByAggregator = new GroupByAggregator(groupByConfig);
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(purchaseSchema, Collections.emptyMap());
+    groupByAggregator.configurePipeline(mockConfigurer);
+    Assert.assertEquals(itemSchema, mockConfigurer.getOutputSchema());
+  }
+
+  @Test
+  public void testGroupByCountDistinct() throws Exception {
+    String customerDataset = "customers";
+    String uniqueCustomersDataset = "uniqCustomersByState";
+      /*
+        <customer, state> --> group by state, uniqueUsers:CountDistinct(customer)
+     */
+    Schema customerSchema = Schema.recordOf(
+      "customers",
+      Schema.Field.of("customer", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("state", Schema.of(Schema.Type.STRING)));
+    // expected output schema
+    Schema outputSchema = Schema.recordOf(
+      "uniqueCustomers",
+      Schema.Field.of("state", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("numUniqueCustomers", Schema.of(Schema.Type.INT)));
+
+    // generate pipeline
+    ETLStage source = new ETLStage("raw_customers", MockSource.getPlugin(customerDataset, customerSchema));
+    ETLStage groupBy =
+      new ETLStage("groupBy",
+                   new ETLPlugin("GroupByAggregate",
+                                 GroupByAggregator.PLUGIN_TYPE,
+                                 ImmutableMap.of(
+                                   "aggregates", "numUniqueCustomers:CountDistinct(customer)",
+                                   "groupByFields", "state"),
+                                 null));
+    ETLStage sink = new ETLStage(
+      "sink", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
+                            ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA, outputSchema.toString(),
+                                            Properties.TimePartitionedFileSetDataset.TPFS_NAME, uniqueCustomersDataset),
+                            null));
+    ETLBatchConfig config = ETLBatchConfig.builder()
+      .addStage(source)
+      .addStage(groupBy)
+      .addStage(sink)
+      .addConnection(source.getName(), groupBy.getName())
+      .addConnection(groupBy.getName(), sink.getName())
+      .build();
+
+    // deploy pipeline, ingest data and run
+    ApplicationManager appManager = deployETL(config, UUID.randomUUID().toString());
+    ingestData(customerDataset, customerSchema);
+    runETLOnce(appManager);
+
+    // verification
+    DataSetManager<TimePartitionedFileSet> outputManager = getDataset(uniqueCustomersDataset);
+    TimePartitionedFileSet fileSet = outputManager.get();
+    try {
+      Set<GenericRecord> actual = Sets.newHashSet(readOutput(fileSet, outputSchema));
+      org.apache.avro.Schema avroOutputSchema = new org.apache.avro.Schema.Parser().parse(outputSchema.toString());
+      Set<GenericRecord> expected = ImmutableSet.of(
+        new GenericRecordBuilder(avroOutputSchema)
+          .set("state", "California")
+          .set("numUniqueCustomers", 4)
+          .build(),
+        new GenericRecordBuilder(avroOutputSchema)
+          .set("state", "Washington")
+          .set("numUniqueCustomers", 2)
+          .build(),
+        new GenericRecordBuilder(avroOutputSchema)
+          .set("state", "Texas")
+          .set("numUniqueCustomers", 1)
+          .build()
+      );
+      Assert.assertEquals(expected, actual);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  @Test
+  public void testCountDistinctValidation() {
+    String groupByField = "state";
+    Schema customerSchema = Schema.recordOf(
+      "customers",
+      Schema.Field.of("string", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("int", Schema.of(Schema.Type.INT)),
+      Schema.Field.of("long", Schema.of(Schema.Type.LONG)),
+      Schema.Field.of("float", Schema.of(Schema.Type.FLOAT)),
+      Schema.Field.of("double", Schema.of(Schema.Type.DOUBLE)),
+      Schema.Field.of("boolean", Schema.of(Schema.Type.BOOLEAN)),
+      Schema.Field.of("array", Schema.arrayOf(Schema.of(Schema.Type.STRING))),
+      Schema.Field.of("record", Schema.recordOf("record")),
+      Schema.Field.of("map", Schema.mapOf(Schema.of(Schema.Type.STRING), Schema.of(Schema.Type.STRING))),
+      Schema.Field.of("enum", Schema.enumWith("A", "B")),
+      Schema.Field.of("union", Schema.unionOf(Schema.of(Schema.Type.STRING), Schema.of(Schema.Type.BOOLEAN))),
+      Schema.Field.of("bytes", Schema.of(Schema.Type.BYTES)),
+      Schema.Field.of(groupByField, Schema.of(Schema.Type.STRING)));
+
+    MockPipelineConfigurer configurer = new MockPipelineConfigurer(customerSchema, Collections.emptyMap());
+    validateCountDistinct(configurer, "string", groupByField);
+    validateCountDistinct(configurer, "int", groupByField);
+    validateCountDistinct(configurer, "long", groupByField);
+    validateCountDistinct(configurer, "boolean", groupByField);
+    assertCountDistinctFailure(configurer, "float", groupByField, "CountDistinct for floats should fail validation");
+    assertCountDistinctFailure(configurer, "double", groupByField, "CountDistinct for doubles should fail validation");
+    assertCountDistinctFailure(configurer, "array", groupByField, "CountDistinct for arrays should fail validation");
+    assertCountDistinctFailure(configurer, "record", groupByField, "CountDistinct for records should fail validation");
+    assertCountDistinctFailure(configurer, "map", groupByField, "CountDistinct for maps should fail validation");
+    assertCountDistinctFailure(configurer, "enum", groupByField, "CountDistinct for enums should fail validation");
+    assertCountDistinctFailure(configurer, "union", groupByField, "CountDistinct for unions should fail validation");
+    assertCountDistinctFailure(configurer, "bytes", groupByField, "CountDistinct for bytes should fail validation");
+  }
+
+  private void assertCountDistinctFailure(MockPipelineConfigurer configurer, String aggregateField,
+                                          String groupByField, String failureReason) {
+    try {
+      validateCountDistinct(configurer, aggregateField, groupByField);
+      Assert.fail(failureReason);
+    } catch (ValidationException e) {
+      // expected
+    }
+  }
+
+  private void validateCountDistinct(MockPipelineConfigurer configurer, String aggregateField, String groupByField) {
+    String aggregates = String.format("distinct:CountDistinct(%s)", aggregateField);
+    GroupByConfig groupByConfig = new GroupByConfig(groupByField,  aggregates);
+    GroupByAggregator groupByAggregator = new GroupByAggregator(groupByConfig);
+    groupByAggregator.configurePipeline(configurer);
+  }
+
+  private void ingestData(String datasetName, Schema schema) throws Exception {
+    // write input data
+    DataSetManager<Table> datasetManager = getDataset(datasetName);
+    List<StructuredRecord> input = ImmutableList.of(
+      StructuredRecord.builder(schema)
+        .set("customer", "Rodrigues")
+        .set("state", "California")
+        .build(),
+      StructuredRecord.builder(schema)
+        .set("customer", "Johnson")
+        .set("state", "Washington")
+        .build(),
+      StructuredRecord.builder(schema)
+        .set("customer", "Smith")
+        .set("state", "Texas")
+        .build(),
+      StructuredRecord.builder(schema)
+        .set("customer", "Sawyer")
+        .set("state", "Washington")
+        .build(),
+      StructuredRecord.builder(schema)
+        .set("customer", "Sparrow")
+        .set("state", "California")
+        .build(),
+      StructuredRecord.builder(schema)
+        .set("customer", "Smith")
+        .set("state", "California")
+        .build(),
+      StructuredRecord.builder(schema)
+        .set("customer", "Murphy")
+        .set("state", "California")
+        .build());
+    MockSource.writeInput(datasetManager, input);
   }
 }
