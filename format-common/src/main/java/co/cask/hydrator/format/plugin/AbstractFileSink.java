@@ -59,7 +59,7 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
     FileFormat format = config.getFormat();
     OutputFormatProvider outputFormatProvider =
       pipelineConfigurer.usePlugin("outputformat", format.name().toLowerCase(),
-                                   FORMAT_PLUGIN_ID, config.getProperties());
+                                   FORMAT_PLUGIN_ID, config.getRawProperties());
     if (outputFormatProvider == null) {
       throw new IllegalArgumentException(String.format("Could not find the '%s' output format plugin.",
                                                        format.name().toLowerCase()));

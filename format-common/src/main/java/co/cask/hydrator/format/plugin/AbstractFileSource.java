@@ -77,7 +77,7 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
     if (fileFormat != null) {
       InputFormatProvider inputFormatProvider =
         pipelineConfigurer.usePlugin("inputformat", fileFormat.name().toLowerCase(), FORMAT_PLUGIN_ID,
-                                     config.getProperties());
+                                     config.getRawProperties());
       if (inputFormatProvider == null) {
         throw new IllegalArgumentException(String.format("Could not find the '%s' input format.",
                                                          fileFormat.name().toLowerCase()));
