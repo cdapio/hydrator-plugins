@@ -26,14 +26,19 @@ import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.XML;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A transform that parses an XML String field into a stringified JSON Object.
@@ -58,9 +63,38 @@ public final class XMLToJSON extends Transform<StructuredRecord, StructuredRecor
   }
 
   @Override
+  public void prepareRun(StageSubmitterContext context) throws Exception {
+    super.prepareRun(context);
+    generateOutputSchema();
+    if (context.getInputSchema() == null || context.getInputSchema().getFields() == null ||
+      context.getOutputSchema() == null || context.getOutputSchema().getFields() == null) {
+      return;
+    }
+
+    // Output operation list includes:
+    // - config.inputField mapping to all output fields (one-to-many)
+    // - other fields in inputSchema that map to themselves (1-to-1)
+    List<String> identityFields = context.getInputSchema().getFields().stream().map(Schema.Field::getName)
+      .filter(field -> outputSchema.getField(field) != null && !field.equals(config.inputField))
+      .collect(Collectors.toList());
+    List<String> processedFields = new ArrayList<>(TransformLineageRecorderUtils.getFields(context.getOutputSchema()));
+    processedFields.removeAll(identityFields);
+
+    List<FieldOperation> outputList = new ArrayList<>(
+      TransformLineageRecorderUtils.generateOneToMany(config.inputField, processedFields, "xmlToJson",
+        "Converted XML string to JSON string."));
+    outputList.addAll(TransformLineageRecorderUtils.generateOneToOnes(identityFields, "identity",
+      TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));
+    context.record(outputList);
+  }
+
+  @Override
   public void initialize(TransformContext context) throws Exception {
     super.initialize(context);
+    generateOutputSchema();
+  }
 
+  private void generateOutputSchema() {
     try {
       outputSchema = Schema.parseJson(config.schema);
       if (outputSchema != null) {

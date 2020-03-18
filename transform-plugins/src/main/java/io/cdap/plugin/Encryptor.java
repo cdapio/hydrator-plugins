@@ -27,10 +27,13 @@ import io.cdap.cdap.api.data.schema.Schema.Field;
 import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageConfigurer;
+import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
 import io.cdap.plugin.common.FieldEncryptor;
 import io.cdap.plugin.common.KeystoreConf;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +41,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.crypto.Cipher;
 
 /**
@@ -70,6 +74,30 @@ public final class Encryptor extends Transform<StructuredRecord, StructuredRecor
     encryptFields = conf.getEncryptFields();
     fieldEncryptor = new FileBasedFieldEncryptor(conf, Cipher.ENCRYPT_MODE);
     fieldEncryptor.initialize();
+  }
+
+  @Override
+  public void prepareRun(StageSubmitterContext context) throws Exception {
+    super.prepareRun(context);
+    encryptFields = conf.getEncryptFields();
+    if (context.getInputSchema() == null || context.getInputSchema().getFields() == null) {
+      return;
+    }
+
+    // Use all encryptFields from conf that also exist in input schema.
+    List<String> encryptedFields = TransformLineageRecorderUtils.getFields(context.getInputSchema()).stream()
+      .filter(encryptFields::contains)
+      .collect(Collectors.toList());
+
+    List<String> identityFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
+    identityFields.removeAll(encryptedFields);
+
+    List<FieldOperation> output = new ArrayList<>();
+    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(encryptedFields, "encrypt",
+      "Encrypted the requested fields."));
+    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(identityFields, "identity",
+      TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));
+    context.record(output);
   }
 
   @Override

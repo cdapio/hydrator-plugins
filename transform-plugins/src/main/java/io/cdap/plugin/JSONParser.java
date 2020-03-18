@@ -30,15 +30,20 @@ import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
 import io.cdap.cdap.format.StructuredRecordStringConverter;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
@@ -86,6 +91,33 @@ public final class JSONParser extends Transform<StructuredRecord, StructuredReco
         .withConfigProperty(Config.FIELD);
     }
     extractMappings(collector);
+  }
+
+  @Override
+  public void prepareRun(StageSubmitterContext context) throws Exception {
+    super.prepareRun(context);
+    extractMappings(context.getFailureCollector());
+
+    if (isSimple) {
+      context.record(TransformLineageRecorderUtils.generateOneToMany(config.field, TransformLineageRecorderUtils
+        .getFields(context.getOutputSchema()), "Parse", "Parsed fields as JSON."));
+      return;
+    }
+
+    // After extracting the mappings, store a list of operations containing identity transforms for every output
+    // field also present in the mappings list. No fields are dropped.
+    List<String> mappedFields = TransformLineageRecorderUtils.getFields(context.getOutputSchema()).stream()
+      .filter(mapping::containsKey).collect(Collectors.toList());
+
+    List<String> identityFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
+    identityFields.removeAll(mappedFields);
+
+    List<FieldOperation> output = new ArrayList<>();
+    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(mappedFields, "Parse",
+      "Parsed fields as JSON."));
+    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(identityFields, "identity",
+      TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));
+    context.record(output);
   }
 
   // If there is no config mapping, then we attempt to directly map output schema fields

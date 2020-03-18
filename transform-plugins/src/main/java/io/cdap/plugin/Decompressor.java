@@ -26,8 +26,11 @@ import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xerial.snappy.Snappy;
@@ -35,10 +38,12 @@ import org.xerial.snappy.Snappy;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -66,6 +71,33 @@ public final class Decompressor extends Transform<StructuredRecord, StructuredRe
   // This is used only for tests, otherwise this is being injected by the ingestion framework.
   public Decompressor(Config config) {
     this.config = config;
+  }
+
+  @Override
+  public void prepareRun(StageSubmitterContext context) throws Exception {
+    super.prepareRun(context);
+    parseConfiguration(config.decompressor, context.getFailureCollector());
+
+    // Initialize the required member maps and then have a one-to-one transform on all fields present in
+    // outSchemaMap and deCompMap and aren't set to NONE as decompressorType.
+    List<String> inFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
+    List<String> outFields = TransformLineageRecorderUtils.getFields(context.getOutputSchema());
+    List<String> identityFields = outFields.stream()
+      .filter(field -> !deCompMap.containsKey(field) || deCompMap.get(field) == DecompressorType.NONE)
+      .collect(Collectors.toList());
+
+    List<String> processedFields = new ArrayList<>(outFields);
+    processedFields.removeAll(identityFields);
+    List<String> droppedFields = new ArrayList<>(inFields);
+    droppedFields.removeAll(outFields);
+
+    List<FieldOperation> output = new ArrayList<>();
+    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(processedFields, "decompress",
+      "Used the specified algorithm to decompress the field."));
+    output.addAll(TransformLineageRecorderUtils.generateDrops(droppedFields));
+    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(identityFields, "identity",
+      TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));
+    context.record(output);
   }
 
   @Override
