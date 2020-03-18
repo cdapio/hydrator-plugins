@@ -30,14 +30,20 @@ import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageConfigurer;
+import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
 import io.cdap.plugin.common.FieldEncryptor;
 import io.cdap.plugin.common.KeystoreConf;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.crypto.Cipher;
 
@@ -77,6 +83,30 @@ public final class Decryptor extends Transform<StructuredRecord, StructuredRecor
     decryptFields = conf.getDecryptFields();
     fieldEncryptor = new FileBasedFieldEncryptor(conf, Cipher.DECRYPT_MODE);
     fieldEncryptor.initialize();
+  }
+
+  @Override
+  public void prepareRun(StageSubmitterContext context) throws Exception {
+    super.prepareRun(context);
+    decryptFields = conf.getDecryptFields();
+    if (context.getInputSchema() == null || context.getInputSchema().getFields() == null) {
+      return;
+    }
+
+    // Use all decryptFields from conf that also exist in input schema.
+    List<String> decryptedFields = TransformLineageRecorderUtils.getFields(context.getInputSchema()).stream()
+      .filter(decryptFields::contains)
+      .collect(Collectors.toList());
+
+    List<String> identityFields = TransformLineageRecorderUtils.getFields(context.getInputSchema());
+    identityFields.removeAll(decryptedFields);
+
+    List<FieldOperation> output = new ArrayList<>();
+    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(decryptedFields, "decrypt",
+      "Decrypted the requested fields."));
+    output.addAll(TransformLineageRecorderUtils.generateOneToOnes(identityFields, "identity",
+      TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));
+    context.record(output);
   }
 
   @Override

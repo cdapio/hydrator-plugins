@@ -34,6 +34,7 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageSubmitterContext;
 import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
+import io.cdap.plugin.common.TransformLineageRecorderUtils;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.slf4j.Logger;
@@ -66,7 +67,7 @@ import javax.annotation.Nullable;
 public final class CSVFormatter extends Transform<StructuredRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(CSVFormatter.class);
 
-  // Transform configuraiton.
+  // Transform configuration.
   private final Config config;
 
   // Output Schema associated with transform output.
@@ -116,6 +117,15 @@ public final class CSVFormatter extends Transform<StructuredRecord, StructuredRe
   @Override
   public void prepareRun(StageSubmitterContext context) throws Exception {
     super.prepareRun(context);
+
+    // Map all the input fields to the first output field.
+    List<String> outputFields = TransformLineageRecorderUtils.getFields(context.getOutputSchema());
+    if (!outputFields.isEmpty()) {
+      context.record(
+        TransformLineageRecorderUtils
+          .generateManyToOne(TransformLineageRecorderUtils.getFields(context.getInputSchema()), outputFields.get(0),
+            "csvFormat", "Formatted the input data as CSV."));
+    }
     config.validate(context.getFailureCollector());
   }
 
