@@ -42,6 +42,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiFunction;
@@ -73,7 +74,8 @@ public class JoinerTestRun extends ETLBatchTestBase {
   private void joinHelper(ETLStage filmStage, ETLStage filmActorStage, ETLStage filmCategoryStage, ETLStage joinStage,
                           ETLStage joinSinkStage, String filmDatasetName, String filmActorDatasetName,
                           String filmCategoryDatasetName, String joinedDatasetName, Schema outputSchema,
-                          BiFunction<Schema, TimePartitionedFileSet, Void> verifyOutput) throws Exception {
+                          BiFunction<Schema, TimePartitionedFileSet, Void> verifyOutput,
+                          Map<String, String> runTimeProperties) throws Exception {
     /*
      * film         ---------------
      *                              |
@@ -102,7 +104,7 @@ public class JoinerTestRun extends ETLBatchTestBase {
     ingestToFilmCategoryTable(filmCategoryDatasetName);
 
     // run the pipeline
-    runETLOnce(appManager);
+    runETLOnce(appManager, runTimeProperties);
 
     DataSetManager<TimePartitionedFileSet> outputManager = getDataset(joinedDatasetName);
     TimePartitionedFileSet fileSet = outputManager.get();
@@ -151,7 +153,7 @@ public class JoinerTestRun extends ETLBatchTestBase {
 
     joinHelper(filmStage, filmActorStage, filmCategoryStage, joinStage, joinSinkStage,
                filmDatasetName, filmActorDatasetName, filmCategoryDatasetName, joinedDatasetName,
-               outputSchema, this::verifyInnerJoinOutput);
+               outputSchema, this::verifyInnerJoinOutput, ImmutableMap.of());
 
   }
 
@@ -194,7 +196,7 @@ public class JoinerTestRun extends ETLBatchTestBase {
 
     joinHelper(filmStage, filmActorStage, filmCategoryStage, joinStage, joinSinkStage,
                filmDatasetName, filmActorDatasetName, filmCategoryDatasetName, joinedDatasetName,
-               outputSchema, this::verifyInnerJoinOutput);
+               outputSchema, this::verifyInnerJoinOutput, ImmutableMap.of());
   }
 
 
@@ -237,11 +239,11 @@ public class JoinerTestRun extends ETLBatchTestBase {
 
     joinHelper(filmStage, filmActorStage, filmCategoryStage, joinStage, joinSinkStage,
                filmDatasetName, filmActorDatasetName, filmCategoryDatasetName, joinedDatasetName,
-               outputSchema, this::verifyOuterJoinOutput);
+               outputSchema, this::verifyOuterJoinOutput, ImmutableMap.of());
   }
 
   @Test
-  public void testOuterJoinWithUnknownInputSchemas() throws Exception {
+  public void testOuterJoinWithMacro() throws Exception {
     String filmDatasetName = "film-outerjoin-unknown-inputschemas";
     String filmCategoryDatasetName = "film-category-outerjoin-unknown-inputschemas";
     String filmActorDatasetName = "film-actor-outerjoin-unknown-inputschemas";
@@ -251,7 +253,7 @@ public class JoinerTestRun extends ETLBatchTestBase {
     ETLStage filmStage = new ETLStage("film", MockSource.getPlugin(filmDatasetName));
     ETLStage filmActorStage = new ETLStage("filmActor", MockSource.getPlugin(filmActorDatasetName));
     ETLStage filmCategoryStage = new ETLStage("filmCategory",
-                                              MockSource.getPlugin(filmCategoryDatasetName));
+      MockSource.getPlugin(filmCategoryDatasetName));
 
     // output schema sorted by input stage names
     Schema outputSchema = Schema.recordOf(
@@ -261,27 +263,36 @@ public class JoinerTestRun extends ETLBatchTestBase {
       Schema.Field.of("renamed_actor", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("renamed_category", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
 
+    Map<String, String> configMap = ImmutableMap.of(
+      "joinKeys", "${joinKeys}",
+      "selectedFields", "${selectedFields}",
+      "requiredInputs", "${requiredInputs}",
+      "numPartitions", "${numPartitions}",
+      Properties.Table.PROPERTY_SCHEMA, "${" + Properties.Table.PROPERTY_SCHEMA + "}");
+    Map<String, String> macroMap = ImmutableMap.of(
+      "joinKeys", "film.film_id=filmActor.film_id=filmCategory.film_id&" +
+        "film.film_name=filmActor.film_name=filmCategory.film_name",
+      "selectedFields", selectedFields,
+      "requiredInputs", "film,filmActor",
+      "numPartitions", "2",
+      Properties.Table.PROPERTY_SCHEMA, outputSchema.toString());
+
     ETLStage joinStage =
       new ETLStage("joiner",
-                   new ETLPlugin("Joiner",
-                                 BatchJoiner.PLUGIN_TYPE,
-                                 ImmutableMap.of(
-                                   "joinKeys", "film.film_id=filmActor.film_id=filmCategory.film_id&" +
-                                     "film.film_name=filmActor.film_name=filmCategory.film_name",
-                                   "selectedFields", selectedFields,
-                                   "requiredInputs", "film,filmActor",
-                                   Properties.Table.PROPERTY_SCHEMA, outputSchema.toString()),
-                                 null));
+        new ETLPlugin("Joiner",
+          BatchJoiner.PLUGIN_TYPE,
+          configMap,
+          null));
 
     ETLStage joinSinkStage = new ETLStage(
       "sink", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
-                            ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA, outputSchema.toString(),
-                                            Properties.TimePartitionedFileSetDataset.TPFS_NAME, joinedDatasetName),
-                            null));
+      ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA, outputSchema.toString(),
+        Properties.TimePartitionedFileSetDataset.TPFS_NAME, joinedDatasetName),
+      null));
 
     joinHelper(filmStage, filmActorStage, filmCategoryStage, joinStage, joinSinkStage,
-               filmDatasetName, filmActorDatasetName, filmCategoryDatasetName, joinedDatasetName,
-               outputSchema, this::verifyOuterJoinOutput);
+      filmDatasetName, filmActorDatasetName, filmCategoryDatasetName, joinedDatasetName,
+      outputSchema, this::verifyOuterJoinOutput, macroMap);
   }
 
   @Test
@@ -323,7 +334,7 @@ public class JoinerTestRun extends ETLBatchTestBase {
 
     joinHelper(filmStage, filmActorStage, filmCategoryStage, joinStage, joinSinkStage,
                filmDatasetName, filmActorDatasetName, filmCategoryDatasetName, joinedDatasetName,
-               outputSchema, this::verifyOuterJoinWithoutRequiredInputs);
+               outputSchema, this::verifyOuterJoinWithoutRequiredInputs, ImmutableMap.of());
   }
 
   private void ingestToFilmCategoryTable(String filmCategoryDatasetName) throws Exception {

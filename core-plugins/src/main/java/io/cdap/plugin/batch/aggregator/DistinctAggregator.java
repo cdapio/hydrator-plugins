@@ -30,6 +30,7 @@ import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchAggregator;
 import io.cdap.cdap.etl.api.batch.BatchAggregatorContext;
 import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
+import io.cdap.plugin.common.SchemaValidator;
 import io.cdap.plugin.common.TransformLineageRecorderUtils;
 
 import java.util.ArrayList;
@@ -55,6 +56,8 @@ public class DistinctAggregator extends RecordAggregator {
    * Plugin Configuration
    */
   public static class Conf extends AggregatorConfig {
+    public static final String FIELDS = "fields";
+
     @Nullable
     @Description("Optional comma-separated list of fields to perform the distinct on. If none is given, each record " +
       "will be taken as is. Otherwise, only fields in this list will be considered.")
@@ -74,8 +77,9 @@ public class DistinctAggregator extends RecordAggregator {
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
     Schema inputSchema = stageConfigurer.getInputSchema();
-    // if null, the input schema is unknown, or its multiple schemas.
-    if (inputSchema == null) {
+    // If null, the input schema is unknown, or it's multiple schemas.
+    // Output schema cannot be set if input schema or distinct fields are not available.
+    if (inputSchema == null || conf.containsMacro(Conf.FIELDS)) {
       stageConfigurer.setOutputSchema(null);
       return;
     }
@@ -85,8 +89,8 @@ public class DistinctAggregator extends RecordAggregator {
     stageConfigurer.setOutputSchema(getOutputSchema(inputSchema, conf.getFields()));
   }
 
-  public void validate(Schema inputSchema, Iterable<String> fields, FailureCollector collector) {
-    if (fields == null || !fields.iterator().hasNext()) {
+  public void validate(@Nullable Schema inputSchema, Iterable<String> fields, FailureCollector collector) {
+    if (inputSchema == null || fields == null || !fields.iterator().hasNext()) {
       return;
     }
 
@@ -102,15 +106,17 @@ public class DistinctAggregator extends RecordAggregator {
   @Override
   public void prepareRun(BatchAggregatorContext context) throws Exception {
     super.prepareRun(context);
-
     validate(context.getInputSchema(), conf.getFields(), context.getFailureCollector());
     context.getFailureCollector().getOrThrowException();
 
-    List<String> fields = conf.getFields() == null ?
-                            TransformLineageRecorderUtils.getFields(context.getInputSchema()) :
-                            Lists.newArrayList(conf.getFields());
-    context.record(TransformLineageRecorderUtils.generateOneToOnes(fields, "distinctAggregator",
-                                                                   "Removed duplicates in input records."));
+    // in configurePipeline all the necessary checks have been performed already to set output schema
+    if (SchemaValidator.canRecordLineage(context.getOutputSchema(), context.getStageName())) {
+      List<String> fields = conf.getFields() == null ?
+              TransformLineageRecorderUtils.getFields(context.getInputSchema()) :
+              Lists.newArrayList(conf.getFields());
+      context.record(TransformLineageRecorderUtils.generateOneToOnes(fields, "distinctAggregator",
+                                                                     "Removed duplicates in input records."));
+    }
   }
 
   @Override
