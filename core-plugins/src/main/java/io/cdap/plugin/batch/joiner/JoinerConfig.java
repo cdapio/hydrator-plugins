@@ -66,6 +66,7 @@ public class JoinerConfig extends PluginConfig {
     "inner join will be performed. Otherwise, outer join will be performed considering non-required inputs as " +
     "optional.";
 
+  @Macro
   @Nullable
   @Description(NUM_PARTITIONS_DESC)
   protected Integer numPartitions;

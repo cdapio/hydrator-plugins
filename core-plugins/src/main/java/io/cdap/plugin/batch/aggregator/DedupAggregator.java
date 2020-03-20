@@ -29,6 +29,7 @@ import io.cdap.cdap.etl.api.batch.BatchAggregator;
 import io.cdap.cdap.etl.api.batch.BatchAggregatorContext;
 import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
 import io.cdap.plugin.batch.aggregator.function.SelectionFunction;
+import io.cdap.plugin.common.SchemaValidator;
 import io.cdap.plugin.common.TransformLineageRecorderUtils;
 
 import java.util.ArrayList;
@@ -57,9 +58,13 @@ public class DedupAggregator extends RecordAggregator {
   public void prepareRun(BatchAggregatorContext context) throws Exception {
     super.prepareRun(context);
 
-    TransformLineageRecorderUtils.generateOneToOnes(
-      TransformLineageRecorderUtils.getFields(context.getInputSchema()), "dedup",
-    "Removed duplicate records based on unique fields.");
+    // in configurePipeline all the necessary checks have been performed already to set output schema
+    if (SchemaValidator.canRecordLineage(context.getOutputSchema(), context.getStageName())) {
+      TransformLineageRecorderUtils.generateOneToOnes(
+              TransformLineageRecorderUtils.getFields(context.getInputSchema()),
+              "dedup",
+              "Removed duplicate records based on unique fields.");
+    }
   }
 
   @Override
