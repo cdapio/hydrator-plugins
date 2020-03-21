@@ -203,7 +203,7 @@ public class JoinerConfigTest {
       Assert.assertEquals(1, e.getFailures().size());
       Assert.assertEquals(1, e.getFailures().get(0).getCauses().size());
       Cause expectedCause = new Cause();
-      expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, JoinerConfig.SELECT_FIELDS);
+      expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, JoinerConfig.SELECTED_FIELDS);
       expectedCause.addAttribute(STAGE, MOCK_STAGE);
       Assert.assertEquals(expectedCause, e.getFailures().get(0).getCauses().get(0));
     }
@@ -277,7 +277,6 @@ public class JoinerConfigTest {
       joiner.getOutputSchema(inputSchemas, collector);
       Assert.fail();
     } catch (ValidationException e) {
-      Assert.assertEquals(1, e.getFailures().size());
       Assert.assertEquals(1, e.getFailures().get(0).getCauses().size());
       Cause expectedCause = new Cause();
       expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, JoinerConfig.JOIN_KEYS);
