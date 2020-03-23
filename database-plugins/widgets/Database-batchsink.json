@@ -16,9 +16,12 @@
           }
         },
         {
-          "widget-type": "textbox",
+          "widget-type": "plugin-list",
           "label": "Plugin Name",
-          "name": "jdbcPluginName"
+          "name": "jdbcPluginName",
+          "widget-attributes": {
+            "plugin-type": "jdbc"
+          }
         },
         {
           "widget-type": "textbox",
