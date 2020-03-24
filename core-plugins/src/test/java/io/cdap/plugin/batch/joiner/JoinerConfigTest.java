@@ -266,6 +266,7 @@ public class JoinerConfigTest {
 
     Joiner joiner = new Joiner(joinerConfig);
     FailureCollector collector = new MockFailureCollector();
+    joiner.init(inputSchemas, collector);
     Assert.assertEquals(outputSchema, joiner.getOutputSchema(inputSchemas, collector));
     Assert.assertEquals(0, collector.getValidationFailures().size());
   }
@@ -291,6 +292,7 @@ public class JoinerConfigTest {
     Joiner joiner = new Joiner(config);
     FailureCollector collector = new MockFailureCollector();
     try {
+      joiner.init(inputSchemas, collector);
       joiner.getOutputSchema(inputSchemas, collector);
       Assert.fail();
     } catch (ValidationException e) {
@@ -332,6 +334,7 @@ public class JoinerConfigTest {
 
     Joiner joiner = new Joiner(conf);
     FailureCollector collector = new MockFailureCollector();
+    joiner.init(inputSchemas, collector);
     Assert.assertEquals(outputSchema, joiner.getOutputSchema(inputSchemas, collector));
     Assert.assertEquals(0, collector.getValidationFailures().size());
   }
