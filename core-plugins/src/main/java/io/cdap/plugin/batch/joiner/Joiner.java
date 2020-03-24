@@ -69,6 +69,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
   private Table<String, String, String> perStageSelectedFields;
   private Set<String> requiredInputs;
   private Multimap<String, String> duplicateFields = ArrayListMultimap.create();
+  private Map<String, Schema> keySchemas = new HashMap<>();
 
   public Joiner(JoinerConfig conf) {
     this.conf = conf;
@@ -194,24 +195,30 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
 
   @Override
   public StructuredRecord joinOn(String stageName, StructuredRecord record) {
-    List<Schema.Field> fields = new ArrayList<>();
-    Schema schema = record.getSchema();
-
-
+    Schema keySchema;
     List<String> joinKeys = perStageJoinKeys.get(stageName);
-    int i = 1;
-    for (String joinKey : joinKeys) {
-      Schema.Field field = schema.getField(joinKey);
-      if (field == null) {
-        throw new IllegalArgumentException(String.format("Join key field '%s' does not exist in schema from '%s'.",
-                                                         joinKey, stageName));
+
+    if (keySchemas.containsKey(stageName)) {
+      keySchema = keySchemas.get(stageName);
+    } else {
+      List<Schema.Field> fields = new ArrayList<>();
+      Schema schema = record.getSchema();
+
+      int i = 1;
+      for (String joinKey : joinKeys) {
+        Schema.Field field = schema.getField(joinKey);
+        if (field == null) {
+          throw new IllegalArgumentException(String.format("Join key field '%s' does not exist in schema from '%s'.",
+                  joinKey, stageName));
+        }
+        Schema.Field joinField = Schema.Field.of(String.valueOf(i++), field.getSchema());
+        fields.add(joinField);
       }
-      Schema.Field joinField = Schema.Field.of(String.valueOf(i++), field.getSchema());
-      fields.add(joinField);
+      keySchema = Schema.recordOf("join.key", fields);
+      keySchemas.put(stageName, keySchema);
     }
-    Schema keySchema = Schema.recordOf("join.key", fields);
     StructuredRecord.Builder keyRecordBuilder = StructuredRecord.builder(keySchema);
-    i = 1;
+    int i = 1;
     for (String joinKey : joinKeys) {
       keyRecordBuilder.set(String.valueOf(i++), record.get(joinKey));
     }
@@ -291,7 +298,6 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
   }
 
   Schema getOutputSchema(Map<String, Schema> inputSchemas, FailureCollector collector) {
-    validateJoinKeySchemas(inputSchemas, conf.getPerStageJoinKeys(), collector);
     requiredInputs = conf.getInputs();
     perStageSelectedFields = conf.getPerStageSelectedFields();
     duplicateFields = ArrayListMultimap.create();
