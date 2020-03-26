@@ -46,8 +46,8 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-
 /**
  * Batch joiner to join records from multiple inputs
  */
@@ -79,16 +79,17 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
   public void configurePipeline(MultiInputPipelineConfigurer pipelineConfigurer) {
     MultiInputStageConfigurer stageConfigurer = pipelineConfigurer.getMultiInputStageConfigurer();
     Map<String, Schema> inputSchemas = stageConfigurer.getInputSchemas();
+    List<String> inputStages = stageConfigurer.getInputStages();
     FailureCollector collector = pipelineConfigurer.getMultiInputStageConfigurer().getFailureCollector();
-    init(inputSchemas, collector);
+    init(inputSchemas, inputStages, collector);
     collector.getOrThrowException();
-    if (!conf.inputSchemasAvailable(inputSchemas) && !conf.containsMacro(conf.OUTPUT_SCHEMA) &&
+    if (!inputSchemasAvailable(inputSchemas, inputStages) && !conf.containsMacro(conf.OUTPUT_SCHEMA) &&
       conf.getOutputSchema(collector) == null) {
       // If input schemas are unknown, an output schema must be provided.
       collector.addFailure("Output schema must be specified", null).withConfigProperty(conf.OUTPUT_SCHEMA);
     }
 
-    Schema outputSchema = getOutputSchema(inputSchemas, collector);
+    Schema outputSchema = getOutputSchema(inputSchemas, inputStages, collector);
     if (outputSchema != null) {
       // Set output schema if it's not a macro.
       stageConfigurer.setOutputSchema(outputSchema);
@@ -102,14 +103,15 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     }
     FailureCollector collector = context.getFailureCollector();
     Map<String, Schema> inputSchemas = context.getInputSchemas();
-    if (!conf.inputSchemasAvailable(inputSchemas)) {
+    List<String> inputStages = context.getInputStages();
+    if (!inputSchemasAvailable(inputSchemas, inputStages)) {
       // inputSchemas will be empty if the output schema of a previous node is a macro
       return;
     }
 
-    init(inputSchemas, collector);
+    init(inputSchemas, inputStages, collector);
     collector.getOrThrowException();
-    Collection<OutputFieldInfo> outputFieldInfos = createOutputFieldInfos(inputSchemas, collector);
+    Collection<OutputFieldInfo> outputFieldInfos = createOutputFieldInfos(inputSchemas, inputStages, collector);
     collector.getOrThrowException();
     context.record(createFieldOperations(outputFieldInfos, perStageJoinKeys));
   }
@@ -187,9 +189,10 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
   public void initialize(BatchJoinerRuntimeContext context) {
     FailureCollector collector = context.getFailureCollector();
     Map<String, Schema> inputSchemas = context.getInputSchemas();
-    init(inputSchemas, collector);
+    List<String> inputStages = context.getInputStages();
+    init(inputSchemas, inputStages, collector);
     collector.getOrThrowException();
-    outputSchema = getOutputSchema(inputSchemas, collector);
+    outputSchema = getOutputSchema(inputSchemas, inputStages, collector);
     collector.getOrThrowException();
   }
 
@@ -256,16 +259,16 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     return outRecordBuilder.build();
   }
 
-  void init(Map<String, Schema> inputSchemas, FailureCollector collector) {
-    validateJoinKeySchemas(inputSchemas, conf.getPerStageJoinKeys(), collector);
+  void init(Map<String, Schema> inputSchemas, List<String> inputStages, FailureCollector collector) {
+    validateJoinKeySchemas(inputSchemas, inputStages, conf.getPerStageJoinKeys(), collector);
     requiredInputs = conf.getInputs();
     perStageSelectedFields = conf.getPerStageSelectedFields();
   }
 
-  void validateJoinKeySchemas(Map<String, Schema> inputSchemas, Map<String, List<String>> joinKeys,
-                              FailureCollector collector) {
+  void validateJoinKeySchemas(Map<String, Schema> inputSchemas, List<String> inputStages,
+                              Map<String, List<String>> joinKeys, FailureCollector collector) {
     perStageJoinKeys = joinKeys;
-    conf.validateJoinKeySchemas(inputSchemas, joinKeys, collector);
+    conf.validateJoinKeySchemas(inputSchemas, inputStages, joinKeys, collector);
 
     List<Schema> prevSchemaList = null;
     for (Map.Entry<String, List<String>> entry : perStageJoinKeys.entrySet()) {
@@ -297,22 +300,19 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     }
   }
 
-  Schema getOutputSchema(Map<String, Schema> inputSchemas, FailureCollector collector) {
-    requiredInputs = conf.getInputs();
-    perStageSelectedFields = conf.getPerStageSelectedFields();
-    duplicateFields = ArrayListMultimap.create();
-    List<Schema.Field> outputFields = getOutputFields(createOutputFieldInfos(inputSchemas, collector));
-    if (outputFields.isEmpty()) {
-      // Could not derive output schema from input schema. Try to get output schema from config.
+  Schema getOutputSchema(Map<String, Schema> inputSchemas, List<String> inputStages, FailureCollector collector) {
+    if (!inputSchemasAvailable(inputSchemas, inputStages)) {
+      // Cannot derive output schema from input schema. Try to get it from config.
       return conf.getOutputSchema(collector);
-    } else {
-      return Schema.recordOf("join.output", outputFields);
     }
+    List<Schema.Field> outputFields = getOutputFields(createOutputFieldInfos(inputSchemas, inputStages, collector));
+    return Schema.recordOf("join.output", outputFields);
   }
 
   private Collection<OutputFieldInfo> createOutputFieldInfos(Map<String, Schema> inputSchemas,
+                                                             List<String> inputStages,
                                                              FailureCollector collector) {
-    validateRequiredInputs(inputSchemas, collector);
+    validateRequiredInputs(inputStages, collector);
     collector.getOrThrowException();
 
     // stage name to input schema
@@ -320,11 +320,6 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     // Selected Field name to output field info
     Map<String, OutputFieldInfo> outputFieldInfo = new LinkedHashMap<>();
     List<String> duplicateAliases = new ArrayList<>();
-
-    if (!conf.inputSchemasAvailable(inputSchemas)) {
-      // inputSchemas will be empty if the output schema of a previous node is a macro
-      return outputFieldInfo.values();
-    }
 
     // order of fields in output schema will be same as order of selectedFields
     Set<Table.Cell<String, String, String>> rows = perStageSelectedFields.cellSet();
@@ -381,6 +376,11 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
       outputFields.add(fieldInfo.getField());
     }
     return outputFields;
+  }
+
+  private boolean inputSchemasAvailable(Map<String, Schema> inputSchemas, List<String> inputStages) {
+    return inputSchemas.keySet().containsAll(inputStages) &&
+      inputSchemas.values().stream().noneMatch(Objects::isNull);
   }
 
   /**
@@ -475,9 +475,9 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     }
   }
 
-  private void validateRequiredInputs(Map<String, Schema> inputSchemas, FailureCollector collector) {
+  private void validateRequiredInputs(List<String> inputStages, FailureCollector collector) {
     for (String requiredInput : requiredInputs) {
-      if (!inputSchemas.isEmpty() && !inputSchemas.containsKey(requiredInput)) {
+      if (!inputStages.contains(requiredInput)) {
         collector.addFailure(String.format("Provided input '%s' must be an input stage name.", requiredInput), null)
           .withConfigElement(conf.REQUIRED_INPUTS, requiredInput);
       }
