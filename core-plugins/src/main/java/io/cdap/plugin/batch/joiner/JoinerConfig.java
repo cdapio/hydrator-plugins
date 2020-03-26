@@ -132,12 +132,6 @@ public class JoinerConfig extends PluginConfig {
     throw collector.getOrThrowException();
   }
 
-  public boolean inputSchemasAvailable(Map<String, Schema> inputSchemas) {
-    // TODO: Remove isEmpty() check when CDAP-16351 is fixed
-    return !inputSchemas.isEmpty() && !inputSchemas.values().stream().anyMatch(v -> v == null);
-  }
-
-
   Map<String, List<String>> getPerStageJoinKeys() {
     Map<String, List<String>> stageToKey = new HashMap<>();
     if (containsMacro(JoinerConfig.JOIN_KEYS)) {
@@ -221,13 +215,12 @@ public class JoinerConfig extends PluginConfig {
     return ImmutableSet.of();
   }
 
-  void validateJoinKeySchemas(Map<String, Schema> inputSchemas, Map<String, List<String>> joinKeys,
-                              FailureCollector collector) {
+  void validateJoinKeySchemas(Map<String, Schema> inputSchemas, List<String> inputStages, Map<String,
+                              List<String>> joinKeys, FailureCollector collector) {
     // Skip validation if joinKeys is a macro, or if any input's output schema is a macro.
     if (!containsMacro(JoinerConfig.JOIN_KEYS) &&
-      inputSchemasAvailable(inputSchemas) &&
-      joinKeys.size() != inputSchemas.size()) {
-      collector.addFailure("There should be join keys present from each stage.",
+        joinKeys.size() != inputStages.size()) {
+        collector.addFailure("There should be join keys present from each stage.",
                            "Ensure join keys are present from each stage.")
         .withConfigProperty(JoinerConfig.JOIN_KEYS);
     }
