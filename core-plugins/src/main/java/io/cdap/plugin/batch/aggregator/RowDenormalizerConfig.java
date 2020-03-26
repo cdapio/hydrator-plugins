@@ -19,6 +19,7 @@ package io.cdap.plugin.batch.aggregator;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
 
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -30,11 +31,19 @@ import javax.annotation.Nullable;
  * Config for RowDenormalizer Aggregator Plugin.
  */
 public class RowDenormalizerConfig extends AggregatorConfig {
+  public static final String KEY_FIELD = "keyField";
+  public static final String NAME_FIELD = "nameField";
+  public static final String VALUE_FIELD = "valueField";
+  public static final String OUTPUT_FIELDS = "outputFields";
+  public static final String FIELD_ALIASES = "fieldAliases";
 
+
+  @Macro
   @Description("Name of the column in the input record which will be used to group the raw data. For Example, " +
     "id.")
   private final String keyField;
 
+  @Macro
   @Description("Name of the column in the input record which contains the names of output schema columns. " +
     "For example, " +
     "input records have columns 'id', 'attribute', 'value' " +
@@ -42,6 +51,7 @@ public class RowDenormalizerConfig extends AggregatorConfig {
     "So the output record will have column names as 'FirstName', 'LastName', 'Address'.")
   private final String nameField;
 
+  @Macro
   @Description("Name of the column in the input record which contains the values for output schema columns. " +
     "For example, " +
     "input records have columns 'id', 'attribute', 'value' " +
@@ -50,9 +60,11 @@ public class RowDenormalizerConfig extends AggregatorConfig {
     "Lakeside' respectively.")
   private final String valueField;
 
+  @Macro
   @Description("List of the output fields to be included in denormalized output.")
   private final String outputFields;
 
+  @Macro
   @Description("List of the output fields to rename. The key specifies the name of the field to rename, with its " +
     "corresponding value specifying the new name for that field.")
   @Nullable

@@ -24,6 +24,7 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchAggregator;
 import io.cdap.cdap.etl.api.batch.BatchAggregatorContext;
 import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
@@ -70,9 +71,11 @@ public class RowDenormalizerAggregator extends BatchAggregator<String, Structure
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
-    validateInputFields(pipelineConfigurer.getStageConfigurer().getInputSchema(),
-                        pipelineConfigurer.getStageConfigurer().getFailureCollector());
-    pipelineConfigurer.getStageConfigurer().setOutputSchema(initializeOutputSchema());
+    StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
+    Schema inputSchema = stageConfigurer.getInputSchema();
+    if (validateInputFields(inputSchema, stageConfigurer.getFailureCollector())) {
+      stageConfigurer.setOutputSchema(initializeOutputSchema());
+    }
   }
 
   @Override
@@ -144,56 +147,78 @@ public class RowDenormalizerAggregator extends BatchAggregator<String, Structure
    * @param inputSchema Validates whether the keyfield, fieldname, and fieldvalue entered by the user is of type
    *                    String or Nullable String and present in the input schema or not.
    * @param collector FailureCollector used to log all errors and return them to the user.
-   * @return true
+   * @returns true if all fields have been validated and output schema can be set.
    */
-  private void validateInputFields(Schema inputSchema, FailureCollector collector) {
+  private boolean validateInputFields(Schema inputSchema, FailureCollector collector) {
 
-    if (inputSchema.getField(conf.getKeyField()) == null) {
-      collector.addFailure(String.format("Key field '%s' does not exist in input schema", conf.getKeyField()), null)
-        .withConfigProperty(KEY_FIELD);
+    boolean canSetOutputSchema = true;
+    if (inputSchema == null) {
+      return false;
+    }
+
+    if (conf.containsMacro(RowDenormalizerConfig.KEY_FIELD)) {
+      canSetOutputSchema = false;
     } else {
-      Schema keyFieldSchema = inputSchema.getField(conf.getKeyField()).getSchema();
-
-      final Schema.Type schemaType = keyFieldSchema.isNullable() ?
-                                    keyFieldSchema.getNonNullable().getType() :
-                                    keyFieldSchema.getType();
-
-      if (!schemaType.equals(Schema.Type.STRING)) {
-        collector.addFailure(String.format("Key field '%s' in the input record must be a String", conf.getKeyField()),
-                             null)
+      if (inputSchema.getField(conf.getKeyField()) == null) {
+        collector.addFailure(String.format("Key field '%s' does not exist in input schema", conf.getKeyField()), null)
           .withConfigProperty(KEY_FIELD);
+      } else {
+        Schema keyFieldSchema = inputSchema.getField(conf.getKeyField()).getSchema();
+
+        final Schema.Type schemaType = keyFieldSchema.isNullable() ?
+          keyFieldSchema.getNonNullable().getType() :
+          keyFieldSchema.getType();
+
+        if (!schemaType.equals(Schema.Type.STRING)) {
+          collector.addFailure(String.format("Key field '%s' in the input record must be a String", conf.getKeyField()),
+                               null)
+            .withConfigProperty(KEY_FIELD);
+        }
       }
     }
 
-    if (inputSchema.getField(conf.getNameField()) == null) {
-      collector.addFailure(String.format("Name field '%s' does not exist in input schema", conf.getNameField()),
-                           null)
-        .withConfigProperty(NAME_FIELD);
+    if (conf.containsMacro(RowDenormalizerConfig.NAME_FIELD)) {
+      canSetOutputSchema = false;
     } else {
-      Schema nameFieldSchema = inputSchema.getField(conf.getNameField()).getSchema();
-
-      if (!((nameFieldSchema.isNullable() ? nameFieldSchema.getNonNullable().getType() : nameFieldSchema
-              .getType()).equals(Schema.Type.STRING))) {
-        collector.addFailure(String.format("Name field '%s' in the input record must be a String", conf.getNameField()),
+      if (inputSchema.getField(conf.getNameField()) == null) {
+        collector.addFailure(String.format("Name field '%s' does not exist in input schema", conf.getNameField()),
                              null)
           .withConfigProperty(NAME_FIELD);
+      } else {
+        Schema nameFieldSchema = inputSchema.getField(conf.getNameField()).getSchema();
+
+        if (!((nameFieldSchema.isNullable() ? nameFieldSchema.getNonNullable().getType() :
+          nameFieldSchema.getType()).equals(Schema.Type.STRING))) {
+          collector.addFailure(String.format("Name field '%s' in the input record must be a String",
+                               conf.getNameField()), null)
+            .withConfigProperty(NAME_FIELD);
+        }
       }
     }
 
-    if (inputSchema.getField(conf.getValueField()) == null) {
-      collector.addFailure(String.format("Value field '%s' does not exist in input schema", conf.getValueField()),
-                           null)
-        .withConfigProperty(VALUE_FIELD);
+    if (conf.containsMacro(RowDenormalizerConfig.VALUE_FIELD)) {
+      canSetOutputSchema = false;
     } else {
-      Schema valueFieldSchema = inputSchema.getField(conf.getValueField()).getSchema();
-
-      if (!((valueFieldSchema.isNullable() ? valueFieldSchema.getNonNullable().getType() : valueFieldSchema
-              .getType()).equals(Schema.Type.STRING))) {
-        collector.addFailure(String.format("Value field '%s' in the input record must a String", conf.getValueField()),
+      if (inputSchema.getField(conf.getValueField()) == null) {
+        collector.addFailure(String.format("Value field '%s' does not exist in input schema", conf.getValueField()),
                              null)
           .withConfigProperty(VALUE_FIELD);
+      } else {
+        Schema valueFieldSchema = inputSchema.getField(conf.getValueField()).getSchema();
+
+        if (!((valueFieldSchema.isNullable() ? valueFieldSchema.getNonNullable().getType() : valueFieldSchema
+          .getType()).equals(Schema.Type.STRING))) {
+          collector.addFailure(String.format("Value field '%s' in the input record must a String",
+                               conf.getValueField()), null)
+            .withConfigProperty(VALUE_FIELD);
+        }
       }
     }
 
+    if (conf.containsMacro(RowDenormalizerConfig.OUTPUT_FIELDS)) {
+      canSetOutputSchema = false;
+    }
+
+    return canSetOutputSchema;
   }
 }
