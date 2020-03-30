@@ -120,7 +120,7 @@ public class CombineTextInputFormat extends CombineFileInputFormat<NullWritable,
 
     public WrapperReader(CombineFileSplit split, TaskAttemptContext context,
                          Integer idx) throws IOException, InterruptedException {
-      super(new PathTrackingTextInputFormat(), split, context, idx);
+      super(new PathTrackingTextInputFormat(idx != 0), split, context, idx);
     }
   }
 }
