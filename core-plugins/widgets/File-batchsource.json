@@ -49,22 +49,19 @@
           }
         },
         {
-          "widget-type": "radio-group",
-          "name": "splitQuotes",
-          "label": "Split Quotes",
+          "widget-type": "toggle",
+          "name": "enableQuotedValues",
+          "label": "Enable Quoted Values",
           "widget-attributes": {
-            "layout": "inline",
-            "default": "true",
-            "options": [
-              {
-                "id": "true",
-                "label": "True"
-              },
-              {
-                "id": "false",
-                "label": "False"
-              }
-            ]
+            "default": "false",
+            "on": {
+              "value": "true",
+              "label": "True"
+            },
+            "off": {
+              "value": "false",
+              "label": "False"
+            }
           }
         }
       ]

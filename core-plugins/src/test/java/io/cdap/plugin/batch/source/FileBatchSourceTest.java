@@ -526,7 +526,7 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
     testReadDelimitedText(FileFormat.DELIMITED.name(), "\u0001", true);
   }
 
-  private void testReadDelimitedText(String format, String delimiter, boolean splitQuotes) throws Exception {
+  private void testReadDelimitedText(String format, String delimiter, boolean enableQuotedValues) throws Exception {
     File fileText = new File(temporaryFolder.newFolder(), "test.txt");
     String outputDatasetName = UUID.randomUUID().toString();
 
@@ -539,7 +539,7 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
 
     String appName = UUID.randomUUID().toString();
     ApplicationManager appManager = createSourceAndDeployApp(appName, fileText, format, outputDatasetName, schema,
-                                                             splitQuotes, delimiter);
+                                                             enableQuotedValues, delimiter);
 
     String join = Joiner.on(delimiter).join(new String[] {"\"a", "b", "c\""});
     String inputStr = new StringBuilder()
@@ -556,9 +556,9 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
         .set("file", fileText.toURI().toString()).build();
     Set<StructuredRecord> expected = ImmutableSet.of(
       StructuredRecord.builder(schema).set("id", 0L).set("file", fileText.toURI().toString()).build(),
-      splitQuotes ? split :
-        StructuredRecord.builder(schema).set("id", 1L).set("val1", join).set("file",
-                                                                             fileText.toURI().toString()).build(),
+      enableQuotedValues ? split :
+        StructuredRecord.builder(schema).set("id", 1L).set("val1", join.substring(1, join.length() - 1))
+          .set("file", fileText.toURI().toString()).build(),
       StructuredRecord.builder(schema).set("id", 2L).set("val1", "sam").set("file", fileText.toURI().toString()).build()
     );
 
@@ -899,12 +899,12 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
 
   private ApplicationManager createSourceAndDeployApp(String appName, File file, String format,
                                                       String outputDatasetName, Schema schema) throws Exception {
-    return createSourceAndDeployApp(appName, file, format, outputDatasetName, schema, true, null);
+    return createSourceAndDeployApp(appName, file, format, outputDatasetName, schema, false, null);
   }
 
   private ApplicationManager createSourceAndDeployApp(String appName, File file, String format,
                                                       String outputDatasetName, Schema schema,
-                                                      boolean splitQuotes,
+                                                      boolean enableQuotedValues,
                                                       @Nullable String delimiter) throws Exception {
 
     ImmutableMap.Builder<String, String> sourceProperties = ImmutableMap.<String, String>builder()
@@ -913,7 +913,7 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
       .put(Properties.File.FORMAT, format)
       .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
       .put("pathField", "file")
-      .put("splitQuotes", String.valueOf(splitQuotes));
+      .put("enableQuotedValues", String.valueOf(enableQuotedValues));
     if (delimiter != null) {
       sourceProperties.put("delimiter", delimiter);
     }

@@ -31,23 +31,22 @@ import javax.annotation.Nullable;
  */
 public class DelimitedConfig extends PathTrackingConfig {
   public static final Map<String, PluginPropertyField> DELIMITED_FIELDS;
-  private static final String SPLIT_QUOTES_DESC =
-    "Whether to split the content between quotes. This value will only be used if the format is 'csv', 'tsv' " +
-      "or 'delimited'. Default value is true.";
+  private static final String ENABLE_QUOTES_DESC = "Whether to treat content between quotes as a value. " +
+                                                     "Default value is false.";
 
   static {
     Map<String, PluginPropertyField> fields = new HashMap<>(FIELDS);
-    fields.put("splitQuotes", new PluginPropertyField("filenameOnly", SPLIT_QUOTES_DESC,
-                                                      "boolean", false, true));
+    fields.put("enableQuotedValues", new PluginPropertyField("filenameOnly", ENABLE_QUOTES_DESC,
+                                                             "boolean", false, true));
     DELIMITED_FIELDS = Collections.unmodifiableMap(fields);
   }
 
   @Macro
   @Nullable
-  @Description(SPLIT_QUOTES_DESC)
-  protected Boolean splitQuotes;
+  @Description(ENABLE_QUOTES_DESC)
+  protected Boolean enableQuotedValues;
 
-  boolean getSplitQuotes() {
-    return splitQuotes == null ? true : splitQuotes;
+  boolean getEnableQuotedValues() {
+    return enableQuotedValues == null ? false : enableQuotedValues;
   }
 }

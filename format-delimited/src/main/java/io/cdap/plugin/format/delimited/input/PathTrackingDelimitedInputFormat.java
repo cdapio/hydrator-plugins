@@ -39,7 +39,7 @@ import javax.annotation.Nullable;
  */
 public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
   static final String DELIMITER = "delimiter";
-  static final String SPLIT_QUOTES = "split_quotes";
+  static final String ENABLE_QUOTES_VALUE = "enable_quotes_value";
 
   @Override
   protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(FileSplit split,
@@ -48,11 +48,13 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
                                                                                     @Nullable Schema schema) {
 
     RecordReader<LongWritable, Text> delegate = (new TextInputFormat()).createRecordReader(split, context);
-    String delimiter = context.getConfiguration().get(DELIMITER);
-    if (!context.getConfiguration().getBoolean(SPLIT_QUOTES, true)) {
-      delimiter = String.format("%s(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", delimiter);
+    String delimeter = context.getConfiguration().get(DELIMITER);
+    String regex = delimeter;
+    boolean enableQuotesValue = context.getConfiguration().getBoolean(ENABLE_QUOTES_VALUE, false);
+    if (enableQuotesValue) {
+      regex = String.format("%s(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", regex);
     }
-    Pattern pattern = Pattern.compile(delimiter);
+    Pattern pattern = Pattern.compile(regex);
 
     return new RecordReader<NullWritable, StructuredRecord.Builder>() {
 
@@ -80,7 +82,7 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
 
         for (String part : Splitter.on(pattern).split(delimitedString)) {
           if (!fields.hasNext()) {
-            int numDataFields = delimitedString.split(pattern.pattern()).length;
+            int numDataFields = delimitedString.split(pattern.pattern()).length + 1;
             int numSchemaFields = schema.getFields().size();
             String message = String.format("Found a row with %d fields when the schema only contains %d field%s.",
                                            numDataFields, numSchemaFields, numSchemaFields == 1 ? "" : "s");
@@ -94,12 +96,19 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
                 throw new IOException(message + " Did you mean to use the 'text' format?");
               }
             }
+            if (!enableQuotesValue && delimitedString.contains("\"")) {
+              message += " Check if quoted values should be allowed.";
+            }
             throw new IOException(message + " Check that the schema contains the right number of fields.");
           }
 
           if (part.isEmpty()) {
             builder.set(fields.next().getName(), null);
           } else {
+            // if this part contains the original delimeter, remove the quotes
+            if (enableQuotesValue && part.contains(delimeter)) {
+              part = part.replaceAll("^\"|\"$", "");
+            }
             builder.convertAndSet(fields.next().getName(), part);
           }
         }

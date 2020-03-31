@@ -26,7 +26,6 @@ import io.cdap.cdap.api.plugin.PluginPropertyField;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.validation.FormatContext;
 import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
-import io.cdap.plugin.format.input.PathTrackingConfig;
 import io.cdap.plugin.format.input.PathTrackingInputFormatProvider;
 
 import java.util.HashMap;
@@ -75,7 +74,7 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
   @Override
   protected void addFormatProperties(Map<String, String> properties) {
     properties.put(PathTrackingDelimitedInputFormat.DELIMITER, conf.delimiter == null ? "," : conf.delimiter);
-    properties.put(PathTrackingDelimitedInputFormat.SPLIT_QUOTES, String.valueOf(conf.getSplitQuotes()));
+    properties.put(PathTrackingDelimitedInputFormat.ENABLE_QUOTES_VALUE, String.valueOf(conf.getEnableQuotedValues()));
   }
 
   /**
