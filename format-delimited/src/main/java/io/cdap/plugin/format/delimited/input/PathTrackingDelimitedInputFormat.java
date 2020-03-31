@@ -31,6 +31,7 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -38,6 +39,7 @@ import javax.annotation.Nullable;
  */
 public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
   static final String DELIMITER = "delimiter";
+  static final String SPLIT_QUOTES = "split_quotes";
 
   @Override
   protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(FileSplit split,
@@ -47,6 +49,10 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
 
     RecordReader<LongWritable, Text> delegate = (new TextInputFormat()).createRecordReader(split, context);
     String delimiter = context.getConfiguration().get(DELIMITER);
+    if (!context.getConfiguration().getBoolean(SPLIT_QUOTES, true)) {
+      delimiter = String.format("%s(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", delimiter);
+    }
+    Pattern pattern = Pattern.compile(delimiter);
 
     return new RecordReader<NullWritable, StructuredRecord.Builder>() {
 
@@ -72,9 +78,9 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
         StructuredRecord.Builder builder = StructuredRecord.builder(schema);
         Iterator<Schema.Field> fields = schema.getFields().iterator();
 
-        for (String part : Splitter.on(delimiter).split(delimitedString)) {
+        for (String part : Splitter.on(pattern).split(delimitedString)) {
           if (!fields.hasNext()) {
-            int numDataFields = delimitedString.split(delimiter).length;
+            int numDataFields = delimitedString.split(pattern.pattern()).length;
             int numSchemaFields = schema.getFields().size();
             String message = String.format("Found a row with %d fields when the schema only contains %d field%s.",
                                            numDataFields, numSchemaFields, numSchemaFields == 1 ? "" : "s");

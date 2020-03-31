@@ -47,6 +47,25 @@
           "widget-attributes": {
             "placeholder": "Delimiter if the format is 'delimited'"
           }
+        },
+        {
+          "widget-type": "radio-group",
+          "name": "splitQuotes",
+          "label": "Split Quotes",
+          "widget-attributes": {
+            "layout": "inline",
+            "default": "true",
+            "options": [
+              {
+                "id": "true",
+                "label": "True"
+              },
+              {
+                "id": "false",
+                "label": "False"
+              }
+            ]
+          }
         }
       ]
     },

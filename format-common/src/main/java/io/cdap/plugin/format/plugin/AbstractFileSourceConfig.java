@@ -94,6 +94,12 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
     + "is anything other than 'delimited'.")
   private String delimiter;
 
+  @Macro
+  @Nullable
+  @Description("Whether to split the content between quotes. This value will only be used if the format is 'csv', " +
+                 "'tsv' or 'delimited'. Default value is true.")
+  protected Boolean splitQuotes;
+
   // this is a hidden property that only exists for wrangler's parse-as-csv that uses the header as the schema
   // when this is true and the format is text, the header will be the first record returned by every record reader
   @Nullable

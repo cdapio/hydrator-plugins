@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.batch.source;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -68,6 +69,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -508,45 +510,56 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
 
   @Test
   public void testReadCSV() throws Exception {
-    testReadDelimitedText(FileFormat.CSV.name(), ",");
+    testReadDelimitedText(FileFormat.CSV.name(), ",", false);
+    testReadDelimitedText(FileFormat.CSV.name(), ",", true);
   }
 
   @Test
   public void testReadTSV() throws Exception {
-    testReadDelimitedText(FileFormat.TSV.name(), "\t");
+    testReadDelimitedText(FileFormat.TSV.name(), "\t", false);
+    testReadDelimitedText(FileFormat.TSV.name(), "\t", true);
   }
 
   @Test
   public void testReadDelimited() throws Exception {
-    testReadDelimitedText(FileFormat.DELIMITED.name(), "\u0001");
+    testReadDelimitedText(FileFormat.DELIMITED.name(), "\u0001", false);
+    testReadDelimitedText(FileFormat.DELIMITED.name(), "\u0001", true);
   }
 
-  private void testReadDelimitedText(String format, String delimiter) throws Exception {
+  private void testReadDelimitedText(String format, String delimiter, boolean splitQuotes) throws Exception {
     File fileText = new File(temporaryFolder.newFolder(), "test.txt");
     String outputDatasetName = UUID.randomUUID().toString();
 
     Schema schema = Schema.recordOf("user",
                                     Schema.Field.of("id", Schema.of(Schema.Type.LONG)),
-                                    Schema.Field.of("name", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                                    Schema.Field.of("val1", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                                    Schema.Field.of("val2", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                                    Schema.Field.of("val3", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
                                     Schema.Field.of("file", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
 
     String appName = UUID.randomUUID().toString();
     ApplicationManager appManager = createSourceAndDeployApp(appName, fileText, format, outputDatasetName, schema,
-                                                             delimiter);
+                                                             splitQuotes, delimiter);
 
+    String join = Joiner.on(delimiter).join(new String[] {"\"a", "b", "c\""});
     String inputStr = new StringBuilder()
       .append("0").append("\n")
-      .append("1").append(delimiter).append("\n")
+      .append("1").append(delimiter).append(join).append("\n")
       .append("2").append(delimiter).append("sam\n").toString();
     FileUtils.writeStringToFile(fileText, inputStr);
 
     appManager.getWorkflowManager(SmartWorkflow.NAME)
       .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
+    StructuredRecord split =
+      StructuredRecord.builder(schema).set("id", 1L).set("val1", "\"a").set("val2", "b").set("val3", "c\"")
+        .set("file", fileText.toURI().toString()).build();
     Set<StructuredRecord> expected = ImmutableSet.of(
       StructuredRecord.builder(schema).set("id", 0L).set("file", fileText.toURI().toString()).build(),
-      StructuredRecord.builder(schema).set("id", 1L).set("file", fileText.toURI().toString()).build(),
-      StructuredRecord.builder(schema).set("id", 2L).set("name", "sam").set("file", fileText.toURI().toString()).build()
+      splitQuotes ? split :
+        StructuredRecord.builder(schema).set("id", 1L).set("val1", join).set("file",
+                                                                             fileText.toURI().toString()).build(),
+      StructuredRecord.builder(schema).set("id", 2L).set("val1", "sam").set("file", fileText.toURI().toString()).build()
     );
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
@@ -886,11 +899,12 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
 
   private ApplicationManager createSourceAndDeployApp(String appName, File file, String format,
                                                       String outputDatasetName, Schema schema) throws Exception {
-    return createSourceAndDeployApp(appName, file, format, outputDatasetName, schema, null);
+    return createSourceAndDeployApp(appName, file, format, outputDatasetName, schema, true, null);
   }
 
   private ApplicationManager createSourceAndDeployApp(String appName, File file, String format,
                                                       String outputDatasetName, Schema schema,
+                                                      boolean splitQuotes,
                                                       @Nullable String delimiter) throws Exception {
 
     ImmutableMap.Builder<String, String> sourceProperties = ImmutableMap.<String, String>builder()
@@ -898,7 +912,8 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
       .put(Properties.File.PATH, file.getAbsolutePath())
       .put(Properties.File.FORMAT, format)
       .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
-      .put("pathField", "file");
+      .put("pathField", "file")
+      .put("splitQuotes", String.valueOf(splitQuotes));
     if (delimiter != null) {
       sourceProperties.put("delimiter", delimiter);
     }

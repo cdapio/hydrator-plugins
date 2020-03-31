@@ -35,15 +35,17 @@ import java.util.Map;
 @Plugin(type = ValidatingInputFormat.PLUGIN_TYPE)
 @Name(TSVInputFormatProvider.NAME)
 @Description(TSVInputFormatProvider.DESC)
-public class TSVInputFormatProvider extends PathTrackingInputFormatProvider<PathTrackingConfig> {
+public class TSVInputFormatProvider extends PathTrackingInputFormatProvider<DelimitedConfig> {
   static final String NAME = "tsv";
   static final String DESC = "Plugin for reading files in tsv format.";
   public static final PluginClass PLUGIN_CLASS =
     new PluginClass(ValidatingInputFormat.PLUGIN_TYPE, NAME, DESC, TSVInputFormatProvider.class.getName(),
-                    "conf", PathTrackingConfig.FIELDS);
+                    "conf", DelimitedConfig.DELIMITED_FIELDS);
+  private final DelimitedConfig conf;
 
-  public TSVInputFormatProvider(PathTrackingConfig conf) {
+  public TSVInputFormatProvider(DelimitedConfig conf) {
     super(conf);
+    this.conf = conf;
   }
 
   @Override
@@ -71,5 +73,6 @@ public class TSVInputFormatProvider extends PathTrackingInputFormatProvider<Path
   @Override
   protected void addFormatProperties(Map<String, String> properties) {
     properties.put(PathTrackingDelimitedInputFormat.DELIMITER, "\t");
+    properties.put(PathTrackingDelimitedInputFormat.SPLIT_QUOTES, String.valueOf(conf.getSplitQuotes()));
   }
 }

@@ -35,15 +35,17 @@ import java.util.Map;
 @Plugin(type = ValidatingInputFormat.PLUGIN_TYPE)
 @Name(CSVInputFormatProvider.NAME)
 @Description(CSVInputFormatProvider.DESC)
-public class CSVInputFormatProvider extends PathTrackingInputFormatProvider<PathTrackingConfig> {
+public class CSVInputFormatProvider extends PathTrackingInputFormatProvider<DelimitedConfig> {
   static final String NAME = "csv";
   static final String DESC = "Plugin for reading files in csv format.";
   public static final PluginClass PLUGIN_CLASS =
     new PluginClass(ValidatingInputFormat.PLUGIN_TYPE, NAME, DESC, CSVInputFormatProvider.class.getName(),
-                    "conf", PathTrackingConfig.FIELDS);
+                    "conf", DelimitedConfig.DELIMITED_FIELDS);
+  private final DelimitedConfig conf;
 
-  public CSVInputFormatProvider(PathTrackingConfig conf) {
+  public CSVInputFormatProvider(DelimitedConfig conf) {
     super(conf);
+    this.conf = conf;
   }
 
   @Override
@@ -71,5 +73,6 @@ public class CSVInputFormatProvider extends PathTrackingInputFormatProvider<Path
   @Override
   protected void addFormatProperties(Map<String, String> properties) {
     properties.put(PathTrackingDelimitedInputFormat.DELIMITER, ",");
+    properties.put(PathTrackingDelimitedInputFormat.SPLIT_QUOTES, String.valueOf(conf.getSplitQuotes()));
   }
 }
