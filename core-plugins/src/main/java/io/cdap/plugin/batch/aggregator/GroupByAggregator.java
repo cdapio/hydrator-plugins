@@ -47,7 +47,8 @@ import java.util.Map;
 @Plugin(type = BatchAggregator.PLUGIN_TYPE)
 @Name("GroupByAggregate")
 @Description("Groups by one or more fields, then performs one or more aggregate functions on each group. " +
-  "Supports avg, count, count(*), first, last, max, min, and sum as aggregate functions.")
+  "Supports `Average`, `Count`, `First`, `Last`, `Max`, `Min`,`Sum`,`Collect List`,`Collect Set`, " +
+  "`Standard Deviation`, `Variance`, `Count Distinct` as aggregate functions.")
 public class GroupByAggregator extends RecordAggregator {
   private final GroupByConfig conf;
   private final HashMap<String, String> functionNameMap = new HashMap<String, String>() {{

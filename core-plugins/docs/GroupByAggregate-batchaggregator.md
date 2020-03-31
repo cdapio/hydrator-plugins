@@ -4,7 +4,8 @@
 Description
 -----------
 Groups by one or more fields, then performs one or more aggregate functions on each group.
-Supports `avg`, `count`, `count(*)`, `first`, `last`, `max`, `min`,`sum`,`collectList`,`collectSet` as aggregate functions.
+Supports `Average`, `Count`, `First`, `Last`, `Max`, `Min`,`Sum`,`Collect List`,`Collect Set`, 
+`Standard Deviation`, `Variance`, `Count Distinct` as aggregate functions.
 
 Use Case
 --------

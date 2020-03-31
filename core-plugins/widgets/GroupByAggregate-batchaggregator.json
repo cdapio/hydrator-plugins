@@ -41,12 +41,24 @@
               "Last",
               "Max",
               "Min",
-              "Stddev",
+              {
+                "label": "Standard Deviation",
+                "value": "Stddev"
+              },
               "Sum",
               "Variance",
-              "CollectList",
-              "CollectSet",
-              "CountDistinct"
+              {
+                "label": "Collect List",
+                "value": "CollectList"
+              },
+              {
+                "label": "Collect Set",
+                "value": "CollectSet"
+              },
+              {
+                "label": "Count Distinct",
+                "value": "CountDistinct"
+              }
             ]
           }
         },
