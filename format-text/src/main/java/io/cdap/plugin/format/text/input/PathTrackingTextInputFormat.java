@@ -51,7 +51,7 @@ public class PathTrackingTextInputFormat extends PathTrackingInputFormat {
                                                                                     TaskAttemptContext context,
                                                                                     @Nullable String pathField,
                                                                                     Schema schema) {
-    RecordReader<LongWritable, Text> delegate = (new TextInputFormat()).createRecordReader(split, context);
+    RecordReader<LongWritable, Text> delegate = (new TextInputFormat()).  createRecordReader(split, context);
     String header = context.getConfiguration().get(CombineTextInputFormat.HEADER);
     return new TextRecordReader(delegate, schema, emittedHeader, header);
   }

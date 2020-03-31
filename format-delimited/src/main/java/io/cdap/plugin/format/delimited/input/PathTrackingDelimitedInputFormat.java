@@ -106,7 +106,7 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
             builder.set(fields.next().getName(), null);
           } else {
             // if this part contains the original delimeter, remove the quotes
-            if (enableQuotesValue && part.contains(delimeter)) {
+            if (enableQuotesValue && part.contains("\"")) {
               part = part.replaceAll("^\"|\"$", "");
             }
             builder.convertAndSet(fields.next().getName(), part);

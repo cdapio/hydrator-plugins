@@ -541,7 +541,7 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
     ApplicationManager appManager = createSourceAndDeployApp(appName, fileText, format, outputDatasetName, schema,
                                                              enableQuotedValues, delimiter);
 
-    String join = Joiner.on(delimiter).join(new String[] {"\"a", "b", "c\""});
+    String join = Joiner.on(delimiter).join(new String[] {"\"a", "b", "c\"", "\"d", "e\""});
     String inputStr = new StringBuilder()
       .append("0").append("\n")
       .append("1").append(delimiter).append(join).append("\n")
