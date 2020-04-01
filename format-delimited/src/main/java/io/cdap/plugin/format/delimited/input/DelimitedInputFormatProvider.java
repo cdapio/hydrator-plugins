@@ -26,7 +26,6 @@ import io.cdap.cdap.api.plugin.PluginPropertyField;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.validation.FormatContext;
 import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
-import io.cdap.plugin.format.input.PathTrackingConfig;
 import io.cdap.plugin.format.input.PathTrackingInputFormatProvider;
 
 import java.util.HashMap;
@@ -70,18 +69,28 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
       collector.addFailure("Delimited format cannot be used without specifying a schema.",
                            "Schema must be specified.").withConfigProperty("schema");
     }
+    if (conf.containsMacro(DelimitedConfig.ENABLE_QUOTES_VALUES) || conf.containsMacro(Conf.DELIMITER)) {
+      return;
+    }
+
+    if (conf.getEnableQuotedValues() && conf.delimiter != null && conf.delimiter.contains("\"")) {
+      throw new IllegalArgumentException(
+        String.format("The delimeter %s cannot contain \" when quotes are enabled as value.", conf.delimiter));
+    }
   }
 
   @Override
   protected void addFormatProperties(Map<String, String> properties) {
     properties.put(PathTrackingDelimitedInputFormat.DELIMITER, conf.delimiter == null ? "," : conf.delimiter);
     properties.put(PathTrackingDelimitedInputFormat.SKIP_HEADER, String.valueOf(conf.getSkipHeader()));
+    properties.put(PathTrackingDelimitedInputFormat.ENABLE_QUOTES_VALUE, String.valueOf(conf.getEnableQuotedValues()));
   }
 
   /**
    * Plugin config for delimited input format
    */
   public static class Conf extends DelimitedConfig {
+    private static final String DELIMITER = "delimiter";
     private static final String DELIMITER_DESC = "Delimiter to use to separate record fields.";
 
     @Macro
