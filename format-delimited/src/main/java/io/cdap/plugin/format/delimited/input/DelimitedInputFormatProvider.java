@@ -26,7 +26,6 @@ import io.cdap.cdap.api.plugin.PluginPropertyField;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.validation.FormatContext;
 import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
-import io.cdap.plugin.format.input.PathTrackingConfig;
 import io.cdap.plugin.format.input.PathTrackingInputFormatProvider;
 
 import java.util.HashMap;
@@ -75,12 +74,14 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
   @Override
   protected void addFormatProperties(Map<String, String> properties) {
     properties.put(PathTrackingDelimitedInputFormat.DELIMITER, conf.delimiter == null ? "," : conf.delimiter);
+    properties.put(PathTrackingDelimitedInputFormat.SKIP_HEADER, String.valueOf(conf.getSkipHeader()));
+    properties.put(PathTrackingDelimitedInputFormat.CLEANSE_QUOTES_VALUE, String.valueOf(conf.getCleanseQuotes()));
   }
 
   /**
    * Plugin config for delimited input format
    */
-  public static class Conf extends PathTrackingConfig {
+  public static class Conf extends DelimitedConfig {
     private static final String DELIMITER_DESC = "Delimiter to use to separate record fields.";
 
     @Macro
@@ -90,7 +91,7 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
   }
 
   private static PluginClass getPluginClass() {
-    Map<String, PluginPropertyField> properties = new HashMap<>(PathTrackingConfig.FIELDS);
+    Map<String, PluginPropertyField> properties = new HashMap<>(DelimitedConfig.DELIMITED_FIELDS);
     properties.put("delimiter", new PluginPropertyField("delimiter", Conf.DELIMITER_DESC, "string", false, true));
     return new PluginClass(ValidatingInputFormat.PLUGIN_TYPE, NAME, DESC, DelimitedInputFormatProvider.class.getName(),
                            "conf", properties);

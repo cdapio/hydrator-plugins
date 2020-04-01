@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.format.delimited.input;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
@@ -30,7 +31,10 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
+import java.util.TreeMap;
 import javax.annotation.Nullable;
 
 /**
@@ -38,6 +42,8 @@ import javax.annotation.Nullable;
  */
 public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
   static final String DELIMITER = "delimiter";
+  static final String SKIP_HEADER = "skip_header";
+  static final String CLEANSE_QUOTES_VALUE = "cleanse_quotes_value";
 
   @Override
   protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(FileSplit split,
@@ -46,8 +52,15 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
                                                                                     @Nullable Schema schema) {
 
     RecordReader<LongWritable, Text> delegate = (new TextInputFormat()).createRecordReader(split, context);
-    String delimiter = context.getConfiguration().get(DELIMITER);
+    boolean skipHeader = context.getConfiguration().getBoolean(SKIP_HEADER, false);
 
+    String delimiter = context.getConfiguration().get(DELIMITER);
+    boolean cleanseQuotes = context.getConfiguration().getBoolean(CLEANSE_QUOTES_VALUE, false);
+
+//    if (cleanseQuotes && delimiter.contains("\"")) {
+//      throw new IllegalArgumentException(
+//        String.format("The delimeter %s cannot contain \" when quotes are enabled as value.", delimiter));
+//    }
     return new RecordReader<NullWritable, StructuredRecord.Builder>() {
 
       @Override
@@ -57,7 +70,14 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
 
       @Override
       public boolean nextKeyValue() throws IOException, InterruptedException {
-        return delegate.nextKeyValue();
+        if (delegate.nextKeyValue()) {
+          // skip to next if the current record is header
+          if (skipHeader && delegate.getCurrentKey().get() == 0L) {
+            return delegate.nextKeyValue();
+          }
+          return true;
+        }
+        return false;
       }
 
       @Override
@@ -68,13 +88,16 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
       @Override
       public StructuredRecord.Builder getCurrentValue() throws IOException, InterruptedException {
         String delimitedString = delegate.getCurrentValue().toString();
+        if (cleanseQuotes) {
+          delimitedString = delimitedString.replaceAll("\"", "");
+        }
 
         StructuredRecord.Builder builder = StructuredRecord.builder(schema);
         Iterator<Schema.Field> fields = schema.getFields().iterator();
 
         for (String part : Splitter.on(delimiter).split(delimitedString)) {
           if (!fields.hasNext()) {
-            int numDataFields = delimitedString.split(delimiter).length;
+            int numDataFields = delimitedString.split(delimiter).length + 1;
             int numSchemaFields = schema.getFields().size();
             String message = String.format("Found a row with %d fields when the schema only contains %d field%s.",
                                            numDataFields, numSchemaFields, numSchemaFields == 1 ? "" : "s");
@@ -88,12 +111,19 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
                 throw new IOException(message + " Did you mean to use the 'text' format?");
               }
             }
+//            if (!cleanseQuotes && delimitedString.contains("\"")) {
+//              message += " Check if quoted values should be allowed.";
+//            }
             throw new IOException(message + " Check that the schema contains the right number of fields.");
           }
 
           if (part.isEmpty()) {
             builder.set(fields.next().getName(), null);
           } else {
+            // if this part contains the original delimeter, remove the quotes
+//            if (cleanseQuotes && part.contains("\"")) {
+//              part = part.replaceAll("^\"|\"$", "");
+//            }
             builder.convertAndSet(fields.next().getName(), part);
           }
         }
@@ -110,5 +140,54 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
         delegate.close();
       }
     };
+  }
+
+  @VisibleForTesting
+  static List<String> splitQuotesString(String delimitedString, String delimiter) {
+    TreeMap<Integer, Integer> quotesPos = new TreeMap<>();
+    int firstQuotePos = -1;
+    for (int i = 0; i < delimitedString.length(); i++) {
+      if (delimitedString.charAt(i) == '\"') {
+        if (firstQuotePos != -1) {
+          quotesPos.put(i, firstQuotePos);
+          quotesPos.put(firstQuotePos, i);
+          firstQuotePos = -1;
+        } else {
+          firstQuotePos = i;
+        }
+      }
+    }
+
+    List<String> result = new ArrayList<>();
+    StringBuilder split = new StringBuilder();
+    for (int i = 0; i < delimitedString.length(); i++) {
+      if (i + delimiter.length() > delimitedString.length()) {
+        split.append(delimitedString.charAt(i));
+      } else {
+        if (delimitedString.substring(i, i + delimiter.length()).equals(delimiter)) {
+          Integer prevQuotePos = quotesPos.floorKey(i);
+          Integer nextQuotePos = quotesPos.ceilingKey(i);
+          if (prevQuotePos != null && nextQuotePos != null && quotesPos.get(prevQuotePos).equals(nextQuotePos)) {
+            split.append(delimitedString.charAt(i));
+          } else {
+            result.add(trimQuotes(split.toString()));
+            i = i + delimiter.length() - 1;
+            split = new StringBuilder();
+          }
+        } else {
+          split.append(delimitedString.charAt(i));
+        }
+      }
+    }
+
+    result.add(trimQuotes(split.toString()));
+    return result;
+  }
+
+  private static String trimQuotes(String string) {
+    if (string.length() > 1 && string.charAt(0) == '\"' && string.charAt(string.length() - 1) == '\"') {
+      return string.replaceAll("^\"|\"$", "");
+    }
+    return string;
   }
 }
