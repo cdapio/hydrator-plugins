@@ -45,6 +45,7 @@ import javax.annotation.Nullable;
  */
 public class CombineTextInputFormat extends CombineFileInputFormat<NullWritable, StructuredRecord> {
   static final String HEADER = "combine.path.tracking.header";
+  static final String SKIP_HEADER = "skip_header";
 
   /**
    * Converts the CombineFileSplits derived by CombineFileInputFormat into CombineHeaderFileSplits

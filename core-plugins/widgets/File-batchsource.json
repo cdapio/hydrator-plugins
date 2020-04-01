@@ -47,6 +47,22 @@
           "widget-attributes": {
             "placeholder": "Delimiter if the format is 'delimited'"
           }
+        },
+        {
+          "widget-type": "toggle",
+          "name": "skipHeader",
+          "label": "Skip Header",
+          "widget-attributes": {
+            "default": "false",
+            "on": {
+              "value": "true",
+              "label": "True"
+            },
+            "off": {
+              "value": "false",
+              "label": "False"
+            }
+          }
         }
       ]
     },
