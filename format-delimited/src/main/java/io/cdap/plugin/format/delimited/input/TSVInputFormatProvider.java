@@ -24,7 +24,6 @@ import io.cdap.cdap.api.plugin.PluginClass;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.validation.FormatContext;
 import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
-import io.cdap.plugin.format.input.PathTrackingConfig;
 import io.cdap.plugin.format.input.PathTrackingInputFormatProvider;
 
 import java.util.Map;
@@ -74,5 +73,6 @@ public class TSVInputFormatProvider extends PathTrackingInputFormatProvider<Deli
   protected void addFormatProperties(Map<String, String> properties) {
     properties.put(PathTrackingDelimitedInputFormat.DELIMITER, "\t");
     properties.put(PathTrackingDelimitedInputFormat.SKIP_HEADER, String.valueOf(conf.getSkipHeader()));
+    properties.put(PathTrackingDelimitedInputFormat.ENABLE_QUOTES_VALUE, String.valueOf(conf.getEnableQuotedValues()));
   }
 }

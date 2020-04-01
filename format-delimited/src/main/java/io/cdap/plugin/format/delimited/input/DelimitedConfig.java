@@ -31,13 +31,19 @@ import javax.annotation.Nullable;
  */
 public class DelimitedConfig extends PathTrackingConfig {
   public static final Map<String, PluginPropertyField> DELIMITED_FIELDS;
+  static final String SKIP_HEADER = "skipHeader";
+  static final String ENABLE_QUOTES_VALUES = "enableQuotedValues";
   private static final String SKIP_HEADER_DESC = "Whether to skip the first line of each file. " +
                                                    "Default value is false.";
+  private static final String ENABLE_QUOTES_DESC = "Whether to treat content between quotes as a value. " +
+                                                     "Default value is false.";
 
   static {
     Map<String, PluginPropertyField> fields = new HashMap<>(FIELDS);
     fields.put("skipHeader", new PluginPropertyField("skipHeader", SKIP_HEADER_DESC,
                                                      "boolean", false, true));
+    fields.put("enableQuotedValues", new PluginPropertyField("filenameOnly", ENABLE_QUOTES_DESC,
+                                                             "boolean", false, true));
     DELIMITED_FIELDS = Collections.unmodifiableMap(fields);
   }
 
@@ -46,7 +52,16 @@ public class DelimitedConfig extends PathTrackingConfig {
   @Description(SKIP_HEADER_DESC)
   protected Boolean skipHeader;
 
+  @Macro
+  @Nullable
+  @Description(ENABLE_QUOTES_DESC)
+  protected Boolean enableQuotedValues;
+
   public boolean getSkipHeader() {
     return skipHeader == null ? false : skipHeader;
+  }
+
+  boolean getEnableQuotedValues() {
+    return enableQuotedValues == null ? false : enableQuotedValues;
   }
 }

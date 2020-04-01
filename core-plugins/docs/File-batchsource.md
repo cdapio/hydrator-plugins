@@ -24,6 +24,11 @@ If the format is 'text', the schema must contain a field named 'body' of type 's
 
 **Skip Header** Whether to skip the first line of each file. Supported formats are 'text', 'csv', 'tsv', 'delimited'.
 
+**Enable Quoted Values** Whether to treat content between quotes as a value. This value will only be used if the format
+is 'csv', 'tsv' or 'delimited'. For example, if this is set to true, a line that looks like '1, "a, b, c"' will output two fields.
+The first field will have '1' as its value and the second will have 'a, b, c' as its value.
+The newline delimiter cannot be within quotes and quotes will be trimmed. It also assumes the quotes are well enclosed.
+
 **Maximum Split Size:** Maximum size in bytes for each input partition.
 Smaller partitions will increase the level of parallelism, but will require more resources and overhead.
 The default value is 128MB.
