@@ -160,7 +160,7 @@ public class ETLBatchTestBase extends HydratorTestBase {
                                       DelimitedInputFormatProvider.PLUGIN_CLASS,
                                       CSVOutputFormatProvider.PLUGIN_CLASS, CSVInputFormatProvider.PLUGIN_CLASS,
                                       TSVOutputFormatProvider.PLUGIN_CLASS, TSVInputFormatProvider.PLUGIN_CLASS),
-                      DelimitedOutputFormatProvider.class, DelimitedInputFormatProvider.class);
+                      DelimitedOutputFormatProvider.class);
     addPluginArtifact(NamespaceId.DEFAULT.artifact("formats-json", "4.0.0"), DATAPIPELINE_ARTIFACT_ID,
                       ImmutableSet.of(JsonOutputFormatProvider.PLUGIN_CLASS, JsonInputFormatProvider.PLUGIN_CLASS),
                       JsonOutputFormatProvider.class, JsonInputFormatProvider.class);

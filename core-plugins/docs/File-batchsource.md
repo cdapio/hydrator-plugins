@@ -22,6 +22,8 @@ If the format is 'text', the schema must contain a field named 'body' of type 's
 
 **Delimiter:** Delimiter to use when the format is 'delimited'. This will be ignored for other formats.
 
+**Skip Header** Whether to skip the first line of each file. Supported formats are 'text', 'csv', 'tsv', 'delimited'.
+
 **Maximum Split Size:** Maximum size in bytes for each input partition.
 Smaller partitions will increase the level of parallelism, but will require more resources and overhead.
 The default value is 128MB.
