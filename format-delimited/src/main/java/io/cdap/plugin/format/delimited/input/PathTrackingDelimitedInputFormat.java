@@ -38,6 +38,7 @@ import javax.annotation.Nullable;
  */
 public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
   static final String DELIMITER = "delimiter";
+  static final String SKIP_HEADER = "skip_header";
 
   @Override
   protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(FileSplit split,
@@ -47,6 +48,7 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
 
     RecordReader<LongWritable, Text> delegate = (new TextInputFormat()).createRecordReader(split, context);
     String delimiter = context.getConfiguration().get(DELIMITER);
+    boolean skipHeader = context.getConfiguration().getBoolean(SKIP_HEADER, false);
 
     return new RecordReader<NullWritable, StructuredRecord.Builder>() {
 
@@ -57,7 +59,14 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
 
       @Override
       public boolean nextKeyValue() throws IOException, InterruptedException {
-        return delegate.nextKeyValue();
+        if (delegate.nextKeyValue()) {
+          // skip to next if the current record is header
+          if (skipHeader && delegate.getCurrentKey().get() == 0L) {
+            return delegate.nextKeyValue();
+          }
+          return true;
+        }
+        return false;
       }
 
       @Override
