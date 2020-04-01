@@ -63,7 +63,6 @@ import io.cdap.plugin.format.avro.input.AvroInputFormatProvider;
 import io.cdap.plugin.format.avro.output.AvroOutputFormatProvider;
 import io.cdap.plugin.format.blob.input.BlobInputFormatProvider;
 import io.cdap.plugin.format.delimited.input.CSVInputFormatProvider;
-import io.cdap.plugin.format.delimited.input.DelimitedConfig;
 import io.cdap.plugin.format.delimited.input.DelimitedInputFormatProvider;
 import io.cdap.plugin.format.delimited.input.TSVInputFormatProvider;
 import io.cdap.plugin.format.delimited.output.CSVOutputFormatProvider;

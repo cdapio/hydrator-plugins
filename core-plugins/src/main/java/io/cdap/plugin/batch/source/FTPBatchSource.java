@@ -170,6 +170,11 @@ public class FTPBatchSource extends AbstractFileSource {
       return false;
     }
 
+    @Override
+    public boolean skipHeader() {
+      return false;
+    }
+
     @Nullable
     @Override
     public Schema getSchema() {

@@ -102,6 +102,11 @@ public interface FileSourceProperties {
   boolean useFilenameAsPath();
 
   /**
+   * Whether to skip header for the files
+   */
+  boolean skipHeader();
+
+  /**
    * The output schema if it is known and constant.
    */
   @Nullable

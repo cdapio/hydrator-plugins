@@ -73,5 +73,7 @@ public class TSVInputFormatProvider extends PathTrackingInputFormatProvider<Deli
   protected void addFormatProperties(Map<String, String> properties) {
     properties.put(PathTrackingDelimitedInputFormat.DELIMITER, "\t");
     properties.put(PathTrackingDelimitedInputFormat.ENABLE_QUOTES_VALUE, String.valueOf(conf.getEnableQuotedValues()));
+    properties.put(PathTrackingDelimitedInputFormat.SKIP_HEADER, String.valueOf(conf.getSkipHeader()));
+
   }
 }

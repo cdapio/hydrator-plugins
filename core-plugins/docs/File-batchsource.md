@@ -27,6 +27,8 @@ is 'csv', 'tsv' or 'delimited'. For example, if this is set to true, a line that
 The first field will have '1' as its value and the second will have 'a, b, c' as its value.
 The newline delimiter cannot be within quotes and quotes will be trimmed. It also assumes the quotes are well enclosed.
 
+**Skip Header** Whether to skip header for the files. Supported formats are 'text', 'csv', 'tsv', 'delimited'.
+
 **Maximum Split Size:** Maximum size in bytes for each input partition.
 Smaller partitions will increase the level of parallelism, but will require more resources and overhead.
 The default value is 128MB.

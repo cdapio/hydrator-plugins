@@ -33,11 +33,15 @@ public class DelimitedConfig extends PathTrackingConfig {
   public static final Map<String, PluginPropertyField> DELIMITED_FIELDS;
   private static final String ENABLE_QUOTES_DESC = "Whether to treat content between quotes as a value. " +
                                                      "Default value is false.";
+  private static final String SKIP_HEADER_DESC = "Whether to skip header for the files. " +
+                                                   "Default value is false.";
 
   static {
     Map<String, PluginPropertyField> fields = new HashMap<>(FIELDS);
-    fields.put("enableQuotedValues", new PluginPropertyField("filenameOnly", ENABLE_QUOTES_DESC,
+    fields.put("enableQuotedValues", new PluginPropertyField("enableQuotedValues", ENABLE_QUOTES_DESC,
                                                              "boolean", false, true));
+    fields.put("skipHeader", new PluginPropertyField("skipHeader", SKIP_HEADER_DESC,
+                                                     "boolean", false, true));
     DELIMITED_FIELDS = Collections.unmodifiableMap(fields);
   }
 
@@ -45,6 +49,15 @@ public class DelimitedConfig extends PathTrackingConfig {
   @Nullable
   @Description(ENABLE_QUOTES_DESC)
   protected Boolean enableQuotedValues;
+
+  @Macro
+  @Nullable
+  @Description(SKIP_HEADER_DESC)
+  protected Boolean skipHeader;
+
+  public boolean getSkipHeader() {
+    return skipHeader == null ? false : skipHeader;
+  }
 
   boolean getEnableQuotedValues() {
     return enableQuotedValues == null ? false : enableQuotedValues;

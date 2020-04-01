@@ -40,6 +40,7 @@ import javax.annotation.Nullable;
 public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
   static final String DELIMITER = "delimiter";
   static final String ENABLE_QUOTES_VALUE = "enable_quotes_value";
+  static final String SKIP_HEADER = "skip_header";
 
   @Override
   protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(FileSplit split,
@@ -48,9 +49,9 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
                                                                                     @Nullable Schema schema) {
 
     RecordReader<LongWritable, Text> delegate = (new TextInputFormat()).createRecordReader(split, context);
-    String delimeter = context.getConfiguration().get(DELIMITER);
-    String regex = delimeter;
+    String regex = context.getConfiguration().get(DELIMITER);
     boolean enableQuotesValue = context.getConfiguration().getBoolean(ENABLE_QUOTES_VALUE, false);
+    boolean skipHeader = context.getConfiguration().getBoolean(SKIP_HEADER, false);
     if (enableQuotesValue) {
       regex = String.format("%s(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", regex);
     }
@@ -65,7 +66,14 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
 
       @Override
       public boolean nextKeyValue() throws IOException, InterruptedException {
-        return delegate.nextKeyValue();
+        if (delegate.nextKeyValue()) {
+          // skip to next if the current record is header
+          if (skipHeader && delegate.getCurrentKey().get() == 0L) {
+            return delegate.nextKeyValue();
+          }
+          return true;
+        }
+        return false;
       }
 
       @Override

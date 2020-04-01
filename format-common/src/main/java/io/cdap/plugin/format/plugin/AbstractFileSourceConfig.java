@@ -37,8 +37,7 @@ import javax.annotation.Nullable;
 public abstract class AbstractFileSourceConfig extends PluginConfig implements FileSourceProperties {
   public static final String NAME_FORMAT = "format";
   public static final String NAME_SCHEMA = "schema";
-
-
+  
   @Description("Name be used to uniquely identify this source for lineage, annotating metadata, etc.")
   private String referenceName;
 
@@ -99,6 +98,12 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
   @Description("Whether to treat content between quotes as a value. This value will only be used if the format " +
                  "is 'csv', 'tsv' or 'delimited'. Default value is false.")
   protected Boolean enableQuotedValues;
+
+  @Macro
+  @Nullable
+  @Description("Whether to skip header for the files. Supported formats are 'text', 'csv', 'tsv', 'delimited'. " +
+                 "Default value is false.")
+  private Boolean skipHeader;
 
   // this is a hidden property that only exists for wrangler's parse-as-csv that uses the header as the schema
   // when this is true and the format is text, the header will be the first record returned by every record reader
@@ -185,6 +190,11 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
   @Override
   public boolean useFilenameAsPath() {
     return filenameOnly;
+  }
+
+  @Override
+  public boolean skipHeader() {
+    return skipHeader == null ? false : skipHeader;
   }
 
   @Nullable
