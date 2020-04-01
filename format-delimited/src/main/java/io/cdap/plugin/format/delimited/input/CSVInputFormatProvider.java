@@ -53,7 +53,7 @@ public class CSVInputFormatProvider extends PathTrackingInputFormatProvider<Path
 
   @Override
   protected void validate() {
-    if (conf.getSchema() == null) {
+    if (!conf.containsMacro(PathTrackingConfig.NAME_SCHEMA) && conf.getSchema() == null) {
       throw new IllegalArgumentException("CSV format cannot be used without specifying a schema.");
     }
   }
@@ -62,7 +62,7 @@ public class CSVInputFormatProvider extends PathTrackingInputFormatProvider<Path
   public void validate(FormatContext context) {
     Schema schema = super.getSchema(context);
     FailureCollector collector = context.getFailureCollector();
-    if (schema == null) {
+    if (!conf.containsMacro(PathTrackingConfig.NAME_SCHEMA) && schema == null) {
       collector.addFailure("CSV format cannot be used without specifying a schema.", "Schema must be specified.")
         .withConfigProperty("schema");
     }

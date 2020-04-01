@@ -34,6 +34,7 @@ import javax.annotation.Nullable;
  */
 public class PathTrackingConfig extends PluginConfig {
   public static final Map<String, PluginPropertyField> FIELDS;
+  public static final String NAME_SCHEMA = "schema";
   private static final String SCHEMA_DESC = "Schema of the data to read.";
   private static final String PATH_FIELD_DESC =
     "Output field to place the path of the file that the record was read from. "

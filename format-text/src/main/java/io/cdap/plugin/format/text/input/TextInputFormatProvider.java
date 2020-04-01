@@ -228,7 +228,7 @@ public class TextInputFormatProvider extends PathTrackingInputFormatProvider<Tex
     @Override
     public Schema getSchema() {
       if (containsMacro(NAME_SCHEMA)) {
-        throw new IllegalStateException("schema should not be checked until macros are evaluated.");
+        return null;
       }
       if (schema == null) {
         return getDefaultSchema(pathField);
