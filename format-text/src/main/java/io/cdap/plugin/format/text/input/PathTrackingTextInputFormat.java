@@ -53,7 +53,8 @@ public class PathTrackingTextInputFormat extends PathTrackingInputFormat {
                                                                                     Schema schema) {
     RecordReader<LongWritable, Text> delegate = (new TextInputFormat()).createRecordReader(split, context);
     String header = context.getConfiguration().get(CombineTextInputFormat.HEADER);
-    return new TextRecordReader(delegate, schema, emittedHeader, header);
+    boolean skipHeader = context.getConfiguration().getBoolean(CombineTextInputFormat.SKIP_HEADER, false);
+    return new TextRecordReader(delegate, schema, emittedHeader, header, skipHeader);
   }
 
   /**
@@ -64,15 +65,17 @@ public class PathTrackingTextInputFormat extends PathTrackingInputFormat {
     private final Schema schema;
     private final String header;
     private final boolean setOffset;
+    private final boolean skipHeader;
     private boolean emittedHeader;
 
     TextRecordReader(RecordReader<LongWritable, Text> delegate, Schema schema, boolean emittedHeader,
-                     @Nullable String header) {
+                     @Nullable String header, boolean skipHeader) {
       this.delegate = delegate;
       this.schema = schema;
       this.emittedHeader = emittedHeader;
       this.header = header;
       this.setOffset = schema.getField("offset") != null;
+      this.skipHeader = skipHeader;
     }
 
     @Override
@@ -87,8 +90,8 @@ public class PathTrackingTextInputFormat extends PathTrackingInputFormat {
       }
 
       if (delegate.nextKeyValue()) {
-        // if this record is the actual header and we've already emitted the copied header
-        if (header != null && emittedHeader && delegate.getCurrentKey().get() == 0L) {
+        // if this record is the actual header and we've already emitted the copied header or we want to skip header
+        if ((skipHeader || (header != null && emittedHeader)) && delegate.getCurrentKey().get() == 0L) {
           return delegate.nextKeyValue();
         }
         return true;

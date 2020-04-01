@@ -17,10 +17,12 @@
 package io.cdap.plugin.format.text.input;
 
 import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginClass;
+import io.cdap.cdap.api.plugin.PluginPropertyField;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.validation.FormatContext;
 import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
@@ -29,7 +31,10 @@ import io.cdap.plugin.format.input.PathTrackingInputFormatProvider;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -43,10 +48,13 @@ public class TextInputFormatProvider extends PathTrackingInputFormatProvider<Tex
   static final String DESC = "Plugin for reading files in text format.";
   public static final PluginClass PLUGIN_CLASS =
     new PluginClass(ValidatingInputFormat.PLUGIN_TYPE, NAME, DESC, TextInputFormatProvider.class.getName(),
-                    "conf", PathTrackingConfig.FIELDS);
+                    "conf", TextConfig.TEXT_FIELDS);
+  // this has to be here to be able to instantiate the correct plugin property field
+  private final TextConfig conf;
 
   public TextInputFormatProvider(TextConfig conf) {
     super(conf);
+    this.conf = conf;
   }
 
   @Override
@@ -213,13 +221,39 @@ public class TextInputFormatProvider extends PathTrackingInputFormatProvider<Tex
     return Schema.recordOf("textfile", fields);
   }
 
+  @Override
+  protected void addFormatProperties(Map<String, String> properties) {
+    super.addFormatProperties(properties);
+    properties.put(CombineTextInputFormat.SKIP_HEADER, String.valueOf(conf.getSkipHeader()));
+  }
+
   /**
    * Text plugin config
    */
   public static class TextConfig extends PathTrackingConfig {
+    public static final Map<String, PluginPropertyField> TEXT_FIELDS;
     private static final String NAME_SCHEMA = "schema";
     private static final String NAME_OFFSET = "offset";
     private static final String NAME_BODY = "body";
+
+    private static final String SKIP_HEADER_DESC = "Whether to skip header for the files. " +
+                                                     "Default value is false.";
+
+    static {
+      Map<String, PluginPropertyField> fields = new HashMap<>(FIELDS);
+      fields.put("skipHeader", new PluginPropertyField("skipHeader", SKIP_HEADER_DESC,
+                                                       "boolean", false, true));
+      TEXT_FIELDS = Collections.unmodifiableMap(fields);
+    }
+
+    @Macro
+    @Nullable
+    @Description(SKIP_HEADER_DESC)
+    protected Boolean skipHeader;
+
+    public boolean getSkipHeader() {
+      return skipHeader == null ? false : skipHeader;
+    }
 
     /**
      * Return the configured schema, or the default schema if none was given. Should never be called if the
