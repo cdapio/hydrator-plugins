@@ -83,7 +83,7 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
     Schema schema = null;
     ValidatingInputFormat validatingInputFormat =
       pipelineConfigurer.usePlugin(ValidatingInputFormat.PLUGIN_TYPE, fileFormat.name().toLowerCase(), FORMAT_PLUGIN_ID,
-                                   config.getRawProperties());
+                                   config.getProperties());
     FormatContext context = new FormatContext(collector, null);
     validateInputFormatProvider(context, fileFormat, validatingInputFormat);
 
