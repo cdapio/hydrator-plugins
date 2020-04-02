@@ -26,6 +26,7 @@ import io.cdap.cdap.api.plugin.PluginPropertyField;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.validation.FormatContext;
 import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
+import io.cdap.plugin.format.input.PathTrackingConfig;
 import io.cdap.plugin.format.input.PathTrackingInputFormatProvider;
 
 import java.util.HashMap;
@@ -56,7 +57,7 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
 
   @Override
   protected void validate() {
-    if (conf.getSchema() == null) {
+    if (!conf.containsMacro(PathTrackingConfig.NAME_SCHEMA) && conf.getSchema() == null) {
       throw new IllegalArgumentException("Delimited format cannot be used without specifying a schema.");
     }
   }
@@ -65,7 +66,7 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
   public void validate(FormatContext context) {
     Schema schema = super.getSchema(context);
     FailureCollector collector = context.getFailureCollector();
-    if (schema == null) {
+    if (!conf.containsMacro(PathTrackingConfig.NAME_SCHEMA) && schema == null) {
       collector.addFailure("Delimited format cannot be used without specifying a schema.",
                            "Schema must be specified.").withConfigProperty("schema");
     }
