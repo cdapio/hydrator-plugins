@@ -29,6 +29,8 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,6 +43,7 @@ import javax.annotation.Nullable;
  * Delimited text format that tracks which file each record was read from.
  */
 public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
+  private final Logger LOG = LoggerFactory.getLogger(PathTrackingDelimitedInputFormat.class);
   static final String DELIMITER = "delimiter";
   static final String SKIP_HEADER = "skip_header";
   static final String CLEANSE_QUOTES_VALUE = "cleanse_quotes_value";
@@ -54,6 +57,7 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
     RecordReader<LongWritable, Text> delegate = (new TextInputFormat()).createRecordReader(split, context);
     boolean skipHeader = context.getConfiguration().getBoolean(SKIP_HEADER, false);
 
+    LOG.info("Receved schema: {}", schema);
     String delimiter = context.getConfiguration().get(DELIMITER);
     boolean cleanseQuotes = context.getConfiguration().getBoolean(CLEANSE_QUOTES_VALUE, false);
 
