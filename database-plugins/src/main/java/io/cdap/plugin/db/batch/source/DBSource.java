@@ -106,7 +106,8 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
       pipelineConfigurer.getStageConfigurer().setOutputSchema(configuredSchema);
     } else if (!sourceConfig.containsMacro(DBSourceConfig.IMPORT_QUERY)) {
       try {
-        pipelineConfigurer.getStageConfigurer().setOutputSchema(getSchema(driverClass));
+        pipelineConfigurer.getStageConfigurer().setOutputSchema(getSchema(driverClass, sourceConfig.patternToReplace,
+                                                                          sourceConfig.replaceWith));
       } catch (IllegalAccessException | InstantiationException e) {
         collector.addFailure(String.format("Failed to instantiate JDBC driver: %s", e.getMessage()), null);
       } catch (SQLException e) {
@@ -160,6 +161,12 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     if (sourceConfig.schema != null) {
       hConf.set(DBUtils.OVERRIDE_SCHEMA, sourceConfig.schema);
     }
+    if (sourceConfig.patternToReplace != null) {
+      hConf.set(DBUtils.PATTERN_TO_REPLACE, sourceConfig.patternToReplace);
+    }
+    if (sourceConfig.replaceWith != null) {
+      hConf.set(DBUtils.REPLACE_WITH, sourceConfig.replaceWith);
+    }
     context.setInput(Input.of(sourceConfig.referenceName,
                               new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf)));
 
@@ -191,7 +198,8 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     return String.format("%s.%s.%s", "source", sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName);
   }
 
-  private Schema getSchema(Class<? extends Driver> driverClass)
+  private Schema getSchema(Class<? extends Driver> driverClass, @Nullable String patternToReplace,
+                           @Nullable String replaceWith)
     throws IllegalAccessException, SQLException, InstantiationException {
     DriverCleanup driverCleanup = loadPluginClassAndGetDriver(driverClass);
     try (Connection connection = getConnection()) {
@@ -202,7 +210,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
         query = removeConditionsClause(query);
       }
       ResultSet resultSet = statement.executeQuery(query);
-      return Schema.recordOf("outputSchema", DBUtils.getSchemaFields(resultSet));
+      return Schema.recordOf("outputSchema", DBUtils.getSchemaFields(resultSet, patternToReplace, replaceWith));
     } finally {
       driverCleanup.destroy();
     }
@@ -253,6 +261,8 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     public static final String NUM_SPLITS = "numSplits";
     public static final String SCHEMA = "schema";
     public static final String TRANSACTION_ISOLATION_LEVEL = "transactionIsolationLevel";
+    public static final String PATTERN_TO_REPLACE = "patternToReplace";
+    public static final String REPLACE_WITH = "replaceWith";
 
     @Name(IMPORT_QUERY)
     @Description("The SELECT query to use to import data from the specified table. " +
@@ -302,6 +312,18 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     String schema;
 
     @Nullable
+    @Name(PATTERN_TO_REPLACE)
+    @Description("The pattern to replace in the field name in the table, it is typically used with the " +
+                   "Replace With config. If Replace With is not set, the pattern will be removed in the field name.")
+    String patternToReplace;
+
+    @Nullable
+    @Name(REPLACE_WITH)
+    @Description("The string that will be replaced in the field name in the table, it must be used with the " +
+                   "Pattern To Replace config.")
+    String replaceWith;
+
+    @Nullable
     private String getImportQuery() {
       return cleanQuery(importQuery);
     }
@@ -345,6 +367,11 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
       if (!hasOneSplit && !containsMacro(BOUNDING_QUERY) && Strings.isNullOrEmpty(boundingQuery)) {
         collector.addFailure("Bounding Query must be specified if Number of Splits is not set to 1.", null)
           .withConfigProperty(BOUNDING_QUERY).withConfigProperty(NUM_SPLITS);
+      }
+
+      if (replaceWith != null && patternToReplace == null) {
+        collector.addFailure("Replace With is set but Pattern To Replace is not provided", null)
+          .withConfigProperty(REPLACE_WITH).withConfigProperty(PATTERN_TO_REPLACE);
       }
     }
 
