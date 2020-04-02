@@ -158,6 +158,21 @@
           }
         }
       ]
+    },
+    {
+      "label": "Column Names Normalization",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Pattern To Replace",
+          "name": "patternToReplace"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Replace With",
+          "name": "replaceWith"
+        }
+      ]
     }
   ],
   "outputs": [

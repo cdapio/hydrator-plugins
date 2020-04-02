@@ -40,7 +40,10 @@ import java.sql.Types;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.sql.rowset.serial.SerialBlob;
 
 /**
@@ -96,7 +99,24 @@ public class DBRecord implements Writable, DBWritable, Configurable {
    */
   public void readFields(ResultSet resultSet) throws SQLException {
     ResultSetMetaData metadata = resultSet.getMetaData();
-    List<Schema.Field> schemaFields = DBUtils.getSchemaFields(resultSet, conf.get(DBUtils.OVERRIDE_SCHEMA));
+    List<Schema.Field> originalSchema = DBUtils.getOriginalSchema(resultSet);
+    String patternToReplace = conf.get(DBUtils.PATTERN_TO_REPLACE);
+    String replaceWith = conf.get(DBUtils.REPLACE_WITH);
+
+    // map of new name -> original name
+    Map<String, String> nameMap = new HashMap<>();
+    List<Schema.Field> newSchema = new ArrayList<>();
+    for (Schema.Field field : originalSchema) {
+      String newName = field.getName();
+      if (patternToReplace != null) {
+        newName = newName.replaceAll(patternToReplace, replaceWith == null ? "" : replaceWith);
+      }
+      nameMap.put(newName, field.getName());
+      newSchema.add(Schema.Field.of(newName, field.getSchema()));
+    }
+
+    List<Schema.Field> schemaFields = DBUtils.getSchemaFields(Schema.recordOf("resultSet", newSchema),
+                                                              conf.get(DBUtils.OVERRIDE_SCHEMA));
     Schema schema = Schema.recordOf("dbRecord", schemaFields);
     StructuredRecord.Builder recordBuilder = StructuredRecord.builder(schema);
     for (int i = 0; i < schemaFields.size(); i++) {
@@ -104,14 +124,16 @@ public class DBRecord implements Writable, DBWritable, Configurable {
       int sqlType = metadata.getColumnType(i + 1);
       int sqlPrecision = metadata.getPrecision(i + 1);
       int sqlScale = metadata.getScale(i + 1);
-      setField(resultSet, recordBuilder, field, sqlType, sqlPrecision, sqlScale);
+      setField(resultSet, recordBuilder, field, sqlType, sqlPrecision, sqlScale, nameMap.getOrDefault(field.getName(),
+                                                                                                      field.getName()));
     }
     record = recordBuilder.build();
   }
 
   private void setField(ResultSet resultSet, StructuredRecord.Builder recordBuilder, Schema.Field field, int sqlType,
-                        int sqlPrecision, int sqlScale) throws SQLException {
-    Object o = DBUtils.transformValue(sqlType, sqlPrecision, sqlScale, resultSet, field.getName());
+                        int sqlPrecision, int sqlScale, String originalName) throws SQLException {
+    // original name has to be used to get result from result set
+    Object o = DBUtils.transformValue(sqlType, sqlPrecision, sqlScale, resultSet, originalName);
     if (o instanceof Date) {
       recordBuilder.setDate(field.getName(), ((Date) o).toLocalDate());
     } else if (o instanceof Time) {
