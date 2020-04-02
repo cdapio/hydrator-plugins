@@ -67,6 +67,12 @@ Defaults to TRANSACTION_SERIALIZABLE. See java.sql.Connection#setTransactionIsol
 The Phoenix jdbc driver will throw an exception if the Phoenix database does not have transactions enabled
 and this setting is set to true. For drivers like that, this should be set to TRANSACTION_NONE.
 
+**Pattern To Replace:** The pattern to replace in the field name in the table, it is typically used with the
+Replace With config. If Replace With is not set, the pattern will be removed in the field name.
+
+**Replace With:** The string that will be replaced in the field name in the table, it must be used with the
+Pattern To Replace config.
+
 **Schema:** The schema of records output by the source. This will be used in place of whatever schema comes
 back from the query. However, it must match the schema that comes back from the query,
 except it can mark fields as nullable and can contain a subset of the fields.
