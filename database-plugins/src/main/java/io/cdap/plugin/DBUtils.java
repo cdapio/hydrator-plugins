@@ -53,6 +53,8 @@ import javax.management.ReflectionException;
 public final class DBUtils {
   private static final Logger LOG = LoggerFactory.getLogger(DBUtils.class);
   public static final String OVERRIDE_SCHEMA = "io.cdap.hydrator.db.override.schema";
+  public static final String PATTERN_TO_REPLACE = "io.cdap.plugin.db.pattern.replace";
+  public static final String REPLACE_WITH = "io.cdap.plugin.db.replace.with";
   public static final String CONNECTION_ARGUMENTS = "io.cdap.hydrator.db.connection.arguments";
 
   /**
@@ -104,17 +106,13 @@ public final class DBUtils {
    * Given the result set, get the metadata of the result set and return
    * list of {@link io.cdap.cdap.api.data.schema.Schema.Field},
    * where name of the field is same as column name and type of the field is obtained using
-   * {@link DBUtils#getSchema(int, int, int)}
+   * {@link DBUtils#getSchema(String, int, int, int, String)}
    *
-   * @param resultSet result set of executed query
+   * @param resultsetSchema the schema from the db
    * @param schemaStr schema string to override resultant schema
    * @return list of schema fields
-   * @throws SQLException
-   * @throws IOException
    */
-  public static List<Schema.Field> getSchemaFields(ResultSet resultSet, @Nullable String schemaStr)
-    throws SQLException {
-    Schema resultsetSchema = Schema.recordOf("resultset", getSchemaFields(resultSet));
+  public static List<Schema.Field> getSchemaFields(Schema resultsetSchema, @Nullable String schemaStr) {
     Schema schema;
 
     if (!Strings.isNullOrEmpty(schemaStr)) {
@@ -156,12 +154,32 @@ public final class DBUtils {
    * @return list of schema fields
    * @throws SQLException
    */
-  public static List<Schema.Field> getSchemaFields(ResultSet resultSet) throws SQLException {
+  public static List<Schema.Field> getOriginalSchema(ResultSet resultSet) throws SQLException {
+    return getSchemaFields(resultSet, null, null);
+  }
+
+  /**
+   * Given the result set, get the metadata of the result set and return
+   * list of {@link io.cdap.cdap.api.data.schema.Schema.Field},
+   * where name of the field is same as column name and type of the field is obtained using
+   * {@link DBUtils#getSchema(String, int, int, int, String)}
+   *
+   * @param resultSet result set of executed query
+   * @param patternToReplace the pattern to replace in the field name
+   * @param replaceWith the replacement value, if it is null, the pattern will be removed
+   * @return list of schema fields
+   * @throws SQLException
+   */
+  public static List<Schema.Field> getSchemaFields(ResultSet resultSet, @Nullable String patternToReplace,
+                                                   @Nullable String replaceWith) throws SQLException {
     List<Schema.Field> schemaFields = Lists.newArrayList();
     ResultSetMetaData metadata = resultSet.getMetaData();
     // ResultSetMetadata columns are numbered starting with 1
     for (int i = 1; i <= metadata.getColumnCount(); i++) {
       String columnName = metadata.getColumnName(i);
+      if (patternToReplace != null) {
+        columnName = columnName.replaceAll(patternToReplace, replaceWith == null ? "" : replaceWith);
+      }
       int columnSqlType = metadata.getColumnType(i);
       int columnSqlPrecision = metadata.getPrecision(i); // total number of digits
       int columnSqlScale = metadata.getScale(i); // digits after the decimal point
