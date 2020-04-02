@@ -57,19 +57,19 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
 
   @Override
   protected void validate() {
-    if (!conf.containsMacro("schema") && conf.getSchema() == null) {
+    /*if (!conf.containsMacro("schema") && conf.getSchema() == null) {
       throw new IllegalArgumentException("Delimited format cannot be used without specifying a schema.");
-    }
+    }*/
   }
 
   @Override
   public void validate(FormatContext context) {
-    Schema schema = super.getSchema(context);
+    /*Schema schema = super.getSchema(context);
     FailureCollector collector = context.getFailureCollector();
     if (!conf.containsMacro("schema") && schema == null) {
-      collector.addFailure("Delimited format cannot be used without specifying a schema.",
+      collector.addFailure("Prashant: Delimited format cannot be used without specifying a schema.",
                            "Schema must be specified.").withConfigProperty("schema");
-    }
+    }*/
   }
 
   @Override
