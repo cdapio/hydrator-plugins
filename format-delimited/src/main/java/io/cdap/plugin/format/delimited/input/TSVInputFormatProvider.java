@@ -55,7 +55,7 @@ public class TSVInputFormatProvider extends PathTrackingInputFormatProvider<Deli
 
   @Override
   protected void validate() {
-    if (conf.getSchema() == null) {
+    if (!conf.containsMacro(PathTrackingConfig.NAME_SCHEMA) && conf.getSchema() == null) {
       throw new IllegalArgumentException("TSV format cannot be used without specifying a schema.");
     }
   }
@@ -64,7 +64,7 @@ public class TSVInputFormatProvider extends PathTrackingInputFormatProvider<Deli
   public void validate(FormatContext context) {
     Schema schema = super.getSchema(context);
     FailureCollector collector = context.getFailureCollector();
-    if (schema == null) {
+    if (!conf.containsMacro(PathTrackingConfig.NAME_SCHEMA) && schema == null) {
       collector.addFailure("TSV format cannot be used without specifying a schema.", "Schema must be specified.")
         .withConfigProperty("schema");
     }
