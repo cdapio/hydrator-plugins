@@ -84,13 +84,32 @@ public abstract class AbstractFileSinkConfig extends PluginConfig implements Fil
           .withConfigProperty(NAME_SUFFIX).withStacktrace(e.getStackTrace());
       }
     }
+
+    FileFormat format = FileFormat.CSV;
     try {
-      getFormat();
+      format = getFormat();
     } catch (IllegalArgumentException e) {
       collector.addFailure(e.getMessage(), null).withConfigProperty(NAME_FORMAT).withStacktrace(e.getStackTrace());
     }
     try {
-      getSchema();
+      Schema schema = getSchema();
+      // Checks if the output schema has fields that are not simple type.
+      // If there are non-simple field types, then serializing as CSV might not be appropriate.
+      // This restriction is on Csv, Delimited and Tab separated files.
+      if (format == FileFormat.CSV || format == FileFormat.DELIMITED || format == FileFormat.TSV) {
+        boolean simpleFields = true;
+        for (Schema.Field field : schema.getFields()) {
+          if (!field.getSchema().isSimpleOrNullableSimple()) {
+            simpleFields = false;
+            break;
+          }
+        }
+        collector.addFailure(
+          String.format("Input has multi-level structure that cannot be represented appropriately in %s.",
+                        format.name()),
+          "Consider using json, avro or parquet to write data."
+        ).withConfigProperty(NAME_FORMAT);
+      }
     } catch (IllegalArgumentException e) {
       collector.addFailure(e.getMessage(), null).withConfigProperty(NAME_SCHEMA).withStacktrace(e.getStackTrace());
     }
