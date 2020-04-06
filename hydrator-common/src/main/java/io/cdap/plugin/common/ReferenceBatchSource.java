@@ -47,7 +47,8 @@ public abstract class ReferenceBatchSource<KEY_IN, VAL_IN, OUT> extends BatchSou
   }
 
   /**
-   * Record field-level lineage for source plugins. This method should be called from prepareRun of any source plugin.
+   * Record field-level lineage for source plugins (ReadOperation). This method should be called from prepareRun of any
+   * source plugin.
    * @param context BatchSourceContext from prepareRun
    * @param outputName name of output dataset
    * @param tableSchema schema of fields
@@ -60,7 +61,7 @@ public abstract class ReferenceBatchSource<KEY_IN, VAL_IN, OUT> extends BatchSou
     LineageRecorder lineageRecorder = new LineageRecorder(context, outputName);
     lineageRecorder.createExternalDataset(tableSchema);
     if (!fieldNames.isEmpty()) {
-      lineageRecorder.recordWrite(operationName, description, fieldNames);
+      lineageRecorder.recordRead(operationName, description, fieldNames);
     }
   }
 }

@@ -47,7 +47,8 @@ public abstract class ReferenceBatchSink<IN, KEY_OUT, VAL_OUT> extends BatchSink
   }
 
   /**
-   * Record field-level lineage for sink plugins. This method should be called from prepareRun of any sink plugin.
+   * Record field-level lineage for sink plugins (WriteOperation). This method should be called from prepareRun of any
+   * sink plugin.
    * @param context BatchSinkContext from prepareRun
    * @param outputName name of output dataset
    * @param tableSchema schema of fields
