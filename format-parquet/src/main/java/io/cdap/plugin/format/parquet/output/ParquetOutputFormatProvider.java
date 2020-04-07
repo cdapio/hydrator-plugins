@@ -84,7 +84,6 @@ public class ParquetOutputFormatProvider extends AbstractOutputFormatProvider {
       "Compression codec to use when writing data. Must be 'snappy', 'gzip', or 'none'.";
 
     @Macro
-    @Nullable
     @Description(SCHEMA_DESC)
     private String schema;
 
@@ -106,7 +105,7 @@ public class ParquetOutputFormatProvider extends AbstractOutputFormatProvider {
 
   private static PluginClass getPluginClass() {
     Map<String, PluginPropertyField> properties = new HashMap<>();
-    properties.put("schema", new PluginPropertyField("schema", Conf.SCHEMA_DESC, "string", false, true));
+    properties.put("schema", new PluginPropertyField("schema", Conf.SCHEMA_DESC, "string", true, true));
     properties.put("compressionCodec",
                    new PluginPropertyField("compressionCodec", Conf.CODEC_DESC, "string", false, true));
     return new PluginClass(ValidatingOutputFormat.PLUGIN_TYPE, NAME, DESC, ParquetOutputFormatProvider.class.getName(),

@@ -48,6 +48,7 @@ public abstract class AbstractFileSinkConfig extends PluginConfig implements Fil
     "If not specified, nothing will be appended to the path.")
   private String suffix;
 
+  @Macro
   @Description("The format to write in. The format must be one of 'json', 'avro', 'parquet', 'csv', 'tsv', "
     + "or 'delimited'.")
   private String format;
@@ -84,12 +85,13 @@ public abstract class AbstractFileSinkConfig extends PluginConfig implements Fil
           .withConfigProperty(NAME_SUFFIX).withStacktrace(e.getStackTrace());
       }
     }
-
     FileFormat format = FileFormat.JSON;
-    try {
-      format = getFormat();
-    } catch (IllegalArgumentException e) {
-      collector.addFailure(e.getMessage(), null).withConfigProperty(NAME_FORMAT).withStacktrace(e.getStackTrace());
+    if (!containsMacro(NAME_FORMAT)) {
+      try {
+        format = getFormat();
+      } catch (IllegalArgumentException e) {
+        collector.addFailure(e.getMessage(), null).withConfigProperty(NAME_FORMAT).withStacktrace(e.getStackTrace());
+      }
     }
     try {
       Schema schema = getSchema();

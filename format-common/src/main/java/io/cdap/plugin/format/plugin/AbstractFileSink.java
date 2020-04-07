@@ -20,6 +20,8 @@ import io.cdap.cdap.api.data.batch.Output;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
+import io.cdap.cdap.api.plugin.InvalidPluginConfigException;
+import io.cdap.cdap.api.plugin.InvalidPluginProperty;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
@@ -33,12 +35,16 @@ import io.cdap.plugin.common.batch.sink.SinkOutputFormatProvider;
 import io.cdap.plugin.format.FileFormat;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
@@ -49,7 +55,8 @@ import javax.annotation.Nullable;
  */
 public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperties>
   extends BatchSink<StructuredRecord, NullWritable, StructuredRecord> {
-  private static final String FORMAT_PLUGIN_ID = "format";
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractFileSink.class);
+  private static final String NAME_FORMAT = "format";
   private final T config;
 
   protected AbstractFileSink(T config) {
@@ -64,10 +71,26 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
     // invalid
     collector.getOrThrowException();
 
+    if (config.containsMacro(NAME_FORMAT)) {
+      // Deploy all format plugins. This ensures that the required plugin is available when
+      // the format macro is evaluated in prepareRun.
+      for (FileFormat f: FileFormat.values()) {
+        try {
+          pipelineConfigurer.usePlugin(ValidatingOutputFormat.PLUGIN_TYPE, f.name().toLowerCase(),
+                                       f.name().toLowerCase(), config.getRawProperties());
+        } catch (InvalidPluginConfigException e) {
+          LOG.warn("Failed to register format '{}', which means it cannot be used when the pipeline is run. " +
+                     "Missing properties: {}, invalid properties: {}", f.name(), e.getMissingProperties(),
+                   e.getInvalidProperties().stream().map(InvalidPluginProperty::getName).collect(Collectors.toList()));
+        }
+      }
+      return;
+    }
+
     FileFormat format = config.getFormat();
     ValidatingOutputFormat validatingOutputFormat =
       pipelineConfigurer.usePlugin(ValidatingOutputFormat.PLUGIN_TYPE, format.name().toLowerCase(),
-                                   FORMAT_PLUGIN_ID, config.getRawProperties());
+                                   format.name().toLowerCase(), config.getRawProperties());
     FormatContext context = new FormatContext(collector, pipelineConfigurer.getStageConfigurer().getInputSchema());
     validateOutputFormatProvider(context, format, validatingOutputFormat);
   }
@@ -76,8 +99,21 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
   public void prepareRun(BatchSinkContext context) throws Exception {
     FailureCollector collector = context.getFailureCollector();
     config.validate(collector);
-    ValidatingOutputFormat validatingOutputFormat = context.newPluginInstance(FORMAT_PLUGIN_ID);
     FileFormat fileFormat = config.getFormat();
+    ValidatingOutputFormat validatingOutputFormat;
+    try {
+      validatingOutputFormat = context.newPluginInstance(fileFormat.name().toLowerCase());
+    } catch (InvalidPluginConfigException e) {
+      Set<String> properties = new HashSet<>(e.getMissingProperties());
+      for (InvalidPluginProperty invalidProperty: e.getInvalidProperties()) {
+        properties.add(invalidProperty.getName());
+      }
+      String errorMessage = String.format("Format '%s' cannot be used because properties %s were not provided or " +
+                                            "were invalid when the pipeline was deployed. Set the format to a " +
+                                            "different value, or re-create the pipeline with all required properties.",
+                                          fileFormat.name(), properties);
+      throw new IllegalArgumentException(errorMessage, e);
+    }
     FormatContext formatContext = new FormatContext(collector, context.getInputSchema());
     validateOutputFormatProvider(formatContext, fileFormat, validatingOutputFormat);
     collector.getOrThrowException();
@@ -139,7 +175,9 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
     if (validatingOutputFormat == null) {
       collector.addFailure(
         String.format("Could not find the '%s' output format plugin.", format.name().toLowerCase()), null)
-        .withPluginNotFound(FORMAT_PLUGIN_ID, format.name().toLowerCase(), ValidatingOutputFormat.PLUGIN_TYPE);
+        .withPluginNotFound(format.name().toLowerCase(),
+                            format.name().toLowerCase(),
+                            ValidatingOutputFormat.PLUGIN_TYPE);
     } else {
       validatingOutputFormat.validate(context);
     }
