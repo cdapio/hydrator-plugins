@@ -16,13 +16,9 @@
 
 package io.cdap.plugin.common;
 
-import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchSource;
-import io.cdap.cdap.etl.api.batch.BatchSourceContext;
-
-import java.util.List;
 
 /**
  * A {@link BatchSource} that verifies referenceName property
@@ -44,24 +40,5 @@ public abstract class ReferenceBatchSource<KEY_IN, VAL_IN, OUT> extends BatchSou
     FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
     IdUtils.validateReferenceName(config.referenceName, collector);
     collector.getOrThrowException();
-  }
-
-  /**
-   * Record field-level lineage for source plugins (ReadOperation). This method should be called from prepareRun of any
-   * source plugin.
-   * @param context BatchSourceContext from prepareRun
-   * @param outputName name of output dataset
-   * @param tableSchema schema of fields
-   * @param fieldNames list of field names
-   * @param operationName name of the operation
-   * @param description operation description; complete sentences preferred
-   */
-  protected void recordLineage(BatchSourceContext context, String outputName, Schema tableSchema,
-                               List<String> fieldNames, String operationName, String description) {
-    LineageRecorder lineageRecorder = new LineageRecorder(context, outputName);
-    lineageRecorder.createExternalDataset(tableSchema);
-    if (!fieldNames.isEmpty()) {
-      lineageRecorder.recordRead(operationName, description, fieldNames);
-    }
   }
 }

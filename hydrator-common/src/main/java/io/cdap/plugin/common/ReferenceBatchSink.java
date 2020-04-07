@@ -16,13 +16,9 @@
 
 package io.cdap.plugin.common;
 
-import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchSink;
-import io.cdap.cdap.etl.api.batch.BatchSinkContext;
-
-import java.util.List;
 
 /**
  * A {@link BatchSink} that verifies referenceName property
@@ -44,24 +40,5 @@ public abstract class ReferenceBatchSink<IN, KEY_OUT, VAL_OUT> extends BatchSink
     FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
     IdUtils.validateReferenceName(config.referenceName, collector);
     collector.getOrThrowException();
-  }
-
-  /**
-   * Record field-level lineage for sink plugins (WriteOperation). This method should be called from prepareRun of any
-   * sink plugin.
-   * @param context BatchSinkContext from prepareRun
-   * @param outputName name of output dataset
-   * @param tableSchema schema of fields
-   * @param fieldNames list of field names
-   * @param operationName name of the operation
-   * @param description operation description; complete sentences preferred
-   */
-  protected void recordLineage(BatchSinkContext context, String outputName, Schema tableSchema, List<String> fieldNames,
-                               String operationName, String description) {
-    LineageRecorder lineageRecorder = new LineageRecorder(context, outputName);
-    lineageRecorder.createExternalDataset(tableSchema);
-    if (!fieldNames.isEmpty()) {
-      lineageRecorder.recordWrite(operationName, description, fieldNames);
-    }
   }
 }
