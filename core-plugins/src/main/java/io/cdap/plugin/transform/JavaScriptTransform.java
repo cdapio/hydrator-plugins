@@ -41,6 +41,7 @@ import io.cdap.cdap.etl.api.Transform;
 import io.cdap.cdap.etl.api.TransformContext;
 import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
 import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
+import io.cdap.cdap.format.StructuredRecordStringConverter;
 import io.cdap.plugin.ScriptConstants;
 import io.cdap.plugin.common.SchemaValidator;
 import io.cdap.plugin.common.StructuredRecordSerializer;
@@ -200,7 +201,7 @@ public class JavaScriptTransform extends Transform<StructuredRecord, StructuredR
   @Override
   public void transform(StructuredRecord input, Emitter<StructuredRecord> emitter) {
     try {
-      engine.eval(String.format("var %s = %s;", VARIABLE_NAME, GSON.toJson(input)));
+      engine.eval(String.format("var %s = %s;", VARIABLE_NAME, StructuredRecordStringConverter.toJsonString(input)));
       Emitter<Map> jsEmitter = new JSEmitter(emitter, schema == null ? input.getSchema() : schema);
       engine.put(EMITTER_NAME, jsEmitter);
       invocable.invokeFunction(FUNCTION_NAME);

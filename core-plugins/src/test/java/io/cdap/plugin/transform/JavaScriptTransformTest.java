@@ -34,6 +34,7 @@ import io.cdap.cdap.etl.mock.transform.MockTransformContext;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -104,7 +105,7 @@ public class JavaScriptTransformTest {
     .set("longField", -99L)
     .set("floatField", -2.71f)
     .set("doubleField", -3.14)
-    .set("bytesField", Bytes.toBytes("hello"))
+    .set("bytesField", ByteBuffer.wrap(Bytes.toBytes("hello")))
     .set("stringField", "world")
     .set("nullableField", null)
     .set("mapField", ImmutableMap.of())
