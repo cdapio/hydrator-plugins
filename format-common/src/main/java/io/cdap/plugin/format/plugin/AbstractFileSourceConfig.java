@@ -50,6 +50,7 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
     + "the regular expression syntax.")
   private String fileRegex;
 
+  @Macro
   @Description("Format of the data to read. Supported formats are 'avro', 'blob', 'csv', 'delimited', 'json', "
     + "'parquet', 'text', or 'tsv'. ")
   private String format;
@@ -60,28 +61,33 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
   @Macro
   private Long maxSplitSize;
 
+  @Macro
   @Nullable
   @Description("Whether to allow an input that does not exist. When false, the source will fail the run if the input "
     + "does not exist. When true, the run will not fail and the source will not generate any output. "
     + "The default value is false.")
   private Boolean ignoreNonExistingFolders;
 
+  @Macro
   @Nullable
   @Description("Whether to recursively read directories within the input directory. The default is false.")
   private Boolean recursive;
 
   @Name(PATH_FIELD)
+  @Macro
   @Nullable
   @Description("Output field to place the path of the file that the record was read from. "
     + "If not specified, the file path will not be included in output records. "
     + "If specified, the field must exist in the output schema as a string.")
   private String pathField;
 
+  @Macro
   @Nullable
   @Description("Whether to only use the filename instead of the URI of the file path when a path field is given. "
     + "The default value is false.")
   private Boolean filenameOnly;
 
+  @Macro
   @Nullable
   @Description("Output schema for the source. Formats like 'avro' and 'parquet' require a schema in order to "
     + "read the data.")
@@ -116,16 +122,20 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
 
   public void validate() {
     IdUtils.validateId(referenceName);
-    getFormat();
+    if (!containsMacro(NAME_FORMAT)) {
+      getFormat();
+    }
     getSchema();
   }
 
   public void validate(FailureCollector collector) {
     IdUtils.validateReferenceName(referenceName, collector);
-    try {
-      getFormat();
-    } catch (IllegalArgumentException e) {
-      collector.addFailure(e.getMessage(), null).withConfigProperty(NAME_FORMAT).withStacktrace(e.getStackTrace());
+    if (!containsMacro(NAME_FORMAT)) {
+      try {
+        getFormat();
+      } catch (IllegalArgumentException e) {
+        collector.addFailure(e.getMessage(), null).withConfigProperty(NAME_FORMAT).withStacktrace(e.getStackTrace());
+      }
     }
     try {
       getSchema();

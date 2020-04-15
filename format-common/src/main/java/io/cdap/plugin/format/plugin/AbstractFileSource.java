@@ -20,6 +20,8 @@ import io.cdap.cdap.api.data.batch.Input;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
+import io.cdap.cdap.api.plugin.InvalidPluginConfigException;
+import io.cdap.cdap.api.plugin.InvalidPluginProperty;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
@@ -41,11 +43,15 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -64,7 +70,8 @@ import javax.annotation.Nullable;
  */
 public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProperties>
   extends BatchSource<NullWritable, StructuredRecord, StructuredRecord> {
-  private static final String FORMAT_PLUGIN_ID = "format";
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractFileSource.class);
+  private static final String NAME_FORMAT = "format";
   private final T config;
 
   protected AbstractFileSource(T config) {
@@ -79,11 +86,27 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
     // invalid
     collector.getOrThrowException();
 
+    if (config.containsMacro(NAME_FORMAT)) {
+      // Deploy all format plugins. This ensures that the required plugin is available when
+      // the format macro is evaluated in prepareRun.
+      for (FileFormat f: FileFormat.values()) {
+        try {
+          pipelineConfigurer.usePlugin(ValidatingInputFormat.PLUGIN_TYPE, f.name().toLowerCase(),
+                                       f.name().toLowerCase(), config.getRawProperties());
+        } catch (InvalidPluginConfigException e) {
+          LOG.warn("Failed to register format '{}', which means it cannot be used when the pipeline is run. " +
+                     "Missing properties: {}, invalid properties: {}", f.name(), e.getMissingProperties(),
+                   e.getInvalidProperties().stream().map(InvalidPluginProperty::getName).collect(Collectors.toList()));
+        }
+      }
+      return;
+    }
+
     FileFormat fileFormat = config.getFormat();
     Schema schema = null;
     ValidatingInputFormat validatingInputFormat =
-      pipelineConfigurer.usePlugin(ValidatingInputFormat.PLUGIN_TYPE, fileFormat.name().toLowerCase(), FORMAT_PLUGIN_ID,
-                                   config.getRawProperties());
+      pipelineConfigurer.usePlugin(ValidatingInputFormat.PLUGIN_TYPE, fileFormat.name().toLowerCase(),
+                                   fileFormat.name().toLowerCase(), config.getRawProperties());
     FormatContext context = new FormatContext(collector, null);
     validateInputFormatProvider(context, fileFormat, validatingInputFormat);
 
@@ -99,8 +122,22 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
   public void prepareRun(BatchSourceContext context) throws Exception {
     FailureCollector collector = context.getFailureCollector();
     config.validate(collector);
-    ValidatingInputFormat validatingInputFormat = context.newPluginInstance(FORMAT_PLUGIN_ID);
     FileFormat fileFormat = config.getFormat();
+    ValidatingInputFormat validatingInputFormat;
+    try {
+      validatingInputFormat = context.newPluginInstance(fileFormat.name().toLowerCase());
+    } catch (InvalidPluginConfigException e) {
+      Set<String> properties = new HashSet<>(e.getMissingProperties());
+      for (InvalidPluginProperty invalidProperty: e.getInvalidProperties()) {
+        properties.add(invalidProperty.getName());
+      }
+      String errorMessage = String.format("Format '%s' cannot be used because properties %s were not provided or " +
+                                            "were invalid when the pipeline was deployed. Set the format to a " +
+                                            "different value, or re-create the pipeline with all required properties.",
+                                          fileFormat.name(), properties);
+      throw new IllegalArgumentException(errorMessage, e);
+    }
+
     FormatContext formatContext = new FormatContext(collector, context.getInputSchema());
     validateInputFormatProvider(formatContext, fileFormat, validatingInputFormat);
     validatePathField(collector, validatingInputFormat.getSchema(formatContext));
@@ -190,7 +227,9 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
     if (validatingInputFormat == null) {
       collector.addFailure(
         String.format("Could not find the '%s' input format.", fileFormat.name().toLowerCase()), null)
-        .withPluginNotFound(FORMAT_PLUGIN_ID, fileFormat.name().toLowerCase(), ValidatingInputFormat.PLUGIN_TYPE);
+        .withPluginNotFound(fileFormat.name().toLowerCase(),
+                            fileFormat.name().toLowerCase(),
+                            ValidatingInputFormat.PLUGIN_TYPE);
     } else {
       validatingInputFormat.validate(context);
     }
