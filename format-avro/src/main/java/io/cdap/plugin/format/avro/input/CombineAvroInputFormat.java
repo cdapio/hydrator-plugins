@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Cask Data, Inc.
+ * Copyright © 2018-2020 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -17,6 +17,7 @@
 package io.cdap.plugin.format.avro.input;
 
 import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.plugin.common.batch.JobUtils;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -38,13 +39,8 @@ public class CombineAvroInputFormat extends CombineFileInputFormat<NullWritable,
 
   @Override
   public List<InputSplit> getSplits(JobContext job) throws IOException {
-    ClassLoader cl = job.getConfiguration().getClassLoader();
-    job.getConfiguration().setClassLoader(getClass().getClassLoader());
-    try {
-      return super.getSplits(job);
-    } finally {
-      job.getConfiguration().setClassLoader(cl);
-    }
+    return JobUtils.applyWithExtraClassLoader(job, getClass().getClassLoader(),
+                                              CombineAvroInputFormat.super::getSplits);
   }
 
   /**
