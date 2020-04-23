@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Cask Data, Inc.
+ * Copyright © 2018-2020 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -17,6 +17,7 @@
 package io.cdap.plugin.format.text.input;
 
 import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.plugin.common.batch.JobUtils;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -57,14 +58,8 @@ public class CombineTextInputFormat extends CombineFileInputFormat<NullWritable,
    */
   @Override
   public List<InputSplit> getSplits(JobContext job) throws IOException {
-    ClassLoader cl = job.getConfiguration().getClassLoader();
-    job.getConfiguration().setClassLoader(getClass().getClassLoader());
-    List<InputSplit> fileSplits;
-    try {
-      fileSplits = super.getSplits(job);
-    } finally {
-      job.getConfiguration().setClassLoader(cl);
-    }
+    List<InputSplit> fileSplits = JobUtils.applyWithExtraClassLoader(job, getClass().getClassLoader(),
+                                                                     CombineTextInputFormat.super::getSplits);
     Configuration hConf = job.getConfiguration();
 
     boolean shouldCopyHeader = hConf.getBoolean(PathTrackingInputFormat.COPY_HEADER, false);
