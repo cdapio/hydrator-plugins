@@ -236,7 +236,7 @@ public class JoinerConfigTest {
     joiner.init(ImmutableMap.of("film", FILM_SCHEMA, "filmActor", FILM_ACTOR_SCHEMA,
                                 "filmCategory", filmCategorySchema),
                 ImmutableList.of("film", "filmActor", "filmCategory"), collector);
-    Assert.assertEquals(2, collector.getValidationFailures().size());
+    Assert.assertEquals(1, collector.getValidationFailures().size());
     Assert.assertEquals(1, collector.getValidationFailures().get(0).getCauses().size());
     Cause expectedCause = new Cause();
     expectedCause.addAttribute(CauseAttributes.STAGE_CONFIG, JoinerConfig.JOIN_KEYS);
