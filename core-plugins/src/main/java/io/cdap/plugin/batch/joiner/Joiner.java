@@ -83,10 +83,10 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     FailureCollector collector = pipelineConfigurer.getMultiInputStageConfigurer().getFailureCollector();
     init(inputSchemas, inputStages, collector);
     collector.getOrThrowException();
-    if (!inputSchemasAvailable(inputSchemas, inputStages) && !conf.containsMacro(conf.OUTPUT_SCHEMA) &&
+    if (!inputSchemasAvailable(inputSchemas, inputStages) && !conf.containsMacro(JoinerConfig.OUTPUT_SCHEMA) &&
       conf.getOutputSchema(collector) == null) {
       // If input schemas are unknown, an output schema must be provided.
-      collector.addFailure("Output schema must be specified", null).withConfigProperty(conf.OUTPUT_SCHEMA);
+      collector.addFailure("Output schema must be specified", null).withConfigProperty(JoinerConfig.OUTPUT_SCHEMA);
     }
 
     Schema outputSchema = getOutputSchema(inputSchemas, inputStages, collector);
@@ -286,7 +286,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
         if (field == null) {
           collector.addFailure(
             String.format("Join key field '%s' is not present in input stage of '%s'.", joinKey, stageName), null)
-            .withConfigProperty(conf.JOIN_KEYS);
+            .withConfigProperty(JoinerConfig.JOIN_KEYS);
         }
         schemaList.add(field.getSchema());
       }
@@ -294,7 +294,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
         collector.addFailure(
           String.format("For stage '%s', Schemas of join keys '%s' are expected to be: '%s', but found: '%s'.",
                         stageName, entry.getValue(), prevSchemaList.toString(), schemaList.toString()), null)
-          .withConfigProperty(conf.JOIN_KEYS);
+          .withConfigProperty(JoinerConfig.JOIN_KEYS);
       }
       prevSchemaList = schemaList;
     }
@@ -346,8 +346,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
       Schema.Field inputField = inputSchema.getField(inputFieldName);
       if (inputField == null) {
         collector.addFailure(
-          String.format("Field '%s' of stage '%s' must be present in input schema '%s'.",
-                        inputFieldName, stageName, inputSchema), null)
+          String.format("Field '%s' of stage '%s' must be present in input schema.", inputFieldName, stageName), null)
           .withConfigElement("selectedFields",
                              String.format("%s.%s as %s", stageName, inputFieldName, alias));
       } else if (requiredInputs.contains(stageName) || inputField.getSchema().isNullable()) {
@@ -363,7 +362,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     if (!duplicateFields.isEmpty()) {
       collector.addFailure(String.format("Output schema must not contain duplicate fields: '%s' for aliases: '%s'.",
                                          duplicateFields, duplicateAliases), null)
-        .withConfigProperty(conf.SELECTED_FIELDS);
+        .withConfigProperty(JoinerConfig.SELECTED_FIELDS);
       collector.getOrThrowException();
     }
 
@@ -479,7 +478,7 @@ public class Joiner extends BatchJoiner<StructuredRecord, StructuredRecord, Stru
     for (String requiredInput : requiredInputs) {
       if (!inputStages.contains(requiredInput)) {
         collector.addFailure(String.format("Provided input '%s' must be an input stage name.", requiredInput), null)
-          .withConfigElement(conf.REQUIRED_INPUTS, requiredInput);
+          .withConfigElement(JoinerConfig.REQUIRED_INPUTS, requiredInput);
       }
     }
   }
