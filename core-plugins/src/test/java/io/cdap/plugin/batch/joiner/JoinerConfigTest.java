@@ -56,7 +56,7 @@ public class JoinerConfigTest {
 
   // output schema sorted by selected fields
   private static final Schema outputSchema = Schema.recordOf(
-    "joined",
+    "join.output",
     Schema.Field.of("film_id", Schema.of(Schema.Type.STRING)),
     Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
     Schema.Field.of("renamed_actor", Schema.of(Schema.Type.STRING)),
@@ -127,7 +127,7 @@ public class JoinerConfigTest {
   @Test
   public void testJoinerConfigWithoutRequiredInputs() {
     Schema outputSchema = Schema.recordOf(
-      "joined",
+      "join.output",
       Schema.Field.of("film_id", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("renamed_actor", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
@@ -340,7 +340,7 @@ public class JoinerConfigTest {
     JoinerConfig conf = new JoinerConfig(joinKeys, selectedFields, requiredInputs);
 
     Schema outputSchema = Schema.recordOf(
-      "joined",
+      "join.output",
       Schema.Field.of("film_id", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("renamed_actor", Schema.of(Schema.Type.STRING)),
