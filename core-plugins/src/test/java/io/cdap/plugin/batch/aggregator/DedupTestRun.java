@@ -47,11 +47,8 @@ public class DedupTestRun extends ETLBatchTestBase {
     Schema.Field.of("lname", Schema.of(Schema.Type.STRING)),
     Schema.Field.of("ts", Schema.of(Schema.Type.INT)),
     Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
-  private static final Schema SINK_SCHEMA = Schema.recordOf("sinkSchema",
-    Schema.Field.of("fname", Schema.of(Schema.Type.STRING)),
-    Schema.Field.of("lname", Schema.of(Schema.Type.STRING)),
-    Schema.Field.of("ts", Schema.of(Schema.Type.INT)),
-    Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
+  private static final Schema SINK_SCHEMA = Schema.recordOf(PURCHASE_SCHEMA.getRecordName() + ".dedup",
+                                                            PURCHASE_SCHEMA.getFields());
 
   private void testHelper(String appName, String purchasesDatasetName, ETLStage purchaseStage,
                           ETLStage dedupStage, String sinkDatasetName, ETLStage sinkStage,
@@ -106,13 +103,13 @@ public class DedupTestRun extends ETLBatchTestBase {
     List<StructuredRecord> output = MockSink.readOutput(sinkManager);
     Assert.assertEquals("Expected records", 2, output.size());
     List<StructuredRecord> expectedOutput = ImmutableList.of(
-      StructuredRecord.builder(PURCHASE_SCHEMA)
+      StructuredRecord.builder(SINK_SCHEMA)
         .set("fname", "samuel")
         .set("lname", "goel")
         .set("ts", 11)
         .set("price", 200.43)
         .build(),
-      StructuredRecord.builder(PURCHASE_SCHEMA)
+      StructuredRecord.builder(SINK_SCHEMA)
         .set("fname", "john")
         .set("lname", "desai")
         .set("ts", 5)

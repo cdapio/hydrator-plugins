@@ -214,15 +214,15 @@ public class GroupByTestRun extends ETLBatchTestBase {
             Schema.Field.of("user", Schema.of(Schema.Type.STRING)),
             Schema.Field.of("item", Schema.of(Schema.Type.STRING)),
             Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
-    Schema userSchema = Schema.recordOf(
-            "user",
+    Schema aggSchema = Schema.recordOf(
+            "purchase.agg",
             Schema.Field.of("user", Schema.of(Schema.Type.STRING)),
             Schema.Field.of("itemList", Schema.arrayOf(Schema.of(Schema.Type.STRING))));
     GroupByConfig groupByConfig = new GroupByConfig("user",  "itemList:CollectList(item)");
     GroupByAggregator groupByAggregator = new GroupByAggregator(groupByConfig);
     MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(purchaseSchema, Collections.EMPTY_MAP);
     groupByAggregator.configurePipeline(mockConfigurer);
-    Assert.assertEquals(userSchema, mockConfigurer.getOutputSchema());
+    Assert.assertEquals(aggSchema, mockConfigurer.getOutputSchema());
   }
 
   @Test
@@ -236,8 +236,8 @@ public class GroupByTestRun extends ETLBatchTestBase {
             Schema.Field.of("user", Schema.of(Schema.Type.STRING)),
             Schema.Field.of("item", Schema.of(Schema.Type.STRING)),
             Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
-    Schema itemSchema = Schema.recordOf(
-            "item",
+    Schema aggSchema = Schema.recordOf(
+            "purchase.agg",
             Schema.Field.of("item", Schema.of(Schema.Type.STRING)),
             Schema.Field.of("uniqueUsers", Schema.arrayOf(Schema.of(Schema.Type.STRING))));
 
@@ -245,6 +245,6 @@ public class GroupByTestRun extends ETLBatchTestBase {
     GroupByAggregator groupByAggregator = new GroupByAggregator(groupByConfig);
     MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(purchaseSchema, Collections.EMPTY_MAP);
     groupByAggregator.configurePipeline(mockConfigurer);
-    Assert.assertEquals(itemSchema, mockConfigurer.getOutputSchema());
+    Assert.assertEquals(aggSchema, mockConfigurer.getOutputSchema());
   }
 }
