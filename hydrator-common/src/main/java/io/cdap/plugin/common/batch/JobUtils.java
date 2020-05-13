@@ -16,11 +16,15 @@
 
 package io.cdap.plugin.common.batch;
 
+import io.cdap.plugin.common.CombineClassLoader;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
 
 import java.io.IOException;
+import java.util.function.Function;
 
 /**
  * A utility for providing operations on {@link Job}.
@@ -43,6 +47,23 @@ public final class JobUtils {
     }
 
     return job;
+  }
+
+  /**
+   * Calls a {@link Function} with the given {@link JobContext}, with the job classloader sets to a
+   * {@link CombineClassLoader}, with the origin job classloader as the parent, and the given extra classloader
+   * as the delegate.
+   */
+  public static <T, E extends Exception> T applyWithExtraClassLoader(JobContext job, ClassLoader extraClassLoader,
+                                                                     ThrowableFunction<JobContext, T, E> f) throws E {
+    Configuration hConf = job.getConfiguration();
+    ClassLoader cl = hConf.getClassLoader();
+    hConf.setClassLoader(new CombineClassLoader(cl, extraClassLoader));
+    try {
+      return f.apply(job);
+    } finally {
+      hConf.setClassLoader(cl);
+    }
   }
 
   private JobUtils() {

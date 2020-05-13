@@ -109,7 +109,7 @@ public class UnionSplitterTest {
     expected.put("long", Schema.recordOf("union.long",
                                          Schema.Field.of("a", Schema.of(Schema.Type.LONG)),
                                          Schema.Field.of("b", Schema.of(Schema.Type.LONG))));
-    expected.put("float", Schema.recordOf("union.double",
+    expected.put("float", Schema.recordOf("union.float",
                                            Schema.Field.of("a", Schema.of(Schema.Type.LONG)),
                                            Schema.Field.of("b", Schema.of(Schema.Type.FLOAT))));
     expected.put("double", Schema.recordOf("union.double",
@@ -131,19 +131,23 @@ public class UnionSplitterTest {
 
     // test without schema modification
     expected.clear();
-    expected.put("null", inputSchema);
-    expected.put("boolean", inputSchema);
-    expected.put("bytes", inputSchema);
-    expected.put("int", inputSchema);
-    expected.put("long", inputSchema);
-    expected.put("float", inputSchema);
-    expected.put("double", inputSchema);
-    expected.put("string", inputSchema);
-    expected.put("rec1", inputSchema);
-    expected.put("rec2", inputSchema);
+    expected.put("null", changeName(inputSchema, "union.null"));
+    expected.put("boolean", changeName(inputSchema, "union.boolean"));
+    expected.put("bytes", changeName(inputSchema, "union.bytes"));
+    expected.put("int", changeName(inputSchema, "union.int"));
+    expected.put("long", changeName(inputSchema, "union.long"));
+    expected.put("float", changeName(inputSchema, "union.float"));
+    expected.put("double", changeName(inputSchema, "union.double"));
+    expected.put("string", changeName(inputSchema, "union.string"));
+    expected.put("rec1", changeName(inputSchema, "union.rec1"));
+    expected.put("rec2", changeName(inputSchema, "union.rec2"));
     actual = UnionSplitter.getOutputSchemas(inputSchema, "b", false, collector);
     Assert.assertEquals(expected, actual);
     Assert.assertEquals(0, collector.getValidationFailures().size());
+  }
+
+  private Schema changeName(Schema schema, String name) {
+    return Schema.recordOf(name, schema.getFields());
   }
 
   @Test
@@ -183,7 +187,7 @@ public class UnionSplitterTest {
     Schema longSchema = Schema.recordOf("union.long",
                                         Schema.Field.of("a", Schema.of(Schema.Type.LONG)),
                                         Schema.Field.of("b", Schema.of(Schema.Type.LONG)));
-    Schema floatSchema = Schema.recordOf("union.double",
+    Schema floatSchema = Schema.recordOf("union.float",
                                          Schema.Field.of("a", Schema.of(Schema.Type.LONG)),
                                          Schema.Field.of("b", Schema.of(Schema.Type.FLOAT)));
     Schema doubleSchema = Schema.recordOf("union.double",
