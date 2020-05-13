@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Cask Data, Inc.
+ * Copyright © 2018-2020 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -19,6 +19,7 @@ package io.cdap.plugin.format.blob.input;
 import com.google.common.io.ByteStreams;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.plugin.common.batch.JobUtils;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -41,13 +42,8 @@ public class PathTrackingBlobInputFormat extends PathTrackingInputFormat {
 
   @Override
   public List<InputSplit> getSplits(JobContext job) throws IOException {
-    ClassLoader cl = job.getConfiguration().getClassLoader();
-    job.getConfiguration().setClassLoader(getClass().getClassLoader());
-    try {
-      return super.getSplits(job);
-    } finally {
-      job.getConfiguration().setClassLoader(cl);
-    }
+    return JobUtils.applyWithExtraClassLoader(job, getClass().getClassLoader(),
+                                              PathTrackingBlobInputFormat.super::getSplits);
   }
 
   @Override
