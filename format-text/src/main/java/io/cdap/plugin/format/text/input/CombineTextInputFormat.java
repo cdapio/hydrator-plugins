@@ -20,9 +20,14 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.plugin.common.batch.JobUtils;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.compress.CodecPool;
+import org.apache.hadoop.io.compress.CompressionCodec;
+import org.apache.hadoop.io.compress.CompressionCodecFactory;
+import org.apache.hadoop.io.compress.Decompressor;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -34,6 +39,7 @@ import org.apache.hadoop.mapreduce.lib.input.CombineFileSplit;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -83,7 +89,8 @@ public class CombineTextInputFormat extends CombineFileInputFormat<NullWritable,
     String header = null;
     for (Path path : split.getPaths()) {
       try (FileSystem fs = path.getFileSystem(hConf);
-        BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(path), StandardCharsets.UTF_8))) {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(openPath(hConf, fs, path),
+                                                                         StandardCharsets.UTF_8))) {
         header = reader.readLine();
         if (header != null) {
           break;
@@ -91,6 +98,19 @@ public class CombineTextInputFormat extends CombineFileInputFormat<NullWritable,
       }
     }
     return header;
+  }
+
+  /**
+   * Opens the given {@link Path} for reading. It honors the compression codec if the file is compressed.
+   */
+  private InputStream openPath(Configuration hConf, FileSystem fs, Path path) throws IOException {
+    CompressionCodec codec = new CompressionCodecFactory(hConf).getCodec(path);
+    FSDataInputStream is = fs.open(path);
+    if (codec == null) {
+      return is;
+    }
+    Decompressor decompressor = CodecPool.getDecompressor(codec);
+    return codec.createInputStream(is, decompressor);
   }
 
   /**
