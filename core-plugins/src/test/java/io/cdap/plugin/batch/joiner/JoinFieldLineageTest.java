@@ -16,7 +16,8 @@
 
 package io.cdap.plugin.batch.joiner;
 
-import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.join.JoinField;
+import io.cdap.cdap.etl.api.join.JoinKey;
 import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
 import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
 import org.junit.Assert;
@@ -25,9 +26,9 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 /**
  *
@@ -42,15 +43,13 @@ public class JoinFieldLineageTest {
     //                              |
     //  purchase -> (customer_id)---
 
-    List<Joiner.OutputFieldInfo> outputFieldInfos = new ArrayList<>();
-    outputFieldInfos.add(new Joiner.OutputFieldInfo("id", "customer", "id",
-                                                    Schema.Field.of("id", Schema.of(Schema.Type.INT))));
-    outputFieldInfos.add(new Joiner.OutputFieldInfo("customer_id", "purchase", "customer_id",
-                                                    Schema.Field.of("customer_id", Schema.of(Schema.Type.INT))));
-    Map<String, List<String>> perStageJoinKeys = new LinkedHashMap<>();
-    perStageJoinKeys.put("customer", Collections.singletonList("id"));
-    perStageJoinKeys.put("purchase", Collections.singletonList("customer_id"));
-    List<FieldOperation> fieldOperations = Joiner.createFieldOperations(outputFieldInfos, perStageJoinKeys);
+    List<JoinField> outputFieldInfos = new ArrayList<>();
+    outputFieldInfos.add(new JoinField("id", "customer", "id"));
+    outputFieldInfos.add(new JoinField("customer_id", "purchase", "customer_id"));
+    Set<JoinKey> joinKeys = new HashSet<>();
+    joinKeys.add(new JoinKey("customer", Collections.singletonList("id")));
+    joinKeys.add(new JoinKey("purchase", Collections.singletonList("customer_id")));
+    List<FieldOperation> fieldOperations = Joiner.createFieldOperations(outputFieldInfos, joinKeys);
     FieldOperation operation = new FieldTransformOperation("Join", Joiner.JOIN_OPERATION_DESCRIPTION,
                                                            Arrays.asList("customer.id", "purchase.customer_id"),
                                                            Arrays.asList("id", "customer_id"));
@@ -67,19 +66,15 @@ public class JoinFieldLineageTest {
     //  purchase ->(customer_id, item)---
 
 
-    List<Joiner.OutputFieldInfo> outputFieldInfos = new ArrayList<>();
-    outputFieldInfos.add(new Joiner.OutputFieldInfo("id", "customer", "id",
-                                                    Schema.Field.of("id", Schema.of(Schema.Type.INT))));
-    outputFieldInfos.add(new Joiner.OutputFieldInfo("name", "customer", "name",
-                                                    Schema.Field.of("name", Schema.of(Schema.Type.STRING))));
-    outputFieldInfos.add(new Joiner.OutputFieldInfo("customer_id", "purchase", "customer_id",
-                                                    Schema.Field.of("customer_id", Schema.of(Schema.Type.INT))));
-    outputFieldInfos.add(new Joiner.OutputFieldInfo("item", "purchase", "item",
-                                                    Schema.Field.of("item", Schema.of(Schema.Type.STRING))));
-    Map<String, List<String>> perStageJoinKeys = new LinkedHashMap<>();
-    perStageJoinKeys.put("customer", Collections.singletonList("id"));
-    perStageJoinKeys.put("purchase", Collections.singletonList("customer_id"));
-    List<FieldOperation> fieldOperations = Joiner.createFieldOperations(outputFieldInfos, perStageJoinKeys);
+    List<JoinField> outputFieldInfos = new ArrayList<>();
+    outputFieldInfos.add(new JoinField("id", "customer", "id"));
+    outputFieldInfos.add(new JoinField("name", "customer", "name"));
+    outputFieldInfos.add(new JoinField("customer_id", "purchase", "customer_id"));
+    outputFieldInfos.add(new JoinField("item", "purchase", "item"));
+    Set<JoinKey> joinKeys = new HashSet<>();
+    joinKeys.add(new JoinKey("customer", Collections.singletonList("id")));
+    joinKeys.add(new JoinKey("purchase", Collections.singletonList("customer_id")));
+    List<FieldOperation> fieldOperations = Joiner.createFieldOperations(outputFieldInfos, joinKeys);
     List<FieldOperation> expected = new ArrayList<>();
 
     expected.add(new FieldTransformOperation("Join", Joiner.JOIN_OPERATION_DESCRIPTION,
@@ -102,16 +97,14 @@ public class JoinFieldLineageTest {
     //                                  |
     //  purchase ->(customer_id, item)---
 
-    List<Joiner.OutputFieldInfo> outputFieldInfos = new ArrayList<>();
-    outputFieldInfos.add(new Joiner.OutputFieldInfo("id_from_customer", "customer", "id",
-                                                    Schema.Field.of("id", Schema.of(Schema.Type.INT))));
-    outputFieldInfos.add(new Joiner.OutputFieldInfo("id_from_purchase", "purchase", "customer_id",
-                                                    Schema.Field.of("customer_id", Schema.of(Schema.Type.INT))));
-    Map<String, List<String>> perStageJoinKeys = new LinkedHashMap<>();
-    perStageJoinKeys.put("customer", Collections.singletonList("id"));
-    perStageJoinKeys.put("purchase", Collections.singletonList("customer_id"));
+    List<JoinField> outputFieldInfos = new ArrayList<>();
+    outputFieldInfos.add(new JoinField("id_from_customer", "customer", "id"));
+    outputFieldInfos.add(new JoinField("id_from_purchase", "purchase", "customer_id"));
+    Set<JoinKey> joinKeys = new HashSet<>();
+    joinKeys.add(new JoinKey("customer", Collections.singletonList("id")));
+    joinKeys.add(new JoinKey("purchase", Collections.singletonList("customer_id")));
 
-    List<FieldOperation> fieldOperations = Joiner.createFieldOperations(outputFieldInfos, perStageJoinKeys);
+    List<FieldOperation> fieldOperations = Joiner.createFieldOperations(outputFieldInfos, joinKeys);
 
     List<FieldOperation> expected = new ArrayList<>();
     expected.add(new FieldTransformOperation("Join", Joiner.JOIN_OPERATION_DESCRIPTION,
@@ -133,19 +126,15 @@ public class JoinFieldLineageTest {
     //                                JOIN  --->(id_from_customer, customer_id, name_from_customer, item_from_purchase)
     //                                  |
     //  purchase ->(customer_id, item)---
-    List<Joiner.OutputFieldInfo> outputFieldInfos = new ArrayList<>();
-    outputFieldInfos.add(new Joiner.OutputFieldInfo("id_from_customer", "customer", "id",
-                                                    Schema.Field.of("id", Schema.of(Schema.Type.INT))));
-    outputFieldInfos.add(new Joiner.OutputFieldInfo("name_from_customer", "customer", "name",
-                                                    Schema.Field.of("name", Schema.of(Schema.Type.STRING))));
-    outputFieldInfos.add(new Joiner.OutputFieldInfo("customer_id", "purchase", "customer_id",
-                                                    Schema.Field.of("customer_id", Schema.of(Schema.Type.INT))));
-    outputFieldInfos.add(new Joiner.OutputFieldInfo("item_from_purchase", "purchase", "item",
-                                                    Schema.Field.of("item", Schema.of(Schema.Type.STRING))));
-    Map<String, List<String>> perStageJoinKeys = new LinkedHashMap<>();
-    perStageJoinKeys.put("customer", Collections.singletonList("id"));
-    perStageJoinKeys.put("purchase", Collections.singletonList("customer_id"));
-    List<FieldOperation> fieldOperations = Joiner.createFieldOperations(outputFieldInfos, perStageJoinKeys);
+    List<JoinField> outputFieldInfos = new ArrayList<>();
+    outputFieldInfos.add(new JoinField("id_from_customer", "customer", "id"));
+    outputFieldInfos.add(new JoinField("name_from_customer", "customer", "name"));
+    outputFieldInfos.add(new JoinField("customer_id", "purchase", "customer_id"));
+    outputFieldInfos.add(new JoinField("item_from_purchase", "purchase", "item"));
+    Set<JoinKey> joinKeys = new HashSet<>();
+    joinKeys.add(new JoinKey("customer", Collections.singletonList("id")));
+    joinKeys.add(new JoinKey("purchase", Collections.singletonList("customer_id")));
+    List<FieldOperation> fieldOperations = Joiner.createFieldOperations(outputFieldInfos, joinKeys);
     List<FieldOperation> expected = new ArrayList<>();
 
     expected.add(new FieldTransformOperation("Join", Joiner.JOIN_OPERATION_DESCRIPTION,
@@ -172,22 +161,17 @@ public class JoinFieldLineageTest {
     //                                  |
     // address ->(address_id, address)--|
 
-    List<Joiner.OutputFieldInfo> outputFieldInfos = new ArrayList<>();
-    outputFieldInfos.add(new Joiner.OutputFieldInfo("id_from_customer", "customer", "id",
-                                                    Schema.Field.of("id", Schema.of(Schema.Type.INT))));
-    outputFieldInfos.add(new Joiner.OutputFieldInfo("name_from_customer", "customer", "name",
-                                                    Schema.Field.of("name", Schema.of(Schema.Type.STRING))));
-    outputFieldInfos.add(new Joiner.OutputFieldInfo("customer_id", "purchase", "customer_id",
-                                                    Schema.Field.of("customer_id", Schema.of(Schema.Type.INT))));
-    outputFieldInfos.add(new Joiner.OutputFieldInfo("address_id", "address", "address_id",
-                                                    Schema.Field.of("address_id", Schema.of(Schema.Type.INT))));
-    outputFieldInfos.add(new Joiner.OutputFieldInfo("address", "address", "address",
-                                                    Schema.Field.of("address", Schema.of(Schema.Type.STRING))));
-    Map<String, List<String>> perStageJoinKeys = new LinkedHashMap<>();
-    perStageJoinKeys.put("customer", Collections.singletonList("id"));
-    perStageJoinKeys.put("purchase", Collections.singletonList("customer_id"));
-    perStageJoinKeys.put("address", Collections.singletonList("address_id"));
-    List<FieldOperation> fieldOperations = Joiner.createFieldOperations(outputFieldInfos, perStageJoinKeys);
+    List<JoinField> outputFieldInfos = new ArrayList<>();
+    outputFieldInfos.add(new JoinField("id_from_customer", "customer", "id"));
+    outputFieldInfos.add(new JoinField("name_from_customer", "customer", "name"));
+    outputFieldInfos.add(new JoinField("customer_id", "purchase", "customer_id"));
+    outputFieldInfos.add(new JoinField("address_id", "address", "address_id"));
+    outputFieldInfos.add(new JoinField("address", "address", "address"));
+    Set<JoinKey> joinKeys = new HashSet<>();
+    joinKeys.add(new JoinKey("customer", Collections.singletonList("id")));
+    joinKeys.add(new JoinKey("purchase", Collections.singletonList("customer_id")));
+    joinKeys.add(new JoinKey("address", Collections.singletonList("address_id")));
+    List<FieldOperation> fieldOperations = Joiner.createFieldOperations(outputFieldInfos, joinKeys);
     List<FieldOperation> expected = new ArrayList<>();
 
     expected.add(new FieldTransformOperation("Join", Joiner.JOIN_OPERATION_DESCRIPTION,

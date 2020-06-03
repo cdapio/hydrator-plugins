@@ -113,7 +113,6 @@ public class JoinerTestRun extends ETLBatchTestBase {
     verifyOutput.apply(outputSchema, fileSet);
   }
 
-
   @Test
   public void testInnerJoin() throws Exception {
     String filmDatasetName = "film-innerjoin";
@@ -154,7 +153,6 @@ public class JoinerTestRun extends ETLBatchTestBase {
     joinHelper(filmStage, filmActorStage, filmCategoryStage, joinStage, joinSinkStage,
                filmDatasetName, filmActorDatasetName, filmCategoryDatasetName, joinedDatasetName,
                outputSchema, this::verifyInnerJoinOutput, ImmutableMap.of());
-
   }
 
   @Test
