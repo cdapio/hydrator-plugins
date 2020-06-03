@@ -19,24 +19,26 @@ package io.cdap.plugin.batch.joiner;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Table;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.FailureCollector;
+import io.cdap.cdap.etl.api.join.JoinField;
+import io.cdap.cdap.etl.api.join.JoinKey;
 import io.cdap.plugin.common.KeyValueListParser;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
@@ -89,6 +91,18 @@ public class JoinerConfig extends PluginConfig {
   @Description(OUTPUT_SCHEMA)
   private String schema;
 
+  @Nullable
+  @Macro
+  @Description("Set of input stages to try to load completely in memory to perform an in-memory join. " +
+    "This is just a hint to the underlying execution engine to try and perform an in-memory join. " +
+    "Whether it is actually loaded into memory is up to the engine. This property is ignored when MapReduce is used.")
+  private String inMemoryInputs;
+
+  @Nullable
+  @Macro
+  @Description("Whether null values in the join key should be joined on. For example, if the join is on A.id = B.id " +
+    "and this value is false, records with a null id from input stages A and B will not get joined together.")
+  private Boolean joinNullKeys;
 
   public JoinerConfig() {
     this.joinKeys = "";
@@ -108,19 +122,6 @@ public class JoinerConfig extends PluginConfig {
     return numPartitions;
   }
 
-  public String getSelectedFields() {
-    return selectedFields;
-  }
-
-  public String getJoinKeys() {
-    return joinKeys;
-  }
-
-  @Nullable
-  public String getRequiredInputs() {
-    return requiredInputs;
-  }
-
   @Nullable
   public Schema getOutputSchema(FailureCollector collector) {
     try {
@@ -132,20 +133,26 @@ public class JoinerConfig extends PluginConfig {
     throw collector.getOrThrowException();
   }
 
-  Map<String, List<String>> getPerStageJoinKeys() {
-    Map<String, List<String>> stageToKey = new HashMap<>();
-    if (containsMacro(JoinerConfig.JOIN_KEYS)) {
-      return stageToKey;
-    }
+  boolean requiredPropertiesContainMacros() {
+    return containsMacro(SELECTED_FIELDS) || containsMacro(REQUIRED_INPUTS) || containsMacro(JOIN_KEYS) ||
+      containsMacro(OUTPUT_SCHEMA);
+  }
+
+  Set<JoinKey> getJoinKeys(FailureCollector failureCollector) {
+    // Use a LinkedHashMap to maintain the ordering as the input config.
+    // This helps making error report deterministic.
+    Map<String, List<String>> stageToKey = new LinkedHashMap<>();
 
     if (Strings.isNullOrEmpty(joinKeys)) {
-      throw new IllegalArgumentException("Join keys can not be empty");
+      failureCollector.addFailure("Join keys cannot be empty", null).withConfigProperty(JOIN_KEYS);
+      throw failureCollector.getOrThrowException();
     }
 
     Iterable<String> multipleJoinKeys = Splitter.on('&').trimResults().omitEmptyStrings().split(joinKeys);
 
     if (Iterables.isEmpty(multipleJoinKeys)) {
-      throw new IllegalArgumentException("Join keys can not be empty.");
+      failureCollector.addFailure("Join keys cannot be empty", null).withConfigProperty(JOIN_KEYS);
+      throw failureCollector.getOrThrowException();
     }
 
     int numJoinKeys = 0;
@@ -155,32 +162,33 @@ public class JoinerConfig extends PluginConfig {
       if (numJoinKeys == 0) {
         numJoinKeys = Iterables.size(keyValues);
       } else if (numJoinKeys != Iterables.size(keyValues)) {
-        throw new IllegalArgumentException("There should be one join key from each of the stages. Please add join " +
-                                             "keys for each stage.");
+        failureCollector.addFailure("There should be one join key from each of the stages",
+                                    "Please add join keys for each stage.")
+          .withConfigProperty(JOIN_KEYS);
+        throw failureCollector.getOrThrowException();
       }
       for (KeyValue<String, String> keyValue : keyValues) {
         String stageName = keyValue.getKey();
         String joinKey = keyValue.getValue();
         if (!stageToKey.containsKey(stageName)) {
-          stageToKey.put(stageName, new ArrayList<String>());
+          stageToKey.put(stageName, new ArrayList<>());
         }
         stageToKey.get(stageName).add(joinKey);
       }
     }
-    return stageToKey;
+
+    return stageToKey.entrySet().stream()
+      .map(entry -> new JoinKey(entry.getKey(), entry.getValue()))
+      .collect(Collectors.toSet());
   }
 
-  Table<String, String, String> getPerStageSelectedFields() {
-    // table to store <stageName, oldFieldName, alias>
-    ImmutableTable.Builder<String, String, String> tableBuilder = new ImmutableTable.Builder<>();
-    if (containsMacro(JoinerConfig.SELECTED_FIELDS)) {
-      return tableBuilder.build();
-    }
-
-
+  List<JoinField> getSelectedFields(FailureCollector failureCollector) {
     if (Strings.isNullOrEmpty(selectedFields)) {
-      throw new IllegalArgumentException("selectedFields can not be empty. Please provide at least 1 selectedFields");
+      failureCollector.addFailure("Must select at least one field", null).withConfigProperty(SELECTED_FIELDS);
+      throw failureCollector.getOrThrowException();
     }
+
+    List<JoinField> selectedJoinFields = new ArrayList<>();
 
     for (String selectedField : Splitter.on(',').trimResults().omitEmptyStrings().split(selectedFields)) {
       Iterable<String> stageOldNameAliasPair = Splitter.on(" as ").trimResults().omitEmptyStrings()
@@ -189,40 +197,45 @@ public class JoinerConfig extends PluginConfig {
         split(Iterables.get(stageOldNameAliasPair, 0));
 
       if (Iterables.size(stageOldNamePair) != 2) {
-        throw new IllegalArgumentException(String.format("Invalid syntax. Selected Fields must be of syntax " +
-                                                           "<stageName>.<oldFieldName> as <alias>, but found %s",
-                                                         selectedField));
+        failureCollector.addFailure(String.format("Invalid syntax. Selected Fields must be of syntax " +
+                                                    "<stageName>.<oldFieldName> as <alias>, but found %s",
+                                                  selectedField), null)
+          .withConfigProperty(SELECTED_FIELDS);
+        continue;
       }
 
       String stageName = Iterables.get(stageOldNamePair, 0);
       String oldFieldName = Iterables.get(stageOldNamePair, 1);
 
       // if alias is not present in selected fields, use original field name as alias
-      String alias = isAliasPresent(stageOldNameAliasPair) ? oldFieldName : Iterables.get(stageOldNameAliasPair, 1);
-      tableBuilder.put(stageName, oldFieldName, alias);
+      String alias = Iterables.size(stageOldNameAliasPair) == 1 ?
+        oldFieldName : Iterables.get(stageOldNameAliasPair, 1);
+      selectedJoinFields.add(new JoinField(stageName, oldFieldName, alias));
     }
-    return tableBuilder.build();
+    failureCollector.getOrThrowException();
+    return selectedJoinFields;
   }
 
-  private boolean isAliasPresent(Iterable<String> stageOldNameAliasPair) {
-    return Iterables.size(stageOldNameAliasPair) == 1;
+  Set<String> getRequiredInputs() {
+    return getSet(requiredInputs);
   }
 
-  Set<String> getInputs() {
-    if (!Strings.isNullOrEmpty(requiredInputs) && !containsMacro(JoinerConfig.REQUIRED_INPUTS)) {
-      return ImmutableSet.copyOf(Splitter.on(',').trimResults().omitEmptyStrings().split(requiredInputs));
-    }
-    return ImmutableSet.of();
+  Set<String> getBroadcastInputs() {
+    return getSet(inMemoryInputs);
   }
 
-  void validateJoinKeySchemas(Map<String, Schema> inputSchemas, List<String> inputStages, Map<String,
-                              List<String>> joinKeys, FailureCollector collector) {
-    // Skip validation if joinKeys is a macro, or if any input's output schema is a macro.
-    if (!containsMacro(JoinerConfig.JOIN_KEYS) &&
-        joinKeys.size() != inputStages.size()) {
-        collector.addFailure("There should be join keys present from each stage.",
-                           "Ensure join keys are present from each stage.")
-        .withConfigProperty(JoinerConfig.JOIN_KEYS);
+  boolean isNullSafe() {
+    return joinNullKeys == null ? true : joinNullKeys;
+  }
+
+  private Set<String> getSet(String strVal) {
+    if (strVal == null || strVal.isEmpty()) {
+      return Collections.emptySet();
     }
+    Set<String> set = new HashSet<>();
+    for (String val : Splitter.on(",").trimResults().omitEmptyStrings().split(strVal)) {
+      set.add(val);
+    }
+    return set;
   }
 }
