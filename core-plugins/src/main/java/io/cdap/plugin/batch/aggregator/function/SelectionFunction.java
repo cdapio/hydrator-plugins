@@ -1,5 +1,5 @@
 /*
- * Copyright © 2016-2019 Cask Data, Inc.
+ * Copyright © 2016-2020 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -21,14 +21,12 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import java.util.List;
 
 /**
- * Peforms selection. To perform selection on a group of {@link StructuredRecord}, {@link #beginFunction} is first
- * called, followed by calls to {@link #operateOn}. Finally the {@link #finishFunction} should be invoked before getting
- * the selected records from {@link #getSelectedRecords}.
+ * Peforms selection on two structured record
  */
-public interface SelectionFunction extends RecordFunctionLifecycle {
+public interface SelectionFunction {
 
   /**
    * @return {@link StructuredRecord} that is chosen based on the aggregate function.
    */
-  List<StructuredRecord> getSelectedRecords();
+  StructuredRecord select(StructuredRecord record1, StructuredRecord record2);
 }

@@ -16,78 +16,54 @@
 
 package io.cdap.plugin.batch.aggregator.function;
 
+import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 
 /**
  * Performs a sum on a field.
  */
-public class Sum extends NumberFunction {
-  private int intSum;
-  private long longSum;
-  private double doubleSum;
-  private float floatSum;
+public class Sum extends NumberFunction<Sum> {
 
   public Sum(String fieldName, Schema fieldSchema) {
     super(fieldName, fieldSchema);
   }
 
   @Override
-  protected void startInt() {
-    intSum = 0;
+  public void mergeValue(StructuredRecord record) {
+    combine(record.get(fieldName));
   }
 
   @Override
-  protected void startLong() {
-    longSum = 0;
+  public void mergeAggregates(Sum otherAgg) {
+    combine(otherAgg.getAggregate());
   }
 
-  @Override
-  protected void startFloat() {
-    floatSum = 0;
-  }
+  private void combine(Number otherNum) {
+    if (otherNum == null) {
+      return;
+    }
 
-  @Override
-  protected void startDouble() {
-    doubleSum = 0;
-  }
+    if (number == null) {
+      number = otherNum;
+      return;
+    }
 
-  @Override
-  protected void updateInt(int val) {
-    intSum += val;
-  }
-
-  @Override
-  protected void updateLong(long val) {
-    longSum += val;
-  }
-
-  @Override
-  protected void updateFloat(float val) {
-    floatSum += val;
-  }
-
-  @Override
-  protected void updateDouble(double val) {
-    doubleSum += val;
-  }
-
-  @Override
-  protected Integer getInt() {
-    return intSum;
-  }
-
-  @Override
-  protected Long getLong() {
-    return longSum;
-  }
-
-  @Override
-  protected Float getFloat() {
-    return floatSum;
-  }
-
-  @Override
-  protected Double getDouble() {
-    return doubleSum;
+    switch (fieldType) {
+      case INT:
+        number = (Integer) number + (Integer) otherNum;
+        return;
+      case LONG:
+        number = (Long) number + (Long) otherNum;
+        return;
+      case FLOAT:
+        number = (Float) number + (Float) otherNum;
+        return;
+      case DOUBLE:
+        number = (Double) number + (Double) otherNum;
+        return;
+      default:
+        throw new IllegalArgumentException(String.format("Field '%s' is of unsupported non-numeric type '%s'. ",
+                                                         fieldName, fieldType));
+    }
   }
 }
