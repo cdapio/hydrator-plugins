@@ -22,7 +22,8 @@ import io.cdap.cdap.api.data.schema.Schema;
 /**
  * Counts the number of times a specific column has a non-null value.
  */
-public class Count implements AggregateFunction<Long> {
+public class Count implements AggregateFunction<Long, Count> {
+  private static final Schema SCHEMA = Schema.of(Schema.Type.LONG);
   private final String fieldName;
   private long count;
 
@@ -31,15 +32,21 @@ public class Count implements AggregateFunction<Long> {
   }
 
   @Override
-  public void beginFunction() {
-    count = 0;
+  public void initialize() {
+    this.count = 0L;
   }
 
   @Override
-  public void operateOn(StructuredRecord record) {
-    if (record.get(fieldName) != null) {
-      count++;
+  public void mergeValue(StructuredRecord record) {
+    if (record.get(fieldName) == null) {
+      return;
     }
+    count++;
+  }
+
+  @Override
+  public void mergeAggregates(Count otherAgg) {
+    count += otherAgg.count;
   }
 
   @Override
@@ -49,6 +56,6 @@ public class Count implements AggregateFunction<Long> {
 
   @Override
   public Schema getOutputSchema() {
-    return Schema.of(Schema.Type.LONG);
+    return SCHEMA;
   }
 }

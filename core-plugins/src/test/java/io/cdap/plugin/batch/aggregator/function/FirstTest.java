@@ -16,28 +16,23 @@
 
 package io.cdap.plugin.batch.aggregator.function;
 
-import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
-import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Arrays;
+
 /**
+ *
  */
-public class FirstTest {
+public class FirstTest extends AggregateFunctionTest {
 
   @Test
   public void testFirst() {
-    Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
-    First count = new First("x", Schema.of(Schema.Type.INT));
-
-    count.beginFunction();
-    count.operateOn(StructuredRecord.builder(schema).set("x", 1).build());
-    count.operateOn(StructuredRecord.builder(schema).set("x", 2).build());
-    count.operateOn(StructuredRecord.builder(schema).set("x", 3).build());
-    Assert.assertEquals(1, count.getAggregate());
-
-    count.beginFunction();
-    count.operateOn(StructuredRecord.builder(schema).set("x", 3).build());
-    Assert.assertEquals(3, count.getAggregate());
+    Schema fieldSchema = Schema.of(Schema.Type.INT);
+    Schema schema = Schema.recordOf("test", Schema.Field.of("x",  Schema.nullableOf(fieldSchema)));
+    test(new First("x", fieldSchema), schema, "x", 1,
+         Arrays.asList(1, 2, 3, 4, 5), new First("x", fieldSchema));
+    test(new First("x", fieldSchema), schema, "x", null,
+         Arrays.asList(null, 2, 3, 4, 5), new First("x", fieldSchema));
   }
 }

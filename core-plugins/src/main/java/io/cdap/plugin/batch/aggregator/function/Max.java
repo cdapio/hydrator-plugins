@@ -16,80 +16,54 @@
 
 package io.cdap.plugin.batch.aggregator.function;
 
+import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
-
-import javax.annotation.Nullable;
 
 /**
  * Calculates max values of a field in a group.
  */
-public class Max extends NumberFunction {
-  private Integer maxInt;
-  private Long maxLong;
-  private Float maxFloat;
-  private Double maxDouble;
+public class Max extends NumberFunction<Max> {
 
-  public Max(String fieldName, @Nullable Schema fieldSchema) {
+  public Max(String fieldName, Schema fieldSchema) {
     super(fieldName, fieldSchema);
   }
 
   @Override
-  protected void startInt() {
-    maxInt = null;
+  public void mergeValue(StructuredRecord record) {
+    combine(record.get(fieldName));
   }
 
   @Override
-  protected void startLong() {
-    maxLong = null;
+  public void mergeAggregates(Max otherAgg) {
+    combine(otherAgg.getAggregate());
   }
 
-  @Override
-  protected void startFloat() {
-    maxFloat = null;
-  }
+  private void combine(Number otherNum) {
+    if (otherNum == null) {
+      return;
+    }
 
-  @Override
-  protected void startDouble() {
-    maxDouble = null;
-  }
+    if (number == null) {
+      number = otherNum;
+      return;
+    }
 
-  @Override
-  protected void updateInt(int val) {
-    maxInt = maxInt == null ? val : Math.max(maxInt, val);
-  }
-
-  @Override
-  protected void updateLong(long val) {
-    maxLong = maxLong == null ? val : Math.max(maxLong, val);
-  }
-
-  @Override
-  protected void updateFloat(float val) {
-    maxFloat = maxFloat == null ? val : Math.max(maxFloat, val);
-  }
-
-  @Override
-  protected void updateDouble(double val) {
-    maxDouble = maxDouble == null ? val : Math.max(maxDouble, val);
-  }
-
-  @Override
-  protected Integer getInt() {
-    return maxInt;
-  }
-
-  @Override
-  protected Long getLong() {
-    return maxLong;
-  }
-
-  @Override
-  protected Float getFloat() {
-    return maxFloat;
-  }
-
-  @Override
-  protected Double getDouble() {
-    return maxDouble;
+    switch (fieldType) {
+      case INT:
+        number = Math.max((Integer) otherNum, (Integer) number);
+        return;
+      case LONG:
+        number = Math.max((Long) otherNum, (Long) number);
+        return;
+      case FLOAT:
+        number = Math.max((Float) otherNum, (Float) number);
+        return;
+      case DOUBLE:
+        number = Math.max((Double) otherNum, (Double) number);
+        return;
+      default:
+        throw new IllegalArgumentException(String.format("Field '%s' is of unsupported non-numeric type '%s'. ",
+                                                         fieldName, fieldType));
+    }
   }
 }

@@ -44,10 +44,11 @@ import javax.annotation.Nullable;
 @Name("Deduplicate")
 @Description("Deduplicates input records, optionally restricted to one or more fields. Takes an optional " +
   "filter function to choose one or more records based on a specific field and a selection function.")
-public class DedupAggregator extends RecordAggregator {
+public class DedupAggregator extends RecordReducibleAggregator<StructuredRecord> {
   private final DedupConfig dedupConfig;
   private List<String> uniqueFields;
   private DedupConfig.DedupFunctionInfo filterFunction;
+  private SelectionFunction selectionFunction;
 
   public DedupAggregator(DedupConfig dedupConfig) {
     super(dedupConfig.numPartitions);
@@ -70,10 +71,6 @@ public class DedupAggregator extends RecordAggregator {
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     List<String> uniqueFields = dedupConfig.getUniqueFields();
     DedupConfig.DedupFunctionInfo functionInfo = dedupConfig.getFilter();
-    if (functionInfo != null) {
-      // Invoke to validate whether the function used is supported
-      functionInfo.getSelectionFunction(null);
-    }
 
     StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
     Schema inputSchema = stageConfigurer.getInputSchema();
@@ -87,6 +84,13 @@ public class DedupAggregator extends RecordAggregator {
     Schema outputSchema = getOutputSchema(inputSchema);
     FailureCollector collector = stageConfigurer.getFailureCollector();
     validateSchema(outputSchema, uniqueFields, functionInfo, collector);
+
+    if (functionInfo != null) {
+      // Invoke to validate whether the function used is supported, the field must be non-null here because of the
+      // validation before
+      functionInfo.getSelectionFunction(outputSchema.getField(functionInfo.getField()).getSchema());
+    }
+
     stageConfigurer.setOutputSchema(outputSchema);
   }
 
@@ -111,36 +115,42 @@ public class DedupAggregator extends RecordAggregator {
   }
 
   @Override
-  public void aggregate(StructuredRecord groupKey, Iterator<StructuredRecord> iterator,
-                        Emitter<StructuredRecord> emitter) {
-    if (!iterator.hasNext()) {
-      return;
-    }
+  public StructuredRecord initializeAggregateValue(StructuredRecord record) {
+    return record;
+  }
 
-    SelectionFunction selectionFunction;
+  @Override
+  public StructuredRecord mergeValues(StructuredRecord aggValue, StructuredRecord record) {
+    return select(aggValue, record);
+  }
+
+  @Override
+  public StructuredRecord mergePartitions(StructuredRecord aggValue1, StructuredRecord aggValue2) {
+    return select(aggValue1, aggValue2);
+  }
+
+  @Override
+  public void finalize(StructuredRecord groupKey, StructuredRecord aggVal, Emitter<StructuredRecord> emitter) {
+    emitter.emit(aggVal);
+  }
+
+  private StructuredRecord select(StructuredRecord record1, StructuredRecord record2) {
     if (filterFunction == null) {
-      emitter.emit(iterator.next());
-    } else {
-      StructuredRecord firstRecord = iterator.next();
-      Schema.Field firstField = firstRecord.getSchema().getField(filterFunction.getField());
-      selectionFunction = filterFunction.getSelectionFunction(firstField.getSchema());
-      selectionFunction.beginFunction();
-      selectionFunction.operateOn(firstRecord);
-
-      while (iterator.hasNext()) {
-        selectionFunction.operateOn(iterator.next());
-      }
-
-      List<StructuredRecord> outputRecords = selectionFunction.getSelectedRecords();
-      for (StructuredRecord outputRecord : outputRecords) {
-        Schema outputSchema = getOutputSchema(outputRecord.getSchema());
-        StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
-        for (Schema.Field field : outputRecord.getSchema().getFields()) {
-          builder.set(field.getName(), outputRecord.get(field.getName()));
-        }
-        emitter.emit(builder.build());
-      }
+      return record1;
     }
+
+    // TODO: CDAP-16473 after we propagate schema in prepareRun, this validation can happen in prepareRun, and
+    // initialize method can create this variable
+    if (selectionFunction == null) {
+      Schema.Field field = record1.getSchema().getField(filterFunction.getField());
+      if (field == null) {
+        throw new IllegalArgumentException(
+          String.format("Field '%s' cannot be used as a filter field since it does not exist in the output schema",
+                        filterFunction.getField()));
+      }
+      selectionFunction = filterFunction.getSelectionFunction(field.getSchema());
+    }
+    return selectionFunction.select(record1, record2);
   }
 
   private Schema getGroupKeySchema(Schema inputSchema) {

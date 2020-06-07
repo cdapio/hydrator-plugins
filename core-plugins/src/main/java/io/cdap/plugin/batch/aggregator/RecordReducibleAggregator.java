@@ -1,5 +1,5 @@
 /*
- * Copyright © 2016-2019 Cask Data, Inc.
+ * Copyright © 2020 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -17,19 +17,23 @@
 package io.cdap.plugin.batch.aggregator;
 
 import io.cdap.cdap.api.data.format.StructuredRecord;
-import io.cdap.cdap.etl.api.batch.BatchAggregator;
 import io.cdap.cdap.etl.api.batch.BatchAggregatorContext;
+import io.cdap.cdap.etl.api.batch.BatchReducibleAggregator;
 
 import javax.annotation.Nullable;
 
 /**
  * Base class for StructuredRecord based aggregators.
+ *
+ * @param <AGG_VALUE> Type of aggregation value
  */
-public abstract class RecordAggregator extends BatchAggregator<StructuredRecord, StructuredRecord, StructuredRecord> {
+public abstract class RecordReducibleAggregator<AGG_VALUE>
+  extends BatchReducibleAggregator<StructuredRecord, StructuredRecord, AGG_VALUE, StructuredRecord> {
+
   @Nullable
   private final Integer numPartitions;
 
-  protected RecordAggregator(@Nullable Integer numPartitions) {
+  protected RecordReducibleAggregator(@Nullable Integer numPartitions) {
     this.numPartitions = numPartitions;
   }
 

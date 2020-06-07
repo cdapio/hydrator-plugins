@@ -16,25 +16,25 @@
 
 package io.cdap.plugin.batch.aggregator.function;
 
-import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import org.junit.Assert;
 
+import java.util.Arrays;
+
 /**
+ *
  */
-public class NumberTest {
+public class NumberTest extends AggregateFunctionTest {
   
-  protected void testFunction(AggregateFunction func, Schema schema, Number expected, Number... inputs) {
-    func.beginFunction();
-    for (Number num : inputs) {
-      func.operateOn(StructuredRecord.builder(schema).set("x", num).build());
-    }
+  protected void testFunction(AggregateFunction func, Schema schema, AggregateFunction otherFunc, Number expected,
+                              Number... inputs) {
+    Number actual = (Number) getAggregate(func, schema, "x", Arrays.asList(inputs), otherFunc);
     if (expected instanceof Float) {
-      Assert.assertTrue(Math.abs((float) expected - (float) func.getAggregate()) < 0.000001f);
+      Assert.assertTrue(Math.abs((float) expected - (float) actual) < 0.000001f);
     } else if (expected instanceof Double) {
-      Assert.assertTrue(Math.abs((double) expected - (double) func.getAggregate()) < 0.000001d);
+      Assert.assertTrue(Math.abs((double) expected - (double) actual) < 0.000001d);
     } else {
-      Assert.assertEquals(expected, func.getAggregate());
+      Assert.assertEquals(expected, actual);
     }
   }
 }

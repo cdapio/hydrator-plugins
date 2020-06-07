@@ -19,172 +19,57 @@ package io.cdap.plugin.batch.aggregator.function;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 
-import java.util.List;
-import javax.annotation.Nullable;
-
 /**
  * Base class for number based selection functions.
  * Allows subclasses to implement typed methods instead of implementing their own casting logic.
  * Guarantees that only methods for one type will be called for each aggregate. For example,
- * if {@link #operateOn(StructuredRecord)} is called, only {@link #operateOnInt(int, StructuredRecord)} will be called.
+ * if {@link #select(StructuredRecord, StructuredRecord)} is called,
+ * only {@link #compareInt(int, int)} will be called.
  */
 public abstract class NumberSelection implements SelectionFunction {
-  private final SelectionFunction delegate;
   private final String fieldName;
+  private final Schema.Type fieldType;
 
-  public NumberSelection(final String fieldName, @Nullable Schema fieldSchema) {
+  public NumberSelection(String fieldName, Schema fieldSchema) {
     this.fieldName = fieldName;
-    // if schema is not known before we start getting records, just use doubles.
-    if (fieldSchema == null) {
-      delegate = new SelectionFunction() {
-        @Override
-        public List<StructuredRecord> getSelectedRecords() {
-          return getRecords();
-        }
+    this.fieldType = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
+  }
 
-        @Override
-        public void beginFunction() {
-          startDouble();
-        }
+  protected abstract int compareInt(int val1, int val2);
 
-        @Override
-        public void operateOn(StructuredRecord record) {
-          Number number = record.get(fieldName);
-          if (number != null) {
-            operateOnDouble(number.doubleValue(), record);
-          }
-        }
-      };
-      return;
+  protected abstract int compareLong(long val1, long val2);
+
+  protected abstract int compareFloat(float val1, float val2);
+
+  protected abstract int compareDouble(double val1, double val2);
+
+  @Override
+  public StructuredRecord select(StructuredRecord record1, StructuredRecord record2) {
+    Object val1 = record1.get(fieldName);
+    Object val2 = record2.get(fieldName);
+
+    if (val1 == null && val2 == null) {
+      return record1;
+    }
+    if (val1 == null) {
+      return record2;
+    }
+    if (val2 == null) {
+      return record1;
     }
 
-    final boolean isNullable = fieldSchema.isNullable();
-    Schema.Type fieldType = isNullable ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
     switch (fieldType) {
       case INT:
-        delegate = new SelectionFunction() {
-          @Override
-          public List<StructuredRecord> getSelectedRecords() {
-            return getRecords();
-          }
-
-          @Override
-          public void beginFunction() {
-            startInt();
-          }
-
-          @Override
-          public void operateOn(StructuredRecord record) {
-            Integer value = record.get(fieldName);
-            if (value != null) {
-              operateOnInt(value, record);
-            }
-          }
-        };
-        break;
+        return compareInt((Integer) val1, (Integer) val2) > 0 ? record1 : record2;
       case LONG:
-        delegate = new SelectionFunction() {
-          @Override
-          public List<StructuredRecord> getSelectedRecords() {
-            return getRecords();
-          }
-
-          @Override
-          public void beginFunction() {
-            startLong();
-          }
-
-          @Override
-          public void operateOn(StructuredRecord record) {
-            Long value = record.get(fieldName);
-            if (value != null) {
-              operateOnLong(value, record);
-            }
-          }
-        };
-        break;
+        return compareLong((Long) val1, (Long) val2) > 0 ? record1 : record2;
       case FLOAT:
-        delegate = new SelectionFunction() {
-          @Override
-          public List<StructuredRecord> getSelectedRecords() {
-            return getRecords();
-          }
-
-          @Override
-          public void beginFunction() {
-            startFloat();
-          }
-
-          @Override
-          public void operateOn(StructuredRecord record) {
-            Float value = record.get(fieldName);
-            if (value != null) {
-              operateOnFloat(value, record);
-            }
-          }
-        };
-        break;
+        return compareFloat((Float) val1, (Float) val2) > 0 ? record1 : record2;
       case DOUBLE:
-        delegate = new SelectionFunction() {
-          @Override
-          public List<StructuredRecord> getSelectedRecords() {
-            return getRecords();
-          }
-
-          @Override
-          public void beginFunction() {
-            startDouble();
-          }
-
-          @Override
-          public void operateOn(StructuredRecord record) {
-            Double value = record.get(fieldName);
-            if (value != null) {
-              operateOnDouble(value, record);
-            }
-          }
-        };
-        break;
+        return compareDouble((Double) val1, (Double) val2) > 0 ? record1 : record2;
       default:
         throw new IllegalArgumentException(String.format("Field '%s' is of unsupported non-numeric type '%s'. ",
                                                          fieldName, fieldType));
     }
   }
-
-  @Override
-  public void beginFunction() {
-    delegate.beginFunction();
-  }
-
-  @Override
-  public void operateOn(StructuredRecord record) {
-    delegate.operateOn(record);
-  }
-
-  @Override
-  public List<StructuredRecord> getSelectedRecords() {
-    return delegate.getSelectedRecords();
-  }
-
-  public String getFieldName() {
-    return fieldName;
-  }
-
-  protected abstract void startInt();
-
-  protected abstract void startLong();
-
-  protected abstract void startFloat();
-
-  protected abstract void startDouble();
-
-  protected abstract void operateOnInt(int val, StructuredRecord record);
-
-  protected abstract void operateOnLong(long val, StructuredRecord record);
-
-  protected abstract void operateOnFloat(float val, StructuredRecord record);
-
-  protected abstract void operateOnDouble(double val, StructuredRecord record);
-
-  protected abstract List<StructuredRecord> getRecords();
 }

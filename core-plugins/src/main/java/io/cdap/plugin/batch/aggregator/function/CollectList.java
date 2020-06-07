@@ -27,10 +27,10 @@ import java.util.List;
  * Collect List of a specific column
  * @param <T> type of aggregate value
  */
-public class CollectList<T> implements AggregateFunction<List<T>> { 
-  private List<T> collectList;
+public class CollectList<T> implements AggregateFunction<List<T>, CollectList<T>> {
   private final String fieldName;
   private final Schema fieldSchema;
+  private List<T> result;
 
   public CollectList(String fieldName, Schema fieldSchema) {
     this.fieldName = fieldName;
@@ -38,19 +38,23 @@ public class CollectList<T> implements AggregateFunction<List<T>> {
   }
 
   @Override
-  public void beginFunction() {
-    collectList = new ArrayList<>();
+  public void initialize() {
+    this.result = new ArrayList<>();
   }
 
   @Override
-  public void operateOn(StructuredRecord record) {
-    T field = record.get(fieldName);
-    collectList.add(field);
+  public void mergeValue(StructuredRecord record) {
+    result.add(record.get(fieldName));
+  }
+
+  @Override
+  public void mergeAggregates(CollectList<T> otherAgg) {
+    result.addAll(otherAgg.result);
   }
 
   @Override
   public List<T> getAggregate() {
-    return collectList;
+    return result;
   }
 
   @Override

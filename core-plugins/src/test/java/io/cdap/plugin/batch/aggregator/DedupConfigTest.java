@@ -35,7 +35,6 @@ public class DedupConfigTest {
       DedupConfig.DedupFunctionInfo expected = new DedupConfig.DedupFunctionInfo("price", function);
       DedupConfig.DedupFunctionInfo actual = config.getFilter();
       Assert.assertEquals(expected, actual);
-      Assert.assertNotNull(actual.getSelectionFunction(null));
     }
   }
 }
