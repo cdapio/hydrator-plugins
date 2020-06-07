@@ -22,6 +22,7 @@ import com.google.common.collect.Sets;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.table.Table;
+import io.cdap.cdap.etl.api.Engine;
 import io.cdap.cdap.etl.api.batch.BatchAggregator;
 import io.cdap.cdap.etl.mock.batch.MockSink;
 import io.cdap.cdap.etl.mock.batch.MockSource;
@@ -47,18 +48,24 @@ public class DedupTestRun extends ETLBatchTestBase {
     Schema.Field.of("lname", Schema.of(Schema.Type.STRING)),
     Schema.Field.of("ts", Schema.of(Schema.Type.INT)),
     Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
-  private static final Schema SINK_SCHEMA = Schema.recordOf(PURCHASE_SCHEMA.getRecordName() + ".dedup",
-                                                            PURCHASE_SCHEMA.getFields());
 
-  private void testHelper(String appName, String purchasesDatasetName, ETLStage purchaseStage,
-                          ETLStage dedupStage, String sinkDatasetName, ETLStage sinkStage,
-                          Map<String, String> runTimeProperties) throws Exception {
+  private void testHelper(Map<String, String> aggProproperties, Map<String, String> runTimeProperties,
+                          String namePrefix, Engine engine) throws Exception {
+    String purchasesDatasetName = "purchases-" + namePrefix + "-" + engine;
+    String sinkDatasetName = "sinkDataset-" + namePrefix + "-" + engine;
+    String appName = "dedup-test-" + namePrefix + "-" + engine;
+    ETLStage purchaseStage = new ETLStage("purchases", MockSource.getPlugin(purchasesDatasetName, PURCHASE_SCHEMA));
+    ETLStage dedupStage = new ETLStage("dedupStage", new ETLPlugin(
+      "Deduplicate", BatchAggregator.PLUGIN_TYPE, aggProproperties, null));
+    ETLStage sinkStage = new ETLStage("tableSink", MockSink.getPlugin(sinkDatasetName));
+
     ETLBatchConfig config = ETLBatchConfig.builder()
       .addStage(purchaseStage)
       .addStage(dedupStage)
       .addStage(sinkStage)
       .addConnection(purchaseStage.getName(), dedupStage.getName())
       .addConnection(dedupStage.getName(), sinkStage.getName())
+      .setEngine(engine)
       .build();
 
     ApplicationManager appManager = deployETL(config, appName);
@@ -103,13 +110,13 @@ public class DedupTestRun extends ETLBatchTestBase {
     List<StructuredRecord> output = MockSink.readOutput(sinkManager);
     Assert.assertEquals("Expected records", 2, output.size());
     List<StructuredRecord> expectedOutput = ImmutableList.of(
-      StructuredRecord.builder(SINK_SCHEMA)
+      StructuredRecord.builder(PURCHASE_SCHEMA)
         .set("fname", "samuel")
         .set("lname", "goel")
         .set("ts", 11)
         .set("price", 200.43)
         .build(),
-      StructuredRecord.builder(SINK_SCHEMA)
+      StructuredRecord.builder(PURCHASE_SCHEMA)
         .set("fname", "john")
         .set("lname", "desai")
         .set("ts", 5)
@@ -120,32 +127,21 @@ public class DedupTestRun extends ETLBatchTestBase {
 
   @Test
   public void testDedup() throws Exception {
-    String purchasesDatasetName = "purchases";
-    String sinkDatasetName = "sinkDataset";
-    String appName = "dedup-test";
-    ETLStage purchaseStage = new ETLStage("purchases", MockSource.getPlugin(purchasesDatasetName, PURCHASE_SCHEMA));
-    ETLStage dedupStage = new ETLStage("dedupStage", new ETLPlugin(
-      "Deduplicate", BatchAggregator.PLUGIN_TYPE, ImmutableMap.of("uniqueFields", "fname,lname",
-      "filterOperation", "ts:max"), null));
-    ETLStage sinkStage = new ETLStage("tableSink", MockSink.getPlugin(sinkDatasetName));
-
-    testHelper(appName, purchasesDatasetName, purchaseStage, dedupStage,
-      sinkDatasetName, sinkStage, ImmutableMap.of());
+    testHelper(ImmutableMap.of("uniqueFields", "fname,lname",
+                               "filterOperation", "ts:max"), ImmutableMap.of(), "", Engine.SPARK);
+    testHelper(ImmutableMap.of("uniqueFields", "fname,lname",
+                               "filterOperation", "ts:max"), ImmutableMap.of(), "", Engine.MAPREDUCE);
   }
 
   @Test
   public void testDedupWithMacro() throws Exception {
-    String purchasesDatasetName = "purchases-null-inputschema";
-    String sinkDatasetName = "sinkDataset-null-inputschema";
-    String appName = "dedup-test-null-inputschema";
-    ETLStage purchaseStage = new ETLStage("purchases", MockSource.getPlugin(purchasesDatasetName));
-    ETLStage dedupStage = new ETLStage("dedupStage", new ETLPlugin(
-      "Deduplicate", BatchAggregator.PLUGIN_TYPE, ImmutableMap.of("uniqueFields", "${uniqueFields}",
-      "filterOperation", "${filterOperation}", "numPartitions", "${numPartitions}"), null));
-    ETLStage sinkStage = new ETLStage("tableSink", MockSink.getPlugin(sinkDatasetName));
-
-    testHelper(appName, purchasesDatasetName, purchaseStage, dedupStage,
-      sinkDatasetName, sinkStage,
-      ImmutableMap.of("uniqueFields", "fname,lname", "filterOperation", "ts:max", "numPartitions", "2"));
+    testHelper(ImmutableMap.of("uniqueFields", "${uniqueFields}",
+                               "filterOperation", "${filterOperation}", "numPartitions", "${numPartitions}"),
+               ImmutableMap.of("uniqueFields", "fname,lname", "filterOperation", "ts:max", "numPartitions", "2"),
+               "-unknown-inputschema", Engine.SPARK);
+    testHelper(ImmutableMap.of("uniqueFields", "${uniqueFields}",
+                               "filterOperation", "${filterOperation}", "numPartitions", "${numPartitions}"),
+               ImmutableMap.of("uniqueFields", "fname,lname", "filterOperation", "ts:max", "numPartitions", "2"),
+               "-unknown-inputschema", Engine.MAPREDUCE);
   }
 }

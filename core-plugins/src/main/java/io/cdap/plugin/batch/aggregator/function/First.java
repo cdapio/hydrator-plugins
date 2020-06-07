@@ -19,19 +19,15 @@ package io.cdap.plugin.batch.aggregator.function;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * Return the first element in a group of {@link StructuredRecord}s.
  *
  * @param <T> type of aggregate value
  */
-public class First<T> implements SelectionFunction, AggregateFunction<T> {
+public class First<T> implements SelectionFunction, AggregateFunction<T, First<T>> {
   private final String fieldName;
   private final Schema fieldSchema;
   private boolean isFirst;
-  private StructuredRecord firstRecord;
   private T first;
 
   public First(String fieldName, Schema fieldSchema) {
@@ -40,19 +36,22 @@ public class First<T> implements SelectionFunction, AggregateFunction<T> {
   }
 
   @Override
-  public void beginFunction() {
-    isFirst = true;
-    first = null;
-    firstRecord = null;
+  public void initialize() {
+    this.isFirst = true;
+    this.first = null;
   }
 
   @Override
-  public void operateOn(StructuredRecord record) {
+  public void mergeValue(StructuredRecord record) {
     if (isFirst) {
       first = record.get(fieldName);
-      firstRecord = record;
       isFirst = false;
     }
+  }
+
+  @Override
+  public void mergeAggregates(First<T> otherAgg) {
+    // no-op since first is already in this aggregation
   }
 
   @Override
@@ -66,11 +65,7 @@ public class First<T> implements SelectionFunction, AggregateFunction<T> {
   }
 
   @Override
-  public List<StructuredRecord> getSelectedRecords() {
-    List<StructuredRecord> recordList = new ArrayList<>();
-    if (firstRecord != null) {
-      recordList.add(firstRecord);
-    }
-    return recordList;
+  public StructuredRecord select(StructuredRecord record1, StructuredRecord record2) {
+    return record1;
   }
 }

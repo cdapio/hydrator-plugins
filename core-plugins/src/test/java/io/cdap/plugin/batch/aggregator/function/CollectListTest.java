@@ -16,70 +16,49 @@
 
 package io.cdap.plugin.batch.aggregator.function;
 
-import io.cdap.cdap.api.data.format.StructuredRecord;
+import com.google.common.collect.ImmutableList;
 import io.cdap.cdap.api.data.schema.Schema;
-import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.List;
-
 /**
- * @author Harsh Takkar
+ *
  */
-public class CollectListTest {
+public class CollectListTest extends AggregateFunctionTest {
 
   @Test
   public void testIntCollectList() {
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
-    CollectList collectList = new CollectList("x", Schema.of(Schema.Type.INT));
-    collectList.beginFunction();
-    collectList.operateOn(StructuredRecord.builder(schema).set("x", 1).build());
-    collectList.operateOn(StructuredRecord.builder(schema).set("x", 2).build());
-    List list = collectList.getAggregate();
-    Assert.assertArrayEquals(new Integer[] {1, 2}, list.toArray());
+    test(new CollectList("x", schema), schema, "x",
+         ImmutableList.of(1, 2, 3, 4), ImmutableList.of(1, 2, 3, 4), new CollectList("x", schema));
   }
 
   @Test
   public void testLongCollectList() {
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.of(Schema.Type.LONG)));
-    CollectList collectList = new CollectList("x", Schema.of(Schema.Type.LONG));
-    collectList.beginFunction();
-    collectList.operateOn(StructuredRecord.builder(schema).set("x", 1L).build());
-    collectList.operateOn(StructuredRecord.builder(schema).set("x", 2L).build());
-    List list = collectList.getAggregate();
-    Assert.assertArrayEquals(new Long[] {1L, 2L}, list.toArray());
+    test(new CollectList("x", schema), schema, "x",
+         ImmutableList.of(1L, 2L, 3L, 4L), ImmutableList.of(1L, 2L, 3L, 4L), new CollectList("x", schema));
   }
 
   @Test
   public void testFloatCollectList() {
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.of(Schema.Type.FLOAT)));
-    CollectList collectList = new CollectList("x", Schema.of(Schema.Type.FLOAT));
-    collectList.beginFunction();
-    collectList.operateOn(StructuredRecord.builder(schema).set("x", 1.0F).build());
-    collectList.operateOn(StructuredRecord.builder(schema).set("x", 2.0F).build());
-    List list = collectList.getAggregate();
-    Assert.assertArrayEquals(new Float[] {1.0F, 2.0F}, list.toArray());
+    test(new CollectList("x", schema), schema, "x",
+         ImmutableList.of(1.0F, 2.0F, 3.0F, 4.0F), ImmutableList.of(1.0F, 2.0F, 3.0F, 4.0F),
+         new CollectList("x", schema));
   }
 
   @Test
   public void testDoubleCollectList() {
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.of(Schema.Type.DOUBLE)));
-    CollectList collectList = new CollectList("x", Schema.of(Schema.Type.DOUBLE));
-    collectList.beginFunction();
-    collectList.operateOn(StructuredRecord.builder(schema).set("x", 1.0D).build());
-    collectList.operateOn(StructuredRecord.builder(schema).set("x", 2.0D).build());
-    List list = collectList.getAggregate();
-    Assert.assertArrayEquals(new Double[] {1.0D, 2.0D}, list.toArray());
+    test(new CollectList("x", schema), schema, "x",
+         ImmutableList.of(1.0d, 2.0d, 3.0d, 4.0d), ImmutableList.of(1.0d, 2.0d, 3.0d, 4.0d),
+         new CollectList("x", schema));
   }
 
   @Test
   public void testStringCollectList() {
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.of(Schema.Type.STRING)));
-    CollectList collectList = new CollectList("x", Schema.of(Schema.Type.STRING));
-    collectList.beginFunction();
-    collectList.operateOn(StructuredRecord.builder(schema).set("x", "a").build());
-    collectList.operateOn(StructuredRecord.builder(schema).set("x", "b").build());
-    List list = collectList.getAggregate();
-    Assert.assertArrayEquals(new String[] {"a", "b"}, list.toArray());
+    test(new CollectList("x", schema), schema, "x",
+         ImmutableList.of("a", "b", "c", "d"), ImmutableList.of("a", "b", "c", "d"), new CollectList("x", schema));
   }
 }

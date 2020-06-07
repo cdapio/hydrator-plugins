@@ -26,10 +26,10 @@ import java.util.Set;
  * Collect Set of a specific column
  * @param <T> type of aggregate value
  */
-public class CollectSet<T> implements AggregateFunction<Set<T>> {
-  private Set<T> collectSet;
+public class CollectSet<T> implements AggregateFunction<Set<T>, CollectSet<T>> {
   private final String fieldName;
   private final Schema fieldSchema;
+  private Set<T> result;
 
   public CollectSet(String fieldName, Schema fieldSchema) {
     this.fieldName = fieldName;
@@ -37,19 +37,23 @@ public class CollectSet<T> implements AggregateFunction<Set<T>> {
   }
 
   @Override
-  public void beginFunction() {
-    collectSet = new HashSet<>();
+  public void initialize() {
+    this.result = new HashSet<>();
   }
 
   @Override
-  public void operateOn(StructuredRecord record) {
-    T field = record.get(fieldName);
-    collectSet.add(field);
+  public void mergeValue(StructuredRecord record) {
+    result.add(record.get(fieldName));
+  }
+
+  @Override
+  public void mergeAggregates(CollectSet<T> otherAgg) {
+    result.addAll(otherAgg.result);
   }
 
   @Override
   public Set<T> getAggregate() {
-    return collectSet;
+    return result;
   }
 
   @Override

@@ -23,7 +23,8 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.lib.TimePartitionedFileSet;
 import io.cdap.cdap.api.dataset.table.Table;
-import io.cdap.cdap.etl.api.batch.BatchAggregator;
+import io.cdap.cdap.etl.api.Engine;
+import io.cdap.cdap.etl.api.batch.BatchReducibleAggregator;
 import io.cdap.cdap.etl.api.batch.BatchSink;
 import io.cdap.cdap.etl.mock.batch.MockSource;
 import io.cdap.cdap.etl.proto.v2.ETLBatchConfig;
@@ -43,7 +44,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Tests for GroupBy Aggregator.
+ * Tests for Distinct Aggregator.
  */
 public class DistinctTestRun extends ETLBatchTestBase {
   private static final Schema INPUT_SCHEMA = Schema.recordOf(
@@ -57,15 +58,30 @@ public class DistinctTestRun extends ETLBatchTestBase {
     Schema.Field.of("user_name", Schema.of(Schema.Type.STRING)),
     Schema.Field.of("item", Schema.of(Schema.Type.STRING)));
 
-  private void testHelper(String appName, String inputDatasetName, ETLStage sourceStage,
-                          ETLStage distinctStage, String outputDatasetName, ETLStage sinkStage,
-                          Map<String, String> runTimeProperties) throws Exception {
+  private void testHelper(Map<String, String> aggProproperties, Map<String, String> runTimeProperties,
+                          String namePrefix, Engine engine) throws Exception {
+    String inputDatasetName = "distinct-input-" + namePrefix + "-" + engine;
+    String outputDatasetName = "distinct-output-" + namePrefix + "-" + engine;
+    String appName = "distinct-test" + namePrefix + "-" + engine;
+
+    ETLStage sourceStage = new ETLStage("purchases", MockSource.getPlugin(inputDatasetName, INPUT_SCHEMA));
+
+    ETLStage distinctStage = new ETLStage(
+      "distinct", new ETLPlugin("Distinct", BatchReducibleAggregator.PLUGIN_TYPE, aggProproperties, null));
+
+    ETLStage sinkStage = new ETLStage(
+      "sink", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
+                            ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA, OUTPUT_SCHEMA.toString(),
+                                            Properties.TimePartitionedFileSetDataset.TPFS_NAME,
+                                            outputDatasetName), null));
+
     ETLBatchConfig config = ETLBatchConfig.builder()
       .addStage(sourceStage)
       .addStage(distinctStage)
       .addStage(sinkStage)
       .addConnection(sourceStage.getName(), distinctStage.getName())
       .addConnection(distinctStage.getName(), sinkStage.getName())
+      .setEngine(engine)
       .build();
     ApplicationManager appManager = deployETL(config, appName);
 
@@ -104,7 +120,6 @@ public class DistinctTestRun extends ETLBatchTestBase {
         .build());
     MockSource.writeInput(purchaseManager, input);
 
-
     // run the pipeline
     runETLOnce(appManager, runTimeProperties);
 
@@ -124,44 +139,17 @@ public class DistinctTestRun extends ETLBatchTestBase {
 
   @Test
   public void testDistinct() throws Exception {
-    String inputDatasetName = "distinct-input";
-    String outputDatasetName = "distinct-output";
-    String appName = "distinct-test";
-
-    ETLStage sourceStage = new ETLStage("purchases", MockSource.getPlugin(inputDatasetName, INPUT_SCHEMA));
-
-    ETLStage distinctStage = new ETLStage(
-      "distinct", new ETLPlugin("Distinct", BatchAggregator.PLUGIN_TYPE,
-      ImmutableMap.of("fields", "user_name,item"), null));
-
-
-    ETLStage sinkStage = new ETLStage(
-      "sink", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
-      ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA, OUTPUT_SCHEMA.toString(),
-        Properties.TimePartitionedFileSetDataset.TPFS_NAME, outputDatasetName),
-      null));
-    testHelper(appName, inputDatasetName, sourceStage, distinctStage, outputDatasetName,
-      sinkStage, ImmutableMap.of());
+    testHelper(ImmutableMap.of("fields", "user_name,item"), ImmutableMap.of(), "", Engine.SPARK);
+    testHelper(ImmutableMap.of("fields", "user_name,item"), ImmutableMap.of(), "", Engine.MAPREDUCE);
   }
 
   @Test
   public void testDistinctWithMacro() throws Exception {
-    String inputDatasetName = "distinct-input-unknown-inputschema";
-    String outputDatasetName = "distinct-output-unknown-inputschema";
-    String appName = "distinct-test-unknown-inputschema";
-
-    ETLStage sourceStage = new ETLStage("purchases", MockSource.getPlugin(inputDatasetName));
-
-
-    ETLStage distinctStage = new ETLStage("distinct",
-      new ETLPlugin("Distinct", BatchAggregator.PLUGIN_TYPE,
-        ImmutableMap.of("fields", "${fields}", "numPartitions", "${numPartitions}"), null));
-
-    ETLStage sinkStage = new ETLStage("sink", new ETLPlugin("TPFSAvro", BatchSink.PLUGIN_TYPE,
-      ImmutableMap.of(Properties.TimePartitionedFileSetDataset.SCHEMA, OUTPUT_SCHEMA.toString(),
-        Properties.TimePartitionedFileSetDataset.TPFS_NAME, outputDatasetName), null));
-
-    testHelper(appName, inputDatasetName, sourceStage, distinctStage, outputDatasetName,
-      sinkStage, ImmutableMap.of("fields", "user_name,item", "numPartitions", "2"));
+    testHelper(ImmutableMap.of("fields", "${fields}", "numPartitions", "${numPartitions}"),
+               ImmutableMap.of("fields", "user_name,item", "numPartitions", "2"),
+               "-unknown-inputschema", Engine.SPARK);
+    testHelper(ImmutableMap.of("fields", "${fields}", "numPartitions", "${numPartitions}"),
+               ImmutableMap.of("fields", "user_name,item", "numPartitions", "2"),
+               "-unknown-inputschema", Engine.MAPREDUCE);
   }
 }
