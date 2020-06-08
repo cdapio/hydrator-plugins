@@ -7,7 +7,7 @@
   },
   "configuration-groups": [
     {
-      "label": "Join",
+      "label": "Basic",
       "properties": [
         {
           "widget-type": "sql-select-fields",
@@ -28,19 +28,39 @@
           "description": "List of join keys to perform join operation."
         },
         {
+          "widget-type": "get-schema",
+          "widget-category": "plugin"
+        }
+      ]
+    },
+    {
+      "label": "Advanced",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Inputs to Load in Memory",
+          "name": "inMemoryInputs"
+        },
+        {
+          "widget-type": "toggle",
+          "label": "Join on Null Keys",
+          "name": "joinNullKeys",
+          "widget-attributes": {
+            "default": "true",
+            "on": {
+              "value": "true",
+              "label": "True"
+            },
+            "off": {
+              "value": "false",
+              "label": "False"
+            }
+          }
+        },
+        {
           "widget-type": "textbox",
           "label": "Number of Partitions",
-          "name": "numPartitions",
-          "plugin-function": {
-            "method": "POST",
-            "label": "Generate Schema",
-            "widget": "outputSchema",
-            "output-property": "schema",
-            "plugin-method": "outputSchema",
-            "position": "bottom",
-            "multiple-inputs": true,
-            "button-class": "btn-hydrator"
-          }
+          "name": "numPartitions"
         }
       ]
     }
@@ -50,6 +70,5 @@
       "name": "schema",
       "widget-type": "schema"
     }
-
   ]
 }
