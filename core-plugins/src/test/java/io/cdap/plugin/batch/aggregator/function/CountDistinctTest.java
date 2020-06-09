@@ -16,24 +16,17 @@
 
 package io.cdap.plugin.batch.aggregator.function;
 
-import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
-import org.junit.Assert;
 import org.junit.Test;
 
-public class CountDistinctTest {
+import java.util.Arrays;
+
+public class CountDistinctTest extends AggregateFunctionTest {
   @Test
   public void testCountDistinct() {
     Schema schema = Schema.recordOf("cities", Schema.Field.of("city", Schema.of(Schema.Type.STRING)));
-    CountDistinct countDistinct = new CountDistinct("city");
-    countDistinct.beginFunction();
-    countDistinct.operateOn(StructuredRecord.builder(schema).set("city", "Mountain View").build());
-    countDistinct.operateOn(StructuredRecord.builder(schema).set("city", "Sunnyvale").build());
-    countDistinct.operateOn(StructuredRecord.builder(schema).set("city", "Sunnyvale").build());
-    countDistinct.operateOn(StructuredRecord.builder(schema).set("city", "Sunnyvale").build());
-    countDistinct.operateOn(StructuredRecord.builder(schema).set("city", "RedwoodCity").build());
-    countDistinct.operateOn(StructuredRecord.builder(schema).set("city", "RedwoodCity").build());
-    int distinctCities = countDistinct.getAggregate();
-    Assert.assertEquals(3, distinctCities);
+    test(new CountDistinct("city"), schema, "city", 3,
+         Arrays.asList("Mountain View", "Sunnyvale", "Sunnyvale", "Sunnyvale", "RedwoodCity", "RedwoodCity"),
+         new CountDistinct("city"));
   }
 }
