@@ -24,24 +24,31 @@ import java.util.Set;
 
 /**
  * Count distinct values of a specific column
+ *
+ * @param <T> type of aggregate value
  */
-public class CountDistinct implements AggregateFunction<Integer> {
+public class CountDistinct<T> implements AggregateFunction<Integer, CountDistinct<T>> {
+  private static final Schema SCHEMA = Schema.of(Schema.Type.INT);
   private final String fieldName;
-  private final Set<Object> collectSet;
+  private Set<T> collectSet;
 
   public CountDistinct(String fieldName) {
     this.fieldName = fieldName;
-    this.collectSet = new HashSet<>();
   }
 
   @Override
-  public void beginFunction() {
-    collectSet.clear();
+  public void initialize() {
+    collectSet = new HashSet<>();
   }
 
   @Override
-  public void operateOn(StructuredRecord record) {
+  public void mergeValue(StructuredRecord record) {
     collectSet.add(record.get(fieldName));
+  }
+
+  @Override
+  public void mergeAggregates(CountDistinct<T> otherAgg) {
+    collectSet.addAll(otherAgg.collectSet);
   }
 
   @Override
@@ -51,6 +58,6 @@ public class CountDistinct implements AggregateFunction<Integer> {
 
   @Override
   public Schema getOutputSchema() {
-    return Schema.of(Schema.Type.INT);
+    return SCHEMA;
   }
 }
