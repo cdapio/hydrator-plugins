@@ -20,6 +20,7 @@ import io.cdap.cdap.etl.api.join.JoinField;
 import io.cdap.cdap.etl.api.join.JoinKey;
 import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
 import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
+import io.cdap.cdap.etl.api.lineage.field.OperationType;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -44,17 +46,18 @@ public class JoinFieldLineageTest {
     //  purchase -> (customer_id)---
 
     List<JoinField> outputFieldInfos = new ArrayList<>();
-    outputFieldInfos.add(new JoinField("id", "customer", "id"));
-    outputFieldInfos.add(new JoinField("customer_id", "purchase", "customer_id"));
+    outputFieldInfos.add(new JoinField("customer", "id", "id"));
+    outputFieldInfos.add(new JoinField("purchase", "customer_id", "customer_id"));
     Set<JoinKey> joinKeys = new HashSet<>();
     joinKeys.add(new JoinKey("customer", Collections.singletonList("id")));
     joinKeys.add(new JoinKey("purchase", Collections.singletonList("customer_id")));
     List<FieldOperation> fieldOperations = Joiner.createFieldOperations(outputFieldInfos, joinKeys);
-    FieldOperation operation = new FieldTransformOperation("Join", Joiner.JOIN_OPERATION_DESCRIPTION,
-                                                           Arrays.asList("customer.id", "purchase.customer_id"),
-                                                           Arrays.asList("id", "customer_id"));
+    FieldTransformOperation operation = new FieldTransformOperation(
+      "Join", Joiner.JOIN_OPERATION_DESCRIPTION,
+      Arrays.asList("customer.id", "purchase.customer_id"),
+      Arrays.asList("id", "customer_id"));
 
-    Assert.assertEquals(Collections.singletonList(operation), fieldOperations);
+    compareOperations(Collections.singletonList(operation), fieldOperations);
   }
 
   @Test
@@ -67,15 +70,15 @@ public class JoinFieldLineageTest {
 
 
     List<JoinField> outputFieldInfos = new ArrayList<>();
-    outputFieldInfos.add(new JoinField("id", "customer", "id"));
-    outputFieldInfos.add(new JoinField("name", "customer", "name"));
-    outputFieldInfos.add(new JoinField("customer_id", "purchase", "customer_id"));
-    outputFieldInfos.add(new JoinField("item", "purchase", "item"));
+    outputFieldInfos.add(new JoinField("customer", "id", "id"));
+    outputFieldInfos.add(new JoinField("customer", "name", "name"));
+    outputFieldInfos.add(new JoinField("purchase", "customer_id", "customer_id"));
+    outputFieldInfos.add(new JoinField("purchase", "item", "item"));
     Set<JoinKey> joinKeys = new HashSet<>();
     joinKeys.add(new JoinKey("customer", Collections.singletonList("id")));
     joinKeys.add(new JoinKey("purchase", Collections.singletonList("customer_id")));
     List<FieldOperation> fieldOperations = Joiner.createFieldOperations(outputFieldInfos, joinKeys);
-    List<FieldOperation> expected = new ArrayList<>();
+    List<FieldTransformOperation> expected = new ArrayList<>();
 
     expected.add(new FieldTransformOperation("Join", Joiner.JOIN_OPERATION_DESCRIPTION,
                                              Arrays.asList("customer.id", "purchase.customer_id"),
@@ -86,7 +89,7 @@ public class JoinFieldLineageTest {
     expected.add(new FieldTransformOperation("Identity purchase.item", Joiner.IDENTITY_OPERATION_DESCRIPTION,
                                              Collections.singletonList("purchase.item"),
                                              Collections.singletonList("item")));
-    Assert.assertEquals(expected, fieldOperations);
+    compareOperations(expected, fieldOperations);
   }
 
   @Test
@@ -98,15 +101,15 @@ public class JoinFieldLineageTest {
     //  purchase ->(customer_id, item)---
 
     List<JoinField> outputFieldInfos = new ArrayList<>();
-    outputFieldInfos.add(new JoinField("id_from_customer", "customer", "id"));
-    outputFieldInfos.add(new JoinField("id_from_purchase", "purchase", "customer_id"));
+    outputFieldInfos.add(new JoinField("customer", "id", "id_from_customer"));
+    outputFieldInfos.add(new JoinField("purchase", "customer_id", "id_from_purchase"));
     Set<JoinKey> joinKeys = new HashSet<>();
     joinKeys.add(new JoinKey("customer", Collections.singletonList("id")));
     joinKeys.add(new JoinKey("purchase", Collections.singletonList("customer_id")));
 
     List<FieldOperation> fieldOperations = Joiner.createFieldOperations(outputFieldInfos, joinKeys);
 
-    List<FieldOperation> expected = new ArrayList<>();
+    List<FieldTransformOperation> expected = new ArrayList<>();
     expected.add(new FieldTransformOperation("Join", Joiner.JOIN_OPERATION_DESCRIPTION,
                                              Arrays.asList("customer.id", "purchase.customer_id"),
                                              Arrays.asList("id", "customer_id")));
@@ -116,7 +119,7 @@ public class JoinFieldLineageTest {
     expected.add(new FieldTransformOperation("Rename customer_id", Joiner.RENAME_OPERATION_DESCRIPTION,
                                              Collections.singletonList("customer_id"),
                                              Collections.singletonList("id_from_purchase")));
-    Assert.assertEquals(expected, fieldOperations);
+    compareOperations(expected, fieldOperations);
   }
 
   @Test
@@ -127,15 +130,15 @@ public class JoinFieldLineageTest {
     //                                  |
     //  purchase ->(customer_id, item)---
     List<JoinField> outputFieldInfos = new ArrayList<>();
-    outputFieldInfos.add(new JoinField("id_from_customer", "customer", "id"));
-    outputFieldInfos.add(new JoinField("name_from_customer", "customer", "name"));
-    outputFieldInfos.add(new JoinField("customer_id", "purchase", "customer_id"));
-    outputFieldInfos.add(new JoinField("item_from_purchase", "purchase", "item"));
+    outputFieldInfos.add(new JoinField("customer", "id", "id_from_customer"));
+    outputFieldInfos.add(new JoinField("customer", "name", "name_from_customer"));
+    outputFieldInfos.add(new JoinField("purchase", "customer_id", "customer_id"));
+    outputFieldInfos.add(new JoinField("purchase", "item", "item_from_purchase"));
     Set<JoinKey> joinKeys = new HashSet<>();
     joinKeys.add(new JoinKey("customer", Collections.singletonList("id")));
     joinKeys.add(new JoinKey("purchase", Collections.singletonList("customer_id")));
     List<FieldOperation> fieldOperations = Joiner.createFieldOperations(outputFieldInfos, joinKeys);
-    List<FieldOperation> expected = new ArrayList<>();
+    List<FieldTransformOperation> expected = new ArrayList<>();
 
     expected.add(new FieldTransformOperation("Join", Joiner.JOIN_OPERATION_DESCRIPTION,
                                              Arrays.asList("customer.id", "purchase.customer_id"),
@@ -149,7 +152,7 @@ public class JoinFieldLineageTest {
     expected.add(new FieldTransformOperation("Rename purchase.item", Joiner.RENAME_OPERATION_DESCRIPTION,
                                              Collections.singletonList("purchase.item"),
                                              Collections.singletonList("item_from_purchase")));
-    Assert.assertEquals(expected, fieldOperations);
+    compareOperations(expected, fieldOperations);
   }
 
   @Test
@@ -162,17 +165,17 @@ public class JoinFieldLineageTest {
     // address ->(address_id, address)--|
 
     List<JoinField> outputFieldInfos = new ArrayList<>();
-    outputFieldInfos.add(new JoinField("id_from_customer", "customer", "id"));
-    outputFieldInfos.add(new JoinField("name_from_customer", "customer", "name"));
-    outputFieldInfos.add(new JoinField("customer_id", "purchase", "customer_id"));
-    outputFieldInfos.add(new JoinField("address_id", "address", "address_id"));
+    outputFieldInfos.add(new JoinField("customer", "id", "id_from_customer"));
+    outputFieldInfos.add(new JoinField("customer", "name", "name_from_customer"));
+    outputFieldInfos.add(new JoinField("purchase", "customer_id", "customer_id"));
+    outputFieldInfos.add(new JoinField("address", "address_id", "address_id"));
     outputFieldInfos.add(new JoinField("address", "address", "address"));
     Set<JoinKey> joinKeys = new HashSet<>();
     joinKeys.add(new JoinKey("customer", Collections.singletonList("id")));
     joinKeys.add(new JoinKey("purchase", Collections.singletonList("customer_id")));
     joinKeys.add(new JoinKey("address", Collections.singletonList("address_id")));
     List<FieldOperation> fieldOperations = Joiner.createFieldOperations(outputFieldInfos, joinKeys);
-    List<FieldOperation> expected = new ArrayList<>();
+    List<FieldTransformOperation> expected = new ArrayList<>();
 
     expected.add(new FieldTransformOperation("Join", Joiner.JOIN_OPERATION_DESCRIPTION,
                                              Arrays.asList("customer.id", "purchase.customer_id", "address.address_id"),
@@ -190,6 +193,29 @@ public class JoinFieldLineageTest {
                                              Collections.singletonList("address.address"),
                                              Collections.singletonList("address")));
 
-    Assert.assertEquals(expected, fieldOperations);
+    compareOperations(expected, fieldOperations);
+  }
+
+
+  /**
+   * Can't compare directly because input and output fields are Lists, but the order is not actually guaranteed.
+   * So need to compare manually using sets instead of lists.
+   */
+  private void compareOperations(List<FieldTransformOperation> expected, List<FieldOperation> actual) {
+    Assert.assertEquals(expected.size(), actual.size());
+    Iterator<FieldTransformOperation> expectedIter = expected.iterator();
+    Iterator<FieldOperation> actualIter = actual.iterator();
+
+    while (expectedIter.hasNext()) {
+      FieldTransformOperation expectedOp = expectedIter.next();
+      FieldOperation actualOp = actualIter.next();
+      Assert.assertEquals(OperationType.TRANSFORM, actualOp.getType());
+      FieldTransformOperation actualTransformOp = (FieldTransformOperation) actualOp;
+      Assert.assertEquals(expectedOp.getName(), actualTransformOp.getName());
+      Assert.assertEquals(new HashSet<>(expectedOp.getInputFields()),
+                          new HashSet<>(actualTransformOp.getInputFields()));
+      Assert.assertEquals(new HashSet<>(expectedOp.getOutputFields()),
+                          new HashSet<>(actualTransformOp.getOutputFields()));
+    }
   }
 }
