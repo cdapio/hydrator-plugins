@@ -42,6 +42,7 @@ import io.cdap.plugin.batch.action.EmailAction;
 import io.cdap.plugin.batch.action.SSHAction;
 import io.cdap.plugin.batch.aggregator.DedupAggregator;
 import io.cdap.plugin.batch.aggregator.GroupByAggregator;
+import io.cdap.plugin.batch.aggregator.function.AggregateFunction;
 import io.cdap.plugin.batch.joiner.Joiner;
 import io.cdap.plugin.batch.sink.BatchCubeSink;
 import io.cdap.plugin.batch.sink.FileSink;
@@ -148,7 +149,9 @@ public class ETLBatchTestBase extends HydratorTestBase {
                       SSHAction.class,
                       TMSAlertPublisher.class,
                       ErrorCollector.class,
-                      FileSink.class);
+                      FileSink.class,
+                      // Spark needs this class to get exported to use the correct classloader
+                      AggregateFunction.class);
     // add format plugins
     addPluginArtifact(NamespaceId.DEFAULT.artifact("formats-avro", "4.0.0"), DATAPIPELINE_ARTIFACT_ID,
                       ImmutableSet.of(AvroOutputFormatProvider.PLUGIN_CLASS, AvroInputFormatProvider.PLUGIN_CLASS),

@@ -16,86 +16,34 @@
 
 package io.cdap.plugin.batch.aggregator.function;
 
-import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 
 /**
  * A {@link SelectionFunction} that can be used to select the record with the max value of a given field.
  */
 public class MaxSelection extends NumberSelection {
-  private StructuredRecord maxRecord;
-  private Integer maxInt;
-  private Long maxLong;
-  private Float maxFloat;
-  private Double maxDouble;
 
   public MaxSelection(String fieldName, Schema fieldSchema) {
     super(fieldName, fieldSchema);
-    maxRecord = null;
   }
 
   @Override
-  protected void startInt() {
-    maxInt = null;
+  protected int compareInt(int val1, int val2) {
+    return Integer.compare(val1, val2);
   }
 
   @Override
-  protected void startLong() {
-    maxLong = null;
+  protected int compareLong(long val1, long val2) {
+    return Long.compare(val1, val2);
   }
 
   @Override
-  protected void startFloat() {
-    maxFloat = null;
+  protected int compareFloat(float val1, float val2) {
+    return Float.compare(val1, val2);
   }
 
   @Override
-  protected void startDouble() {
-    maxDouble = null;
-  }
-
-  @Override
-  protected void operateOnInt(int current, StructuredRecord record) {
-    maxInt = maxInt == null ? current : Math.max(maxInt, current);
-    if (Objects.equals(maxInt, current)) {
-      maxRecord = record;
-    }
-  }
-
-  @Override
-  protected void operateOnLong(long current, StructuredRecord record) {
-    maxLong = maxLong == null ? current : Math.max(maxLong, current);
-    if (Objects.equals(maxLong, current)) {
-      maxRecord = record;
-    }
-  }
-
-  @Override
-  protected void operateOnFloat(float current, StructuredRecord record) {
-    maxFloat = maxFloat == null ? current : Math.max(maxFloat, current);
-    if (Objects.equals(maxFloat, current)) {
-      maxRecord = record;
-    }
-  }
-
-  @Override
-  protected void operateOnDouble(double current, StructuredRecord record) {
-    maxDouble = maxDouble == null ? current : Math.max(maxDouble, current);
-    if (Objects.equals(maxDouble, current)) {
-      maxRecord = record;
-    }
-  }
-
-  @Override
-  protected List<StructuredRecord> getRecords() {
-    List<StructuredRecord> records = new ArrayList<>();
-    if (maxRecord != null) {
-      records.add(maxRecord);
-    }
-    return records;
+  protected int compareDouble(double val1, double val2) {
+    return Double.compare(val1, val2);
   }
 }

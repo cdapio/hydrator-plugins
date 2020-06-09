@@ -22,6 +22,7 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.table.Put;
 import io.cdap.cdap.api.dataset.table.Row;
 import io.cdap.cdap.api.dataset.table.Table;
+import io.cdap.cdap.etl.api.Engine;
 import io.cdap.cdap.etl.api.batch.BatchAggregator;
 import io.cdap.cdap.etl.api.batch.BatchSink;
 import io.cdap.cdap.etl.api.batch.BatchSource;
@@ -45,15 +46,20 @@ public class GroupByTestRun extends ETLBatchTestBase {
 
   @Test
   public void testGroupBy() throws Exception {
+    testGroupBy(Engine.SPARK);
+    testGroupBy(Engine.MAPREDUCE);
+  }
+
+  private void testGroupBy(Engine engine) throws Exception {
 
     /*
                                   |--> group by user, totalPurchases:count(*), totalSpent:sum(price) --> user table
         <ts, user, item, price> --|
                                   |--> group by item, totalPurchases:count(user), latestPurchase:max(ts) --> item table
      */
-    String purchasesDatasetName = "purchases-groupbytest";
-    String usersDatasetName = "users-groupbytest";
-    String itemsDatasetName = "items-groupbytest";
+    String purchasesDatasetName = "purchases-groupbytest-" + engine;
+    String usersDatasetName = "users-groupbytest-" + engine;
+    String itemsDatasetName = "items-groupbytest-" + engine;
 
     Schema purchaseSchema = Schema.recordOf(
       "purchase",
@@ -127,8 +133,9 @@ public class GroupByTestRun extends ETLBatchTestBase {
       .addConnection(purchaseStage.getName(), itemGroupStage.getName())
       .addConnection(userGroupStage.getName(), userSinkStage.getName())
       .addConnection(itemGroupStage.getName(), itemSinkStage.getName())
+      .setEngine(engine)
       .build();
-    ApplicationManager appManager = deployETL(config, "groupby-test");
+    ApplicationManager appManager = deployETL(config, "groupby-test-" + engine);
 
     // write input data
     // 1: 1234567890000, samuel, island, 1000000

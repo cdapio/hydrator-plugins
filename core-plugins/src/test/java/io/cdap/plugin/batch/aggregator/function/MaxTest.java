@@ -20,6 +20,7 @@ import io.cdap.cdap.api.data.schema.Schema;
 import org.junit.Test;
 
 /**
+ *
  */
 public class MaxTest extends NumberTest {
 
@@ -27,30 +28,34 @@ public class MaxTest extends NumberTest {
   public void testIntMax() {
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
     Max max = new Max("x", Schema.of(Schema.Type.INT));
-    testFunction(max, schema, 101, 99, 100, 101);
-    testFunction(max, schema, 100, -100, 0, 3, 100);
-    testFunction(max, schema, -5, -5, -5);
+    Max max1 = new Max("x", Schema.of(Schema.Type.INT));
+    testFunction(max, schema, max1, 101, 99, 100, 101);
+    testFunction(max, schema, max1, 100, -100, 0, 3, 100);
+    testFunction(max, schema, max1, -5, -5, -5);
   }
 
   @Test
   public void testLongMax() {
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.of(Schema.Type.LONG)));
     Max max = new Max("x", Schema.of(Schema.Type.LONG));
-    testFunction(max, schema, Long.MAX_VALUE, -1L, 0L, Long.MAX_VALUE, 500L);
-    testFunction(max, schema, 0L, 0L);
+    Max max1 = new Max("x", Schema.of(Schema.Type.LONG));
+    testFunction(max, schema, max1, Long.MAX_VALUE, -1L, 0L, Long.MAX_VALUE, 500L);
+    testFunction(max, schema, max1, 0L, 0L);
   }
 
   @Test
   public void testFloatMax() {
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.of(Schema.Type.FLOAT)));
     Max max = new Max("x", Schema.of(Schema.Type.FLOAT));
-    testFunction(max, schema, Float.MAX_VALUE, -1.1f, 0f, Float.MAX_VALUE, 500.2f);
+    Max max1 = new Max("x", Schema.of(Schema.Type.FLOAT));
+    testFunction(max, schema, max1, Float.MAX_VALUE, -1.1f, 0f, Float.MAX_VALUE, 500.2f);
   }
 
   @Test
   public void testDoubleMax() {
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.of(Schema.Type.DOUBLE)));
     Max max = new Max("x", Schema.of(Schema.Type.DOUBLE));
-    testFunction(max, schema, Double.MAX_VALUE, -1.1d, 0d, Double.MAX_VALUE, 500.2d);
+    Max max1 = new Max("x", Schema.of(Schema.Type.DOUBLE));
+    testFunction(max, schema, max1, Double.MAX_VALUE, -1.1d, 0d, Double.MAX_VALUE, 500.2d);
   }
 }
