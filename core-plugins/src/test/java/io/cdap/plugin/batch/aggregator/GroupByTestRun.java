@@ -56,10 +56,14 @@ public class GroupByTestRun extends ETLBatchTestBase {
                                   |--> group by user, totalPurchases:count(*), totalSpent:sum(price) --> user table
         <ts, user, item, price> --|
                                   |--> group by item, totalPurchases:count(user), latestPurchase:max(ts) --> item table
+                                  |
+                                  |  test same name can be used in the output schema
+                                  |--> group by user, price:max(price) --> max table
      */
     String purchasesDatasetName = "purchases-groupbytest-" + engine;
     String usersDatasetName = "users-groupbytest-" + engine;
     String itemsDatasetName = "items-groupbytest-" + engine;
+    String maxDatasetName = "max-groupbytest-" + engine;
 
     Schema purchaseSchema = Schema.recordOf(
       "purchase",
@@ -123,16 +127,43 @@ public class GroupByTestRun extends ETLBatchTestBase {
                                    "aggregates", "totalPurchases:count(user), latestPurchase:max(ts)"),
                                  null));
 
+    Schema maxSchema = Schema.recordOf(
+      "max",
+      Schema.Field.of("user", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
+    ETLStage maxSinkStage =
+      new ETLStage("max",
+                   new ETLPlugin("Table",
+                                 BatchSink.PLUGIN_TYPE,
+                                 ImmutableMap.of(
+                                   Properties.BatchReadableWritable.NAME, maxDatasetName,
+                                   Properties.Table.PROPERTY_SCHEMA_ROW_FIELD, "user",
+                                   Properties.Table.PROPERTY_SCHEMA, maxSchema.toString()),
+                                 null));
+
+    ETLStage maxGroupStage =
+      new ETLStage("maxGroup",
+                   new ETLPlugin("GroupByAggregate",
+                                 BatchAggregator.PLUGIN_TYPE,
+                                 ImmutableMap.of(
+                                   "groupByFields", "user",
+                                   "aggregates", "price:max(price)"),
+                                 null));
+
     ETLBatchConfig config = ETLBatchConfig.builder("* * * * *")
       .addStage(purchaseStage)
       .addStage(userSinkStage)
       .addStage(itemSinkStage)
+      .addStage(maxSinkStage)
       .addStage(userGroupStage)
       .addStage(itemGroupStage)
+      .addStage(maxGroupStage)
       .addConnection(purchaseStage.getName(), userGroupStage.getName())
       .addConnection(purchaseStage.getName(), itemGroupStage.getName())
+      .addConnection(purchaseStage.getName(), maxGroupStage.getName())
       .addConnection(userGroupStage.getName(), userSinkStage.getName())
       .addConnection(itemGroupStage.getName(), itemSinkStage.getName())
+      .addConnection(maxGroupStage.getName(), maxSinkStage.getName())
       .setEngine(engine)
       .build();
     ApplicationManager appManager = deployETL(config, "groupby-test-" + engine);
@@ -208,6 +239,16 @@ public class GroupByTestRun extends ETLBatchTestBase {
     row = itemsTable.get(Bytes.toBytes("shirt"));
     Assert.assertEquals(row.getLong("totalPurchases").longValue(), 2L);
     Assert.assertEquals(row.getLong("latestPurchase").longValue(), 1234567890003L);
+
+    DataSetManager<Table> maxManager = getDataset(maxDatasetName);
+    Table maxTable = maxManager.get();
+    // max table should have:
+    // Samuel, 100000
+    row = maxTable.get(Bytes.toBytes("samuel"));
+    Assert.assertTrue(Math.abs(row.getDouble("price") - 1000000d) < 0.0000001);
+    // pie: 2, 1234567890002
+    row = maxTable.get(Bytes.toBytes("john"));
+    Assert.assertTrue(Math.abs(row.getDouble("price") - 20.53d) < 0.0000001);
   }
 
   @Test
