@@ -177,6 +177,7 @@ public class GroupByAggregator extends RecordReducibleAggregator<AggregateResult
   @Override
   public AggregateResult initializeAggregateValue(StructuredRecord record) {
     Map<String, AggregateFunction> functions = initAggregates(record.getSchema());
+    functions.values().forEach(AggregateFunction::initialize);
     updateAggregates(functions, record);
     return new AggregateResult(record.getSchema(), functions);
   }
