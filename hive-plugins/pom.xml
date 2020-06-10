@@ -23,16 +23,9 @@
     <version>2.4.0</version>
   </parent>
 
-  <name>Hive Hydrator Plugins</name>
+  <name>Hive Plugins</name>
   <artifactId>hive-plugins</artifactId>
   <modelVersion>4.0.0</modelVersion>
-
-  <repositories>
-    <repository>
-      <id>cloudera</id>
-      <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
-    </repository>
-  </repositories>
 
   <dependencies>
     <dependency>
@@ -51,7 +44,7 @@
     <dependency>
       <groupId>org.apache.hive.hcatalog</groupId>
       <artifactId>hive-hcatalog-core</artifactId>
-      <version>${cdh.hive.version}</version>
+      <version>${hive.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.apache.avro</groupId>
@@ -82,7 +75,7 @@
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-metastore</artifactId>
-      <version>${cdh.hive.version}</version>
+      <version>${hive.version}</version>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
@@ -122,6 +115,17 @@
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-common</artifactId>
     </dependency>
+    <!-- Dependency is required after upgrading hive to 2.4.0  -->
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <version>${commons-codec.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hive</groupId>
+      <artifactId>hive-serde</artifactId>
+      <version>${hive.version}</version>
+    </dependency>
   </dependencies>
 
   <build>
@@ -134,7 +138,8 @@
         <configuration>
           <instructions>
             <_exportcontents>io.cdap.plugin.batch.*;org.apache.commons.lang;org.apache.hive.hcatalog.*;
-              org.apache.hadoop.hive.metastore.*;org.apache.hadoop.hive.ql.io.avro
+              org.apache.hadoop.hive.metastore.*;org.apache.hadoop.hive.ql.io.avro;org.apache.commons.codec.binary.*;
+              org.apache.hadoop.hive.ql.io.*;org.apache.hadoop.hive.serde2.lazy.*;
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>

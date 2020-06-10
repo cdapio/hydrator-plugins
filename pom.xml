@@ -111,7 +111,7 @@
     <guava.version>13.0.1</guava.version>
     <hadoop.version>2.3.0</hadoop.version>
     <hsql.version>2.2.4</hsql.version>
-    <cdh.hive.version>1.1.0-cdh5.5.1</cdh.hive.version>
+    <hive.version>2.3.7</hive.version>
     <javamail.version>1.4.1</javamail.version>
     <junit.version>4.11</junit.version>
     <kafka.version>0.8.2.2</kafka.version>
