@@ -36,7 +36,6 @@ import io.cdap.plugin.common.SchemaValidator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +48,7 @@ import java.util.Map;
 @Description("Groups by one or more fields, then performs one or more aggregate functions on each group. " +
   "Supports `Average`, `Count`, `First`, `Last`, `Max`, `Min`,`Sum`,`Collect List`,`Collect Set`, " +
   "`Standard Deviation`, `Variance`, `Count Distinct` as aggregate functions.")
-public class GroupByAggregator extends RecordAggregator {
+public class GroupByAggregator extends RecordReducibleAggregator<AggregateResult> {
   private final GroupByConfig conf;
   private final HashMap<String, String> functionNameMap = new HashMap<String, String>() {{
     put("AVG", "Avg");
@@ -69,7 +68,6 @@ public class GroupByAggregator extends RecordAggregator {
   private List<String> groupByFields;
   private List<GroupByConfig.FunctionInfo> functionInfos;
   private Schema outputSchema;
-  private Map<String, AggregateFunction> aggregateFunctions;
 
   public GroupByAggregator(GroupByConfig conf) {
     super(conf.numPartitions);
@@ -180,6 +178,9 @@ public class GroupByAggregator extends RecordAggregator {
   public void initialize(BatchRuntimeContext context) throws Exception {
     groupByFields = conf.getGroupByFields();
     functionInfos = conf.getAggregates();
+    if (context.getInputSchema() != null) {
+      initAggregates(context.getInputSchema());
+    }
   }
 
   @Override
@@ -194,25 +195,35 @@ public class GroupByAggregator extends RecordAggregator {
   }
 
   @Override
-  public void aggregate(StructuredRecord groupKey, Iterator<StructuredRecord> iterator,
-                        Emitter<StructuredRecord> emitter) throws Exception {
-    if (!iterator.hasNext()) {
-      return;
-    }
+  public AggregateResult initializeAggregateValue(StructuredRecord record) {
+    Map<String, AggregateFunction> functions = initAggregates(record.getSchema());
+    functions.values().forEach(AggregateFunction::initialize);
+    updateAggregates(functions, record);
+    return new AggregateResult(record.getSchema(), functions);
+  }
 
-    StructuredRecord firstVal = iterator.next();
-    initAggregates(firstVal.getSchema());
+  @Override
+  public AggregateResult mergeValues(AggregateResult agg, StructuredRecord record) {
+    updateAggregates(agg.getFunctions(), record);
+    return agg;
+  }
+
+  @Override
+  public AggregateResult mergePartitions(AggregateResult agg1, AggregateResult agg2) {
+    mergeAggregates(agg1.getFunctions(), agg2.getFunctions());
+    return agg1;
+  }
+
+  @Override
+  public void finalize(StructuredRecord groupKey, AggregateResult aggValue,
+                       Emitter<StructuredRecord> emitter) {
+    initAggregates(aggValue.getInputSchema());
     StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
     for (String groupByField : groupByFields) {
       builder.set(groupByField, groupKey.get(groupByField));
     }
-    updateAggregates(firstVal);
 
-    while (iterator.hasNext()) {
-      updateAggregates(iterator.next());
-    }
-
-    for (Map.Entry<String, AggregateFunction> aggregateFunction : aggregateFunctions.entrySet()) {
+    for (Map.Entry<String, AggregateFunction> aggregateFunction : aggValue.getFunctions().entrySet()) {
       builder.set(aggregateFunction.getKey(), aggregateFunction.getValue().getAggregate());
     }
     emitter.emit(builder.build());
@@ -239,9 +250,15 @@ public class GroupByAggregator extends RecordAggregator {
     return Schema.recordOf(inputSchema.getRecordName() + ".agg", outputFields);
   }
 
-  private void updateAggregates(StructuredRecord groupVal) {
+  private void updateAggregates(Map<String, AggregateFunction> aggregateFunctions, StructuredRecord groupVal) {
     for (AggregateFunction aggregateFunction : aggregateFunctions.values()) {
-      aggregateFunction.operateOn(groupVal);
+      aggregateFunction.mergeValue(groupVal);
+    }
+  }
+
+  private void mergeAggregates(Map<String, AggregateFunction> agg1, Map<String, AggregateFunction> agg2) {
+    for (Map.Entry<String, AggregateFunction> aggregateFunction : agg1.entrySet()) {
+      aggregateFunction.getValue().mergeAggregates(agg2.get(aggregateFunction.getKey()));
     }
   }
 
@@ -266,22 +283,22 @@ public class GroupByAggregator extends RecordAggregator {
     return Schema.Field.of(functionInfo.getName(), aggregateFunction.getOutputSchema());
   }
 
-  private void initAggregates(Schema valueSchema) {
+  private Map<String, AggregateFunction> initAggregates(Schema valueSchema) {
     List<Schema.Field> outputFields = new ArrayList<>(groupByFields.size() + functionInfos.size());
     for (String groupByField : groupByFields) {
       outputFields.add(valueSchema.getField(groupByField));
     }
 
-    aggregateFunctions = new HashMap<>();
+    Map<String, AggregateFunction> functions = new HashMap<>();
     for (GroupByConfig.FunctionInfo functionInfo : functionInfos) {
       Schema.Field inputField = valueSchema.getField(functionInfo.getField());
       Schema fieldSchema = inputField == null ? null : inputField.getSchema();
       AggregateFunction aggregateFunction = functionInfo.getAggregateFunction(fieldSchema);
-      aggregateFunction.beginFunction();
       outputFields.add(Schema.Field.of(functionInfo.getName(), aggregateFunction.getOutputSchema()));
-      aggregateFunctions.put(functionInfo.getName(), aggregateFunction);
+      functions.put(functionInfo.getName(), aggregateFunction);
     }
     outputSchema = Schema.recordOf(valueSchema.getRecordName() + ".agg", outputFields);
+    return functions;
   }
 
   private Schema getGroupKeySchema(Schema inputSchema) {

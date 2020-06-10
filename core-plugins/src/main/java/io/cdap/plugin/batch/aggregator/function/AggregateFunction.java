@@ -19,23 +19,44 @@ package io.cdap.plugin.batch.aggregator.function;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 
+import java.io.Serializable;
+import javax.annotation.Nullable;
+
 /**
- * Performs an aggregation. For each group that needs an aggregate to be calculated, the {@link #beginFunction()}
- * method is called first. After that, one or more calls to {@link #operateOn(StructuredRecord)} are made, one call for
- * each value in the group. Finally, {@link #getAggregate()} is called to retrieve the aggregate.
- *
- * todo: convert this to a plugin
+ * Performs an aggregation.
  *
  * @param <T> type of aggregate value
+ * @param <V> type of aggregate function
  */
-public interface AggregateFunction<T> extends RecordFunctionLifecycle {
+public interface AggregateFunction<T, V extends AggregateFunction> extends Serializable {
 
   /**
-   * Called once when an aggregate should be fetched. Called after all calls to {@link #operateOn(StructuredRecord)}
-   * for an aggregate have been made.
+   * Initialize the function. This function is guaranteed to be called before any other method is called.
+   */
+  void initialize();
+
+  /**
+   * Merge the given record to the aggregated collection. This function is guaranteed to get called once
+   *
+   * @param record the record to merge
+   */
+  void mergeValue(StructuredRecord record);
+
+  /**
+   * Merge the given two aggregates into one aggregate, the result is stored in first aggregate.
+   *
+   * @param otherAgg other aggregation function to merge
+   */
+  void mergeAggregates(V otherAgg);
+
+  /**
+   * Get the aggregated result from the given aggregated records. This method is guaranteed to be called
+   * after all the {@link #mergeValue(StructuredRecord)} and {@link #mergeAggregates(AggregateFunction)} calls
+   * are done.
    *
    * @return the aggregate value
    */
+  @Nullable
   T getAggregate();
 
   /**

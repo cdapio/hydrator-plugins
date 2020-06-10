@@ -134,7 +134,9 @@ public class DedupConfig extends AggregatorConfig {
         case MIN:
           return new MinSelection(field, fieldSchema);
       }
-      throw new IllegalStateException("Unknown function type " + function);
+      throw new IllegalArgumentException(String.format(
+        "The function '%s' provided is not supported. It must be one of %s.",
+        function, Joiner.on(',').join(Function.values())));
     }
 
     @Override

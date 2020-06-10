@@ -16,80 +16,54 @@
 
 package io.cdap.plugin.batch.aggregator.function;
 
+import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
-
-import javax.annotation.Nullable;
 
 /**
  * Calculates minimum values of a field in a group.
  */
-public class Min extends NumberFunction {
-  private Integer minInt;
-  private Long minLong;
-  private Float minFloat;
-  private Double minDouble;
+public class Min extends NumberFunction<Min> {
 
-  public Min(String fieldName, @Nullable Schema fieldSchema) {
+  public Min(String fieldName, Schema fieldSchema) {
     super(fieldName, fieldSchema);
   }
 
   @Override
-  protected void startInt() {
-    minInt = null;
+  public void mergeValue(StructuredRecord record) {
+    combine(record.get(fieldName));
   }
 
   @Override
-  protected void startLong() {
-    minLong = null;
+  public void mergeAggregates(Min otherAgg) {
+    combine(otherAgg.getAggregate());
   }
 
-  @Override
-  protected void startFloat() {
-    minFloat = null;
-  }
+  private void combine(Number otherNum) {
+    if (otherNum == null) {
+      return;
+    }
 
-  @Override
-  protected void startDouble() {
-    minDouble = null;
-  }
+    if (number == null) {
+      number = otherNum;
+      return;
+    }
 
-  @Override
-  protected void updateInt(int val) {
-    minInt = minInt == null ? val : Math.min(minInt, val);
-  }
-
-  @Override
-  protected void updateLong(long val) {
-    minLong = minLong == null ? val : Math.min(minLong, val);
-  }
-
-  @Override
-  protected void updateFloat(float val) {
-    minFloat = minFloat == null ? val : Math.min(minFloat, val);
-  }
-
-  @Override
-  protected void updateDouble(double val) {
-    minDouble = minDouble == null ? val : Math.min(minDouble, val);
-  }
-
-  @Override
-  protected Integer getInt() {
-    return minInt;
-  }
-
-  @Override
-  protected Long getLong() {
-    return minLong;
-  }
-
-  @Override
-  protected Float getFloat() {
-    return minFloat;
-  }
-
-  @Override
-  protected Double getDouble() {
-    return minDouble;
+    switch (fieldType) {
+      case INT:
+        number = Math.min((Integer) otherNum, (Integer) number);
+        return;
+      case LONG:
+        number = Math.min((Long) otherNum, (Long) number);
+        return;
+      case FLOAT:
+        number = Math.min((Float) otherNum, (Float) number);
+        return;
+      case DOUBLE:
+        number = Math.min((Double) otherNum, (Double) number);
+        return;
+      default:
+        throw new IllegalArgumentException(String.format("Field '%s' is of unsupported non-numeric type '%s'. ",
+                                                         fieldName, fieldType));
+    }
   }
 }

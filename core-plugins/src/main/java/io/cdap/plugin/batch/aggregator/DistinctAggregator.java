@@ -48,7 +48,7 @@ import javax.annotation.Nullable;
 @Description("Deduplicates input records so that all output records are distinct. " +
   "Can optionally take a list of fields, which will project out all other fields and perform a distinct " +
   "on just those fields.")
-public class DistinctAggregator extends RecordAggregator {
+public class DistinctAggregator extends RecordReducibleAggregator<StructuredRecord> {
   private final Conf conf;
   private Iterable<String> fields;
   private Schema outputSchema;
@@ -128,7 +128,7 @@ public class DistinctAggregator extends RecordAggregator {
 
   @Override
   public void groupBy(StructuredRecord record, Emitter<StructuredRecord> emitter) {
-    if (fields == null) {
+    if (fields == null || !fields.iterator().hasNext()) {
       emitter.emit(record);
       return;
     }
@@ -142,8 +142,22 @@ public class DistinctAggregator extends RecordAggregator {
   }
 
   @Override
-  public void aggregate(StructuredRecord groupKey, Iterator<StructuredRecord> iterator,
-                        Emitter<StructuredRecord> emitter) {
+  public StructuredRecord initializeAggregateValue(StructuredRecord record) {
+    return record;
+  }
+
+  @Override
+  public StructuredRecord mergeValues(StructuredRecord aggValue, StructuredRecord record) {
+    return aggValue;
+  }
+
+  @Override
+  public StructuredRecord mergePartitions(StructuredRecord aggVal1, StructuredRecord aggVal2) {
+    return aggVal1;
+  }
+
+  @Override
+  public void finalize(StructuredRecord groupKey, StructuredRecord aggValue, Emitter<StructuredRecord> emitter) {
     emitter.emit(groupKey);
   }
 

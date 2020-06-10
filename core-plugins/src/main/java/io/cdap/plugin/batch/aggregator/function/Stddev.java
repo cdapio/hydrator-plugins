@@ -20,47 +20,50 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.plugin.batch.aggregator.AggregationUtils;
 
+import javax.annotation.Nullable;
+
 /**
  * Calculates the Standard Deviation
  */
-public class Stddev implements AggregateFunction<Double> {
-  private final String fieldName;
-  private final Schema outputSchema;
-  private RunningStats stats;
+public class Stddev implements AggregateFunction<Double, Stddev> {
+  private final Variance variance;
 
   public Stddev(String fieldName, Schema fieldSchema) {
-    this.fieldName = fieldName;
-    boolean isNullable = fieldSchema.isNullable();
-    Schema.Type fieldType = isNullable ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
+    Schema.Type fieldType = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
     if (!AggregationUtils.isNumericType(fieldType)) {
       throw new IllegalArgumentException(String.format(
         "Cannot compute standard deviation on field %s because its type %s is not numeric", fieldName, fieldType));
     }
-    outputSchema = isNullable ? Schema.nullableOf(Schema.of(Schema.Type.DOUBLE)) : Schema.of(Schema.Type.DOUBLE);
+    this.variance = new Variance(fieldName, fieldSchema);
   }
 
   @Override
-  public void beginFunction() {
-    stats = new RunningStats();
+  public void initialize() {
+    variance.initialize();
   }
 
   @Override
-  public void operateOn(StructuredRecord record) {
-    Object val = record.get(fieldName);
-    if (val == null) {
-      return;
-    }
-    double value = ((Number) val).doubleValue();
-    stats.push(value);
+  public void mergeValue(StructuredRecord record) {
+    variance.mergeValue(record);
   }
 
+  @Override
+  public void mergeAggregates(Stddev otherAgg) {
+    variance.mergeAggregates(otherAgg.variance);
+  }
+
+  @Nullable
   @Override
   public Double getAggregate() {
-    return stats.stddev();
+    Double aggregate = variance.getAggregate();
+    if (aggregate == null) {
+      return null;
+    }
+    return Math.sqrt(aggregate);
   }
 
   @Override
   public Schema getOutputSchema() {
-    return outputSchema;
+    return variance.getOutputSchema();
   }
 }

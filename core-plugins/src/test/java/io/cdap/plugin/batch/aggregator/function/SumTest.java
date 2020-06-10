@@ -20,6 +20,7 @@ import io.cdap.cdap.api.data.schema.Schema;
 import org.junit.Test;
 
 /**
+ *
  */
 public class SumTest extends NumberTest {
 
@@ -27,32 +28,36 @@ public class SumTest extends NumberTest {
   public void testIntSum() {
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
     Sum sum = new Sum("x", Schema.of(Schema.Type.INT));
-    testFunction(sum, schema, 0, -50, 49, 1, 0, 100, -100);
-    testFunction(sum, schema, 3, -100, 0, 3, 100);
-    testFunction(sum, schema, 0, 0);
+    Sum sum1 = new Sum("x", Schema.of(Schema.Type.INT));
+    testFunction(sum, schema, sum1, 0, -50, 49, 1, 0, 100, -100);
+    testFunction(sum, schema, sum1, 3, -100, 0, 3, 100);
+    testFunction(sum, schema, sum1, 0, 0);
   }
 
   @Test
   public void testLongSum() {
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.of(Schema.Type.LONG)));
     Sum sum = new Sum("x", Schema.of(Schema.Type.LONG));
-    testFunction(sum, schema, 500L, -1L, 0L, 1L, 500L);
-    testFunction(sum, schema, 0L, 0L);
+    Sum sum1 = new Sum("x", Schema.of(Schema.Type.LONG));
+    testFunction(sum, schema, sum1, 500L, -1L, 0L, 1L, 500L);
+    testFunction(sum, schema, sum1, 0L, 0L);
   }
 
   @Test
   public void testFloatSum() {
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.of(Schema.Type.FLOAT)));
     Sum sum = new Sum("x", Schema.of(Schema.Type.FLOAT));
-    testFunction(sum, schema, 0f, -1.1f, 1.1f, 0f, -50f, 50f);
-    testFunction(sum, schema, 3.14f, 0f, 3.1f, 0.04f);
+    Sum sum1 = new Sum("x", Schema.of(Schema.Type.FLOAT));
+    testFunction(sum, schema, sum1, 0f, -1.1f, 1.1f, 0f, -50f, 50f);
+    testFunction(sum, schema, sum1, 3.14f, 0f, 3.1f, 0.04f);
   }
 
   @Test
   public void testDoubleSum() {
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.of(Schema.Type.DOUBLE)));
     Sum sum = new Sum("x", Schema.of(Schema.Type.DOUBLE));
-    testFunction(sum, schema, 0d, -1.1d, 1.1d, 0d, -50d, 50d);
-    testFunction(sum, schema, 3.14d, 0d, 3.1d, 0.04d);
+    Sum sum1 = new Sum("x", Schema.of(Schema.Type.DOUBLE));
+    testFunction(sum, schema, sum1, 0d, -1.1d, 1.1d, 0d, -50d, 50d);
+    testFunction(sum, schema, sum1, 3.14d, 0d, 3.1d, 0.04d);
   }
 }

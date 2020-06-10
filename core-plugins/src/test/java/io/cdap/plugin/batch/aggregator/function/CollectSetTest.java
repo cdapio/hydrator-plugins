@@ -16,81 +16,48 @@
 
 package io.cdap.plugin.batch.aggregator.function;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
-import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.Set;
-
 /**
- * @author Harsh Takkar
+ *
  */
-public class CollectSetTest {
+public class CollectSetTest extends AggregateFunctionTest {
 
   @Test
   public void testIntCollectSet() {
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
-    CollectSet collectSet = new CollectSet("x", Schema.of(Schema.Type.INT));
-    collectSet.beginFunction();
-    collectSet.operateOn(StructuredRecord.builder(schema).set("x", 1).build());
-    collectSet.operateOn(StructuredRecord.builder(schema).set("x", 2).build());
-    collectSet.operateOn(StructuredRecord.builder(schema).set("x", 1).build());
-    Set set = collectSet.getAggregate();
-    Set<Integer> expectedSet = ImmutableSet.of(1, 2);
-    Assert.assertEquals(expectedSet, set);
+    test(new CollectSet("x", schema), schema, "x", ImmutableSet.of(1, 2), ImmutableList.of(1, 2, 1),
+         new CollectSet("x", schema));
   }
 
   @Test
   public void testLongCollectSet() {
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.of(Schema.Type.LONG)));
-    CollectSet collectSet = new CollectSet("x", Schema.of(Schema.Type.LONG));
-    collectSet.beginFunction();
-    collectSet.operateOn(StructuredRecord.builder(schema).set("x", 1L).build());
-    collectSet.operateOn(StructuredRecord.builder(schema).set("x", 2L).build());
-    collectSet.operateOn(StructuredRecord.builder(schema).set("x", 1L).build());
-    Set set = collectSet.getAggregate();
-    Set<Long> expectedSet = ImmutableSet.of(1L, 2L);
-    Assert.assertEquals(expectedSet, set);
+    test(new CollectSet("x", schema), schema, "x", ImmutableSet.of(1L, 2L), ImmutableList.of(1L, 2L, 1L),
+         new CollectSet("x", schema));
   }
 
   @Test
   public void testFloatCollectSet() {
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.of(Schema.Type.FLOAT)));
-    CollectSet collectSet = new CollectSet("x", Schema.of(Schema.Type.FLOAT));
-    collectSet.beginFunction();
-    collectSet.operateOn(StructuredRecord.builder(schema).set("x", 1.0F).build());
-    collectSet.operateOn(StructuredRecord.builder(schema).set("x", 2.0F).build());
-    collectSet.operateOn(StructuredRecord.builder(schema).set("x", 1.0F).build());
-    Set set = collectSet.getAggregate();
-    Set<Float> expectedSet = ImmutableSet.of(1.0F, 2.0F);
-    Assert.assertEquals(expectedSet, set);
+    test(new CollectSet("x", schema), schema, "x", ImmutableSet.of(1.0F, 2.0F), ImmutableList.of(1.0F, 2.0F, 1.0F),
+         new CollectSet("x", schema));
   }
 
   @Test
   public void testDoubleCollectSet() {
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.of(Schema.Type.DOUBLE)));
-    CollectSet collectSet = new CollectSet("x", Schema.of(Schema.Type.DOUBLE));
-    collectSet.beginFunction();
-    collectSet.operateOn(StructuredRecord.builder(schema).set("x", 1.0D).build());
-    collectSet.operateOn(StructuredRecord.builder(schema).set("x", 2.0D).build());
-    collectSet.operateOn(StructuredRecord.builder(schema).set("x", 1.0D).build());
-    Set set = collectSet.getAggregate();
-    Set<Double> expectedSet = ImmutableSet.of(1.0D, 2.0D);
-    Assert.assertEquals(expectedSet, set);
+    test(new CollectSet("x", schema), schema, "x", ImmutableSet.of(1.0D, 2.0D), ImmutableList.of(1.0D, 2.0D, 1.0D),
+         new CollectSet("x", schema));
   }
 
   @Test
   public void testStringCollectSet() {
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.of(Schema.Type.STRING)));
-    CollectSet collectSet = new CollectSet("x", Schema.of(Schema.Type.STRING));
-    collectSet.beginFunction();
-    collectSet.operateOn(StructuredRecord.builder(schema).set("x", "a").build());
-    collectSet.operateOn(StructuredRecord.builder(schema).set("x", "b").build());
-    collectSet.operateOn(StructuredRecord.builder(schema).set("x", "a").build());
-    Set set = collectSet.getAggregate();
-    Set<String> expectedSet = ImmutableSet.of("a", "b");
-    Assert.assertEquals(expectedSet, set);
+    test(new CollectSet("x", schema), schema, "x", ImmutableSet.of("1", "2"), ImmutableList.of("1", "2", "1"),
+         new CollectSet("x", schema));
   }
 }

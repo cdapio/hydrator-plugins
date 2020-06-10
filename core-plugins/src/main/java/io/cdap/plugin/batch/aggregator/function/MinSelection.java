@@ -19,83 +19,32 @@ package io.cdap.plugin.batch.aggregator.function;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-
 /**
  * A {@link StructuredRecord} that can be used to select the record with the min value of a given field.
  */
 public class MinSelection extends NumberSelection {
-  private StructuredRecord minRecord;
-  private Integer minInt;
-  private Long minLong;
-  private Float minFloat;
-  private Double minDouble;
 
   public MinSelection(String fieldName, Schema fieldSchema) {
     super(fieldName, fieldSchema);
-    minRecord = null;
   }
 
   @Override
-  protected void startInt() {
-    minInt = null;
+  protected int compareInt(int val1, int val2) {
+    return -Integer.compare(val1, val2);
   }
 
   @Override
-  protected void startLong() {
-    minLong = null;
+  protected int compareLong(long val1, long val2) {
+    return -Long.compare(val1, val2);
   }
 
   @Override
-  protected void startFloat() {
-    minFloat = null;
+  protected int compareFloat(float val1, float val2) {
+    return -Float.compare(val1, val2);
   }
 
   @Override
-  protected void startDouble() {
-    minDouble = null;
-  }
-
-  @Override
-  protected void operateOnInt(int current, StructuredRecord record) {
-    minInt = minInt == null ? current : Math.min(minInt, current);
-    if (Objects.equals(minInt, current)) {
-      minRecord = record;
-    }
-  }
-
-  @Override
-  protected void operateOnLong(long current, StructuredRecord record) {
-    minLong = minLong == null ? current : Math.min(minLong, current);
-    if (Objects.equals(minLong, current)) {
-      minRecord = record;
-    }
-  }
-
-  @Override
-  protected void operateOnFloat(float current, StructuredRecord record) {
-    minFloat = minFloat == null ? current : Math.min(minFloat, current);
-    if (Objects.equals(minFloat, current)) {
-      minRecord = record;
-    }
-  }
-
-  @Override
-  protected void operateOnDouble(double current, StructuredRecord record) {
-    minDouble = minDouble == null ? current : Math.min(minDouble, current);
-    if (Objects.equals(minDouble, current)) {
-      minRecord = record;
-    }
-  }
-
-  @Override
-  protected List<StructuredRecord> getRecords() {
-    List<StructuredRecord> records = new ArrayList<>();
-    if (minRecord != null) {
-      records.add(minRecord);
-    }
-    return records;
+  protected int compareDouble(double val1, double val2) {
+    return -Double.compare(val1, val2);
   }
 }
