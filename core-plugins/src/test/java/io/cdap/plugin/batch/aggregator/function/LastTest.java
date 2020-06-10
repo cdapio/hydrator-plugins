@@ -16,14 +16,17 @@
 
 package io.cdap.plugin.batch.aggregator.function;
 
-import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
+
 /**
+ *
  */
-public class LastTest {
+public class LastTest extends AggregateFunctionTest {
 
   @Test
   public void testLast() {
@@ -32,17 +35,11 @@ public class LastTest {
 
     Assert.assertEquals(Schema.of(Schema.Type.INT), last.getOutputSchema());
 
-    last.beginFunction();
-    last.operateOn(StructuredRecord.builder(schema).set("x", 1).build());
-    last.operateOn(StructuredRecord.builder(schema).set("x", 2).build());
-    last.operateOn(StructuredRecord.builder(schema).set("x", 3).build());
-    Assert.assertEquals(3, last.getAggregate());
-
-    last.beginFunction();
-    last.operateOn(StructuredRecord.builder(schema).set("x", 3).build());
-    Assert.assertEquals(3, last.getAggregate());
-
-    last.beginFunction();
-    Assert.assertNull(last.getAggregate());
+    test(new Last("x", Schema.of(Schema.Type.INT)), schema, "x", 3, Arrays.asList(1, 2, 3),
+         new Last("x", Schema.of(Schema.Type.INT)));
+    test(new Last("x", Schema.of(Schema.Type.INT)), schema, "x", 3, Collections.singletonList(3),
+         new Last("x", Schema.of(Schema.Type.INT)));
+    test(new Last("x", Schema.of(Schema.Type.INT)), schema, "x", null, Collections.emptyList(),
+         new Last("x", Schema.of(Schema.Type.INT)));
   }
 }

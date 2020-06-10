@@ -19,18 +19,16 @@ package io.cdap.plugin.batch.aggregator.function;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 
-import java.util.ArrayList;
-import java.util.List;
+import javax.annotation.Nullable;
 
 /**
  * Return the last element in the group.
  *
  * @param <T> type of aggregate value
  */
-public class Last<T> implements SelectionFunction, AggregateFunction<T> {
+public class Last<T> implements SelectionFunction, AggregateFunction<T, Last<T>> {
   private final String fieldName;
   private final Schema fieldSchema;
-  private StructuredRecord lastRecord;
   private T last;
 
   public Last(String fieldName, Schema fieldSchema) {
@@ -39,17 +37,21 @@ public class Last<T> implements SelectionFunction, AggregateFunction<T> {
   }
 
   @Override
-  public void beginFunction() {
-    last = null;
-    lastRecord = null;
+  public void initialize() {
+    this.last = null;
   }
 
   @Override
-  public void operateOn(StructuredRecord record) {
+  public void mergeValue(StructuredRecord record) {
     last = record.get(fieldName);
-    lastRecord = record;
   }
 
+  @Override
+  public void mergeAggregates(Last<T> otherAgg) {
+    last = otherAgg.getAggregate();
+  }
+
+  @Nullable
   @Override
   public T getAggregate() {
     return last;
@@ -61,11 +63,7 @@ public class Last<T> implements SelectionFunction, AggregateFunction<T> {
   }
 
   @Override
-  public List<StructuredRecord> getSelectedRecords() {
-    List<StructuredRecord> recordList = new ArrayList<>();
-    if (lastRecord != null) {
-      recordList.add(lastRecord);
-    }
-    return recordList;
+  public StructuredRecord select(StructuredRecord record1, StructuredRecord record2) {
+    return record2;
   }
 }

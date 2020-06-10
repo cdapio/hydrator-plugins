@@ -16,29 +16,22 @@
 
 package io.cdap.plugin.batch.aggregator.function;
 
-import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
-import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Arrays;
+
 /**
+ *
  */
-public class CountTest {
+public class CountTest extends AggregateFunctionTest {
 
   @Test
   public void testCount() {
-    Count count = new Count("x");
     Schema schema = Schema.recordOf(
       "test",
-      Schema.Field.of("x", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
-      Schema.Field.of("y", Schema.of(Schema.Type.INT)));
-    count.beginFunction();
-    count.operateOn(StructuredRecord.builder(schema).set("x", "abc").set("y", 5).build());
-    count.operateOn(StructuredRecord.builder(schema).set("y", 3).build());
-    Assert.assertEquals(1L, count.getAggregate().longValue());
-
-    count.beginFunction();
-    count.operateOn(StructuredRecord.builder(schema).set("y", 1).build());
-    Assert.assertEquals(0L, count.getAggregate().longValue());
+      Schema.Field.of("x", Schema.nullableOf(Schema.of(Schema.Type.INT))));
+    test(new Count("x"), schema, "x", 3L, Arrays.asList(1, 2, null, null, 3), new Count("x"));
+    test(new Count("y"), schema, "x", 0L, Arrays.asList(1, 2, null, null, 3), new Count("y"));
   }
 }

@@ -23,11 +23,11 @@ import io.cdap.plugin.batch.aggregator.AggregationUtils;
 /**
  * Calculates the average of a column. Does not protect against overflow.
  */
-public class Avg implements AggregateFunction<Double> {
+public class Avg implements AggregateFunction<Double, Avg> {
   private final String fieldName;
   private final Schema outputSchema;
   private double avg;
-  private double count;
+  private long count;
 
   public Avg(String fieldName, Schema fieldSchema) {
     this.fieldName = fieldName;
@@ -38,29 +38,34 @@ public class Avg implements AggregateFunction<Double> {
         "Cannot compute avg on field %s because its type %s is not numeric", fieldName, fieldType));
     }
 
+    // the avg is null only if the field value is always null
     outputSchema = isNullable ? Schema.nullableOf(Schema.of(Schema.Type.DOUBLE)) : Schema.of(Schema.Type.DOUBLE);
   }
 
   @Override
-  public void beginFunction() {
-    avg = 0d;
-    count = 0d;
+  public void initialize() {
+    this.avg = 0d;
+    this.count = 0L;
   }
 
   @Override
-  public void operateOn(StructuredRecord record) {
+  public void mergeValue(StructuredRecord record) {
     Object val = record.get(fieldName);
     if (val == null) {
       return;
     }
-    count++;
-    avg = avg + (((Number) val).doubleValue() - avg) / count;
+    computeAvg(1L, (Number) val);
+  }
+
+  @Override
+  public void mergeAggregates(Avg otherAgg) {
+    computeAvg(otherAgg.count, otherAgg.avg);
   }
 
   @Override
   public Double getAggregate() {
+    // this only happens when every value is null
     if (count == 0) {
-      // only happens if the field value was always null
       return null;
     }
     return avg;
@@ -69,5 +74,13 @@ public class Avg implements AggregateFunction<Double> {
   @Override
   public Schema getOutputSchema() {
     return outputSchema;
+  }
+
+  private void computeAvg(long deltaCount, Number oldAvg) {
+    if (deltaCount == 0L) {
+      return;
+    }
+    count += deltaCount;
+    avg = avg + (oldAvg.doubleValue() - avg) * deltaCount / count;
   }
 }
