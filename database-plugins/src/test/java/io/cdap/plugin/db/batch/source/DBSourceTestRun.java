@@ -70,6 +70,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
         .put(DBSource.DBSourceConfig.IMPORT_QUERY, importQuery)
         .put(DBSource.DBSourceConfig.BOUNDING_QUERY, boundingQuery)
         .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
+        .put(DBSource.DBSourceConfig.FETCH_SIZE, "${db.fetch.size}")
         .put(ConnectionConfig.JDBC_PLUGIN_NAME, "hypersql")
         .put(Constants.Reference.REFERENCE_NAME, "DBMacroTest")
         .build(),
@@ -79,7 +80,8 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     ETLPlugin sinkConfig = MockSink.getPlugin("macroOutputTable");
 
     ApplicationManager appManager = deployETL(sourceConfig, sinkConfig, "testDBMacro");
-    runETLOnce(appManager, ImmutableMap.of("logical.start.time", String.valueOf(CURRENT_TS)));
+    runETLOnce(appManager, ImmutableMap.of("logical.start.time", String.valueOf(CURRENT_TS),
+                                           "db.fetch.size", Integer.toString(100)));
 
     DataSetManager<Table> outputManager = getDataset("macroOutputTable");
     Assert.assertTrue(MockSink.readOutput(outputManager).isEmpty());
