@@ -37,7 +37,7 @@
       "label": "Advanced",
       "properties": [
         {
-          "widget-type": "textbox",
+          "widget-type": "multiple-input-stage-selector",
           "label": "Inputs to Load in Memory",
           "name": "inMemoryInputs"
         },
