@@ -77,6 +77,14 @@
           "widget-attributes" : {
              "default": "1"
            }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Fetch Size",
+          "name": "fetchSize",
+          "widget-attributes" : {
+            "default": "1000"
+          }
         }
       ]
     },
