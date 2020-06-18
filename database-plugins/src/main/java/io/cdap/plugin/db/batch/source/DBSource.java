@@ -167,6 +167,9 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     if (sourceConfig.replaceWith != null) {
       hConf.set(DBUtils.REPLACE_WITH, sourceConfig.replaceWith);
     }
+    if (sourceConfig.fetchSize != null) {
+      hConf.setInt(DBUtils.FETCH_SIZE, sourceConfig.fetchSize);
+    }
     context.setInput(Input.of(sourceConfig.referenceName,
                               new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf)));
 
@@ -263,6 +266,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     public static final String TRANSACTION_ISOLATION_LEVEL = "transactionIsolationLevel";
     public static final String PATTERN_TO_REPLACE = "patternToReplace";
     public static final String REPLACE_WITH = "replaceWith";
+    public static final String FETCH_SIZE = "fetchSize";
 
     @Name(IMPORT_QUERY)
     @Description("The SELECT query to use to import data from the specified table. " +
@@ -324,6 +328,13 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     String replaceWith;
 
     @Nullable
+    @Name(FETCH_SIZE)
+    @Macro
+    @Description("The number of rows to fetch at a time per split. Larger fetch size can result in faster import, " +
+                  "with the tradeoff of higher memory usage.")
+    Integer fetchSize;
+
+    @Nullable
     private String getImportQuery() {
       return cleanQuery(importQuery);
     }
@@ -372,6 +383,11 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
       if (replaceWith != null && patternToReplace == null) {
         collector.addFailure("Replace With is set but Pattern To Replace is not provided", null)
           .withConfigProperty(REPLACE_WITH).withConfigProperty(PATTERN_TO_REPLACE);
+      }
+
+      if (!containsMacro(FETCH_SIZE) && fetchSize != null && fetchSize <= 0) {
+        collector.addFailure("Invalid fetch size.", "Fetch size must be a positive integer.")
+          .withConfigProperty(FETCH_SIZE);
       }
     }
 

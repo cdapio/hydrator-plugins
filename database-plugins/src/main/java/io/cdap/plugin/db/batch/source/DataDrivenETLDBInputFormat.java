@@ -95,7 +95,6 @@ public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
                                                   conf.get(DBConfiguration.PASSWORD_PROPERTY));
         connection = DriverManager.getConnection(url, properties);
 
-
         boolean autoCommitEnabled = conf.getBoolean(AUTO_COMMIT_ENABLED, false);
         if (autoCommitEnabled) {
           // hack to work around jdbc drivers like the hive driver that throw exceptions on commit
@@ -103,6 +102,11 @@ public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
         } else {
           this.connection.setAutoCommit(false);
         }
+        int fetchSize = conf.getInt(DBUtils.FETCH_SIZE, 0);
+        if (fetchSize > 0) {
+          this.connection = new ConnectionWithFetchSize(this.connection, fetchSize);
+        }
+
         String level = conf.get(TransactionIsolationLevel.CONF_KEY);
         LOG.debug("Transaction isolation level: {}", level);
         connection.setTransactionIsolation(TransactionIsolationLevel.getLevel(level));
