@@ -31,12 +31,16 @@ import io.cdap.cdap.api.dataset.table.Scanner;
 import io.cdap.cdap.api.dataset.table.Table;
 import io.cdap.cdap.common.utils.Tasks;
 import io.cdap.cdap.datapipeline.DataPipelineApp;
+import io.cdap.cdap.datapipeline.SmartWorkflow;
 import io.cdap.cdap.datastreams.DataStreamsApp;
 import io.cdap.cdap.datastreams.DataStreamsSparkLauncher;
+import io.cdap.cdap.etl.api.batch.SparkCompute;
 import io.cdap.cdap.etl.api.streaming.StreamingSource;
 import io.cdap.cdap.etl.mock.batch.MockSink;
+import io.cdap.cdap.etl.mock.batch.MockSource;
 import io.cdap.cdap.etl.mock.test.HydratorTestBase;
 import io.cdap.cdap.etl.proto.v2.DataStreamsConfig;
+import io.cdap.cdap.etl.proto.v2.ETLBatchConfig;
 import io.cdap.cdap.etl.proto.v2.ETLPlugin;
 import io.cdap.cdap.etl.proto.v2.ETLStage;
 import io.cdap.cdap.proto.ProgramRunStatus;
@@ -48,6 +52,7 @@ import io.cdap.cdap.test.ApplicationManager;
 import io.cdap.cdap.test.DataSetManager;
 import io.cdap.cdap.test.SparkManager;
 import io.cdap.cdap.test.TestConfiguration;
+import io.cdap.cdap.test.WorkflowManager;
 import io.cdap.http.HttpHandler;
 import io.cdap.http.NettyHttpService;
 import io.cdap.plugin.common.http.HTTPPollConfig;
@@ -72,6 +77,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import javax.ws.rs.HttpMethod;
 
@@ -138,6 +144,74 @@ public class SparkPluginTest extends HydratorTestBase {
   @AfterClass
   public static void cleanup() throws Exception {
     httpService.stop();
+  }
+
+  @Test
+  public void testSCD2() throws Exception {
+    Schema schema = Schema.recordOf(
+      "x",
+      Schema.Field.of("id", Schema.of(Schema.Type.INT)),
+      Schema.Field.of("startDate", Schema.of(Schema.LogicalType.DATE)),
+      Schema.Field.of("endDate", Schema.nullableOf(Schema.of(Schema.LogicalType.DATE))));
+
+    Map<String, String> properties = new HashMap<>();
+    properties.put("key", "id");
+    properties.put("startDateField", "startDate");
+    properties.put("endDateField", "endDate");
+    properties.put("numPartitions", "1");
+    String inputDataset = UUID.randomUUID().toString();
+    String outputDateset = UUID.randomUUID().toString();
+    ETLBatchConfig config = ETLBatchConfig.builder()
+      .addStage(new ETLStage("source", MockSource.getPlugin(inputDataset, schema)))
+      .addStage(new ETLStage("scd2", new ETLPlugin("SCD2", SparkCompute.PLUGIN_TYPE, properties)))
+      .addStage(new ETLStage("sink", MockSink.getPlugin(outputDateset)))
+      .addConnection("source", "scd2")
+      .addConnection("scd2", "sink")
+      .build();
+
+
+    AppRequest<ETLBatchConfig> appRequest = new AppRequest<>(
+      new ArtifactSummary(DATAPIPELINE_ARTIFACT_ID.getArtifact(), DATAPIPELINE_ARTIFACT_ID.getVersion()), config);
+    ApplicationId appId = NamespaceId.DEFAULT.app("SCD2");
+    ApplicationManager appManager = deployApplication(appId, appRequest);
+
+    List<StructuredRecord> input = new ArrayList<>();
+    input.add(StructuredRecord.builder(schema).set("id", 0).set("startDate", 0).set("endDate", 10).build());
+    input.add(StructuredRecord.builder(schema).set("id", 1).set("startDate", 10).set("endDate", 20).build());
+    input.add(StructuredRecord.builder(schema).set("id", 0).set("startDate", 1000).set("endDate", 5000).build());
+    input.add(StructuredRecord.builder(schema).set("id", 1).set("startDate", 21).set("endDate", 1000).build());
+    input.add(StructuredRecord.builder(schema).set("id", 0).set("startDate", 100).build());
+    input.add(StructuredRecord.builder(schema).set("id", 1).set("startDate", 15).build());
+    DataSetManager<Table> inputManager = getDataset(inputDataset);
+    MockSource.writeInput(inputManager, input);
+
+    WorkflowManager workflowManager = appManager.getWorkflowManager(SmartWorkflow.NAME);
+    workflowManager.startAndWaitForRun(ProgramRunStatus.COMPLETED, 3, TimeUnit.MINUTES);
+
+    DataSetManager<Table> outputManager = getDataset(outputDateset);
+    List<StructuredRecord> output = MockSink.readOutput(outputManager);
+    output.sort((r1, r2) -> {
+      int id1 = r1.get("id");
+      int id2 = r2.get("id");
+      int cmp = Integer.compare(id1, id2);
+      if (cmp != 0) {
+        return cmp;
+      }
+
+      int sdate1 = r1.get("startDate");
+      int sdate2 = r2.get("startDate");
+      return Integer.compare(sdate1, sdate2);
+    });
+
+    List<StructuredRecord> expected = new ArrayList<>();
+    expected.add(StructuredRecord.builder(schema).set("id", 0).set("startDate", 0).set("endDate", 99).build());
+    expected.add(StructuredRecord.builder(schema).set("id", 0).set("startDate", 100).set("endDate", 999).build());
+    expected.add(StructuredRecord.builder(schema).set("id", 0).set("startDate", 1000).set("endDate", 2932896).build());
+    expected.add(StructuredRecord.builder(schema).set("id", 1).set("startDate", 10).set("endDate", 14).build());
+    expected.add(StructuredRecord.builder(schema).set("id", 1).set("startDate", 15).set("endDate", 20).build());
+    expected.add(StructuredRecord.builder(schema).set("id", 1).set("startDate", 21).set("endDate", 2932896).build());
+
+    Assert.assertEquals(expected, output);
   }
 
   @Test
