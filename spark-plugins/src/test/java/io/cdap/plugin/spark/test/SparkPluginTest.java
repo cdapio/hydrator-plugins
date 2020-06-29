@@ -159,6 +159,7 @@ public class SparkPluginTest extends HydratorTestBase {
     properties.put("startDateField", "startDate");
     properties.put("endDateField", "endDate");
     properties.put("numPartitions", "1");
+    properties.put("deduplicate", "true");
     String inputDataset = UUID.randomUUID().toString();
     String outputDateset = UUID.randomUUID().toString();
     ETLBatchConfig config = ETLBatchConfig.builder()
