@@ -4,7 +4,9 @@
 Description
 -----------
 Groups by one or more fields, then performs one or more aggregate functions on each group.
-Supports `avg`, `count`, `count(*)`, `first`, `last`, `max`, `min`,`sum`,`collectList`,`collectSet` as aggregate functions.
+Supports `avg`, `count`, `count(*)`, `first`, `last`, `max`, `min`,`sum`,`collectList`,`collectSet`,
+`latestDate`,`earliestDate`,`longestString`,`shortestString`,`longestString`,`countNulls`,`concat`,
+`concatDistinct`,`logicalAnd`,`logicalOr`,`sumOfSquares`,`correctedSumOfSquares` as aggregate functions.
 
 Use Case
 --------
@@ -20,7 +22,9 @@ For example, if grouping by the ``user`` field and calculating an aggregate ``nu
 output records will have a ``user`` field and a ``numActions`` field. (Macro-enabled)
 
 **aggregates:** Aggregates to compute on each group of records.
-Supported aggregate functions are `avg`, `count`, `count(*)`, `first`, `last`, `max`, `min`,`sum`,`collectList`,`collectSet`.
+Supported aggregate functions are `avg`, `count`, `count(*)`, `first`, `last`, `max`, `min`,`sum`,`collectList`,`collectSet`,
+`latestDate`,`earliestDate`,`longestString`,`shortestString`,`longestString`,`countNulls`,`concat`,`concatDistinct`,
+`logicalAnd`,`logicalOr`,`sumOfSquares`,`correctedSumOfSquares`.
 A function must specify the field it should be applied on, as well as the name it should be called.
 Aggregates are specified using the syntax `name:function(field)[, other aggregates]`.
 For example, ``avgPrice:avg(price),cheapest:min(price)`` will calculate two aggregates.

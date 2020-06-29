@@ -45,7 +45,51 @@
               "Sum",
               "Variance",
               "CollectList",
-              "CollectSet"
+              "CollectSet",
+              {
+                "label": "Latest Date",
+                "value": "LatestDate"
+              },
+              {
+                "label": "Earliest Date",
+                "value": "EarliestDate"
+              },
+              {
+                "label": "Longest String",
+                "value": "LongestString"
+              },
+              {
+                "label": "Shortest String",
+                "value": "ShortestString"
+              },
+              {
+                "label": "Number of Nulls",
+                "value": "CountNulls"
+              },
+              {
+                "label": "Concat",
+                "value": "Concat"
+              },
+              {
+                "label": "Concat Distinct",
+                "value": "ConcatDistinct"
+              },
+              {
+                "label": "Logical AND",
+                "value": "LogicalAnd"
+              },
+              {
+                "label": "Logical OR",
+                "value": "LogicalOr"
+              },
+              {
+                "label": "Sum oF squares",
+                "value": "SumOfSquares"
+              },
+              {
+                "label": "Corrected sum of squares",
+                "value": "CorrectedSumOfSquares"
+              }
             ]
           }
         },

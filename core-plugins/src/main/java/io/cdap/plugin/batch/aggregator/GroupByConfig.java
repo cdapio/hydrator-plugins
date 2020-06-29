@@ -26,14 +26,25 @@ import io.cdap.plugin.batch.aggregator.function.AggregateFunction;
 import io.cdap.plugin.batch.aggregator.function.Avg;
 import io.cdap.plugin.batch.aggregator.function.CollectList;
 import io.cdap.plugin.batch.aggregator.function.CollectSet;
+import io.cdap.plugin.batch.aggregator.function.Concat;
+import io.cdap.plugin.batch.aggregator.function.ConcatDistinct;
+import io.cdap.plugin.batch.aggregator.function.CorrectedSumOfSquares;
 import io.cdap.plugin.batch.aggregator.function.Count;
 import io.cdap.plugin.batch.aggregator.function.CountAll;
+import io.cdap.plugin.batch.aggregator.function.CountNulls;
+import io.cdap.plugin.batch.aggregator.function.EarliestDate;
 import io.cdap.plugin.batch.aggregator.function.First;
 import io.cdap.plugin.batch.aggregator.function.Last;
+import io.cdap.plugin.batch.aggregator.function.LatestDate;
+import io.cdap.plugin.batch.aggregator.function.LogicalAnd;
+import io.cdap.plugin.batch.aggregator.function.LogicalOr;
+import io.cdap.plugin.batch.aggregator.function.LongestString;
 import io.cdap.plugin.batch.aggregator.function.Max;
 import io.cdap.plugin.batch.aggregator.function.Min;
+import io.cdap.plugin.batch.aggregator.function.ShortestString;
 import io.cdap.plugin.batch.aggregator.function.Stddev;
 import io.cdap.plugin.batch.aggregator.function.Sum;
+import io.cdap.plugin.batch.aggregator.function.SumOfSquares;
 import io.cdap.plugin.batch.aggregator.function.Variance;
 
 import java.util.ArrayList;
@@ -205,6 +216,28 @@ public class GroupByConfig extends AggregatorConfig {
           return new CollectList(field, fieldSchema);
         case COLLECTSET:
           return new CollectSet(field, fieldSchema);
+        case LATESTDATE:
+          return new LatestDate(field, fieldSchema);
+        case EARLIESTDATE:
+          return new EarliestDate(field, fieldSchema);
+        case LONGESTSTRING:
+          return new LongestString(field, fieldSchema);
+        case SHORTESTSTRING:
+          return new ShortestString(field, fieldSchema);
+        case COUNTNULLS:
+          return new CountNulls(field);
+        case CONCAT:
+          return new Concat(field, fieldSchema);
+        case CONCATDISTINCT:
+          return new ConcatDistinct(field, fieldSchema);
+        case LOGICALAND:
+          return new LogicalAnd(field);
+        case LOGICALOR:
+          return new LogicalOr(field);
+        case CORRECTEDSUMOFSQUARES:
+          return new CorrectedSumOfSquares(field, fieldSchema);
+        case SUMOFSQUARES:
+          return new SumOfSquares(field, fieldSchema);
       }
       // should never happen
       throw new IllegalStateException("Unknown function type " + function);
@@ -252,6 +285,17 @@ public class GroupByConfig extends AggregatorConfig {
     STDDEV,
     VARIANCE,
     COLLECTLIST,
-    COLLECTSET
+    COLLECTSET,
+    LATESTDATE,
+    EARLIESTDATE,
+    LONGESTSTRING,
+    SHORTESTSTRING,
+    COUNTNULLS,
+    CONCAT,
+    CONCATDISTINCT,
+    LOGICALAND,
+    LOGICALOR,
+    CORRECTEDSUMOFSQUARES,
+    SUMOFSQUARES
   }
 }
