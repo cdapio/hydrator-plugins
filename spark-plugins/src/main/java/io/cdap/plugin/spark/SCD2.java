@@ -28,12 +28,11 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.SparkCompute;
 import io.cdap.cdap.etl.api.batch.SparkExecutionPluginContext;
 import io.cdap.cdap.etl.api.batch.SparkPluginContext;
-import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
-import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
 import org.apache.spark.HashPartitioner;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.PairFunction;
+import org.apache.spark.api.java.function.VoidFunction;
 import scala.Tuple2;
 
 import java.io.IOException;
@@ -44,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -209,7 +209,7 @@ public class SCD2 extends SparkCompute<StructuredRecord, StructuredRecord> {
 //      outputSchema = context.getOutputSchema();
 //    }
 //
-//    blacklist = config.getBlacklist();
+    blacklist = config.getBlacklist();
 //    if (outputSchema == null) {
 //      return;
 //    }
@@ -229,11 +229,19 @@ public class SCD2 extends SparkCompute<StructuredRecord, StructuredRecord> {
   @Override
   public JavaRDD<StructuredRecord> transform(SparkExecutionPluginContext context,
                                              JavaRDD<StructuredRecord> javaRDD) {
-    return javaRDD.mapToPair(new RecordToKeyRecordPair(config.key, config.startDateField))
-      .repartitionAndSortWithinPartitions(new HashPartitioner(config.getNumPartitions()), new KeyComparator())
-      // records are now sorted by key and start date (asc)
-      .flatMap(new RecordMap(config.startDateField, config.deduplicate, blacklist))
-      .flatMap(new DateMap(config.startDateField, config.endDateField));
+    JavaRDD<SCD2Record> javaRdd =
+      javaRDD.mapToPair(new RecordToKeyRecordPair(config.key, config.startDateField))
+        .repartitionAndSortWithinPartitions(new HashPartitioner(config.getNumPartitions()), new KeyComparator())
+        .mapPartitions(new FlatMapFunction<Iterator<Tuple2<SCD2Key, StructuredRecord>>, Object>() {
+
+          @Override
+          public Iterator<Object> call(Iterator<Tuple2<SCD2Key, StructuredRecord>> tuple2Iterator) throws Exception {
+            return null;
+          }
+        })
+        // records are now sorted by key and start date (asc)
+        .flatMap(new RecordMap(config.startDateField, config.deduplicate, blacklist));
+    return javaRdd.flatMap(new DateMap(config.startDateField, config.endDateField));
   }
 
   public static class KeyComparator implements Comparator<SCD2Key>, Serializable {
@@ -367,9 +375,9 @@ public class SCD2 extends SparkCompute<StructuredRecord, StructuredRecord> {
       result.add(builder.build());
 
       // if the latest date matches, this is the last record, so mark it as active and add it to result
-      if (latestDate == date) {
+      if (prev != null && latestDate == date) {
         builder = buildRecord(cur);
-        builder.set(endDateField, ACTIVE_DATE);
+        builder.setDate(endDateField, ACTIVE_DATE);
         result.add(builder.build());
       }
       return result;
