@@ -21,12 +21,14 @@ import java.util.Objects;
 
 /**
  * A key that hashes and is equal based on a single key value, but which also contains the start date for ordering.
+ *
+ * @param <T> t
  */
 public class SCD2Key<T extends Comparable<T>> implements Serializable {
   private final T key;
-  private final int startDate;
+  private final long startDate;
 
-  public SCD2Key(T key, int startDate) {
+  public SCD2Key(T key, long startDate) {
     this.key = key;
     this.startDate = startDate;
   }
@@ -35,7 +37,7 @@ public class SCD2Key<T extends Comparable<T>> implements Serializable {
     return key;
   }
 
-  public int getStartDate() {
+  public long getStartDate() {
     return startDate;
   }
 

@@ -24,7 +24,7 @@
   </parent>
 
   <properties>
-    <spark.version>1.6.1</spark.version>
+    <spark.version>2.3.4</spark.version>
   </properties>
 
   <name>Spark Hydrator Plugins</name>
@@ -86,7 +86,7 @@
     </dependency>
     <dependency>
       <groupId>org.apache.spark</groupId>
-      <artifactId>spark-core_2.10</artifactId>
+      <artifactId>spark-core_2.11</artifactId>
       <version>${spark.version}</version>
       <scope>provided</scope>
       <exclusions>
@@ -143,19 +143,19 @@
     </dependency>
     <dependency>
       <groupId>org.apache.spark</groupId>
-      <artifactId>spark-mllib_2.10</artifactId>
+      <artifactId>spark-mllib_2.11</artifactId>
       <version>${spark.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.spark</groupId>
-      <artifactId>spark-streaming_2.10</artifactId>
+      <artifactId>spark-streaming_2.11</artifactId>
       <version>${spark.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.spark</groupId>
-      <artifactId>spark-repl_2.10</artifactId>
+      <artifactId>spark-repl_2.11</artifactId>
       <version>${spark.version}</version>
       <scope>provided</scope>
     </dependency>

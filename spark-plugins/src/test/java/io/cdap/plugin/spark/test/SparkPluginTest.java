@@ -151,8 +151,8 @@ public class SparkPluginTest extends HydratorTestBase {
     Schema schema = Schema.recordOf(
       "x",
       Schema.Field.of("id", Schema.of(Schema.Type.INT)),
-      Schema.Field.of("startDate", Schema.of(Schema.LogicalType.DATE)),
-      Schema.Field.of("endDate", Schema.nullableOf(Schema.of(Schema.LogicalType.DATE))));
+      Schema.Field.of("startDate", Schema.of(Schema.LogicalType.TIMESTAMP_MICROS)),
+      Schema.Field.of("endDate", Schema.nullableOf(Schema.of(Schema.LogicalType.TIMESTAMP_MICROS))));
 
     Map<String, String> properties = new HashMap<>();
     properties.put("key", "id");
@@ -176,12 +176,15 @@ public class SparkPluginTest extends HydratorTestBase {
     ApplicationManager appManager = deployApplication(appId, appRequest);
 
     List<StructuredRecord> input = new ArrayList<>();
-    input.add(StructuredRecord.builder(schema).set("id", 0).set("startDate", 0).set("endDate", 10).build());
-    input.add(StructuredRecord.builder(schema).set("id", 1).set("startDate", 10).set("endDate", 20).build());
-    input.add(StructuredRecord.builder(schema).set("id", 0).set("startDate", 1000).set("endDate", 5000).build());
-    input.add(StructuredRecord.builder(schema).set("id", 1).set("startDate", 21).set("endDate", 1000).build());
-    input.add(StructuredRecord.builder(schema).set("id", 0).set("startDate", 100).build());
-    input.add(StructuredRecord.builder(schema).set("id", 1).set("startDate", 15).build());
+    input.add(StructuredRecord.builder(schema).set("id", 0).set("startDate", 0L).set("endDate", 10000000L).build());
+    input.add(StructuredRecord.builder(schema).set("id", 1).set("startDate", 10000000L)
+                .set("endDate", 20000000L).build());
+    input.add(StructuredRecord.builder(schema).set("id", 0)
+                .set("startDate", 1000000000L).set("endDate", 5000000000L).build());
+    input.add(StructuredRecord.builder(schema).set("id", 1)
+                .set("startDate", 21000000L).set("endDate", 1000000000L).build());
+    input.add(StructuredRecord.builder(schema).set("id", 0).set("startDate", 100000000L).build());
+    input.add(StructuredRecord.builder(schema).set("id", 1).set("startDate", 15000000L).build());
     DataSetManager<Table> inputManager = getDataset(inputDataset);
     MockSource.writeInput(inputManager, input);
 
@@ -198,18 +201,23 @@ public class SparkPluginTest extends HydratorTestBase {
         return cmp;
       }
 
-      int sdate1 = r1.get("startDate");
-      int sdate2 = r2.get("startDate");
-      return Integer.compare(sdate1, sdate2);
+      long sdate1 = r1.get("startDate");
+      long sdate2 = r2.get("startDate");
+      return Long.compare(sdate1, sdate2);
     });
 
     List<StructuredRecord> expected = new ArrayList<>();
-    expected.add(StructuredRecord.builder(schema).set("id", 0).set("startDate", 0).set("endDate", 99).build());
-    expected.add(StructuredRecord.builder(schema).set("id", 0).set("startDate", 100).set("endDate", 999).build());
-    expected.add(StructuredRecord.builder(schema).set("id", 0).set("startDate", 1000).set("endDate", 2932896).build());
-    expected.add(StructuredRecord.builder(schema).set("id", 1).set("startDate", 10).set("endDate", 14).build());
-    expected.add(StructuredRecord.builder(schema).set("id", 1).set("startDate", 15).set("endDate", 20).build());
-    expected.add(StructuredRecord.builder(schema).set("id", 1).set("startDate", 21).set("endDate", 2932896).build());
+    expected.add(StructuredRecord.builder(schema).set("id", 0).set("startDate", 0).set("endDate", 99000000L).build());
+    expected.add(StructuredRecord.builder(schema).set("id", 0)
+                   .set("startDate", 100000000L).set("endDate", 999000000L).build());
+    expected.add(StructuredRecord.builder(schema).set("id", 0)
+                   .set("startDate", 1000000000L).set("endDate", 253402214400000000L).build());
+    expected.add(StructuredRecord.builder(schema).set("id", 1)
+                   .set("startDate", 10000000L).set("endDate", 14000000L).build());
+    expected.add(StructuredRecord.builder(schema).set("id", 1)
+                   .set("startDate", 15000000L).set("endDate", 20000000L).build());
+    expected.add(StructuredRecord.builder(schema).set("id", 1)
+                   .set("startDate", 21000000L).set("endDate", 253402214400000000L).build());
 
     Assert.assertEquals(expected, output);
   }

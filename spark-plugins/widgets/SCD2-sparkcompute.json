@@ -1,0 +1,98 @@
+{
+  "metadata": {
+    "spec-version": "1.5"
+  },
+  "configuration-groups": [
+    {
+      "label": "Configuration",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Key",
+          "name": "key"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Start Date Field",
+          "name": "startDateField"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "End Date Field",
+          "name": "endDateField"
+        },
+        {
+          "widget-type": "toggle",
+          "name": "fillInNull",
+          "label": "Fill In Null",
+          "widget-attributes": {
+            "default": "false",
+            "on": {
+              "value": "true",
+              "label": "True"
+            },
+            "off": {
+              "value": "false",
+              "label": "False"
+            }
+          }
+        },
+        {
+          "widget-type": "toggle",
+          "name": "deduplicate",
+          "label": "Deduplicate",
+          "widget-attributes": {
+            "default": "false",
+            "on": {
+              "value": "true",
+              "label": "True"
+            },
+            "off": {
+              "value": "false",
+              "label": "False"
+            }
+          }
+        },
+        {
+          "widget-type": "csv",
+          "name": "blacklist",
+          "label": "Black List",
+          "widget-attributes": {
+            "delimiter": ",",
+            "value-placeholder": "Field Name"
+          }
+        },
+        {
+          "widget-type": "toggle",
+          "name": "hybridSCD2",
+          "label": "Enable Hybrid SCD2",
+          "widget-attributes": {
+            "default": "false",
+            "on": {
+              "value": "true",
+              "label": "True"
+            },
+            "off": {
+              "value": "false",
+              "label": "False"
+            }
+          }
+        },
+        {
+          "widget-type": "csv",
+          "name": "placeHolderFields",
+          "label": "Place Holder Fields",
+          "widget-attributes": {
+            "delimiter": ",",
+            "value-placeholder": "Field Name"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Number of Partitions",
+          "name": "numPartitions"
+        }
+      ]
+    }
+  ]
+}
