@@ -1,0 +1,59 @@
+{
+  "metadata": {
+    "spec-version": "1.5"
+  },
+  "configuration-groups": [
+    {
+      "label": "Data Cacher",
+      "properties": [
+        {
+          "name": "storageLevel",
+          "widget-type": "select",
+          "label": "Storage Level",
+          "widget-attributes": {
+            "default": "MEMORY_AND_DISK",
+            "values": [
+              "DISK_ONLY",
+              "DISK_ONLY_2",
+              "MEMORY_ONLY",
+              "MEMORY_ONLY_2",
+              "MEMORY_ONLY_SER",
+              "MEMORY_ONLY_SER_2",
+              "MEMORY_AND_DISK",
+              "MEMORY_AND_DISK_2",
+              "MEMORY_AND_DISK_SER",
+              "MEMORY_AND_DISK_SER_2"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "widget-type": "schema",
+      "widget-attributes": {
+        "default-schema": {
+          "name": "etlSchemaBody",
+          "type": "record",
+          "fields": [
+            {
+              "name": "body",
+              "type": "string"
+            }
+          ]
+        },
+        "schema-default-type": "string",
+        "property-watch": "format"
+      }
+    }
+  ],
+  "jump-config": {
+    "datasets": [
+      {
+        "ref-property-name": "referenceName"
+      }
+    ]
+  }
+}
