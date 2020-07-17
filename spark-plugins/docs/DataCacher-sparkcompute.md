@@ -20,7 +20,7 @@ Description
 -----------
 Data cacher plugin will cache any record that is passed through it. This is 
 useful for pipelines that have auto-caching disabled but would still like to cache 
-records are certain points in the pipeline. Spark caching prevents unnecessary
+records at certain points in the pipeline. Spark caching prevents unnecessary
 recomputation of previous stages, this is particularly helpful for pipelines with 
 branching paths. 
 
