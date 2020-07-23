@@ -94,7 +94,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- version properties -->
     <apache-commons.version>1.2</apache-commons.version>
-    <asm.version>5.0.3</asm.version>
+    <asm.version>7.1</asm.version>
     <avro.version>1.7.7</avro.version>
     <cassandra.version>2.1.0</cassandra.version>
     <cassandraunit.version>2.0.2.2</cassandraunit.version>
@@ -125,6 +125,7 @@
     <json.version>20160212</json.version>
     <netty.version>4.1.16.Final</netty.version>
     <netty-http.version>1.3.0</netty-http.version>
+    <spark1.version>1.6.3</spark1.version>
   </properties>
 
   <repositories>
@@ -608,7 +609,7 @@
       </dependency>
       <dependency>
         <groupId>org.ow2.asm</groupId>
-        <artifactId>asm-all</artifactId>
+        <artifactId>asm-commons</artifactId>
         <version>${asm.version}</version>
       </dependency>
       <dependency>
@@ -640,7 +641,56 @@
       <dependency>
         <groupId>org.apache.spark</groupId>
         <artifactId>spark-streaming-twitter_2.10</artifactId>
-        <version>1.6.2</version>
+        <version>${spark1.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.spark</groupId>
+        <artifactId>spark-core_2.10</artifactId>
+        <version>${spark1.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-client</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.esotericsoftware.reflectasm</groupId>
+            <artifactId>reflectasm</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-recipes</artifactId>
+          </exclusion>
+          <!-- excludes scala-compiler and scala-reflect to avoid conflicting with the one from spark-repl -->
+          <exclusion>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-compiler</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-reflect</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.eclipse.jetty.orbit</groupId>
+            <artifactId>javax.servlet</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>asm</groupId>
+            <artifactId>asm</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.spark</groupId>
+        <artifactId>spark-streaming_2.10</artifactId>
+        <version>${spark1.version}</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
@@ -656,6 +706,24 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+
+  <dependencies>
+    <!--
+      Spark dependencies are needed in unit-test.
+      They are not included from transitive dependencies because cdap-etl-api-spark is in provided scope
+    -->
+    <dependency>
+      <groupId>org.apache.spark</groupId>
+      <artifactId>spark-core_2.10</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.spark</groupId>
+      <artifactId>spark-streaming_2.10</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
 
   <build>
     <pluginManagement>
