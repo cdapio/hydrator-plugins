@@ -74,6 +74,95 @@ Setting it to true can cause a large drop in performance if there are a lot of n
 **Number of Partitions:** Number of partitions to use when grouping fields. If not specified, the execution
 framework will decide on the number to use.
 
+**Distribution:** Enabling distribution will increase the level of parallelism when joining skewed data. 
+A skewed join happens when a significant percentage of input records have the same key. Distribution is
+ possible when the following conditions are met:
+1. There are exactly two input stages. 
+1. Broadcast is not enabled for either stage.
+1. The skewed input is marked as `required`.
+
+
+Distribution requires two parameters:
+1. **Distribution Size:** This controls the size of the salt that will be generated for distribution. The **Number of Partitions** 
+property should be greater than or equal to this number for optimal results. A larger value will lead to more 
+parallelism but it will also grow the size of the non-skewed dataset by this factor.
+1. **Skewed Input Stage:**  Name of the skewed input stage. The skewed input stage is the one that contains many rows that join 
+to the same row in the non-skewed stage. Ex. If stage A has 10 rows that join on the same row in stage B, then
+stage A is the skewed input stage.
+
+For more information about Distribution and data skew, please see the **Skew** section of this documentation.
+
+Skew
+----------
+### Problem
+Data skew is an important characteristic to consider when implementing joins. A skewed join happens
+when a significant percentage of input records in one dataset have the same key and therefore join to
+the same record in the second dataset. This is problematic due to the way the execution framework handles
+joins. At a high level, all records with matching keys are grouped into a partition, these partitions 
+are distributed across the nodes in a cluster to perform the join operation. In a skewed join, one 
+or more of these partitions will be significantly larger than the rest, which will result in a majority 
+of the workers in the cluster remaining idle while a couple workers process the large partitions. This
+results in poor performance since the cluster is being under utilized.
+
+### Solution 1: In-Memory Join (Spark only)
+*This option is only available if the Spark engine is used, MapReduce 
+does not support In-Memory joins.*
+
+The first approach for increasing performance of skewed joins is using an In-Memory join. An in-memory
+join is a performance improvement when a large dataset is being joined with a small dataset. In this
+approach, the small dataset is loaded into memory and broadcast to workers and loaded into 
+workers memory. Once it is in memory, a join is performed by iterating through the elements of the
+large dataset. With this approach, data from the large dataset is NEVER shuffled. Data with the 
+same key can be joined in parallel across the cluster instead of handled only by a single worker 
+providing optimal performance. Data sets that have a small size can be used for in-memory joins. 
+Make sure the total size of broadcast data does not exceed **2GB.**
+  
+### Solution 2: Distribution
+Distribution should be used when the smaller dataset cannot fit into memory. This solution solves the 
+data skew problem by adding a composite key (salt) on both the datasets and by specifying a join condition 
+with a combination of composite keys along with original keys to be joined. The addition of the 
+composite key allows the data to be spread across more workers therefore increasing parallelism which 
+increases overall performance. The following example illustrates how salting works and how it is used for distribution:
+
+Suppose the skewed side (Stage A) has data like:
+
+| id | country |
+|----|---------|
+| 0  | us      |
+| 1  | us      |
+| 2  | us      |
+| 3  | gb      |
+
+where most of the data has the same value for the country. The unskewed side (Stage B) has data like:
+
+ | country | code | 
+ | ------- | ---- | 
+ | us      | 1    | 
+ | gb      | 44   | 
+
+The join key is country. With a `Distribution Size` of 2 and `Skewed Stage` of 'Stage A', a new salt
+column is added to the skewed data, where the value is a random number between 0 and 1:
+
+| id | country | salt |
+|----|---------|------|
+| 0  | us      | 0    |
+| 1  | us      | 1    |
+| 2  | us      | 0    |
+| 2  | gb      | 1    |
+
+
+The unskewed data is exploded, where each row is becomes 2 rows, one for each value between 0 and `Distribution Size`:
+
+ | country | code | salt | 
+ | ------- | ---- | ---- | 
+ | us      | 1    | 0    | 
+ | us      | 1    | 1    | 
+ | gb      | 44   | 0    | 
+ | gb      | 44   | 1    | 
+ 
+ The salt column is added to the join key and the join can be performed as normal. 
+However, now the skewed key can be processed across two workers which increases the performance.
+
 Example
 -------
 This example performs an inner join on records from ``customers`` and ``purchases`` inputs

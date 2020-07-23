@@ -61,6 +61,54 @@
           "widget-type": "textbox",
           "label": "Number of Partitions",
           "name": "numPartitions"
+        },
+        {
+          "widget-type": "toggle",
+          "label": "Distribution Enabled",
+          "name": "distributionEnabled",
+          "widget-attributes": {
+            "default": "false",
+            "on": {
+              "value": "true",
+              "label": "True"
+            },
+            "off": {
+              "value": "false",
+              "label": "False"
+            }
+          }
+        },
+        {
+          "name": "distributionFactor",
+          "widget-type": "number",
+          "label": "Distribution Size",
+          "widget-attributes": {
+            "min": "0"
+          }
+        },
+        {
+          "widget-type": "multiple-input-stage-selector",
+          "label": "Distribution Skewed Input Stage",
+          "name": "distributionStageName",
+          "widget-attributes": {
+            "singleSelectOnly": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "filters": [
+    {
+      "name": "distribution rules",
+      "condition": {
+        "expression": "distributionEnabled == true"
+      },
+      "show": [
+        {
+          "name": "distributionFactor"
+        },
+        {
+          "name": "distributionStageName"
         }
       ]
     }
