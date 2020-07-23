@@ -749,6 +749,7 @@
             </goals>
             <configuration>
               <excludes>
+                <exclude>travis_wait*.log</exclude>
                 <exclude>LICENSE*.txt</exclude>
                 <!-- This file should be not be there, but I am excluding it for now -->
                 <exclude>*.rst</exclude>
