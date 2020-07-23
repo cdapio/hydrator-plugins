@@ -24,7 +24,7 @@ env:
 
 script: mvn -U clean test
 
-install: mvn -U install -DskipTests=true -q
+install: travis_wait 30 mvn -U install -DskipTests=true -q
 
 branches:
   only:
