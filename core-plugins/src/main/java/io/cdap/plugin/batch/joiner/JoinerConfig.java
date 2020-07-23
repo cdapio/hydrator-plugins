@@ -45,10 +45,14 @@ import javax.annotation.Nullable;
  * Config for join plugin.
  */
 public class JoinerConfig extends PluginConfig {
+
   public static final String SELECTED_FIELDS = "selectedFields";
   public static final String REQUIRED_INPUTS = "requiredInputs";
   public static final String JOIN_KEYS = "joinKeys";
   public static final String OUTPUT_SCHEMA = "schema";
+  public static final String DISTRIBUTION_FACTOR = "distributionFactor";
+  public static final String DISTRIBUTION_STAGE = "distributionStageName";
+  public static final String MEMORY_INPUTS = "inMemoryInputs";
   private static final String NUM_PARTITIONS_DESC = "Number of partitions to use when joining. " +
     "If not specified, the execution framework will decide how many to use.";
   private static final String JOIN_KEY_DESC = "List of join keys to perform join operation. The list is " +
@@ -67,6 +71,14 @@ public class JoinerConfig extends PluginConfig {
     " Required input stages decide the type of the join. If all the input stages are present in required inputs, " +
     "inner join will be performed. Otherwise, outer join will be performed considering non-required inputs as " +
     "optional.";
+  private static final String DISTRIBUTION_STAGE_DESC =
+    "Name of the skewed input stage. The skewed input stage is the one that contains many rows that join "
+      + "to the same row in the non-skewed stage. Ex. If stage A has 10 rows that join on the same row in stage B, then"
+      + " stage A is the skewed input stage";
+  private static final String DISTRIBUTION_FACTOR_DESC =
+    "This controls the size of the salt that will be generated for distribution. The number of partitions "
+      + "should be greater than or equal to this number for optimal results. A larger value will lead to more "
+      + "parallelism but it will also grow the size of the non-skewed dataset by this factor.";
 
   @Macro
   @Nullable
@@ -103,6 +115,23 @@ public class JoinerConfig extends PluginConfig {
   @Description("Whether null values in the join key should be joined on. For example, if the join is on A.id = B.id " +
     "and this value is false, records with a null id from input stages A and B will not get joined together.")
   private Boolean joinNullKeys;
+
+  @Nullable
+  @Macro
+  @Description(DISTRIBUTION_FACTOR_DESC)
+  private Integer distributionFactor;
+
+  @Nullable
+  @Macro
+  @Description(DISTRIBUTION_STAGE_DESC)
+  private String distributionStageName;
+
+  @Macro
+  @Nullable
+  @Description("Distribution is useful when the input data is skewed. Enabling distribution will allow you to "
+    + "increase the parallelism for skewed data.")
+  private Boolean distributionEnabled;
+
 
   public JoinerConfig() {
     this.joinKeys = "";
@@ -237,5 +266,46 @@ public class JoinerConfig extends PluginConfig {
       set.add(val);
     }
     return set;
+  }
+
+  @Nullable
+  public Integer getDistributionFactor() {
+    return distributionFactor;
+  }
+
+  @Nullable
+  public String getDistributionStageName() {
+    return distributionStageName;
+  }
+
+  public boolean isDistributionValid(FailureCollector collector) {
+    int startFailures = collector.getValidationFailures().size();
+
+    //If distribution is disabled then no need to validate further
+    if (!containsMacro("distributionEnabled") && (distributionEnabled == null || !distributionEnabled)) {
+      return false;
+    }
+
+    if (!containsMacro(DISTRIBUTION_FACTOR) && distributionFactor == null) {
+      collector.addFailure("Distribution Size is a required value if distribution is enabled.", "")
+        .withConfigProperty(DISTRIBUTION_FACTOR);
+    }
+    if (!containsMacro(DISTRIBUTION_STAGE) && Strings.isNullOrEmpty(distributionStageName)) {
+      collector.addFailure("Skewed Stage name is a required value if distribution is enabled.", "")
+        .withConfigProperty(DISTRIBUTION_STAGE);
+    }
+
+    // If there are still macro values then this config is not valid
+    if (distributionContainsMacro()) {
+      return false;
+    }
+
+    return startFailures == collector.getValidationFailures().size();
+  }
+
+  public boolean distributionContainsMacro() {
+    return containsMacro("distributionEnabled") ||
+      containsMacro(DISTRIBUTION_FACTOR) ||
+      containsMacro(DISTRIBUTION_STAGE);
   }
 }

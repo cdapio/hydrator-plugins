@@ -20,7 +20,6 @@ import com.google.common.annotations.VisibleForTesting;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
-import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.batch.BatchAutoJoiner;
 import io.cdap.cdap.etl.api.batch.BatchJoiner;
@@ -38,6 +37,8 @@ import io.cdap.cdap.etl.api.join.error.SelectedFieldError;
 import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
 import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
 import io.cdap.cdap.etl.api.validation.ValidationFailure;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -62,6 +63,7 @@ import javax.annotation.Nullable;
   "inputs, outer join will be performed")
 public class Joiner extends BatchAutoJoiner {
 
+  private static final Logger LOG = LoggerFactory.getLogger(Joiner.class);
   public static final String JOIN_OPERATION_DESCRIPTION = "Used as a key in a join";
   public static final String IDENTITY_OPERATION_DESCRIPTION = "Unchanged as part of a join";
   public static final String RENAME_OPERATION_DESCRIPTION = "Renamed as a part of a join";
@@ -94,9 +96,9 @@ public class Joiner extends BatchAutoJoiner {
     boolean useOutputSchema = false;
     for (JoinStage joinStage : context.getInputStages().values()) {
       inputs.add(JoinStage.builder(joinStage)
-        .setRequired(requiredStages.contains(joinStage.getStageName()))
-        .setBroadcast(broadcastStages.contains(joinStage.getStageName()))
-        .build());
+                   .setRequired(requiredStages.contains(joinStage.getStageName()))
+                   .setBroadcast(broadcastStages.contains(joinStage.getStageName()))
+                   .build());
       useOutputSchema = useOutputSchema || joinStage.getSchema() == null;
     }
 
@@ -112,6 +114,10 @@ public class Joiner extends BatchAutoJoiner {
         joinBuilder.setOutputSchema(conf.getOutputSchema(collector));
       } else {
         joinBuilder.setOutputSchemaName("join.output");
+      }
+
+      if (conf.isDistributionValid(collector)) {
+        joinBuilder.setDistributionFactor(conf.getDistributionFactor(), conf.getDistributionStageName());
       }
       return joinBuilder.build();
     } catch (InvalidJoinException e) {
@@ -134,6 +140,16 @@ public class Joiner extends BatchAutoJoiner {
           case OUTPUT_SCHEMA:
             OutputSchemaError schemaError = (OutputSchemaError) error;
             failure.withOutputSchemaField(schemaError.getField());
+            break;
+          case DISTRIBUTION_SIZE:
+            failure.withConfigProperty(JoinerConfig.DISTRIBUTION_FACTOR);
+            break;
+          case DISTRIBUTION_STAGE:
+            failure.withConfigProperty(JoinerConfig.DISTRIBUTION_STAGE);
+            break;
+          case BROADCAST:
+            failure.withConfigProperty(JoinerConfig.MEMORY_INPUTS);
+            break;
         }
       }
       throw collector.getOrThrowException();
@@ -144,6 +160,10 @@ public class Joiner extends BatchAutoJoiner {
   public void prepareRun(BatchJoinerContext context) {
     if (conf.getNumPartitions() != null) {
       context.setNumPartitions(conf.getNumPartitions());
+      if (conf.getDistributionFactor() != null && conf.getDistributionFactor() < conf.getNumPartitions()) {
+        LOG.warn("Number of partitions ({}) should be greater than or equal to distribution factor ({}) for optimal "
+                   + "results.", conf.getNumPartitions(), conf.getDistributionFactor());
+      }
     }
     FailureCollector collector = context.getFailureCollector();
     context.record(createFieldOperations(conf.getSelectedFields(collector),
@@ -151,18 +171,17 @@ public class Joiner extends BatchAutoJoiner {
   }
 
   /**
-   * Create the field operations from the provided OutputFieldInfo instances and join keys.
-   * For join we record several types of transformation; Join, Identity, and Rename.
-   * For each of these transformations, if the input field is directly coming from the schema
-   * of one of the stage, the field is added as {@code stage_name.field_name}. We keep track of fields
-   * outputted by operation (in {@code outputsSoFar set}, so that any operation uses that field as
-   * input later, we add it without the stage name.
+   * Create the field operations from the provided OutputFieldInfo instances and join keys. For join we record several
+   * types of transformation; Join, Identity, and Rename. For each of these transformations, if the input field is
+   * directly coming from the schema of one of the stage, the field is added as {@code stage_name.field_name}. We keep
+   * track of fields outputted by operation (in {@code outputsSoFar set}, so that any operation uses that field as input
+   * later, we add it without the stage name.
    * <p>
-   * Join transform operation is added with join keys as input tagged with the stage name, and join keys
-   * without stage name as output.
+   * Join transform operation is added with join keys as input tagged with the stage name, and join keys without stage
+   * name as output.
    * <p>
-   * For other fields which are not renamed in join, Identity transform is added, while for fields which
-   * are renamed Rename transform is added.
+   * For other fields which are not renamed in join, Identity transform is added, while for fields which are renamed
+   * Rename transform is added.
    *
    * @param outputFields collection of output fields along with information such as stage name, alias
    * @param joinKeys join keys
