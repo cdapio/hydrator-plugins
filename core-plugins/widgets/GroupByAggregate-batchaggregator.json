@@ -47,14 +47,6 @@
               "CollectList",
               "CollectSet",
               {
-                "label": "Latest Date",
-                "value": "LatestDate"
-              },
-              {
-                "label": "Earliest Date",
-                "value": "EarliestDate"
-              },
-              {
                 "label": "Longest String",
                 "value": "LongestString"
               },

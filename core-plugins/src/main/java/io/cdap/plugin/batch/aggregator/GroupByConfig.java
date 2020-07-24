@@ -32,10 +32,8 @@ import io.cdap.plugin.batch.aggregator.function.CorrectedSumOfSquares;
 import io.cdap.plugin.batch.aggregator.function.Count;
 import io.cdap.plugin.batch.aggregator.function.CountAll;
 import io.cdap.plugin.batch.aggregator.function.CountNulls;
-import io.cdap.plugin.batch.aggregator.function.EarliestDate;
 import io.cdap.plugin.batch.aggregator.function.First;
 import io.cdap.plugin.batch.aggregator.function.Last;
-import io.cdap.plugin.batch.aggregator.function.LatestDate;
 import io.cdap.plugin.batch.aggregator.function.LogicalAnd;
 import io.cdap.plugin.batch.aggregator.function.LogicalOr;
 import io.cdap.plugin.batch.aggregator.function.LongestString;
@@ -216,10 +214,6 @@ public class GroupByConfig extends AggregatorConfig {
           return new CollectList(field, fieldSchema);
         case COLLECTSET:
           return new CollectSet(field, fieldSchema);
-        case LATESTDATE:
-          return new LatestDate(field, fieldSchema);
-        case EARLIESTDATE:
-          return new EarliestDate(field, fieldSchema);
         case LONGESTSTRING:
           return new LongestString(field, fieldSchema);
         case SHORTESTSTRING:
@@ -286,8 +280,6 @@ public class GroupByConfig extends AggregatorConfig {
     VARIANCE,
     COLLECTLIST,
     COLLECTSET,
-    LATESTDATE,
-    EARLIESTDATE,
     LONGESTSTRING,
     SHORTESTSTRING,
     COUNTNULLS,

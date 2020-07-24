@@ -61,8 +61,6 @@ public class GroupByAggregator extends RecordReducibleAggregator<AggregateResult
     put("VARIANCE", "Variance");
     put("COLLECTLIST", "CollectList");
     put("COLLECTSET", "CollectSet");
-    put("LATESTDATE", "LatestDate");
-    put("EARLIESTDATE", "EarliestDate");
     put("LONGESTSTRING", "LongestString");
     put("SHORTESTSTRING", "ShortestString");
     put("COUNTNULLS", "CountNulls");
