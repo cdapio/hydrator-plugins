@@ -20,6 +20,12 @@ If the format is 'blob', every input file will be read into a separate record.
 The 'blob' format also requires a schema that contains a field named 'body' of type 'bytes'.
 If the format is 'text', the schema must contain a field named 'body' of type 'string'.
 
+**Get Schema:** Auto-detects schema from file. Supported formats are: avro, parquet, csv, delimited,
+ tsv.
+Blob - is set by default as field named 'body' of type bytes.
+Text - is set by default as two fields: 'body' of type bytes and 'offset' of type  'long'.
+JSON - is not supported, user has to manually provide the output schema.
+
 **Delimiter:** Delimiter to use when the format is 'delimited'. This will be ignored for other formats.
 
 **Skip Header** Whether to skip the first line of each file. Supported formats are 'text', 'csv', 'tsv', 'delimited'.

@@ -17,11 +17,17 @@
 package io.cdap.plugin.format.input;
 
 import com.google.common.base.Strings;
+import com.google.common.io.Files;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.api.plugin.PluginPropertyField;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -85,5 +91,49 @@ public class PathTrackingConfig extends PluginConfig {
     } catch (IOException e) {
       throw new IllegalArgumentException("Invalid schema: " + e.getMessage(), e);
     }
+  }
+
+  /**
+   * Checks whether provided path is directory or file and returns file based on the following
+   * conditions: if provided path directs to file - file from the provided path will be returned if
+   * provided path directs to a directory - first file matching the extension will be provided if
+   * extension is null first file from the directory will be returned
+   *
+   * @param path              path from config
+   * @param matchingExtension extension to match when searching for file in directory
+   * @return {@link Path}
+   */
+  public Path getFilePathForSchemaGeneration(String path, String matchingExtension, Configuration configuration)
+      throws IOException {
+    Path fsPath = new Path(path);
+    FileSystem fs = FileSystem.get(fsPath.toUri(), configuration);
+
+    if (!fs.exists(fsPath)) {
+      throw new IOException("Input path not found");
+    }
+
+    if (fs.isFile(fsPath)) {
+      return fsPath;
+    }
+
+    final FileStatus[] files = fs.listStatus(fsPath);
+
+    if (files == null) {
+      throw new IllegalArgumentException("Cannot read files from provided path");
+    }
+
+    if (files.length == 0) {
+      throw new IllegalArgumentException("Provided directory is empty");
+    }
+    // find first delimited file
+    for (FileStatus file : files) {
+      if (matchingExtension == null) {
+        return file.getPath();
+      }
+      if (Files.getFileExtension(file.getPath().getName()).equals(matchingExtension)) {
+        return file.getPath();
+      }
+    }
+    throw new IllegalArgumentException("Could not find file with valid format extension in provided path");
   }
 }

@@ -38,6 +38,14 @@
               "tsv"
             ],
             "default": "text"
+          },
+          "plugin-function": {
+            "method": "POST",
+            "widget": "outputSchema",
+            "label": "Get Schema Value",
+            "required-fields": ["path"],
+            "missing-required-fields-message": "Please provide path field",
+            "plugin-method": "getSchema"
           }
         },
         {
