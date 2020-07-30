@@ -48,14 +48,14 @@ public class DelimitedConfig extends PathTrackingConfig {
 
   public static final Map<String, PluginPropertyField> DELIMITED_FIELDS;
   private static final String SKIP_HEADER_DESC = "Whether to skip the first line of each file. " +
-      "Default value is false.";
+    "Default value is false.";
   private static final String DELIMITER = "delimiter";
   private static final String FORMAT = "format";
 
   static {
     Map<String, PluginPropertyField> fields = new HashMap<>(FIELDS);
     fields.put("skipHeader", new PluginPropertyField("skipHeader", SKIP_HEADER_DESC,
-        "boolean", false, true));
+                                                     "boolean", false, true));
     DELIMITED_FIELDS = Collections.unmodifiableMap(fields);
   }
 
@@ -127,25 +127,40 @@ public class DelimitedConfig extends PathTrackingConfig {
     final String format = getProperties().getProperties().getOrDefault(FORMAT, "delimited");
     String delimiter = getProperties().getProperties().get(DELIMITER);
     if (format.equals("delimited") && Strings.isNullOrEmpty(delimiter)) {
-      throw new IllegalArgumentException("Delimiter is required when format is set to 'delimited'");
+      throw new IllegalArgumentException("Delimiter is required when format is set to 'delimited'.");
     }
     List<Schema.Field> fields = new ArrayList<>();
     String path = getProperties().getProperties().getOrDefault(
-        "path", ""
+      "path", ""
     );
 
     Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();
-    final Path file = getFilePathForSchemaGeneration(path,
-        format.equals("delimited") ? null : format, conf);
-    final FileSystem fileSystem = FileSystem.get(file.toUri(), conf);
-    FSDataInputStream input = fileSystem.open(file);
-    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(input));
-    String line = bufferedReader.readLine();
-    if (line == null) {
-      return null;
+    // set entries here, before FileSystem is used
+    for (Map.Entry<String, String> entry : getFileSystemProperties().entrySet()) {
+      conf.set(entry.getKey(), entry.getValue());
     }
-    bufferedReader.close();
+    FSDataInputStream input = null;
+    BufferedReader bufferedReader = null;
+    String line = null;
+    try {
+      final Path file = getFilePathForSchemaGeneration(path,
+                                                       format.equals("delimited") ? null : format, conf);
+      final FileSystem fileSystem = FileSystem.get(file.toUri(), conf);
+      input = fileSystem.open(file);
+      bufferedReader = new BufferedReader(new InputStreamReader(input));
+      line = bufferedReader.readLine();
+      if (line == null) {
+        return null;
+      }
+    } finally {
+      if (bufferedReader != null) {
+        bufferedReader.close();
+      }
+      if (input != null) {
+        input.close();
+      }
+    }
     String[] columns = line.split(getDefaultDelimiter());
     int count = 1;
     for (String column : columns) {
@@ -154,10 +169,10 @@ public class DelimitedConfig extends PathTrackingConfig {
         continue;
       }
       fields.add(
-          Schema.Field.of(
-              String.format("%s_%s", "body", count),
-              Schema.of(Schema.Type.STRING)
-          )
+        Schema.Field.of(
+          String.format("%s_%s", "body", count),
+          Schema.of(Schema.Type.STRING)
+        )
       );
       count++;
     }

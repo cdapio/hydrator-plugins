@@ -78,19 +78,42 @@ public class ParquetInputFormatProvider extends
     if (conf.containsMacro(PathTrackingConfig.NAME_SCHEMA) || !Strings.isNullOrEmpty(conf.schema)) {
       return super.getSchema(context);
     }
-    String filePath = conf.getProperties().getProperties().getOrDefault("path", null);
+    try {
+      return getDefaultSchema(context);
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Invalid schema: " + e.getMessage(), e);
+    }
+  }
 
+  /**
+   * Extract schema from file
+   *
+   * @param context {@link FormatContext}
+   * @return {@link Schema}
+   * @throws IOException raised when error occurs during schema extraction
+   */
+  public Schema getDefaultSchema(FormatContext context) throws IOException {
+    String filePath = conf.getProperties().getProperties().getOrDefault("path", null);
+    ParquetReader reader = null;
     try {
       Job job = JobUtils.createInstance();
       Configuration hconf = job.getConfiguration();
+      // set entries here, before FileSystem is used
+      for (Map.Entry<String, String> entry : conf.getFileSystemProperties().entrySet()) {
+        hconf.set(entry.getKey(), entry.getValue());
+      }
       final Path file = conf.getFilePathForSchemaGeneration(filePath, "parquet", hconf);
-      final ParquetReader reader = AvroParquetReader.builder(file).build();
+      reader = AvroParquetReader.builder(file).build();
       GenericData.Record record = (GenericData.Record) reader.read();
       return Schema.parseJson(record.getSchema().toString());
     } catch (IOException e) {
       context.getFailureCollector().addFailure("Schema error", e.getMessage());
+    } finally {
+      if (reader != null) {
+        reader.close();
+      }
     }
-    return super.getSchema(context);
+    return null;
   }
 
   /**

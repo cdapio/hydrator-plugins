@@ -18,18 +18,20 @@ package io.cdap.plugin.format.input;
 
 import com.google.common.base.Strings;
 import com.google.common.io.Files;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.api.plugin.PluginPropertyField;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -49,6 +51,10 @@ public class PathTrackingConfig extends PluginConfig {
   private static final String FILENAME_ONLY_DESC =
     "Whether to only use the filename instead of the URI of the file path when a path field is given. "
       + "The default value is false.";
+  private static final String FILE_SYSTEM_PROPERTIES = "fileSystemProperties";
+  private static final Gson GSON = new Gson();
+  private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() {
+  }.getType();
 
   static {
     Map<String, PluginPropertyField> fields = new HashMap<>();
@@ -104,7 +110,7 @@ public class PathTrackingConfig extends PluginConfig {
    * @return {@link Path}
    */
   public Path getFilePathForSchemaGeneration(String path, String matchingExtension, Configuration configuration)
-      throws IOException {
+    throws IOException {
     Path fsPath = new Path(path);
     FileSystem fs = FileSystem.get(fsPath.toUri(), configuration);
 
@@ -135,5 +141,12 @@ public class PathTrackingConfig extends PluginConfig {
       }
     }
     throw new IllegalArgumentException("Could not find file with valid format extension in provided path");
+  }
+
+  public Map<String, String> getFileSystemProperties() {
+    if (getRawProperties().getProperties().containsKey(FILE_SYSTEM_PROPERTIES)) {
+      return GSON.fromJson(getRawProperties().getProperties().get(FILE_SYSTEM_PROPERTIES), MAP_STRING_STRING_TYPE);
+    }
+    return Collections.emptyMap();
   }
 }

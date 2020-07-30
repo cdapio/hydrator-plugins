@@ -51,14 +51,14 @@ import javax.annotation.Nullable;
 @Name(AvroInputFormatProvider.NAME)
 @Description(AvroInputFormatProvider.DESC)
 public class AvroInputFormatProvider extends
-    PathTrackingInputFormatProvider<AvroInputFormatProvider.Conf> {
+  PathTrackingInputFormatProvider<AvroInputFormatProvider.Conf> {
 
   static final String NAME = "avro";
   static final String DESC = "Plugin for reading files in avro format.";
   public static final PluginClass PLUGIN_CLASS =
-      new PluginClass(ValidatingInputFormat.PLUGIN_TYPE, NAME, DESC,
-          AvroInputFormatProvider.class.getName(),
-          "conf", PathTrackingConfig.FIELDS);
+    new PluginClass(ValidatingInputFormat.PLUGIN_TYPE, NAME, DESC,
+                    AvroInputFormatProvider.class.getName(),
+                    "conf", PathTrackingConfig.FIELDS);
 
   public AvroInputFormatProvider(AvroInputFormatProvider.Conf conf) {
     super(conf);
@@ -103,13 +103,35 @@ public class AvroInputFormatProvider extends
       return super.getSchema(context);
     }
     try {
+      return getDefaultSchema(context);
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Invalid schema: " + e.getMessage(), e);
+    }
+  }
+
+  /**
+   * Extract schema from file
+   *
+   * @param context {@link FormatContext}
+   * @return {@link Schema}
+   * @throws IOException raised when error occurs during schema extraction
+   */
+  public Schema getDefaultSchema(FormatContext context) throws IOException {
+    String filePath = conf.getProperties().getProperties().getOrDefault("path", null);
+    SeekableInput seekableInput = null;
+    FileReader<GenericRecord> dataFileReader = null;
+    try {
       Job job = JobUtils.createInstance();
       Configuration hconf = job.getConfiguration();
+      // set entries here, before FileSystem is used
+      for (Map.Entry<String, String> entry : conf.getFileSystemProperties().entrySet()) {
+        hconf.set(entry.getKey(), entry.getValue());
+      }
       Path file = conf.getFilePathForSchemaGeneration(filePath, NAME, hconf);
-      DatumReader<GenericRecord> dataReader = new GenericDatumReader<GenericRecord>();
-      SeekableInput seekableInput = new FsInput(file, hconf);
-      FileReader<GenericRecord> dataFileReader = DataFileReader
-          .openReader(seekableInput, dataReader);
+      DatumReader<GenericRecord> dataReader = new GenericDatumReader<>();
+      seekableInput = new FsInput(file, hconf);
+      dataFileReader = DataFileReader
+        .openReader(seekableInput, dataReader);
       GenericRecord firstRecord;
       if (!dataFileReader.hasNext()) {
         return null;
@@ -118,8 +140,15 @@ public class AvroInputFormatProvider extends
       return new AvroToStructuredTransformer().convertSchema(firstRecord.getSchema());
     } catch (IOException e) {
       context.getFailureCollector().addFailure("Schema parse error", e.getMessage());
+    } finally {
+      if (dataFileReader != null) {
+        dataFileReader.close();
+      }
+      if (seekableInput != null) {
+        seekableInput.close();
+      }
     }
-    return super.getSchema(context);
+    return null;
   }
 
 }
