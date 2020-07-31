@@ -47,6 +47,12 @@ public class PathTrackingBlobInputFormat extends PathTrackingInputFormat {
   }
 
   @Override
+  protected boolean isSplitable(JobContext context, Path filename) {
+    // Blobs should not be splitable.
+    return false;
+  }
+
+  @Override
   protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(FileSplit split,
                                                                                     TaskAttemptContext context,
                                                                                     @Nullable String pathField,
