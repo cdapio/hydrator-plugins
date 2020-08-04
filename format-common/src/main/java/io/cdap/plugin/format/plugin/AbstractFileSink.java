@@ -88,11 +88,15 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
     }
 
     FileFormat format = config.getFormat();
-    ValidatingOutputFormat validatingOutputFormat =
-      pipelineConfigurer.usePlugin(ValidatingOutputFormat.PLUGIN_TYPE, format.name().toLowerCase(),
-                                   format.name().toLowerCase(), config.getRawProperties());
+    ValidatingOutputFormat validatingOutputFormat = getValidatingOutputFormat(pipelineConfigurer);
     FormatContext context = new FormatContext(collector, pipelineConfigurer.getStageConfigurer().getInputSchema());
     validateOutputFormatProvider(context, format, validatingOutputFormat);
+  }
+
+  protected ValidatingOutputFormat getValidatingOutputFormat(PipelineConfigurer pipelineConfigurer) {
+    FileFormat format = config.getFormat();
+    return pipelineConfigurer.usePlugin(ValidatingOutputFormat.PLUGIN_TYPE, format.name().toLowerCase(),
+                                        format.name().toLowerCase(), config.getRawProperties());
   }
 
   @Override
@@ -100,20 +104,7 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
     FailureCollector collector = context.getFailureCollector();
     config.validate(collector);
     FileFormat fileFormat = config.getFormat();
-    ValidatingOutputFormat validatingOutputFormat;
-    try {
-      validatingOutputFormat = context.newPluginInstance(fileFormat.name().toLowerCase());
-    } catch (InvalidPluginConfigException e) {
-      Set<String> properties = new HashSet<>(e.getMissingProperties());
-      for (InvalidPluginProperty invalidProperty: e.getInvalidProperties()) {
-        properties.add(invalidProperty.getName());
-      }
-      String errorMessage = String.format("Format '%s' cannot be used because properties %s were not provided or " +
-                                            "were invalid when the pipeline was deployed. Set the format to a " +
-                                            "different value, or re-create the pipeline with all required properties.",
-                                          fileFormat.name(), properties);
-      throw new IllegalArgumentException(errorMessage, e);
-    }
+    ValidatingOutputFormat validatingOutputFormat = getOutputFormatForRun(context);
     FormatContext formatContext = new FormatContext(collector, context.getInputSchema());
     validateOutputFormatProvider(formatContext, fileFormat, validatingOutputFormat);
     collector.getOrThrowException();
@@ -135,10 +126,26 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
     Map<String, String> outputProperties = new HashMap<>(validatingOutputFormat.getOutputFormatConfiguration());
     outputProperties.putAll(getFileSystemProperties(context));
     outputProperties.put(FileOutputFormat.OUTDIR, getOutputDir(context.getLogicalStartTime()));
-
     context.addOutput(Output.of(config.getReferenceName(),
                                 new SinkOutputFormatProvider(validatingOutputFormat.getOutputFormatClassName(),
                                                              outputProperties)));
+  }
+
+  protected ValidatingOutputFormat getOutputFormatForRun(BatchSinkContext context) throws InstantiationException {
+    FileFormat fileFormat = config.getFormat();
+    try {
+      return context.newPluginInstance(fileFormat.name().toLowerCase());
+    } catch (InvalidPluginConfigException e) {
+      Set<String> properties = new HashSet<>(e.getMissingProperties());
+      for (InvalidPluginProperty invalidProperty : e.getInvalidProperties()) {
+        properties.add(invalidProperty.getName());
+      }
+      String errorMessage = String.format("Format '%s' cannot be used because properties %s were not provided or " +
+                                            "were invalid when the pipeline was deployed. Set the format to a " +
+                                            "different value, or re-create the pipeline with all required properties.",
+                                          fileFormat.name(), properties);
+      throw new IllegalArgumentException(errorMessage, e);
+    }
   }
 
   @Override
@@ -163,10 +170,13 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
                                 outputFields);
   }
 
-  private String getOutputDir(long logicalStartTime) {
+  protected String getOutputDir(long logicalStartTime) {
     String suffix = config.getSuffix();
     String timeSuffix = suffix == null || suffix.isEmpty() ? "" : new SimpleDateFormat(suffix).format(logicalStartTime);
-    return String.format("%s/%s", config.getPath(), timeSuffix);
+    String configPath = config.getPath();
+    //Avoid the extra '/' since '/' is appended before timeSuffix in the next line
+    String finalPath = configPath.endsWith("/") ? configPath.substring(0, configPath.length() - 1) : configPath;
+    return String.format("%s/%s", finalPath, timeSuffix);
   }
 
   private void validateOutputFormatProvider(FormatContext context, FileFormat format,
