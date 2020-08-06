@@ -108,9 +108,7 @@ public class BatchCassandraSource extends ReferenceBatchSource<Long, Row, Struct
     ConfigHelper.setInputPartitioner(conf, config.partitioner);
     ConfigHelper.setInputRpcPort(conf, (config.port == null) ? "9160" : Integer.toString(config.port));
     Preconditions.checkArgument(!(Strings.isNullOrEmpty(config.username) ^ Strings.isNullOrEmpty(config.password)),
-                                "You must either set both username and password or neither username nor password. " +
-                                  "Currently, they are username: " + config.username +
-                                  " and password: " + config.password);
+                                "You must either set both username and password or neither username nor password.");
     if (!Strings.isNullOrEmpty(config.username)) {
       ConfigHelper.setInputKeyspaceUserNameAndPassword(conf, config.username, config.password);
     }
