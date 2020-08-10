@@ -514,6 +514,55 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
   }
 
   @Test
+  public void testReadBlobWithSplits() throws Exception {
+    // Should generate only one record per split
+    // There should only be one split per file
+    File testFolder = temporaryFolder.newFolder();
+    File file1 = new File(testFolder, "test1");
+    File file2 = new File(testFolder, "test2");
+    String outputDatasetName = UUID.randomUUID().toString();
+
+    Schema schema = Schema.recordOf("blob",
+                                    Schema.Field.of("body", Schema.of(Schema.Type.BYTES)),
+                                    Schema.Field.of("file", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
+
+    String appName = UUID.randomUUID().toString();
+    ImmutableMap.Builder<String, String> sourceProperties = ImmutableMap.<String, String>builder()
+      .put(Constants.Reference.REFERENCE_NAME, appName + "TestFile")
+      .put(Properties.File.PATH, testFolder.getAbsolutePath())
+      .put(Properties.File.FORMAT, FileFormat.BLOB.name())
+      .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
+      .put("skipHeader", "false")
+      .put("pathField", "file")
+      .put(Properties.File.SCHEMA, schema.toString())
+      .put("maxSplitSize", "1");
+
+    ApplicationManager appManager = createSourceAndDeployApp(appName, outputDatasetName, sourceProperties.build());
+
+    String content1 = "abc\ndef\nghi\njkl";
+    FileUtils.writeStringToFile(file1, content1);
+    String content2 = "123\n456\n789";
+    FileUtils.writeStringToFile(file2, content2);
+
+    appManager.getWorkflowManager(SmartWorkflow.NAME)
+      .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
+
+    byte[] byteContent1 = content1.getBytes(StandardCharsets.US_ASCII);
+    byte[] byteContent2 = content2.getBytes(StandardCharsets.US_ASCII);
+
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> output = MockSink.readOutput(outputManager);
+    Assert.assertEquals(2, output.size());
+
+    Map<String, byte[]> contents = new HashMap<>();
+    for (StructuredRecord outputRecord : output) {
+      contents.put(outputRecord.get("file"), Bytes.toBytes((ByteBuffer) outputRecord.get("body")));
+    }
+    Assert.assertArrayEquals(byteContent1, contents.get(file1.toURI().toString()));
+    Assert.assertArrayEquals(byteContent2, contents.get(file2.toURI().toString()));
+  }
+
+  @Test
   public void testReadJson() throws Exception {
     File fileText = new File(temporaryFolder.newFolder(), "test.json");
     String outputDatasetName = UUID.randomUUID().toString();
@@ -957,8 +1006,13 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
       String schemaString = schema.toString();
       sourceProperties.put(Properties.File.SCHEMA, schemaString);
     }
+    return createSourceAndDeployApp(appName, outputDatasetName, sourceProperties.build());
+  }
+
+  private ApplicationManager createSourceAndDeployApp(String appName, String outputDatasetName,
+                                                      Map<String, String> properties) throws Exception {
     ETLStage source = new ETLStage(
-        "source", new ETLPlugin("File", BatchSource.PLUGIN_TYPE, sourceProperties.build(), null));
+      "source", new ETLPlugin("File", BatchSource.PLUGIN_TYPE, properties, null));
 
     ETLStage sink = new ETLStage("sink", MockSink.getPlugin(outputDatasetName));
 
