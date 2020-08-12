@@ -18,9 +18,6 @@ package io.cdap.plugin.spark;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
-import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Table;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
@@ -36,21 +33,14 @@ import io.cdap.cdap.etl.api.batch.SparkExecutionPluginContext;
 import io.cdap.cdap.etl.api.batch.SparkPluginContext;
 import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
 import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
-import org.apache.spark.HashPartitioner;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.function.FlatMapFunction;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.PairFunction;
-import scala.Tuple2;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import javax.annotation.Nullable;
 
@@ -122,12 +112,7 @@ public class SCD2 extends SparkCompute<StructuredRecord, StructuredRecord> {
   @Override
   public JavaRDD<StructuredRecord> transform(SparkExecutionPluginContext context,
                                              JavaRDD<StructuredRecord> javaRDD) {
-    return javaRDD.mapToPair(new RecordToKeyRecordPair(conf.key, conf.startDateField))
-      .repartitionAndSortWithinPartitions(new HashPartitioner(conf.getNumPartitions()), new KeyComparator())
-      // records are now sorted by key and start date (desc). ex: r1, r2, r3, r4
-      // we need to walk the records in order and update the end time of r2 to be start time of r1 - 1.
-      .mapPartitions(new SCD2FlapMap(conf))
-      .filter((Function<StructuredRecord, Boolean>) Objects::nonNull);
+    return new SCD2Processor(conf).process(javaRDD);
   }
 
   /**
@@ -142,156 +127,6 @@ public class SCD2 extends SparkCompute<StructuredRecord, StructuredRecord> {
         return cmp;
       }
       return Long.compare(k1.getStartDate(), k2.getStartDate());
-    }
-  }
-
-  /**
-   * maps a record to a key field plus the record.
-   */
-  public static class RecordToKeyRecordPair implements PairFunction<StructuredRecord, SCD2Key, StructuredRecord> {
-    private final String keyField;
-    private final String startDateField;
-
-    public RecordToKeyRecordPair(String keyField, String startDateField) {
-      this.keyField = keyField;
-      this.startDateField = startDateField;
-    }
-
-    @Override
-    public Tuple2<SCD2Key, StructuredRecord> call(StructuredRecord record) {
-      // TODO: how should null keys be handled? or null start times?
-      Object key = record.get(keyField);
-      if (key == null) {
-        throw new IllegalArgumentException("The key should not be null");
-      }
-      return new Tuple2<>(new SCD2Key((Comparable) key, record.get(startDateField)), record);
-    }
-  }
-
-  /**
-   *
-   */
-  public static class SCD2FlapMap
-    implements FlatMapFunction<Iterator<Tuple2<SCD2Key, StructuredRecord>>, StructuredRecord> {
-    private final Conf conf;
-
-    public SCD2FlapMap(Conf conf) {
-      this.conf = conf;
-
-    }
-
-    @Override
-    public Iterator<StructuredRecord> call(Iterator<Tuple2<SCD2Key, StructuredRecord>> records) {
-      return new SCD2Iterator(records, conf);
-    }
-  }
-
-  /**
-   * The scd2 iterator, it keeps track of cur, prev, next from the given iterator.
-   */
-  public static class SCD2Iterator extends AbstractIterator<StructuredRecord> {
-    // 9999-12-31 00:00:00 timestamp in micro seconds
-    private static final long ACTIVE_TS = 253402214400000000L;
-    private final Iterator<Tuple2<SCD2Key, StructuredRecord>> records;
-    private final Table<Object, String, Object> valTable;
-    private final Conf conf;
-    private final Set<String> blacklist;
-    private final Set<String> placeholders;
-    private Schema outputSchema;
-    private Tuple2<SCD2Key, StructuredRecord> cur;
-    private Tuple2<SCD2Key, StructuredRecord> prev;
-    private Tuple2<SCD2Key, StructuredRecord> next;
-
-    public SCD2Iterator(Iterator<Tuple2<SCD2Key, StructuredRecord>> records, Conf conf) {
-      this.records = records;
-      this.conf = conf;
-      this.blacklist = conf.getBlacklist();
-      this.valTable = HashBasedTable.create();
-      this.placeholders = conf.getPlaceHolderFields();
-    }
-
-    @Override
-    protected StructuredRecord computeNext() {
-      // if the records does not have value, but next still have a value, we still need to process it
-      if (!records.hasNext() && next == null) {
-        return endOfData();
-      }
-
-      prev = cur;
-      cur = next != null ? next : records.next();
-      next = records.hasNext() ? records.next() : null;
-
-      // deduplicate the result
-      if (conf.deduplicate() && next != null && next._1().equals(cur._1())) {
-        boolean isDiff = false;
-        for (Schema.Field field : cur._2().getSchema().getFields()) {
-          String fieldName = field.getName();
-          Object value = cur._2().get(fieldName);
-          if (blacklist.contains(fieldName)) {
-            continue;
-          }
-
-          // check if there is difference between next record and cur record
-          Object nextVal = next._2().get(fieldName);
-          if ((nextVal == null) != (value == null) || (value != null && !value.equals(nextVal))) {
-            isDiff = true;
-            break;
-          }
-        }
-        if (!isDiff) {
-          return null;
-        }
-      }
-
-      // if key changes, clean up the table to free memory
-      if (prev != null && !prev._1().equals(cur._1())) {
-        valTable.row(prev._1().getKey()).clear();
-      }
-
-      return computeRecord(cur._1().getKey(),
-                           prev != null && prev._1().equals(cur._1()) ? prev._2() : null,
-                           cur._2(),
-                           next != null && next._1().equals(cur._1()) ? next._2() : null);
-    }
-
-    private StructuredRecord computeRecord(Object key, @Nullable StructuredRecord prev, StructuredRecord cur,
-                                           @Nullable StructuredRecord next) {
-      if (outputSchema == null) {
-        outputSchema = conf.getOutputSchema(cur.getSchema());
-      }
-
-      StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
-
-      for (Schema.Field field : cur.getSchema().getFields()) {
-        String fieldName = field.getName();
-        Object value = cur.get(fieldName);
-        // if enable scd2 hybrid, check for prev record is a late arriving data which does not have an end date,
-        // also make sure the current record is either closed or is not late arriving date which has a end date
-        if (conf.enableHybridSCD2() && placeholders.contains(fieldName) && prev != null &&
-              prev.get(conf.endDateField) == null && (next == null || cur.get(conf.endDateField) != null)) {
-          value = prev.get(fieldName);
-        }
-
-        // fill in null from previous record
-        if (conf.fillInNull() && value == null) {
-          value = valTable.get(key, fieldName);
-        }
-        builder.set(fieldName, value);
-        if (conf.fillInNull() && value != null) {
-          valTable.put(key, fieldName, value);
-        }
-      }
-
-      long endDate;
-      if (next == null) {
-        endDate = ACTIVE_TS;
-      } else {
-        Long date = next.get(conf.startDateField);
-        // TODO: handle nulls in start date? Or simply restrict the schema to be non-nullable
-        endDate = date == null ? ACTIVE_TS : date - 1000000L;
-      }
-      builder.set(conf.endDateField, endDate);
-      return builder.build();
     }
   }
 
@@ -365,11 +200,23 @@ public class SCD2 extends SparkCompute<StructuredRecord, StructuredRecord> {
       this.placeHolderFields = placeHolderFields;
     }
 
-    private boolean deduplicate() {
+    public String getKey() {
+      return key;
+    }
+
+    public String getStartDateField() {
+      return startDateField;
+    }
+
+    public String getEndDateField() {
+      return endDateField;
+    }
+
+    public boolean deduplicate() {
       return deduplicate;
     }
 
-    private boolean fillInNull() {
+    public boolean fillInNull() {
       return fillInNull;
     }
 
@@ -377,7 +224,7 @@ public class SCD2 extends SparkCompute<StructuredRecord, StructuredRecord> {
       return hybridSCD2 == null ? false : hybridSCD2;
     }
 
-    private int getNumPartitions() {
+    public int getNumPartitions() {
       return numPartitions == null ? 200 : numPartitions;
     }
 
@@ -385,7 +232,7 @@ public class SCD2 extends SparkCompute<StructuredRecord, StructuredRecord> {
       return getFields(PLACEHOLDER, placeHolderFields);
     }
 
-    private Set<String> getBlacklist() {
+    public Set<String> getBlacklist() {
       return getFields(BLACKLIST, blacklist);
     }
 
@@ -458,7 +305,7 @@ public class SCD2 extends SparkCompute<StructuredRecord, StructuredRecord> {
     }
 
     @Nullable
-    private Schema getOutputSchema(@Nullable Schema inputSchema) {
+    public Schema getOutputSchema(@Nullable Schema inputSchema) {
       if (inputSchema == null) {
         return null;
       }

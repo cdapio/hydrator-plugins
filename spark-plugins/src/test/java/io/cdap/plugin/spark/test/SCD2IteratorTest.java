@@ -19,6 +19,7 @@ package io.cdap.plugin.spark.test;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.plugin.spark.SCD2;
+import io.cdap.plugin.spark.SCD2Iterator;
 import io.cdap.plugin.spark.SCD2Key;
 import org.junit.Assert;
 import org.junit.Test;
@@ -58,8 +59,8 @@ public class SCD2IteratorTest {
         new Tuple2<>(new SCD2Key(record.get("id"), record.get("startDate")), record)).collect(Collectors.toList());
 
     Iterator<StructuredRecord> iterator =
-      new SCD2.SCD2Iterator(inputs.iterator(),
-                            new SCD2.Conf("id", "startDate", "endDate", false, false, null, false, null));
+      new SCD2Iterator(inputs.iterator(),
+                       new SCD2.Conf("id", "startDate", "endDate", false, false, null, false, null));
 
     List<StructuredRecord> result = new ArrayList<>();
     iterator.forEachRemaining(result::add);
@@ -81,9 +82,9 @@ public class SCD2IteratorTest {
 
     // test fill in null and deduplicate
     iterator =
-      new SCD2.SCD2Iterator(inputs.iterator(),
-                            new SCD2.Conf("id", "startDate", "endDate", true,
-                                          true, "id,startDate,endDate", false, null));
+      new SCD2Iterator(inputs.iterator(),
+                       new SCD2.Conf("id", "startDate", "endDate", true,
+                                     true, "id,startDate,endDate", false, null));
 
     result = new ArrayList<>();
     iterator.forEachRemaining(result::add);
