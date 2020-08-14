@@ -28,6 +28,8 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.etl.api.Emitter;
+import io.cdap.cdap.etl.api.FailureCollector;
+import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchSink;
 import io.cdap.cdap.etl.api.batch.BatchSinkContext;
 import io.cdap.cdap.format.StructuredRecordStringConverter;
@@ -65,7 +67,16 @@ public class BatchCassandraSink
   }
 
   @Override
+  public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
+    super.configurePipeline(pipelineConfigurer);
+    config.validate(pipelineConfigurer.getStageConfigurer().getFailureCollector());
+  }
+
+  @Override
   public void prepareRun(BatchSinkContext context) {
+    FailureCollector collector = context.getFailureCollector();
+    config.validate(collector);
+    collector.getOrThrowException();
     context.addOutput(Output.of(config.referenceName, new CassandraOutputFormatProvider(config)));
   }
 
@@ -177,6 +188,13 @@ public class BatchCassandraSink
       this.keyspace = keyspace;
       this.columns = columns;
       this.primaryKey = primaryKey;
+    }
+
+    public void validate(FailureCollector collector) {
+      if (port != null && (port < 1 || port > 65535)) {
+        collector.addFailure("Invalid port number.", "Port number must be an integer from 1 to 65535.")
+          .withConfigProperty(Cassandra.PORT);
+      }
     }
   }
 
