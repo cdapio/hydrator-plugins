@@ -18,7 +18,6 @@ package io.cdap.plugin.batch.source;
 
 import com.datastax.driver.core.Row;
 import com.google.common.base.CharMatcher;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import io.cdap.cdap.api.annotation.Description;
@@ -35,6 +34,7 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.batch.BatchSourceContext;
+import io.cdap.plugin.batch.sink.BatchCassandraSink;
 import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.common.ReferenceBatchSource;
 import io.cdap.plugin.common.ReferencePluginConfig;
@@ -85,10 +85,8 @@ public class BatchCassandraSource extends ReferenceBatchSource<Long, Row, Struct
     super.configurePipeline(pipelineConfigurer);
     StageConfigurer stageConfigurer = pipelineConfigurer.getStageConfigurer();
     FailureCollector collector = stageConfigurer.getFailureCollector();
-    if (Strings.isNullOrEmpty(config.schema)) {
-      collector.addFailure("Schema must be specified.", null).withConfigProperty(Cassandra.SCHEMA);
-      throw collector.getOrThrowException();
-    }
+    config.validate(collector);
+    collector.getOrThrowException();
     try {
       Schema schema = Schema.parseJson(config.schema);
       stageConfigurer.setOutputSchema(schema);
@@ -100,6 +98,9 @@ public class BatchCassandraSource extends ReferenceBatchSource<Long, Row, Struct
 
   @Override
   public void prepareRun(BatchSourceContext context) throws Exception {
+    FailureCollector collector = context.getFailureCollector();
+    config.validate(collector);
+    collector.getOrThrowException();
     Configuration conf = new Configuration();
     conf.clear();
 
@@ -107,8 +108,6 @@ public class BatchCassandraSource extends ReferenceBatchSource<Long, Row, Struct
     ConfigHelper.setInputInitialAddress(conf, config.initialAddress);
     ConfigHelper.setInputPartitioner(conf, config.partitioner);
     ConfigHelper.setInputRpcPort(conf, (config.port == null) ? "9160" : Integer.toString(config.port));
-    Preconditions.checkArgument(!(Strings.isNullOrEmpty(config.username) ^ Strings.isNullOrEmpty(config.password)),
-                                "You must either set both username and password or neither username nor password.");
     if (!Strings.isNullOrEmpty(config.username)) {
       ConfigHelper.setInputKeyspaceUserNameAndPassword(conf, config.username, config.password);
     }
@@ -271,6 +270,22 @@ public class BatchCassandraSource extends ReferenceBatchSource<Long, Row, Struct
         return schema == null ? null : Schema.parseJson(schema);
       } catch (IOException e) {
         throw new IllegalArgumentException("Invalid schema: " + e.getMessage());
+      }
+    }
+
+    public void validate(FailureCollector collector) {
+      if (Strings.isNullOrEmpty(schema)) {
+        collector.addFailure("Schema must be specified.", null).withConfigProperty(Cassandra.SCHEMA);
+      }
+      if (port != null && (port < 1 || port > 65535)) {
+        collector.addFailure("Invalid port number.", "Port number must be an integer from 1 to 65535.")
+          .withConfigProperty(BatchCassandraSink.Cassandra.PORT);
+      }
+      if (!containsMacro(Cassandra.USERNAME) && !containsMacro(Cassandra.PASSWORD) &&
+        Strings.isNullOrEmpty(username) ^ Strings.isNullOrEmpty(password)) {
+        collector.addFailure("Invalid username and password combination.",
+                             "You must either set both username and password or neither username nor password.")
+          .withConfigProperty(Cassandra.USERNAME).withConfigProperty(Cassandra.PASSWORD);
       }
     }
   }
