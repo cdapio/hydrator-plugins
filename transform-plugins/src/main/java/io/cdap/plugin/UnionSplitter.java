@@ -31,11 +31,10 @@ import io.cdap.cdap.etl.api.MultiOutputStageConfigurer;
 import io.cdap.cdap.etl.api.SplitterTransform;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.text.DecimalFormat;
+import java.util.*;
 import javax.annotation.Nullable;
 
 /**
@@ -104,28 +103,36 @@ public class UnionSplitter extends SplitterTransform<StructuredRecord, Structure
       valSchema = Schema.of(Schema.Type.DOUBLE);
     } else if (val instanceof String) {
       valSchema = Schema.of(Schema.Type.STRING);
-    } else if (val instanceof StructuredRecord) {
+    }else if (val instanceof Time) {
+      valSchema = Schema.of(Schema.LogicalType.TIME_MILLIS);
+    }else if (val instanceof DecimalFormat) {
+      valSchema = Schema.of(Schema.LogicalType.DECIMAL);
+    }else if (val instanceof Timestamp) {
+      valSchema = Schema.of(Schema.LogicalType.TIMESTAMP_MILLIS);
+    }else if (val instanceof Date) {
+      valSchema = Schema.of(Schema.LogicalType.DATE);
+    }else if (val instanceof StructuredRecord) {
       valSchema = ((StructuredRecord) val).getSchema();
     } else if (val.getClass().isEnum()) {
       emitter.emitError(
-        new InvalidEntry<>(300, String.format("Field '%s' is an Enum, which is not supported.", conf.unionField),
-                           record));
+              new InvalidEntry<>(300, String.format("Field '%s' is an Enum, which is not supported.", conf.unionField),
+                      record));
       return;
     } else if (val instanceof Map) {
       emitter.emitError(
-        new InvalidEntry<>(301, String.format("Field '%s' is a Map, which is not supported.", conf.unionField),
-                           record));
+              new InvalidEntry<>(301, String.format("Field '%s' is a Map, which is not supported.", conf.unionField),
+                      record));
       return;
     } else if (val instanceof Collection) {
       emitter.emitError(
-        new InvalidEntry<>(302, String.format("Field '%s' is an array, which is not supported.", conf.unionField),
-                           record));
+              new InvalidEntry<>(302, String.format("Field '%s' is an array, which is not supported.", conf.unionField),
+                      record));
       return;
     } else {
       emitter.emitError(
-        new InvalidEntry<>(303, String.format("Could not determine type for field '%s' with value of class '%s'.",
-                                              conf.unionField, val.getClass().getName()),
-                           record));
+              new InvalidEntry<>(303, String.format("Could not determine type for field '%s' with value of class '%s'.",
+                      conf.unionField, val.getClass().getName()),
+                      record));
       return;
     }
 
