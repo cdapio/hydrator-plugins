@@ -22,17 +22,17 @@ import org.junit.Test;
 import java.util.Arrays;
 
 /**
- *
+ * A test method for Count Nulls aggregate function
  */
 public class CountNullsTest extends AggregateFunctionTest {
 
   @Test
   public void testCountNulls() {
     Schema schema = Schema.recordOf(
-        "test",
-        Schema.Field.of("x", Schema.nullableOf(Schema.of(Schema.Type.INT))));
+      "test",
+      Schema.Field.of("x", Schema.nullableOf(Schema.of(Schema.Type.INT))));
     test(new CountNulls("x"), schema, "x", 2L, Arrays.asList(1, 2, null, null, 3),
-        new CountNulls("x"));
+         new CountNulls("x"));
     test(new CountNulls("x"), schema, "x", 0L, Arrays.asList(1, 2, 3, 4, 5), new CountNulls("x"));
   }
 

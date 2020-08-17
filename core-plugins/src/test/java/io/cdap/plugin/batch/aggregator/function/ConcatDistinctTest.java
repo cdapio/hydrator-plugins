@@ -22,7 +22,7 @@ import org.junit.Test;
 import java.util.Arrays;
 
 /**
- *
+ * A test method for Concat Distinct aggregate function
  */
 public class ConcatDistinctTest extends AggregateFunctionTest {
 
@@ -31,9 +31,9 @@ public class ConcatDistinctTest extends AggregateFunctionTest {
     Schema fieldSchema = Schema.of(Schema.Type.STRING);
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.nullableOf(fieldSchema)));
     test(new Concat("x", fieldSchema), schema, "x", "1, 2, 3, 4, 5",
-        Arrays.asList("1", "2", "3", "4", "5"), new Concat("x", fieldSchema));
+         Arrays.asList("1", "2", "3", "4", "5"), new Concat("x", fieldSchema));
     test(new Concat("x", fieldSchema), schema, "x", "2, 3, 4, 5",
-        Arrays.asList(null, "2", "3", "4", "5"), new Concat("x", fieldSchema));
+         Arrays.asList(null, "2", "3", "4", "5"), new Concat("x", fieldSchema));
   }
 
 }

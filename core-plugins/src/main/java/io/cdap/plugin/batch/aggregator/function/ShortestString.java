@@ -30,13 +30,11 @@ public class ShortestString implements AggregateFunction<String, ShortestString>
 
   public ShortestString(String fieldName, Schema fieldSchema) {
     this.fieldName = fieldName;
-    Type inputType =
-        fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
+    Type inputType = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
 
     if (!inputType.equals(Type.STRING)) {
       throw new IllegalArgumentException(
-          String.format("Field '%s' is of unsupported non-string type '%s'. ",
-              fieldName, inputType));
+        String.format("Field '%s' is of unsupported non-string type '%s'. ", fieldName, inputType));
     }
   }
 

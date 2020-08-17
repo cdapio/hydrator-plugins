@@ -20,7 +20,7 @@ import io.cdap.cdap.api.data.schema.Schema;
 import org.junit.Test;
 
 /**
- *
+ * A test method for Sum of Squares aggregate function
  */
 public class SumOfSquaresTest extends NumberTest {
 

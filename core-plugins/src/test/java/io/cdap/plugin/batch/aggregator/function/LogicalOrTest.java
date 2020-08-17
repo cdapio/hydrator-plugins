@@ -22,7 +22,7 @@ import org.junit.Test;
 import java.util.Arrays;
 
 /**
- *
+ * A test method for Logical Or aggregate function
  */
 public class LogicalOrTest extends AggregateFunctionTest {
 
@@ -31,10 +31,10 @@ public class LogicalOrTest extends AggregateFunctionTest {
     Schema fieldSchema = Schema.of(Schema.Type.BOOLEAN);
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.nullableOf(fieldSchema)));
     test(new LogicalOr("x"), schema, "x", true,
-        Arrays.asList(false, false, true),
-        new LogicalOr("x"));
+         Arrays.asList(false, false, true),
+         new LogicalOr("x"));
     test(new LogicalOr("x"), schema, "x", false,
-        Arrays.asList(false, false, false),
-        new LogicalOr("x"));
+         Arrays.asList(false, false, false),
+         new LogicalOr("x"));
   }
 }

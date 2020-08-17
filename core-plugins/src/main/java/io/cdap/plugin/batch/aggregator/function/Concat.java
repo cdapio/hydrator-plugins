@@ -19,7 +19,6 @@ package io.cdap.plugin.batch.aggregator.function;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.data.schema.Schema.Type;
-import java.util.Objects;
 
 /**
  * Concatenates the values in the group with a comma
@@ -35,12 +34,12 @@ public class Concat implements AggregateFunction<String, Concat> {
     this.fieldName = fieldName;
     this.fieldSchema = fieldSchema;
     Type inputType =
-        fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
+      fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
 
     if (!inputType.equals(Type.STRING)) {
       throw new IllegalArgumentException(
-          String.format("Field '%s' is of unsupported non-string type '%s'. ",
-              fieldName, inputType));
+        String.format("Field '%s' is of unsupported non-string type '%s'. ",
+                      fieldName, inputType));
     }
   }
 
@@ -52,8 +51,7 @@ public class Concat implements AggregateFunction<String, Concat> {
   @Override
   public void mergeValue(StructuredRecord record) {
     if (record.get(fieldName) != null) {
-      String value = Objects
-          .requireNonNull(record.get(fieldName)).toString();
+      String value = record.get(fieldName);
       if (firstString) {
         concatString = value;
         firstString = false;

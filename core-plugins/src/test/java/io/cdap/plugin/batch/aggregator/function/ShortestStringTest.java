@@ -22,7 +22,7 @@ import org.junit.Test;
 import java.util.Arrays;
 
 /**
- *
+ * A test method for Shortest String aggregate function
  */
 public class ShortestStringTest extends AggregateFunctionTest {
 

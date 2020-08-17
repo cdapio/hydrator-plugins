@@ -22,7 +22,7 @@ import org.junit.Test;
 import java.util.Arrays;
 
 /**
- *
+ * A test method for Longest String aggregate function
  */
 public class LongestStringTest extends AggregateFunctionTest {
 
@@ -31,11 +31,11 @@ public class LongestStringTest extends AggregateFunctionTest {
     Schema fieldSchema = Schema.of(Schema.Type.STRING);
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.nullableOf(fieldSchema)));
     test(new LongestString("x", fieldSchema), schema, "x", "absorption",
-        Arrays.asList("heart", "ditch", "extent", "effective", "absorption"),
-        new LongestString("x", fieldSchema));
+         Arrays.asList("heart", "ditch", "extent", "effective", "absorption"),
+         new LongestString("x", fieldSchema));
     test(new LongestString("x", fieldSchema), schema, "x", "effective",
-        Arrays.asList("heart", "ditch", "extent", "effective", null),
-        new LongestString("x", fieldSchema));
+         Arrays.asList("heart", "ditch", "extent", "effective", null),
+         new LongestString("x", fieldSchema));
   }
 
 }

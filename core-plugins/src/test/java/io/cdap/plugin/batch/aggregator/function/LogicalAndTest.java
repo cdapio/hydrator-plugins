@@ -22,7 +22,7 @@ import org.junit.Test;
 import java.util.Arrays;
 
 /**
- *
+ * A test method for Logical And aggregate function
  */
 public class LogicalAndTest extends AggregateFunctionTest {
 
@@ -31,11 +31,11 @@ public class LogicalAndTest extends AggregateFunctionTest {
     Schema fieldSchema = Schema.of(Schema.Type.BOOLEAN);
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.nullableOf(fieldSchema)));
     test(new LogicalAnd("x"), schema, "x", true,
-        Arrays.asList(true, true, true),
-        new LogicalAnd("x"));
+         Arrays.asList(true, true, true),
+         new LogicalAnd("x"));
     test(new LogicalAnd("x"), schema, "x", false,
-        Arrays.asList(true, false, true),
-        new LogicalAnd("x"));
+         Arrays.asList(true, false, true),
+         new LogicalAnd("x"));
   }
 
 }

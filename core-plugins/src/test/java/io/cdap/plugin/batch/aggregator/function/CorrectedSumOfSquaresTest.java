@@ -20,7 +20,7 @@ import io.cdap.cdap.api.data.schema.Schema;
 import org.junit.Test;
 
 /**
- *
+ * A test method for Corrected Sum of Squares aggregate function
  */
 public class CorrectedSumOfSquaresTest extends NumberTest {
 
@@ -28,9 +28,9 @@ public class CorrectedSumOfSquaresTest extends NumberTest {
   public void testCorrectedSumOfSquares() {
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
     CorrectedSumOfSquares correctedSumOfSquares = new CorrectedSumOfSquares("x",
-        Schema.of(Schema.Type.INT));
+                                                                            Schema.of(Schema.Type.INT));
     CorrectedSumOfSquares correctedSumOfSquares1 = new CorrectedSumOfSquares("x",
-        Schema.of(Schema.Type.INT));
+                                                                             Schema.of(Schema.Type.INT));
     testFunction(correctedSumOfSquares, schema, correctedSumOfSquares1, 0d, 0);
     testFunction(correctedSumOfSquares, schema, correctedSumOfSquares1, 17.5d, 1, 2, 3, 4, 5, 6);
     testFunction(correctedSumOfSquares, schema, correctedSumOfSquares1, 7946.75d, -10, 0, 3, 100);
