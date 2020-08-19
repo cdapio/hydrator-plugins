@@ -1,0 +1,44 @@
+{
+  "metadata": {
+    "spec-version": "1.0"
+  },
+  "configuration-groups": [
+    {
+      "label": "Flatten Options",
+      "properties": [
+        {
+          "widget-type": "input-field-selector",
+          "label": "Fields to flatten",
+          "name": "fieldsToFlatten",
+          "plugin-function": {
+            "method": "POST",
+            "label": "Generate Schema",
+            "widget": "outputSchema",
+            "output-property": "schema",
+            "plugin-method": "outputSchema",
+            "position": "bottom",
+            "button-class": "btn-hydrator"
+          },
+          "widget-attributes": {
+            "multiselect": true
+          }
+        },
+        {
+          "label": "Level to limit flattening",
+          "name": "levelToLimitFlattening",
+          "widget-type": "number",
+          "widget-attributes": {
+            "default": "1",
+            "min": "1"
+          }
+        },
+        {
+          "name": "prefix",
+          "label": "Prefix",
+          "widget-type": "textbox"
+        }
+      ]
+    }
+  ],
+  "outputs": [ ]
+}
