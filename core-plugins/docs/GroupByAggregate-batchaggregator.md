@@ -5,7 +5,9 @@ Description
 -----------
 Groups by one or more fields, then performs one or more aggregate functions on each group.
 Supports `Average`, `Count`, `First`, `Last`, `Max`, `Min`,`Sum`,`Collect List`,`Collect Set`, 
-`Standard Deviation`, `Variance`, `Count Distinct` as aggregate functions.
+`Standard Deviation`, `Variance`, `Count Distinct`, `Longest String`,`Shortest String`,`Count Nulls`,
+`Concat`, `Concat Distinct`, `Logical And`, `Logical Or`, `Sum Of Squares`, `Corrected Sum Of Squares`
+as aggregate functions.
 
 Use Case
 --------
@@ -22,7 +24,9 @@ output records will have a ``user`` field and a ``numActions`` field. (Macro-ena
 
 **aggregates:** Aggregates to compute on each group of records.
 Supported aggregate functions are `avg`, `count`, `count(*)`, `first`, `last`, `max`, `min`,`sum`,`collectList`,
-`collectSet`, `countDistinct`. A function must specify the field it should be applied on, as well as the name it should 
+`collectSet`, `countDistinct`, `longestString`, `shortestString`, `countNulls`, `concat`, `concatDistinct`, 
+`logicalAnd`, `logicalOr`, `sumOfSquares`, `correctedSumOfSquares`. 
+A function must specify the field it should be applied on, as well as the name it should 
 be called. Aggregates are specified using the syntax `name:function(field)[, other aggregates]`.
 For example, ``avgPrice:avg(price),cheapest:min(price)`` will calculate two aggregates.
 The first will create a field called ``avgPrice`` that is the average of all ``price`` fields in the group.
