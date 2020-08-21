@@ -767,18 +767,18 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
     String outputDatasetName = "test-filesource-avro-null-schema";
 
     String appName = "FileSourceAvroNullSchema";
-    ApplicationManager appManager = createSourceAndDeployApp(appName, fileAvro, "avro", outputDatasetName,
-                                                             null);
-
     Schema recordSchemaWithoutPathField = Schema.recordOf("record",
                                                           Schema.Field.of("i", Schema.of(Schema.Type.INT)),
-                                                          Schema.Field.of("l", Schema.of(Schema.Type.LONG)));
+                                                          Schema.Field.of("l", Schema.of(Schema.Type.LONG)),
+                                                          Schema.Field.of("file", Schema.of(Schema.Type.STRING))
+    );
 
     org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(recordSchemaWithoutPathField.
       toString());
     GenericRecord record = new GenericRecordBuilder(avroSchema)
       .set("i", Integer.MAX_VALUE)
       .set("l", Long.MAX_VALUE)
+      .set("file", fileAvro.getAbsolutePath())
       .build();
 
     DataSetManager<TimePartitionedFileSet> inputManager = getDataset("TestFile");
@@ -789,6 +789,9 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
     dataFileWriter.append(record);
     dataFileWriter.close();
     inputManager.flush();
+    ApplicationManager appManager = createSourceAndDeployApp(appName, fileAvro, "avro", outputDatasetName,
+                                                             null);
+
 
     appManager.getWorkflowManager(SmartWorkflow.NAME)
       .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
@@ -899,26 +902,26 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
     String outputDatasetName = "test-filesource-parquet-null-schema";
 
     String appName = "FileSourceParquetNullSchema";
-    ApplicationManager appManager = createSourceAndDeployApp(appName, fileParquet, "parquet", outputDatasetName,
-                                                             null);
-
     Schema recordSchemaWithMissingField = Schema.recordOf("record",
                                                           Schema.Field.of("i", Schema.of(Schema.Type.INT)),
-                                                          Schema.Field.of("l", Schema.of(Schema.Type.LONG)));
-
+                                                          Schema.Field.of("l", Schema.of(Schema.Type.LONG)),
+                                                          Schema.Field.of("file", Schema.of(Schema.Type.STRING))
+    );
     org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(recordSchemaWithMissingField.
       toString());
     GenericRecord record = new GenericRecordBuilder(avroSchema)
       .set("i", Integer.MAX_VALUE)
       .set("l", Long.MAX_VALUE)
+      .set("file", fileParquet.getAbsoluteFile())
       .build();
-
     DataSetManager<TimePartitionedFileSet> inputManager = getDataset("TestFile");
     ParquetWriter<GenericRecord> parquetWriter = new AvroParquetWriter<>(new Path(fileParquet.getAbsolutePath()),
                                                                          avroSchema);
     parquetWriter.write(record);
     parquetWriter.close();
     inputManager.flush();
+    ApplicationManager appManager = createSourceAndDeployApp(appName, fileParquet, "parquet", outputDatasetName,
+                                                             null);
 
     appManager.getWorkflowManager(SmartWorkflow.NAME)
       .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
