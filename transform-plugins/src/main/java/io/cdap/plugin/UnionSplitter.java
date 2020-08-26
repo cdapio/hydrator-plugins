@@ -87,26 +87,27 @@ public class UnionSplitter extends SplitterTransform<StructuredRecord, Structure
     }
 
     Object val = record.get(conf.unionField);
-    Schema.LogicalType logicalType = fieldSchema.getNonNullable().getLogicalType();
+    fieldSchema = fieldSchema.isNullable() ? fieldSchema.getNonNullable() : fieldSchema;
+    Schema.LogicalType logicalType = fieldSchema.getLogicalType();
     Schema valSchema;
     if (val == null) {
       valSchema = Schema.of(Schema.Type.NULL);
     } else if (val instanceof Boolean) {
       valSchema = Schema.of(Schema.Type.BOOLEAN);
     } else if (val instanceof ByteBuffer || val instanceof byte[] || val instanceof Byte[]) {
-      if (logicalType!=null) {
+      if (logicalType != null) {
         valSchema = Schema.of(logicalType);
       } else {
         valSchema = Schema.of(Schema.Type.BYTES);
       }
     } else if (val instanceof Integer) {
-      if (logicalType!=null) {
+      if (logicalType != null) {
         valSchema = Schema.of(logicalType);
       } else {
         valSchema = Schema.of(Schema.Type.INT);
       }
     } else if (val instanceof Long) {
-      if (logicalType!=null) {
+      if (logicalType != null) {
         valSchema = Schema.of(logicalType);
       } else {
         valSchema = Schema.of(Schema.Type.LONG);
