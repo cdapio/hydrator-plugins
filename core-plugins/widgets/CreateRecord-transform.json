@@ -1,0 +1,32 @@
+{
+  "metadata": {
+    "spec-version": "1.0",
+    "label": "Create Record"
+  },
+  "display-name" : "Create Record",
+  "configuration-groups": [
+    {
+      "label": "Create Hierarchy Configuration",
+      "properties": [
+        {
+          "label": "Mapping",
+          "name": "fieldMapping",
+          "widget-type": "textbox"
+        },
+        {
+          "label": "Include fields missing in mapping",
+          "name": "includeNonMappedFields",
+          "widget-type": "toggle",
+          "widget-attributes": {
+            "on": {
+              "label": "Yes"
+            },
+            "off": {
+              "label": "No"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
