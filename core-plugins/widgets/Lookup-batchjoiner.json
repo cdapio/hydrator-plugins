@@ -1,0 +1,61 @@
+{
+  "metadata": {
+    "spec-version": "1.3"
+  },
+  "inputs": {
+    "multipleInputs": true
+  },
+  "display-name" : "Lookup Transform",
+  "configuration-groups": [
+    {
+      "label": "Lookup Configuration",
+      "properties": [
+        {
+          "widget-type": "multiple-input-stage-selector",
+          "label": "Lookup dataset",
+          "name": "lookupDataset",
+          "widget-attributes": {
+            "singleSelectOnly": "true"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Input key field",
+          "name": "inputKeyField",
+          "widget-attributes": {
+            "multiple-inputs": "true"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Lookup key field",
+          "name": "lookupKeyField"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Lookup value field",
+          "name": "lookupValueField"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Output field",
+          "name": "outputField"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Default",
+          "name": "defaultValue",
+          "widget-attributes": {
+            "default": null
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "schema",
+      "widget-type": "schema"
+    }
+  ]
+}
