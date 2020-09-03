@@ -1,0 +1,349 @@
+{
+  "name": "create_record_tranform",
+  "description": "Data Pipeline Application",
+  "artifact": {
+    "name": "cdap-data-pipeline",
+    "version": "6.3.0-SNAPSHOT",
+    "scope": "SYSTEM"
+  },
+  "config": {
+    "resources": {
+      "memoryMB": 2048,
+      "virtualCores": 1
+    },
+    "driverResources": {
+      "memoryMB": 2048,
+      "virtualCores": 1
+    },
+    "connections": [
+      {
+        "from": "Database-actor",
+        "to": "Joiner"
+      },
+      {
+        "from": "Joiner",
+        "to": "Joiner2"
+      },
+      {
+        "from": "Joiner2",
+        "to": "CreateRecord"
+      },
+      {
+        "from": "CreateRecord",
+        "to": "Group-By"
+      },
+      {
+        "from": "Group-By",
+        "to": "File"
+      },
+      {
+        "from": "Database-film-actor",
+        "to": "Joiner"
+      },
+      {
+        "from": "Database-film",
+        "to": "Joiner2"
+      }
+    ],
+    "comments": [],
+    "postActions": [],
+    "properties": {},
+    "processTimingEnabled": true,
+    "stageLoggingEnabled": true,
+    "stages": [
+      {
+        "name": "Database-actor",
+        "plugin": {
+          "name": "Database",
+          "type": "batchsource",
+          "label": "Database-actor",
+          "artifact": {
+            "name": "database-plugins",
+            "version": "2.5.0-SNAPSHOT",
+            "scope": "SYSTEM"
+          },
+          "properties": {
+            "jdbcPluginType": "jdbc",
+            "numSplits": "1",
+            "fetchSize": "1000",
+            "enableAutoCommit": "false",
+            "columnNameCase": "No change",
+            "transactionIsolationLevel": "TRANSACTION_SERIALIZABLE",
+            "connectionString": "${connection}",
+            "password": "${password}",
+            "importQuery": "SELECT * FROM actor WHERE $CONDITIONS",
+            "jdbcPluginName": "mysql",
+            "user": "${username}",
+            "referenceName": "actor",
+            "schema": "{\"type\":\"record\",\"name\":\"outputSchema\",\"fields\":[{\"name\":\"actor_id\",\"type\":\"int\"},{\"name\":\"first_name\",\"type\":\"string\"},{\"name\":\"last_name\",\"type\":\"string\"},{\"name\":\"last_update\",\"type\":{\"type\":\"long\",\"logicalType\":\"timestamp-micros\"}}]}"
+          }
+        },
+        "outputSchema": [
+          {
+            "name": "etlSchemaBody",
+            "schema": "{\"type\":\"record\",\"name\":\"outputSchema\",\"fields\":[{\"name\":\"actor_id\",\"type\":\"int\"},{\"name\":\"first_name\",\"type\":\"string\"},{\"name\":\"last_name\",\"type\":\"string\"},{\"name\":\"last_update\",\"type\":{\"type\":\"long\",\"logicalType\":\"timestamp-micros\"}}]}"
+          }
+        ],
+        "type": "batchsource",
+        "label": "Database-actor",
+        "icon": "icon-database"
+      },
+      {
+        "name": "Joiner",
+        "plugin": {
+          "name": "Joiner",
+          "type": "batchjoiner",
+          "label": "Joiner",
+          "artifact": {
+            "name": "core-plugins",
+            "version": "2.5.0-SNAPSHOT",
+            "scope": "SYSTEM"
+          },
+          "properties": {
+            "schema": "{\"type\":\"record\",\"name\":\"join.typeoutput\",\"fields\":[{\"name\":\"actor_id\",\"type\":\"int\"},{\"name\":\"first_name\",\"type\":\"string\"},{\"name\":\"last_name\",\"type\":\"string\"},{\"name\":\"film_id\",\"type\":\"int\"}]}",
+            "joinKeys": "Database-film-actor.actor_id = Database-actor.actor_id",
+            "selectedFields": "Database-actor.actor_id as actor_id,Database-actor.first_name as first_name,Database-actor.last_name as last_name,Database-film-actor.film_id as film_id",
+            "requiredInputs": "Database-actor,Database-film-actor",
+            "numPartitions": "1"
+          }
+        },
+        "outputSchema": [
+          {
+            "name": "etlSchemaBody",
+            "schema": "{\"type\":\"record\",\"name\":\"join.typeoutput\",\"fields\":[{\"name\":\"actor_id\",\"type\":\"int\"},{\"name\":\"first_name\",\"type\":\"string\"},{\"name\":\"last_name\",\"type\":\"string\"},{\"name\":\"film_id\",\"type\":\"int\"}]}"
+          }
+        ],
+        "inputSchema": [
+          {
+            "name": "Database-actor",
+            "schema": "{\"type\":\"record\",\"name\":\"outputSchema\",\"fields\":[{\"name\":\"actor_id\",\"type\":\"int\"},{\"name\":\"first_name\",\"type\":\"string\"},{\"name\":\"last_name\",\"type\":\"string\"},{\"name\":\"last_update\",\"type\":{\"type\":\"long\",\"logicalType\":\"timestamp-micros\"}}]}"
+          },
+          {
+            "name": "Database-film-actor",
+            "schema": "{\"type\":\"record\",\"name\":\"outputSchema\",\"fields\":[{\"name\":\"actor_id\",\"type\":\"int\"},{\"name\":\"film_id\",\"type\":\"int\"}]}"
+          }
+        ],
+        "type": "batchjoiner",
+        "label": "Joiner",
+        "icon": "icon-joiner"
+      },
+      {
+        "name": "Joiner2",
+        "plugin": {
+          "name": "Joiner",
+          "type": "batchjoiner",
+          "label": "Joiner2",
+          "artifact": {
+            "name": "core-plugins",
+            "version": "2.5.0-SNAPSHOT",
+            "scope": "SYSTEM"
+          },
+          "properties": {
+            "schema": "{\"type\":\"record\",\"name\":\"join.typeoutput\",\"fields\":[{\"name\":\"actor_id\",\"type\":[\"int\",\"null\"]},{\"name\":\"first_name\",\"type\":[\"string\",\"null\"]},{\"name\":\"last_name\",\"type\":[\"string\",\"null\"]},{\"name\":\"film_id\",\"type\":[\"int\",\"null\"]},{\"name\":\"title\",\"type\":[\"string\",\"null\"]},{\"name\":\"description\",\"type\":[\"string\",\"null\"]},{\"name\":\"release_year\",\"type\":[{\"type\":\"int\",\"logicalType\":\"date\"},\"null\"]},{\"name\":\"language_id\",\"type\":[\"int\",\"null\"]},{\"name\":\"original_language_id\",\"type\":[\"int\",\"null\"]},{\"name\":\"rental_duration\",\"type\":[\"int\",\"null\"]},{\"name\":\"rental_rate\",\"type\":[\"double\",\"null\"]},{\"name\":\"length\",\"type\":[\"int\",\"null\"]},{\"name\":\"replacement_cost\",\"type\":[\"double\",\"null\"]},{\"name\":\"special_features\",\"type\":[\"string\",\"null\"]},{\"name\":\"last_update\",\"type\":[{\"type\":\"long\",\"logicalType\":\"timestamp-micros\"},\"null\"]}]}",
+            "joinKeys": "Joiner.film_id = Database-film.film_id",
+            "selectedFields": "Joiner.actor_id as actor_id,Joiner.first_name as first_name,Joiner.last_name as last_name,Database-film.film_id as film_id,Database-film.title as title,Database-film.description as description,Database-film.release_year as release_year,Database-film.language_id as language_id,Database-film.original_language_id as original_language_id,Database-film.rental_duration as rental_duration,Database-film.rental_rate as rental_rate,Database-film.length as length,Database-film.replacement_cost as replacement_cost,Database-film.special_features as special_features,Database-film.last_update as last_update",
+            "numPartitions": "1"
+          }
+        },
+        "outputSchema": [
+          {
+            "name": "etlSchemaBody",
+            "schema": "{\"type\":\"record\",\"name\":\"join.typeoutput\",\"fields\":[{\"name\":\"actor_id\",\"type\":[\"int\",\"null\"]},{\"name\":\"first_name\",\"type\":[\"string\",\"null\"]},{\"name\":\"last_name\",\"type\":[\"string\",\"null\"]},{\"name\":\"film_id\",\"type\":[\"int\",\"null\"]},{\"name\":\"title\",\"type\":[\"string\",\"null\"]},{\"name\":\"description\",\"type\":[\"string\",\"null\"]},{\"name\":\"release_year\",\"type\":[{\"type\":\"int\",\"logicalType\":\"date\"},\"null\"]},{\"name\":\"language_id\",\"type\":[\"int\",\"null\"]},{\"name\":\"original_language_id\",\"type\":[\"int\",\"null\"]},{\"name\":\"rental_duration\",\"type\":[\"int\",\"null\"]},{\"name\":\"rental_rate\",\"type\":[\"double\",\"null\"]},{\"name\":\"length\",\"type\":[\"int\",\"null\"]},{\"name\":\"replacement_cost\",\"type\":[\"double\",\"null\"]},{\"name\":\"special_features\",\"type\":[\"string\",\"null\"]},{\"name\":\"last_update\",\"type\":[{\"type\":\"long\",\"logicalType\":\"timestamp-micros\"},\"null\"]}]}"
+          }
+        ],
+        "inputSchema": [
+          {
+            "name": "Joiner",
+            "schema": "{\"type\":\"record\",\"name\":\"join.typeoutput\",\"fields\":[{\"name\":\"actor_id\",\"type\":\"int\"},{\"name\":\"first_name\",\"type\":\"string\"},{\"name\":\"last_name\",\"type\":\"string\"},{\"name\":\"film_id\",\"type\":\"int\"}]}"
+          },
+          {
+            "name": "Database-film",
+            "schema": "{\"type\":\"record\",\"name\":\"outputSchema\",\"fields\":[{\"name\":\"film_id\",\"type\":\"int\"},{\"name\":\"title\",\"type\":\"string\"},{\"name\":\"description\",\"type\":[\"string\",\"null\"]},{\"name\":\"release_year\",\"type\":[{\"type\":\"int\",\"logicalType\":\"date\"},\"null\"]},{\"name\":\"language_id\",\"type\":\"int\"},{\"name\":\"original_language_id\",\"type\":[\"int\",\"null\"]},{\"name\":\"rental_duration\",\"type\":\"int\"},{\"name\":\"rental_rate\",\"type\":\"double\"},{\"name\":\"length\",\"type\":[\"int\",\"null\"]},{\"name\":\"replacement_cost\",\"type\":\"double\"},{\"name\":\"special_features\",\"type\":[\"string\",\"null\"]},{\"name\":\"last_update\",\"type\":{\"type\":\"long\",\"logicalType\":\"timestamp-micros\"}}]}"
+          }
+        ],
+        "type": "batchjoiner",
+        "label": "Joiner2",
+        "icon": "icon-joiner"
+      },
+      {
+        "name": "CreateRecord",
+        "plugin": {
+          "name": "CreateRecord",
+          "type": "transform",
+          "label": "CreateRecord",
+          "artifact": {
+            "name": "core-plugins",
+            "version": "2.5.0-SNAPSHOT",
+            "scope": "USER"
+          },
+          "properties": {
+            "fieldMapping": "{ \t\"id\": [\"film_id\"], \t\"title\": [\"title\"], \t\"description\": [\"description\"], \t\"actor\": { \t\t\"id\": [\"actor_id\"], \t\t\"firstName\": [\"first_name\"], \t\t\"lastName\": [\"last_name\"] \t} }",
+            "includeNonMappedFields": "on"
+          }
+        },
+        "outputSchema": [
+          {
+            "name": "etlSchemaBody",
+            "schema": "{\"type\":\"record\",\"name\":\"record\",\"fields\":[{\"name\":\"id\",\"type\":[\"int\",\"null\"]},{\"name\":\"title\",\"type\":[\"string\",\"null\"]},{\"name\":\"description\",\"type\":[\"string\",\"null\"]},{\"name\":\"actor\",\"type\":{\"type\":\"record\",\"name\":\"actor\",\"fields\":[{\"name\":\"id\",\"type\":[\"int\",\"null\"]},{\"name\":\"firstName\",\"type\":[\"string\",\"null\"]},{\"name\":\"lastName\",\"type\":[\"string\",\"null\"]}]}},{\"name\":\"release_year\",\"type\":[{\"type\":\"int\",\"logicalType\":\"date\"},\"null\"]},{\"name\":\"language_id\",\"type\":[\"int\",\"null\"]},{\"name\":\"original_language_id\",\"type\":[\"int\",\"null\"]},{\"name\":\"rental_duration\",\"type\":[\"int\",\"null\"]},{\"name\":\"rental_rate\",\"type\":[\"double\",\"null\"]},{\"name\":\"length\",\"type\":[\"int\",\"null\"]},{\"name\":\"replacement_cost\",\"type\":[\"double\",\"null\"]},{\"name\":\"special_features\",\"type\":[\"string\",\"null\"]},{\"name\":\"last_update\",\"type\":[{\"type\":\"long\",\"logicalType\":\"timestamp-micros\"},\"null\"]}]}"
+          }
+        ],
+        "inputSchema": [
+          {
+            "name": "Joiner2",
+            "schema": "{\"type\":\"record\",\"name\":\"join.typeoutput\",\"fields\":[{\"name\":\"actor_id\",\"type\":[\"int\",\"null\"]},{\"name\":\"first_name\",\"type\":[\"string\",\"null\"]},{\"name\":\"last_name\",\"type\":[\"string\",\"null\"]},{\"name\":\"film_id\",\"type\":[\"int\",\"null\"]},{\"name\":\"title\",\"type\":[\"string\",\"null\"]},{\"name\":\"description\",\"type\":[\"string\",\"null\"]},{\"name\":\"release_year\",\"type\":[{\"type\":\"int\",\"logicalType\":\"date\"},\"null\"]},{\"name\":\"language_id\",\"type\":[\"int\",\"null\"]},{\"name\":\"original_language_id\",\"type\":[\"int\",\"null\"]},{\"name\":\"rental_duration\",\"type\":[\"int\",\"null\"]},{\"name\":\"rental_rate\",\"type\":[\"double\",\"null\"]},{\"name\":\"length\",\"type\":[\"int\",\"null\"]},{\"name\":\"replacement_cost\",\"type\":[\"double\",\"null\"]},{\"name\":\"special_features\",\"type\":[\"string\",\"null\"]},{\"name\":\"last_update\",\"type\":[{\"type\":\"long\",\"logicalType\":\"timestamp-micros\"},\"null\"]}]}"
+          }
+        ],
+        "type": "transform",
+        "label": "CreateRecord",
+        "icon": "fa-plug"
+      },
+      {
+        "name": "Group-By",
+        "plugin": {
+          "name": "GroupByAggregate",
+          "type": "batchaggregator",
+          "label": "Group By",
+          "artifact": {
+            "name": "core-plugins",
+            "version": "2.5.0-SNAPSHOT",
+            "scope": "SYSTEM"
+          },
+          "properties": {
+            "groupByFields": "id, title, description,length",
+            "aggregates": "actor:CollectSet(actor)",
+            "numPartitions": "1"
+          }
+        },
+        "outputSchema": [
+          {
+            "name": "etlSchemaBody",
+            "schema": "{\"type\":\"record\",\"name\":\"record.typeagg\",\"fields\":[{\"name\":\"id\",\"type\":[\"int\",\"null\"]},{\"name\":\"title\",\"type\":[\"string\",\"null\"]},{\"name\":\"description\",\"type\":[\"string\",\"null\"]},{\"name\":\"length\",\"type\":[\"int\",\"null\"]},{\"name\":\"actor\",\"type\":{\"type\":\"array\",\"items\":{\"type\":\"record\",\"name\":\"actor\",\"fields\":[{\"name\":\"id\",\"type\":[\"int\",\"null\"]},{\"name\":\"firstName\",\"type\":[\"string\",\"null\"]},{\"name\":\"lastName\",\"type\":[\"string\",\"null\"]}]}}}]}"
+          }
+        ],
+        "inputSchema": [
+          {
+            "name": "CreateRecord",
+            "schema": "{\"type\":\"record\",\"name\":\"record\",\"fields\":[{\"name\":\"id\",\"type\":[\"int\",\"null\"]},{\"name\":\"title\",\"type\":[\"string\",\"null\"]},{\"name\":\"description\",\"type\":[\"string\",\"null\"]},{\"name\":\"actor\",\"type\":{\"type\":\"record\",\"name\":\"actor\",\"fields\":[{\"name\":\"id\",\"type\":[\"int\",\"null\"]},{\"name\":\"firstName\",\"type\":[\"string\",\"null\"]},{\"name\":\"lastName\",\"type\":[\"string\",\"null\"]}]}},{\"name\":\"release_year\",\"type\":[{\"type\":\"int\",\"logicalType\":\"date\"},\"null\"]},{\"name\":\"language_id\",\"type\":[\"int\",\"null\"]},{\"name\":\"original_language_id\",\"type\":[\"int\",\"null\"]},{\"name\":\"rental_duration\",\"type\":[\"int\",\"null\"]},{\"name\":\"rental_rate\",\"type\":[\"double\",\"null\"]},{\"name\":\"length\",\"type\":[\"int\",\"null\"]},{\"name\":\"replacement_cost\",\"type\":[\"double\",\"null\"]},{\"name\":\"special_features\",\"type\":[\"string\",\"null\"]},{\"name\":\"last_update\",\"type\":[{\"type\":\"long\",\"logicalType\":\"timestamp-micros\"},\"null\"]}]}"
+          }
+        ],
+        "type": "batchaggregator",
+        "label": "Group By",
+        "icon": "icon-groupbyaggregate"
+      },
+      {
+        "name": "File",
+        "plugin": {
+          "name": "File",
+          "type": "batchsink",
+          "label": "File",
+          "artifact": {
+            "name": "core-plugins",
+            "version": "2.5.0-SNAPSHOT",
+            "scope": "SYSTEM"
+          },
+          "properties": {
+            "suffix": "yyyy-MM-dd-HH-mm",
+            "format": "json",
+            "schema": "{\"type\":\"record\",\"name\":\"record.typeagg\",\"fields\":[{\"name\":\"id\",\"type\":[\"int\",\"null\"]},{\"name\":\"title\",\"type\":[\"string\",\"null\"]},{\"name\":\"description\",\"type\":[\"string\",\"null\"]},{\"name\":\"actor\",\"type\":{\"type\":\"array\",\"items\":{\"type\":\"record\",\"name\":\"actor\",\"fields\":[{\"name\":\"id\",\"type\":[\"int\",\"null\"]},{\"name\":\"firstName\",\"type\":[\"string\",\"null\"]},{\"name\":\"lastName\",\"type\":[\"string\",\"null\"]}]}}}]}",
+            "path": "${writeData}",
+            "referenceName": "hirerachy_film_actor"
+          }
+        },
+        "outputSchema": [
+          {
+            "name": "etlSchemaBody",
+            "schema": "{\"type\":\"record\",\"name\":\"record.typeagg\",\"fields\":[{\"name\":\"id\",\"type\":[\"int\",\"null\"]},{\"name\":\"title\",\"type\":[\"string\",\"null\"]},{\"name\":\"description\",\"type\":[\"string\",\"null\"]},{\"name\":\"actor\",\"type\":{\"type\":\"array\",\"items\":{\"type\":\"record\",\"name\":\"actor\",\"fields\":[{\"name\":\"id\",\"type\":[\"int\",\"null\"]},{\"name\":\"firstName\",\"type\":[\"string\",\"null\"]},{\"name\":\"lastName\",\"type\":[\"string\",\"null\"]}]}}}]}"
+          }
+        ],
+        "inputSchema": [
+          {
+            "name": "Group By",
+            "schema": "{\"type\":\"record\",\"name\":\"record.typeagg\",\"fields\":[{\"name\":\"id\",\"type\":[\"int\",\"null\"]},{\"name\":\"title\",\"type\":[\"string\",\"null\"]},{\"name\":\"description\",\"type\":[\"string\",\"null\"]},{\"name\":\"length\",\"type\":[\"int\",\"null\"]},{\"name\":\"actor\",\"type\":{\"type\":\"array\",\"items\":{\"type\":\"record\",\"name\":\"actor\",\"fields\":[{\"name\":\"id\",\"type\":[\"int\",\"null\"]},{\"name\":\"firstName\",\"type\":[\"string\",\"null\"]},{\"name\":\"lastName\",\"type\":[\"string\",\"null\"]}]}}}]}"
+          }
+        ],
+        "type": "batchsink",
+        "label": "File",
+        "icon": "icon-file"
+      },
+      {
+        "name": "Database-film-actor",
+        "plugin": {
+          "name": "Database",
+          "type": "batchsource",
+          "label": "Database-film-actor",
+          "artifact": {
+            "name": "database-plugins",
+            "version": "2.5.0-SNAPSHOT",
+            "scope": "SYSTEM"
+          },
+          "properties": {
+            "jdbcPluginType": "jdbc",
+            "numSplits": "1",
+            "fetchSize": "1000",
+            "enableAutoCommit": "false",
+            "columnNameCase": "No change",
+            "transactionIsolationLevel": "TRANSACTION_SERIALIZABLE",
+            "connectionString": "${connection}",
+            "password": "${password}",
+            "importQuery": "SELECT * FROM film_actor WHERE $CONDITIONS",
+            "jdbcPluginName": "mysql",
+            "user": "${username}",
+            "referenceName": "film_actor",
+            "schema": "{\"type\":\"record\",\"name\":\"outputSchema\",\"fields\":[{\"name\":\"actor_id\",\"type\":\"int\"},{\"name\":\"film_id\",\"type\":\"int\"}]}"
+          }
+        },
+        "outputSchema": [
+          {
+            "name": "etlSchemaBody",
+            "schema": "{\"type\":\"record\",\"name\":\"outputSchema\",\"fields\":[{\"name\":\"actor_id\",\"type\":\"int\"},{\"name\":\"film_id\",\"type\":\"int\"}]}"
+          }
+        ],
+        "type": "batchsource",
+        "label": "Database-film-actor",
+        "icon": "icon-database"
+      },
+      {
+        "name": "Database-film",
+        "plugin": {
+          "name": "Database",
+          "type": "batchsource",
+          "label": "Database-film",
+          "artifact": {
+            "name": "database-plugins",
+            "version": "2.5.0-SNAPSHOT",
+            "scope": "SYSTEM"
+          },
+          "properties": {
+            "jdbcPluginType": "jdbc",
+            "numSplits": "1",
+            "fetchSize": "1000",
+            "enableAutoCommit": "false",
+            "columnNameCase": "No change",
+            "transactionIsolationLevel": "TRANSACTION_SERIALIZABLE",
+            "connectionString": "${connection}",
+            "password": "${password}",
+            "importQuery": "SELECT * FROM film WHERE $CONDITIONS",
+            "jdbcPluginName": "mysql",
+            "user": "${username}",
+            "referenceName": "film",
+            "schema": "{\"type\":\"record\",\"name\":\"outputSchema\",\"fields\":[{\"name\":\"film_id\",\"type\":\"int\"},{\"name\":\"title\",\"type\":\"string\"},{\"name\":\"description\",\"type\":[\"string\",\"null\"]},{\"name\":\"release_year\",\"type\":[{\"type\":\"int\",\"logicalType\":\"date\"},\"null\"]},{\"name\":\"language_id\",\"type\":\"int\"},{\"name\":\"original_language_id\",\"type\":[\"int\",\"null\"]},{\"name\":\"rental_duration\",\"type\":\"int\"},{\"name\":\"rental_rate\",\"type\":\"double\"},{\"name\":\"length\",\"type\":[\"int\",\"null\"]},{\"name\":\"replacement_cost\",\"type\":\"double\"},{\"name\":\"special_features\",\"type\":[\"string\",\"null\"]},{\"name\":\"last_update\",\"type\":{\"type\":\"long\",\"logicalType\":\"timestamp-micros\"}}]}"
+          }
+        },
+        "outputSchema": [
+          {
+            "name": "etlSchemaBody",
+            "schema": "{\"type\":\"record\",\"name\":\"outputSchema\",\"fields\":[{\"name\":\"film_id\",\"type\":\"int\"},{\"name\":\"title\",\"type\":\"string\"},{\"name\":\"description\",\"type\":[\"string\",\"null\"]},{\"name\":\"release_year\",\"type\":[{\"type\":\"int\",\"logicalType\":\"date\"},\"null\"]},{\"name\":\"language_id\",\"type\":\"int\"},{\"name\":\"original_language_id\",\"type\":[\"int\",\"null\"]},{\"name\":\"rental_duration\",\"type\":\"int\"},{\"name\":\"rental_rate\",\"type\":\"double\"},{\"name\":\"length\",\"type\":[\"int\",\"null\"]},{\"name\":\"replacement_cost\",\"type\":\"double\"},{\"name\":\"special_features\",\"type\":[\"string\",\"null\"]},{\"name\":\"last_update\",\"type\":{\"type\":\"long\",\"logicalType\":\"timestamp-micros\"}}]}"
+          }
+        ],
+        "type": "batchsource",
+        "label": "Database-film",
+        "icon": "icon-database"
+      }
+    ],
+    "schedule": "0 * * * *",
+    "engine": "spark",
+    "numOfRecordsPreview": 100,
+    "description": "Data Pipeline Application",
+    "maxConcurrentRuns": 1
+  }
+}
