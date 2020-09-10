@@ -21,28 +21,25 @@ import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.FailureCollector;
+import io.cdap.cdap.etl.api.JoinConfig;
+import io.cdap.cdap.etl.api.JoinElement;
 import io.cdap.cdap.etl.api.MultiInputPipelineConfigurer;
-import io.cdap.cdap.etl.api.batch.BatchAutoJoiner;
 import io.cdap.cdap.etl.api.batch.BatchJoiner;
 import io.cdap.cdap.etl.api.batch.BatchJoinerContext;
-import io.cdap.cdap.etl.api.join.AutoJoinerContext;
-import io.cdap.cdap.etl.api.join.JoinCondition;
-import io.cdap.cdap.etl.api.join.JoinDefinition;
-import io.cdap.cdap.etl.api.join.JoinField;
-import io.cdap.cdap.etl.api.join.JoinKey;
-import io.cdap.cdap.etl.api.join.JoinStage;
+import io.cdap.cdap.etl.api.batch.BatchJoinerRuntimeContext;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
@@ -50,7 +47,79 @@ import javax.annotation.Nullable;
  */
 @Plugin(type = BatchJoiner.PLUGIN_TYPE)
 @Name("Lookup")
-public class Lookup extends BatchAutoJoiner {
+public class Lookup extends BatchJoiner<Object, StructuredRecord, StructuredRecord> {
+
+  private JoinConfig joinConfig;
+  private Set<Object> alreadyProcessed = new HashSet<>();
+  private ArrayList<Object> joinKeys = new ArrayList<>();
+
+
+  @Override
+  public void prepareRun(BatchJoinerContext context) throws Exception {
+    super.prepareRun(context);
+    List<String> requiredInputs = new ArrayList<>();
+    context.getInputSchemas().forEach((stageName, schema) -> {
+      requiredInputs.add(stageName);
+    });
+    joinConfig = new JoinConfig(requiredInputs);
+  }
+
+  @Override
+  public void initialize(BatchJoinerRuntimeContext context) throws Exception {
+    super.initialize(context);
+    List<String> requiredInputs = new ArrayList<>();
+    context.getInputSchemas().forEach((stageName, schema) -> {
+      if (!stageName.equals(config.getLookupDataset())) {
+        requiredInputs.add(stageName);
+      }
+      joinKeys.add(stageName);
+    });
+    joinConfig = new JoinConfig(requiredInputs);
+    context.getStageName();
+  }
+
+  @Override
+  public Object joinOn(String stageName, StructuredRecord structuredRecord) throws Exception {
+    if (stageName.equals(config.getLookupDataset())) {
+      if (alreadyProcessed.contains(structuredRecord.get(config.getLookupKeyField()))) {
+        return null;
+      }
+      alreadyProcessed.add(structuredRecord.get(config.getLookupKeyField()));
+      return structuredRecord.get(config.getLookupKeyField());
+    } else {
+      return structuredRecord.get(config.getInputKeyField());
+    }
+  }
+
+  @Override
+  public JoinConfig getJoinConfig() throws Exception {
+    return joinConfig;
+  }
+
+  @Override
+  public StructuredRecord merge(Object joinKey, Iterable<JoinElement<StructuredRecord>> iterable)
+    throws Exception {
+    StructuredRecord.Builder builder = StructuredRecord.builder(Schema.parseJson(config.schema));
+    builder.set(config.getOutputField(), config.getDefaultValue());
+    final Iterator<JoinElement<StructuredRecord>> iterator = iterable.iterator();
+    while (iterator.hasNext()) {
+      final JoinElement<StructuredRecord> next = iterator.next();
+      if (next.getStageName().equals(config.getLookupDataset())) {
+        builder.set(config.getOutputField(), next.getInputRecord().get(config.getLookupValueField()));
+      } else {
+        for (Schema.Field field : next.getInputRecord().getSchema().getFields()) {
+          builder.set(field.getName(), next.getInputRecord().get(field.getName()));
+        }
+      }
+    }
+    return builder.build();
+  }
+
+  @Override
+  public Collection<Object> getJoinKeys(String stageName, StructuredRecord structuredRecord)
+    throws Exception {
+    return joinKeys;
+  }
 
   /**
    * Config for Lookup transform
@@ -118,10 +187,6 @@ public class Lookup extends BatchAutoJoiner {
       return lookupDataset;
     }
 
-    public void setLookupDatasets(Set<String> datasets) {
-      this.lookupDataset = String.join(",", datasets);
-    }
-
     public String getInputKeyField() {
       return inputKeyField;
     }
@@ -186,78 +251,9 @@ public class Lookup extends BatchAutoJoiner {
   }
 
   private final Lookup.Config config;
-  private Schema outputSchema = null;
 
   public Lookup(Config config) {
     this.config = config;
-  }
-
-  @Nullable
-  @Override
-  public JoinDefinition define(AutoJoinerContext context) {
-    FailureCollector collector = context.getFailureCollector();
-    boolean hasUnknownInputSchema = context.getInputStages().values().stream().anyMatch(Objects::isNull);
-    if (hasUnknownInputSchema) {
-      // If input schemas are unknown, an output schema must be provided.
-      collector.addFailure("Missing output schema", "Output schema must be specified.");
-    }
-    if (config.fieldsContainMacro()) {
-      return null;
-    }
-    outputSchema = config.getOutputSchema(collector);
-
-
-    if (outputSchema == null) {
-      final Map<String, Schema> inputSchemas = context.getInputStages().values().stream()
-        .collect(Collectors.toMap(e -> e.getStageName(), e -> e.getSchema()));
-      outputSchema = generateOutputSchema(inputSchemas, collector);
-    }
-    boolean useOutputSchema = false;
-    List<JoinStage> inputs = new ArrayList<>(context.getInputStages().size());
-    try {
-      Schema inputSchema = null;
-      String inputStageName = "";
-      String lookupStageName = config.lookupDataset;
-      for (String stageName : context.getInputStages().keySet()) {
-        if (!stageName.equals(config.lookupDataset)) {
-          inputSchema = context.getInputStages().get(stageName).getSchema();
-          inputStageName = stageName;
-        }
-      }
-      for (JoinStage joinStage : context.getInputStages().values()) {
-        inputs.add(JoinStage.builder(joinStage)
-                     .setRequired(!joinStage.getStageName().equals(config.lookupDataset))
-                     .setBroadcast(joinStage.getStageName().equals(config.lookupDataset))
-                     .build());
-        useOutputSchema = useOutputSchema || joinStage.getSchema() == null;
-      }
-
-      JoinDefinition.Builder joinBuilder = JoinDefinition.builder();
-      joinBuilder.from(inputs);
-      List<JoinField> selectedJoinFields = new ArrayList<>();
-      for (Schema.Field field : outputSchema.getFields()) {
-        if (!field.getName().equals(config.outputField)) {
-          selectedJoinFields.add(new JoinField(inputStageName, field.getName(), field.getName()));
-        }
-      }
-      selectedJoinFields.add(new JoinField(lookupStageName, config.lookupValueField, config.outputField));
-      joinBuilder.select(selectedJoinFields);
-      // input keys
-      joinBuilder.on(JoinCondition.onKeys()
-                       .addKey(new JoinKey(inputStageName, Collections.singletonList(config.inputKeyField)))
-                       .addKey(new JoinKey(lookupStageName, Collections.singletonList(config.lookupKeyField)))
-                       .build());
-      joinBuilder.setOutputSchema(outputSchema);
-      return joinBuilder.build();
-    } catch (Exception e) {
-      collector.addFailure("Error:", e.getMessage());
-    }
-    throw collector.getOrThrowException();
-  }
-
-  @Override
-  public void onRunFinish(boolean succeeded, BatchJoinerContext context) {
-    super.onRunFinish(succeeded, context);
   }
 
   private Schema generateOutputSchema(Map<String, Schema> inputSchemas, FailureCollector collector) {
