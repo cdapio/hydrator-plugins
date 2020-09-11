@@ -1,11 +1,11 @@
 {
   "metadata": {
-    "spec-version": "1.3"
+    "spec-version": "1.5"
   },
   "inputs": {
     "multipleInputs": true
   },
-  "display-name" : "Lookup Transform",
+  "display-name" : "Lookup",
   "configuration-groups": [
     {
       "label": "Lookup Configuration",
