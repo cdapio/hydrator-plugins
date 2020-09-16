@@ -95,14 +95,15 @@ public class ParquetOutputFormatProvider extends AbstractOutputFormatProvider {
     private void validate() {
       if (!containsMacro("schema")) {
         if (schema == null) {
-          throw new IllegalArgumentException("Found null schema.");
+          throw new IllegalArgumentException("Found null schema for output format.");
         }
 
         try {
-            Schema.parseJson(schema);
+          Schema.parseJson(schema);
         } catch (IOException e) {
-          throw new IllegalArgumentException("Unable to parse schema: " + e.getMessage(), e);
+          throw new IllegalArgumentException("Unable to parse schema for output format: " + e.getMessage(), e);
         }
+      }
     }
   }
 
