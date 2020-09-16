@@ -93,13 +93,16 @@ public class ParquetOutputFormatProvider extends AbstractOutputFormatProvider {
     private String compressionCodec;
 
     private void validate() {
-      if (!containsMacro("schema") && schema != null) {
+      if (!containsMacro("schema")) {
+        if (schema == null) {
+          throw new IllegalArgumentException("Found null schema.");
+        }
+
         try {
-          Schema.parseJson(schema);
+            Schema.parseJson(schema);
         } catch (IOException e) {
           throw new IllegalArgumentException("Unable to parse schema: " + e.getMessage(), e);
         }
-      }
     }
   }
 
