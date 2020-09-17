@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.format.parquet.output;
 
+import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
@@ -93,16 +94,18 @@ public class ParquetOutputFormatProvider extends AbstractOutputFormatProvider {
     private String compressionCodec;
 
     private void validate() {
-      if (!containsMacro("schema")) {
-        if (schema == null) {
-          throw new IllegalArgumentException("Found null schema for output format.");
-        }
+      if (containsMacro("schema")) {
+        return;
+      }
 
-        try {
-          Schema.parseJson(schema);
-        } catch (IOException e) {
-          throw new IllegalArgumentException("Unable to parse schema for output format: " + e.getMessage(), e);
-        }
+      if (Strings.isNullOrEmpty(schema)) {
+        throw new IllegalArgumentException("Output schema must not be null or empty.");
+      }
+
+      try {
+        Schema.parseJson(schema);
+      } catch (IOException e) {
+        throw new IllegalArgumentException("Unable to parse output schema: " + e.getMessage(), e);
       }
     }
   }
