@@ -272,8 +272,9 @@ public class Lookup extends BatchJoiner<Object, StructuredRecord, StructuredReco
       }
     }
     List<Schema.Field> fields = new ArrayList<>(inputSchema.getFields());
-    fields.add(Schema.Field.of(config.outputField, Schema.nullableOf(lookupSchema.getField(config.lookupValueField)
-                                                                       .getSchema())));
+    final Schema.Field lookupField = lookupSchema.getField(config.lookupValueField);
+    fields.add(Schema.Field.of(config.outputField, lookupField.getSchema().isNullable() ? lookupField.getSchema()
+      : Schema.nullableOf(lookupField.getSchema())));
     return Schema.recordOf("join.output", fields);
   }
 
