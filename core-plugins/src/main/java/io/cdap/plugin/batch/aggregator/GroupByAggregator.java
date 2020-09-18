@@ -63,6 +63,15 @@ public class GroupByAggregator extends RecordReducibleAggregator<AggregateResult
     put("COLLECTLIST", "CollectList");
     put("COLLECTSET", "CollectSet");
     put("COUNTDISTINCT", "CountDistinct");
+    put("LONGESTSTRING", "LongestString");
+    put("SHORTESTSTRING", "ShortestString");
+    put("COUNTNULLS", "CountNulls");
+    put("CONCAT", "Concat");
+    put("CONCATDISTINCT", "ConcatDistinct");
+    put("LOGICALAND", "LogicalAnd");
+    put("LOGICALOR", "LogicalOr");
+    put("CORRECTEDSUMOFSQUARES", "CorrectedSumOfSquares");
+    put("SUMOFSQUARES", "SumOfSquares");
   }};
 
   private List<String> groupByFields;

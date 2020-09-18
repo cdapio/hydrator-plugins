@@ -58,6 +58,42 @@
               {
                 "label": "Count Distinct",
                 "value": "CountDistinct"
+              },
+              {
+                "label": "Longest String",
+                "value": "LongestString"
+              },
+              {
+                "label": "Shortest String",
+                "value": "ShortestString"
+              },
+              {
+                "label": "Number of Nulls",
+                "value": "CountNulls"
+              },
+              {
+                "label": "Concat",
+                "value": "Concat"
+              },
+              {
+                "label": "Concat Distinct",
+                "value": "ConcatDistinct"
+              },
+              {
+                "label": "Logical AND",
+                "value": "LogicalAnd"
+              },
+              {
+                "label": "Logical OR",
+                "value": "LogicalOr"
+              },
+              {
+                "label": "Sum of squares",
+                "value": "SumOfSquares"
+              },
+              {
+                "label": "Corrected sum of squares",
+                "value": "CorrectedSumOfSquares"
               }
             ]
           }
