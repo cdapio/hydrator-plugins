@@ -25,6 +25,7 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginClass;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.api.plugin.PluginPropertyField;
+import io.cdap.cdap.etl.api.validation.FormatContext;
 import io.cdap.cdap.etl.api.validation.ValidatingOutputFormat;
 import io.cdap.plugin.format.output.AbstractOutputFormatProvider;
 import org.apache.parquet.format.CompressionCodec;
@@ -55,6 +56,11 @@ public class ParquetOutputFormatProvider extends AbstractOutputFormatProvider {
   @Override
   public String getOutputFormatClassName() {
     return StructuredParquetOutputFormat.class.getName();
+  }
+
+  @Override
+  public void validate(FormatContext context) {
+    conf.validate();
   }
 
   @Override
