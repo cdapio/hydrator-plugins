@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.format.parquet.output;
 
+import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
@@ -24,6 +25,7 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginClass;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.api.plugin.PluginPropertyField;
+import io.cdap.cdap.etl.api.validation.FormatContext;
 import io.cdap.cdap.etl.api.validation.ValidatingOutputFormat;
 import io.cdap.plugin.format.output.AbstractOutputFormatProvider;
 import org.apache.parquet.format.CompressionCodec;
@@ -54,6 +56,11 @@ public class ParquetOutputFormatProvider extends AbstractOutputFormatProvider {
   @Override
   public String getOutputFormatClassName() {
     return StructuredParquetOutputFormat.class.getName();
+  }
+
+  @Override
+  public void validate(FormatContext context) {
+    conf.validate();
   }
 
   @Override
@@ -93,12 +100,18 @@ public class ParquetOutputFormatProvider extends AbstractOutputFormatProvider {
     private String compressionCodec;
 
     private void validate() {
-      if (!containsMacro("schema") && schema != null) {
-        try {
-          Schema.parseJson(schema);
-        } catch (IOException e) {
-          throw new IllegalArgumentException("Unable to parse schema: " + e.getMessage(), e);
-        }
+      if (containsMacro("schema")) {
+        return;
+      }
+
+      if (Strings.isNullOrEmpty(schema)) {
+        throw new IllegalArgumentException("Output schema must not be null or empty.");
+      }
+
+      try {
+        Schema.parseJson(schema);
+      } catch (IOException e) {
+        throw new IllegalArgumentException("Unable to parse output schema: " + e.getMessage(), e);
       }
     }
   }

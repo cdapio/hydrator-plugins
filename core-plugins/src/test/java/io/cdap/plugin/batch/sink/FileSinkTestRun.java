@@ -71,6 +71,23 @@ public class FileSinkTestRun extends ETLBatchTestBase {
                                                        Schema.Field.of("s", Schema.of(Schema.Type.STRING)));
   private static MetadataAdmin metadataAdmin;
 
+  /* Enum used to describe schema state and return schema values accordingly. */
+  private enum SchemaState {
+    EMPTY_STRING,
+    NULL_VALUE,
+    VALID,
+    ;
+
+    public String getSchema(String validSchema) {
+      switch (this) {
+        case EMPTY_STRING: return "";
+        case NULL_VALUE: return null;
+        case VALID: return validSchema;
+        default: throw new IllegalArgumentException("Invalid schema state " + this);
+      }
+    }
+  }
+
   @BeforeClass
   public static void setUp() {
     metadataAdmin = getMetadataAdmin();
@@ -95,7 +112,7 @@ public class FileSinkTestRun extends ETLBatchTestBase {
     // only set the delimiter as a pipeline property if the format is "delimited".
     // otherwise, the delimiter should be tied to the format
     Map<Integer, String> output = new HashMap<>();
-    runPipeline(format, format == FileFormat.DELIMITED ? delimiter : null, file -> {
+    runPipeline(format, file -> {
       try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
         String line;
         while ((line = reader.readLine()) != null) {
@@ -103,7 +120,7 @@ public class FileSinkTestRun extends ETLBatchTestBase {
           output.put(Integer.valueOf(fields[0]), fields[1]);
         }
       }
-    });
+    }, format == FileFormat.DELIMITED ? delimiter : null);
     Assert.assertEquals(ImmutableMap.of(0, "abc", 1, "def", 2, "ghi"), output);
     validateDatasetSchema(format);
   }
@@ -145,6 +162,30 @@ public class FileSinkTestRun extends ETLBatchTestBase {
 
   @Test
   public void testParquetFileSink() throws Exception {
+    testParquetFileSink(SchemaState.VALID);
+  }
+
+  @Test
+  public void testParquetFileSink_outputFormatNull() throws Exception {
+    try {
+      testParquetFileSink(SchemaState.NULL_VALUE);
+      Assert.fail("Pipeline should fail with IllegalArgumentException.");
+    } catch (IllegalStateException e) {
+      // expected
+    }
+  }
+
+  @Test
+  public void testParquetFileSink_outputFormatEmptyString() throws Exception {
+    try {
+      testParquetFileSink(SchemaState.EMPTY_STRING);
+      Assert.fail("Pipeline should fail.");
+    } catch (IllegalStateException e) {
+      // expected
+    }
+  }
+
+  private void testParquetFileSink(SchemaState outputFormatSchemaState) throws Exception {
     Map<Integer, String> output = new HashMap<>();
     runPipeline(FileFormat.PARQUET, file -> {
       Path parquetFile = new Path(file.toString());
@@ -156,29 +197,38 @@ public class FileSinkTestRun extends ETLBatchTestBase {
           genericRecord = reader.read();
         }
       }
-    });
+    }, null, outputFormatSchemaState);
     Assert.assertEquals(ImmutableMap.of(0, "abc", 1, "def", 2, "ghi"), output);
     validateDatasetSchema(FileFormat.PARQUET);
   }
 
   private void runPipeline(FileFormat format, FileConsumer fileConsumer) throws Exception {
-    runPipeline(format, null, fileConsumer);
+    runPipeline(format, fileConsumer, null);
   }
 
-  /**
-   * Creates and runs a pipeline that is the mock source writing to a file sink using the specified format.
-   * It will always write three records, {"i":0, "s":"abc"}, {"i":1, "s":"def"}, and {"i":2, "s":"ghi"}.
-   */
-  private void runPipeline(FileFormat format, @Nullable String delimiter, FileConsumer fileConsumer) throws Exception {
+  private void runPipeline(FileFormat format, FileConsumer fileConsumer, @Nullable String delimiter)
+      throws Exception {
+    runPipeline(format, fileConsumer, delimiter, SchemaState.VALID);
+  }
+
+    /**
+     * Creates and runs a pipeline that is the mock source writing to a file sink using the specified format.
+     * It will always write three records, {"i":0, "s":"abc"}, {"i":1, "s":"def"}, and {"i":2, "s":"ghi"}.
+     */
+  private void runPipeline(
+      FileFormat format,
+      FileConsumer fileConsumer,
+      @Nullable String delimiter,
+      SchemaState outputFormatSchemaState) throws Exception {
     String inputName = UUID.randomUUID().toString();
 
-    File baseDir = TEMP_FOLDER.newFolder(format + "FileSink");
+    File baseDir = TEMP_FOLDER.newFolder(format + "FileSink" + outputFormatSchemaState);
     File outputDir = new File(baseDir, "out");
     Map<String, String> properties = new HashMap<>();
     properties.put("path", outputDir.getAbsolutePath());
     properties.put("referenceName", format.name());
     properties.put("format", format.name());
-    properties.put("schema", "${schema}");
+    properties.put("schema", outputFormatSchemaState.getSchema("${schema}"));
     properties.put("delimiter", delimiter);
 
     ETLBatchConfig conf = ETLBatchConfig.builder()
