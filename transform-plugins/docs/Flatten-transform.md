@@ -21,17 +21,20 @@ For example the input record is as follows:
 
 ```
 Address
-    - Street 
+    - Street  
     - City 
+        - Name
+        - Code
     - State
     - Zip 
 ```
 
 The output schema will be specified as:
 
-| Field            |
-| ---------------- | 
-| Address_Street   | 
-| Address_City     | 
-| Address_State    | 
-| Address_Zip      | 
+| Field             |
+| ----------------  |  
+| Address_Street    | 
+| Address_City_Name |
+| Address_City_Code |
+| Address_State     | 
+| Address_Zip       | 

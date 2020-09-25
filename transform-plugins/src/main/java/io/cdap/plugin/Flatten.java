@@ -54,6 +54,10 @@ public final class Flatten extends Transform<StructuredRecord, StructuredRecord>
   private Schema outputSchema;
   private Map<String, OutputFieldInfo> inputOutputMapping = Maps.newHashMap();
 
+  public Flatten(Config config) {
+    this.config = config;
+  }
+
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
@@ -100,8 +104,7 @@ public final class Flatten extends Transform<StructuredRecord, StructuredRecord>
 
     List<String> fieldsToFlatten = config.getFieldsToFlatten();
     if (fieldsToFlatten == null || fieldsToFlatten.isEmpty()) {
-      failureCollector.addFailure("No field(s) selected for flattening.",
-                                  "Choose field(s) to flatten.");
+      failureCollector.addFailure("Atleast one field should be selected.", "");
       failureCollector.getOrThrowException();
     }
 
@@ -181,17 +184,75 @@ public final class Flatten extends Transform<StructuredRecord, StructuredRecord>
     return outputFieldInfo;
   }
 
+  /**
+   * Try to flatten fields of Records. <br>
+   * For each field of record check if type is:  <br>
+   *
+   * <p><b>Record</b>: try to flatten sub fields recursively until schema of field is not record or
+   * `levelToLimitFlattening` is reached and return {@link OutputFieldInfo} for flatten fields</p>
+   * <p></p><b>is not record</b>: return {@link OutputFieldInfo} for not flatten records</p>
+   * <pre>
+   *  Example:
+   *    {
+   *      "homeTeam" : {
+   *          "name" : "TeamA",
+   *          "players": ["Player1", "Player2", "Player3"],
+   *          "address": {
+   *              "name":"CityA",
+   *              "code": 1200
+   *          }
+   *          "code" : 500
+   *      },
+   *      "awayTeam" : {
+   *         "name" : "TeamA",
+   *         "players": ["Player1", "Player2", "Player3"],
+   *         "address": {
+   *              "name":"CityB",
+   *              "code": 1201
+   *          }
+   *         "code" : 501
+   *      }
+   *    }</pre>
+   * <p>
+   * Result will be list of OutputFieldInfo:
+   * <p>
+   * fieldName: homeTeam_name and node: homeTeam -> name
+   * fieldName: homeTeam_players and node: homeTeam -> players
+   * fieldName: homeTeam_address_name and node: homeTeam -> address-> name
+   * fieldName: homeTeam_address_code and node: homeTeam -> address-> code
+   * fieldName: homeTeam_code and node: home -> code
+   * <p>
+   * fieldName: awayTeam_name and node: awayTeam -> name
+   * fieldName: awayTeam_players and node: awayTeam -> players
+   * fieldName: awayTeam_address_name and node: awayTeam -> address-> name
+   * fieldName: awayTeam_address_code and node: awayTeam -> address-> code
+   * fieldName: awayTeam_code and node: awayTeam -> code
+   * <p>
+   * and the OutputSchema Fields will be
+   * <pre>
+   *       homeTeam_name,
+   *       homeTeam_players,
+   *       homeTeam_address_name,
+   *       homeTeam_address_code,
+   *       homeTeam_code,
+   *       awayTeam_name,
+   *       awayTeam_players,
+   *       awayTeam_address_name,
+   *       awayTeam_address_code,
+   *       awayTeam_code
+   * </pre>
+   *
+   * @param field                  Field to flatten
+   * @param levelToLimitFlattening
+   * @return list of  {@link OutputFieldInfo}
+   */
   private List<OutputFieldInfo> generateOutputFieldInfoForRecord(Schema.Field field, int levelToLimitFlattening) {
 
     List<OutputFieldInfo> outputFieldInfos = new ArrayList<>();
     Schema schema = field.getSchema();
     List<Schema.Field> fields;
 
-    if (schema.isNullable()) {
-      fields = schema.getNonNullable().getFields();
-    } else {
-      fields = schema.getFields();
-    }
+    fields = schema.isNullable() ? schema.getNonNullable().getFields() : schema.getFields();
 
     if (fields == null || fields.size() == 0) {
       return outputFieldInfos;
@@ -232,15 +293,8 @@ public final class Flatten extends Transform<StructuredRecord, StructuredRecord>
     if (schema == null) {
       return false;
     }
-    Schema.Type type = schema.getType();
-    if (type == Schema.Type.RECORD) {
-      return true;
-    }
-    if (schema.isNullable()) {
-      Schema nonNullable = schema.getNonNullable();
-      return nonNullable.getType() == Schema.Type.RECORD;
-    }
-    return false;
+    Schema.Type type = schema.isNullable() ? schema.getNonNullable().getType() : schema.getType();
+    return type == Schema.Type.RECORD;
   }
 
   /**
@@ -260,7 +314,7 @@ public final class Flatten extends Transform<StructuredRecord, StructuredRecord>
     @Macro
     @Nullable
     @Name(PROPERTY_NAME_LEVEL_TO_LIMIT)
-    @Description("Limit flattening to a certain level in nested structures.")
+    @Description("Limit flattening to a certain level in nested structures. Default is 1.")
     private String levelToLimitFlattening;
 
     @Macro
@@ -270,6 +324,12 @@ public final class Flatten extends Transform<StructuredRecord, StructuredRecord>
       "This can be used to fix conflicts that can occur if fields have the same name after flattening. " +
       "The prefix is added as <prefix>_<flattened_name >")
     private String prefix;
+
+    public Config(String fieldsToFlatten, @Nullable String levelToLimitFlattening, @Nullable String prefix) {
+      this.fieldsToFlatten = fieldsToFlatten;
+      this.levelToLimitFlattening = levelToLimitFlattening;
+      this.prefix = prefix;
+    }
 
     public List<String> getFieldsToFlatten() {
       if (containsMacro(PROPERTY_NAME_FIELDS_TO_MAP) || Strings.isNullOrEmpty(fieldsToFlatten)) {
