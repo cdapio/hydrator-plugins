@@ -22,6 +22,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
 import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.format.StructuredRecord;
@@ -53,10 +54,12 @@ public class CreateRecordTransform extends Transform<StructuredRecord, Structure
     public static final String FIELD_MAPPING = "fieldMapping";
     public static final String INCLUDE_NON_MAPPED_FIELDS = "includeNonMappedFields";
 
+    @Macro
     @Description("Specifies the mapping for generating the hierarchy.")
     @Name(FIELD_MAPPING)
     String fieldMapping;
 
+    @Macro
     @Description("Specifies whether the fields in the input schema that are not part of the mapping, " +
       "should be carried over as-is.")
     @Name(INCLUDE_NON_MAPPED_FIELDS)
@@ -95,11 +98,16 @@ public class CreateRecordTransform extends Transform<StructuredRecord, Structure
       }
       collector.getOrThrowException();
     }
+
+    public boolean hasFieldsWithMacro() {
+      return containsMacro(FIELD_MAPPING) || containsMacro(INCLUDE_NON_MAPPED_FIELDS);
+    }
   }
 
   private final CreateRecordTransformConfig createRecordTransformConfig;
   private static final Gson GSON = new Gson();
   private JsonElement fieldMappingJson = null;
+  private Schema outputSchema = null;
 
   public CreateRecordTransform(CreateRecordTransformConfig createRecordTransformConfig) {
     this.createRecordTransformConfig = createRecordTransformConfig;
@@ -110,12 +118,13 @@ public class CreateRecordTransform extends Transform<StructuredRecord, Structure
     super.configurePipeline(pipelineConfigurer);
     FailureCollector failureCollector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
     createRecordTransformConfig.validate(failureCollector);
-    Schema outputSchema = null;
-    if (pipelineConfigurer.getStageConfigurer().getInputSchema() != null) {
+    if (pipelineConfigurer.getStageConfigurer().getInputSchema() != null &&
+      !createRecordTransformConfig.hasFieldsWithMacro()) {
       //validate the input schema and get the output schema for it
-      outputSchema = getOutputSchema(pipelineConfigurer.getStageConfigurer().getInputSchema(), failureCollector);
+      final Schema outputSchema = getOutputSchema(pipelineConfigurer.getStageConfigurer().getInputSchema(),
+                                                  failureCollector);
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
     }
-    pipelineConfigurer.getStageConfigurer().setOutputSchema(outputSchema);
   }
 
   @Override
@@ -123,14 +132,16 @@ public class CreateRecordTransform extends Transform<StructuredRecord, Structure
     super.initialize(context);
     FailureCollector failureCollector = context.getFailureCollector();
     createRecordTransformConfig.validate(failureCollector);
+    outputSchema = context.getOutputSchema();
+    if (outputSchema == null && context.getInputSchema() != null) {
+      outputSchema = getOutputSchema(context.getInputSchema(), context.getFailureCollector());
+    }
   }
 
   @Override
   public void transform(StructuredRecord structuredRecord, Emitter<StructuredRecord> emitter) throws Exception {
-    final Schema outputSchema = getContext().getOutputSchema();
     if (outputSchema == null) {
-      getContext().getFailureCollector().addFailure("Output schema missing.",
-                                                    "Please provide output schema.");
+      outputSchema = getOutputSchema(structuredRecord.getSchema(), getContext().getFailureCollector());
     }
     StructuredRecord.Builder builder = StructuredRecord.builder(outputSchema);
     if (fieldMappingJson == null) {
@@ -141,7 +152,7 @@ public class CreateRecordTransform extends Transform<StructuredRecord, Structure
   }
 
   /**
-   * Mpa input data fields to output data fields
+   * Map input data fields to output data fields
    *
    * @param builder          {@link StructuredRecord.Builder} builder set the data for
    * @param oldRecord        {@link StructuredRecord} existing record to read from
@@ -177,6 +188,13 @@ public class CreateRecordTransform extends Transform<StructuredRecord, Structure
     for (Map.Entry<String, JsonElement> treeNode : fieldMappingJson.getAsJsonObject().entrySet()) {
       if (treeNode.getValue().isJsonArray()) {
         final Schema.Field field = getField(inputSchema, treeNode.getValue().getAsJsonArray());
+        if (field == null) {
+          collector.addFailure(String.format("Field with name %s not found in input schema.",
+                                             treeNode.getValue()),
+                               "Please make sure mapped fields are available in input schema.")
+            .withConfigProperty(CreateRecordTransformConfig.FIELD_MAPPING);
+          collector.getOrThrowException();
+        }
         fieldList.add(Schema.Field.of(treeNode.getKey(), field.getSchema()));
       }
       if (treeNode.getValue().isJsonObject()) {
@@ -299,10 +317,14 @@ public class CreateRecordTransform extends Transform<StructuredRecord, Structure
    */
   private Schema getOutputSchema(Schema inputSchema, FailureCollector collector) {
     final JsonElement fieldMappingJson = getFinalFieldMappingJson(inputSchema);
-
-    if (fieldMappingJson.isJsonNull()) {
-      collector.addFailure("Empty mapping field.", "Please provide valid mapping field.");
+    if (inputSchema == null) {
+      collector.addFailure("Missing input schema.", "Please provide valid input schema.");
     }
+    if (fieldMappingJson.isJsonNull()) {
+      collector.addFailure("Empty mapping field.", "Please provide valid mapping field.")
+        .withConfigProperty(CreateRecordTransformConfig.FIELD_MAPPING);
+    }
+    collector.getOrThrowException();
     final Schema schema = generateFields(inputSchema, collector, "record",
                                          fieldMappingJson.getAsJsonObject());
     return schema;

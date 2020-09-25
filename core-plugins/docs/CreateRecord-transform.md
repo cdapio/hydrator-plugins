@@ -29,7 +29,25 @@ Let's say we have two following data structure:
 | amount                | Double       |
 | order_description     | String       |
 
-We want to create Target model will look like this:
+By setting the following mapping:
+
+```
+{
+	"id": ["customer_id"],
+	"customer": {
+		"name": ["customer_name"],
+		"phone": ["customer_phone"]
+	},
+	"orders": {
+		"id": ["order_id"],
+		"product_id": ["product_id"],
+		"amount": ["amount"],
+		"description": ["order_description"]
+	}
+}
+```
+
+It will create target model will look like this:
 
 | field                | type         |
 | -------------------- | ------------ |
