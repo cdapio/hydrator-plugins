@@ -35,6 +35,7 @@ import io.cdap.cdap.etl.api.batch.BatchJoinerRuntimeContext;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -43,15 +44,19 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
- * Performs lookup and matches dataset records.
+ * Performs a lookup of a given field within a lookup dataset by matching it with input dataset and includes the
+ * field, and it's value in resulting dataset. The difference from joiner plugin is that this plugin returns only the
+ * first match.
  */
 @Plugin(type = BatchJoiner.PLUGIN_TYPE)
 @Name("Lookup")
-public class Lookup extends BatchJoiner<Object, StructuredRecord, StructuredRecord> {
+@Description("Performs a lookup of a given field within a lookup dataset by matching it with input dataset and " +
+  "includes the field, and it's value in resulting dataset. The difference from joiner plugin is that this plugin " +
+  "returns only the first match.")
+public class Lookup extends BatchJoiner<StructuredRecord, StructuredRecord, StructuredRecord> {
 
   private JoinConfig joinConfig;
-  private Set<Object> alreadyProcessed = new HashSet<>();
-  private ArrayList<Object> joinKeys = new ArrayList<>();
+  private final Set<Object> alreadyProcessed = new HashSet<>();
 
 
   @Override
@@ -59,7 +64,9 @@ public class Lookup extends BatchJoiner<Object, StructuredRecord, StructuredReco
     super.prepareRun(context);
     List<String> requiredInputs = new ArrayList<>();
     context.getInputSchemas().forEach((stageName, schema) -> {
-      requiredInputs.add(stageName);
+      if (!stageName.equals(config.getLookupDataset())) {
+        requiredInputs.add(stageName);
+      }
     });
     joinConfig = new JoinConfig(requiredInputs);
   }
@@ -72,23 +79,45 @@ public class Lookup extends BatchJoiner<Object, StructuredRecord, StructuredReco
       if (!stageName.equals(config.getLookupDataset())) {
         requiredInputs.add(stageName);
       }
-      joinKeys.add(stageName);
     });
     joinConfig = new JoinConfig(requiredInputs);
     context.getStageName();
   }
 
   @Override
-  public Object joinOn(String stageName, StructuredRecord structuredRecord) throws Exception {
+  public StructuredRecord joinOn(String stageName, StructuredRecord structuredRecord) throws Exception {
+    final Collection<StructuredRecord> joinKey = processJoinKeys(stageName, structuredRecord);
+    return joinKey.size() > 0 ? joinKey.iterator().next() : null;
+  }
+
+  /**
+   * Generates join key based on stage and provided config
+   * @param stageName name of the current stage
+   * @param structuredRecord current record being processed
+   * @return {@link StructuredRecord} containing join key value
+   */
+  public Collection<StructuredRecord> processJoinKeys(String stageName, StructuredRecord structuredRecord) {
+    Schema fieldSchema = null;
+    Object lookupValue = null;
     if (stageName.equals(config.getLookupDataset())) {
-      if (alreadyProcessed.contains(structuredRecord.get(config.getLookupKeyField()))) {
-        return null;
+      lookupValue = structuredRecord.get(config.getLookupKeyField());
+      fieldSchema = structuredRecord.getSchema().getField(config.getLookupKeyField()).getSchema();
+      if (alreadyProcessed.contains(lookupValue)) {
+        lookupValue = null;
+        if (!fieldSchema.isNullable()) {
+          fieldSchema = Schema.nullableOf(fieldSchema);
+        }
       }
       alreadyProcessed.add(structuredRecord.get(config.getLookupKeyField()));
-      return structuredRecord.get(config.getLookupKeyField());
-    } else {
-      return structuredRecord.get(config.getInputKeyField());
     }
+    if (fieldSchema == null) {
+      fieldSchema = structuredRecord.getSchema().getField(config.getInputKeyField()).getSchema();
+    }
+    StructuredRecord.Builder builder = StructuredRecord
+      .builder(Schema.recordOf("record", Schema.Field.of("id", fieldSchema)));
+    builder.set("id", stageName.equals(config.getLookupDataset()) ? lookupValue :
+      structuredRecord.get(config.getInputKeyField()));
+    return Collections.singletonList(builder.build());
   }
 
   @Override
@@ -97,7 +126,7 @@ public class Lookup extends BatchJoiner<Object, StructuredRecord, StructuredReco
   }
 
   @Override
-  public StructuredRecord merge(Object joinKey, Iterable<JoinElement<StructuredRecord>> iterable)
+  public StructuredRecord merge(StructuredRecord joinKey, Iterable<JoinElement<StructuredRecord>> iterable)
     throws Exception {
     StructuredRecord.Builder builder = StructuredRecord.builder(Schema.parseJson(config.schema));
     builder.set(config.getOutputField(), config.getDefaultValue());
@@ -116,9 +145,9 @@ public class Lookup extends BatchJoiner<Object, StructuredRecord, StructuredReco
   }
 
   @Override
-  public Collection<Object> getJoinKeys(String stageName, StructuredRecord structuredRecord)
+  public Collection<StructuredRecord> getJoinKeys(String stageName, StructuredRecord structuredRecord)
     throws Exception {
-    return joinKeys;
+    return processJoinKeys(stageName, structuredRecord);
   }
 
   /**
@@ -159,6 +188,7 @@ public class Lookup extends BatchJoiner<Object, StructuredRecord, StructuredReco
       "output schema, and will contain the value of the Lookup Value Field.")
     @Name(OUTPUT_FIELD)
     @Macro
+    @Nullable
     private final String outputField;
 
     @Description("Default value to use when there is no match in the lookup source. Defaults to null.")
@@ -173,7 +203,7 @@ public class Lookup extends BatchJoiner<Object, StructuredRecord, StructuredReco
     private String schema;
 
     public Config(String lookupDataset, String inputKeyField, String lookupKeyField, String lookupValueField,
-                  String outputField, @Nullable String defaultValue, @Nullable String schema) {
+                  @Nullable String outputField, @Nullable String defaultValue, @Nullable String schema) {
       this.lookupDataset = lookupDataset;
       this.inputKeyField = inputKeyField;
       this.lookupKeyField = lookupKeyField;
@@ -200,7 +230,7 @@ public class Lookup extends BatchJoiner<Object, StructuredRecord, StructuredReco
     }
 
     public String getOutputField() {
-      return outputField;
+      return Strings.isNullOrEmpty(outputField) ? getLookupValueField() : outputField;
     }
 
     @Nullable
@@ -243,10 +273,6 @@ public class Lookup extends BatchJoiner<Object, StructuredRecord, StructuredReco
         failureCollector.addFailure("Missing lookup value field.", "Lookup value field must be provided.")
           .withConfigProperty(LOOKUP_VALUE_FIELD);
       }
-      if (!containsMacro(OUTPUT_FIELD) && Strings.isNullOrEmpty(outputField)) {
-        failureCollector.addFailure("Missing output field.", "Output field must be provided.")
-          .withConfigProperty(OUTPUT_FIELD);
-      }
     }
   }
 
@@ -256,24 +282,31 @@ public class Lookup extends BatchJoiner<Object, StructuredRecord, StructuredReco
     this.config = config;
   }
 
+  /**
+   * Generates schema based on input schemas and provided configuration
+   * @param inputSchemas map containing input stage name and schema
+   * @param collector {@link FailureCollector}
+   * @return {@link Schema} generated schema
+   */
   private Schema generateOutputSchema(Map<String, Schema> inputSchemas, FailureCollector collector) {
     final Set<String> schemas = inputSchemas.keySet();
     if (schemas.size() == 0) {
       collector.addFailure("Missing input schema.", "Please connect valid input datasets.");
     }
-    Schema lookupSchema = inputSchemas.getOrDefault(config.lookupDataset, null);
+    Schema lookupSchema = inputSchemas.getOrDefault(config.getLookupDataset(), null);
     Schema inputSchema = null;
     if (lookupSchema == null) {
-      collector.addFailure("Lookup dataset with name not found.", "Please provide valid name for lookup dataset.");
+      collector.addFailure("Lookup dataset with name not found.",
+                           "Please provide valid name for lookup dataset.");
     }
     for (String schemaName : schemas) {
-      if (!schemaName.equals(config.lookupDataset)) {
+      if (!schemaName.equals(config.getLookupDataset())) {
         inputSchema = inputSchemas.getOrDefault(schemaName, null);
       }
     }
     List<Schema.Field> fields = new ArrayList<>(inputSchema.getFields());
-    final Schema.Field lookupField = lookupSchema.getField(config.lookupValueField);
-    fields.add(Schema.Field.of(config.outputField, lookupField.getSchema().isNullable() ? lookupField.getSchema()
+    final Schema.Field lookupField = lookupSchema.getField(config.getLookupValueField());
+    fields.add(Schema.Field.of(config.getOutputField(), lookupField.getSchema().isNullable() ? lookupField.getSchema()
       : Schema.nullableOf(lookupField.getSchema())));
     return Schema.recordOf("join.output", fields);
   }
@@ -298,7 +331,11 @@ public class Lookup extends BatchJoiner<Object, StructuredRecord, StructuredReco
       }
       collector.getOrThrowException();
     }
-    if (!inputSchemas.keySet().contains(config.lookupDataset)) {
+    // one or both of the input schemas contain macro
+    if (inputSchemas.values().contains(null)) {
+      return;
+    }
+    if (!inputSchemas.containsKey(config.lookupDataset)) {
       collector.addFailure("Missing lookup dataset.",
                            "Lookup dataset name needs to match one of the input datasets.")
         .withConfigProperty(config.lookupDataset);

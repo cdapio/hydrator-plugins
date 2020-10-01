@@ -3,7 +3,8 @@
 Description
 ----------- 
 Performs a lookup of a given field within a lookup dataset by matching it with input dataset and includes the 
-field, and it's value in resulting dataset.
+field, and it's value in resulting dataset. The difference from joiner plugin is that this plugin returns only 
+the first match.
 
 
 Use Case
@@ -46,6 +47,14 @@ lookup dataset which leaves customer as input dataset.
 |id  |customer_id |phone_number |
 |1   |1           | 555-555-555 |
 |2   |1           | 333-333-333 |
+
+Set input key field as `customer_id`
+
+Set lookup key field as `customer_id`
+
+Set lookup value field as `phone_number`
+
+Set output field as `phone`
 
 The output record will have the lookup value field which in our case is phone_number aliased as phone
 
