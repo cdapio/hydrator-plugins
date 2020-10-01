@@ -16,7 +16,6 @@
 
 package io.cdap.plugin.format.blob.input;
 
-import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
@@ -162,7 +161,7 @@ public class BlobInputFormatProvider extends PathTrackingInputFormatProvider<Blo
       if (containsMacro(NAME_SCHEMA)) {
         return null;
       }
-      if (Strings.isNullOrEmpty(schema)) {
+      if (schema == null) {
         return getDefaultSchema();
       }
       try {
