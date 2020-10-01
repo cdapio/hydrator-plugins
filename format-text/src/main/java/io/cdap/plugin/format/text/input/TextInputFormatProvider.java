@@ -16,7 +16,6 @@
 
 package io.cdap.plugin.format.text.input;
 
-import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
@@ -265,7 +264,7 @@ public class TextInputFormatProvider extends PathTrackingInputFormatProvider<Tex
       if (containsMacro(NAME_SCHEMA)) {
         return null;
       }
-      if (Strings.isNullOrEmpty(schema)) {
+      if (schema == null) {
         return getDefaultSchema(pathField);
       }
       try {

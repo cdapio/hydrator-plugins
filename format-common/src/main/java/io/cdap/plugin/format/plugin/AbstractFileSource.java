@@ -16,7 +16,6 @@
 
 package io.cdap.plugin.format.plugin;
 
-import com.google.gson.Gson;
 import io.cdap.cdap.api.data.batch.Input;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
@@ -24,7 +23,6 @@ import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.api.plugin.InvalidPluginConfigException;
 import io.cdap.cdap.api.plugin.InvalidPluginProperty;
 import io.cdap.cdap.api.plugin.PluginConfig;
-import io.cdap.cdap.api.plugin.PluginProperties;
 import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
@@ -74,9 +72,7 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
   extends BatchSource<NullWritable, StructuredRecord, StructuredRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(AbstractFileSource.class);
   private static final String NAME_FORMAT = "format";
-  private static final String FILE_SYSTEM_PROPERTIES = "fileSystemProperties";
   private final T config;
-  private static final Gson GSON = new Gson();
 
   protected AbstractFileSource(T config) {
     this.config = config;
@@ -108,16 +104,9 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
 
     FileFormat fileFormat = config.getFormat();
     Schema schema = null;
-
-    // Include source file system properties for schema auto detection
-    final PluginProperties.Builder builder = PluginProperties.builder();
-    builder.addAll(config.getRawProperties().getProperties());
-    builder.add(FILE_SYSTEM_PROPERTIES, GSON.toJson(getFileSystemProperties(null)));
-    final PluginProperties pluginProperties = builder.build();
-
     ValidatingInputFormat validatingInputFormat =
       pipelineConfigurer.usePlugin(ValidatingInputFormat.PLUGIN_TYPE, fileFormat.name().toLowerCase(),
-                                   fileFormat.name().toLowerCase(), pluginProperties);
+                                   fileFormat.name().toLowerCase(), config.getRawProperties());
     FormatContext context = new FormatContext(collector, null);
     validateInputFormatProvider(context, fileFormat, validatingInputFormat);
 

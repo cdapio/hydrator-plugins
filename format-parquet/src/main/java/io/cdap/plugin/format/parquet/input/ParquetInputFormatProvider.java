@@ -16,28 +16,16 @@
 
 package io.cdap.plugin.format.parquet.input;
 
-import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
-import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginClass;
-import io.cdap.cdap.etl.api.validation.FormatContext;
 import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
-import io.cdap.plugin.common.batch.JobUtils;
 import io.cdap.plugin.format.input.PathTrackingConfig;
 import io.cdap.plugin.format.input.PathTrackingInputFormatProvider;
-import org.apache.avro.generic.GenericData;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.mapreduce.Job;
-import org.apache.parquet.avro.AvroParquetReader;
-import org.apache.parquet.hadoop.ParquetReader;
 
-import java.io.IOException;
 import java.util.Map;
-import javax.annotation.Nullable;
 
 /**
  * Provides and sets up configuration for an parquet input format.
@@ -45,14 +33,14 @@ import javax.annotation.Nullable;
 @Plugin(type = ValidatingInputFormat.PLUGIN_TYPE)
 @Name(ParquetInputFormatProvider.NAME)
 @Description(ParquetInputFormatProvider.DESC)
-public class ParquetInputFormatProvider extends PathTrackingInputFormatProvider<ParquetInputFormatProvider.Conf> {
+public class ParquetInputFormatProvider extends PathTrackingInputFormatProvider<PathTrackingConfig> {
   static final String NAME = "parquet";
   static final String DESC = "Plugin for reading files in text format.";
   public static final PluginClass PLUGIN_CLASS =
     new PluginClass(ValidatingInputFormat.PLUGIN_TYPE, NAME, DESC, ParquetInputFormatProvider.class.getName(),
                     "conf", PathTrackingConfig.FIELDS);
 
-  public ParquetInputFormatProvider(ParquetInputFormatProvider.Conf conf) {
+  public ParquetInputFormatProvider(PathTrackingConfig conf) {
     super(conf);
   }
 
@@ -67,60 +55,5 @@ public class ParquetInputFormatProvider extends PathTrackingInputFormatProvider<
     if (schema != null) {
       properties.put("parquet.avro.read.schema", schema.toString());
     }
-  }
-
-  @Nullable
-  @Override
-  public Schema getSchema(FormatContext context) {
-    if (conf.containsMacro(PathTrackingConfig.NAME_SCHEMA) || !Strings.isNullOrEmpty(conf.schema)) {
-      return super.getSchema(context);
-    }
-    try {
-      return getDefaultSchema(context);
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Invalid schema: " + e.getMessage(), e);
-    }
-  }
-
-  /**
-   * Extract schema from file
-   *
-   * @param context {@link FormatContext}
-   * @return {@link Schema}
-   * @throws IOException raised when error occurs during schema extraction
-   */
-  public Schema getDefaultSchema(FormatContext context) throws IOException {
-    String filePath = conf.getProperties().getProperties().getOrDefault("path", null);
-    ParquetReader reader = null;
-    try {
-      Job job = JobUtils.createInstance();
-      Configuration hconf = job.getConfiguration();
-      // set entries here, before FileSystem is used
-      for (Map.Entry<String, String> entry : conf.getFileSystemProperties().entrySet()) {
-        hconf.set(entry.getKey(), entry.getValue());
-      }
-      final Path file = conf.getFilePathForSchemaGeneration(filePath, "parquet", hconf);
-      reader = AvroParquetReader.builder(file).build();
-      GenericData.Record record = (GenericData.Record) reader.read();
-      return Schema.parseJson(record.getSchema().toString());
-    } catch (IOException e) {
-      context.getFailureCollector().addFailure("Schema error", e.getMessage());
-    } finally {
-      if (reader != null) {
-        reader.close();
-      }
-    }
-    return null;
-  }
-
-  /**
-   * Common config for Parquet format
-   */
-  public static class Conf extends PathTrackingConfig {
-
-    @Macro
-    @Nullable
-    @Description(NAME_SCHEMA)
-    public String schema;
   }
 }
