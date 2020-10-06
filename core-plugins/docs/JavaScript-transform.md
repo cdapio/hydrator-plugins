@@ -7,6 +7,8 @@ Executes user-provided JavaScript that transforms one record into zero or more r
 Input records are converted into JSON objects which can be directly accessed in
 JavaScript. The transform expects to receive a JSON object as input, which it can
 process and emit zero or more records or emit error using the provided emitter object.
+Currently, JDK 8's Nashorn JavaScript engine is used to run the user's code which
+supports ES5 syntax.
 
 
 Use Case
