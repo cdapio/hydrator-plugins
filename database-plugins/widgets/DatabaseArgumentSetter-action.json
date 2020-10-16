@@ -1,0 +1,95 @@
+{
+  "metadata": {
+    "spec-version": "1.5"
+  },
+  "display-name": "Database Argument Setter",
+  "configuration-groups": [
+    {
+      "label": "Connection",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Plugin Name",
+          "name": "jdbcPluginName"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Plugin Type",
+          "name": "jdbcPluginType",
+          "widget-attributes": {
+            "default": "jdbc"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Connection String",
+          "name": "connectionString"
+        }
+      ]
+    },
+    {
+      "label": "Credentials",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Username",
+          "name": "user"
+        },
+        {
+          "widget-type": "password",
+          "label": "Password",
+          "name": "password"
+        }
+      ]
+    },
+    {
+      "label": "Configuration",
+      "properties": [
+        {
+          "widget-type": "text",
+          "label": "Database",
+          "name": "databaseName"
+        },
+        {
+          "widget-type": "text",
+          "label": "Table",
+          "name": "tableName"
+        },
+        {
+          "widget-type": "keyvalue",
+          "label": "Argument Selection Conditions",
+          "name": "argumentSelectionConditions",
+          "widget-attributes": {
+            "showDelimiter": "false",
+            "key-placeholder": "Key",
+            "value-placeholder": "Value",
+            "kv-delimiter" : "=",
+            "delimiter" : ";"
+          }
+        },
+        {
+          "widget-type": "text",
+          "label": "Arguments column",
+          "name": "argumentsColumns"
+        }
+      ]
+    },
+    {
+      "label": "Advanced",
+      "properties": [
+        {
+          "widget-type": "keyvalue",
+          "label": "Connection Arguments",
+          "name": "connectionArguments",
+          "widget-attributes": {
+            "showDelimiter": "false",
+            "key-placeholder": "Key",
+            "value-placeholder": "Value",
+            "kv-delimiter": "=",
+            "delimiter": ";"
+          }
+        }
+      ]
+    }
+  ]
+}

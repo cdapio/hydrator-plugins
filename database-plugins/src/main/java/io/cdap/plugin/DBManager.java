@@ -37,10 +37,10 @@ import javax.annotation.Nullable;
  */
 public class DBManager implements Destroyable {
   private static final Logger LOG = LoggerFactory.getLogger(DBManager.class);
-  private final ConnectionConfig config;
+  private final BaseConnectionConfig config;
   private DriverCleanup driverCleanup;
 
-  public DBManager(ConnectionConfig config) {
+  public DBManager(BaseConnectionConfig config) {
     this.config = config;
   }
 
