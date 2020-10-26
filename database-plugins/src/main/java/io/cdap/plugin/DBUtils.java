@@ -232,13 +232,12 @@ public final class DBUtils {
         break;
 
       case Types.NUMERIC:
-//         if there are no digits after the point, use integer types
+      case Types.DECIMAL:
+        // if there are no digits after the point, use integer types
         type = scale != 0 ? Schema.Type.DOUBLE :
           // with 10 digits we can represent 2^32 and LONG is required
           precision > 9 ? Schema.Type.LONG : Schema.Type.INT;
         break;
-      case Types.DECIMAL:
-        return Schema.decimalOf(precision, scale);
 
       case Types.DOUBLE:
         type = Schema.Type.DOUBLE;
@@ -283,18 +282,17 @@ public final class DBUtils {
         case Types.TINYINT:
           return ((Number) original).intValue();
         case Types.NUMERIC:
-          BigDecimal decimal = (BigDecimal) original;
-        if (scale != 0) {
-          // if there are digits after the point, use double types
-          return decimal.doubleValue();
-        } else if (precision > 9) {
-          // with 10 digits we can represent 2^32 and LONG is required
-          return decimal.longValue();
-        } else {
-          return decimal.intValue();
-        }
         case Types.DECIMAL:
-          return original;
+          BigDecimal decimal = (BigDecimal) original;
+          if (scale != 0) {
+            // if there are digits after the point, use double types
+            return decimal.doubleValue();
+          } else if (precision > 9) {
+            // with 10 digits we can represent 2^32 and LONG is required
+            return decimal.longValue();
+          } else {
+            return decimal.intValue();
+          }
         case Types.DATE:
           return resultSet.getDate(fieldName);
         case Types.TIME:
