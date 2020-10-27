@@ -87,7 +87,14 @@ public class UnionSplitter extends SplitterTransform<StructuredRecord, Structure
     }
 
     Object val = record.get(conf.unionField);
+    fieldSchema = fieldSchema.isNullable() ? fieldSchema.getNonNullable() : fieldSchema;
+
     Schema valSchema;
+
+    Schema schema = fieldSchema.isNullable() ? fieldSchema.getNonNullable() : fieldSchema;
+    //TODO: logical type always will be null
+    Schema.LogicalType logicalType = schema.getLogicalType();
+
     if (val == null) {
       valSchema = Schema.of(Schema.Type.NULL);
     } else if (val instanceof Boolean) {
@@ -96,8 +103,24 @@ public class UnionSplitter extends SplitterTransform<StructuredRecord, Structure
       valSchema = Schema.of(Schema.Type.BYTES);
     } else if (val instanceof Integer) {
       valSchema = Schema.of(Schema.Type.INT);
+      //TODO: logicalType always is null
+      if (logicalType == Schema.LogicalType.DATE) {
+        valSchema = Schema.of(Schema.LogicalType.DATE);
+      } else if (logicalType == Schema.LogicalType.TIME_MILLIS) {
+        valSchema = Schema.of(Schema.LogicalType.DATE);
+      }
+
     } else if (val instanceof Long) {
       valSchema = Schema.of(Schema.Type.LONG);
+
+      //TODO: logicalType always is null
+      if (logicalType == Schema.LogicalType.TIMESTAMP_MILLIS) {
+        valSchema = Schema.of(Schema.LogicalType.TIMESTAMP_MILLIS);
+      } else if (logicalType == Schema.LogicalType.TIMESTAMP_MICROS) {
+        valSchema = Schema.of(Schema.LogicalType.TIMESTAMP_MICROS);
+      } else if (logicalType == Schema.LogicalType.TIME_MICROS) {
+        valSchema = Schema.of(Schema.LogicalType.TIME_MICROS);
+      }
     } else if (val instanceof Float) {
       valSchema = Schema.of(Schema.Type.FLOAT);
     } else if (val instanceof Double) {
@@ -214,6 +237,9 @@ public class UnionSplitter extends SplitterTransform<StructuredRecord, Structure
 
       String port = type == Schema.Type.RECORD ? schema.getRecordName() : type.name().toLowerCase();
       outputFields.set(unionIndex, Schema.Field.of(unionField, modifySchema ? schema : unionSchema));
+      if (schema.getLogicalType() != null) {
+        port = schema.getLogicalType().name().toLowerCase();
+      }
       outputPortSchemas.put(port, Schema.recordOf(inputSchema.getRecordName() + "." + port, outputFields));
     }
 

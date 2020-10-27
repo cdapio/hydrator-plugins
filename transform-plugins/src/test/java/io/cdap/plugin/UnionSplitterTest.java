@@ -27,6 +27,7 @@ import io.cdap.cdap.etl.mock.validation.MockFailureCollector;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,6 +91,7 @@ public class UnionSplitterTest {
                                                                              Schema.of(Schema.Type.FLOAT),
                                                                              Schema.of(Schema.Type.DOUBLE),
                                                                              Schema.of(Schema.Type.STRING),
+                                                                             Schema.of(Schema.LogicalType.DATE),
                                                                              rec1Schema, rec2Schema)));
 
     // test with schema modification
@@ -118,6 +120,9 @@ public class UnionSplitterTest {
     expected.put("string", Schema.recordOf("union.string",
                                            Schema.Field.of("a", Schema.of(Schema.Type.LONG)),
                                            Schema.Field.of("b", Schema.of(Schema.Type.STRING))));
+    expected.put("date", Schema.recordOf("union.date",
+                                         Schema.Field.of("a", Schema.of(Schema.Type.LONG)),
+                                         Schema.Field.of("b", Schema.of(Schema.LogicalType.DATE))));
     expected.put("rec1", Schema.recordOf("union.rec1",
                                          Schema.Field.of("a", Schema.of(Schema.Type.LONG)),
                                          Schema.Field.of("b", rec1Schema)));
@@ -139,6 +144,7 @@ public class UnionSplitterTest {
     expected.put("float", changeName(inputSchema, "union.float"));
     expected.put("double", changeName(inputSchema, "union.double"));
     expected.put("string", changeName(inputSchema, "union.string"));
+    expected.put("date", changeName(inputSchema, "union.date"));
     expected.put("rec1", changeName(inputSchema, "union.rec1"));
     expected.put("rec2", changeName(inputSchema, "union.rec2"));
     actual = UnionSplitter.getOutputSchemas(inputSchema, "b", false, collector);
@@ -173,6 +179,7 @@ public class UnionSplitterTest {
                                           Schema.of(Schema.Type.FLOAT),
                                           Schema.of(Schema.Type.DOUBLE),
                                           Schema.of(Schema.Type.STRING),
+                                          Schema.of(Schema.LogicalType.DATE),
                                           rec1Schema, rec2Schema)));
 
     Schema nullSchema = Schema.recordOf("union.null",
@@ -196,6 +203,9 @@ public class UnionSplitterTest {
     Schema stringSchema = Schema.recordOf("union.string",
                                           Schema.Field.of("a", Schema.of(Schema.Type.LONG)),
                                           Schema.Field.of("b", Schema.of(Schema.Type.STRING)));
+    Schema dateSchema = Schema.recordOf("union.date",
+                                        Schema.Field.of("a", Schema.of(Schema.Type.LONG)),
+                                        Schema.Field.of("b", Schema.of(Schema.LogicalType.DATE)));
     Schema withRec1Schema = Schema.recordOf("union.rec1",
                                             Schema.Field.of("a", Schema.of(Schema.Type.LONG)),
                                             Schema.Field.of("b", rec1Schema));
@@ -208,6 +218,13 @@ public class UnionSplitterTest {
     unionSplitter.initialize(context);
 
     MockMultiOutputEmitter<StructuredRecord> mockEmitter = new MockMultiOutputEmitter<>();
+
+
+    unionSplitter.transform(StructuredRecord.builder(inputSchema)
+                              .set("a", 0L)
+                              .setDate("b", LocalDate.of(2020, 8, 8))
+                              .build(),
+                            mockEmitter);
     unionSplitter.transform(StructuredRecord.builder(inputSchema)
                               .set("a", 0L)
                               .set("b", null)
@@ -287,6 +304,10 @@ public class UnionSplitterTest {
     expected.put("string", ImmutableList.of(StructuredRecord.builder(stringSchema)
                                             .set("a", 0L)
                                             .set("b", "5")
+                                            .build()));
+    expected.put("date", ImmutableList.of(StructuredRecord.builder(dateSchema)
+                                            .set("a", 0L)
+                                            .set("b", LocalDate.of(2020, 8, 8))
                                             .build()));
     expected.put("rec1", ImmutableList.of(StructuredRecord.builder(withRec1Schema)
                                             .set("a", 0L)
