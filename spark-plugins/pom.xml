@@ -193,6 +193,10 @@
           <instructions>
             <_exportcontents>
               io.cdap.plugin.spark.*;
+              <!--
+                This is workaround for CDAP-17374, the http config class needs to be exported for HTTPPollerSource
+              -->
+              io.cdap.plugin.common.http.*;
               org.apache.spark.streaming.scheduler.*;
               org.apache.spark.streaming.twitter.*;
               twitter4j.*
