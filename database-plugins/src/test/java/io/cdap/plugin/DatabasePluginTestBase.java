@@ -190,7 +190,11 @@ public class DatabasePluginTestBase extends HydratorTestBase {
                      "CLOB_COL CLOB(100)," +
                      "CHAR_COL CHAR(100)," +
                      "LONGVARCHAR_COL LONGVARCHAR," +
-                     "VARBINARY_COL VARBINARY(20)" +
+                     "VARBINARY_COL VARBINARY(20)," +
+                     "DECIMAL_INT DECIMAL(8, 0)," +
+                     "DECIMAL_LONG DECIMAL(11, 0)," +
+                     "NUMERIC_INT NUMERIC(8, 0)," +
+                     "NUMERIC_LONG NUMERIC(11, 0)" +
                      ")");
       stmt.execute("CREATE TABLE \"MY_DEST_TABLE\" AS (" +
                      "SELECT * FROM \"my_table\") WITH DATA");
@@ -203,10 +207,12 @@ public class DatabasePluginTestBase extends HydratorTestBase {
     try (
       PreparedStatement pStmt1 =
         conn.prepareStatement("INSERT INTO \"my_table\" " +
-                                "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                                "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " +
+                                "?, ?)");
       PreparedStatement pStmt2 =
         conn.prepareStatement("INSERT INTO \"your_table\" " +
-                                "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+                                "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " +
+                                "?, ?)")) {
       // insert the same data into both tables: my_table and your_table
       final PreparedStatement[] preparedStatements = {pStmt1, pStmt2};
       for (PreparedStatement pStmt : preparedStatements) {
@@ -239,6 +245,10 @@ public class DatabasePluginTestBase extends HydratorTestBase {
           pStmt.setString(21, "char" + i);
           pStmt.setString(22, "longvarchar" + i);
           pStmt.setBytes(23, name.getBytes(Charsets.UTF_8));
+          pStmt.setInt(24, 123 + i);
+          pStmt.setLong(25, 999999999L + i);
+          pStmt.setInt(26, 123 + i);
+          pStmt.setLong(27, 999999999L + i);
           pStmt.executeUpdate();
         }
       }
