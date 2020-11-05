@@ -17,6 +17,7 @@
 package io.cdap.plugin;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import io.cdap.cdap.api.common.Bytes;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
@@ -28,6 +29,7 @@ import org.apache.hadoop.mapreduce.lib.db.DBWritable;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -99,7 +101,18 @@ public class DBRecord implements Writable, DBWritable, Configurable {
    */
   public void readFields(ResultSet resultSet) throws SQLException {
     ResultSetMetaData metadata = resultSet.getMetaData();
-    List<Schema.Field> originalSchema = DBUtils.getOriginalSchema(resultSet);
+    String outputSchemaString = conf.get(DBUtils.OVERRIDE_SCHEMA, null);
+    Schema outputSchema = null;
+
+    if (!Strings.isNullOrEmpty(outputSchemaString)) {
+      try {
+        outputSchema = Schema.parseJson(outputSchemaString);
+      } catch (IOException e) {
+        throw new IllegalArgumentException(String.format("Unable to parse schema string '%s'.", outputSchemaString), e);
+      }
+    }
+
+    List<Schema.Field> originalSchema = DBUtils.getOriginalSchema(resultSet, outputSchema);
     String patternToReplace = conf.get(DBUtils.PATTERN_TO_REPLACE);
     String replaceWith = conf.get(DBUtils.REPLACE_WITH);
 
@@ -124,16 +137,22 @@ public class DBRecord implements Writable, DBWritable, Configurable {
       int sqlType = metadata.getColumnType(i + 1);
       int sqlPrecision = metadata.getPrecision(i + 1);
       int sqlScale = metadata.getScale(i + 1);
+
+      Schema outputFieldSchema = field.getSchema();
+      outputFieldSchema = outputFieldSchema.isNullable() ? outputFieldSchema.getNonNullable() : outputFieldSchema;
       setField(resultSet, recordBuilder, field, sqlType, sqlPrecision, sqlScale, nameMap.getOrDefault(field.getName(),
-                                                                                                      field.getName()));
+                                                                                                      field.getName()),
+               outputFieldSchema);
     }
     record = recordBuilder.build();
   }
 
   private void setField(ResultSet resultSet, StructuredRecord.Builder recordBuilder, Schema.Field field, int sqlType,
-                        int sqlPrecision, int sqlScale, String originalName) throws SQLException {
+                        int sqlPrecision, int sqlScale, String originalName, Schema outputFieldSchema)
+    throws SQLException {
     // original name has to be used to get result from result set
-    Object o = DBUtils.transformValue(sqlType, sqlPrecision, sqlScale, resultSet, originalName);
+    Object o = DBUtils.transformValue(sqlType, sqlPrecision, sqlScale, resultSet, originalName,
+                                      outputFieldSchema);
     if (o instanceof Date) {
       recordBuilder.setDate(field.getName(), ((Date) o).toLocalDate());
     } else if (o instanceof Time) {
@@ -141,6 +160,9 @@ public class DBRecord implements Writable, DBWritable, Configurable {
     } else if (o instanceof Timestamp) {
       Instant instant = ((Timestamp) o).toInstant();
       recordBuilder.setTimestamp(field.getName(), instant.atZone(ZoneId.ofOffset("UTC", ZoneOffset.UTC)));
+    } else if (o instanceof BigDecimal) {
+      BigDecimal decimal = ((BigDecimal) o);
+      recordBuilder.setDecimal(field.getName(), decimal);
     } else {
       recordBuilder.set(field.getName(), o);
     }
