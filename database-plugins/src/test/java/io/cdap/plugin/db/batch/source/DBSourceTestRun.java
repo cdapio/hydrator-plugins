@@ -37,6 +37,8 @@ import io.cdap.plugin.common.Constants;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
 import java.nio.ByteBuffer;
 import java.sql.Date;
 import java.sql.Time;
@@ -149,10 +151,13 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     Assert.assertEquals(125.45, row2.get("FLOAT_COL"), 0.00001);
     Assert.assertEquals(124.45, row1.get("REAL_COL"), 0.00001);
     Assert.assertEquals(125.45, row2.get("REAL_COL"), 0.00001);
-    Assert.assertEquals(124.45, row1.get("NUMERIC_COL"), 0.000001);
-    Assert.assertEquals(125.45, row2.get("NUMERIC_COL"), 0.000001);
-    Assert.assertEquals(124.45, row1.get("DECIMAL_COL"), 0.000001);
-    Assert.assertNull(row2.get("DECIMAL_COL"));
+    Assert.assertEquals(new BigDecimal(124.45, new MathContext(5)).setScale(2),
+                        row1.getDecimal("NUMERIC_COL"));
+    Assert.assertEquals(new BigDecimal(125.45, new MathContext(5)).setScale(2),
+                        row2.getDecimal("NUMERIC_COL"));
+    Assert.assertEquals(new BigDecimal(124.45, new MathContext(5)).setScale(2),
+                        row1.getDecimal("DECIMAL_COL"));
+    Assert.assertNull(row2.getDecimal("DECIMAL_COL"));
     Assert.assertTrue(row1.get("BIT_COL"));
     Assert.assertFalse(row2.get("BIT_COL"));
     // Verify time columns
@@ -177,6 +182,80 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     Assert.assertEquals("user2", Bytes.toString(((ByteBuffer) row2.get("BLOB_COL")).array(), 0, 5));
     Assert.assertEquals(CLOB_DATA, row1.get("CLOB_COL"));
     Assert.assertEquals(CLOB_DATA, row2.get("CLOB_COL"));
+  }
+
+  @Test
+  public void testBackwardCompatibilityForSQLDataTypes() throws Exception {
+    String importQuery = "SELECT ID, NAME, DECIMAL_INT, DECIMAL_COL, DECIMAL_LONG, NUMERIC_INT, NUMERIC_COL," +
+      " NUMERIC_LONG FROM \"my_table\" WHERE ID < 3 AND $CONDITIONS";
+
+    String boundingQuery = "SELECT MIN(ID),MAX(ID) from \"my_table\"";
+    String splitBy = "ID";
+    ETLPlugin sourceConfig = new ETLPlugin(
+      "Database",
+      BatchSource.PLUGIN_TYPE,
+      ImmutableMap.<String, String>builder()
+        .put(DBConfig.CONNECTION_STRING, getConnectionURL())
+        .put(DBSource.DBSourceConfig.IMPORT_QUERY, importQuery)
+        .put(DBSource.DBSourceConfig.BOUNDING_QUERY, boundingQuery)
+        .put(DBSource.DBSourceConfig.SPLIT_BY, splitBy)
+        .put(DBConfig.JDBC_PLUGIN_NAME, "hypersql")
+        .put(Constants.Reference.REFERENCE_NAME, "DBSourceTestBackwardsCompatibility")
+        .put("schema", " {\n" +
+          "            \"type\": \"record\",\n" +
+          "            \"name\": \"etlSchemaBody\",\n" +
+          "            \"fields\": [\n" +
+          "                {\n" +
+          "                    \"name\": \"ID\",\n" +
+          "                    \"type\": \"int\"\n" +
+          "                },\n" +
+          "                {\n" +
+          "                    \"name\": \"NAME\",\n" +
+          "                    \"type\": \"string\"\n" +
+          "                },\n" +
+          "                {\n" +
+          "                    \"name\": \"DECIMAL_INT\",\n" +
+          "                    \"type\": \"int\"\n" +
+          "                },\n" +
+          "                 {\n" +
+          "                    \"name\": \"DECIMAL_COL\",\n" +
+          "                    \"type\": [ \"double\" , \"null\" ]\n" +
+          "                },\n" +
+          "                {\n" +
+          "                    \"name\": \"DECIMAL_LONG\",\n" +
+          "                    \"type\": \"long\"\n" +
+          "                },\n" +
+          "                {\n" +
+          "                    \"name\": \"NUMERIC_INT\",\n" +
+          "                    \"type\": \"int\"\n" +
+          "                },\n" +
+          "                {\n" +
+          "                    \"name\": \"NUMERIC_COL\",\n" +
+          "                    \"type\": [ \"double\" , \"null\" ]\n" +
+          "                },\n" +
+          "                {\n" +
+          "                    \"name\": \"NUMERIC_LONG\",\n" +
+          "                    \"type\": \"long\"\n" +
+          "                }\n" +
+          "            ]\n" +
+          "}")
+        .build(),
+      null
+    );
+    String outputDatasetName = "output-dbsourcetestcompatibility";
+    ETLPlugin sinkConfig = MockSink.getPlugin(outputDatasetName);
+    ApplicationManager appManager = deployETL(sourceConfig, sinkConfig, "testDBSourceCompatibility");
+    runETLOnce(appManager);
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> outputRecords = MockSink.readOutput(outputManager);
+    Assert.assertEquals(2, outputRecords.size());
+    String userid = outputRecords.get(0).get("NAME");
+    StructuredRecord row1 = "user1".equals(userid) ? outputRecords.get(0) : outputRecords.get(1);
+    StructuredRecord row2 = "user1".equals(userid) ? outputRecords.get(1) : outputRecords.get(0);
+    Assert.assertEquals(124, (int) row1.get("DECIMAL_INT"));
+    Assert.assertEquals(124.45, row1.get("DECIMAL_COL"), 0.000001);
+    Assert.assertNull(row2.get("DECIMAL_COL"));
+    Assert.assertEquals(1000000000, (long) row1.get("DECIMAL_LONG"));
   }
 
   @Test
@@ -218,7 +297,7 @@ public class DBSourceTestRun extends DatabasePluginTestBase {
     Assert.assertEquals(1, row1.<Integer>get("id").intValue());
     Assert.assertEquals(2, row2.<Integer>get("id").intValue());
   }
-  
+
   @Test
   public void testDbSourceMultipleTables() throws Exception {
     // have the same data in both tables ('\"my_table\"' and '\"your_table\"'), and select the ID and NAME fields from
