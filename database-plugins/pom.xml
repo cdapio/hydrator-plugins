@@ -41,6 +41,32 @@
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
     </dependency>
+    <dependency>
+      <groupId>mysql</groupId>
+      <artifactId>mysql-connector-java</artifactId>
+      <version>8.0.17</version>
+    </dependency>
+    <dependency>
+       <groupId>com.google.cloud.sql</groupId>
+       <artifactId>mysql-socket-factory-connector-j-8</artifactId>
+       <version>1.2.0</version>
+    </dependency>
+    <dependency>
+       <groupId>com.google.cloud.sql</groupId>
+       <artifactId>postgres-socket-factory</artifactId>
+       <version>1.2.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.cloud.sql</groupId>
+      <artifactId>cloud-sql-connector-jdbc-sqlserver</artifactId>
+      <version>1.2.0</version>
+    </dependency>
+    <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-core</artifactId>
+        <version>2.5.2</version>
+    </dependency>
+
 
     <!-- test dependencies -->
     <dependency>
@@ -67,15 +93,19 @@
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
-        <version>3.3.0</version>
+        <version>3.5.0</version>
         <extensions>true</extensions>
         <configuration>
           <instructions>
             <_exportcontents>
+              com.mysql.jdbc.*;
               io.cdap.plugin.*;
+              io.cdap.plugin.db.socketfactory.mysql.*;
               org.apache.commons.lang;
               org.apache.commons.logging.*;
               org.codehaus.jackson.*
+              org.postgresql.*;
+              org.postgresql.util.*;
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>
