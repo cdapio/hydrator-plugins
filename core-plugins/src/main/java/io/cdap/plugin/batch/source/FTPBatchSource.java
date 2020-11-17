@@ -30,11 +30,14 @@ import io.cdap.cdap.etl.api.batch.BatchSourceContext;
 import io.cdap.plugin.format.FileFormat;
 import io.cdap.plugin.format.plugin.AbstractFileSource;
 import io.cdap.plugin.format.plugin.FileSourceProperties;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
 import java.lang.reflect.Type;
+import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
@@ -49,6 +52,10 @@ public class FTPBatchSource extends AbstractFileSource {
   private static final String NAME_FILE_SYSTEM_PROPERTIES = "fileSystemProperties";
   private static final String FS_SFTP_IMPL = "fs.sftp.impl";
   private static final String SFTP_FS_CLASS = "org.apache.hadoop.fs.sftp.SFTPFileSystem";
+  private static final String FTP_PROTOCOL = "ftp";
+  private static final String SFTP_PROTOCOL = "sftp";
+  private static final int DEFAULT_FTP_PORT = 21;
+  private static final int DEFAULT_SFTP_PORT = 22;
 
   public static final Schema SCHEMA = Schema.recordOf("text",
                                                       Schema.Field.of("offset", Schema.of(Schema.Type.LONG)),
@@ -78,7 +85,8 @@ public class FTPBatchSource extends AbstractFileSource {
   @SuppressWarnings("unused")
   public static class FTPBatchSourceConfig extends PluginConfig implements FileSourceProperties {
     private static final Gson GSON = new Gson();
-    private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
+    private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() {
+    }.getType();
 
     @Macro
     @Description("Name be used to uniquely identify this source for lineage, annotating metadata, etc.")
@@ -130,6 +138,29 @@ public class FTPBatchSource extends AbstractFileSource {
 
     @Override
     public String getPath() {
+      if (authContainsSpecialCharacters()) {
+        Path urlInfo;
+        String extractedPassword = extractPasswordFromUrl();
+        String encodedPassword = URLEncoder.encode(extractedPassword);
+        String validatePath = path.replace(extractedPassword, encodedPassword);
+        try {
+          urlInfo = new Path(validatePath);
+        } catch (Exception e) {
+          throw new IllegalArgumentException(String.format("Unable to parse url: %s %s", e.getMessage(), e));
+        }
+        String host = urlInfo.toUri().getAuthority().substring(urlInfo.toUri().getAuthority().lastIndexOf("@") + 1);
+        String user = urlInfo.toUri().getAuthority().split(":")[0];
+        String protocol = urlInfo.toUri().getScheme();
+        int port = urlInfo.toUri().getPort();
+        if (port == -1 && protocol.equals(FTP_PROTOCOL)) {
+          port = DEFAULT_FTP_PORT;
+        }
+        if (port == -1 && protocol.equals(SFTP_PROTOCOL)) {
+          port = DEFAULT_SFTP_PORT;
+        }
+        String cleanHost = host.replace(":" + port, "");
+        return urlInfo.toUri().getScheme() + "://" + cleanHost + urlInfo.toUri().getPath();
+      }
       return path;
     }
 
@@ -181,15 +212,62 @@ public class FTPBatchSource extends AbstractFileSource {
       return SCHEMA;
     }
 
+    public String extractPasswordFromUrl() {
+      int getLastIndexOfAtSign = path.lastIndexOf("@");
+      String authentication = path.substring(0, getLastIndexOfAtSign);
+      return authentication.substring(authentication.lastIndexOf(":") + 1);
+    }
+
+    public boolean authContainsSpecialCharacters() {
+      Pattern regularPasswordWithoutSpecialCharacters = Pattern.compile("[^A-Za-z0-9]");
+      Matcher regularPassword = regularPasswordWithoutSpecialCharacters.matcher(extractPasswordFromUrl());
+      return !regularPassword.matches();
+    }
+
     Map<String, String> getFileSystemProperties() {
-      if (fileSystemProperties == null) {
-        return new HashMap<>();
+      HashMap<String, String> fileSystemPropertiesMap = new HashMap<>();
+      if (fileSystemProperties != null) {
+        fileSystemPropertiesMap.putAll(GSON.fromJson(fileSystemProperties, MAP_STRING_STRING_TYPE));
       }
+
       try {
-        return GSON.fromJson(fileSystemProperties, MAP_STRING_STRING_TYPE);
+        if (authContainsSpecialCharacters()) {
+          Path urlInfo;
+          String extractedPassword = extractPasswordFromUrl();
+          String encodedPassword = URLEncoder.encode(extractedPassword);
+          String validatePath = path.replace(extractedPassword, encodedPassword);
+          try {
+            urlInfo = new Path(validatePath);
+          } catch (Exception e) {
+            throw new IllegalArgumentException(String.format("Unable to parse url: %s %s", e.getMessage(), e));
+          }
+          // After encoding the url, the format should look like:
+          // ftp://kimi:42%4067%5Dgfuss@192.168.0.179:21/kimi-look-here.txt
+          int port = urlInfo.toUri().getPort();
+          String host = urlInfo.toUri().getAuthority().substring(urlInfo.toUri().getAuthority().lastIndexOf("@") + 1);
+          String user = urlInfo.toUri().getAuthority().split(":")[0];
+          if (urlInfo.toUri().getScheme().equals(FTP_PROTOCOL)) {
+            port = (port == -1) ? DEFAULT_FTP_PORT : port;
+            String cleanHostFTP = host.replace(":" + port, "");
+            fileSystemPropertiesMap.put("fs.ftp.host", cleanHostFTP);
+            fileSystemPropertiesMap.put(String.format("fs.ftp.user.%s", cleanHostFTP), user);
+            fileSystemPropertiesMap.put(String.format("fs.ftp.password.%s", cleanHostFTP), extractedPassword);
+            fileSystemPropertiesMap.put("fs.ftp.host.port", String.valueOf(port));
+          } else {
+            port = (port == -1) ? DEFAULT_SFTP_PORT : port;
+            String cleanHostSFTP = host.replace(":" + port, "");
+            fileSystemPropertiesMap.put(String.format("fs.sftp.user.%s", cleanHostSFTP), user);
+            fileSystemPropertiesMap.put(String.format("fs.sftp.password.%s.%s", cleanHostSFTP, user),
+                                        extractedPassword);
+            fileSystemPropertiesMap.put("fs.sftp.host.port", String.valueOf(port));
+          }
+        }
+
       } catch (Exception e) {
-        throw new IllegalArgumentException("Unable to parse filesystem properties: " + e.getMessage(), e);
+        throw new IllegalArgumentException(String.format("Unable to parse filesystem properties: %s %s", e.getMessage(),
+                                                         e));
       }
+      return fileSystemPropertiesMap;
     }
   }
 }
