@@ -213,7 +213,8 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
         query = removeConditionsClause(query);
       }
       ResultSet resultSet = statement.executeQuery(query);
-      return Schema.recordOf("outputSchema", DBUtils.getSchemaFields(resultSet, patternToReplace, replaceWith));
+      return Schema.recordOf("outputSchema", DBUtils.getSchemaFields(resultSet, patternToReplace, replaceWith,
+                                                                     null));
     } finally {
       driverCleanup.destroy();
     }
