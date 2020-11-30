@@ -33,6 +33,7 @@ import org.junit.Test;
 import java.util.Collections;
 
 /**
+ * Test class for {@link ProjectionTransform}
  */
 public class ProjectionTransformTest {
   private static final Schema SIMPLE_TYPES_SCHEMA =
@@ -71,7 +72,8 @@ public class ProjectionTransformTest {
       new ProjectionTransform.ProjectionTransformConfig("y, z", null, null, null);
 
     new ProjectionTransform(config).configurePipeline(mockConfigurer);
-    Schema expectedSchema = Schema.recordOf("three.projected", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
+    Schema expectedSchema = Schema.recordOf(
+      "three.projected", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
     Assert.assertEquals(expectedSchema, mockConfigurer.getOutputSchema());
 
     //test keep
@@ -203,7 +205,7 @@ public class ProjectionTransformTest {
     StructuredRecord input = StructuredRecord.builder(schema)
       .set("x", 1)
       .set("y", 3.14)
-      .set("z", new int[] { 1, 2, 3 })
+      .set("z", new int[]{1, 2, 3})
       .build();
     ProjectionTransform.ProjectionTransformConfig config = new ProjectionTransform
       .ProjectionTransformConfig("y, z", null, null, null);
@@ -215,7 +217,8 @@ public class ProjectionTransformTest {
     transform.transform(input, emitter);
     StructuredRecord output = emitter.getEmitted().get(0);
 
-    Schema expectedSchema = Schema.recordOf("three.projected", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
+    Schema expectedSchema = Schema.recordOf(
+      "three.projected", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
     Assert.assertEquals(expectedSchema, output.getSchema());
     Assert.assertEquals(1, output.<Integer>get("x").intValue());
   }
@@ -229,7 +232,7 @@ public class ProjectionTransformTest {
     StructuredRecord input = StructuredRecord.builder(schema)
       .set("x", 1)
       .set("y", 3.14)
-      .set("z", new int[] { 1, 2, 3 })
+      .set("z", new int[]{1, 2, 3})
       .build();
     ProjectionTransform.ProjectionTransformConfig config = new ProjectionTransform
       .ProjectionTransformConfig(null, null, null, "x");
@@ -241,7 +244,8 @@ public class ProjectionTransformTest {
     transform.transform(input, emitter);
     StructuredRecord output = emitter.getEmitted().get(0);
 
-    Schema expectedSchema = Schema.recordOf("three.projected", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
+    Schema expectedSchema = Schema.recordOf(
+      "three.projected", Schema.Field.of("x", Schema.of(Schema.Type.INT)));
     Assert.assertEquals(expectedSchema, output.getSchema());
     Assert.assertEquals(1, output.<Integer>get("x").intValue());
   }
@@ -256,7 +260,7 @@ public class ProjectionTransformTest {
     MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema, Collections.emptyMap());
     try {
       ProjectionTransform.ProjectionTransformConfig config =
-          new ProjectionTransform.ProjectionTransformConfig("y, z", null, null, "x,y");
+        new ProjectionTransform.ProjectionTransformConfig("y, z", null, null, "x,y");
 
       new ProjectionTransform(config).configurePipeline(mockConfigurer);
       Assert.fail();
@@ -275,7 +279,7 @@ public class ProjectionTransformTest {
     StructuredRecord input = StructuredRecord.builder(schema)
       .set("x", 1)
       .set("y", 3.14)
-      .set("z", new int[] { 1, 2, 3 })
+      .set("z", new int[]{1, 2, 3})
       .build();
     ProjectionTransform.ProjectionTransformConfig config = new ProjectionTransform
       .ProjectionTransformConfig(null, "x:y,y:z,z:x", null, null);
@@ -474,7 +478,7 @@ public class ProjectionTransformTest {
   @Test
   public void testConvertToLong() throws Exception {
     ProjectionTransform.ProjectionTransformConfig config = new ProjectionTransform
-      .ProjectionTransformConfig(null, null, "intField:long", null);
+      .ProjectionTransformConfig(null, null, "intField:long,floatField:long,doubleField:long", null);
     Transform<StructuredRecord, StructuredRecord> transform = new ProjectionTransform(config);
     TransformContext transformContext = new MockTransformContext();
     transform.initialize(transformContext);
@@ -487,8 +491,8 @@ public class ProjectionTransformTest {
                                             Schema.Field.of("booleanField", Schema.of(Schema.Type.BOOLEAN)),
                                             Schema.Field.of("intField", Schema.of(Schema.Type.LONG)),
                                             Schema.Field.of("longField", Schema.of(Schema.Type.LONG)),
-                                            Schema.Field.of("floatField", Schema.of(Schema.Type.FLOAT)),
-                                            Schema.Field.of("doubleField", Schema.of(Schema.Type.DOUBLE)),
+                                            Schema.Field.of("floatField", Schema.of(Schema.Type.LONG)),
+                                            Schema.Field.of("doubleField", Schema.of(Schema.Type.LONG)),
                                             Schema.Field.of("bytesField", Schema.of(Schema.Type.BYTES)),
                                             Schema.Field.of("stringField", Schema.of(Schema.Type.STRING)));
 
@@ -496,8 +500,39 @@ public class ProjectionTransformTest {
     Assert.assertTrue((Boolean) output.get("booleanField"));
     Assert.assertEquals(28L, output.<Long>get("intField").longValue());
     Assert.assertEquals(99L, output.<Long>get("longField").longValue());
-    Assert.assertTrue(Math.abs(2.71f - (Float) output.get("floatField")) < 0.000001);
-    Assert.assertTrue(Math.abs(3.14 - (Double) output.get("doubleField")) < 0.000001);
+    Assert.assertEquals(3, output.<Long>get("floatField").longValue());
+    Assert.assertEquals(3, output.<Long>get("doubleField").longValue());
+    Assert.assertArrayEquals(Bytes.toBytes("foo"), (byte[]) output.get("bytesField"));
+    Assert.assertEquals("bar", output.get("stringField"));
+  }
+
+  @Test
+  public void testConvertToInt() throws Exception {
+    ProjectionTransform.ProjectionTransformConfig config = new ProjectionTransform
+      .ProjectionTransformConfig(null, null, "doubleField:int,floatField:int", null);
+    Transform<StructuredRecord, StructuredRecord> transform = new ProjectionTransform(config);
+    TransformContext transformContext = new MockTransformContext();
+    transform.initialize(transformContext);
+
+    MockEmitter<StructuredRecord> emitter = new MockEmitter<>();
+    transform.transform(SIMPLE_TYPES_RECORD, emitter);
+    StructuredRecord output = emitter.getEmitted().get(0);
+
+    Schema expectedSchema = Schema.recordOf("record.projected",
+                                            Schema.Field.of("booleanField", Schema.of(Schema.Type.BOOLEAN)),
+                                            Schema.Field.of("intField", Schema.of(Schema.Type.INT)),
+                                            Schema.Field.of("longField", Schema.of(Schema.Type.LONG)),
+                                            Schema.Field.of("floatField", Schema.of(Schema.Type.INT)),
+                                            Schema.Field.of("doubleField", Schema.of(Schema.Type.INT)),
+                                            Schema.Field.of("bytesField", Schema.of(Schema.Type.BYTES)),
+                                            Schema.Field.of("stringField", Schema.of(Schema.Type.STRING)));
+
+    Assert.assertEquals(expectedSchema, output.getSchema());
+    Assert.assertTrue((Boolean) output.get("booleanField"));
+    Assert.assertEquals(28, output.<Integer>get("intField").intValue());
+    Assert.assertEquals(99L, output.<Long>get("longField").longValue());
+    Assert.assertEquals(3, output.<Integer>get("floatField").intValue());
+    Assert.assertEquals(3, output.<Integer>get("doubleField").intValue());
     Assert.assertArrayEquals(Bytes.toBytes("foo"), (byte[]) output.get("bytesField"));
     Assert.assertEquals("bar", output.get("stringField"));
   }
@@ -590,13 +625,13 @@ public class ProjectionTransformTest {
   @Test
   public void testDropFieldsValidations() {
     Schema schema = Schema.recordOf("three",
-            Schema.Field.of("x", Schema.of(Schema.Type.INT)),
-            Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
-            Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
+                                    Schema.Field.of("x", Schema.of(Schema.Type.INT)),
+                                    Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
+                                    Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
 
     MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema, Collections.emptyMap());
     ProjectionTransform.ProjectionTransformConfig config =
-            new ProjectionTransform.ProjectionTransformConfig("x,y,z", null, null, null);
+      new ProjectionTransform.ProjectionTransformConfig("x,y,z", null, null, null);
     try {
       new ProjectionTransform(config).configurePipeline(mockConfigurer);
       Assert.fail();
@@ -613,13 +648,13 @@ public class ProjectionTransformTest {
   @Test
   public void testKeepFieldsValidations() {
     Schema schema = Schema.recordOf("three",
-            Schema.Field.of("x", Schema.of(Schema.Type.INT)),
-            Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
-            Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
+                                    Schema.Field.of("x", Schema.of(Schema.Type.INT)),
+                                    Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
+                                    Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
 
     MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema, Collections.emptyMap());
     ProjectionTransform.ProjectionTransformConfig config =
-            new ProjectionTransform.ProjectionTransformConfig(null, null, null, "n");
+      new ProjectionTransform.ProjectionTransformConfig(null, null, null, "n");
     try {
       new ProjectionTransform(config).configurePipeline(mockConfigurer);
       Assert.fail();
@@ -637,13 +672,13 @@ public class ProjectionTransformTest {
   @Test
   public void testConvertFieldsValidations() {
     Schema schema = Schema.recordOf("three",
-            Schema.Field.of("x", Schema.of(Schema.Type.INT)),
-            Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
-            Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
+                                    Schema.Field.of("x", Schema.of(Schema.Type.INT)),
+                                    Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
+                                    Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
 
     MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema, Collections.emptyMap());
     ProjectionTransform.ProjectionTransformConfig config =
-            new ProjectionTransform.ProjectionTransformConfig(null, null, "n:boolean", "x");
+      new ProjectionTransform.ProjectionTransformConfig(null, null, "n:boolean", "x");
     try {
       new ProjectionTransform(config).configurePipeline(mockConfigurer);
       Assert.fail();
@@ -661,13 +696,13 @@ public class ProjectionTransformTest {
   @Test
   public void testRenameFieldsValidations() {
     Schema schema = Schema.recordOf("three",
-            Schema.Field.of("x", Schema.of(Schema.Type.INT)),
-            Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
-            Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
+                                    Schema.Field.of("x", Schema.of(Schema.Type.INT)),
+                                    Schema.Field.of("y", Schema.of(Schema.Type.DOUBLE)),
+                                    Schema.Field.of("z", Schema.arrayOf(Schema.of(Schema.Type.INT))));
 
     MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(schema, Collections.emptyMap());
     ProjectionTransform.ProjectionTransformConfig config =
-            new ProjectionTransform.ProjectionTransformConfig(null, "n:m", null, "x");
+      new ProjectionTransform.ProjectionTransformConfig(null, "n:m", null, "x");
     try {
       new ProjectionTransform(config).configurePipeline(mockConfigurer);
     } catch (ValidationException e) {
