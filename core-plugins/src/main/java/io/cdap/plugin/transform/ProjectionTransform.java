@@ -73,8 +73,8 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
     "long, float, double, bytes, string). Any simple type can be converted to bytes or a string. Otherwise, a type " +
     "can only be converted to a larger type. For example, an int can be converted to a long, but a long cannot be " +
     "converted to an int.";
-    private static final String KEEP_DESC = "Comma-separated list of fields to keep. For example: " +
-     "'field1,field2,field3'. Both keep and drop fields cannot be specified.";
+  private static final String KEEP_DESC = "Comma-separated list of fields to keep. For example: " +
+    "'field1,field2,field3'. Both keep and drop fields cannot be specified.";
 
   /**
    * Config class for ProjectionTransform
@@ -100,6 +100,7 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
     @Description(KEEP_DESC)
     @Nullable
     String keep;
+
     public ProjectionTransformConfig(String drop, String rename, String convert, String keep) {
       this.drop = drop;
       this.rename = rename;
@@ -161,10 +162,11 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
     output.addAll(TransformLineageRecorderUtils.generateOneToOnes(
       fieldsToKeep, "identity", TransformLineageRecorderUtils.IDENTITY_TRANSFORM_DESCRIPTION));
     output.addAll(TransformLineageRecorderUtils.generateDrops(fieldsToDrop));
-    output.addAll(fieldsToRename.keySet().stream().map(
-      field -> new FieldTransformOperation("renameField" + field,
-                                           "Renamed fields as specified.", Collections.singletonList(field),
-                                           fieldsToRename.get(field))).collect(Collectors.toList()));
+    output.addAll(fieldsToRename.keySet().stream().map(field -> new FieldTransformOperation(
+      "renameField" + field,
+      "Renamed fields as specified.",
+      Collections.singletonList(field), fieldsToRename.get(field))).collect(Collectors.toList()));
+
     context.record(output);
   }
 
@@ -176,7 +178,7 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
     for (Schema.Field inputField : inputSchema.getFields()) {
       String inputFieldName = inputField.getName();
       if (!fieldsToKeep.isEmpty() && !fieldsToKeep.contains(inputFieldName)) {
-          continue;
+        continue;
       } else if (fieldsToDrop.contains(inputFieldName)) {
         continue;
       }
@@ -217,7 +219,8 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
           }
         }
         if (containAllFields) {
-          collector.addFailure("'Fields to drop' cannot contain all the fields of the input schema.", null)
+          collector.addFailure(
+            "'Fields to drop' cannot contain all the fields of the input schema.", null)
             .withConfigProperty(ProjectionTransformConfig.DROP);
         }
       }
@@ -239,9 +242,10 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
       for (KeyValue<String, String> keyVal : kvParser.parse(projectionTransformConfig.rename)) {
         String key = keyVal.getKey();
         String val = keyVal.getValue();
-        if (inputSchema != null && inputSchema.getField(key) ==  null) {
+        if (inputSchema != null && inputSchema.getField(key) == null) {
           collector.addFailure(
-            String.format("Field '%s' provided in 'Fields to rename' must be present in the input schema.", key), null)
+            String.format("Field '%s' provided in 'Fields to rename' must be present in the input schema.", key),
+            null)
             .withConfigElement(ProjectionTransformConfig.RENAME, String.format("%s:%s", key, val));
         }
         try {
@@ -265,15 +269,18 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
       for (KeyValue<String, String> keyVal : kvParser.parse(projectionTransformConfig.convert)) {
         String name = keyVal.getKey();
         String typeStr = keyVal.getValue();
-        if (inputSchema != null && inputSchema.getField(name) ==  null) {
+        if (inputSchema != null && inputSchema.getField(name) == null) {
           collector.addFailure(
-            String.format("Field '%s' provided in 'Convert' is not present in the input schema.", name), null)
+            String.format(
+              "Field '%s' provided in 'Convert' is not present in the input schema.", name), null)
             .withConfigElement(ProjectionTransformConfig.CONVERT, String.format("%s:%s", name, typeStr));
         }
         Schema.Type type = Schema.Type.valueOf(typeStr.toUpperCase());
         if (!type.isSimpleType() || type == Schema.Type.NULL) {
           collector.addFailure(
-            String.format("Cannot convert field '%s' to a '%s'.", name, typeStr), "Only simple types are supported.")
+            String.format(
+              "Cannot convert field '%s' to a '%s'.", name, typeStr),
+            "Only simple types are supported.")
             .withConfigElement(ProjectionTransformConfig.CONVERT, String.format("%s:%s", name, typeStr));
         }
         if (fieldsToConvert.containsKey(name)) {
@@ -306,18 +313,18 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
     } else {
       // otherwise, just try to cast it.
       builder.set(fieldName, convertPrimitive(fieldName, val, inputType, outputType,
-                                             getContext().getFailureCollector()));
+                                              getContext().getFailureCollector()));
     }
   }
 
   private Object convertPrimitive(String fieldName, Object val, Schema.Type inputType,
-      Schema.Type outputType, FailureCollector collector) {
+                                  Schema.Type outputType, FailureCollector collector) {
     if (inputType == outputType) {
       return val;
     }
 
     // guaranteed input and output types are non-null simple types
-    switch(inputType) {
+    switch (inputType) {
       // if input is bytes, try to convert the bytes to the correct type
       case BYTES:
         byte[] bytesVal;
@@ -387,6 +394,10 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
             return String.valueOf(floatVal);
           case BYTES:
             return Bytes.toBytes(floatVal);
+          case INT:
+            return Math.round(floatVal);
+          case LONG:
+            return (long) Math.round(floatVal);
         }
         break;
       case DOUBLE:
@@ -396,13 +407,18 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
             return String.valueOf(doubleVal);
           case BYTES:
             return Bytes.toBytes(doubleVal);
+          case INT:
+            return (int) Math.round(doubleVal);
+          case LONG:
+            return Math.round(doubleVal);
         }
         break;
     }
 
     String typeStr = outputType.toString().toLowerCase();
     collector.addFailure(
-      String.format("Cannot convert field '%s' from type '%s' to type '%s'.", fieldName, inputType, outputType), null)
+      String.format("Cannot convert field '%s' from type '%s' to type '%s'.", fieldName, inputType, outputType),
+      null)
       .withConfigElement(ProjectionTransformConfig.CONVERT, String.format("%s:%s", fieldName, typeStr));
     throw collector.getOrThrowException();
   }
@@ -438,7 +454,8 @@ public class ProjectionTransform extends Transform<StructuredRecord, StructuredR
         if (!inputFieldType.isSimpleType() || inputFieldType == Schema.Type.NULL) {
           String typeStr = outputFieldSchema.getType().toString().toLowerCase();
           collector.addFailure(
-            String.format("Field '%s' is of unconvertible type '%s'.", inputFieldName, inputFieldType), null)
+            String.format(
+              "Field '%s' is of unconvertible type '%s'.", inputFieldName, inputFieldType), null)
             .withConfigElement(ProjectionTransformConfig.CONVERT, String.format("%s:%s", inputFieldName, typeStr));
           collector.getOrThrowException();
         }
