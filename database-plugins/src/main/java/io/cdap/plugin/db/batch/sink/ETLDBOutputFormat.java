@@ -29,11 +29,14 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.db.DBConfiguration;
 import org.apache.hadoop.mapreduce.lib.db.DBOutputFormat;
 import org.apache.hadoop.mapreduce.lib.db.DBWritable;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormatCounter;
 import org.apache.hadoop.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
@@ -46,15 +49,16 @@ import java.util.Properties;
  *
  * @param <K> - Key passed to this class to be written
  * @param <V> - Value passed to this class to be written. The value is ignored.
- *
  */
-public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<K, V> {
+public class ETLDBOutputFormat<K extends DBWritable, V> extends DBOutputFormat<K, V> {
   public static final String AUTO_COMMIT_ENABLED = "io.cdap.hydrator.db.output.autocommit.enabled";
 
   private static final Logger LOG = LoggerFactory.getLogger(ETLDBOutputFormat.class);
   private Configuration conf;
   private Driver driver;
   private JDBCDriverShim driverShim;
+  private String socketFactory;
+  private String delegateClass;
 
   @Override
   public RecordWriter<K, V> getRecordWriter(TaskAttemptContext context) throws IOException {
@@ -84,8 +88,18 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
             if (!emptyData) {
               getStatement().executeBatch();
               getConnection().commit();
+              if (socketFactory != null) {
+                @SuppressWarnings("unchecked")
+                Class<? extends Driver> driverClass = (Class<? extends Driver>) conf.getClassLoader()
+                  .loadClass(conf.get(DBConfiguration.DRIVER_CLASS_PROPERTY));
+                Class<?> cls = driverClass.getClassLoader().loadClass(socketFactory);
+                long bytesWritten = (long) cls.getMethod("getBytesWritten").invoke(null, null);
+                LOG.error("PJ: wrote {} bytes", bytesWritten);
+                context.getCounter(FileOutputFormatCounter.BYTES_WRITTEN).increment(bytesWritten);
+              }
             }
-          } catch (SQLException e) {
+          } catch (SQLException | ClassNotFoundException | NoSuchMethodException |
+            IllegalAccessException | InvocationTargetException e) {
             try {
               getConnection().rollback();
             } catch (SQLException ex) {
@@ -123,16 +137,38 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
     Connection connection;
     try {
       String url = conf.get(DBConfiguration.URL_PROPERTY);
+      if (url.contains("com.google.cloud.sql.mysql.SocketFactory")) {
+        delegateClass = "com.google.cloud.sql.mysql.SocketFactory";
+        socketFactory = "io.cdap.plugin.db.socketfactory.mysql.SocketFactory";
+        url = url.replace("com.google.cloud.sql.mysql.SocketFactory",
+                          "io.cdap.plugin.db.socketfactory.mysql.SocketFactory");
+      } else if (url.contains("com.google.cloud.sql.postgres.SocketFactory")) {
+        delegateClass = "com.google.cloud.sql.postgres.SocketFactory";
+        socketFactory = "io.cdap.plugin.db.socketfactory.postgres.SocketFactory";
+        url = url.replace("com.google.cloud.sql.postgres.SocketFactory",
+                          "io.cdap.plugin.db.socketfactory.postgres.SocketFactory");
+      } else if (url.contains("com.google.cloud.sql.sqlserver.SocketFactory")) {
+        delegateClass = "com.google.cloud.sql.sqlserver.SocketFactory";
+        socketFactory = "io.cdap.plugin.db.socketfactory.sqlserver.SocketFactory";
+        url = url.replace("com.google.cloud.sql.sqlserver.SocketFactory",
+                          "io.cdap.plugin.db.socketfactory.sqlserver.SocketFactory");
+      }
+
+      ClassLoader classLoader = conf.getClassLoader();
+      @SuppressWarnings("unchecked")
+      Class<? extends Driver> driverClass =
+        (Class<? extends Driver>) classLoader.loadClass(conf.get(DBConfiguration.DRIVER_CLASS_PROPERTY));
+      if (socketFactory != null) {
+        Class<?> cls = driverClass.getClassLoader().loadClass(socketFactory);
+        Method m = cls.getMethod("setDelegateClass", String.class);
+        m.invoke(null, delegateClass);
+      }
       try {
         // throws SQLException if no suitable driver is found
         DriverManager.getDriver(url);
       } catch (SQLException e) {
         if (driverShim == null) {
           if (driver == null) {
-            ClassLoader classLoader = conf.getClassLoader();
-            @SuppressWarnings("unchecked")
-            Class<? extends Driver> driverClass =
-              (Class<? extends Driver>) classLoader.loadClass(conf.get(DBConfiguration.DRIVER_CLASS_PROPERTY));
             driver = driverClass.newInstance();
 
             // De-register the default driver that gets registered when driver class is loaded.
