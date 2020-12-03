@@ -65,7 +65,7 @@ public class PathTrackingJsonInputFormat extends PathTrackingInputFormat {
                                                                                     TaskAttemptContext context,
                                                                                     @Nullable String pathField,
                                                                                     @Nullable Schema schema) {
-    RecordReader<LongWritable, Text> delegate = (new TextInputFormat()).createRecordReader(split, context);
+    RecordReader<LongWritable, Text> delegate = getDefaultRecordReaderDelegate(split, context);
     Schema modifiedSchema = getModifiedSchema(schema, pathField);
 
     return new RecordReader<NullWritable, StructuredRecord.Builder>() {
