@@ -35,3 +35,7 @@
 	path = condition-plugins
 	url = ../../data-integrations/condition-plugins.git
 	branch = develop
+[submodule "azure"]
+	path = azure
+	url = ../../data-integrations/azure
+	branch = develop
