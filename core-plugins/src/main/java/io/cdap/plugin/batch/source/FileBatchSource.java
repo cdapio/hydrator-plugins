@@ -21,6 +21,7 @@ import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.batch.BatchSourceContext;
+import io.cdap.plugin.format.input.CharsetTransformingPathTrackingInputFormat;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import io.cdap.plugin.format.plugin.AbstractFileSource;
 
@@ -47,6 +48,9 @@ public class FileBatchSource extends AbstractFileSource<FileSourceConfig> {
     Map<String, String> properties = new HashMap<>(config.getFileSystemProperties());
     if (config.shouldCopyHeader()) {
       properties.put(PathTrackingInputFormat.COPY_HEADER, "true");
+    }
+    if (config.getFileEncoding() != null) {
+      properties.put(PathTrackingInputFormat.SOURCE_FILE_ENCODING, config.getFileEncoding());
     }
     return properties;
   }

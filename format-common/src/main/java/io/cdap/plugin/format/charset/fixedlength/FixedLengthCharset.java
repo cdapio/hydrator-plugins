@@ -24,7 +24,7 @@ import java.util.Set;
 
 /**
  * Enumeration containing all currently supported Fixed Length charsets.
- *
+ * <p>
  * This currently includes:
  * - UTF-32,
  * - ISO-8859 variants supported by Java
@@ -78,6 +78,7 @@ public enum FixedLengthCharset {
 
   /**
    * Find a FixedLengthCharset for a given encoding name. Throws a runtime exception if not found.
+   *
    * @param name Charset name
    * @return FixedLengthCharset for the desired charset.
    */
@@ -92,15 +93,17 @@ public enum FixedLengthCharset {
   }
 
   /**
-   * Set containing the names of all character encodings.
+   * Check if this file encoding is valid.
    *
-   * @return A set containing all character encoding names.
+   * @return boolean value specifying if this is a valid encoding or not.
    */
-  public static Set<String> getValidEncodings() {
-    Set<String> set = new HashSet<>();
+  public static boolean isValidEncoding(String name) {
     for (FixedLengthCharset c : FixedLengthCharset.values()) {
-      set.add(c.getName().toLowerCase());
+      if (name.equalsIgnoreCase(c.getName())) {
+        return true;
+      }
     }
-    return Collections.unmodifiableSet(set);
+
+    return false;
   }
 }

@@ -38,6 +38,7 @@ import javax.annotation.Nullable;
 public abstract class AbstractFileSourceConfig extends PluginConfig implements FileSourceProperties {
   public static final String NAME_FORMAT = "format";
   public static final String NAME_SCHEMA = "schema";
+  public static final String DEFAULT_FILE_ENCODING = "utf-8";
   
   @Description("Name be used to uniquely identify this source for lineage, annotating metadata, etc.")
   private String referenceName;
@@ -149,8 +150,8 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
       collector.addFailure(e.getMessage(), null).withConfigProperty(NAME_SCHEMA).withStacktrace(e.getStackTrace());
     }
 
-    if (fileEncoding != null && !fileEncoding.equals("utf-8")
-      && !FixedLengthCharset.getValidEncodings().contains(fileEncoding)) {
+    if (fileEncoding != null && !fileEncoding.equals(DEFAULT_FILE_ENCODING)
+      && !FixedLengthCharset.isValidEncoding(fileEncoding)) {
       collector.addFailure("Specified file encoding is not valid.",
                            "Use one of the supported file encodings.");
     }

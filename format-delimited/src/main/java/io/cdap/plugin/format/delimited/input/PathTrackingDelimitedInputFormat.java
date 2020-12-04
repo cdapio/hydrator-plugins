@@ -19,7 +19,6 @@ package io.cdap.plugin.format.delimited.input;
 import com.google.common.base.Splitter;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
-import io.cdap.plugin.format.input.CharsetTransformingPathTrackingInputFormat;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -46,10 +45,7 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
                                                                                     @Nullable String pathField,
                                                                                     @Nullable Schema schema) {
 
-    // This is just here for testing and will be cleaned up at a later date.
-    RecordReader<LongWritable, Text> delegate =
-      (new CharsetTransformingPathTrackingInputFormat("UTF-32")).createRecordReader(split, context);
-//    RecordReader<LongWritable, Text> delegate = (new TextInputFormat()).createRecordReader(split, context);
+    RecordReader<LongWritable, Text> delegate = getDefaultRecordReaderDelegate(split, context);
     String delimiter = context.getConfiguration().get(DELIMITER);
     boolean skipHeader = context.getConfiguration().getBoolean(SKIP_HEADER, false);
 
