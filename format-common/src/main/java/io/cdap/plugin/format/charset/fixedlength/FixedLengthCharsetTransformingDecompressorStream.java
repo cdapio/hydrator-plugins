@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.format.charset.fixedlength;
 
+import io.cdap.plugin.format.charset.CharsetTransformingLineRecordReader;
 import org.apache.hadoop.io.compress.DecompressorStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,8 +33,9 @@ public class FixedLengthCharsetTransformingDecompressorStream extends Decompress
   private static final Logger LOG = LoggerFactory.getLogger(FixedLengthCharsetTransformingDecompressorStream.class);
 
   //Starting and ending position in the file.
-  long start;
-  long end;
+  protected final long start;
+  protected final long end;
+  protected final FixedLengthCharset fixedLengthCharset;
 
   protected FixedLengthCharsetTransformingDecompressorStream(InputStream in,
                                                              FixedLengthCharset fixedLengthCharset,
@@ -42,6 +44,7 @@ public class FixedLengthCharsetTransformingDecompressorStream extends Decompress
     throws IOException {
     super(in, new FixedLengthCharsetTransformingDecompressor(fixedLengthCharset));
     long skippedBytes = in.skip(start);
+    this.fixedLengthCharset = fixedLengthCharset;
     this.start = start;
     this.end = end;
   }
@@ -68,10 +71,56 @@ public class FixedLengthCharsetTransformingDecompressorStream extends Decompress
       FixedLengthCharsetTransformingDecompressor flcDecompressor =
         (FixedLengthCharsetTransformingDecompressor) this.decompressor;
 
-      //Actual position is starting possition + the number of bytes we have consumed - the remaining bytes
+      //Actual position is starting possition + the number of bytes we have consumed.
       return start + flcDecompressor.getNumConsumedBytes();
     } else {
       return super.getPos();
+    }
+  }
+
+  /**
+   * Fill the input buffer with data from the source input.
+   *
+   * Partition boundaries present a challenge: We need to make sure to read just enough characters to make it into
+   * the next complete line.
+   *
+   * Note that, as we approach the partition boundary, we start reading one character at a time until the input
+   * reader is able to read a full line.
+   *
+   * The method that reads a full line after the partition boundary can be found in
+   * {@link CharsetTransformingLineRecordReader#nextKeyValue()}
+   *
+   * @return Number of bytes read from the source.
+   * @throws IOException when there is a problema reading from the underlying stream.
+   */
+  @Override
+  protected int getCompressedData() throws IOException {
+    if (this.decompressor instanceof FixedLengthCharsetTransformingDecompressor) {
+      checkStream();
+
+      FixedLengthCharsetTransformingDecompressor flcDecompressor =
+        (FixedLengthCharsetTransformingDecompressor) this.decompressor;
+
+      // Calculate the number of bytes in this partition that we still need to read.
+      long bytesUntilPartitionBoundary = this.end - (this.start + flcDecompressor.getNumConsumedBytes());
+
+      // Prevent int overflow
+      if (bytesUntilPartitionBoundary > Integer.MAX_VALUE) {
+        bytesUntilPartitionBoundary = Integer.MAX_VALUE;
+      }
+
+      // If we are at or after the partiton boundary, we read 1 character at a time until we're able to
+      // read a full line.
+      if (bytesUntilPartitionBoundary < this.fixedLengthCharset.getNumBytesPerCharacter()) {
+        bytesUntilPartitionBoundary = this.fixedLengthCharset.getNumBytesPerCharacter();
+      }
+
+      // Calculate how many bytes we actually need to read
+      int readLength = Math.min(buffer.length, (int) bytesUntilPartitionBoundary);
+
+      return in.read(buffer, 0, readLength);
+    } else {
+      return super.getCompressedData();
     }
   }
 }

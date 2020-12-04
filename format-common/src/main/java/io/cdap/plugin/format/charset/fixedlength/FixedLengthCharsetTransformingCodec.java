@@ -40,10 +40,10 @@ public class FixedLengthCharsetTransformingCodec extends DefaultCodec
   implements Configurable, SplittableCompressionCodec {
   private static final Logger LOG = LoggerFactory.getLogger(FixedLengthCharsetTransformingCodec.class);
 
-  FixedLengthCharset fixedLengthCharset;
+  protected final FixedLengthCharset sourceEncoding;
 
-  public FixedLengthCharsetTransformingCodec(FixedLengthCharset fixedLengthCharset) {
-    this.fixedLengthCharset = fixedLengthCharset;
+  public FixedLengthCharsetTransformingCodec(FixedLengthCharset sourceEncoding) {
+    this.sourceEncoding = sourceEncoding;
   }
 
   @Override
@@ -68,7 +68,7 @@ public class FixedLengthCharsetTransformingCodec extends DefaultCodec
 
   @Override
   public CompressionInputStream createInputStream(InputStream in) throws IOException {
-    return super.createInputStream(in, new FixedLengthCharsetTransformingDecompressor(this.fixedLengthCharset));
+    return super.createInputStream(in, new FixedLengthCharsetTransformingDecompressor(sourceEncoding));
   }
 
   @Override
@@ -93,7 +93,7 @@ public class FixedLengthCharsetTransformingCodec extends DefaultCodec
 
   @Override
   public Decompressor createDecompressor() {
-    return new FixedLengthCharsetTransformingDecompressor(fixedLengthCharset);
+    return new FixedLengthCharsetTransformingDecompressor(sourceEncoding);
   }
 
   @Override
@@ -108,25 +108,23 @@ public class FixedLengthCharsetTransformingCodec extends DefaultCodec
     }
 
     //Adjust start to align to the next character boundary.
-    if (start % fixedLengthCharset.getCharLength() != 0) {
-      LOG.info("Adjusted Start from {} to {} by {} bytes",
-               start,
-               start + fixedLengthCharset.getCharLength() - (start % fixedLengthCharset.getCharLength()),
-               fixedLengthCharset.getCharLength() - (start % fixedLengthCharset.getCharLength()));
-      start += fixedLengthCharset.getCharLength() - (start % fixedLengthCharset.getCharLength());
+    if (start % sourceEncoding.getNumBytesPerCharacter() != 0) {
+      long adjustment = sourceEncoding.getNumBytesPerCharacter() - (start % sourceEncoding.getNumBytesPerCharacter());
+      LOG.trace("Adjusted partition start positioon from {} to {} by {} bytes",
+                start, start + adjustment, adjustment);
+      start += adjustment;
     }
 
     //Adjust end to align to the next character boundary.
-    if (end % fixedLengthCharset.getCharLength() != 0) {
-      LOG.info("Adjusted End from {} to {} by {} bytes",
-               end,
-               end + fixedLengthCharset.getCharLength() - (end % fixedLengthCharset.getCharLength()),
-               fixedLengthCharset.getCharLength() - (end % fixedLengthCharset.getCharLength()));
-      end += fixedLengthCharset.getCharLength() - (end % fixedLengthCharset.getCharLength());
+    if (end % sourceEncoding.getNumBytesPerCharacter() != 0) {
+      long adjustment = sourceEncoding.getNumBytesPerCharacter() - (end % sourceEncoding.getNumBytesPerCharacter());
+      LOG.trace("Adjusted partition end position from {} to {} by {} bytes",
+                end, end + adjustment, adjustment);
+      end += adjustment;
     }
 
     FixedLengthCharsetTransformingDecompressorStream decompressorStream =
-      new FixedLengthCharsetTransformingDecompressorStream(seekableIn, this.fixedLengthCharset, start, end);
+      new FixedLengthCharsetTransformingDecompressorStream(seekableIn, sourceEncoding, start, end);
 
     return new TransformingCompressionInputStream(decompressorStream, start, end);
   }
@@ -136,32 +134,32 @@ public class FixedLengthCharsetTransformingCodec extends DefaultCodec
    */
   public static class TransformingCompressionInputStream extends SplitCompressionInputStream {
 
-    FixedLengthCharsetTransformingDecompressorStream decompressorStream;
+    protected final FixedLengthCharsetTransformingDecompressorStream decompressorStream;
 
     public TransformingCompressionInputStream(FixedLengthCharsetTransformingDecompressorStream in, long start, long end)
       throws IOException {
       super(in, start, end);
-      this.decompressorStream = in;
+      decompressorStream = in;
     }
 
     @Override
     public int read() throws IOException {
-      return this.decompressorStream.read();
+      return decompressorStream.read();
     }
 
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
-      return this.decompressorStream.read(b, off, len);
+      return decompressorStream.read(b, off, len);
     }
 
     @Override
     public void resetState() throws IOException {
-      this.decompressorStream.reset();
+      decompressorStream.reset();
     }
 
     @Override
     public long getPos() throws IOException {
-      return this.decompressorStream.getPos();
+      return decompressorStream.getPos();
     }
   }
 }

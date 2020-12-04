@@ -18,6 +18,7 @@ package io.cdap.plugin.format.charset;
 
 import io.cdap.plugin.format.charset.fixedlength.FixedLengthCharset;
 import io.cdap.plugin.format.charset.fixedlength.FixedLengthCharsetTransformingCodec;
+import io.cdap.plugin.format.charset.fixedlength.FixedLengthCharsetTransformingDecompressorStream;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -25,10 +26,12 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.Seekable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.compress.CodecPool;
 import org.apache.hadoop.io.compress.Decompressor;
 import org.apache.hadoop.io.compress.SplitCompressionInputStream;
 import org.apache.hadoop.io.compress.SplittableCompressionCodec;
 import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.CompressedSplitLineReader;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
@@ -40,11 +43,12 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 
 /**
- * Copy of Hadoop's Line Record Reader (Hadoop Version 2.3.0)
+ * Copy of Hadoop's LineRecordReader (Hadoop Version 2.3.0). The reason we copy this class is to modify some behaviors
+ * related to the creation of the decompressor. This also allows us to implement
  * <p>
  * This class uses a fixed Codec and Decompressor to parse records.
  */
-public class CharsetTransformingLineRecordReader extends LineRecordReader {
+public class CharsetTransformingLineRecordReader extends RecordReader<LongWritable, Text> {
   private static final Logger LOG = LoggerFactory.getLogger(CharsetTransformingLineRecordReader.class);
   public static final String MAX_LINE_LENGTH =
     "mapreduce.input.linerecordreader.line.maxlength";
@@ -54,12 +58,10 @@ public class CharsetTransformingLineRecordReader extends LineRecordReader {
   private long pos;
   private long end;
   private SplitLineReader in;
-  private FSDataInputStream fileIn;
   private Seekable filePosition;
   private int maxLineLength;
   private LongWritable key;
   private Text value;
-  private boolean isCompressedInput;
   private Decompressor decompressor;
   private byte[] recordDelimiterBytes;
 
@@ -72,6 +74,13 @@ public class CharsetTransformingLineRecordReader extends LineRecordReader {
     this.recordDelimiterBytes = recordDelimiter;
   }
 
+  /**
+   * Initialize method from parent class, simplified for this our use case from the base class.
+   *
+   * @param genericSplit File Split
+   * @param context      Execution context
+   * @throws IOException if the underlying file or decompression operations fail.
+   */
   public void initialize(InputSplit genericSplit,
                          TaskAttemptContext context) throws IOException {
     FileSplit split = (FileSplit) genericSplit;
@@ -83,10 +92,9 @@ public class CharsetTransformingLineRecordReader extends LineRecordReader {
 
     // open the file and seek to the start of the split
     final FileSystem fs = file.getFileSystem(job);
-    fileIn = fs.open(file);
+    FSDataInputStream fileIn = fs.open(file);
 
     SplittableCompressionCodec codec = new FixedLengthCharsetTransformingCodec(fixedLengthCharset);
-    isCompressedInput = true;
     decompressor = codec.createDecompressor();
 
     final SplitCompressionInputStream cIn =
@@ -110,18 +118,39 @@ public class CharsetTransformingLineRecordReader extends LineRecordReader {
     this.pos = start;
   }
 
-
+  /**
+   * Returns the maximum of bytes to consume from the input stream
+   * Since the input is compressed, there is no way to accurately determine how many bytes we need to consume.
+   *
+   * @param pos Current file position
+   * @return Number of bytes to consume.
+   */
   private int maxBytesToConsume(long pos) {
-    return isCompressedInput
-      ? Integer.MAX_VALUE
-      : (int) Math.min(Integer.MAX_VALUE, end - pos);
+    return Integer.MAX_VALUE;
   }
 
+  /**
+   * Returns the File position in the underlying stream.
+   * <p>
+   * Note that, as the file is read in chunks to decompress, this number will only update in batches and usually be
+   * ahead of the actual file position. see {@link FixedLengthCharsetTransformingDecompressorStream#getCompressedData}
+   *
+   * @return File position
+   * @throws IOException if an exception is thrown from the underlying strem operation.
+   */
   private long getFilePosition() throws IOException {
-    LOG.info("File position is: {}", filePosition.getPos());
     return filePosition.getPos();
   }
 
+  /**
+   * Read the next Key Value from the decompressor.
+   * <p>
+   * Note that, as we read from the original file in chunks in order to decode, as we approach the partition boundary
+   * defined by `end`, the read operation
+   *
+   * @return
+   * @throws IOException
+   */
   public boolean nextKeyValue() throws IOException {
     if (key == null) {
       key = new LongWritable();
@@ -175,9 +204,19 @@ public class CharsetTransformingLineRecordReader extends LineRecordReader {
     }
   }
 
+  /**
+   * Close this input stream and clean up the decompressor.
+   * @throws IOException
+   */
   public synchronized void close() throws IOException {
-    if (in != null) {
-      in.close();
+    try {
+      if (in != null) {
+        in.close();
+      }
+    } finally {
+      if (decompressor != null) {
+        decompressor.end();
+      }
     }
   }
 }

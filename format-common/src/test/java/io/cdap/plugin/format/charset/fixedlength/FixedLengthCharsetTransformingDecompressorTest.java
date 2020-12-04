@@ -40,6 +40,36 @@ public class FixedLengthCharsetTransformingDecompressorTest {
   }
 
   @Test
+  public void testISO88592Input() throws IOException {
+    testDecode("This is ŕęďţ@ string that will need to be converted into UTF-8",
+               FixedLengthCharset.ISO_8859_2);
+  }
+
+  @Test
+  public void testISO88593Input() throws IOException {
+    testDecode("This is ĜŝħĦ@ string that will need to be converted into UTF-8",
+               FixedLengthCharset.ISO_8859_3);
+  }
+
+  @Test
+  public void testISO88594Input() throws IOException {
+    testDecode("This is ŖąÆŦĸ@ string that will need to be converted into UTF-8",
+               FixedLengthCharset.ISO_8859_4);
+  }
+
+  @Test
+  public void testISO88595Input() throws IOException {
+    testDecode("This is ДЩЊЮѓ@ string that will need to be converted into UTF-8",
+               FixedLengthCharset.ISO_8859_5);
+  }
+
+  @Test
+  public void testISO88596Input() throws IOException {
+    testDecode("This is سشغقئ@ string that will need to be converted into UTF-8",
+               FixedLengthCharset.ISO_8859_6);
+  }
+
+  @Test
   public void testWindows1252Bytes() throws IOException {
     testDecode("This is áéíóú@ string that will need to be converted into UTF-8",
                FixedLengthCharset.WINDOWS_1252);
@@ -64,6 +94,7 @@ public class FixedLengthCharsetTransformingDecompressorTest {
       }
     }
 
-    Assert.assertArrayEquals(utf8Bytes, decompressed.toByteArray());
+    byte[] decompressedBytes = decompressed.toByteArray();
+    Assert.assertArrayEquals(utf8Bytes, decompressedBytes);
   }
 }

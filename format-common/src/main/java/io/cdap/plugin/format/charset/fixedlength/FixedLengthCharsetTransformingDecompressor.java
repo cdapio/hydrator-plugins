@@ -29,15 +29,15 @@ import java.nio.charset.StandardCharsets;
  */
 public class FixedLengthCharsetTransformingDecompressor implements Decompressor {
 
-  final FixedLengthCharset origin;
-  final Charset destination = StandardCharsets.UTF_8;
-  long numConsumedBytes = 0;
+  protected final FixedLengthCharset sourceEncoding;
+  protected final Charset targetCharset = StandardCharsets.UTF_8;
+  protected long numConsumedBytes = 0;
 
   ByteArrayOutputStream incomingBuffer = new ByteArrayOutputStream();
   ByteArrayInputStream outgoingBuffer = new ByteArrayInputStream(new byte[]{});
 
-  public FixedLengthCharsetTransformingDecompressor(FixedLengthCharset origin) {
-    this.origin = origin;
+  public FixedLengthCharsetTransformingDecompressor(FixedLengthCharset sourceEncoding) {
+    this.sourceEncoding = sourceEncoding;
   }
 
   @Override
@@ -51,12 +51,13 @@ public class FixedLengthCharsetTransformingDecompressor implements Decompressor 
 
     //Calculate the position in this array where the last full character can be decoded.
     int length = input.length;
-    int lastCharacterBoundary = (input.length / origin.getCharLength()) * origin.getCharLength();
+    int lastCharacterBoundary =
+      (input.length / sourceEncoding.getNumBytesPerCharacter()) * sourceEncoding.getNumBytesPerCharacter();
 
     //Decode the incoming bytes as a string.
-    String inputString = new String(input, 0, lastCharacterBoundary, origin.getCharset());
+    String inputString = new String(input, 0, lastCharacterBoundary, sourceEncoding.getCharset());
     //Encode the previously decoded string as UTF-8 bytes and add this payload into the Outgoing buffer to serve reads.
-    outgoingBuffer = new ByteArrayInputStream(inputString.getBytes(destination));
+    outgoingBuffer = new ByteArrayInputStream(inputString.getBytes(targetCharset));
 
     //Clean up the input buffer.
     incomingBuffer.reset();
