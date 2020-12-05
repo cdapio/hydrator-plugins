@@ -65,28 +65,25 @@ public class FixedLengthCharsetTransformingDecompressorStream extends Decompress
 
   @Override
   public long getPos() throws IOException {
-    //If we're working with a Charset Transforming decompressor, we can calculate the current position on the input file
+    // Since we're working with a Charset Transforming decompressor, we can calculate the current position on the
+    // input file.
     // By adding the starting position in the file with the number of bytes we have read so far.
-    if (this.decompressor instanceof FixedLengthCharsetTransformingDecompressor) {
-      FixedLengthCharsetTransformingDecompressor flcDecompressor =
-        (FixedLengthCharsetTransformingDecompressor) this.decompressor;
+    FixedLengthCharsetTransformingDecompressor flcDecompressor =
+      (FixedLengthCharsetTransformingDecompressor) this.decompressor;
 
-      //Actual position is starting possition + the number of bytes we have consumed.
-      return start + flcDecompressor.getNumConsumedBytes();
-    } else {
-      return super.getPos();
-    }
+    //Actual position is starting possition + the number of bytes we have consumed.
+    return start + flcDecompressor.getNumConsumedBytes();
   }
 
   /**
    * Fill the input buffer with data from the source input.
-   *
+   * <p>
    * Partition boundaries present a challenge: We need to make sure to read just enough characters to make it into
    * the next complete line.
-   *
+   * <p>
    * Note that, as we approach the partition boundary, we start reading one character at a time until the input
    * reader is able to read a full line.
-   *
+   * <p>
    * The method that reads a full line after the partition boundary can be found in
    * {@link CharsetTransformingLineRecordReader#nextKeyValue()}
    *
@@ -95,32 +92,28 @@ public class FixedLengthCharsetTransformingDecompressorStream extends Decompress
    */
   @Override
   protected int getCompressedData() throws IOException {
-    if (this.decompressor instanceof FixedLengthCharsetTransformingDecompressor) {
-      checkStream();
+    checkStream();
 
-      FixedLengthCharsetTransformingDecompressor flcDecompressor =
-        (FixedLengthCharsetTransformingDecompressor) this.decompressor;
+    FixedLengthCharsetTransformingDecompressor flcDecompressor =
+      (FixedLengthCharsetTransformingDecompressor) this.decompressor;
 
-      // Calculate the number of bytes in this partition that we still need to read.
-      long bytesUntilPartitionBoundary = this.end - (this.start + flcDecompressor.getNumConsumedBytes());
+    // Calculate the number of bytes in this partition that we still need to read.
+    long bytesUntilPartitionBoundary = this.end - (this.start + flcDecompressor.getNumConsumedBytes());
 
-      // Prevent int overflow
-      if (bytesUntilPartitionBoundary > Integer.MAX_VALUE) {
-        bytesUntilPartitionBoundary = Integer.MAX_VALUE;
-      }
-
-      // If we are at or after the partiton boundary, we read 1 character at a time until we're able to
-      // read a full line.
-      if (bytesUntilPartitionBoundary < this.fixedLengthCharset.getNumBytesPerCharacter()) {
-        bytesUntilPartitionBoundary = this.fixedLengthCharset.getNumBytesPerCharacter();
-      }
-
-      // Calculate how many bytes we actually need to read
-      int readLength = Math.min(buffer.length, (int) bytesUntilPartitionBoundary);
-
-      return in.read(buffer, 0, readLength);
-    } else {
-      return super.getCompressedData();
+    // Prevent int overflow
+    if (bytesUntilPartitionBoundary > Integer.MAX_VALUE) {
+      bytesUntilPartitionBoundary = Integer.MAX_VALUE;
     }
+
+    // If we are at or after the partiton boundary, we read 1 character at a time until we're able to
+    // read a full line.
+    if (bytesUntilPartitionBoundary < this.fixedLengthCharset.getNumBytesPerCharacter()) {
+      bytesUntilPartitionBoundary = this.fixedLengthCharset.getNumBytesPerCharacter();
+    }
+
+    // Calculate how many bytes we actually need to read
+    int readLength = Math.min(buffer.length, (int) bytesUntilPartitionBoundary);
+
+    return in.read(buffer, 0, readLength);
   }
 }
