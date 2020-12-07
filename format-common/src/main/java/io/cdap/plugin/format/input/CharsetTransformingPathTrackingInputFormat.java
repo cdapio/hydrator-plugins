@@ -33,7 +33,7 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
  */
 public class CharsetTransformingPathTrackingInputFormat extends TextInputFormat {
 
-  FixedLengthCharset fixedLengthCharset;
+  protected final FixedLengthCharset fixedLengthCharset;
 
   public CharsetTransformingPathTrackingInputFormat(String charsetName) {
     this.fixedLengthCharset = FixedLengthCharset.forName(charsetName);

@@ -40,7 +40,7 @@ public class FixedLengthCharsetTransformingCodec extends DefaultCodec
   implements Configurable, SplittableCompressionCodec {
   private static final Logger LOG = LoggerFactory.getLogger(FixedLengthCharsetTransformingCodec.class);
 
-  protected final FixedLengthCharset sourceEncoding;
+  private final FixedLengthCharset sourceEncoding;
 
   public FixedLengthCharsetTransformingCodec(FixedLengthCharset sourceEncoding) {
     this.sourceEncoding = sourceEncoding;
@@ -48,22 +48,22 @@ public class FixedLengthCharsetTransformingCodec extends DefaultCodec
 
   @Override
   public CompressionOutputStream createOutputStream(OutputStream out) throws IOException {
-    throw new RuntimeException("Not supported");
+    throw new UnsupportedOperationException("Not supported");
   }
 
   @Override
   public CompressionOutputStream createOutputStream(OutputStream out, Compressor compressor) throws IOException {
-    throw new RuntimeException("Not supported");
+    throw new UnsupportedOperationException("Not supported");
   }
 
   @Override
   public Class<? extends Compressor> getCompressorType() {
-    throw new RuntimeException("Not supported");
+    throw new UnsupportedOperationException("Not supported");
   }
 
   @Override
   public Compressor createCompressor() {
-    throw new RuntimeException("Not supported");
+    throw new UnsupportedOperationException("Not supported");
   }
 
   @Override
@@ -83,7 +83,7 @@ public class FixedLengthCharsetTransformingCodec extends DefaultCodec
 
   @Override
   public DirectDecompressor createDirectDecompressor() {
-    throw new RuntimeException("Not supported");
+    throw new UnsupportedOperationException("Not supported");
   }
 
   @Override
