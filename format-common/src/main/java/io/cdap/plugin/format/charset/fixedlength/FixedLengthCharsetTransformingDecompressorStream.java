@@ -81,8 +81,12 @@ public class FixedLengthCharsetTransformingDecompressorStream extends Decompress
    * Partition boundaries present a challenge: We need to make sure to read just enough characters to make it into
    * the next complete line.
    * <p>
-   * Note that, as we approach the partition boundary, we start reading one character at a time until the input
-   * reader is able to read a full line.
+   * Note that, as we approach the partition boundary, we read from the input stream one character at a time the input
+   * reader is able to read a full line (see below).
+   * <p>
+   * We must do this because the position in the file (last byte read) might
+   * include one or more lines that have not yet been read We must ensure that we only read the last line that
+   * started before the partition boundary and not a single extra line.
    * <p>
    * The method that reads a full line after the partition boundary can be found in
    * {@link CharsetTransformingLineRecordReader#nextKeyValue()}
@@ -105,7 +109,7 @@ public class FixedLengthCharsetTransformingDecompressorStream extends Decompress
       bytesUntilPartitionBoundary = Integer.MAX_VALUE;
     }
 
-    // If we are at or after the partiton boundary, we read 1 character at a time until we're able to
+    // If we are at or after the partition boundary, we read 1 character at a time until we're able to
     // read a full line.
     if (bytesUntilPartitionBoundary < this.fixedLengthCharset.getNumBytesPerCharacter()) {
       bytesUntilPartitionBoundary = this.fixedLengthCharset.getNumBytesPerCharacter();

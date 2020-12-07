@@ -96,7 +96,6 @@ public class FixedLengthCharsetTransformingCodec extends DefaultCodec
     return new FixedLengthCharsetTransformingDecompressor(sourceEncoding);
   }
 
-  @Override
   public SplitCompressionInputStream createInputStream(InputStream seekableIn,
                                                        Decompressor decompressor,
                                                        long start,

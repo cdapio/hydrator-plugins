@@ -89,7 +89,7 @@ public enum FixedLengthCharset {
       }
     }
 
-    throw new IllegalArgumentException("Cannot find FixedLengthCharset for the supplied charset name: '" + name +"'");
+    throw new IllegalArgumentException("Cannot find FixedLengthCharset for the supplied charset name: '" + name + "'");
   }
 
   /**
