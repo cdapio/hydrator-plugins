@@ -73,6 +73,10 @@ public class FixedLengthCharsetTransformingCodec extends DefaultCodec
 
   @Override
   public CompressionInputStream createInputStream(InputStream in, Decompressor decompressor) throws IOException {
+    if (!(decompressor instanceof FixedLengthCharsetTransformingDecompressor)) {
+      throw new IllegalArgumentException("FixedLengthCharsetTransformingCodec can only be used with a" +
+                                           "FixedLengthCharsetTransformingDecompressor instance");
+    }
     return super.createInputStream(in, decompressor);
   }
 

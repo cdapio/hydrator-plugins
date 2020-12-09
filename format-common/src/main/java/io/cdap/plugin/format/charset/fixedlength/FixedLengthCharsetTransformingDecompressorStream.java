@@ -43,7 +43,7 @@ public class FixedLengthCharsetTransformingDecompressorStream extends Decompress
                                                              long end)
     throws IOException {
     super(in, new FixedLengthCharsetTransformingDecompressor(fixedLengthCharset));
-    long skippedBytes = in.skip(start);
+    in.skip(start);
     this.fixedLengthCharset = fixedLengthCharset;
     this.start = start;
     this.end = end;
