@@ -21,7 +21,6 @@ import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.batch.BatchSourceContext;
-import io.cdap.plugin.format.input.CharsetTransformingPathTrackingInputFormat;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import io.cdap.plugin.format.plugin.AbstractFileSource;
 

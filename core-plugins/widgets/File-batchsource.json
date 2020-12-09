@@ -165,6 +165,39 @@
           "name": "fileSystemProperties"
         },
         {
+          "widget-type": "select",
+          "label": "File encoding",
+          "name": "fileEncoding",
+          "widget-attributes": {
+            "values": [
+              "UTF-8 (default)",
+              "UTF-32",
+              "ISO-8859-1 (Latin-1 Western European)",
+              "ISO-8859-2 (Latin-2 Central European)",
+              "ISO-8859-3 (Latin-3 South European)",
+              "ISO-8859-4 (Latin-4 North European)",
+              "ISO-8859-5 (Latin/Cyrillic)",
+              "ISO-8859-6 (Latin/Arabic)",
+              "ISO-8859-7 (Latin/Greek)",
+              "ISO-8859-8 (Latin/Hebrew)",
+              "ISO-8859-9 (Latin-5 Turkish)",
+              "ISO-8859-11 (Latin/Thai)",
+              "ISO-8859-13 (Latin-7 Baltic Rim)",
+              "ISO-8859-15 (Latin-9)",
+              "Windows-1250",
+              "Windows-1251",
+              "Windows-1252",
+              "Windows-1253",
+              "Windows-1254",
+              "Windows-1255",
+              "Windows-1256",
+              "Windows-1257",
+              "Windows-1258"
+            ],
+            "default": "UTF-8 (default)"
+          }
+        },
+        {
           "widget-type": "hidden",
           "name": "copyHeader"
         }

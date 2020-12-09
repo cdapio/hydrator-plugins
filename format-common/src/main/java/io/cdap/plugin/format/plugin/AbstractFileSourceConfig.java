@@ -39,7 +39,7 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
   public static final String NAME_FORMAT = "format";
   public static final String NAME_SCHEMA = "schema";
   public static final String DEFAULT_FILE_ENCODING = "utf-8";
-  
+
   @Description("Name be used to uniquely identify this source for lineage, annotating metadata, etc.")
   private String referenceName;
 
@@ -150,10 +150,15 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
       collector.addFailure(e.getMessage(), null).withConfigProperty(NAME_SCHEMA).withStacktrace(e.getStackTrace());
     }
 
-    if (fileEncoding != null && !fileEncoding.equals(DEFAULT_FILE_ENCODING)
-      && !FixedLengthCharset.isValidEncoding(fileEncoding)) {
-      collector.addFailure("Specified file encoding is not valid.",
-                           "Use one of the supported file encodings.");
+    if (fileEncoding != null && !fileEncoding.isEmpty()) {
+      fileEncoding = cleanFileEncoding(fileEncoding);
+
+      if (!fileEncoding.equalsIgnoreCase(DEFAULT_FILE_ENCODING)
+        && !FixedLengthCharset.isValidEncoding(fileEncoding)) {
+        collector.addFailure("Specified file encoding is not valid.",
+                             "Use one of the supported file encodings.");
+      }
+
     }
 
     // if failure collector has not collected any errors, that would mean either validation has succeeded or config
@@ -230,5 +235,17 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
 
   public boolean shouldCopyHeader() {
     return copyHeader;
+  }
+
+  /**
+   * Takes the first word of the file encoding string, as any further words are just charset descriptions.
+   *
+   * @param fileEncoding The file encoding parameter supplied by the user
+   * @return the cleaned up file encoding name
+   */
+  protected String cleanFileEncoding(String fileEncoding) {
+    fileEncoding = fileEncoding.trim();
+
+    return fileEncoding.split(" ")[0];
   }
 }
