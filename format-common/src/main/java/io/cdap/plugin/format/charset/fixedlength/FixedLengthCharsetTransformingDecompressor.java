@@ -56,6 +56,9 @@ public class FixedLengthCharsetTransformingDecompressor implements Decompressor 
 
   @Override
   public void setInput(byte[] b, int off, int len) {
+    //Set up incoming buffer for writes.
+    inputByteBuffer.compact();
+
     //Expand incoming buffer if needed.
     if (inputByteBuffer.remaining() < len) {
       //Allocate new buffer that can fill the existing input + newly received bytes
@@ -85,9 +88,6 @@ public class FixedLengthCharsetTransformingDecompressor implements Decompressor 
 
     //Set up decoded char buffer for reads.
     decodedCharBuffer.flip();
-
-    //Set up incoming buffer for writes.
-    inputByteBuffer.compact();
 
   }
 
