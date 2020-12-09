@@ -530,7 +530,7 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
     ImmutableMap.Builder<String, String> sourceProperties = ImmutableMap.<String, String>builder()
       .put(Constants.Reference.REFERENCE_NAME, appName + "TestFile")
       .put(Properties.File.PATH, testFolder.getAbsolutePath())
-      .put(Properties.File.FORMAT, FileFormat.BLOB.name())
+      .put(Properties.File.FORMAT, FileFormat.BLOB.name().toLowerCase())
       .put(Properties.File.IGNORE_NON_EXISTING_FOLDERS, "false")
       .put("skipHeader", "false")
       .put("pathField", "file")
