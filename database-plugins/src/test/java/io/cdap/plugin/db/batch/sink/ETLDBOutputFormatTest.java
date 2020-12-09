@@ -112,4 +112,13 @@ public class ETLDBOutputFormatTest {
     Assert.assertNull(outputFormat.getDelegateClass());
     Assert.assertEquals(ETLDBOutputFormat.POSTGRES_SOCKET_FACTORY, outputFormat.getSocketFactory());
   }
+
+  @Test
+  public void testRewriteOracleUrl() throws Exception {
+    ETLDBOutputFormat outputFormat = new ETLDBOutputFormat();
+    String url = "jdbc:oracle:thin:scott/tiger@//myhost:1521/myservicename";
+    Assert.assertEquals(url, outputFormat.rewriteUrl(url));
+    Assert.assertNull(outputFormat.getDelegateClass());
+    Assert.assertNull(outputFormat.getSocketFactory());
+  }
 }

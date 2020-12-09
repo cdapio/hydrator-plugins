@@ -173,14 +173,14 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
 
   private String rewriteSqlserverUrl(String url) {
     // Url format: jdbc:sqlserver://[serverName[\instanceName][:portNumber]][;property=value[;property=value]]
+    // socketFactoryClass specifies class name for a custom socket factory
     Pattern regex = Pattern.compile("socketFactoryClass=([^;]+)");
     Matcher regexMatcher = regex.matcher(url);
     if (regexMatcher.find()) {
       if (!SQLSERVER_SOCKET_FACTORY.equals(regexMatcher.group(1))) {
         delegateClass = regexMatcher.group(1);
       }
-      String ret = regexMatcher.replaceAll(String.format("socketFactoryClass=%s", SQLSERVER_SOCKET_FACTORY));
-      return ret;
+      return regexMatcher.replaceAll(String.format("socketFactoryClass=%s", SQLSERVER_SOCKET_FACTORY));
     } else {
       return String.format("%s;socketFactoryClass=%s", url, SQLSERVER_SOCKET_FACTORY);
     }
