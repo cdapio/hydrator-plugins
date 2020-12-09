@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.db.batch.sink;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
@@ -40,6 +41,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
@@ -48,6 +50,8 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Class that extends {@link DBOutputFormat} to load the database driver class correctly.
@@ -58,9 +62,10 @@ import java.util.Properties;
  */
 public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<K, V> {
   public static final String AUTO_COMMIT_ENABLED = "io.cdap.hydrator.db.output.autocommit.enabled";
-  private static final String MYSQL_SOCKET_FACTORY = "io.cdap.socketfactory.mysql.SocketFactory";
-  private static final String POSTGRES_SOCKET_FACTORY = "io.cdap.socketfactory.postgres.SocketFactory";
-  private static final String SQLSERVER_SOCKET_FACTORY = "io.cdap.socketfactory.sqlserver.SocketFactory";
+  private static final String JDBC_PREFIX = "jdbc:";
+  static final String MYSQL_SOCKET_FACTORY = "io.cdap.socketfactory.mysql.SocketFactory";
+  static final String POSTGRES_SOCKET_FACTORY = "io.cdap.socketfactory.postgres.SocketFactory";
+  static final String SQLSERVER_SOCKET_FACTORY = "io.cdap.socketfactory.sqlserver.SocketFactory";
 
   private static final Logger LOG = LoggerFactory.getLogger(ETLDBOutputFormat.class);
   private Configuration conf;
@@ -68,6 +73,14 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
   private JDBCDriverShim driverShim;
   private String socketFactory;
   private String delegateClass;
+
+  String getSocketFactory() {
+    return socketFactory;
+  }
+
+  String getDelegateClass() {
+    return delegateClass;
+  }
 
   @Override
   public RecordWriter<K, V> getRecordWriter(TaskAttemptContext context) throws IOException {
@@ -142,46 +155,59 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
     }
   }
 
+  private String rewriteJdbcUrl(URI uri) throws URISyntaxException {
+    String query = uri.getQuery();
+    Map<String, String> queryParams = null;
+    String rewrittenQuery = null;
+    if (query !=  null) {
+      queryParams = new HashMap<>(Splitter.on('&').trimResults().withKeyValueSeparator("=").split(query));
+      String factory = queryParams.get("socketFactory");
+      if (factory != null && !factory.equals(socketFactory)) {
+        delegateClass = factory;
+        queryParams.put("socketFactory", socketFactory);
+      }
+      rewrittenQuery = Joiner.on('&').withKeyValueSeparator("=").join(queryParams);
+    }
+    return JDBC_PREFIX + new URI(uri.getScheme(), uri.getAuthority(), uri.getPath(), rewrittenQuery, uri.getFragment());
+  }
+
+  private String rewriteSqlserverUrl(String url) {
+    // Url format: jdbc:sqlserver://[serverName[\instanceName][:portNumber]][;property=value[;property=value]]
+    Pattern regex = Pattern.compile("socketFactoryClass=([^;]+)");
+    Matcher regexMatcher = regex.matcher(url);
+    if (regexMatcher.find()) {
+      if (!SQLSERVER_SOCKET_FACTORY.equals(regexMatcher.group(1))) {
+        delegateClass = regexMatcher.group(1);
+      }
+      String ret = regexMatcher.replaceAll(String.format("socketFactoryClass=%s", SQLSERVER_SOCKET_FACTORY));
+      return ret;
+    } else {
+      return String.format("%s;socketFactoryClass=%s", url, SQLSERVER_SOCKET_FACTORY);
+    }
+  }
+
+  @VisibleForTesting
+  String rewriteUrl(String url) throws URISyntaxException {
+    URI uri = new URI(url.substring(JDBC_PREFIX.length()));
+    switch (uri.getScheme()) {
+      case "mysql":
+        socketFactory = MYSQL_SOCKET_FACTORY;
+        return rewriteJdbcUrl(uri);
+      case "postgresql":
+        socketFactory = POSTGRES_SOCKET_FACTORY;
+        return rewriteJdbcUrl(uri);
+      case "sqlserver":
+        socketFactory = SQLSERVER_SOCKET_FACTORY;
+        return rewriteSqlserverUrl(url);
+      default:
+        return url;
+    }
+  }
+
   private Connection getConnection(Configuration conf) {
     Connection connection;
     try {
-      String url = conf.get(DBConfiguration.URL_PROPERTY);
-      String jdbcPrefix = "jdbc:";
-      URI uri = new URI(url.substring(jdbcPrefix.length()));
-      String socketFactoryParam = null;
-      switch (uri.getScheme()) {
-        case "mysql":
-          socketFactory = MYSQL_SOCKET_FACTORY;
-          socketFactoryParam = "socketFactory";
-          break;
-        case "postgresql":
-          socketFactory = POSTGRES_SOCKET_FACTORY;
-          socketFactoryParam = "socketFactory";
-          break;
-        case "sqlserver":
-          socketFactory = SQLSERVER_SOCKET_FACTORY;
-          socketFactoryParam = "socketFactoryClass";
-          break;
-      }
-
-      String query = uri.getQuery();
-      Map<String, String> queryParams;
-      if (query !=  null) {
-        queryParams = new HashMap<>(Splitter.on('&').trimResults().withKeyValueSeparator("=").split(query));
-      } else {
-        queryParams = new HashMap<>();
-      }
-
-      if (socketFactory != null) {
-        String factory = queryParams.get(socketFactoryParam);
-        if (factory != null && !factory.equals(socketFactory)) {
-          delegateClass = factory;
-        }
-        queryParams.put(socketFactoryParam, socketFactory);
-        String rewrittenQuery = Joiner.on('&').withKeyValueSeparator("=").join(queryParams);
-        url = jdbcPrefix +
-          new URI(uri.getScheme(), uri.getAuthority(), uri.getPath(), rewrittenQuery, uri.getFragment());
-      }
+      String url = rewriteUrl(conf.get(DBConfiguration.URL_PROPERTY));
       ClassLoader classLoader = conf.getClassLoader();
       @SuppressWarnings("unchecked")
       Class<? extends Driver> driverClass =
