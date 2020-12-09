@@ -48,7 +48,8 @@ public class FileBatchSource extends AbstractFileSource<FileSourceConfig> {
     if (config.shouldCopyHeader()) {
       properties.put(PathTrackingInputFormat.COPY_HEADER, "true");
     }
-    if (config.getFileEncoding() != null) {
+    if (config.getFileEncoding() != null
+      && !config.getFileEncoding().equalsIgnoreCase(config.getDefaultFileEncoding())) {
       properties.put(PathTrackingInputFormat.SOURCE_FILE_ENCODING, config.getFileEncoding());
     }
     return properties;
