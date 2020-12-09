@@ -16,7 +16,9 @@
 
 package io.cdap.plugin.db.batch.sink;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import io.cdap.plugin.ConnectionConfig;
 import io.cdap.plugin.DBUtils;
@@ -37,11 +39,14 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -53,6 +58,9 @@ import java.util.Properties;
  */
 public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<K, V> {
   public static final String AUTO_COMMIT_ENABLED = "io.cdap.hydrator.db.output.autocommit.enabled";
+  private static final String MYSQL_SOCKET_FACTORY = "io.cdap.socketfactory.mysql.SocketFactory";
+  private static final String POSTGRES_SOCKET_FACTORY = "io.cdap.socketfactory.postgres.SocketFactory";
+  private static final String SQLSERVER_SOCKET_FACTORY = "io.cdap.socketfactory.sqlserver.SocketFactory";
 
   private static final Logger LOG = LoggerFactory.getLogger(ETLDBOutputFormat.class);
   private Configuration conf;
@@ -138,21 +146,41 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
     Connection connection;
     try {
       String url = conf.get(DBConfiguration.URL_PROPERTY);
-      if (url.contains("com.google.cloud.sql.mysql.SocketFactory")) {
-        delegateClass = "com.google.cloud.sql.mysql.SocketFactory";
-        socketFactory = "io.cdap.socketfactory.mysql.SocketFactory";
-        url = url.replace("com.google.cloud.sql.mysql.SocketFactory",
-                          socketFactory);
-      } else if (url.contains("com.google.cloud.sql.postgres.SocketFactory")) {
-        delegateClass = "com.google.cloud.sql.postgres.SocketFactory";
-        socketFactory = "io.cdap.socketfactory.postgres.SocketFactory";
-        url = url.replace("com.google.cloud.sql.postgres.SocketFactory",
-                          socketFactory);
-      } else if (url.contains("com.google.cloud.sql.sqlserver.SocketFactory")) {
-        delegateClass = "com.google.cloud.sql.sqlserver.SocketFactory";
-        socketFactory = "io.cdap.socketfactory.sqlserver.SocketFactory";
-        url = url.replace("com.google.cloud.sql.sqlserver.SocketFactory",
-                          socketFactory);
+      String jdbcPrefix = "jdbc:";
+      URI uri = new URI(url.substring(jdbcPrefix.length()));
+      String socketFactoryParam = null;
+      switch (uri.getScheme()) {
+        case "mysql":
+          socketFactory = MYSQL_SOCKET_FACTORY;
+          socketFactoryParam = "socketFactory";
+          break;
+        case "postgresql":
+          socketFactory = POSTGRES_SOCKET_FACTORY;
+          socketFactoryParam = "socketFactory";
+          break;
+        case "sqlserver":
+          socketFactory = SQLSERVER_SOCKET_FACTORY;
+          socketFactoryParam = "socketFactoryClass";
+          break;
+      }
+
+      String query = uri.getQuery();
+      Map<String, String> queryParams;
+      if (query !=  null) {
+        queryParams = new HashMap<>(Splitter.on('&').trimResults().withKeyValueSeparator("=").split(query));
+      } else {
+        queryParams = new HashMap<>();
+      }
+
+      if (socketFactory != null) {
+        String factory = queryParams.get(socketFactoryParam);
+        if (factory != null && !factory.equals(socketFactory)) {
+          delegateClass = factory;
+        }
+        queryParams.put(socketFactoryParam, socketFactory);
+        String rewrittenQuery = Joiner.on('&').withKeyValueSeparator("=").join(queryParams);
+        url = jdbcPrefix +
+          new URI(uri.getScheme(), uri.getAuthority(), uri.getPath(), rewrittenQuery, uri.getFragment());
       }
       ClassLoader classLoader = conf.getClassLoader();
       @SuppressWarnings("unchecked")
