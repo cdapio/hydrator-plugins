@@ -29,7 +29,7 @@ public class FixedLengthCharsetTransformingDecompressorTest {
 
   @Test
   public void testUtf32Input() throws IOException {
-    testDecode("This is 漢字áéíóú@ string that will need to be converted into UTF-8",
+    testDecode("áéíóú This is a string that will need to be converted into UTF-8",
                FixedLengthCharset.UTF_32);
   }
 
@@ -82,19 +82,27 @@ public class FixedLengthCharsetTransformingDecompressorTest {
     byte[] sourceBytes = testString.getBytes(fixedLengthCharset.getCharset());
     byte[] utf8Bytes = testString.getBytes(StandardCharsets.UTF_8);
 
-    //Set the input stream 3 bytes at a time.
-    for (int i = 0; i < sourceBytes.length; i += 3) {
-      decompressor.setInput(sourceBytes, i, Math.min(3, sourceBytes.length - i));
+    //Set the input stream from 1 to 8 bytes at a time;
 
-      //Read from the decompressed stream one byte at a time.
-      while (!decompressor.finished()) {
-        byte[] buf = new byte[1];
-        int numReadBytes = decompressor.decompress(buf, 0, 1);
-        decompressed.write(buf, 0, numReadBytes);
+    for (int s = 1; s <= 16; s++) {
+
+      for (int i = 0; i < sourceBytes.length; i += s) {
+        decompressor.setInput(sourceBytes, i, Math.min(s, sourceBytes.length - i));
+
+        //Read from the decompressed stream one byte at a time.
+        while (!decompressor.finished()) {
+          byte[] buf = new byte[1];
+          int numReadBytes = decompressor.decompress(buf, 0, 1);
+          decompressed.write(buf, 0, numReadBytes);
+        }
       }
-    }
 
-    byte[] decompressedBytes = decompressed.toByteArray();
-    Assert.assertArrayEquals(utf8Bytes, decompressedBytes);
+      byte[] decompressedBytes = decompressed.toByteArray();
+      Assert.assertArrayEquals(utf8Bytes, decompressedBytes);
+
+      decompressed.reset();
+      decompressor.reset();
+
+    }
   }
 }

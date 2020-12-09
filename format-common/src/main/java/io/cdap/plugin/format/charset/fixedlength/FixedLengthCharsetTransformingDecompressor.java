@@ -17,11 +17,16 @@
 package io.cdap.plugin.format.charset.fixedlength;
 
 import org.apache.hadoop.io.compress.Decompressor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CoderResult;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -29,44 +34,60 @@ import java.nio.charset.StandardCharsets;
  */
 public class FixedLengthCharsetTransformingDecompressor implements Decompressor {
 
-  protected final FixedLengthCharset sourceEncoding;
-  protected final Charset targetCharset = StandardCharsets.UTF_8;
-  protected long numConsumedBytes = 0;
+  private static final Logger LOG = LoggerFactory.getLogger(FixedLengthCharsetTransformingDecompressor.class);
 
-  ByteArrayOutputStream incomingBuffer = new ByteArrayOutputStream();
-  ByteArrayInputStream outgoingBuffer = new ByteArrayInputStream(new byte[]{});
+  protected final FixedLengthCharset sourceEncoding;
+  protected final CharsetDecoder decoder;
+  protected final CharsetEncoder encoder;
+  protected final Charset targetCharset = StandardCharsets.UTF_8;
+  protected long numDecodedCharacters = 0;
+  protected long numEncodedCharacters = 0;
+
+  //Initializing all buffers.
+  protected ByteBuffer inputByteBuffer = ByteBuffer.allocate(0);
+  protected CharBuffer decodedCharBuffer = CharBuffer.allocate(0);
+  protected ByteBuffer partialOutputByteBuffer = ByteBuffer.allocate(0);
 
   public FixedLengthCharsetTransformingDecompressor(FixedLengthCharset sourceEncoding) {
     this.sourceEncoding = sourceEncoding;
+    this.decoder = sourceEncoding.getCharset().newDecoder();
+    this.encoder = targetCharset.newEncoder();
   }
 
   @Override
   public void setInput(byte[] b, int off, int len) {
-    //Append the newly received bytes into the Input buffer
-    incomingBuffer.write(b, off, len);
-    byte[] input = incomingBuffer.toByteArray();
+    //Expand incoming buffer if needed.
+    if (inputByteBuffer.remaining() < len) {
+      //Allocate new buffer that can fill the existing input + newly received bytes
+      ByteBuffer newIncomingBuffer = ByteBuffer.allocate(len + inputByteBuffer.capacity());
 
-    //Count how many bytes we have consumed so far.
-    numConsumedBytes += len;
+      //Set up incoming buffer for reads and copy contents into new buffer.
+      inputByteBuffer.flip();
+      newIncomingBuffer.put(inputByteBuffer);
 
-    //Calculate the position in this array where the last full character can be decoded.
-    int length = input.length;
-    int lastCharacterBoundary =
-      (input.length / sourceEncoding.getNumBytesPerCharacter()) * sourceEncoding.getNumBytesPerCharacter();
-
-    //Decode the incoming bytes as a string.
-    String inputString = new String(input, 0, lastCharacterBoundary, sourceEncoding.getCharset());
-    //Encode the previously decoded string as UTF-8 bytes and add this payload into the Outgoing buffer to serve reads.
-    outgoingBuffer = new ByteArrayInputStream(inputString.getBytes(targetCharset));
-
-    //Clean up the input buffer.
-    incomingBuffer.reset();
-
-    //If there are remaining bytes that do not align to a full character, append those bytes into the input buffer
-    // so they form a full character in a subsequent invocation of this function.
-    if (length > lastCharacterBoundary) {
-      incomingBuffer.write(input, lastCharacterBoundary, length - lastCharacterBoundary);
+      inputByteBuffer = newIncomingBuffer;
     }
+
+    //Copy incoming payload into Input Byte Buffer
+    inputByteBuffer.put(b, off, len);
+    inputByteBuffer.flip();
+
+    //Set up char buffer for writes
+    decodedCharBuffer.compact();
+
+    //Expand the char buffer if needed.
+    if (decodedCharBuffer.capacity() < inputByteBuffer.limit() / sourceEncoding.getNumBytesPerCharacter()) {
+      decodedCharBuffer = CharBuffer.allocate(inputByteBuffer.limit() / sourceEncoding.getNumBytesPerCharacter());
+    }
+
+    //Decode bytes from the input buffer into the Decoded Char Buffer
+    decodeByteBufferIntoCharBuffer(inputByteBuffer);
+
+    //Set up decoded char buffer for reads.
+    decodedCharBuffer.flip();
+
+    //Set up incoming buffer for writes.
+    inputByteBuffer.compact();
 
   }
 
@@ -75,7 +96,7 @@ public class FixedLengthCharsetTransformingDecompressor implements Decompressor 
    */
   @Override
   public boolean needsInput() {
-    return outgoingBuffer.available() == 0;
+    return decodedCharBuffer.remaining() == 0;
   }
 
   @Override
@@ -90,23 +111,128 @@ public class FixedLengthCharsetTransformingDecompressor implements Decompressor 
 
   @Override
   public boolean finished() {
-    return outgoingBuffer.available() == 0;
+    return decodedCharBuffer.remaining() == 0 && partialOutputByteBuffer.remaining() == 0;
   }
 
   @Override
   public int decompress(byte[] b, int off, int len) throws IOException {
-    return outgoingBuffer.read(b, off, len);
+
+    //Allocate new outgoing buffer
+    ByteBuffer encodedBuffer = ByteBuffer.allocate(len - off);
+
+    //Consume any remaining bytes from a previous decompress invocation.
+    while (partialOutputByteBuffer != null && partialOutputByteBuffer.hasRemaining() && encodedBuffer.hasRemaining()) {
+      encodedBuffer.put(partialOutputByteBuffer.get());
+    }
+
+    //Encode as many characters as possible into the Encoded Buffer.
+    encodeCharBufferIntoByteBuffer(encodedBuffer);
+
+    // Handle the case where the outgoing buffer can still fit additional space.
+    // This means we need to encode one extra character and add as many bytes as possible into the output buffer.
+    if (decodedCharBuffer.remaining() > 0 && encodedBuffer.remaining() > 0) {
+      encodePartialCharacter(encodedBuffer);
+    }
+
+    //Set up decoded buffer for reading.
+    encodedBuffer.flip();
+    encodedBuffer.get(b, off, Math.min(encodedBuffer.remaining(), len));
+
+    //Return the number of bytes copied, which matches the actual position in the decoded buffer.
+    return encodedBuffer.position();
+  }
+
+  /**
+   * Decode butes from the specified byteBuffer into the DecodedCharBuffer.
+   *
+   * @param buffer The target ByteBuffer
+   */
+  protected void decodeByteBufferIntoCharBuffer(ByteBuffer buffer) {
+    int initialCharBufferPos = decodedCharBuffer.position();
+
+    //Decode input buffer as characters.
+    CoderResult decodeResult = decoder.decode(buffer, decodedCharBuffer, false);
+
+    if (decodeResult.isError()) {
+      LOG.error("Unable to decode payload from file as {}", sourceEncoding.getCharset().name());
+      throw new CharacterDecodingException(decoder);
+    }
+
+    int finalCharBufferPos = decodedCharBuffer.position();
+
+    numDecodedCharacters += finalCharBufferPos - initialCharBufferPos;
+  }
+
+  /**
+   * Encode bytes from the decodedCharBuffer into the specified ByteBuffer.
+   *
+   * @param buffer The target ByteBuffer
+   */
+  protected void encodeCharBufferIntoByteBuffer(ByteBuffer buffer) {
+    int initialCharBufferPos = decodedCharBuffer.position();
+
+    //Decode as many chars as possible into the outgoing buffer.
+    CoderResult encodeResult = encoder.encode(decodedCharBuffer, buffer, true);
+
+    if (encodeResult.isError()) {
+      LOG.error("Unable to encode decoded payload as UTF-8");
+      throw new CharacterEncodingException(encoder);
+    }
+
+    int finalCharBufferPos = decodedCharBuffer.position();
+
+    numEncodedCharacters += finalCharBufferPos - initialCharBufferPos;
+  }
+
+  /**
+   * Handle the case where we still need to encode an extra character and copy partial bytes from this encoded
+   * character into the output buffer in order to fill the output byte array.
+   * @param outputBuffer the output buffer we'll use to store the partial bytes from a character.
+   */
+  protected void encodePartialCharacter(ByteBuffer outputBuffer) {
+    // UTF-8 characters can be up to 4 bytes long.
+    // We start from 2 bytes as a 1-byte-long character would already fit in the encoded buffer.
+    for (int numBytes = 2; numBytes <= 4; numBytes++) {
+      ByteBuffer extraCharacterByteBuffer = ByteBuffer.allocate(numBytes);
+
+      encodeCharBufferIntoByteBuffer(extraCharacterByteBuffer);
+
+      //If we were not able to decode a character in this many bytes, we increase the size of the array and continue.
+      if (extraCharacterByteBuffer.remaining() != 0) {
+        continue;
+      }
+
+      //If we were able to decode an extra character, we need to split this character between the original buffer and
+      //an additional buffer for later.
+
+      //Set up additional char buffer for read in the next invocation of this method.
+      extraCharacterByteBuffer.flip();
+
+      //Read as many bytes as possible from this additional char buffer.
+      while (extraCharacterByteBuffer.hasRemaining() && outputBuffer.hasRemaining()) {
+        outputBuffer.put(extraCharacterByteBuffer.get());
+      }
+
+      //Store remaining bytes in the Partial Byte Buffer
+      partialOutputByteBuffer = extraCharacterByteBuffer;
+
+      // Exit this function as we have already completed the work.
+      return;
+    }
   }
 
   @Override
   public int getRemaining() {
-    return incomingBuffer.size();
+    return inputByteBuffer.remaining();
   }
 
   @Override
   public void reset() {
-    incomingBuffer.reset();
-    outgoingBuffer.reset();
+    inputByteBuffer = ByteBuffer.allocate(0);
+    decodedCharBuffer = CharBuffer.allocate(0);
+    partialOutputByteBuffer = ByteBuffer.allocate(0);
+    numDecodedCharacters = 0;
+    numEncodedCharacters = 0;
   }
 
   @Override
@@ -115,6 +241,26 @@ public class FixedLengthCharsetTransformingDecompressor implements Decompressor 
   }
 
   public long getNumConsumedBytes() {
-    return this.numConsumedBytes;
+    return numEncodedCharacters * sourceEncoding.getNumBytesPerCharacter();
+  }
+
+  /**
+   * Runtime Character Decoding Exception in case we are unable to decode the supplied payload from the
+   * specified charset.
+   */
+  public static class CharacterDecodingException extends RuntimeException {
+    public CharacterDecodingException(CharsetDecoder decoder) {
+      super(String.format("Unable to read from source as text encoded in '%s'", decoder.charset().name()));
+    }
+  }
+
+  /**
+   * Runtime Character Decoding Exception in case we are unable to encode the decoded payload into the
+   * desired charset.
+   */
+  public static class CharacterEncodingException extends RuntimeException {
+    public CharacterEncodingException(CharsetEncoder encoder) {
+      super(String.format("Unable to encode byte payload as '%s'", encoder.charset().name()));
+    }
   }
 }
