@@ -106,7 +106,7 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
       return;
     }
 
-    FileFormat fileFormat = config.getFormat();
+    String fileFormat = config.getFormatName();
     Schema schema = null;
 
     // Include source file system properties for schema auto detection
@@ -116,8 +116,7 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
     final PluginProperties pluginProperties = builder.build();
 
     ValidatingInputFormat validatingInputFormat =
-      pipelineConfigurer.usePlugin(ValidatingInputFormat.PLUGIN_TYPE, fileFormat.name().toLowerCase(),
-                                   fileFormat.name().toLowerCase(), pluginProperties);
+      pipelineConfigurer.usePlugin(ValidatingInputFormat.PLUGIN_TYPE, fileFormat, fileFormat, pluginProperties);
     FormatContext context = new FormatContext(collector, null);
     validateInputFormatProvider(context, fileFormat, validatingInputFormat);
 
@@ -133,10 +132,10 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
   public void prepareRun(BatchSourceContext context) throws Exception {
     FailureCollector collector = context.getFailureCollector();
     config.validate(collector);
-    FileFormat fileFormat = config.getFormat();
+    String fileFormat = config.getFormatName();
     ValidatingInputFormat validatingInputFormat;
     try {
-      validatingInputFormat = context.newPluginInstance(fileFormat.name().toLowerCase());
+      validatingInputFormat = context.newPluginInstance(fileFormat);
     } catch (InvalidPluginConfigException e) {
       Set<String> properties = new HashSet<>(e.getMissingProperties());
       for (InvalidPluginProperty invalidProperty: e.getInvalidProperties()) {
@@ -145,7 +144,7 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
       String errorMessage = String.format("Format '%s' cannot be used because properties %s were not provided or " +
                                             "were invalid when the pipeline was deployed. Set the format to a " +
                                             "different value, or re-create the pipeline with all required properties.",
-                                          fileFormat.name(), properties);
+                                          fileFormat, properties);
       throw new IllegalArgumentException(errorMessage, e);
     }
 
@@ -228,19 +227,16 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
    * Override this to specify a custom field level operation name and description.
    */
   protected void recordLineage(LineageRecorder lineageRecorder, List<String> outputFields) {
-    lineageRecorder.recordRead("Read", String.format("Read from %s files.",
-                                                     config.getFormat().name().toLowerCase()), outputFields);
+    lineageRecorder.recordRead("Read", String.format("Read from %s files.", config.getFormatName()), outputFields);
   }
 
-  private void validateInputFormatProvider(FormatContext context, FileFormat fileFormat,
+  private void validateInputFormatProvider(FormatContext context, String fileFormat,
                                            @Nullable ValidatingInputFormat validatingInputFormat) {
     FailureCollector collector = context.getFailureCollector();
     if (validatingInputFormat == null) {
       collector.addFailure(
-        String.format("Could not find the '%s' input format.", fileFormat.name().toLowerCase()), null)
-        .withPluginNotFound(fileFormat.name().toLowerCase(),
-                            fileFormat.name().toLowerCase(),
-                            ValidatingInputFormat.PLUGIN_TYPE);
+        String.format("Could not find the '%s' input format.", fileFormat), null)
+        .withPluginNotFound(fileFormat, fileFormat, ValidatingInputFormat.PLUGIN_TYPE);
     } else {
       validatingInputFormat.validate(context);
     }
