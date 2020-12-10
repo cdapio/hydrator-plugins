@@ -20,6 +20,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import io.cdap.plugin.ConnectionConfig;
 import io.cdap.plugin.DBUtils;
@@ -47,11 +48,9 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Class that extends {@link DBOutputFormat} to load the database driver class correctly.
@@ -157,33 +156,43 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
 
   private String rewriteJdbcUrl(URI uri) throws URISyntaxException {
     String query = uri.getQuery();
-    Map<String, String> queryParams = null;
-    String rewrittenQuery = null;
+    String rewrittenQuery;
+    Map<String, String> queryParams;
     if (query !=  null) {
-      queryParams = new HashMap<>(Splitter.on('&').trimResults().withKeyValueSeparator("=").split(query));
+      queryParams  = new LinkedHashMap<>(Splitter.on('&').trimResults().withKeyValueSeparator("=").split(query));
       String factory = queryParams.get("socketFactory");
       if (factory != null && !factory.equals(socketFactory)) {
         delegateClass = factory;
-        queryParams.put("socketFactory", socketFactory);
       }
-      rewrittenQuery = Joiner.on('&').withKeyValueSeparator("=").join(queryParams);
+    } else {
+      queryParams = new LinkedHashMap<>();
     }
+    queryParams.put("socketFactory", socketFactory);
+    rewrittenQuery = Joiner.on('&').withKeyValueSeparator("=").join(queryParams);
     return JDBC_PREFIX + new URI(uri.getScheme(), uri.getAuthority(), uri.getPath(), rewrittenQuery, uri.getFragment());
   }
 
-  private String rewriteSqlserverUrl(String url) {
-    // Url format: jdbc:sqlserver://[serverName[\instanceName][:portNumber]][;property=value[;property=value]]
-    // socketFactoryClass specifies class name for a custom socket factory
-    Pattern regex = Pattern.compile("socketFactoryClass=([^;]+)");
-    Matcher regexMatcher = regex.matcher(url);
-    if (regexMatcher.find()) {
-      if (!SQLSERVER_SOCKET_FACTORY.equals(regexMatcher.group(1))) {
-        delegateClass = regexMatcher.group(1);
-      }
-      return regexMatcher.replaceAll(String.format("socketFactoryClass=%s", SQLSERVER_SOCKET_FACTORY));
-    } else {
-      return String.format("%s;socketFactoryClass=%s", url, SQLSERVER_SOCKET_FACTORY);
+  private String rewriteSqlserverUrl(URI uri) throws URISyntaxException {
+    String authority = uri.getAuthority();
+    if (authority == null) {
+      return uri.toString();
     }
+    int queryIndex = authority.indexOf(';') + 1;
+    String query = authority.substring(queryIndex);
+    Map<String, String> queryParams;
+    if (!Strings.isNullOrEmpty(query)) {
+      queryParams = new LinkedHashMap<>(Splitter.on(';').trimResults().withKeyValueSeparator("=")
+                                          .split(query));
+      String factory = queryParams.get("socketFactoryClass");
+      if (factory != null && !factory.equals(socketFactory)) {
+        delegateClass = factory;
+      }
+    } else {
+      queryParams = new LinkedHashMap<>();
+    }
+    queryParams.put("socketFactoryClass", socketFactory);
+    authority = authority.substring(0, queryIndex) + Joiner.on(';').withKeyValueSeparator("=").join(queryParams);
+    return JDBC_PREFIX + new URI(uri.getScheme(), authority, null, null, null);
   }
 
   @VisibleForTesting
@@ -198,7 +207,7 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
         return rewriteJdbcUrl(uri);
       case "sqlserver":
         socketFactory = SQLSERVER_SOCKET_FACTORY;
-        return rewriteSqlserverUrl(url);
+        return rewriteSqlserverUrl(uri);
       default:
         return url;
     }

@@ -23,7 +23,7 @@ public class ETLDBOutputFormatTest {
   @Test
   public void testRewriteSqlserverUrlWithCdapSocketFactory() throws Exception {
     ETLDBOutputFormat outputFormat = new ETLDBOutputFormat();
-    String url = "jdbc:sqlserver://127.0.0.1;databaseName=mydb;socketFactoryClass=" +
+    String url = "jdbc:sqlserver://127.0.0.1:1433;databaseName=mydb;socketFactoryClass=" +
       "io.cdap.socketfactory.sqlserver.SocketFactory";
     Assert.assertEquals(url, outputFormat.rewriteUrl(url));
     Assert.assertNull(outputFormat.getDelegateClass());
@@ -31,6 +31,17 @@ public class ETLDBOutputFormatTest {
   }
 
   @Test
+  public void testRewriteSqlserverUrlWithNoParams() throws Exception {
+    ETLDBOutputFormat outputFormat = new ETLDBOutputFormat();
+    String url = "jdbc:sqlserver://127.0.0.1:1433;";
+    String expected = "jdbc:sqlserver://127.0.0.1:1433;socketFactoryClass=" +
+      "io.cdap.socketfactory.sqlserver.SocketFactory";
+    Assert.assertEquals(expected, outputFormat.rewriteUrl(url));
+    Assert.assertNull(outputFormat.getDelegateClass());
+    Assert.assertEquals(ETLDBOutputFormat.SQLSERVER_SOCKET_FACTORY, outputFormat.getSocketFactory());
+  }
+
+    @Test
   public void testRewriteSqlserverUrlWithGcloudSocketFactory() throws Exception {
     ETLDBOutputFormat outputFormat = new ETLDBOutputFormat();
     String url = "jdbc:sqlserver://;databaseName=mydb;socketFactoryClass=" +
@@ -78,7 +89,8 @@ public class ETLDBOutputFormatTest {
   public void testRewriteMySqlUrlWithoutFactory() throws Exception {
     ETLDBOutputFormat outputFormat = new ETLDBOutputFormat();
     String url = "jdbc:mysql://localhost/mydb";
-    Assert.assertEquals(url, outputFormat.rewriteUrl(url));
+    String expected = "jdbc:mysql://localhost/mydb?socketFactory=io.cdap.socketfactory.mysql.SocketFactory";
+    Assert.assertEquals(expected, outputFormat.rewriteUrl(url));
     Assert.assertNull(outputFormat.getDelegateClass());
     Assert.assertEquals(ETLDBOutputFormat.MYSQL_SOCKET_FACTORY, outputFormat.getSocketFactory());
   }
@@ -108,7 +120,8 @@ public class ETLDBOutputFormatTest {
   public void testRewritePostgresUrlWithoutFactory() throws Exception {
     ETLDBOutputFormat outputFormat = new ETLDBOutputFormat();
     String url = "jdbc:postgresql://localhost/mydb";
-    Assert.assertEquals(url, outputFormat.rewriteUrl(url));
+    String expected = "jdbc:postgresql://localhost/mydb?socketFactory=io.cdap.socketfactory.postgres.SocketFactory";
+    Assert.assertEquals(expected, outputFormat.rewriteUrl(url));
     Assert.assertNull(outputFormat.getDelegateClass());
     Assert.assertEquals(ETLDBOutputFormat.POSTGRES_SOCKET_FACTORY, outputFormat.getSocketFactory());
   }
