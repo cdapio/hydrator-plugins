@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import io.cdap.plugin.ConnectionConfig;
 import io.cdap.plugin.DBUtils;
+import io.cdap.plugin.DataSizeReporter;
 import io.cdap.plugin.JDBCDriverShim;
 import io.cdap.plugin.db.batch.NoOpCommitConnection;
 import io.cdap.plugin.db.batch.TransactionIsolationLevel;
@@ -29,6 +30,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.db.DBConfiguration;
 import org.apache.hadoop.mapreduce.lib.db.DBOutputFormat;
 import org.apache.hadoop.mapreduce.lib.db.DBWritable;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormatCounter;
 import org.apache.hadoop.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,6 +75,7 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
       return new DBRecordWriter(connection, statement) {
 
         private boolean emptyData = true;
+        private long bytesWritten = 0;
 
         //Implementation of the close method below is the exact implementation in DBOutputFormat except that
         //we check if there is any data to be written and if not, we skip executeBatch call.
@@ -84,6 +87,7 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
             if (!emptyData) {
               getStatement().executeBatch();
               getConnection().commit();
+              context.getCounter(FileOutputFormatCounter.BYTES_WRITTEN).increment(bytesWritten);
             }
           } catch (SQLException e) {
             try {
@@ -111,6 +115,12 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
         @Override
         public void write(K key, V value) throws IOException {
           super.write(key, value);
+          if (key instanceof DataSizeReporter) {
+            bytesWritten += ((DataSizeReporter) key).getBytesWritten();
+          }
+          if (value instanceof DataSizeReporter) {
+            bytesWritten += ((DataSizeReporter) value).getBytesWritten();
+          }
           emptyData = false;
         }
       };
