@@ -55,9 +55,10 @@ import javax.sql.rowset.serial.SerialBlob;
  * @see org.apache.hadoop.mapreduce.lib.db.DBOutputFormat DBOutputFormat
  * @see DBWritable DBWritable
  */
-public class DBRecord implements Writable, DBWritable, Configurable {
+public class DBRecord implements Writable, DBWritable, Configurable, DataSizeReporter {
   private StructuredRecord record;
   private Configuration conf;
+  private long bytesWritten;
 
   /**
    * Need to cache {@link ResultSetMetaData} of the record for use during writing to a table.
@@ -92,6 +93,13 @@ public class DBRecord implements Writable, DBWritable, Configurable {
    */
   public StructuredRecord getRecord() {
     return record;
+  }
+
+  /**
+   * @return the size of data written.
+   */
+  public long getBytesWritten() {
+    return bytesWritten;
   }
 
   /**
@@ -262,14 +270,20 @@ public class DBRecord implements Writable, DBWritable, Configurable {
       switch (fieldLogicalType) {
         case DATE:
           stmt.setDate(sqlIndex, Date.valueOf(record.getDate(fieldName)));
+          bytesWritten += Long.BYTES;
           break;
         case TIME_MILLIS:
+          stmt.setTime(sqlIndex, Time.valueOf(record.getTime(fieldName)));
+          bytesWritten += Integer.BYTES;
+          break;
         case TIME_MICROS:
           stmt.setTime(sqlIndex, Time.valueOf(record.getTime(fieldName)));
+          bytesWritten += Long.BYTES;
           break;
         case TIMESTAMP_MILLIS:
         case TIMESTAMP_MICROS:
           stmt.setTimestamp(sqlIndex, Timestamp.from(record.getTimestamp(fieldName).toInstant()));
+          bytesWritten += Long.BYTES;
           break;
       }
       return;
@@ -282,26 +296,32 @@ public class DBRecord implements Writable, DBWritable, Configurable {
       case STRING:
         // clob can also be written to as setString
         stmt.setString(sqlIndex, (String) fieldValue);
+        bytesWritten += ((String) fieldValue).length();
         break;
       case BOOLEAN:
         stmt.setBoolean(sqlIndex, (Boolean) fieldValue);
+        bytesWritten += Integer.BYTES;
         break;
       case INT:
         // write short or int appropriately
         writeInt(stmt, fieldIndex, sqlIndex, fieldValue);
+        bytesWritten += Integer.BYTES;
         break;
       case LONG:
         stmt.setLong(sqlIndex, (Long) fieldValue);
+        bytesWritten += Long.BYTES;
         break;
       case FLOAT:
         // both real and float are set with the same method on prepared statement
         stmt.setFloat(sqlIndex, (Float) fieldValue);
+        bytesWritten += Float.BYTES;
         break;
       case DOUBLE:
         stmt.setDouble(sqlIndex, (Double) fieldValue);
+        bytesWritten += Double.BYTES;
         break;
       case BYTES:
-        writeBytes(stmt, fieldIndex, sqlIndex, fieldValue);
+        bytesWritten += writeBytes(stmt, fieldIndex, sqlIndex, fieldValue);
         break;
       default:
         throw new SQLException(String.format("Column %s with value %s has an unsupported datatype %s",
@@ -309,15 +329,16 @@ public class DBRecord implements Writable, DBWritable, Configurable {
     }
   }
 
-  private void writeBytes(PreparedStatement stmt, int fieldIndex, int sqlIndex, Object fieldValue) throws SQLException {
+  private int writeBytes(PreparedStatement stmt, int fieldIndex, int sqlIndex, Object fieldValue) throws SQLException {
     byte[] byteValue = fieldValue instanceof ByteBuffer ? Bytes.toBytes((ByteBuffer) fieldValue) : (byte[]) fieldValue;
     int parameterType = columnTypes[fieldIndex];
     if (Types.BLOB == parameterType) {
       stmt.setBlob(sqlIndex, new SerialBlob(byteValue));
-      return;
+      return byteValue.length;
     }
     // handles BINARY, VARBINARY and LOGVARBINARY
     stmt.setBytes(sqlIndex, byteValue);
+    return byteValue.length;
   }
 
   private void writeInt(PreparedStatement stmt, int fieldIndex, int sqlIndex, Object fieldValue) throws SQLException {
