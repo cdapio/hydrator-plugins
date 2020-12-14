@@ -69,8 +69,7 @@ public class DataCacher extends SparkCompute<StructuredRecord, StructuredRecord>
         String.format("Invalid storage level '%s'. Please select a valid value", config.storageLevel));
     }
 
-    javaRDD.persist(storageLevel);
-    return javaRDD;
+    return javaRDD.persist(storageLevel);
   }
 
   /**
