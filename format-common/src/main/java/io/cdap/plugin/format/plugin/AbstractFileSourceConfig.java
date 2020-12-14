@@ -224,6 +224,10 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
     return fileEncoding;
   }
 
+  public String getDefaultFileEncoding() {
+    return DEFAULT_FILE_ENCODING;
+  }
+
   @Nullable
   public Schema getSchema() {
     try {

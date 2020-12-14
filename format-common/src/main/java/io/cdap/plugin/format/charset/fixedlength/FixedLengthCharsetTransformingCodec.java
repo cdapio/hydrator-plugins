@@ -73,11 +73,7 @@ public class FixedLengthCharsetTransformingCodec extends DefaultCodec
 
   @Override
   public CompressionInputStream createInputStream(InputStream in, Decompressor decompressor) throws IOException {
-    if (!(decompressor instanceof FixedLengthCharsetTransformingDecompressor)) {
-      throw new IllegalArgumentException("FixedLengthCharsetTransformingCodec can only be used with a" +
-                                           "FixedLengthCharsetTransformingDecompressor instance");
-    }
-    return super.createInputStream(in, decompressor);
+    throw new UnsupportedOperationException("Not supported.");
   }
 
   @Override
@@ -132,37 +128,4 @@ public class FixedLengthCharsetTransformingCodec extends DefaultCodec
     return new TransformingCompressionInputStream(decompressorStream, start, end);
   }
 
-  /**
-   * Wrapper for the decompressor stream.
-   */
-  public static class TransformingCompressionInputStream extends SplitCompressionInputStream {
-
-    protected final FixedLengthCharsetTransformingDecompressorStream decompressorStream;
-
-    public TransformingCompressionInputStream(FixedLengthCharsetTransformingDecompressorStream in, long start, long end)
-      throws IOException {
-      super(in, start, end);
-      decompressorStream = in;
-    }
-
-    @Override
-    public int read() throws IOException {
-      return decompressorStream.read();
-    }
-
-    @Override
-    public int read(byte[] b, int off, int len) throws IOException {
-      return decompressorStream.read(b, off, len);
-    }
-
-    @Override
-    public void resetState() throws IOException {
-      decompressorStream.reset();
-    }
-
-    @Override
-    public long getPos() throws IOException {
-      return decompressorStream.getPos();
-    }
-  }
 }
