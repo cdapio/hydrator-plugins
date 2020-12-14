@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.format.charset.fixedlength;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.io.compress.DecompressorStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,9 +50,23 @@ public class FixedLengthCharsetTransformingDecompressorStream extends Decompress
     this.end = end;
   }
 
+  @VisibleForTesting
+  protected FixedLengthCharsetTransformingDecompressorStream(InputStream in,
+                                                             FixedLengthCharset fixedLengthCharset,
+                                                             int bufferSize,
+                                                             long start,
+                                                             long end)
+    throws IOException {
+    super(in, new FixedLengthCharsetTransformingDecompressor(fixedLengthCharset), bufferSize);
+    in.skip(start);
+    this.fixedLengthCharset = fixedLengthCharset;
+    this.start = start;
+    this.end = end;
+  }
+
   @Override
   protected int decompress(byte[] b, int off, int len) throws IOException {
-    //Set input for decompression if it's needed for execution.
+    //Set input for decompression if it's needed.
     if (this.decompressor.needsInput()) {
       int l = getCompressedData();
       if (l > 0) {
@@ -103,5 +118,18 @@ public class FixedLengthCharsetTransformingDecompressorStream extends Decompress
     totalReadBytes += numReadBytes;
 
     return numReadBytes;
+  }
+
+  /**
+   * Method that invokes the parent method to get decompressed data, without partition boundary awareness.
+   * <p>
+   * This method is visible for the purposes of testing the partition boundaries.
+   *
+   * @return number of bytes read from source input stream
+   * @throws IOException If there was a problem reading from the underlying input stream.
+   */
+  @VisibleForTesting
+  protected int getCompressedDataSuper() throws IOException {
+    return super.getCompressedData();
   }
 }

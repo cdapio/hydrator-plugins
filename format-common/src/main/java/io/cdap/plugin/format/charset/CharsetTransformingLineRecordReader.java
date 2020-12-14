@@ -52,6 +52,7 @@ public class CharsetTransformingLineRecordReader extends RecordReader<LongWritab
     "mapreduce.input.linerecordreader.line.maxlength";
 
   private final FixedLengthCharset fixedLengthCharset;
+  private final byte[] recordDelimiterBytes;
   private long start;
   private long pos;
   private long end;
@@ -61,11 +62,6 @@ public class CharsetTransformingLineRecordReader extends RecordReader<LongWritab
   private LongWritable key;
   private Text value;
   private Decompressor decompressor;
-  private byte[] recordDelimiterBytes;
-
-  public CharsetTransformingLineRecordReader(FixedLengthCharset fixedLengthCharset) {
-    this.fixedLengthCharset = fixedLengthCharset;
-  }
 
   public CharsetTransformingLineRecordReader(FixedLengthCharset fixedLengthCharset, byte[] recordDelimiter) {
     this.fixedLengthCharset = fixedLengthCharset;
