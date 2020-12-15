@@ -23,21 +23,11 @@
           }
         },
         {
-          "widget-type": "select",
+          "widget-type": "plugin-list",
           "label": "Format",
           "name": "format",
           "widget-attributes": {
-            "values": [
-              "avro",
-              "blob",
-              "csv",
-              "delimited",
-              "json",
-              "parquet",
-              "text",
-              "tsv"
-            ],
-            "default": "text"
+            "plugin-type": "validatingInputFormat"
           },
           "plugin-function": {
             "method": "POST",

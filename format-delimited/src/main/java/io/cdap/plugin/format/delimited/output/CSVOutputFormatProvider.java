@@ -19,8 +19,10 @@ package io.cdap.plugin.format.delimited.output;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginClass;
 import io.cdap.cdap.api.plugin.PluginPropertyField;
+import io.cdap.cdap.etl.api.validation.FormatContext;
 import io.cdap.cdap.etl.api.validation.ValidatingOutputFormat;
 import io.cdap.plugin.format.output.AbstractOutputFormatProvider;
 
@@ -41,6 +43,20 @@ public class CSVOutputFormatProvider extends AbstractOutputFormatProvider {
   @Override
   public String getOutputFormatClassName() {
     return StructuredDelimitedOutputFormat.class.getName();
+  }
+
+  @Override
+  public void validate(FormatContext context) {
+    Schema inputSchema = context.getInputSchema();
+    boolean allSimpleFields = inputSchema.getFields().stream()
+      .map(Schema.Field::getSchema)
+      .allMatch(Schema::isSimpleOrNullableSimple);
+    if (allSimpleFields == false) {
+      context.getFailureCollector().addFailure(
+        "Input has multi-level structure that cannot be represented appropriately as csv.",
+        "Consider using json, avro or parquet to write data."
+      ).withConfigProperty("format");
+    }
   }
 
   @Override

@@ -165,8 +165,8 @@ public class FTPBatchSource extends AbstractFileSource {
     }
 
     @Override
-    public FileFormat getFormat() {
-      return FileFormat.TEXT;
+    public String getFormatName() {
+      return FileFormat.TEXT.name().toLowerCase();
     }
 
     @Nullable

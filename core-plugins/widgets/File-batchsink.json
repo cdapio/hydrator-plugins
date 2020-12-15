@@ -31,19 +31,11 @@
           }
         },
         {
-          "widget-type": "select",
+          "widget-type": "plugin-list",
           "label": "Format",
           "name": "format",
           "widget-attributes": {
-            "values": [
-              "avro",
-              "csv",
-              "delimited",
-              "json",
-              "parquet",
-              "tsv"
-            ],
-            "default": "json"
+            "plugin-type": "validatingOutputFormat"
           }
         },
         {

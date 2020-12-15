@@ -87,26 +87,25 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
       return;
     }
 
-    FileFormat format = config.getFormat();
-    ValidatingOutputFormat validatingOutputFormat = getValidatingOutputFormat(pipelineConfigurer);
+    String format = config.getFormatName();
+    ValidatingOutputFormat validatingOutputFormat = getValidatingOutputFormat(pipelineConfigurer, format);
     FormatContext context = new FormatContext(collector, pipelineConfigurer.getStageConfigurer().getInputSchema());
     validateOutputFormatProvider(context, format, validatingOutputFormat);
   }
 
-  protected ValidatingOutputFormat getValidatingOutputFormat(PipelineConfigurer pipelineConfigurer) {
-    FileFormat format = config.getFormat();
-    return pipelineConfigurer.usePlugin(ValidatingOutputFormat.PLUGIN_TYPE, format.name().toLowerCase(),
-                                        format.name().toLowerCase(), config.getRawProperties());
+  protected ValidatingOutputFormat getValidatingOutputFormat(PipelineConfigurer pipelineConfigurer, String format) {
+    return pipelineConfigurer.usePlugin(ValidatingOutputFormat.PLUGIN_TYPE, format,
+                                        format, config.getRawProperties());
   }
 
   @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
     FailureCollector collector = context.getFailureCollector();
     config.validate(collector);
-    FileFormat fileFormat = config.getFormat();
+    String format = config.getFormatName();
     ValidatingOutputFormat validatingOutputFormat = getOutputFormatForRun(context);
     FormatContext formatContext = new FormatContext(collector, context.getInputSchema());
-    validateOutputFormatProvider(formatContext, fileFormat, validatingOutputFormat);
+    validateOutputFormatProvider(formatContext, format, validatingOutputFormat);
     collector.getOrThrowException();
 
 
@@ -132,9 +131,9 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
   }
 
   protected ValidatingOutputFormat getOutputFormatForRun(BatchSinkContext context) throws InstantiationException {
-    FileFormat fileFormat = config.getFormat();
+    String fileFormat = config.getFormatName();
     try {
-      return context.newPluginInstance(fileFormat.name().toLowerCase());
+      return context.newPluginInstance(fileFormat);
     } catch (InvalidPluginConfigException e) {
       Set<String> properties = new HashSet<>(e.getMissingProperties());
       for (InvalidPluginProperty invalidProperty : e.getInvalidProperties()) {
@@ -143,7 +142,7 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
       String errorMessage = String.format("Format '%s' cannot be used because properties %s were not provided or " +
                                             "were invalid when the pipeline was deployed. Set the format to a " +
                                             "different value, or re-create the pipeline with all required properties.",
-                                          fileFormat.name(), properties);
+                                          fileFormat, properties);
       throw new IllegalArgumentException(errorMessage, e);
     }
   }
@@ -166,7 +165,7 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
    * Override this to specify a custom field level operation name and description.
    */
   protected void recordLineage(LineageRecorder lineageRecorder, List<String> outputFields) {
-    lineageRecorder.recordWrite("Write", String.format("Wrote to %s files.", config.getFormat().name().toLowerCase()),
+    lineageRecorder.recordWrite("Write", String.format("Wrote to %s files.", config.getFormatName()),
                                 outputFields);
   }
 
@@ -179,15 +178,13 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
     return String.format("%s/%s", finalPath, timeSuffix);
   }
 
-  private void validateOutputFormatProvider(FormatContext context, FileFormat format,
+  private void validateOutputFormatProvider(FormatContext context, String format,
                                             @Nullable ValidatingOutputFormat validatingOutputFormat) {
     FailureCollector collector = context.getFailureCollector();
     if (validatingOutputFormat == null) {
       collector.addFailure(
-        String.format("Could not find the '%s' output format plugin.", format.name().toLowerCase()), null)
-        .withPluginNotFound(format.name().toLowerCase(),
-                            format.name().toLowerCase(),
-                            ValidatingOutputFormat.PLUGIN_TYPE);
+        String.format("Could not find the '%s' output format plugin.", format), null)
+        .withPluginNotFound(format, format, ValidatingOutputFormat.PLUGIN_TYPE);
     } else {
       validatingOutputFormat.validate(context);
     }

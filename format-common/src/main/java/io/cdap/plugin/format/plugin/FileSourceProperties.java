@@ -64,9 +64,24 @@ public interface FileSourceProperties {
   String getPath();
 
   /**
-   * Get the format of the data to read.
+   * Get the name of the format plugin used to read data.
    */
-  FileFormat getFormat();
+  default String getFormatName() {
+    FileFormat format = getFormat();
+    if (format == null) {
+      return null;
+    }
+    return format.name().toLowerCase();
+  }
+
+  /**
+   * @deprecated use {@link #getFormatName()} instead
+   */
+  @Nullable
+  @Deprecated
+  default FileFormat getFormat() {
+    return null;
+  }
 
   /**
    * Get the pattern that file names must match if filename filter should be done.

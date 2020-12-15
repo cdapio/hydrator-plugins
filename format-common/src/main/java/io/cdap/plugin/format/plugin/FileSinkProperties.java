@@ -62,9 +62,20 @@ public interface FileSinkProperties {
   String getPath();
 
   /**
-   * Get the format of the data to write.
+   * Get the name of the format plugin to use to write the data.
    */
-  FileFormat getFormat();
+  default String getFormatName() {
+    return null;
+  }
+
+  /**
+   * @deprecated use {@link #getFormatName()} instead
+   */
+  @Nullable
+  @Deprecated
+  default FileFormat getFormat() {
+    return null;
+  }
 
   /**
    * Get the output schema if it is known and constant, or null if it is not known or not constant.
