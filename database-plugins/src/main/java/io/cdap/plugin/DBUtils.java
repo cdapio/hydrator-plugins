@@ -149,7 +149,7 @@ public final class DBUtils {
    * Given the result set, get the metadata of the result set and return
    * list of {@link io.cdap.cdap.api.data.schema.Schema.Field},
    * where name of the field is same as column name and type of the field is obtained using
-   * {@link DBUtils#getSchema(int, int, int)}
+   * {@link DBUtils#getSchema(String, int, int, int, String)}
    *
    * @param resultSet result set of executed query
    * @return list of schema fields
@@ -185,7 +185,7 @@ public final class DBUtils {
       int columnSqlPrecision = metadata.getPrecision(i); // total number of digits
       int columnSqlScale = metadata.getScale(i); // digits after the decimal point
       String columnTypeName = metadata.getColumnTypeName(i);
-      Schema columnSchema = getSchema(columnTypeName, columnSqlType, columnSqlPrecision, columnSqlScale);
+      Schema columnSchema = getSchema(columnTypeName, columnSqlType, columnSqlPrecision, columnSqlScale, columnName);
       if (ResultSetMetaData.columnNullable == metadata.isNullable(i)) {
         columnSchema = Schema.nullableOf(columnSchema);
       }
@@ -196,7 +196,8 @@ public final class DBUtils {
   }
 
   // given a sql type return schema type
-  private static Schema getSchema(String typeName, int sqlType, int precision, int scale) throws SQLException {
+  private static Schema getSchema(String typeName, int sqlType, int precision, int scale, String columnName)
+    throws SQLException {
     // Type.STRING covers sql types - VARCHAR,CHAR,CLOB,LONGNVARCHAR,LONGVARCHAR,NCHAR,NCLOB,NVARCHAR
     Schema.Type type = Schema.Type.STRING;
     switch (sqlType) {
@@ -264,7 +265,8 @@ public final class DBUtils {
       case Types.REF:
       case Types.SQLXML:
       case Types.STRUCT:
-        throw new SQLException(new UnsupportedTypeException("Unsupported SQL Type: " + sqlType));
+        throw new SQLException(new UnsupportedTypeException(String.format("Column %s has unsupported SQL type of %s."
+          , columnName, sqlType)));
     }
 
     return Schema.of(type);
