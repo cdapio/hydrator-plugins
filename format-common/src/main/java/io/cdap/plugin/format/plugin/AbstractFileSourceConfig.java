@@ -122,21 +122,11 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
 
   public void validate() {
     IdUtils.validateId(referenceName);
-    if (!containsMacro(NAME_FORMAT)) {
-      getFormat();
-    }
     getSchema();
   }
 
   public void validate(FailureCollector collector) {
     IdUtils.validateReferenceName(referenceName, collector);
-    if (!containsMacro(NAME_FORMAT)) {
-      try {
-        getFormat();
-      } catch (IllegalArgumentException e) {
-        collector.addFailure(e.getMessage(), null).withConfigProperty(NAME_FORMAT).withStacktrace(e.getStackTrace());
-      }
-    }
     try {
       getSchema();
     } catch (IllegalArgumentException e) {
@@ -160,8 +150,15 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
   }
 
   @Override
-  public FileFormat getFormat() {
-    return FileFormat.from(format, x -> true);
+  public String getFormatName() {
+    // need to do this for backwards compatibility, where the pre-packaged format names were case insensitive.
+    try {
+      FileFormat fileFormat = FileFormat.from(format, x -> true);
+      return fileFormat.name().toLowerCase();
+    } catch (IllegalArgumentException e) {
+      // ignore
+    }
+    return format;
   }
 
   @Nullable

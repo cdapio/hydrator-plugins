@@ -69,9 +69,6 @@ public abstract class AbstractFileSinkConfig extends PluginConfig implements Fil
     if (suffix != null && !containsMacro(NAME_SUFFIX)) {
       new SimpleDateFormat(suffix);
     }
-    if (!containsMacro(NAME_FORMAT)) {
-      getFormat();
-    }
     getSchema();
   }
 
@@ -84,34 +81,6 @@ public abstract class AbstractFileSinkConfig extends PluginConfig implements Fil
         collector.addFailure("Invalid suffix.", "Ensure provided suffix is valid.")
           .withConfigProperty(NAME_SUFFIX).withStacktrace(e.getStackTrace());
       }
-    }
-    FileFormat format = FileFormat.JSON;
-    if (!containsMacro(NAME_FORMAT)) {
-      try {
-        format = getFormat();
-      } catch (IllegalArgumentException e) {
-        collector.addFailure(e.getMessage(), null).withConfigProperty(NAME_FORMAT).withStacktrace(e.getStackTrace());
-      }
-    }
-    try {
-      Schema schema = getSchema();
-      // Checks if the output schema has fields that are not simple type.
-      // If there are non-simple field types, then serializing as CSV might not be appropriate.
-      // This restriction is on Csv, Delimited and Tab separated files.
-      if (format == FileFormat.CSV || format == FileFormat.DELIMITED || format == FileFormat.TSV) {
-        boolean allSimpleFields = schema.getFields().stream()
-          .map(Schema.Field::getSchema)
-          .allMatch(Schema::isSimpleOrNullableSimple);
-        if (allSimpleFields == false) {
-          collector.addFailure(
-            String.format("Input has multi-level structure that cannot be represented appropriately in %s.",
-                          format.name()),
-            "Consider using json, avro or parquet to write data."
-          ).withConfigProperty(NAME_FORMAT);
-        }
-      }
-    } catch (IllegalArgumentException e) {
-      collector.addFailure(e.getMessage(), null).withConfigProperty(NAME_SCHEMA).withStacktrace(e.getStackTrace());
     }
 
     // if failure collector has not collected any errors, that would mean either validation has succeeded or config
@@ -148,12 +117,15 @@ public abstract class AbstractFileSinkConfig extends PluginConfig implements Fil
     }
   }
 
-  /**
-   * Logically equivalent to valueOf except it throws an exception with a message that indicates what the valid
-   * enum values are.
-   */
   @Override
-  public FileFormat getFormat() {
-    return FileFormat.from(format, FileFormat::canWrite);
+  public String getFormatName() {
+    // need to do this for backwards compatibility, where the pre-packaged format names were case insensitive.
+    try {
+      FileFormat fileFormat = FileFormat.from(format, x -> true);
+      return fileFormat.name().toLowerCase();
+    } catch (IllegalArgumentException e) {
+      // ignore
+    }
+    return format;
   }
 }

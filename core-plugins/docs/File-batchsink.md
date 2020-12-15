@@ -23,7 +23,9 @@ For example, the format 'yyyy-MM-dd-HH-mm' will result in a directory of the for
 If not specified, nothing will be appended to the path."
 
 **Format:** Format to write the records in.
-The format must be one of 'json', 'avro', 'parquet', 'csv', 'tsv', or 'delimited'.
+The format must be one of 'json', 'avro', 'parquet', 'csv', 'tsv', 'delimited', or the name of any
+format plugins deployed to your environment. If the format is a macro, only the pre-packaged
+formats can be used.
 
 **Delimiter:** Delimiter to use if the format is 'delimited'.
 
