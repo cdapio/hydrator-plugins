@@ -88,14 +88,14 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
     }
 
     String format = config.getFormatName();
-    ValidatingOutputFormat validatingOutputFormat = getValidatingOutputFormat(pipelineConfigurer, format);
+    ValidatingOutputFormat validatingOutputFormat = getValidatingOutputFormat(pipelineConfigurer);
     FormatContext context = new FormatContext(collector, pipelineConfigurer.getStageConfigurer().getInputSchema());
     validateOutputFormatProvider(context, format, validatingOutputFormat);
   }
 
-  protected ValidatingOutputFormat getValidatingOutputFormat(PipelineConfigurer pipelineConfigurer, String format) {
-    return pipelineConfigurer.usePlugin(ValidatingOutputFormat.PLUGIN_TYPE, format,
-                                        format, config.getRawProperties());
+  protected ValidatingOutputFormat getValidatingOutputFormat(PipelineConfigurer pipelineConfigurer) {
+    return pipelineConfigurer.usePlugin(ValidatingOutputFormat.PLUGIN_TYPE, config.getFormatName(),
+                                        config.getFormatName(), config.getRawProperties());
   }
 
   @Override
