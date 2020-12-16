@@ -67,16 +67,6 @@ public class FixedLengthCharsetTransformingCodec extends DefaultCodec
   }
 
   @Override
-  public CompressionInputStream createInputStream(InputStream in) throws IOException {
-    return super.createInputStream(in, new FixedLengthCharsetTransformingDecompressor(sourceEncoding));
-  }
-
-  @Override
-  public CompressionInputStream createInputStream(InputStream in, Decompressor decompressor) throws IOException {
-    throw new UnsupportedOperationException("Not supported.");
-  }
-
-  @Override
   public Class<? extends Decompressor> getDecompressorType() {
     return FixedLengthCharsetTransformingDecompressor.class;
   }
