@@ -23,6 +23,8 @@ import io.cdap.cdap.api.data.schema.Schema;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -62,9 +64,9 @@ public abstract class RecordConverter<INPUT, OUTPUT> {
 
   private List<Object> convertArray(Object values, Schema elementSchema) throws IOException {
     List<Object> output;
-    if (values instanceof List) {
-      List<Object> valuesList = (List<Object>) values;
-      output = Lists.newArrayListWithCapacity(valuesList.size());
+    if (values instanceof Collection) {
+      Collection<Object> valuesList = (Collection<Object>) values;
+      output = new ArrayList<>(valuesList.size());
       for (Object value : valuesList) {
         output.add(convertField(value, elementSchema));
       }
