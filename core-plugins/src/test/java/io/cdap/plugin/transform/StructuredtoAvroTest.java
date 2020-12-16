@@ -24,8 +24,34 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.HashSet;
 
 public class StructuredtoAvroTest {
+
+  @Test
+  public void testCollectionTypes() throws Exception {
+    Schema schema = Schema.recordOf("c", Schema.Field.of("c", Schema.arrayOf(Schema.of(Schema.Type.STRING))));
+    StructuredToAvroTransformer transformer = new StructuredToAvroTransformer(schema);
+
+    StructuredRecord record = StructuredRecord.builder(schema)
+      .set("c", new String[] { "a", "b", "c" })
+      .build();
+    GenericRecord result = transformer.transform(record);
+    Assert.assertEquals(Arrays.asList("a", "b", "c"), result.get("c"));
+
+    record = StructuredRecord.builder(schema)
+      .set("c", Arrays.asList("a", "b", "c"))
+      .build();
+    result = transformer.transform(record);
+    Assert.assertEquals(Arrays.asList("a", "b", "c"), result.get("c"));
+
+    record = StructuredRecord.builder(schema)
+      .set("c", new HashSet<>(Arrays.asList("a", "b", "c")))
+      .build();
+    result = transformer.transform(record);
+    Assert.assertEquals(Arrays.asList("a", "b", "c"), result.get("c"));
+  }
 
   @Test
   public void testStructuredToAvroConversionForNested() throws Exception {
