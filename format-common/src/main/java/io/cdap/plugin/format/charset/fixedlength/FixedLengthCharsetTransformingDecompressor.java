@@ -133,7 +133,7 @@ public class FixedLengthCharsetTransformingDecompressor implements Decompressor 
     // This is an expensive operation that is executed as a last resort, meaning we only do this when we were
     // not able to add any bytes to the output payload before.
     if (decodedCharBuffer.remaining() > 0 && encodedBuffer.remaining() > 0 && encodedBuffer.position() - off == 0) {
-      encodePartialCharacter(encodedBuffer);
+      encodePartialCharIntoByteBuffer(encodedBuffer);
     }
 
     //Return the number of bytes copied,
@@ -184,41 +184,32 @@ public class FixedLengthCharsetTransformingDecompressor implements Decompressor 
   }
 
   /**
-   * Handle the case where we still need to encode an extra character and copy partial bytes from this encoded
-   * character into the output buffer in order to fill the output byte array.
+   * Encode a minimum of 1 additional character from the decoded char buffer into the output buffer.
+   * <p>
+   * Since the output is UTF-8, there can be up to 4 additional characters encoded in this temporary buffer.
+   * <p>
+   * Any remaining bytes that could not be added into the output stream are stored in the `partialOutputByteBuffer`
+   * and consumed in the next invocation of the `decompress` method.
    *
    * @param outputBuffer the output buffer we'll use to store the partial bytes from a character.
    */
-  protected void encodePartialCharacter(ByteBuffer outputBuffer) {
+  protected void encodePartialCharIntoByteBuffer(ByteBuffer outputBuffer) {
     // UTF-8 characters can be up to 4 bytes long.
     // We start from 2 bytes as a 1-byte-long character would already fit in the encoded buffer.
-    for (int numBytes = 2; numBytes <= 4; numBytes++) {
-      ByteBuffer extraCharacterByteBuffer = ByteBuffer.allocate(numBytes);
+    ByteBuffer additionalByteBuffer = ByteBuffer.allocate(4);
 
-      encodeCharBufferIntoByteBuffer(extraCharacterByteBuffer);
+    encodeCharBufferIntoByteBuffer(additionalByteBuffer);
 
-      //If we were not able to decode a character in this many bytes, we increase the size of the array and continue.
-      if (extraCharacterByteBuffer.remaining() != 0) {
-        continue;
-      }
+    //Set up additional char buffer for read in the next invocation of this method.
+    additionalByteBuffer.flip();
 
-      //If we were able to decode an extra character, we need to split this character between the original buffer and
-      //an additional buffer for later.
-
-      //Set up additional char buffer for read in the next invocation of this method.
-      extraCharacterByteBuffer.flip();
-
-      //Read as many bytes as possible from this additional char buffer.
-      while (extraCharacterByteBuffer.hasRemaining() && outputBuffer.hasRemaining()) {
-        outputBuffer.put(extraCharacterByteBuffer.get());
-      }
-
-      //Store remaining bytes in the Partial Byte Buffer
-      partialOutputByteBuffer = extraCharacterByteBuffer;
-
-      // Exit this function as we have already completed the work.
-      return;
+    //Read as many bytes as possible from this additional char buffer.
+    while (additionalByteBuffer.hasRemaining() && outputBuffer.hasRemaining()) {
+      outputBuffer.put(additionalByteBuffer.get());
     }
+
+    //Store remaining bytes in the Partial Byte Buffer
+    partialOutputByteBuffer = additionalByteBuffer;
   }
 
   @Override
