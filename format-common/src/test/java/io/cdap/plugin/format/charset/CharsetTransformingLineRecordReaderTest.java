@@ -19,7 +19,6 @@ package io.cdap.plugin.format.charset;
 import io.cdap.plugin.format.charset.fixedlength.FixedLengthCharset;
 import io.cdap.plugin.format.charset.fixedlength.FixedLengthCharsetTransformingCodec;
 import io.cdap.plugin.format.charset.fixedlength.FixedLengthCharsetTransformingDecompressorStream;
-import io.cdap.plugin.format.charset.fixedlength.TransformingCompressionInputStream;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.compress.SplitCompressionInputStream;
 import org.apache.hadoop.mapreduce.lib.input.CompressedSplitLineReader;
@@ -85,55 +84,26 @@ public class CharsetTransformingLineRecordReaderTest {
   public void testGetNextLine() throws IOException {
     decompressorStream =
       new FixedLengthCharsetTransformingDecompressorStream(inputStream, FixedLengthCharset.UTF_32, 0, 32);
-    compressionInputStream = new TransformingCompressionInputStream(decompressorStream, 0, 32);
+    compressionInputStream = decompressorStream;
 
     //Set up test
     setUpRecordReaderForTest();
 
     //Ensure the first line is read
-    recordReader.nextKeyValue();
+    Assert.assertTrue(recordReader.nextKeyValue());
     Assert.assertEquals(recordReader.key.get(), 0);
     Assert.assertEquals(recordReader.value.toString(), "abcd");
     //Ensure the second line is read
-    recordReader.nextKeyValue();
+    Assert.assertTrue(recordReader.nextKeyValue());
     Assert.assertEquals(recordReader.key.get(), 5);
     Assert.assertEquals(recordReader.value.toString(), "edfg");
     //Ensure no more lines can be read.
-    recordReader.nextKeyValue();
+    Assert.assertFalse(recordReader.nextKeyValue());
     Assert.assertNull(recordReader.key);
     Assert.assertNull(recordReader.value);
-    recordReader.nextKeyValue();
-    Assert.assertNull(recordReader.key);
-    Assert.assertNull(recordReader.value);
-  }
-
-  @Test
-  public void testGetNextLineCallingOriginalGetCompressedDataMethod() throws IOException {
-    //We'll override the getCompressedData method by invoking the superclass getCompressedData method.
-    //This will highlight the partition boundary issues we had to solve.
-    decompressorStream =
-      new FixedLengthCharsetTransformingDecompressorStream(inputStream, FixedLengthCharset.UTF_32, 0, 32) {
-        @Override
-        protected int getCompressedData() throws IOException {
-          return super.getCompressedDataSuper();
-        }
-      };
-    compressionInputStream = new TransformingCompressionInputStream(decompressorStream, 0, 32);
-
-    //Set up test
-    setUpRecordReaderForTest();
-
-    //Ensure first line is read
-    recordReader.nextKeyValue();
-    Assert.assertEquals(recordReader.key.get(), 0);
-    Assert.assertEquals(recordReader.value.toString(), "abcd");
-    //Notice that the next line does not get read, as the file position goes beyond the partition boundary, even when
-    //not all expected lines have been read yet.
-    recordReader.nextKeyValue();
-    Assert.assertNull(recordReader.key);
-    Assert.assertNull(recordReader.value);
-    recordReader.nextKeyValue();
+    Assert.assertFalse(recordReader.nextKeyValue());
     Assert.assertNull(recordReader.key);
     Assert.assertNull(recordReader.value);
   }
+
 }

@@ -22,6 +22,7 @@ import org.junit.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 
 import static org.junit.Assert.assertEquals;
 
@@ -36,124 +37,100 @@ public class FixedLengthCharsetTransformingDecompressorStreamTest {
 
   @Before
   public void test() {
-    inputStream = new ByteArrayInputStream(text.getBytes(FixedLengthCharset.UTF_32.getCharset()));
+    inputStream = new ByteArrayInputStream(text.getBytes(Charset.forName("UTF-32")));
   }
 
   @Test
   public void testGetCompressedDataPartitionBoundaries_FirstPartition() throws IOException {
     int bufferSize = 20;
+    byte[] buffer = new byte[bufferSize];
     long partitionStart = 0;
     long partitionEnd = 32;
 
     decompressorStream = new FixedLengthCharsetTransformingDecompressorStream(inputStream,
                                                                               FixedLengthCharset.UTF_32,
-                                                                              bufferSize,
                                                                               partitionStart,
                                                                               partitionEnd);
 
     int numReadBytes;
 
     //First read, limit not reached
-    numReadBytes = decompressorStream.getCompressedData();
-    assertEquals(numReadBytes, 20);
+    numReadBytes = decompressorStream.read(buffer);
+    assertEquals(numReadBytes, 5);
     assertEquals(decompressorStream.getPos(), 20);
 
     //Second read, limit is reached in this batch.
     // Only 12 out of 20 possible bytes are read to reach the partition limit
-    numReadBytes = decompressorStream.getCompressedData();
-    assertEquals(numReadBytes, 12);
+    numReadBytes = decompressorStream.read(buffer);
+    assertEquals(numReadBytes, 3);
     assertEquals(decompressorStream.getPos(), 32);
 
     //Additional read operation, buffer is now filled to completion.
-    numReadBytes = decompressorStream.getCompressedData();
-    assertEquals(numReadBytes, 20);
+    numReadBytes = decompressorStream.read(buffer);
+    assertEquals(numReadBytes, 5);
     assertEquals(decompressorStream.getPos(), 52);
   }
 
   @Test
   public void testGetCompressedDataPartitionBoundaries_MiddlePartition() throws IOException {
     int bufferSize = 20;
+    byte[] buffer = new byte[bufferSize];
     long partitionStart = 32;
     long partitionEnd = 64;
 
     decompressorStream = new FixedLengthCharsetTransformingDecompressorStream(inputStream,
                                                                               FixedLengthCharset.UTF_32,
-                                                                              bufferSize,
                                                                               partitionStart,
                                                                               partitionEnd);
 
     int numReadBytes;
 
     //First read, limit not reached
-    numReadBytes = decompressorStream.getCompressedData();
-    assertEquals(numReadBytes, 20);
+    numReadBytes = decompressorStream.read(buffer);
+    assertEquals(numReadBytes, 5);
     assertEquals(decompressorStream.getPos(), 52);
 
     //Second read, limit is reached in this batch.
     // Only 12 out of 20 possible bytes are read to reach the partition limit
-    numReadBytes = decompressorStream.getCompressedData();
-    assertEquals(numReadBytes, 12);
+    numReadBytes = decompressorStream.read(buffer);
+    assertEquals(numReadBytes, 3);
     assertEquals(decompressorStream.getPos(), 64);
 
     //Additional read operation, buffer is now filled to completion.
-    numReadBytes = decompressorStream.getCompressedData();
-    assertEquals(numReadBytes, 20);
+    numReadBytes = decompressorStream.read(buffer);
+    assertEquals(numReadBytes, 5);
     assertEquals(decompressorStream.getPos(), 84);
   }
 
   @Test
   public void testGetCompressedDataPartitionBoundaries_FinalPartition() throws IOException {
     int bufferSize = 20;
+    byte[] buffer = new byte[bufferSize];
     long partitionStart = 96;
     long partitionEnd = 128;
 
     decompressorStream = new FixedLengthCharsetTransformingDecompressorStream(inputStream,
                                                                               FixedLengthCharset.UTF_32,
-                                                                              bufferSize,
                                                                               partitionStart,
                                                                               partitionEnd);
 
     int numReadBytes;
 
     //First read, limit not reached
-    numReadBytes = decompressorStream.getCompressedData();
-    assertEquals(numReadBytes, 20);
+    numReadBytes = decompressorStream.read(buffer);
+    assertEquals(numReadBytes, 5);
     assertEquals(decompressorStream.getPos(), 116);
 
     //Second read, limit is reached in this batch.
     // Only 12 out of 20 possible bytes are read to reach the partition limit
-    numReadBytes = decompressorStream.getCompressedData();
-    assertEquals(numReadBytes, 12);
+    numReadBytes = decompressorStream.read(buffer);
+    assertEquals(numReadBytes, 3);
     assertEquals(decompressorStream.getPos(), 128);
 
     //Additional read operation, no more bytes can be read.
-    numReadBytes = decompressorStream.getCompressedData();
+    numReadBytes = decompressorStream.read(buffer);
     assertEquals(numReadBytes, -1);
     assertEquals(decompressorStream.getPos(), 128);
   }
 
-  @Test
-  public void testGetCompressedDataSuperMethod() throws IOException {
-    int bufferSize = 20;
-    long partitionStart = 0;
-    long partitionEnd = 32;
-
-    decompressorStream = new FixedLengthCharsetTransformingDecompressorStream(inputStream,
-                                                                              FixedLengthCharset.UTF_32,
-                                                                              bufferSize,
-                                                                              partitionStart,
-                                                                              partitionEnd);
-
-    int numReadBytes;
-
-    //First read, limit not reached
-    numReadBytes = decompressorStream.getCompressedDataSuper();
-    assertEquals(numReadBytes, 20);
-    assertEquals(decompressorStream.getPos(), 20);
-
-    //Second read, limit is exceeded.
-    numReadBytes = decompressorStream.getCompressedDataSuper();
-    assertEquals(numReadBytes, 20);
-    assertEquals(decompressorStream.getPos(), 40);
-  }
 }

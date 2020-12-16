@@ -16,11 +16,12 @@
 
 package io.cdap.plugin.format.charset.fixedlength;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.UnsupportedCharsetException;
+import java.util.Map;
 
 /**
  * Enumeration containing all currently supported Fixed Length charsets.
@@ -30,38 +31,18 @@ import java.util.Set;
  * - ISO-8859 variants supported by Java
  * - Windows single-byte code pages supported by Java.
  */
-public enum FixedLengthCharset {
-  UTF_32("UTF-32", Charset.forName("UTF-32"), 4),
-  ISO_8859_1("ISO-8859-1", StandardCharsets.ISO_8859_1, 1),
-  ISO_8859_2("ISO-8859-2", Charset.forName("ISO-8859-2"), 1),
-  ISO_8859_3("ISO-8859-3", Charset.forName("ISO-8859-3"), 1),
-  ISO_8859_4("ISO-8859-4", Charset.forName("ISO-8859-4"), 1),
-  ISO_8859_5("ISO-8859-5", Charset.forName("ISO-8859-5"), 1),
-  ISO_8859_6("ISO-8859-6", Charset.forName("ISO-8859-6"), 1),
-  ISO_8859_7("ISO-8859-7", Charset.forName("ISO-8859-7"), 1),
-  ISO_8859_8("ISO-8859-8", Charset.forName("ISO-8859-8"), 1),
-  ISO_8859_9("ISO-8859-9", Charset.forName("ISO-8859-9"), 1),
-  ISO_8859_11("ISO-8859-11", Charset.forName("ISO-8859-11"), 1),
-  ISO_8859_13("ISO-8859-13", Charset.forName("ISO-8859-13"), 1),
-  ISO_8859_15("ISO-8859-15", Charset.forName("ISO-8859-15"), 1),
-  WINDOWS_1250("Windows-1250", Charset.forName("windows-1250"), 1),
-  WINDOWS_1251("Windows-1251", Charset.forName("windows-1251"), 1),
-  WINDOWS_1252("Windows-1252", Charset.forName("windows-1252"), 1),
-  WINDOWS_1253("Windows-1253", Charset.forName("windows-1253"), 1),
-  WINDOWS_1254("Windows-1254", Charset.forName("windows-1254"), 1),
-  WINDOWS_1255("Windows-1255", Charset.forName("windows-1255"), 1),
-  WINDOWS_1256("Windows-1256", Charset.forName("windows-1256"), 1),
-  WINDOWS_1257("Windows-1257", Charset.forName("windows-1257"), 1),
-  WINDOWS_1258("Windows-1258", Charset.forName("windows-1258"), 1);
+public class FixedLengthCharset {
+  public static final FixedLengthCharset UTF_32 = new FixedLengthCharset("UTF-32", Charset.forName("UTF-32"));
+  private static final Map<String, FixedLengthCharset> ALLOWED_MULTIBYTE_CHARSETS = ImmutableMap.of(
+    UTF_32.getName(), UTF_32
+  );
 
   private final String name;
   private final Charset charset;
-  private final int numBytesPerCharacter;
 
-  FixedLengthCharset(String name, Charset charset, int numBytesPerCharacter) {
+  FixedLengthCharset(String name, Charset charset) {
     this.name = name;
     this.charset = charset;
-    this.numBytesPerCharacter = numBytesPerCharacter;
   }
 
   public String getName() {
@@ -72,10 +53,6 @@ public enum FixedLengthCharset {
     return charset;
   }
 
-  public int getNumBytesPerCharacter() {
-    return numBytesPerCharacter;
-  }
-
   /**
    * Find a FixedLengthCharset for a given encoding name. Throws a runtime exception if not found.
    *
@@ -83,13 +60,12 @@ public enum FixedLengthCharset {
    * @return FixedLengthCharset for the desired charset.
    */
   public static FixedLengthCharset forName(String name) {
-    for (FixedLengthCharset c : FixedLengthCharset.values()) {
-      if (name.equalsIgnoreCase(c.getName())) {
-        return c;
-      }
+    FixedLengthCharset charset = ALLOWED_MULTIBYTE_CHARSETS.get(name.toUpperCase());
+    if (charset != null) {
+      return charset;
     }
-
-    throw new IllegalArgumentException("Cannot find FixedLengthCharset for the supplied charset name: '" + name + "'");
+    Charset c = Charset.forName(name.toUpperCase());
+    return new FixedLengthCharset(name, c);
   }
 
   /**
@@ -98,12 +74,15 @@ public enum FixedLengthCharset {
    * @return boolean value specifying if this is a valid encoding or not.
    */
   public static boolean isValidEncoding(String name) {
-    for (FixedLengthCharset c : FixedLengthCharset.values()) {
-      if (name.equalsIgnoreCase(c.getName())) {
-        return true;
-      }
+    if (ALLOWED_MULTIBYTE_CHARSETS.containsKey(name.toUpperCase())) {
+      return true;
     }
-
-    return false;
+    try {
+      Charset charset = Charset.forName(name.toUpperCase());
+      CharsetDecoder decoder = charset.newDecoder();
+      return decoder.maxCharsPerByte() == 1 && decoder.averageCharsPerByte() == 1;
+    } catch (UnsupportedCharsetException e) {
+      return false;
+    }
   }
 }

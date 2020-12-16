@@ -18,8 +18,6 @@ package io.cdap.plugin.format.charset.fixedlength;
 
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.fs.Seekable;
-import org.apache.hadoop.io.compress.CompressionInputStream;
-import org.apache.hadoop.io.compress.CompressionOutputStream;
 import org.apache.hadoop.io.compress.Compressor;
 import org.apache.hadoop.io.compress.Decompressor;
 import org.apache.hadoop.io.compress.DefaultCodec;
@@ -31,24 +29,20 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 
 /**
  * Codec implementation that returns a decompressor for Fixed Length character encodings.
  */
 public class FixedLengthCharsetTransformingCodec extends DefaultCodec
   implements Configurable, SplittableCompressionCodec {
+  //We align on 4 byte boundary to ensure multibyte charsets woudl work
+  public static final int ALIGNMENT = 4;
   private static final Logger LOG = LoggerFactory.getLogger(FixedLengthCharsetTransformingCodec.class);
 
   private final FixedLengthCharset sourceEncoding;
 
   public FixedLengthCharsetTransformingCodec(FixedLengthCharset sourceEncoding) {
     this.sourceEncoding = sourceEncoding;
-  }
-
-  @Override
-  public CompressionOutputStream createOutputStream(OutputStream out) throws IOException {
-    throw new UnsupportedOperationException("Not supported");
   }
 
   @Override
@@ -92,25 +86,22 @@ public class FixedLengthCharsetTransformingCodec extends DefaultCodec
     }
 
     //Adjust start to align to the next character boundary.
-    if (start % sourceEncoding.getNumBytesPerCharacter() != 0) {
-      long adjustment = sourceEncoding.getNumBytesPerCharacter() - (start % sourceEncoding.getNumBytesPerCharacter());
+    if (start % ALIGNMENT != 0) {
+      long adjustment = ALIGNMENT - (start % ALIGNMENT);
       LOG.trace("Adjusted partition start positioon from {} to {} by {} bytes",
                 start, start + adjustment, adjustment);
       start += adjustment;
     }
 
     //Adjust end to align to the next character boundary.
-    if (end % sourceEncoding.getNumBytesPerCharacter() != 0) {
-      long adjustment = sourceEncoding.getNumBytesPerCharacter() - (end % sourceEncoding.getNumBytesPerCharacter());
+    if (end % ALIGNMENT != 0) {
+      long adjustment = ALIGNMENT - (end % ALIGNMENT);
       LOG.trace("Adjusted partition end position from {} to {} by {} bytes",
                 end, end + adjustment, adjustment);
       end += adjustment;
     }
 
-    FixedLengthCharsetTransformingDecompressorStream decompressorStream =
-      new FixedLengthCharsetTransformingDecompressorStream(seekableIn, sourceEncoding, start, end);
-
-    return new TransformingCompressionInputStream(decompressorStream, start, end);
+    return new FixedLengthCharsetTransformingDecompressorStream(seekableIn, sourceEncoding, start, end);
   }
 
 }

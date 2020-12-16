@@ -46,7 +46,8 @@ public class FixedLengthCharsetTransformingDecompressor implements Decompressor 
   //Initializing all buffers.
   protected ByteBuffer inputByteBuffer = ByteBuffer.allocate(0);
   protected CharBuffer decodedCharBuffer = CharBuffer.allocate(0);
-  protected ByteBuffer partialOutputByteBuffer = ByteBuffer.allocate(0);
+  // UTF-8 characters can be up to 4 bytes long.
+  protected final ByteBuffer partialOutputByteBuffer = (ByteBuffer) ByteBuffer.allocate(4).position(4);
 
   public FixedLengthCharsetTransformingDecompressor(FixedLengthCharset sourceEncoding) {
     this.sourceEncoding = sourceEncoding;
@@ -56,6 +57,43 @@ public class FixedLengthCharsetTransformingDecompressor implements Decompressor 
 
   @Override
   public void setInput(byte[] b, int off, int len) {
+    ByteBuffer decodeBuffer;
+    if (inputByteBuffer.remaining() == 0) {
+      //Just wrap source array
+      decodeBuffer = ByteBuffer.wrap(b, off, len);
+    } else {
+      ensureInputByteBufferCapacity(len);
+
+      //Copy incoming payload into Input Byte Buffer
+      inputByteBuffer.put(b, off, len);
+      inputByteBuffer.flip();
+      decodeBuffer = inputByteBuffer;
+    }
+
+    //Set up char buffer for writes
+    decodedCharBuffer.compact();
+
+    //Expand the char buffer if needed. We expect no more than a char per byte
+    if (decodedCharBuffer.capacity() < decodeBuffer.limit()) {
+      decodedCharBuffer = CharBuffer.allocate(decodeBuffer.limit());
+    }
+
+    //Decode bytes from the input buffer into the Decoded Char Buffer
+    decodeByteBufferIntoCharBuffer(decodeBuffer);
+
+    if (decodeBuffer.remaining() > 0 && decodeBuffer != inputByteBuffer) {
+      //Save few last bytes for next decode
+      ensureInputByteBufferCapacity(decodeBuffer.remaining());
+      inputByteBuffer.put(decodeBuffer);
+      inputByteBuffer.flip();
+    }
+
+    //Set up decoded char buffer for reads.
+    decodedCharBuffer.flip();
+
+  }
+
+  private void ensureInputByteBufferCapacity(int len) {
     //Set up incoming buffer for writes.
     inputByteBuffer.compact();
 
@@ -70,25 +108,6 @@ public class FixedLengthCharsetTransformingDecompressor implements Decompressor 
 
       inputByteBuffer = newIncomingBuffer;
     }
-
-    //Copy incoming payload into Input Byte Buffer
-    inputByteBuffer.put(b, off, len);
-    inputByteBuffer.flip();
-
-    //Set up char buffer for writes
-    decodedCharBuffer.compact();
-
-    //Expand the char buffer if needed.
-    if (decodedCharBuffer.capacity() < inputByteBuffer.limit() / sourceEncoding.getNumBytesPerCharacter()) {
-      decodedCharBuffer = CharBuffer.allocate(inputByteBuffer.limit() / sourceEncoding.getNumBytesPerCharacter());
-    }
-
-    //Decode bytes from the input buffer into the Decoded Char Buffer
-    decodeByteBufferIntoCharBuffer(inputByteBuffer);
-
-    //Set up decoded char buffer for reads.
-    decodedCharBuffer.flip();
-
   }
 
   /**
@@ -194,22 +213,16 @@ public class FixedLengthCharsetTransformingDecompressor implements Decompressor 
    * @param outputBuffer the output buffer we'll use to store the partial bytes from a character.
    */
   protected void encodePartialCharIntoByteBuffer(ByteBuffer outputBuffer) {
-    // UTF-8 characters can be up to 4 bytes long.
-    // We start from 2 bytes as a 1-byte-long character would already fit in the encoded buffer.
-    ByteBuffer additionalByteBuffer = ByteBuffer.allocate(4);
-
-    encodeCharBufferIntoByteBuffer(additionalByteBuffer);
+    partialOutputByteBuffer.clear();
+    encodeCharBufferIntoByteBuffer(partialOutputByteBuffer);
 
     //Set up additional char buffer for read in the next invocation of this method.
-    additionalByteBuffer.flip();
+    partialOutputByteBuffer.flip();
 
     //Read as many bytes as possible from this additional char buffer.
-    while (additionalByteBuffer.hasRemaining() && outputBuffer.hasRemaining()) {
-      outputBuffer.put(additionalByteBuffer.get());
+    while (partialOutputByteBuffer.hasRemaining() && outputBuffer.hasRemaining()) {
+      outputBuffer.put(partialOutputByteBuffer.get());
     }
-
-    //Store remaining bytes in the Partial Byte Buffer
-    partialOutputByteBuffer = additionalByteBuffer;
   }
 
   @Override
@@ -221,7 +234,7 @@ public class FixedLengthCharsetTransformingDecompressor implements Decompressor 
   public void reset() {
     inputByteBuffer = ByteBuffer.allocate(0);
     decodedCharBuffer = CharBuffer.allocate(0);
-    partialOutputByteBuffer = ByteBuffer.allocate(0);
+    partialOutputByteBuffer.position(0).limit(0);
     numDecodedCharacters = 0;
     numEncodedCharacters = 0;
   }
