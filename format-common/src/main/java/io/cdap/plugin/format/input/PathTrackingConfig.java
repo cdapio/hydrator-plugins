@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Cask Data, Inc.
+ * Copyright © 2018-2021 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -17,7 +17,6 @@
 package io.cdap.plugin.format.input;
 
 import com.google.common.base.Strings;
-import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import io.cdap.cdap.api.annotation.Description;
@@ -35,6 +34,8 @@ import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -106,11 +107,11 @@ public class PathTrackingConfig extends PluginConfig {
    * provided path directs to a directory - first file matching the extension will be provided if
    * extension is null first file from the directory will be returned
    *
-   * @param path              path from config
-   * @param matchingExtension extension to match when searching for file in directory
+   * @param path path from config
+   * @param regexPathFilter the regex used to filter the files
    * @return {@link Path}
    */
-  public Path getFilePathForSchemaGeneration(String path, String matchingExtension, Configuration configuration)
+  public Path getFilePathForSchemaGeneration(String path, String regexPathFilter, Configuration configuration)
     throws IOException {
     Path fsPath = new Path(path);
     FileSystem fs = FileSystem.get(fsPath.toUri(), configuration);
@@ -132,20 +133,25 @@ public class PathTrackingConfig extends PluginConfig {
     if (files.length == 0) {
       throw new IllegalArgumentException("Provided directory is empty");
     }
-    // find first file by extension
+
     for (FileStatus file : files) {
-      if (matchingExtension == null) {
+      if (Strings.isNullOrEmpty(regexPathFilter)) {
         return file.getPath();
-      }
-      if (Files.getFileExtension(file.getPath().getName()).equals(matchingExtension)) {
-        return file.getPath();
+      } else {
+        Pattern pattern = Pattern.compile(regexPathFilter);
+        Matcher matcher = pattern.matcher(file.getPath().toString());
+        if (matcher.find()) {
+          return file.getPath();
+        }
       }
     }
-    throw new IllegalArgumentException("Could not find file with valid format extension in provided path");
+    throw new IllegalArgumentException(String.format("No file inside \"%s\" matched regex \"%s\"!", path,
+                                                     regexPathFilter));
   }
 
   /**
    * Read file system properties from config
+   *
    * @return
    */
   public Map<String, String> getFileSystemProperties() {
