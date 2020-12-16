@@ -25,6 +25,9 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+
 /**
  * An input format that tracks which the file path each record was read from. This InputFormat is a wrapper around
  * underlying input formats. The responsibility of this class is to keep track of which file each record is reading
@@ -44,7 +47,7 @@ public class CharsetTransformingPathTrackingInputFormat extends TextInputFormat 
     String delimiter = context.getConfiguration().get("textinputformat.record.delimiter");
     byte[] recordDelimiterBytes = null;
     if (null != delimiter) {
-      recordDelimiterBytes = delimiter.getBytes(fixedLengthCharset.getCharset());
+      recordDelimiterBytes = delimiter.getBytes(StandardCharsets.UTF_8);
     }
     return new CharsetTransformingLineRecordReader(fixedLengthCharset, recordDelimiterBytes);
   }

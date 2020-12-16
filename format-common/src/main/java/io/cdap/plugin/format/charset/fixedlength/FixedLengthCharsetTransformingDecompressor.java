@@ -118,7 +118,7 @@ public class FixedLengthCharsetTransformingDecompressor implements Decompressor 
   public int decompress(byte[] b, int off, int len) throws IOException {
 
     //Allocate new outgoing buffer
-    ByteBuffer encodedBuffer = ByteBuffer.allocate(len - off);
+    ByteBuffer encodedBuffer = ByteBuffer.wrap(b, off, len);
 
     //Consume any remaining bytes from a previous decompress invocation.
     while (partialOutputByteBuffer != null && partialOutputByteBuffer.hasRemaining() && encodedBuffer.hasRemaining()) {
@@ -128,18 +128,17 @@ public class FixedLengthCharsetTransformingDecompressor implements Decompressor 
     //Encode as many characters as possible into the Encoded Buffer.
     encodeCharBufferIntoByteBuffer(encodedBuffer);
 
-    // Handle the case where the outgoing buffer can still fit additional space.
+    // Handle the case where we need to add a partial decompressed character to the output buffer.
     // This means we need to encode one extra character and add as many bytes as possible into the output buffer.
-    if (decodedCharBuffer.remaining() > 0 && encodedBuffer.remaining() > 0) {
+    // This is an expensive operation that is executed as a last resort, meaning we only do this when we were
+    // not able to add any bytes to the output payload before.
+    if (decodedCharBuffer.remaining() > 0 && encodedBuffer.remaining() > 0 && encodedBuffer.position() - off == 0) {
       encodePartialCharacter(encodedBuffer);
     }
 
-    //Set up decoded buffer for reading.
-    encodedBuffer.flip();
-    encodedBuffer.get(b, off, Math.min(encodedBuffer.remaining(), len));
-
-    //Return the number of bytes copied, which matches the actual position in the decoded buffer.
-    return encodedBuffer.position();
+    //Return the number of bytes copied,
+    // This is matches the actual position in the decoded buffer minus the initial offset
+    return encodedBuffer.position() - off;
   }
 
   /**
@@ -187,6 +186,7 @@ public class FixedLengthCharsetTransformingDecompressor implements Decompressor 
   /**
    * Handle the case where we still need to encode an extra character and copy partial bytes from this encoded
    * character into the output buffer in order to fill the output byte array.
+   *
    * @param outputBuffer the output buffer we'll use to store the partial bytes from a character.
    */
   protected void encodePartialCharacter(ByteBuffer outputBuffer) {

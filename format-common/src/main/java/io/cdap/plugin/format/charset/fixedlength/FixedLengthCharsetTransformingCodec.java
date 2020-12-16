@@ -52,11 +52,6 @@ public class FixedLengthCharsetTransformingCodec extends DefaultCodec
   }
 
   @Override
-  public CompressionOutputStream createOutputStream(OutputStream out, Compressor compressor) throws IOException {
-    throw new UnsupportedOperationException("Not supported");
-  }
-
-  @Override
   public Class<? extends Compressor> getCompressorType() {
     throw new UnsupportedOperationException("Not supported");
   }

@@ -82,27 +82,30 @@ public class FixedLengthCharsetTransformingDecompressorTest {
     byte[] sourceBytes = testString.getBytes(fixedLengthCharset.getCharset());
     byte[] utf8Bytes = testString.getBytes(StandardCharsets.UTF_8);
 
-    //Set the input stream from 1 to 8 bytes at a time;
+    //Consume input and output at different speeds to ensure the decompressor works as expected.
+    for (int inputBlockSize = 1; inputBlockSize <= 16; inputBlockSize++) {
+      for (int outputBlockSize = 1; outputBlockSize <= 16; outputBlockSize++) {
 
-    for (int s = 1; s <= 16; s++) {
+        //Set input and decompress.
+        for (int i = 0; i < sourceBytes.length; i += inputBlockSize) {
+          decompressor.setInput(sourceBytes, i, Math.min(inputBlockSize, sourceBytes.length - i));
 
-      for (int i = 0; i < sourceBytes.length; i += s) {
-        decompressor.setInput(sourceBytes, i, Math.min(s, sourceBytes.length - i));
-
-        //Read from the decompressed stream one byte at a time.
-        while (!decompressor.finished()) {
-          byte[] buf = new byte[1];
-          int numReadBytes = decompressor.decompress(buf, 0, 1);
-          decompressed.write(buf, 0, numReadBytes);
+          //Read from the decompressed stream one byte at a time.
+          while (!decompressor.finished()) {
+            byte[] buf = new byte[outputBlockSize];
+            int numReadBytes = decompressor.decompress(buf, 0, outputBlockSize);
+            decompressed.write(buf, 0, numReadBytes);
+          }
         }
+
+        //Ensure decompressed output matches expected payload.
+        byte[] decompressedBytes = decompressed.toByteArray();
+        Assert.assertArrayEquals(utf8Bytes, decompressedBytes);
+
+        decompressed.reset();
+        decompressor.reset();
+
       }
-
-      byte[] decompressedBytes = decompressed.toByteArray();
-      Assert.assertArrayEquals(utf8Bytes, decompressedBytes);
-
-      decompressed.reset();
-      decompressor.reset();
-
     }
   }
 }
