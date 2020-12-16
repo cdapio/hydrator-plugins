@@ -64,20 +64,6 @@ public class FixedLengthCharsetTransformingDecompressorStream extends Decompress
     this.end = end;
   }
 
-  @Override
-  protected int decompress(byte[] b, int off, int len) throws IOException {
-    //Set input for decompression if it's needed.
-    if (this.decompressor.needsInput()) {
-      int l = getCompressedData();
-      if (l > 0) {
-        this.decompressor.setInput(buffer, 0, l);
-      }
-    }
-
-    //Proceed with super method.
-    return super.decompress(b, off, len);
-  }
-
   /**
    * Fill the input buffer with data from the source input.
    * <p>

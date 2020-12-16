@@ -231,10 +231,6 @@ public class FixedLengthCharsetTransformingDecompressor implements Decompressor 
     this.reset();
   }
 
-  public long getNumConsumedBytes() {
-    return numEncodedCharacters * sourceEncoding.getNumBytesPerCharacter();
-  }
-
   /**
    * Runtime Character Decoding Exception in case we are unable to decode the supplied payload from the
    * specified charset.
