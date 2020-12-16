@@ -51,17 +51,17 @@ public class CharsetTransformingLineRecordReader extends RecordReader<LongWritab
   public static final String MAX_LINE_LENGTH =
     "mapreduce.input.linerecordreader.line.maxlength";
 
-  private final FixedLengthCharset fixedLengthCharset;
-  private final byte[] recordDelimiterBytes;
-  private long start;
-  private long pos;
-  private long end;
-  private SplitLineReader in;
-  private Seekable filePosition;
-  private int maxLineLength;
-  private LongWritable key;
-  private Text value;
-  private Decompressor decompressor;
+  protected final FixedLengthCharset fixedLengthCharset;
+  protected final byte[] recordDelimiterBytes;
+  protected long start;
+  protected long pos;
+  protected long end;
+  protected SplitLineReader in;
+  protected Seekable filePosition;
+  protected int maxLineLength;
+  protected LongWritable key;
+  protected Text value;
+  protected Decompressor decompressor;
 
   public CharsetTransformingLineRecordReader(FixedLengthCharset fixedLengthCharset, byte[] recordDelimiter) {
     this.fixedLengthCharset = fixedLengthCharset;
@@ -127,12 +127,14 @@ public class CharsetTransformingLineRecordReader extends RecordReader<LongWritab
    * Returns the File position in the underlying stream.
    * <p>
    * Note that, as the file is read in chunks to decompress, this number will only update in batches and usually be
-   * ahead of the actual file position. see {@link FixedLengthCharsetTransformingDecompressorStream#getCompressedData}
+   * ahead of the actual decompressed position in the underlying file.
+   *
+   * See {@link FixedLengthCharsetTransformingDecompressorStream#getCompressedData}
    *
    * @return File position
    * @throws IOException if an exception is thrown from the underlying strem operation.
    */
-  private long getFilePosition() throws IOException {
+  protected long getFilePosition() throws IOException {
     return filePosition.getPos();
   }
 

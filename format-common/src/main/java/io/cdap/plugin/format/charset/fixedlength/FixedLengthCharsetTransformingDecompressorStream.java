@@ -38,7 +38,7 @@ public class FixedLengthCharsetTransformingDecompressorStream extends Decompress
   protected final FixedLengthCharset fixedLengthCharset;
   protected long totalReadBytes = 0;
 
-  protected FixedLengthCharsetTransformingDecompressorStream(InputStream in,
+  public FixedLengthCharsetTransformingDecompressorStream(InputStream in,
                                                              FixedLengthCharset fixedLengthCharset,
                                                              long start,
                                                              long end)
@@ -82,7 +82,6 @@ public class FixedLengthCharsetTransformingDecompressorStream extends Decompress
    */
   @Override
   protected int getCompressedData() throws IOException {
-    //return super.getCompressedData();
     checkStream();
 
     int len = buffer.length;
