@@ -23,21 +23,47 @@
           }
         },
         {
-          "widget-type": "select",
+          "widget-type": "plugin-list",
           "label": "Format",
           "name": "format",
           "widget-attributes": {
-            "values": [
-              "avro",
-              "blob",
-              "csv",
-              "delimited",
-              "json",
-              "parquet",
-              "text",
-              "tsv"
-            ],
-            "default": "text"
+            "plugin-type": "validatingInputFormat"
+          }
+        },
+        {
+          "widget-type": "number",
+          "label": "Sample Size",
+          "name": "sampleSize",
+          "widget-attributes": {
+            "default": "1000",
+            "minimum": "1"
+          }
+        },
+        {
+          "widget-type": "keyvalue-dropdown",
+          "label": "Override",
+          "name": "override",
+          "widget-attributes": {
+            "key-placeholder": "Field Name",
+            "value-placeholder": "Data Type",
+            "dropdownOptions": [
+              "boolean",
+              "bytes",
+              "double",
+              "float",
+              "int",
+              "long",
+              "string",
+              "timestamp"
+            ]
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Delimiter",
+          "name": "delimiter",
+          "widget-attributes": {
+            "placeholder": "Delimiter if the format is 'delimited'"
           },
           "plugin-function": {
             "method": "POST",
@@ -48,14 +74,6 @@
             ],
             "missing-required-fields-message": "Please provide path field",
             "plugin-method": "getSchema"
-          }
-        },
-        {
-          "widget-type": "textbox",
-          "label": "Delimiter",
-          "name": "delimiter",
-          "widget-attributes": {
-            "placeholder": "Delimiter if the format is 'delimited'"
           }
         },
         {

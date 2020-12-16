@@ -29,6 +29,11 @@
   <name>Delimited format plugins</name>
   <packaging>jar</packaging>
 
+  <properties>
+    <commons-io.version>2.5</commons-io.version>
+    <commons-lang3.version>3.1</commons-lang3.version>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>io.cdap.cdap</groupId>
@@ -55,6 +60,16 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>${commons-lang3.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>${commons-io.version}</version>
+    </dependency>
   </dependencies>
 
   <build>
@@ -67,7 +82,7 @@
         <configuration>
           <instructions>
             <_exportcontents>
-              io.cdap.plugin.format.delimited.*;
+              io.cdap.plugin.format.delimited.*;org.apache.commons.io;org.apache.commons.lang3;
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>

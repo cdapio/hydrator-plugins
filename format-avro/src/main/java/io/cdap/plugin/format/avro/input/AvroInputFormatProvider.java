@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Cask Data, Inc.
+ * Copyright © 2018-2021 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -124,7 +124,7 @@ public class AvroInputFormatProvider extends PathTrackingInputFormatProvider<Avr
       for (Map.Entry<String, String> entry : conf.getFileSystemProperties().entrySet()) {
         hconf.set(entry.getKey(), entry.getValue());
       }
-      Path file = conf.getFilePathForSchemaGeneration(filePath, NAME, hconf);
+      Path file = conf.getFilePathForSchemaGeneration(filePath, ".+\\.avro", hconf);
       DatumReader<GenericRecord> dataReader = new GenericDatumReader<>();
       seekableInput = new FsInput(file, hconf);
       dataFileReader = DataFileReader.openReader(seekableInput, dataReader);
