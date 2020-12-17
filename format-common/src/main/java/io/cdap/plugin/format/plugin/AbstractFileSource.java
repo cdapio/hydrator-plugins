@@ -87,18 +87,21 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
     Schema schema = null;
 
     // Include source file system properties for schema auto detection
-    final PluginProperties.Builder builder = PluginProperties.builder();
+    PluginProperties.Builder builder = PluginProperties.builder();
     builder.addAll(config.getRawProperties().getProperties());
-    builder.add(FILE_SYSTEM_PROPERTIES, GSON.toJson(getFileSystemProperties(null)));
-    final PluginProperties pluginProperties = builder.build();
+
+    if (shouldGetSchema()) {
+      // Include source file system properties for schema auto detection
+      builder.add(FILE_SYSTEM_PROPERTIES, GSON.toJson(getFileSystemProperties(null)));
+    }
 
     ValidatingInputFormat validatingInputFormat =
-      pipelineConfigurer.usePlugin(ValidatingInputFormat.PLUGIN_TYPE, fileFormat.name().toLowerCase(), FORMAT_PLUGIN_ID,
-                                   pluginProperties);
+      pipelineConfigurer.usePlugin(ValidatingInputFormat.PLUGIN_TYPE,
+                                   fileFormat.name().toLowerCase(), FORMAT_PLUGIN_ID, builder.build());
     FormatContext context = new FormatContext(collector, null);
     validateInputFormatProvider(context, fileFormat, validatingInputFormat);
 
-    if (validatingInputFormat != null) {
+    if (validatingInputFormat != null && shouldGetSchema()) {
       schema = validatingInputFormat.getSchema(context);
     }
 
@@ -227,5 +230,14 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
           .withOutputSchemaField(schemaPathField.getName());
       }
     }
+  }
+
+  /**
+   * Determines if the schema should be auto detected. This method must return false if any of the plugin properties
+   * needed to determine the schema is a macro or not present. Otherwise this method should return true.
+   * See PLUGIN-508 and CDAP-17473
+   */
+  protected boolean shouldGetSchema() {
+    return true;
   }
 }
