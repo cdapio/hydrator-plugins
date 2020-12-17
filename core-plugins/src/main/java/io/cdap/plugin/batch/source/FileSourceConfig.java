@@ -32,10 +32,10 @@ import javax.annotation.Nullable;
  * File source config
  */
 public class FileSourceConfig extends AbstractFileSourceConfig {
-
+  public static final String NAME_FILE_SYSTEM_PROPERTIES = "fileSystemProperties";
+  public static final String NAME_PATH = "path";
   private static final Gson GSON = new Gson();
   private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
-  private static final String NAME_FILE_SYSTEM_PROPERTIES = "fileSystemProperties";
 
   @Macro
   @Description("Path to file(s) to be read. If a directory is specified, " +
