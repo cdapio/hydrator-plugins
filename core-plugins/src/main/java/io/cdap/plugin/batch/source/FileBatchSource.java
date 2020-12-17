@@ -50,4 +50,11 @@ public class FileBatchSource extends AbstractFileSource<FileSourceConfig> {
     }
     return properties;
   }
+
+  @Override
+  protected boolean shouldGetSchema() {
+    return !config.containsMacro(FileSourceConfig.NAME_PATH) && !config.containsMacro(FileSourceConfig.NAME_FORMAT) &&
+      !config.containsMacro(FileSourceConfig.NAME_DELIMITER) &&
+      !config.containsMacro(FileSourceConfig.NAME_FILE_SYSTEM_PROPERTIES);
+  }
 }
