@@ -65,7 +65,11 @@ public interface FileSinkProperties {
    * Get the name of the format plugin to use to write the data.
    */
   default String getFormatName() {
-    return null;
+    FileFormat format = getFormat();
+    if (format == null) {
+      return null;
+    }
+    return format.name().toLowerCase();
   }
 
   /**
