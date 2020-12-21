@@ -254,7 +254,7 @@ public class JoinerConfig extends PluginConfig {
   }
 
   boolean isNullSafe() {
-    return joinNullKeys == null ? true : joinNullKeys;
+    return joinNullKeys == null ? false : joinNullKeys;
   }
 
   private Set<String> getSet(String strVal) {

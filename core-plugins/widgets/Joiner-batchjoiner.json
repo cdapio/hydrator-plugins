@@ -46,7 +46,7 @@
           "label": "Join on Null Keys",
           "name": "joinNullKeys",
           "widget-attributes": {
-            "default": "true",
+            "default": "false",
             "on": {
               "value": "true",
               "label": "True"
