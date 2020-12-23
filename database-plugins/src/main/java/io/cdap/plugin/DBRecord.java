@@ -285,6 +285,11 @@ public class DBRecord implements Writable, DBWritable, Configurable, DataSizeRep
           stmt.setTimestamp(sqlIndex, Timestamp.from(record.getTimestamp(fieldName).toInstant()));
           bytesWritten += Long.BYTES;
           break;
+        case DECIMAL:
+          BigDecimal value = record.getDecimal(fieldName);
+          stmt.setBigDecimal(sqlIndex, value);
+          bytesWritten += value.unscaledValue().bitLength() / Byte.SIZE + Integer.BYTES;
+          break;
       }
       return;
     }
