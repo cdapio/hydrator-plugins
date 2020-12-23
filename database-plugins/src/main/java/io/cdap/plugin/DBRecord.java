@@ -271,6 +271,11 @@ public class DBRecord implements Writable, DBWritable, Configurable {
         case TIMESTAMP_MICROS:
           stmt.setTimestamp(sqlIndex, Timestamp.from(record.getTimestamp(fieldName).toInstant()));
           break;
+        case DECIMAL:
+          BigDecimal value = record.getDecimal(fieldName);
+          stmt.setBigDecimal(sqlIndex, value);
+          bytesWritten += value.unscaledValue().bitLength() / Byte.SIZE + Integer.BYTES;
+          break;
       }
       return;
     }
