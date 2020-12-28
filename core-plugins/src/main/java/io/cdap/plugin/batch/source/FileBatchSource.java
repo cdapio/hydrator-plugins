@@ -48,6 +48,10 @@ public class FileBatchSource extends AbstractFileSource<FileSourceConfig> {
     if (config.shouldCopyHeader()) {
       properties.put(PathTrackingInputFormat.COPY_HEADER, "true");
     }
+    if (config.getFileEncoding() != null
+      && !config.getFileEncoding().equals(config.getDefaultFileEncoding())) {
+      properties.put(PathTrackingInputFormat.SOURCE_FILE_ENCODING, config.getFileEncoding());
+    }
     return properties;
   }
 
@@ -55,6 +59,7 @@ public class FileBatchSource extends AbstractFileSource<FileSourceConfig> {
   protected boolean shouldGetSchema() {
     return !config.containsMacro(FileSourceConfig.NAME_PATH) && !config.containsMacro(FileSourceConfig.NAME_FORMAT) &&
       !config.containsMacro(FileSourceConfig.NAME_DELIMITER) &&
-      !config.containsMacro(FileSourceConfig.NAME_FILE_SYSTEM_PROPERTIES);
+      !config.containsMacro(FileSourceConfig.NAME_FILE_SYSTEM_PROPERTIES) &&
+      !config.containsMacro(FileSourceConfig.NAME_FILE_ENCODING);
   }
 }
