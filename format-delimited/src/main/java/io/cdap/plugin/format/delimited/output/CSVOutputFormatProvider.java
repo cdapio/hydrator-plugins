@@ -48,6 +48,10 @@ public class CSVOutputFormatProvider extends AbstractOutputFormatProvider {
   @Override
   public void validate(FormatContext context) {
     Schema inputSchema = context.getInputSchema();
+    // this is possible if schema is macro enabled
+    if (inputSchema == null) {
+      return;
+    }
     boolean allSimpleFields = inputSchema.getFields().stream()
       .map(Schema.Field::getSchema)
       .allMatch(Schema::isSimpleOrNullableSimple);

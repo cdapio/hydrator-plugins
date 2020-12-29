@@ -107,7 +107,10 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
     }
 
     String fileFormat = config.getFormatName();
-    Schema schema = null;
+
+    // here set the schema from the config since the input format can only provide schema if all the required fields
+    // are not macro
+    Schema schema = config.getSchema();
 
     PluginProperties.Builder builder = PluginProperties.builder();
     builder.addAll(config.getRawProperties().getProperties());
