@@ -37,6 +37,7 @@ import javax.annotation.Nullable;
 public abstract class AbstractFileSourceConfig extends PluginConfig implements FileSourceProperties {
   public static final String NAME_FORMAT = "format";
   public static final String NAME_SCHEMA = "schema";
+  public static final String NAME_DELIMITER = "delimiter";
   
   @Description("Name be used to uniquely identify this source for lineage, annotating metadata, etc.")
   private String referenceName;
@@ -93,6 +94,7 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
     + "read the data.")
   private String schema;
 
+  @Name(NAME_DELIMITER)
   @Macro
   @Nullable
   @Description("The delimiter to use if the format is 'delimited'. The delimiter will be ignored if the format "
