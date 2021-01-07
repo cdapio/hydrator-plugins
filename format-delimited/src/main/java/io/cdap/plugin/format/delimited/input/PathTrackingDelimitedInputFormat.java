@@ -27,7 +27,6 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
-import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -46,7 +45,7 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
                                                                                     @Nullable String pathField,
                                                                                     @Nullable Schema schema) {
 
-    RecordReader<LongWritable, Text> delegate = (new TextInputFormat()).createRecordReader(split, context);
+    RecordReader<LongWritable, Text> delegate = getDefaultRecordReaderDelegate(split, context);
     String delimiter = context.getConfiguration().get(DELIMITER);
     boolean skipHeader = context.getConfiguration().getBoolean(SKIP_HEADER, false);
 

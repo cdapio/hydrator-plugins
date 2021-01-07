@@ -19,12 +19,15 @@ package io.cdap.plugin.format.input;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 
 import java.io.IOException;
 import javax.annotation.Nullable;
@@ -45,7 +48,9 @@ public abstract class PathTrackingInputFormat extends FileInputFormat<NullWritab
   public static final String COPY_HEADER = "path.tracking.copy.header";
   static final String PATH_FIELD = "path.tracking.path.field";
   static final String FILENAME_ONLY = "path.tracking.filename.only";
+  public static final String SOURCE_FILE_ENCODING = "path.tracking.encoding";
   static final String SCHEMA = "schema";
+  public static final String TARGET_ENCODING = "utf-8";
 
   @Override
   public RecordReader<NullWritable, StructuredRecord> createRecordReader(InputSplit split,
@@ -67,6 +72,20 @@ public abstract class PathTrackingInputFormat extends FileInputFormat<NullWritab
     RecordReader<NullWritable, StructuredRecord.Builder> delegate = createRecordReader(fileSplit, context,
                                                                                        pathField, parsedSchema);
     return new TrackingRecordReader(delegate, pathField, path);
+  }
+
+  public RecordReader<LongWritable, Text> getDefaultRecordReaderDelegate(InputSplit split,
+                                                                            TaskAttemptContext context) {
+    RecordReader<LongWritable, Text> delegate;
+
+    if (context.getConfiguration().get(SOURCE_FILE_ENCODING) != null) {
+      String encoding = context.getConfiguration().get(SOURCE_FILE_ENCODING);
+      delegate = (new CharsetTransformingPathTrackingInputFormat(encoding)).createRecordReader(split, context);
+    } else {
+      delegate = (new TextInputFormat()).createRecordReader(split, context);
+    }
+
+    return delegate;
   }
 
   protected abstract RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(
