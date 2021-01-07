@@ -155,6 +155,280 @@
           "name": "fileSystemProperties"
         },
         {
+          "widget-type": "select",
+          "label": "File encoding",
+          "name": "fileEncoding",
+          "widget-attributes": {
+            "values": [
+              {
+                "label": "UTF-8",
+                "value": "UTF-8"
+              },
+              {
+                "label": "UTF-32",
+                "value": "UTF-32"
+              },
+              {
+                "label": "ISO-8859-1 (Latin-1 Western European)",
+                "value": "ISO-8859-1"
+              },
+              {
+                "label": "ISO-8859-2 (Latin-2 Central European)",
+                "value": "ISO-8859-2"
+              },
+              {
+                "label": "ISO-8859-3 (Latin-3 South European)",
+                "value": "ISO-8859-3"
+              },
+              {
+                "label": "ISO-8859-4 (Latin-4 North European)",
+                "value": "ISO-8859-4"
+              },
+              {
+                "label": "ISO-8859-5 (Latin/Cyrillic)",
+                "value": "ISO-8859-5"
+              },
+              {
+                "label": "ISO-8859-6 (Latin/Arabic)",
+                "value": "ISO-8859-6"
+              },
+              {
+                "label": "ISO-8859-7 (Latin/Greek)",
+                "value": "ISO-8859-7"
+              },
+              {
+                "label": "ISO-8859-8 (Latin/Hebrew)",
+                "value": "ISO-8859-8"
+              },
+              {
+                "label": "ISO-8859-9 (Latin-5 Turkish)",
+                "value": "ISO-8859-9"
+              },
+              {
+                "label": "ISO-8859-11 (Latin/Thai)",
+                "value": "ISO-8859-11"
+              },
+              {
+                "label": "ISO-8859-13 (Latin-7 Baltic Rim)",
+                "value": "ISO-8859-13"
+              },
+              {
+                "label": "ISO-8859-15 (Latin-9)",
+                "value": "ISO-8859-15"
+              },
+              {
+                "label": "Windows-1250",
+                "value": "Windows-1250"
+              },
+              {
+                "label": "Windows-1251",
+                "value": "Windows-1251"
+              },
+              {
+                "label": "Windows-1252",
+                "value": "Windows-1252"
+              },
+              {
+                "label": "Windows-1253",
+                "value": "Windows-1253"
+              },
+              {
+                "label": "Windows-1254",
+                "value": "Windows-1254"
+              },
+              {
+                "label": "Windows-1255",
+                "value": "Windows-1255"
+              },
+              {
+                "label": "Windows-1256",
+                "value": "Windows-1256"
+              },
+              {
+                "label": "Windows-1257",
+                "value": "Windows-1257"
+              },
+              {
+                "label": "Windows-1258",
+                "value": "Windows-1258"
+              },
+              {
+                "label": "IBM00858",
+                "value": "IBM00858"
+              },
+              {
+                "label": "IBM01140",
+                "value": "IBM01140"
+              },
+              {
+                "label": "IBM01141",
+                "value": "IBM01141"
+              },
+              {
+                "label": "IBM01142",
+                "value": "IBM01142"
+              },
+              {
+                "label": "IBM01143",
+                "value": "IBM01143"
+              },
+              {
+                "label": "IBM01144",
+                "value": "IBM01144"
+              },
+              {
+                "label": "IBM01145",
+                "value": "IBM01145"
+              },
+              {
+                "label": "IBM01146",
+                "value": "IBM01146"
+              },
+              {
+                "label": "IBM01147",
+                "value": "IBM01147"
+              },
+              {
+                "label": "IBM01148",
+                "value": "IBM01148"
+              },
+              {
+                "label": "IBM01149",
+                "value": "IBM01149"
+              },
+              {
+                "label": "IBM037",
+                "value": "IBM037"
+              },
+              {
+                "label": "IBM1026",
+                "value": "IBM1026"
+              },
+              {
+                "label": "IBM1047",
+                "value": "IBM1047"
+              },
+              {
+                "label": "IBM273",
+                "value": "IBM273"
+              },
+              {
+                "label": "IBM277",
+                "value": "IBM277"
+              },
+              {
+                "label": "IBM278",
+                "value": "IBM278"
+              },
+              {
+                "label": "IBM280",
+                "value": "IBM280"
+              },
+              {
+                "label": "IBM284",
+                "value": "IBM284"
+              },
+              {
+                "label": "IBM285",
+                "value": "IBM285"
+              },
+              {
+                "label": "IBM290",
+                "value": "IBM290"
+              },
+              {
+                "label": "IBM297",
+                "value": "IBM297"
+              },
+              {
+                "label": "IBM420",
+                "value": "IBM420"
+              },
+              {
+                "label": "IBM424",
+                "value": "IBM424"
+              },
+              {
+                "label": "IBM437",
+                "value": "IBM437"
+              },
+              {
+                "label": "IBM500",
+                "value": "IBM500"
+              },
+              {
+                "label": "IBM775",
+                "value": "IBM775"
+              },
+              {
+                "label": "IBM850",
+                "value": "IBM850"
+              },
+              {
+                "label": "IBM852",
+                "value": "IBM852"
+              },
+              {
+                "label": "IBM855",
+                "value": "IBM855"
+              },
+              {
+                "label": "IBM857",
+                "value": "IBM857"
+              },
+              {
+                "label": "IBM860",
+                "value": "IBM860"
+              },
+              {
+                "label": "IBM861",
+                "value": "IBM861"
+              },
+              {
+                "label": "IBM862",
+                "value": "IBM862"
+              },
+              {
+                "label": "IBM863",
+                "value": "IBM863"
+              },
+              {
+                "label": "IBM864",
+                "value": "IBM864"
+              },
+              {
+                "label": "IBM865",
+                "value": "IBM865"
+              },
+              {
+                "label": "IBM866",
+                "value": "IBM866"
+              },
+              {
+                "label": "IBM868",
+                "value": "IBM868"
+              },
+              {
+                "label": "IBM869",
+                "value": "IBM869"
+              },
+              {
+                "label": "IBM870",
+                "value": "IBM870"
+              },
+              {
+                "label": "IBM871",
+                "value": "IBM871"
+              },
+              {
+                "label": "IBM918",
+                "value": "IBM918"
+              }
+            ],
+            "default": "UTF-8"
+          }
+        },
+        {
           "widget-type": "hidden",
           "name": "copyHeader"
         }

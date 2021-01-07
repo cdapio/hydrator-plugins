@@ -34,6 +34,7 @@ import javax.annotation.Nullable;
 public class FileSourceConfig extends AbstractFileSourceConfig {
   public static final String NAME_FILE_SYSTEM_PROPERTIES = "fileSystemProperties";
   public static final String NAME_PATH = "path";
+  public static final String NAME_FILE_ENCODING = "fileEncoding";
 
   private static final Gson GSON = new Gson();
   private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
