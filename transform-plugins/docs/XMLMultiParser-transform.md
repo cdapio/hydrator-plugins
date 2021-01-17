@@ -27,6 +27,14 @@ children of the elements referenced by the XPath. For example: /rss/channel/item
 **schema:** The schema of records to output. Each field in the schema must be a child of the XML element referenced by
 the XPath. Currently only simply types are supported.
 
+**enableExternalGeneralEntities:** This enables processing external generic entities while reading xml file. Defaults to `false`.
+
+**enableExternalParameterEntities:** This enables processing external generic entities while reading xml file.
+
+**loadExternalDTD**: This enables processing external DTDs while reading xml file.
+
+**disallowDocTypeDTD**: This prevents processing any DTDs while reading xml files. This defaults to `false` from the plugin but when configuring the plugin via UI this will be set to true. This is to prevent xxe based xml vulnerabilities while reading the xml file. Please read more about [xxe xml vulnerability here](https://owasp.org/www-community/vulnerabilities/XML_External_Entity_(XXE)_Processing).
+
 Conditions
 ----------
 If error dataset is configured, then all the erroneous rows, if present in the input, will be committed to the
@@ -69,12 +77,12 @@ For example, for xml document:
     <channel>
         <item>
             <guid>id123</guid>
-            <title>Something Happened in the World</name>
+            <title>Something Happened in the World</title>
             <pubDate>1970-01-01 12:00:00</pubDate>
         </item>
         <item>
             <guid>id456</guid>
-            <title>Some Other Thing Happened in the World</name>
+            <title>Some Other Thing Happened in the World</title>
             <pubDate>1970-01-01 13:00:00</pubDate>
         </item>
     </channel>

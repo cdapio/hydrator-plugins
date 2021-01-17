@@ -22,6 +22,64 @@
           "name": "xPath"
         }
       ]
+    },
+    {
+      "label": "Advanced",
+      "properties": [
+        {
+          "widget-type": "toggle",
+          "name": "disallowDocTypeDTD",
+          "label": "Disallow Doctype DTD",
+          "widget-attributes": {
+            "default": "true",
+            "on": {
+              "value": "true"
+            },
+            "off": {
+              "value": "false"
+            }
+          }
+        },
+        {
+          "widget-type": "toggle",
+          "name": "loadExternalDTD",
+          "label": "Load external DTD",
+          "widget-attributes": {
+            "on": {
+              "value": "true"
+            },
+            "off": {
+              "value": "false"
+            }
+          }
+        },
+        {
+          "widget-type": "toggle",
+          "name": "enableExternalParameterEntities",
+          "label": "Enable External Parameter Entities",
+          "widget-attributes": {
+            "on": {
+              "value": "true"
+            },
+            "off": {
+              "value": "false"
+            }
+          }
+        },
+        {
+          "widget-type": "toggle",
+          "name": "enableExternalGeneralEntities",
+          "label": "Enable External General Entities",
+          "widget-attributes": {
+            "on": {
+              "value": "true"
+            },
+            "off": {
+              "value": "false"
+            }
+          }
+        }
+      ]
     }
   ],
   "outputs": [
@@ -40,6 +98,25 @@
         ],
         "schema-default-type": "string"
       }
+    }
+  ],
+  "filters": [
+    {
+      "name": "Toggle disallow doctype declaration property",
+      "condition": {
+        "expression": "disallowDocTypeDTD == false"
+      },
+      "show": [
+        {
+          "name": "loadExternalDTD"
+        },
+        {
+          "name": "enableExternalParameterEntities"
+        },
+        {
+          "name": "enableExternalGeneralEntities"
+        }
+      ]
     }
   ],
   "errorDataset": {

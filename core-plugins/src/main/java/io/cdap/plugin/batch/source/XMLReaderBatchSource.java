@@ -137,6 +137,9 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       conf.set(XMLInputFormat.XML_INPUTFORMAT_TARGET_FOLDER, config.targetFolder);
     }
 
+    conf.setBoolean(XMLInputFormat.XML_INPUTFORMAT_ENABLE_EXTERNAL_ENTITIES, config.shouldEnableExternalEntities());
+    conf.setBoolean(XMLInputFormat.XML_INPUTFORMAT_SUPPORT_DTD, config.shouldSupportDTD());
+
     if (!config.containsMacro("tableName") && !Strings.isNullOrEmpty(config.tableName)) {
       setFileTrackingInfo(context, conf);
       //Create a temporary directory, in which XMLRecordReader will add file tracking information.
@@ -248,6 +251,7 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     public static final String ACTION_AFTER_PROCESS = "actionAfterProcess";
     public static final String REPROCESSING_REQUIRED = "reprocessingRequired";
 
+
     @Description("Path to file(s) to be read. If a directory is specified, terminate the path name with a \'/\'.")
     @Macro
     private final String path;
@@ -296,6 +300,15 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     @Macro
     private final String temporaryFolder;
 
+    @Description("Enable external entities while processing XML files")
+    @Nullable
+    @Macro
+    private final Boolean enableExternalEntities;
+
+    @Description("Enable support DTDs while processing XML files")
+    @Nullable
+    private final Boolean supportDTD;
+
     @VisibleForTesting
     XMLReaderConfig(String referenceName, String path, @Nullable String pattern, String nodePath,
                     String actionAfterProcess, @Nullable String targetFolder, String reprocessingRequired,
@@ -310,6 +323,27 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
       this.tableName = tableName;
       this.tableExpiryPeriod = tableExpiryPeriod;
       this.temporaryFolder = temporaryFolder;
+      this.enableExternalEntities = false;
+      this.supportDTD = false;
+    }
+
+    @VisibleForTesting
+    XMLReaderConfig(String referenceName, String path, @Nullable String pattern, String nodePath,
+                    String actionAfterProcess, @Nullable String targetFolder, String reprocessingRequired,
+                    @Nullable String tableName, @Nullable Integer tableExpiryPeriod, String temporaryFolder,
+                    @Nullable Boolean enableExternalEntities, @Nullable Boolean supportDTD) {
+      super(referenceName);
+      this.path = path;
+      this.pattern = pattern;
+      this.nodePath = nodePath;
+      this.actionAfterProcess = actionAfterProcess;
+      this.targetFolder = targetFolder;
+      this.reprocessingRequired = reprocessingRequired;
+      this.tableName = tableName;
+      this.tableExpiryPeriod = tableExpiryPeriod;
+      this.temporaryFolder = temporaryFolder;
+      this.enableExternalEntities = enableExternalEntities;
+      this.supportDTD = supportDTD;
     }
 
     @VisibleForTesting
@@ -329,6 +363,16 @@ public class XMLReaderBatchSource extends ReferenceBatchSource<LongWritable, Obj
     @VisibleForTesting
     String getNodePath() {
       return nodePath;
+    }
+
+    @VisibleForTesting
+    boolean shouldEnableExternalEntities() {
+      return enableExternalEntities == null ? false : enableExternalEntities;
+    }
+
+    @VisibleForTesting
+    boolean shouldSupportDTD() {
+      return supportDTD == null ? false : supportDTD;
     }
 
     void validate(FailureCollector collector) {
