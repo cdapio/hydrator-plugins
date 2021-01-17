@@ -177,6 +177,16 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
       InputSource source = new InputSource(new StringReader((String) input.get(config.inputField)));
       source.setEncoding(config.encoding);
       DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
+      builderFactory.setFeature("http://xml.org/sax/features/external-general-entities",
+              config.enableExternalGeneralEntities);
+      builderFactory.setFeature("http://xml.org/sax/features/external-parameter-entities",
+              config.enableExternalParameterEntities);
+      builderFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd",
+              config.loadExternalDTD);
+      builderFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl",
+              config.disallowDocTypeDTD);
+      builderFactory.setXIncludeAware(false);
+      builderFactory.setExpandEntityReferences(false);
       DocumentBuilder documentBuilder = builderFactory.newDocumentBuilder();
       Document document = documentBuilder.parse(source);
       XPathFactory xpathFactory = XPathFactory.newInstance();
@@ -303,19 +313,48 @@ public class XMLParser extends Transform<StructuredRecord, StructuredRecord> {
       "Defaults to false. ")
     private final Boolean failOnArray;
 
+    @Nullable
+    @Description("Enable external entities.Sets" +
+            " 'http://xml.org/sax/features/external-general-entities'")
+    private final Boolean enableExternalGeneralEntities;
+
+    @Nullable
+    @Description("Enable external parameter entities. Sets" +
+            " 'http://xml.org/sax/features/external-parameter-entitiesl'")
+    private final Boolean enableExternalParameterEntities;
+
+    @Nullable
+    @Description("Enable loading external dtd. Sets" +
+            " 'http://apache.org/xml/features/nonvalidating/load-external-dtd'")
+    private final Boolean loadExternalDTD;
+
+    @Nullable
+    @Description("Disallow doctype type declaration. Sets" +
+            " 'http://apache.org/xml/features/disallow-doctype-decl'")
+    private final Boolean disallowDocTypeDTD;
 
     public Config() {
-      this("", "", "", "", "");
+      this("", "", "", "", "", false, false, false, false);
+    }
+    public Config(String inputField, String encoding, String xPathFieldMapping, String fieldTypeMapping,
+                  String processOnError) {
+      this(inputField, encoding, xPathFieldMapping, fieldTypeMapping, processOnError, false, false, false, false);
     }
 
     public Config(String inputField, String encoding, String xPathFieldMapping, String fieldTypeMapping,
-                  String processOnError) {
+                  String processOnError,
+                  Boolean enableExternalGeneralEntities,
+                  Boolean enableExternalParameterEntities, Boolean loadExternalDTD, Boolean disallowDocTypeDTD) {
       this.inputField = inputField;
       this.encoding = encoding;
       this.xPathFieldMapping = xPathFieldMapping;
       this.fieldTypeMapping = fieldTypeMapping;
       this.processOnError = processOnError;
       this.failOnArray = false;
+      this.enableExternalGeneralEntities = enableExternalGeneralEntities;
+      this.enableExternalParameterEntities = enableExternalParameterEntities;
+      this.loadExternalDTD = loadExternalDTD;
+      this.disallowDocTypeDTD = disallowDocTypeDTD;
     }
 
     /**
