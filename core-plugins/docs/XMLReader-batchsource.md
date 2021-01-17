@@ -37,6 +37,10 @@ will not be processed again on future runs of the pipeline.
 
 **Table Data Expiry Period (Days):** The amount of time (in days) to wait before clearing the table used to track processed filed. If omitted, data will not expire in the tracking table. Example: for `tableExpiryPeriod = 30`, data before 30 days is deleted from the table.
 
+**Enable external entities:** This enables processing external entities while reading xml file. Defaults to `false`. __Note__: The external entities should be enabled only if necessary. It posts security risk of malicious code execution. Please read more about [xxe xml vulnerability here](https://owasp.org/www-community/vulnerabilities/XML_External_Entity_(XXE)_Processing).
+
+**Support DTDs:** This sets supporting DTDs while processing xml file. This property needs to be set `true` if external entities needs to be evaluated. Defaults to `false`.
+
 
 Usage Notes
 -----------
