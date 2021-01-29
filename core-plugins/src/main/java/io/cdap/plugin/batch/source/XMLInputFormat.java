@@ -38,6 +38,8 @@ public class XMLInputFormat extends FileInputFormat<LongWritable, Map<String, St
   public static final String XML_INPUTFORMAT_PROCESSED_FILES = "xml.inputformat.processed.files";
   public static final String XML_INPUTFORMAT_FILE_ACTION = "xml.inputformat.file.action";
   public static final String XML_INPUTFORMAT_TARGET_FOLDER = "xml.inputformat.target.folder";
+  public static final String XML_INPUTFORMAT_ENABLE_EXTERNAL_ENTITIES = "xml.inputformat.enable.externalentities";
+  public static final String XML_INPUTFORMAT_SUPPORT_DTD = "xml.inputformat.support.dtd";
 
   @Override
   public RecordReader<LongWritable, Map<String, String>> createRecordReader(InputSplit split,
