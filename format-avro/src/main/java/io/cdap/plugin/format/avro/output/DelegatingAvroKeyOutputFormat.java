@@ -25,18 +25,28 @@ import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.util.function.Function;
 
 /**
- * TODO: add
+ * Output format for Avro files which uses the DelegatingAvroKeyRecordWriter to write records.
  */
-public class DelegatingAvroKeyOutputFormat extends AvroOutputFormatBase<AvroKey<GenericRecordWrapper>, NullWritable> {
+public class DelegatingAvroKeyOutputFormat extends AvroOutputFormatBase<AvroKey<GenericRecord>, NullWritable> {
 
   @Override
-  public RecordWriter<AvroKey<GenericRecordWrapper>, NullWritable> getRecordWriter(TaskAttemptContext context)
+  public RecordWriter<AvroKey<GenericRecord>, NullWritable> getRecordWriter(TaskAttemptContext context)
     throws IOException, InterruptedException {
+    Function<TaskAttemptContext, OutputStream> outputStreamSupplier = (ctx) -> {
+      try {
+        return getAvroFileOutputStream(ctx);
+      } catch (IOException e) {
+        throw new RuntimeException("Unable to get Outpus Stream", e);
+      }
+    };
+
     return new DelegatingAvroKeyRecordWriter(context,
                                              getCompressionCodec(context),
-                                             getAvroFileOutputStream(context),
+                                             outputStreamSupplier,
                                              getSyncInterval(context));
   }
 }

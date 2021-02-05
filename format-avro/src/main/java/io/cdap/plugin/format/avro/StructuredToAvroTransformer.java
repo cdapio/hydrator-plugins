@@ -20,7 +20,6 @@ package io.cdap.plugin.format.avro;
 import com.google.common.collect.Maps;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.plugin.common.RecordConverter;
-import io.cdap.plugin.format.avro.output.GenericRecordWrapper;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericRecordBuilder;
@@ -33,7 +32,7 @@ import javax.annotation.Nullable;
 /**
  * Creates GenericRecords from StructuredRecords
  */
-public class StructuredToAvroTransformer extends RecordConverter<StructuredRecord, GenericRecordWrapper> {
+public class StructuredToAvroTransformer extends RecordConverter<StructuredRecord, GenericRecord> {
 
   private final Map<Integer, Schema> schemaCache;
   private final io.cdap.cdap.api.data.schema.Schema outputCDAPSchema;
@@ -43,13 +42,13 @@ public class StructuredToAvroTransformer extends RecordConverter<StructuredRecor
     this.outputCDAPSchema = outputSchema;
   }
 
-  public GenericRecordWrapper transform(StructuredRecord structuredRecord) throws IOException {
+  public GenericRecord transform(StructuredRecord structuredRecord) throws IOException {
     return transform(structuredRecord,
                      outputCDAPSchema == null ? structuredRecord.getSchema() : outputCDAPSchema);
   }
 
   @Override
-  public GenericRecordWrapper transform(StructuredRecord structuredRecord,
+  public GenericRecord transform(StructuredRecord structuredRecord,
                                         io.cdap.cdap.api.data.schema.Schema schema) throws IOException {
     io.cdap.cdap.api.data.schema.Schema structuredRecordSchema = structuredRecord.getSchema();
 
@@ -64,7 +63,7 @@ public class StructuredToAvroTransformer extends RecordConverter<StructuredRecor
       }
       recordBuilder.set(fieldName, convertField(structuredRecord.get(fieldName), schemaField));
     }
-    return new GenericRecordWrapper(recordBuilder.build(), structuredRecordSchema.hashCode());
+    return recordBuilder.build();
   }
 
   @Override

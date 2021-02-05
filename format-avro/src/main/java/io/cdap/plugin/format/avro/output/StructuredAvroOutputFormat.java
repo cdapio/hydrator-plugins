@@ -21,6 +21,7 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.plugin.format.avro.StructuredToAvroTransformer;
 import io.cdap.plugin.format.output.DelegatingOutputFormat;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -33,15 +34,15 @@ import java.util.function.Function;
 /**
  * Converts StructuredRecord into GenericRecord before delegating to AvroKeyOutputFormat.
  */
-public class StructuredAvroOutputFormat extends DelegatingOutputFormat<AvroKey<GenericRecordWrapper>, NullWritable> {
+public class StructuredAvroOutputFormat extends DelegatingOutputFormat<AvroKey<GenericRecord>, NullWritable> {
 
   @Override
-  protected OutputFormat<AvroKey<GenericRecordWrapper>, NullWritable> createDelegate() {
+  protected OutputFormat<AvroKey<GenericRecord>, NullWritable> createDelegate() {
     return new DelegatingAvroKeyOutputFormat();
   }
 
   @Override
-  protected Function<StructuredRecord, KeyValue<AvroKey<GenericRecordWrapper>, NullWritable>> getConversion(
+  protected Function<StructuredRecord, KeyValue<AvroKey<GenericRecord>, NullWritable>> getConversion(
     TaskAttemptContext context) throws IOException {
 
     Configuration hConf = context.getConfiguration();

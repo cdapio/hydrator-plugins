@@ -31,48 +31,49 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
- * TODO: add
+ * Record Writer for Avro records that delegates to additional record writers based on the Schema hash.
  */
-public class DelegatingAvroKeyRecordWriter extends RecordWriter<AvroKey<GenericRecordWrapper>, NullWritable> {
+public class DelegatingAvroKeyRecordWriter extends RecordWriter<AvroKey<GenericRecord>, NullWritable> {
   private final Map<Integer, RecordWriter<AvroKey<GenericRecord>, NullWritable>> delegateMap;
   private final TaskAttemptContext context;
   private final CodecFactory codecFactory;
-  private final OutputStream outputStream;
+  private final Function<TaskAttemptContext, OutputStream> outputStreamSupplier;
   private final int syncInterval;
 
   public DelegatingAvroKeyRecordWriter(TaskAttemptContext context,
                                        CodecFactory codecFactory,
-                                       OutputStream outputStream,
+                                       Function<TaskAttemptContext, OutputStream> outputStreamSupplier,
                                        int syncInterval) {
     super();
     this.delegateMap = new HashMap<>();
     this.context = context;
     this.codecFactory = codecFactory;
-    this.outputStream = outputStream;
+    this.outputStreamSupplier = outputStreamSupplier;
     this.syncInterval = syncInterval;
   }
 
   @Override
-  public void write(AvroKey<GenericRecordWrapper> key, NullWritable value) throws IOException, InterruptedException {
+  public void write(AvroKey<GenericRecord> key, NullWritable value) throws IOException, InterruptedException {
     RecordWriter<AvroKey<GenericRecord>, NullWritable> delegate =
-      delegateMap.computeIfAbsent(key.datum().getSchemaHash(), (k) -> {
+      delegateMap.computeIfAbsent(key.datum().getSchema().hashCode(), (k) -> {
         try {
           Configuration conf = context.getConfiguration();
           GenericData dataModel = AvroSerialization.createDataModel(conf);
 
-          return new AvroKeyRecordWriter<>(key.datum().getGenericRecord().getSchema(),
+          return new AvroKeyRecordWriter<>(key.datum().getSchema(),
                                            dataModel,
                                            codecFactory,
-                                           outputStream,
+                                           outputStreamSupplier.apply(context),
                                            syncInterval);
         } catch (IOException ioe) {
           throw new RuntimeException("Unable to initialize Avro Record Writer", ioe);
         }
       });
 
-    delegate.write(new AvroKey<>(key.datum().getGenericRecord()), value);
+    delegate.write(key, value);
   }
 
   @Override
