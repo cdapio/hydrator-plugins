@@ -57,8 +57,10 @@ public class AvroOutputFormatProvider extends AbstractOutputFormatProvider {
 
   @Override
   public Map<String, String> getOutputFormatConfiguration() {
+    boolean allowFlexibleSchema = true; // Boolean.parseBoolean(conf.allowFlexibleSchema);
+
     Map<String, String> configuration = new HashMap<>();
-    if (!conf.containsMacro("schema")) {
+    if (!allowFlexibleSchema && !conf.containsMacro("schema")) {
       configuration.put(SCHEMA_KEY, conf.schema);
     }
 
@@ -83,8 +85,11 @@ public class AvroOutputFormatProvider extends AbstractOutputFormatProvider {
     private static final String SCHEMA_DESC = "Schema of the data to write.";
     private static final String CODEC_DESC =
       "Compression codec to use when writing data. Must be 'snappy', 'deflate', 'bzip2', 'xz', or 'none.'";
+    private static final String ALLOW_FLEXIBLE_SCHEMA =
+      "Allow records without schemas set as arguments to the pipeline.";
 
     @Macro
+    @Nullable
     @Description(SCHEMA_DESC)
     private String schema;
 
@@ -92,13 +97,20 @@ public class AvroOutputFormatProvider extends AbstractOutputFormatProvider {
     @Nullable
     @Description(CODEC_DESC)
     private String compressionCodec;
+
+    @Macro
+    @Nullable
+    @Description(ALLOW_FLEXIBLE_SCHEMA)
+    private String allowFlexibleSchema;
   }
 
   private static PluginClass getPluginClass() {
     Map<String, PluginPropertyField> properties = new HashMap<>();
-    properties.put("schema", new PluginPropertyField("schema", Conf.SCHEMA_DESC, "string", true, true));
+    properties.put("schema", new PluginPropertyField("schema", Conf.SCHEMA_DESC, "string", false, true));
     properties.put("compressionCodec",
                    new PluginPropertyField("compressionCodec", Conf.CODEC_DESC, "string", false, true));
+    properties.put("allowFlexibleSchema",
+                   new PluginPropertyField("allowFlexibleSchema", Conf.ALLOW_FLEXIBLE_SCHEMA, "string", false, true));
     return new PluginClass(ValidatingOutputFormat.PLUGIN_TYPE, NAME, DESC, AvroOutputFormatProvider.class.getName(),
                            "conf", properties);
   }

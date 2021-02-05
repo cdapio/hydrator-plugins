@@ -20,10 +20,9 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.plugin.format.avro.StructuredToAvroTransformer;
+import io.cdap.plugin.format.avro.UnstructuredToAvroTransformer;
 import io.cdap.plugin.format.output.DelegatingOutputFormat;
-import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.mapred.AvroKey;
-import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.OutputFormat;
@@ -35,26 +34,40 @@ import java.util.function.Function;
 /**
  * Converts StructuredRecord into GenericRecord before delegating to AvroKeyOutputFormat.
  */
-public class StructuredAvroOutputFormat extends DelegatingOutputFormat<AvroKey<GenericRecord>, NullWritable> {
+public class StructuredAvroOutputFormat extends DelegatingOutputFormat<AvroKey<GenericRecordWrapper>, NullWritable> {
 
   @Override
-  protected OutputFormat<AvroKey<GenericRecord>, NullWritable> createDelegate() {
-    return new AvroKeyOutputFormat<>();
+  protected OutputFormat<AvroKey<GenericRecordWrapper>, NullWritable> createDelegate() {
+    return new DelegatingAvroKeyOutputFormat();
   }
 
   @Override
-  protected Function<StructuredRecord, KeyValue<AvroKey<GenericRecord>, NullWritable>> getConversion(
+  protected Function<StructuredRecord, KeyValue<AvroKey<GenericRecordWrapper>, NullWritable>> getConversion(
     TaskAttemptContext context) throws IOException {
 
     Configuration hConf = context.getConfiguration();
-    Schema schema = Schema.parseJson(hConf.get(AvroOutputFormatProvider.SCHEMA_KEY));
-    StructuredToAvroTransformer transformer = new StructuredToAvroTransformer(schema);
-    return record -> {
-      try {
-        return new KeyValue<>(new AvroKey<>(transformer.transform(record)), NullWritable.get());
-      } catch (IOException e) {
-        throw new RuntimeException("Unable to transform structured record into a generic record", e);
-      }
-    };
+
+    String schemaJson = hConf.get(AvroOutputFormatProvider.SCHEMA_KEY);
+
+    if (schemaJson != null) {
+      Schema schema = Schema.parseJson(hConf.get(AvroOutputFormatProvider.SCHEMA_KEY));
+      StructuredToAvroTransformer transformer = new StructuredToAvroTransformer(schema);
+      return record -> {
+        try {
+          return new KeyValue<>(new AvroKey<>(transformer.transform(record)), NullWritable.get());
+        } catch (IOException e) {
+          throw new RuntimeException("Unable to transform structured record into a generic record", e);
+        }
+      };
+    } else {
+      UnstructuredToAvroTransformer transformer = new UnstructuredToAvroTransformer();
+      return record -> {
+        try {
+          return new KeyValue<>(new AvroKey<>(transformer.transform(record)), NullWritable.get());
+        } catch (IOException e) {
+          throw new RuntimeException("Unable to transform structured record into a generic record", e);
+        }
+      };
+    }
   }
 }
