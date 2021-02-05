@@ -64,7 +64,7 @@ public class StructuredToAvroTransformer extends RecordConverter<StructuredRecor
       }
       recordBuilder.set(fieldName, convertField(structuredRecord.get(fieldName), schemaField));
     }
-    return new GenericRecordWrapper(recordBuilder.build(), avroSchema, structuredRecordSchema.hashCode());
+    return new GenericRecordWrapper(recordBuilder.build(), structuredRecordSchema.hashCode());
   }
 
   @Override

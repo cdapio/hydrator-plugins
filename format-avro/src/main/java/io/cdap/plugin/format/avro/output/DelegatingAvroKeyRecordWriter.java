@@ -16,13 +16,11 @@
 
 package io.cdap.plugin.format.avro.output;
 
-import org.apache.avro.Schema;
 import org.apache.avro.file.CodecFactory;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.hadoop.io.AvroSerialization;
 import org.apache.avro.mapred.AvroKey;
-import org.apache.avro.mapreduce.AvroJob;
 import org.apache.avro.mapreduce.AvroKeyRecordWriter;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -59,13 +57,12 @@ public class DelegatingAvroKeyRecordWriter extends RecordWriter<AvroKey<GenericR
   @Override
   public void write(AvroKey<GenericRecordWrapper> key, NullWritable value) throws IOException, InterruptedException {
     RecordWriter<AvroKey<GenericRecord>, NullWritable> delegate =
-      delegateMap.computeIfAbsent(key.datum().getHash(), (k) -> {
+      delegateMap.computeIfAbsent(key.datum().getSchemaHash(), (k) -> {
         try {
           Configuration conf = context.getConfiguration();
-          Schema writerSchema = key.datum().getSchema();
           GenericData dataModel = AvroSerialization.createDataModel(conf);
 
-          return new AvroKeyRecordWriter<>(writerSchema,
+          return new AvroKeyRecordWriter<>(key.datum().getGenericRecord().getSchema(),
                                            dataModel,
                                            codecFactory,
                                            outputStream,
@@ -79,9 +76,19 @@ public class DelegatingAvroKeyRecordWriter extends RecordWriter<AvroKey<GenericR
   }
 
   @Override
-  public void close(TaskAttemptContext context) throws IOException, InterruptedException {
+  public void close(TaskAttemptContext context)  {
+    RuntimeException ex = new RuntimeException("Unable to close delegate.");
+
     for (RecordWriter<AvroKey<GenericRecord>, NullWritable> delegate : delegateMap.values()) {
-      delegate.close(context);
+      try {
+        delegate.close(context);
+      } catch (IOException | InterruptedException e) {
+        ex.addSuppressed(e);
+      }
+    }
+
+    if (ex.getSuppressed().length > 0) {
+      throw ex;
     }
   }
 }

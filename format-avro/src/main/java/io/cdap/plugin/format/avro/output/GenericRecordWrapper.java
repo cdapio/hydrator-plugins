@@ -16,32 +16,25 @@
 
 package io.cdap.plugin.format.avro.output;
 
-import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 
 /**
- * TODO: add
+ * Wrapped for Generic Record which includes the hash value for the Schema.
  */
 public class GenericRecordWrapper {
   private final GenericRecord genericRecord;
-  private final Schema schema;
-  private final int hash;
+  private final int schemaHash;
 
-  public GenericRecordWrapper(GenericRecord genericRecord, Schema schema, int hash) {
+  public GenericRecordWrapper(GenericRecord genericRecord, int schemaHash) {
     this.genericRecord = genericRecord;
-    this.schema = schema;
-    this.hash = hash;
+    this.schemaHash = schemaHash;
   }
 
   public GenericRecord getGenericRecord() {
     return genericRecord;
   }
 
-  public Schema getSchema() {
-    return schema;
-  }
-
-  public int getHash() {
-    return hash;
+  public int getSchemaHash() {
+    return schemaHash;
   }
 }
