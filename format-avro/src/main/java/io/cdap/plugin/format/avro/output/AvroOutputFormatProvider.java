@@ -52,7 +52,11 @@ public class AvroOutputFormatProvider extends AbstractOutputFormatProvider {
 
   @Override
   public String getOutputFormatClassName() {
-    return StructuredAvroOutputFormat.class.getName();
+    if (conf.schema != null) {
+      return StructuredAvroOutputFormat.class.getName();
+    } else {
+      return RuntimeSuppliedSchemaAvroOutputFormat.class.getName();
+    }
   }
 
   @Override
@@ -85,6 +89,7 @@ public class AvroOutputFormatProvider extends AbstractOutputFormatProvider {
       "Compression codec to use when writing data. Must be 'snappy', 'deflate', 'bzip2', 'xz', or 'none.'";
 
     @Macro
+    @Nullable
     @Description(SCHEMA_DESC)
     private String schema;
 
@@ -96,7 +101,7 @@ public class AvroOutputFormatProvider extends AbstractOutputFormatProvider {
 
   private static PluginClass getPluginClass() {
     Map<String, PluginPropertyField> properties = new HashMap<>();
-    properties.put("schema", new PluginPropertyField("schema", Conf.SCHEMA_DESC, "string", true, true));
+    properties.put("schema", new PluginPropertyField("schema", Conf.SCHEMA_DESC, "string", false, true));
     properties.put("compressionCodec",
                    new PluginPropertyField("compressionCodec", Conf.CODEC_DESC, "string", false, true));
     return new PluginClass(ValidatingOutputFormat.PLUGIN_TYPE, NAME, DESC, AvroOutputFormatProvider.class.getName(),
