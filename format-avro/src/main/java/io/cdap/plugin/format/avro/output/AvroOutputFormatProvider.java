@@ -57,7 +57,7 @@ public class AvroOutputFormatProvider extends AbstractOutputFormatProvider {
 
   @Override
   public Map<String, String> getOutputFormatConfiguration() {
-    boolean allowFlexibleSchema = true; // Boolean.parseBoolean(conf.allowFlexibleSchema);
+    boolean allowFlexibleSchema = Boolean.parseBoolean(conf.allowFlexibleSchema);
 
     Map<String, String> configuration = new HashMap<>();
     if (!allowFlexibleSchema && !conf.containsMacro("schema")) {
