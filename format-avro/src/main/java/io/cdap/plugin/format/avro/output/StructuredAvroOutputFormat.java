@@ -20,7 +20,6 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.plugin.format.avro.StructuredToAvroTransformer;
-import io.cdap.plugin.format.avro.UnstructuredToAvroTransformer;
 import io.cdap.plugin.format.output.DelegatingOutputFormat;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.hadoop.conf.Configuration;
@@ -48,26 +47,19 @@ public class StructuredAvroOutputFormat extends DelegatingOutputFormat<AvroKey<G
     Configuration hConf = context.getConfiguration();
 
     String schemaJson = hConf.get(AvroOutputFormatProvider.SCHEMA_KEY);
+    Schema schema = null;
 
     if (schemaJson != null) {
-      Schema schema = Schema.parseJson(hConf.get(AvroOutputFormatProvider.SCHEMA_KEY));
-      StructuredToAvroTransformer transformer = new StructuredToAvroTransformer(schema);
-      return record -> {
-        try {
-          return new KeyValue<>(new AvroKey<>(transformer.transform(record)), NullWritable.get());
-        } catch (IOException e) {
-          throw new RuntimeException("Unable to transform structured record into a generic record", e);
-        }
-      };
-    } else {
-      UnstructuredToAvroTransformer transformer = new UnstructuredToAvroTransformer();
-      return record -> {
-        try {
-          return new KeyValue<>(new AvroKey<>(transformer.transform(record)), NullWritable.get());
-        } catch (IOException e) {
-          throw new RuntimeException("Unable to transform structured record into a generic record", e);
-        }
-      };
+      schema = Schema.parseJson(hConf.get(AvroOutputFormatProvider.SCHEMA_KEY));
     }
+
+    StructuredToAvroTransformer transformer = new StructuredToAvroTransformer(schema);
+    return record -> {
+      try {
+        return new KeyValue<>(new AvroKey<>(transformer.transform(record)), NullWritable.get());
+      } catch (IOException e) {
+        throw new RuntimeException("Unable to transform structured record into a generic record", e);
+      }
+    };
   }
 }
