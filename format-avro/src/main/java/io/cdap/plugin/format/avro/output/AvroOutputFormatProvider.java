@@ -62,10 +62,6 @@ public class AvroOutputFormatProvider extends AbstractOutputFormatProvider {
   @Override
   public Map<String, String> getOutputFormatConfiguration() {
     Map<String, String> configuration = new HashMap<>();
-    if (!conf.containsMacro("schema")) {
-      configuration.put(SCHEMA_KEY, conf.schema);
-    }
-
     if (conf.compressionCodec != null && !conf.containsMacro("compressionCodec") &&
       !"none".equalsIgnoreCase(conf.compressionCodec)) {
 

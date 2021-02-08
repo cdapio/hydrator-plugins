@@ -59,21 +59,22 @@ public class DelegatingAvroKeyRecordWriter extends RecordWriter<AvroKey<GenericR
 
   @Override
   public void write(AvroKey<GenericRecord> key, NullWritable value) throws IOException, InterruptedException {
-    RecordWriter<AvroKey<GenericRecord>, NullWritable> delegate =
-      delegateMap.computeIfAbsent(key.datum().getSchema().hashCode(), (k) -> {
-        try {
-          Configuration conf = context.getConfiguration();
-          GenericData dataModel = AvroSerialization.createDataModel(conf);
+    RecordWriter<AvroKey<GenericRecord>, NullWritable> delegate;
+    int schemaHash = key.datum().getSchema().hashCode();
 
-          return new AvroKeyRecordWriter<>(key.datum().getSchema(),
+    if (delegateMap.containsKey(schemaHash)) {
+      delegate = delegateMap.get(schemaHash);
+    } else {
+      Configuration conf = context.getConfiguration();
+      GenericData dataModel = AvroSerialization.createDataModel(conf);
+
+      delegate = new AvroKeyRecordWriter<>(key.datum().getSchema(),
                                            dataModel,
                                            codecFactory,
                                            outputStreamSupplier.apply(context),
                                            syncInterval);
-        } catch (IOException ioe) {
-          throw new RuntimeException("Unable to initialize Avro Record Writer", ioe);
-        }
-      });
+      delegateMap.put(schemaHash, delegate);
+    }
 
     delegate.write(key, value);
   }
