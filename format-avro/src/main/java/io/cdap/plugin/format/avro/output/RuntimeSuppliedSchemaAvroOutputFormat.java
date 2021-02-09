@@ -48,14 +48,7 @@ public class RuntimeSuppliedSchemaAvroOutputFormat extends
 
     Configuration hConf = context.getConfiguration();
 
-    String schemaJson = hConf.get(AvroOutputFormatProvider.SCHEMA_KEY);
-    Schema schema = null;
-
-    if (schemaJson != null) {
-      schema = Schema.parseJson(hConf.get(AvroOutputFormatProvider.SCHEMA_KEY));
-    }
-
-    StructuredToAvroTransformer transformer = new StructuredToAvroTransformer(schema);
+    StructuredToAvroTransformer transformer = new StructuredToAvroTransformer(null);
     return record -> {
       try {
         return new KeyValue<>(new AvroKey<>(transformer.transform(record)), NullWritable.get());

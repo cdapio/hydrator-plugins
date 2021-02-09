@@ -62,7 +62,7 @@ public class AvroOutputFormatProvider extends AbstractOutputFormatProvider {
   @Override
   public Map<String, String> getOutputFormatConfiguration() {
     Map<String, String> configuration = new HashMap<>();
-    if (!conf.containsMacro("schema")) {
+    if (conf.schema != null && !conf.containsMacro("schema")) {
       configuration.put(SCHEMA_KEY, conf.schema);
     }
 
