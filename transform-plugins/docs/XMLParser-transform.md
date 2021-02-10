@@ -38,6 +38,14 @@ Example : ``<field-name>:<data-type>``
 
 **failOnArray:** Whether to allow xpaths that are arrays. If false, the first element will be chosen. Defaults to false.
 
+**enableExternalGeneralEntities:** This enables processing external generic entities while reading xml file. Defaults to `false`.
+
+**enableExternalParameterEntities:** This enables processing external generic entities while reading xml file.
+
+**loadExternalDTD**: This enables processing external DTDs while reading xml file.
+
+**disallowDocTypeDTD**: This prevents processing any DTDs while reading xml files. This defaults to `false` from the plugin but when configuring the plugin via UI this will be set to true. This is to prevent xxe based xml vulnerabilities while reading the xml file. Please read more about [xxe xml vulnerability here](https://owasp.org/www-community/vulnerabilities/XML_External_Entity_(XXE)_Processing).
+
 Example
 -------
 

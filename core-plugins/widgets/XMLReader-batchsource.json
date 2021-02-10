@@ -82,6 +82,36 @@
           "widget-type": "hidden",
           "label": "Table Data Expiry Period (Days)",
           "name": "tableExpiryPeriod"
+        },
+        {
+          "widget-type": "toggle",
+          "label": "Enable processing external entities",
+          "name": "enableExternalEntities",
+          "widget-attributes": {
+            "on": {
+              "value": "true",
+              "label": "On"
+            },
+            "off": {
+              "value": "false",
+              "label": "Off"
+            }
+          }
+        },
+        {
+          "widget-type": "toggle",
+          "label": "Enable XML parser to support DTDs",
+          "name": "supportDTD",
+          "widget-attributes": {
+            "on": {
+              "value": "true",
+              "label": "On"
+            },
+            "off": {
+              "value": "false",
+              "label": "Off"
+            }
+          }
         }
       ]
     }

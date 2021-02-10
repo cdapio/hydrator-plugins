@@ -65,6 +65,8 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
   private long availableBytes;
   private FSDataInputStream fdDataInputStream;
   private final DecimalFormat df = new DecimalFormat("#.##");
+  private boolean enableExternalEntities;
+  private boolean supportDTD;
 
   private LongWritable currentKey;
   private Map<String, String> currentValue;
@@ -106,6 +108,10 @@ public class XMLRecordReader extends RecordReader<LongWritable, Map<String, Stri
     Configuration conf = context.getConfiguration();
     fs = file.getFileSystem(conf);
     XMLInputFactory factory = XMLInputFactory.newInstance();
+    enableExternalEntities = conf.getBoolean(XMLInputFormat.XML_INPUTFORMAT_ENABLE_EXTERNAL_ENTITIES, false);
+    supportDTD = conf.getBoolean(XMLInputFormat.XML_INPUTFORMAT_SUPPORT_DTD, false);
+    factory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, enableExternalEntities);
+    factory.setProperty(XMLInputFactory.SUPPORT_DTD, supportDTD);
     fdDataInputStream = fs.open(file);
     availableBytes = split.getLength();
     try {
