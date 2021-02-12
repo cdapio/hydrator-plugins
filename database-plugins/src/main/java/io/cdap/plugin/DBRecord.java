@@ -274,7 +274,6 @@ public class DBRecord implements Writable, DBWritable, Configurable {
         case DECIMAL:
           BigDecimal value = record.getDecimal(fieldName);
           stmt.setBigDecimal(sqlIndex, value);
-          bytesWritten += value.unscaledValue().bitLength() / Byte.SIZE + Integer.BYTES;
           break;
       }
       return;
