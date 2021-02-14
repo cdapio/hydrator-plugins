@@ -19,6 +19,7 @@ package io.cdap.plugin.format.delimited.input;
 import com.google.common.base.Splitter;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.plugin.common.SchemaValidator;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -99,10 +100,14 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
             throw new IOException(message + " Check that the schema contains the right number of fields.");
           }
 
+          Schema.Field nextField = fields.next();
           if (part.isEmpty()) {
-            builder.set(fields.next().getName(), null);
+            builder.set(nextField.getName(), null);
           } else {
-            builder.convertAndSet(fields.next().getName(), part);
+            String fieldName = nextField.getName();
+            //Ensure if date time field, value is in correct format
+            SchemaValidator.validateDateTimeField(nextField.getSchema(), fieldName, part);
+            builder.convertAndSet(fieldName, part);
           }
         }
         return builder;

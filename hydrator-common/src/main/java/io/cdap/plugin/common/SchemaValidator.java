@@ -17,6 +17,8 @@
 package io.cdap.plugin.common;
 
 import com.google.common.base.Strings;
+import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
@@ -24,6 +26,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
@@ -185,6 +195,77 @@ public final class SchemaValidator {
       return false;
     }
     return true;
+  }
+
+  /**
+   * Validates if the value is in ISO 8601 format without zone if schema is of type datetime logical type.
+   * Recursively validates if schema is a complex type.
+   *
+   * @param schema    @link Schema}
+   * @param fieldName String name of the field
+   * @param value     Object value of the field
+   * @throws io.cdap.cdap.api.data.format.UnexpectedFormatException if the format is invalid
+   */
+  public static void validateDateTimeField(Schema schema, String fieldName, Object value) {
+    validateDateTimeField(schema, fieldName, value, new HashSet<>());
+  }
+
+  private static void validateDateTimeField(Schema schema, String fieldName, Object value, Set<String> knownRecords) {
+    if (schema.getLogicalType() == Schema.LogicalType.DATETIME) {
+      try {
+        LocalDateTime.parse(value.toString());
+      } catch (DateTimeParseException exception) {
+        throw new UnexpectedFormatException(
+          String
+            .format("Datetime field '%s' with value '%s' is not in ISO-8601 format.", fieldName, value.toString()),
+          exception);
+      }
+    }
+    //handle non simple types
+    switch (schema.getType()) {
+      case UNION:
+        List<Schema> unionSchemas = schema.getUnionSchemas();
+        for (Schema unionSchema : unionSchemas) {
+          if (unionSchema.getType() == Schema.Type.NULL) {
+            continue;
+          }
+          //Just look for the first schema after NULL in union since there is no validation for other types
+          validateDateTimeField(unionSchema, fieldName, value, knownRecords);
+          break;
+        }
+        break;
+      case RECORD:
+        if (knownRecords.add(schema.getRecordName())) {
+          StructuredRecord record = (StructuredRecord) value;
+          schema.getFields().forEach(
+            field -> validateDateTimeField(field.getSchema(), field.getName(), record.get(field.getName()),
+                                           knownRecords));
+        }
+        break;
+      case ARRAY:
+        if (value.getClass().isArray()) {
+          for (int index = 0; index < Array.getLength(value); index++) {
+            validateDateTimeField(schema.getComponentSchema(), fieldName, Array.get(value, index), knownRecords);
+          }
+          break;
+        }
+        Collection<Object> valuesList = (Collection<Object>) value;
+        valuesList.forEach(
+          arrayElement -> validateDateTimeField(schema.getComponentSchema(), fieldName, arrayElement,
+                                                knownRecords));
+        break;
+      case MAP:
+        Map.Entry<Schema, Schema> mapSchema = schema.getMapSchema();
+        Map<Object, Object> valueMap = (Map<Object, Object>) value;
+        valueMap.entrySet().forEach(entry -> {
+          validateDateTimeField(mapSchema.getKey(), fieldName, entry.getKey(), knownRecords);
+          validateDateTimeField(mapSchema.getValue(), fieldName, entry.getValue(), knownRecords);
+        });
+        break;
+      default:
+        //other types can be ignored
+        break;
+    }
   }
 
   private SchemaValidator() {

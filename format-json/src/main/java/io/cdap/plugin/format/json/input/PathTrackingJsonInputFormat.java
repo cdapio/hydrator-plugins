@@ -19,6 +19,7 @@ package io.cdap.plugin.format.json.input;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.format.StructuredRecordStringConverter;
+import io.cdap.plugin.common.SchemaValidator;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -27,7 +28,6 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
-import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -91,7 +91,9 @@ public class PathTrackingJsonInputFormat extends PathTrackingInputFormat {
         StructuredRecord record = StructuredRecordStringConverter.fromJsonString(json, modifiedSchema);
         StructuredRecord.Builder builder = StructuredRecord.builder(schema);
         for (Schema.Field field : schema.getFields()) {
-          builder.set(field.getName(), record.get(field.getName()));
+          Object value = record.get(field.getName());
+          SchemaValidator.validateDateTimeField(field.getSchema(), field.getName(), value);
+          builder.set(field.getName(), value);
         }
         return builder;
       }

@@ -18,11 +18,14 @@ package io.cdap.plugin.format.avro;
 
 import com.google.common.collect.Maps;
 import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.plugin.common.RecordConverter;
 import org.apache.avro.generic.GenericRecord;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -59,6 +62,26 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
     }
 
     return builder;
+  }
+
+  /**
+   * Overriding here to validate for datetime field
+   *
+   * @param field  Field value
+   * @param schema {@link Schema}
+   * @return Object value
+   * @throws IOException
+   */
+  protected Object convertField(Object field, Schema schema) throws IOException {
+    if (schema.getLogicalType() == Schema.LogicalType.DATETIME) {
+      try {
+        LocalDateTime.parse(field.toString());
+      } catch (DateTimeParseException exception) {
+        throw new UnexpectedFormatException(
+          String.format("Datetime value '%s' is not in ISO-8601 format.", field.toString()), exception);
+      }
+    }
+    return super.convertField(field, schema);
   }
 
   public Schema convertSchema(org.apache.avro.Schema schema) throws IOException {
