@@ -22,10 +22,44 @@
           "description": "Type of joins to be performed. Inner join means all stages are required, while Outer join allows for 0 or more input stages to be required input."
         },
         {
+          "widget-type": "radio-group",
+          "name": "conditionType",
+          "label": "Join Condition Type",
+          "widget-attributes": {
+            "layout": "inline",
+            "default": "Basic",
+            "options": [
+              {
+                "id": "Basic"
+              },
+              {
+                "id": "Advanced"
+              }
+            ]
+          }
+        },
+        {
           "widget-type": "sql-conditions",
           "label": "Join Condition",
           "name": "joinKeys",
           "description": "List of join keys to perform join operation."
+        },
+        {
+          "widget-type": "keyvalue",
+          "label": "Input Aliases",
+          "name": "inputAliases",
+          "widget-attributes": {
+            "showDelimiter": "false",
+            "key-placeholder": "Input Name",
+            "value-placeholder": "Alias",
+            "kv-delimiter" : "=",
+            "delimiter" : ";"
+          }
+        },
+        {
+          "widget-type": "textarea",
+          "label": "Join Condition",
+          "name": "conditionExpression"
         },
         {
           "widget-type": "get-schema",
@@ -101,7 +135,9 @@
     {
       "name": "distribution rules",
       "condition": {
-        "expression": "distributionEnabled == true"
+        "property": "distributionEnabled",
+        "operator":  "equal to",
+        "value": "true"
       },
       "show": [
         {
@@ -109,6 +145,44 @@
         },
         {
           "name": "distributionStageName"
+        }
+      ]
+    },
+    {
+      "name": "basic condition",
+      "condition": {
+        "property": "conditionType",
+        "operator": "equal to",
+        "value": "Basic"
+      },
+      "show": [
+        {
+          "name": "distributionEnabled"
+        },
+        {
+          "name": "joinKeys"
+        },
+        {
+          "name": "numPartitions"
+        },
+        {
+          "name": "joinNullKeys"
+        }
+      ]
+    },
+    {
+      "name": "advanced condition",
+      "condition": {
+        "property": "conditionType",
+        "operator": "equal to",
+        "value": "Advanced"
+      },
+      "show": [
+        {
+          "name": "conditionExpression"
+        },
+        {
+          "name": "inputAliases"
         }
       ]
     }

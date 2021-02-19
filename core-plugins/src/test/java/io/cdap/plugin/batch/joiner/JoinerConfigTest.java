@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableSet;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.join.AutoJoinerContext;
+import io.cdap.cdap.etl.api.join.JoinCondition;
 import io.cdap.cdap.etl.api.join.JoinDefinition;
 import io.cdap.cdap.etl.api.join.JoinField;
 import io.cdap.cdap.etl.api.join.JoinKey;
@@ -340,11 +341,6 @@ public class JoinerConfigTest {
       Schema.Field.of("film_id", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("film_name", Schema.of(Schema.Type.STRING)),
       Schema.Field.of("category_name", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
-
-    Map<String, Schema> inputSchemas = ImmutableMap.of("film", FILM_SCHEMA, "filmActor", FILM_ACTOR_SCHEMA,
-                                                       "filmCategory", filmCategorySchema);
-    List<String> inputStages = Arrays.asList("film", "filmActor", "filmCategory");
-
     String joinKeys = "film.film_id=filmActor.film_id=filmCategory.film_id";
     String selectedFields = "film.film_id, film.film_name, filmActor.actor_name as renamed_actor, " +
       "filmCategory.category_name as renamed_category";
@@ -364,6 +360,53 @@ public class JoinerConfigTest {
     JoinDefinition joinDefinition = joiner.define(autoJoinerContext);
     Assert.assertEquals(outputSchema, joinDefinition.getOutputSchema());
     Assert.assertEquals(0, collector.getValidationFailures().size());
+  }
+
+  @Test
+  public void testAdvancedJoinCondition() {
+    JoinerConfig conf = new JoinerConfig("users.id, emails.email", "users.id = emails.userid");
+    Joiner joiner = new Joiner(conf);
+    FailureCollector collector = new MockFailureCollector();
+
+    Schema userSchema = Schema.recordOf("user", Schema.Field.of("id", Schema.of(Schema.Type.INT)));
+    Schema emailSchema = Schema.recordOf("email",
+                                         Schema.Field.of("email", Schema.of(Schema.Type.STRING)),
+                                         Schema.Field.of("userid", Schema.of(Schema.Type.INT)));
+    Map<String, JoinStage> inputStages = new HashMap<>();
+    inputStages.put("users", JoinStage.builder("users", userSchema).build());
+    inputStages.put("emails", JoinStage.builder("emails", emailSchema).build());
+    AutoJoinerContext autoJoinerContext = new MockAutoJoinerContext(inputStages, collector);
+    JoinDefinition joinDefinition = joiner.define(autoJoinerContext);
+    JoinCondition condition = joinDefinition.getCondition();
+    Assert.assertEquals(JoinCondition.Op.EXPRESSION, condition.getOp());
+    Assert.assertEquals("users.id = emails.userid", ((JoinCondition.OnExpression) condition).getExpression());
+  }
+
+  @Test
+  public void testAdvancedWithTooManyInputs() {
+    JoinerConfig conf = new JoinerConfig("users.id, emails.email", "users.id = emails.userid");
+    Joiner joiner = new Joiner(conf);
+    FailureCollector collector = new MockFailureCollector();
+
+    Schema userSchema = Schema.recordOf("user", Schema.Field.of("id", Schema.of(Schema.Type.INT)));
+    Schema emailSchema = Schema.recordOf("email",
+                                         Schema.Field.of("email", Schema.of(Schema.Type.STRING)),
+                                         Schema.Field.of("userid", Schema.of(Schema.Type.INT)));
+    Map<String, JoinStage> inputStages = new HashMap<>();
+    inputStages.put("users", JoinStage.builder("users", userSchema).build());
+    inputStages.put("emails", JoinStage.builder("emails", emailSchema).build());
+    inputStages.put("users2", JoinStage.builder("users2", userSchema).build());
+    AutoJoinerContext autoJoinerContext = new MockAutoJoinerContext(inputStages, collector);
+    try {
+      joiner.define(autoJoinerContext);
+      Assert.fail("Advanced join did not fail with 3 inputs as expected.");
+    } catch (ValidationException e) {
+      List<ValidationFailure> failures = e.getFailures();
+      Assert.assertEquals(1, failures.size());
+      List<ValidationFailure.Cause> causes = failures.get(0).getCauses();
+      Assert.assertEquals(1, causes.size());
+      Assert.assertEquals(JoinerConfig.CONDITION_TYPE, causes.get(0).getAttribute(CauseAttributes.STAGE_CONFIG));
+    }
   }
 
 }
