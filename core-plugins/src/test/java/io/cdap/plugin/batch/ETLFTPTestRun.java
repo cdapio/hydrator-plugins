@@ -41,6 +41,7 @@ import org.mockftpserver.fake.filesystem.UnixFakeFileSystem;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -119,5 +120,44 @@ public class ETLFTPTestRun extends ETLBatchTestBase {
       GenericRecord record = records.get(0);
       Assert.assertEquals(TEST_STRING, record.get("body").toString());
     }
+  }
+
+  private void testHelper(Map<String, String> properties, Map<String, String> runTimeProperties) throws Exception {
+
+    ETLStage source = new ETLStage("source", new ETLPlugin(
+      "FTP", BatchSource.PLUGIN_TYPE, properties, null));
+
+    ETLStage sink = new ETLStage("sink", new ETLPlugin(
+      "TPFSAvro",
+      BatchSink.PLUGIN_TYPE,
+      ImmutableMap.<String, String>builder()
+        .put(Properties.TimePartitionedFileSetDataset.SCHEMA, FTPBatchSource.SCHEMA.toString())
+        .put(Properties.TimePartitionedFileSetDataset.TPFS_NAME, "fileSink").build(),
+      null));
+
+    ETLBatchConfig etlConfig = ETLBatchConfig.builder()
+      .addStage(source)
+      .addStage(sink)
+      .addConnection(source.getName(), sink.getName())
+      .build();
+
+    ApplicationManager appManager = deployETL(etlConfig, "FTPToTPFS");
+    runETLOnce(appManager, runTimeProperties);
+
+    DataSetManager<TimePartitionedFileSet> fileSetManager = getDataset("fileSink");
+    try (TimePartitionedFileSet fileSet = fileSetManager.get()) {
+      List<GenericRecord> records = readOutput(fileSet, FTPBatchSource.SCHEMA);
+      Assert.assertEquals(1, records.size());
+      GenericRecord record = records.get(0);
+      Assert.assertEquals(TEST_STRING, record.get("body").toString());
+    }
+  }
+
+  @Test
+  public void testFTPBatchSourceWithMacro() throws Exception {
+    testHelper(ImmutableMap.of("path", "${path}", "referenceName", "${referenceName}"),
+               ImmutableMap.of("path", String.format("ftp://%s:%s@localhost:%d%s",
+                                                                   USER, PWD, port, folder.getAbsolutePath()),
+                               "referenceName", "ftp_with_macro"));
   }
 }
