@@ -19,17 +19,29 @@ input is a left outer join. A join between two optional inputs is an outer join.
 A join of more than two inputs is logically equivalent to performing inner joins over all the
 required inputs, followed by left outer joins on the optional inputs.
 
-**Join Condition:** List of keys to perform the join operation. The list is separated by `&`. 
-Join key from each input stage will be prefixed with `<stageName>.` and the relation among join keys from different inputs is represented by `=`. 
-For example: customers.customer_id=items.c_id&customers.customer_name=items.c_name means the join key is a composite key
-of customer id and customer name from customers and items input stages and join will be performed on equality 
-of the join keys. This transform only supports equality for joins.
+**Join Condition Type:** Type of join condition to use. A condition can either be 'Basic' or 'Advanced'.
+Advanced join conditions cannot be used in streaming pipelines or with the MapReduce engine.
+Advanced join conditions can only be used when joining two inputs.
+
+**Join Condition:** When the condition type is 'Basic', the condition specifies the list of keys to perform the join operation.
+The join will be performed based on equality of the join keys.
+When the condition type is 'Advanced', the condition can be any SQL expression supported by the engine. 
+It is important to note that many advanced join conditions will require the engine to perform a full cartesian
+product followed by a filter. For example, conditions that use 'or', 'not', or range conditions fall under this category.
+This can be multiple orders of magnitude more expensive than basic joins that are just performed on equality.
+When using advanced joins, try to load one of the inputs into memory when possible.
+
+**Input Aliases:** When using advanced join conditions, input aliases can be specified to make the SQL expression
+more readable. For example, if the join inputs are named 'User Signups 2020' and 'Signup Locations',
+they can be aliased to a simpler names like 'users' and 'locations'. This allows you to use a simpler condition like 
+'users.loc = locations.id or users.loc_name = locations.name'.
 
 **Inputs to Load in Memory:** Hint to the underlying execution engine that the specified input data should be
 loaded into memory to perform an in-memory join. This is ignored by the MapReduce engine and passed onto the Spark engine.
 An in-memory join performs well when one side of the join is small (for example, under 1gb). Be sure to set
-Spark executor memory to a number large enough to load all of these datasets into memory. This is most commonly
+Spark executor and driver memory to a number large enough to load all of these datasets into memory. This is most commonly
 used when a large input is being joined to a small input and will lead to much better performance in such scenarios.
+A general rule of thumb is to set executor and driver memory to fives times the dataset size.
 
 **Join on Null Keys:** Whether to join rows together if both of their key values are null.
 For example, suppose the join is on a 'purchases' input that contains:

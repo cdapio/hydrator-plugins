@@ -102,14 +102,18 @@ public class Joiner extends BatchAutoJoiner {
       useOutputSchema = useOutputSchema || joinStage.getSchema() == null;
     }
 
+    JoinCondition condition = conf.getCondition(collector);
+    if (condition.getOp() == JoinCondition.Op.EXPRESSION && inputs.size() != 2) {
+      collector.addFailure("Advanced join conditions can only be used when there are two inputs.", null)
+        .withConfigProperty(JoinerConfig.CONDITION_TYPE);
+      throw collector.getOrThrowException();
+    }
+
     try {
       JoinDefinition.Builder joinBuilder = JoinDefinition.builder()
         .select(conf.getSelectedFields(collector))
         .from(inputs)
-        .on(JoinCondition.onKeys()
-              .setKeys(conf.getJoinKeys(collector))
-              .setNullSafe(conf.isNullSafe())
-              .build());
+        .on(condition);
       if (useOutputSchema) {
         joinBuilder.setOutputSchema(conf.getOutputSchema(collector));
       } else {
@@ -150,6 +154,8 @@ public class Joiner extends BatchAutoJoiner {
           case BROADCAST:
             failure.withConfigProperty(JoinerConfig.MEMORY_INPUTS);
             break;
+          case INVALID_CONDITION:
+            failure.withConfigProperty(JoinerConfig.CONDITION_EXPR);
         }
       }
       throw collector.getOrThrowException();
@@ -166,8 +172,10 @@ public class Joiner extends BatchAutoJoiner {
       }
     }
     FailureCollector collector = context.getFailureCollector();
-    context.record(createFieldOperations(conf.getSelectedFields(collector),
-                                         conf.getJoinKeys(collector)));
+    JoinCondition.Op conditionType = conf.getCondition(collector).getOp();
+    Set<JoinKey> keys = conditionType == JoinCondition.Op.KEY_EQUALITY ?
+      conf.getJoinKeys(collector) : Collections.emptySet();
+    context.record(createFieldOperations(conf.getSelectedFields(collector), keys));
   }
 
   /**
@@ -215,8 +223,9 @@ public class Joiner extends BatchAutoJoiner {
 
       String outputFieldName = outputField.getAlias() == null ? outputField.getFieldName() : outputField.getAlias();
       if (outputField.getFieldName().equals(outputFieldName)) {
-        // Record identity transform
-        if (perStageJoinKeys.get(outputField.getStageName()).contains(outputField.getFieldName())) {
+        // Record identity transform when using key equality
+        List<String> stageJoinKeys = perStageJoinKeys.get(outputField.getStageName());
+        if (stageJoinKeys == null || stageJoinKeys.contains(outputField.getFieldName())) {
           // if the field is part of join key no need to emit the identity transform as it is already taken care
           // by join
           continue;
