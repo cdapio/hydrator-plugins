@@ -132,7 +132,7 @@ public final class DBUtils {
           resultsetField.getSchema().getNonNullable() : resultsetField.getSchema();
         Schema simpleSchema = field.getSchema().isNullable() ? field.getSchema().getNonNullable() : field.getSchema();
 
-        if (!resultsetFieldSchema.equals(simpleSchema)) {
+        if (!isCompatible(resultsetFieldSchema, simpleSchema)) {
           throw new IllegalArgumentException(String.format("Schema field '%s' has type '%s' but in input record " +
                                                              "found type '%s'.",
                                                            field.getName(), simpleSchema.getDisplayName(),
@@ -143,6 +143,18 @@ public final class DBUtils {
 
     }
     return resultsetSchema.getFields();
+  }
+
+  private static boolean isCompatible(Schema resultSetSchema, Schema mappedSchema) {
+    if (resultSetSchema.equals(mappedSchema)) {
+      return true;
+    }
+    //allow mapping from string to datetime, values will be validated for format
+    if (resultSetSchema.getType() == Schema.Type.STRING && mappedSchema
+      .getLogicalType() == Schema.LogicalType.DATETIME) {
+      return true;
+    }
+    return false;
   }
 
   /**

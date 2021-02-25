@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.cdap.cdap.api.common.Bytes;
 import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
@@ -40,8 +41,10 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -204,7 +207,18 @@ public class DBRecord implements Writable, DBWritable, Configurable, DataSizeRep
             bytesRead += Float.BYTES;
             break;
           case STRING:
-            bytesRead += ((String) o).length();
+            String value = (String) o;
+            //make sure value is in the right format for datetime
+            if (schema.getLogicalType() == Schema.LogicalType.DATETIME) {
+              try {
+                LocalDateTime.parse(value);
+              } catch (DateTimeParseException exception) {
+                throw new UnexpectedFormatException(
+                  String.format("Datetime field '%s' with value '%s' is not in ISO-8601 format.", field.getName(),
+                                value), exception);
+              }
+            }
+            bytesRead += value.length();
             break;
           case BYTES:
             bytesRead += ((byte[]) o).length;
@@ -328,6 +342,10 @@ public class DBRecord implements Writable, DBWritable, Configurable, DataSizeRep
           BigDecimal value = record.getDecimal(fieldName);
           stmt.setBigDecimal(sqlIndex, value);
           bytesWritten += value.unscaledValue().bitLength() / Byte.SIZE + Integer.BYTES;
+          break;
+        case DATETIME:
+          stmt.setString(sqlIndex, (String) fieldValue);
+          bytesWritten += ((String) fieldValue).length();
           break;
       }
       return;

@@ -17,6 +17,7 @@
 package io.cdap.plugin;
 
 import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.Assert;
@@ -29,13 +30,16 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import javax.sql.rowset.serial.SerialBlob;
 
 public class DBRecordTest {
@@ -68,10 +72,12 @@ public class DBRecordTest {
     int binarySize = expectedBinary.length;
     boolean expectedBoolean = true;
     int booleanSize = Integer.BYTES;
+    LocalDateTime localDateTime = LocalDateTime.now();
+    String formatedDt = localDateTime.format(DateTimeFormatter.ISO_DATE_TIME);
 
 
     long expectedBytesWritten = longSize + floatSize + doubleSize + stringSize + timeSize * 2 + integerSize +
-      timeMillisSize + timeMicrosSize + blobSize + binarySize + booleanSize;
+      timeMillisSize + timeMicrosSize + blobSize + binarySize + booleanSize + formatedDt.length();
     StructuredRecord input = StructuredRecord
       .builder(Schema.recordOf(
         "foo",
@@ -87,7 +93,8 @@ public class DBRecordTest {
         Schema.Field.of("blob", Schema.of(Schema.Type.BYTES)),
         Schema.Field.of("binary", Schema.of(Schema.Type.BYTES)),
         Schema.Field.of("boolean", Schema.of(Schema.Type.BOOLEAN)),
-        Schema.Field.of("null", Schema.of(Schema.Type.NULL))
+        Schema.Field.of("null", Schema.of(Schema.Type.NULL)),
+        Schema.Field.of("datetime", Schema.of(Schema.LogicalType.DATETIME))
       ))
       .set("long", expectedLong)
       .set("float", expectedFloat)
@@ -102,9 +109,11 @@ public class DBRecordTest {
       .set("binary", expectedBinary)
       .set("boolean", expectedBoolean)
       .set("null", null)
+      .setDateTime("datetime", localDateTime)
       .build();
     int[] columnTypes = {Types.BIGINT, Types.FLOAT, Types.DOUBLE, Types.VARCHAR, Types.BIGINT, Types.BIGINT,
-      Types.INTEGER, Types.BIGINT, Types.INTEGER, Types.BLOB, Types.BINARY, Types.INTEGER, Types.VARCHAR};
+      Types.INTEGER, Types.BIGINT, Types.INTEGER, Types.BLOB, Types.BINARY, Types.INTEGER, Types.VARCHAR,
+      Types.VARCHAR};
     DBRecord record = new DBRecord(input, columnTypes);
     PreparedStatement statement = Mockito.mock(PreparedStatement.class);
     record.write(statement);
@@ -128,6 +137,7 @@ public class DBRecordTest {
     Mockito.verify(statement, Mockito.times(1)).setBytes(11, expectedBinary);
     Mockito.verify(statement, Mockito.times(1)).setBoolean(12, expectedBoolean);
     Mockito.verify(statement, Mockito.times(1)).setNull(13, Types.VARCHAR);
+    Mockito.verify(statement, Mockito.times(1)).setString(14, formatedDt);
   }
 
   @Test
@@ -292,5 +302,69 @@ public class DBRecordTest {
     Assert.assertSame(expectedRecord.get("string"), dbRecord.getRecord().get("string"));
     Assert.assertEquals(0, Float.compare(expectedRecord.get("float"), dbRecord.getRecord().get("float")));
     Assert.assertNull(expectedRecord.getDecimal("nullnumeric"));
+  }
+
+  @Test
+  public void testDatetime() throws SQLException {
+    //When output schema has datetime type , valid datetime string values should be allowed.
+    ResultSetMetaData rsMetaMock = Mockito.mock(ResultSetMetaData.class);
+    Mockito.when(rsMetaMock.getColumnCount()).thenReturn(2);
+    Mockito.when(rsMetaMock.getColumnName(Mockito.eq(1))).thenReturn("string");
+    Mockito.when(rsMetaMock.getColumnType(Mockito.eq(1))).thenReturn(Types.VARCHAR);
+    Mockito.when(rsMetaMock.isNullable(Mockito.eq(1))).thenReturn(ResultSetMetaData.columnNoNulls);
+    Mockito.when(rsMetaMock.getColumnName(Mockito.eq(2))).thenReturn("datetimestring");
+    Mockito.when(rsMetaMock.getColumnType(Mockito.eq(2))).thenReturn(Types.VARCHAR);
+    Mockito.when(rsMetaMock.isNullable(Mockito.eq(2))).thenReturn(ResultSetMetaData.columnNullable);
+
+    String testString = "random";
+    LocalDateTime testDateTime = LocalDateTime.now();
+    String formattedDateTime = testDateTime.format(DateTimeFormatter.ISO_DATE_TIME);
+    ResultSet resultSetMock = Mockito.mock(ResultSet.class);
+    Mockito.when(resultSetMock.getMetaData()).thenReturn(rsMetaMock);
+    Mockito.when(resultSetMock.next()).thenReturn(true).thenReturn(false);
+    Mockito.when(resultSetMock.getObject("string")).thenReturn(testString);
+    Mockito.when(resultSetMock.getObject("datetimestring")).thenReturn(formattedDateTime);
+
+    Schema outputSchema = Schema.recordOf("dbRecord",
+                                          Schema.Field.of("string", Schema.of(Schema.Type.STRING)),
+                                          Schema.Field
+                                            .of("datetimestring",
+                                                Schema.nullableOf(Schema.of(Schema.LogicalType.DATETIME))));
+    Configuration configuration = new Configuration();
+    configuration.set(DBUtils.OVERRIDE_SCHEMA, outputSchema.toString());
+
+    DBRecord dbRecord = new DBRecord();
+    dbRecord.setConf(configuration);
+    dbRecord.readFields(resultSetMock);
+
+    Assert.assertEquals(testString, dbRecord.getRecord().get("string"));
+    Assert.assertEquals(testDateTime, dbRecord.getRecord().getDateTime("datetimestring"));
+    Assert.assertEquals(formattedDateTime, dbRecord.getRecord().get("datetimestring"));
+  }
+
+  @Test(expected = UnexpectedFormatException.class)
+  public void testInvalidDatetime() throws SQLException {
+    //When output schema has datetime type , valid datetime string values should be allowed.
+    ResultSetMetaData rsMetaMock = Mockito.mock(ResultSetMetaData.class);
+    Mockito.when(rsMetaMock.getColumnCount()).thenReturn(1);
+    Mockito.when(rsMetaMock.getColumnName(Mockito.eq(1))).thenReturn("datetimestring");
+    Mockito.when(rsMetaMock.getColumnType(Mockito.eq(1))).thenReturn(Types.VARCHAR);
+    Mockito.when(rsMetaMock.isNullable(Mockito.eq(1))).thenReturn(ResultSetMetaData.columnNullable);
+
+    String testDateTime = "Invalid datetime string";
+    ResultSet resultSetMock = Mockito.mock(ResultSet.class);
+    Mockito.when(resultSetMock.getMetaData()).thenReturn(rsMetaMock);
+    Mockito.when(resultSetMock.next()).thenReturn(true).thenReturn(false);
+    Mockito.when(resultSetMock.getObject("datetimestring")).thenReturn(testDateTime);
+
+    Schema outputSchema = Schema.recordOf("dbRecord",
+                                          Schema.Field.of("datetimestring",
+                                                          Schema.nullableOf(Schema.of(Schema.LogicalType.DATETIME))));
+    Configuration configuration = new Configuration();
+    configuration.set(DBUtils.OVERRIDE_SCHEMA, outputSchema.toString());
+
+    DBRecord dbRecord = new DBRecord();
+    dbRecord.setConf(configuration);
+    dbRecord.readFields(resultSetMock);
   }
 }
