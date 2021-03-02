@@ -17,6 +17,7 @@
 package io.cdap.plugin.batch.source;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import io.cdap.cdap.api.annotation.Description;
@@ -252,7 +253,7 @@ public class FTPBatchSource extends AbstractFileSource {
 
     Map<String, String> getFileSystemProperties(FailureCollector collector) {
       HashMap<String, String> fileSystemPropertiesMap = new HashMap<>();
-      if (fileSystemProperties != null) {
+      if (!Strings.isNullOrEmpty(fileSystemProperties)) {
         fileSystemPropertiesMap.putAll(GSON.fromJson(fileSystemProperties, MAP_STRING_STRING_TYPE));
       }
 
