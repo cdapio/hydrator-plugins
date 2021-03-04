@@ -25,11 +25,11 @@ Advanced join conditions can only be used when joining two inputs.
 
 **Join Condition:** When the condition type is 'Basic', the condition specifies the list of keys to perform the join operation.
 The join will be performed based on equality of the join keys.
-When the condition type is 'Advanced', the condition can be any SQL expression supported by the engine. 
-It is important to note that many advanced join conditions will require the engine to perform a full cartesian
-product followed by a filter. For example, conditions that use 'or', 'not', or range conditions fall under this category.
-This can be multiple orders of magnitude more expensive than basic joins that are just performed on equality.
-When using advanced joins, try to load one of the inputs into memory when possible.
+When the condition type is 'Advanced', the condition can be any SQL expression supported by the engine.
+It is important to note that advanced join conditions can be many times more expensive than basic joins performed on equality.
+Advanced outer joins must load one of the inputs into memory.
+Advanced inner joins do not need to load an input into memory.
+However, without an in-memory input, the engine will be forced to calculate a very expensive cartesian product.
 
 **Input Aliases:** When using advanced join conditions, input aliases can be specified to make the SQL expression
 more readable. For example, if the join inputs are named 'User Signups 2020' and 'Signup Locations',
