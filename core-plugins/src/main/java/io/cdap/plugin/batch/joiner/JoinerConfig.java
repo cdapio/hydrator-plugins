@@ -245,6 +245,11 @@ public class JoinerConfig extends PluginConfig {
           .setNullSafe(isNullSafe())
           .build();
       case EXPRESSION:
+        if (conditionExpression == null || conditionExpression.isEmpty()) {
+          failureCollector.addFailure("A join condition must be specified.", null)
+            .withConfigProperty(CONDITION_EXPR);
+          throw failureCollector.getOrThrowException();
+        }
         return JoinCondition.onExpression()
           .setExpression(conditionExpression)
           .setDatasetAliases(getInputAliases(failureCollector))

@@ -103,10 +103,25 @@ public class Joiner extends BatchAutoJoiner {
     }
 
     JoinCondition condition = conf.getCondition(collector);
-    if (condition.getOp() == JoinCondition.Op.EXPRESSION && inputs.size() != 2) {
-      collector.addFailure("Advanced join conditions can only be used when there are two inputs.", null)
-        .withConfigProperty(JoinerConfig.CONDITION_TYPE);
-      throw collector.getOrThrowException();
+    if (condition.getOp() == JoinCondition.Op.EXPRESSION) {
+      if (inputs.size() != 2) {
+        collector.addFailure("Advanced join conditions can only be used when there are two inputs.", null)
+          .withConfigProperty(JoinerConfig.CONDITION_TYPE);
+        throw collector.getOrThrowException();
+      }
+
+      /*
+         If this is an outer join of some kind and it is not a broadcast join, add a failure.
+         this is because any outer join that is not an equality join in Spark will get turned into
+         a BroadcastNestedLoopJoin anyway. So it is better to make that behavior explicit to the user
+         and force them to specify which side should be broadcast. This also prevents problems where
+         Spark will just choose to broadcast the right side because it doesn't know how big the input datasets are.
+         See CDAP-17718 for more info.
+       */
+      if (requiredStages.size() < inputs.size() && broadcastStages.isEmpty()) {
+        collector.addFailure("Advanced outer joins must specify an input to load in memory.", null)
+          .withConfigProperty(JoinerConfig.MEMORY_INPUTS);
+      }
     }
 
     try {
