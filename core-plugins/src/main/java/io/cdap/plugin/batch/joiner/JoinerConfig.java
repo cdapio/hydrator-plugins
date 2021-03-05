@@ -179,9 +179,9 @@ public class JoinerConfig extends PluginConfig {
   }
 
   @VisibleForTesting
-  JoinerConfig(String selectedFields, String conditionExpression) {
+  JoinerConfig(String selectedFields, String conditionExpression, Set<String> requiredInputs) {
     this.selectedFields = selectedFields;
-    this.requiredInputs = requiredInputs;
+    this.requiredInputs = String.join(",", requiredInputs);
     this.conditionType = ADVANCED;
     this.conditionExpression = conditionExpression;
   }

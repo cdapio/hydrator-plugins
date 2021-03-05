@@ -35,6 +35,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -364,7 +365,8 @@ public class JoinerConfigTest {
 
   @Test
   public void testAdvancedJoinCondition() {
-    JoinerConfig conf = new JoinerConfig("users.id, emails.email", "users.id = emails.userid");
+    JoinerConfig conf = new JoinerConfig("users.id, emails.email", "users.id = emails.userid",
+                                         new HashSet<>(Arrays.asList("users", "emails")));
     Joiner joiner = new Joiner(conf);
     FailureCollector collector = new MockFailureCollector();
 
@@ -383,8 +385,37 @@ public class JoinerConfigTest {
   }
 
   @Test
+  public void testAdvancedOuterRequiresBroadcast() {
+    JoinerConfig conf = new JoinerConfig("users.id, emails.email", "users.id = emails.userid",
+                                         Collections.singleton("users"));
+    Joiner joiner = new Joiner(conf);
+    FailureCollector collector = new MockFailureCollector();
+
+    Schema userSchema = Schema.recordOf("user", Schema.Field.of("id", Schema.of(Schema.Type.INT)));
+    Schema emailSchema = Schema.recordOf("email",
+                                         Schema.Field.of("email", Schema.of(Schema.Type.STRING)),
+                                         Schema.Field.of("userid", Schema.of(Schema.Type.INT)));
+    Map<String, JoinStage> inputStages = new HashMap<>();
+    inputStages.put("users", JoinStage.builder("users", userSchema).build());
+    inputStages.put("emails", JoinStage.builder("emails", emailSchema).build());
+    inputStages.put("users2", JoinStage.builder("users2", userSchema).build());
+    AutoJoinerContext autoJoinerContext = new MockAutoJoinerContext(inputStages, collector);
+    try {
+      joiner.define(autoJoinerContext);
+      Assert.fail("Advanced left outer join without broadcast did not fail as expected.");
+    } catch (ValidationException e) {
+      List<ValidationFailure> failures = e.getFailures();
+      Assert.assertEquals(1, failures.size());
+      List<ValidationFailure.Cause> causes = failures.get(0).getCauses();
+      Assert.assertEquals(1, causes.size());
+      Assert.assertEquals(JoinerConfig.CONDITION_TYPE, causes.get(0).getAttribute(CauseAttributes.STAGE_CONFIG));
+    }
+  }
+
+  @Test
   public void testAdvancedWithTooManyInputs() {
-    JoinerConfig conf = new JoinerConfig("users.id, emails.email", "users.id = emails.userid");
+    JoinerConfig conf = new JoinerConfig("users.id, emails.email", "users.id = emails.userid",
+                                         new HashSet<>(Arrays.asList("users", "emails")));
     Joiner joiner = new Joiner(conf);
     FailureCollector collector = new MockFailureCollector();
 
