@@ -83,8 +83,12 @@ Traditional relational database systems do not join on null key values.
 In most situations, you will want to do the same and set this to false. 
 Setting it to true can cause a large drop in performance if there are a lot of null keys in your input data.
 
-**Number of Partitions:** Number of partitions to use when grouping fields. If not specified, the execution
-framework will decide on the number to use.
+**Number of Partitions:** Number of partitions to use when grouping fields. 
+This value is ignored if an input is loaded into memory or if an advanced join is being performed. 
+When an input is loaded into memory, the number of partitions will be equal
+to the number of partitions used for the input that is not loaded into memory.
+If no value is given, or if an inner advanced join is being performed, the number of partitions will be determined
+by the value of 'spark.sql.shuffle.partitions' in the engine config, which defaults to 200. 
 
 **Distribution:** Enabling distribution will increase the level of parallelism when joining skewed data. 
 A skewed join happens when a significant percentage of input records have the same key. Distribution is
