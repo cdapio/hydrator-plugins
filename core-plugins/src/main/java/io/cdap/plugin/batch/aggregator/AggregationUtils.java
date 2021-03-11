@@ -23,16 +23,54 @@ import io.cdap.cdap.api.data.schema.Schema;
  */
 public final class AggregationUtils {
 
-  private AggregationUtils(){}
+  private AggregationUtils() {
+  }
 
   /**
    * Checks if the type of the field is Numeric.
+   *
    * @param fieldType type of the field to be checked.
    * @return true if numeric, false otherwise.
    */
-  public static boolean isNumericType(Schema.Type fieldType) {
+  private static boolean isNumericType(Schema.Type fieldType) {
     return fieldType == Schema.Type.INT || fieldType == Schema.Type.LONG ||
       fieldType == Schema.Type.FLOAT || fieldType == Schema.Type.DOUBLE;
   }
 
+  /**
+   * Validates if the field schema type is numeric, otherwise throws an IllegalArgumentException
+   *
+   * @param fieldSchema  - Schema for the field
+   * @param fieldName    - Name of the field
+   * @param functionName - Name of the function
+   */
+  public static void ensureNumericType(Schema fieldSchema, String fieldName, String functionName) {
+    Schema.Type fieldType = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
+    if (!isNumericType(fieldType)) {
+      generateException(fieldSchema, fieldName, functionName, fieldType, "numeric");
+    }
+  }
+
+  /**
+   * Validates if the field schema type is boolean, otherwise throws an IllegalArgumentException
+   *
+   * @param fieldSchema  - Schema for the field
+   * @param fieldName    - Name of the field
+   * @param functionName - Name of the function
+   */
+  public static void ensureBooleanType(Schema fieldSchema, String fieldName, String functionName) {
+    Schema.Type fieldType = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
+    if (fieldType != Schema.Type.BOOLEAN) {
+      generateException(fieldSchema, fieldName, functionName, fieldType, "boolean");
+    }
+  }
+
+  private static void generateException(Schema fieldSchema, String fieldName, String functionName,
+                                        Schema.Type fieldType, String expectedType) {
+    Schema.LogicalType logicalType = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getLogicalType() :
+      fieldSchema.getLogicalType();
+    throw new IllegalArgumentException(String.format(
+      "Cannot compute %s on field %s because its type %s is not %s", functionName, fieldName,
+      logicalType == null ? fieldType : logicalType, expectedType));
+  }
 }

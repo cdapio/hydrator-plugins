@@ -33,15 +33,8 @@ public class CorrectedSumOfSquares implements AggregateFunction<Double, Correcte
 
   public CorrectedSumOfSquares(String fieldName, Schema fieldSchema) {
     this.fieldName = fieldName;
-    boolean isNullable = fieldSchema.isNullable();
-    Schema.Type fieldType =
-      isNullable ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
-    if (!AggregationUtils.isNumericType(fieldType)) {
-      throw new IllegalArgumentException(String.format(
-        "Cannot compute corrected sum of squares on field %s because its type %s is not numeric",
-        fieldName, fieldType));
-    }
-    outputSchema = isNullable ? Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))
+    AggregationUtils.ensureNumericType(fieldSchema, fieldName, "corrected sum of squares");
+    outputSchema = fieldSchema.isNullable() ? Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))
       : Schema.of(Schema.Type.DOUBLE);
   }
 

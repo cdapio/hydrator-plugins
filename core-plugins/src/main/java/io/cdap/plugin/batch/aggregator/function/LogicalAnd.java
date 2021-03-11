@@ -19,6 +19,7 @@ package io.cdap.plugin.batch.aggregator.function;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.data.schema.Schema.Type;
+import io.cdap.plugin.batch.aggregator.AggregationUtils;
 
 /**
  * Returns true if all the values in the group are true, false even if there is a single false
@@ -29,8 +30,9 @@ public class LogicalAnd implements AggregateFunction<Boolean, LogicalAnd> {
   private final String fieldName;
   private boolean logicalAnd;
 
-  public LogicalAnd(String fieldName) {
+  public LogicalAnd(String fieldName, Schema fieldSchema) {
     this.fieldName = fieldName;
+    AggregationUtils.ensureBooleanType(fieldSchema, fieldName, "Logical AND");
   }
 
   @Override

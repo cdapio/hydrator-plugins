@@ -32,12 +32,7 @@ public class Avg implements AggregateFunction<Double, Avg> {
   public Avg(String fieldName, Schema fieldSchema) {
     this.fieldName = fieldName;
     boolean isNullable = fieldSchema.isNullable();
-    Schema.Type fieldType = isNullable ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
-    if (!AggregationUtils.isNumericType(fieldType)) {
-      throw new IllegalArgumentException(String.format(
-        "Cannot compute avg on field %s because its type %s is not numeric", fieldName, fieldType));
-    }
-
+    AggregationUtils.ensureNumericType(fieldSchema, fieldName, "Avg");
     // the avg is null only if the field value is always null
     outputSchema = isNullable ? Schema.nullableOf(Schema.of(Schema.Type.DOUBLE)) : Schema.of(Schema.Type.DOUBLE);
   }
