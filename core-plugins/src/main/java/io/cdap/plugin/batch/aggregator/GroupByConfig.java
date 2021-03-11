@@ -228,9 +228,9 @@ public class GroupByConfig extends AggregatorConfig {
         case CONCATDISTINCT:
           return new ConcatDistinct(field, fieldSchema);
         case LOGICALAND:
-          return new LogicalAnd(field);
+          return new LogicalAnd(field, fieldSchema);
         case LOGICALOR:
-          return new LogicalOr(field);
+          return new LogicalOr(field, fieldSchema);
         case CORRECTEDSUMOFSQUARES:
           return new CorrectedSumOfSquares(field, fieldSchema);
         case SUMOFSQUARES:

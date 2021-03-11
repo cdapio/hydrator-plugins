@@ -29,11 +29,7 @@ public class Stddev implements AggregateFunction<Double, Stddev> {
   private final Variance variance;
 
   public Stddev(String fieldName, Schema fieldSchema) {
-    Schema.Type fieldType = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
-    if (!AggregationUtils.isNumericType(fieldType)) {
-      throw new IllegalArgumentException(String.format(
-        "Cannot compute standard deviation on field %s because its type %s is not numeric", fieldName, fieldType));
-    }
+    AggregationUtils.ensureNumericType(fieldSchema, fieldName, "standard deviation");
     this.variance = new Variance(fieldName, fieldSchema);
   }
 
