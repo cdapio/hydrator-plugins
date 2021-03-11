@@ -58,6 +58,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
@@ -95,32 +96,46 @@ public class FileSinkTestRun extends ETLBatchTestBase {
 
   @Test
   public void testCSVFileSink() throws Exception {
-    testDelimitedFileSink(FileFormat.CSV, ",");
+    testDelimitedFileSink(FileFormat.CSV, ",", false);
+    testDelimitedFileSink(FileFormat.CSV, ",", true);
   }
 
   @Test
   public void testTSVFileSink() throws Exception {
-    testDelimitedFileSink(FileFormat.TSV, "\t");
+    testDelimitedFileSink(FileFormat.TSV, "\t", false);
+    testDelimitedFileSink(FileFormat.TSV, "\t", true);
   }
 
   @Test
   public void testDelimitedFileSink() throws Exception {
-    testDelimitedFileSink(FileFormat.DELIMITED, "\u0001");
+    testDelimitedFileSink(FileFormat.DELIMITED, "\u0001", false);
+    testDelimitedFileSink(FileFormat.DELIMITED, "\u0001", true);
   }
 
-  private void testDelimitedFileSink(FileFormat format, String delimiter) throws Exception {
+  private void testDelimitedFileSink(FileFormat format, String delimiter, boolean writeHeader) throws Exception {
     // only set the delimiter as a pipeline property if the format is "delimited".
     // otherwise, the delimiter should be tied to the format
     Map<Integer, String> output = new HashMap<>();
+    String expectedHeader = SCHEMA.getFields().stream()
+      .map(Schema.Field::getName)
+      .collect(Collectors.joining(delimiter));
     runPipeline(format, file -> {
-      try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-        String line;
-        while ((line = reader.readLine()) != null) {
-          String[] fields = line.split(delimiter);
-          output.put(Integer.valueOf(fields[0]), fields[1]);
-        }
-      }
-    }, format == FileFormat.DELIMITED ? delimiter : null);
+                  try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                    String line;
+                    boolean isHeader = writeHeader;
+                    while ((line = reader.readLine()) != null) {
+                      if (isHeader) {
+                        Assert.assertEquals(expectedHeader, line);
+                        isHeader = false;
+                        continue;
+                      }
+                      String[] fields = line.split(delimiter);
+                      output.put(Integer.valueOf(fields[0]), fields[1]);
+                    }
+                  }
+                }, format == FileFormat.DELIMITED ? delimiter : null,
+                SchemaState.VALID,
+                writeHeader);
     Assert.assertEquals(ImmutableMap.of(0, "abc", 1, "def", 2, "ghi"), output);
     validateDatasetSchema(format);
   }
@@ -197,7 +212,7 @@ public class FileSinkTestRun extends ETLBatchTestBase {
           genericRecord = reader.read();
         }
       }
-    }, null, outputFormatSchemaState);
+    }, null, outputFormatSchemaState, false);
     Assert.assertEquals(ImmutableMap.of(0, "abc", 1, "def", 2, "ghi"), output);
     validateDatasetSchema(FileFormat.PARQUET);
   }
@@ -208,7 +223,7 @@ public class FileSinkTestRun extends ETLBatchTestBase {
 
   private void runPipeline(FileFormat format, FileConsumer fileConsumer, @Nullable String delimiter)
       throws Exception {
-    runPipeline(format, fileConsumer, delimiter, SchemaState.VALID);
+    runPipeline(format, fileConsumer, delimiter, SchemaState.VALID, false);
   }
 
     /**
@@ -219,10 +234,12 @@ public class FileSinkTestRun extends ETLBatchTestBase {
       FileFormat format,
       FileConsumer fileConsumer,
       @Nullable String delimiter,
-      SchemaState outputFormatSchemaState) throws Exception {
+      SchemaState outputFormatSchemaState,
+      boolean writeHeader) throws Exception {
     String inputName = UUID.randomUUID().toString();
 
-    File baseDir = TEMP_FOLDER.newFolder(format + "FileSink" + outputFormatSchemaState);
+    File baseDir = TEMP_FOLDER.newFolder(
+      String.format("%s-%s-FileSink-%s", format, writeHeader, outputFormatSchemaState));
     File outputDir = new File(baseDir, "out");
     Map<String, String> properties = new HashMap<>();
     properties.put("path", outputDir.getAbsolutePath());
@@ -230,6 +247,7 @@ public class FileSinkTestRun extends ETLBatchTestBase {
     properties.put("format", format.name());
     properties.put("schema", outputFormatSchemaState.getSchema("${schema}"));
     properties.put("delimiter", delimiter);
+    properties.put("writeHeader", String.valueOf(writeHeader));
 
     ETLBatchConfig conf = ETLBatchConfig.builder()
       .addStage(new ETLStage("source", MockSource.getPlugin(inputName, SCHEMA)))

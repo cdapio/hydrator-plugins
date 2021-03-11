@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Cask Data, Inc.
+ * Copyright © 2018-2021 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -77,13 +77,13 @@ public class DelimitedOutputFormatProvider extends AbstractOutputFormatProvider 
     if (conf.containsMacro("delimiter")) {
       return Collections.emptyMap();
     }
-    return StructuredDelimitedOutputFormat.getConfiguration(conf.delimiter);
+    return StructuredDelimitedOutputFormat.getConfiguration(conf.delimiter, conf.shouldWriteHeader());
   }
 
   /**
    * Configuration for the delimited format.
    */
-  public static class Conf extends PluginConfig {
+  public static class Conf extends DelimitedPluginConfig {
     private static final String DELIMITER_DESC = "Delimiter to use to separate record fields.";
 
     @Macro
@@ -92,6 +92,7 @@ public class DelimitedOutputFormatProvider extends AbstractOutputFormatProvider 
     private String delimiter;
 
     public Conf() {
+      super();
       delimiter = ",";
     }
   }
@@ -99,6 +100,7 @@ public class DelimitedOutputFormatProvider extends AbstractOutputFormatProvider 
   private static PluginClass getPluginClass() {
     Map<String, PluginPropertyField> properties = new HashMap<>();
     properties.put("delimiter", new PluginPropertyField("delimiter", Conf.DELIMITER_DESC, "string", false, true));
+    properties.put("writeHeader", new PluginPropertyField("writeHeader", Conf.HEADER_DESC, "boolean", false, true));
     return new PluginClass(ValidatingOutputFormat.PLUGIN_TYPE, NAME, DESC,
                            DelimitedOutputFormatProvider.class.getName(), "conf", properties);
   }
