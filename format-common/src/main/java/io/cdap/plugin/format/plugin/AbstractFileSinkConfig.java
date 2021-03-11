@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Cask Data, Inc.
+ * Copyright © 2018-2021 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -58,6 +58,12 @@ public abstract class AbstractFileSinkConfig extends PluginConfig implements Fil
   @Description("The delimiter to use if the format is 'delimited'. The delimiter will be ignored if the format "
     + "is anything other than 'delimited'.")
   private String delimiter;
+
+  @Macro
+  @Nullable
+  @Description("Whether a header should be written to each output file. This only applies to the delimited, csv, " +
+    "and tsv formats.")
+  private Boolean writeHeader;
 
   @Macro
   @Nullable

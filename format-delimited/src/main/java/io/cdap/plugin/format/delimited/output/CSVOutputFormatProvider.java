@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Cask Data, Inc.
+ * Copyright © 2018-2021 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -39,6 +39,11 @@ public class CSVOutputFormatProvider extends AbstractOutputFormatProvider {
   public static final PluginClass PLUGIN_CLASS = getPluginClass();
   static final String NAME = "csv";
   static final String DESC = "Plugin for writing files in csv format.";
+  private final DelimitedPluginConfig conf;
+
+  public CSVOutputFormatProvider(DelimitedPluginConfig conf) {
+    this.conf = conf;
+  }
 
   @Override
   public String getOutputFormatClassName() {
@@ -65,12 +70,14 @@ public class CSVOutputFormatProvider extends AbstractOutputFormatProvider {
 
   @Override
   public Map<String, String> getOutputFormatConfiguration() {
-    return StructuredDelimitedOutputFormat.getConfiguration(",");
+    return StructuredDelimitedOutputFormat.getConfiguration(",", conf.shouldWriteHeader());
   }
 
   private static PluginClass getPluginClass() {
     Map<String, PluginPropertyField> properties = new HashMap<>();
+    properties.put("writeHeader", new PluginPropertyField("writeHeader", DelimitedOutputFormatProvider.Conf.HEADER_DESC,
+                                                          "boolean", false, true));
     return new PluginClass(ValidatingOutputFormat.PLUGIN_TYPE, NAME, DESC, CSVOutputFormatProvider.class.getName(),
-                           null, properties);
+                           "conf", properties);
   }
 }
