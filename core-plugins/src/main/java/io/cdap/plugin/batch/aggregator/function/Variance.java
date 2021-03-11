@@ -44,11 +44,7 @@ public class Variance implements AggregateFunction<Double, Variance> {
   public Variance(String fieldName, Schema fieldSchema) {
     this.fieldName = fieldName;
     boolean isNullable = fieldSchema.isNullable();
-    Schema.Type fieldType = isNullable ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
-    if (!AggregationUtils.isNumericType(fieldType)) {
-      throw new IllegalArgumentException(String.format(
-        "Cannot compute variance on field %s because its type %s is not numeric", fieldName, fieldType));
-    }
+    AggregationUtils.ensureNumericType(fieldSchema, fieldName, "variance");
     outputSchema = isNullable ? Schema.nullableOf(Schema.of(Schema.Type.DOUBLE)) : Schema.of(Schema.Type.DOUBLE);
   }
 

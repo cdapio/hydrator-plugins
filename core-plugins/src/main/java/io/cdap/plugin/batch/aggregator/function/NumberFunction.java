@@ -17,6 +17,7 @@
 package io.cdap.plugin.batch.aggregator.function;
 
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.plugin.batch.aggregator.AggregationUtils;
 
 /**
  * Base class for number based aggregate functions.
@@ -34,6 +35,7 @@ public abstract class NumberFunction<V extends NumberFunction> implements Aggreg
     this.fieldName = fieldName;
     this.fieldSchema = fieldSchema;
     this.fieldType = fieldSchema.isNullable() ? fieldSchema.getNonNullable().getType() : fieldSchema.getType();
+    AggregationUtils.ensureNumericType(fieldSchema, fieldName, this.getClass().getSimpleName());
   }
 
   @Override
