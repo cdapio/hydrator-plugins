@@ -30,12 +30,12 @@ public class LogicalAndTest extends AggregateFunctionTest {
   public void logicalAndTest() {
     Schema fieldSchema = Schema.of(Schema.Type.BOOLEAN);
     Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.nullableOf(fieldSchema)));
-    test(new LogicalAnd("x"), schema, "x", true,
+    test(new LogicalAnd("x", fieldSchema), schema, "x", true,
          Arrays.asList(true, true, true),
-         new LogicalAnd("x"));
-    test(new LogicalAnd("x"), schema, "x", false,
+         new LogicalAnd("x", fieldSchema));
+    test(new LogicalAnd("x", fieldSchema), schema, "x", false,
          Arrays.asList(true, false, true),
-         new LogicalAnd("x"));
+         new LogicalAnd("x", fieldSchema));
   }
 
 }
