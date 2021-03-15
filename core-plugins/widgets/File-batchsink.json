@@ -45,6 +45,22 @@
           "widget-attributes": {
             "placeholder": "Delimiter if the format is 'delimited'"
           }
+        },
+        {
+          "widget-type": "toggle",
+          "label": "Write Header",
+          "name": "writeHeader",
+          "widget-attributes": {
+            "default": "false",
+            "on": {
+              "value": "true",
+              "label": "True"
+            },
+            "off": {
+              "value": "false",
+              "label": "False"
+            }
+          }
         }
       ]
     },
@@ -55,6 +71,32 @@
           "widget-type": "json-editor",
           "label": "File System Properties",
           "name": "fileSystemProperties"
+        }
+      ]
+    }
+  ],
+  "filters": [
+    {
+      "name": "delimiter",
+      "condition": {
+        "property": "format",
+        "operator": "equal to",
+        "value": "delimited"
+      },
+      "show": [
+        {
+          "name": "delimiter"
+        }
+      ]
+    },
+    {
+      "name": "header",
+      "condition": {
+        "expression": "format == 'delimited' || format == 'csv' || format == 'tsv'"
+      },
+      "show": [
+        {
+          "name": "writeHeader"
         }
       ]
     }

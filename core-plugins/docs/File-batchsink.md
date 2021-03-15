@@ -29,4 +29,6 @@ formats can be used.
 
 **Delimiter:** Delimiter to use if the format is 'delimited'.
 
+**Write Header:** Whether to write a header to each file if the format is 'delimited', 'csv', or 'tsv'.
+
 **File System Properties:** Additional properties to use with the OutputFormat when reading the data.

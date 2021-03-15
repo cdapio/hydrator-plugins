@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Cask Data, Inc.
+ * Copyright © 2018-2021 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -39,6 +39,11 @@ public class TSVOutputFormatProvider extends AbstractOutputFormatProvider {
   public static final PluginClass PLUGIN_CLASS = getPluginClass();
   static final String NAME = "tsv";
   static final String DESC = "Plugin for writing files in tsv format.";
+  private final DelimitedPluginConfig conf;
+
+  public TSVOutputFormatProvider(DelimitedPluginConfig conf) {
+    this.conf = conf;
+  }
 
   @Override
   public String getOutputFormatClassName() {
@@ -65,12 +70,14 @@ public class TSVOutputFormatProvider extends AbstractOutputFormatProvider {
 
   @Override
   public Map<String, String> getOutputFormatConfiguration() {
-    return StructuredDelimitedOutputFormat.getConfiguration("\t");
+    return StructuredDelimitedOutputFormat.getConfiguration("\t", conf.shouldWriteHeader());
   }
 
   private static PluginClass getPluginClass() {
     Map<String, PluginPropertyField> properties = new HashMap<>();
+    properties.put("writeHeader", new PluginPropertyField("writeHeader", DelimitedOutputFormatProvider.Conf.HEADER_DESC,
+                                                          "boolean", false, true));
     return new PluginClass(ValidatingOutputFormat.PLUGIN_TYPE, NAME, DESC, TSVOutputFormatProvider.class.getName(),
-                           null, properties);
+                           "conf", properties);
   }
 }
