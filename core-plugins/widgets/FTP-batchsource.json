@@ -2,6 +2,7 @@
   "metadata": {
     "spec-version": "1.5"
   },
+  "display-name": "FTP (Deprecated)",
   "configuration-groups": [
     {
       "label": "Basic",
