@@ -1,5 +1,7 @@
-# FTP Batch Source
+# FTP Batch Source (Deprecated)
 
+**NOTE**: This plugin is deprecated. Please use https://github.com/data-integrations/ftp-plugins instead, which is
+available as FTP plugins (> v3.0.0) from the Hub.
 
 Description
 -----------
