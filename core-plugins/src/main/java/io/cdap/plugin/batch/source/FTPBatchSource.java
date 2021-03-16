@@ -45,11 +45,13 @@ import javax.annotation.Nullable;
 
 /**
  * {@link BatchSource} that reads from an FTP or SFTP server.
+ * This plugin is deprecated. Please use https://github.com/data-integrations/ftp-plugins instead.
  */
+@Deprecated
 @Plugin(type = "batchsource")
 @Name("FTP")
-@Description("Batch source for an FTP or SFTP source. Prefix of the path ('ftp://...' or 'sftp://...') determines " +
-  "the source server type, either FTP or SFTP.")
+@Description("This plugin is deprecated. Please use https://github.com/data-integrations/ftp-plugins instead, which " +
+  "is available as FTP plugins (> v3.0.0) from the Hub.")
 public class FTPBatchSource extends AbstractFileSource {
   private static final String NAME_FILE_SYSTEM_PROPERTIES = "fileSystemProperties";
   private static final String FS_SFTP_IMPL = "fs.sftp.impl";
