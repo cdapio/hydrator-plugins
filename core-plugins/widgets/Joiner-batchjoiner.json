@@ -27,13 +27,15 @@
           "label": "Join Condition Type",
           "widget-attributes": {
             "layout": "inline",
-            "default": "Basic",
+            "default": "basic",
             "options": [
               {
-                "id": "Basic"
+                "label": "Basic",
+                "id": "basic"
               },
               {
-                "id": "Advanced"
+                "label": "Advanced",
+                "id": "advanced"
               }
             ]
           }
@@ -153,7 +155,7 @@
       "condition": {
         "property": "conditionType",
         "operator": "equal to",
-        "value": "Basic"
+        "value": "basic"
       },
       "show": [
         {
@@ -175,7 +177,7 @@
       "condition": {
         "property": "conditionType",
         "operator": "equal to",
-        "value": "Advanced"
+        "value": "advanced"
       },
       "show": [
         {
