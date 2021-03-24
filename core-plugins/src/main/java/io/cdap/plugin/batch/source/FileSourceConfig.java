@@ -52,6 +52,17 @@ public class FileSourceConfig extends AbstractFileSourceConfig {
     + "This is an advanced feature that requires knowledge of the properties supported by the underlying filesystem.")
   private String fileSystemProperties;
 
+  @Macro
+  @Nullable
+  @Description("A list of columns with the corresponding data types for whom the automatic data type detection gets " +
+    "skipped.")
+  private String override;
+
+  @Macro
+  @Nullable
+  @Description("The maximum number of rows that will get investigated for automatic data type detection.")
+  private Long sampleSize;
+  
   FileSourceConfig() {
     super();
     fileSystemProperties = "{}";
