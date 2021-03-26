@@ -28,9 +28,14 @@ Blob - is set by default as field named 'body' of type bytes.
 Text - is set by default as two fields: 'body' of type bytes and 'offset' of type 'long'.
 JSON - is not supported, user has to manually provide the output schema.
 
+**Override:** A list of columns with the corresponding data types for whom the automatic data type detection gets
+ skipped. 
+ 
+**Sample Size:** The maximum number of rows in a file that will get investigated for automatic data type detection.
+
 **Delimiter:** Delimiter to use when the format is 'delimited'. This will be ignored for other formats.
 
-**Skip Header** Whether to skip the first line of each file. Supported formats are 'text', 'csv', 'tsv', 'delimited'.
+**Skip Header:** Whether to skip the first line of each file. Supported formats are 'text', 'csv', 'tsv', 'delimited'.
 
 **Maximum Split Size:** Maximum size in bytes for each input partition.
 Smaller partitions will increase the level of parallelism, but will require more resources and overhead.
