@@ -153,9 +153,7 @@
     {
       "name": "basic condition",
       "condition": {
-        "property": "conditionType",
-        "operator": "equal to",
-        "value": "basic"
+        "expression": "conditionType == 'basic' || !conditionType"
       },
       "show": [
         {
