@@ -49,7 +49,7 @@
     </dependency>
     <dependency>
       <groupId>io.cdap.cdap</groupId>
-      <artifactId>cdap-data-pipeline</artifactId>
+      <artifactId>cdap-data-pipeline2_2.11</artifactId>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
