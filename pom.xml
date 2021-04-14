@@ -725,24 +725,6 @@
     </dependencies>
   </dependencyManagement>
 
-  <dependencies>
-    <!--
-      Spark dependencies are needed in unit-test.
-      They are not included from transitive dependencies because cdap-etl-api-spark is in provided scope
-    -->
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-core_2.10</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-streaming_2.10</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-  </dependencies>
-
   <build>
     <pluginManagement>
       <plugins>
