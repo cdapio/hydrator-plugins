@@ -8,13 +8,9 @@
       "label": "General",
       "properties": [
         {
-          "widget-type": "csv",
+          "widget-type": "input-field-selector",
           "label": "Unique Fields",
-          "name": "uniqueFields",
-          "widget-attributes": {
-            "delimiter": ",",
-            "value-placeholder": "Field Name"
-          }
+          "name": "uniqueFields"
         },
         {
           "widget-type": "keyvalue-dropdown",
