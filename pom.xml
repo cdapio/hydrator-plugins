@@ -250,6 +250,14 @@
             <groupId>asm</groupId>
             <artifactId>asm</artifactId>
           </exclusion>
+          <!--
+                CDAP-17945: this has its own implementation of YarnConfiguration for some reason,
+                which breaks unit tests. Hive/Explore is really not used anymore, so excluding it.
+           -->
+          <exclusion>
+            <groupId>io.cdap.cdap</groupId>
+            <artifactId>cdap-explore-jdbc</artifactId>
+          </exclusion>
         </exclusions>
       </dependency>
       <dependency>
