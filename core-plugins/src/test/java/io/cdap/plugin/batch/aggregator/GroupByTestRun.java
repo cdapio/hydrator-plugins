@@ -469,4 +469,45 @@ public class GroupByTestRun extends ETLBatchTestBase {
         .build());
     MockSource.writeInput(datasetManager, input);
   }
+
+  @Test
+  public void testGroupByConditionValidation() {
+    Schema purchaseSchema = Schema.recordOf(
+      "purchase",
+      Schema.Field.of("ts", Schema.of(Schema.Type.LONG)),
+      Schema.Field.of("user", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("item", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
+    Schema aggSchema = Schema.recordOf(
+      "purchase.agg",
+      Schema.Field.of("item", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("maxPrice", Schema.of(Schema.Type.DOUBLE)));
+
+    GroupByConfig groupByConfig = new GroupByConfig("item",  "maxPrice:MaxIf(price):condition(price<5)");
+    GroupByAggregator groupByAggregator = new GroupByAggregator(groupByConfig);
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(purchaseSchema, Collections.emptyMap());
+    groupByAggregator.configurePipeline(mockConfigurer);
+    Assert.assertEquals(aggSchema, mockConfigurer.getOutputSchema());
+  }
+
+  @Test
+  public void testGroupByConditionValidationFailure() {
+    Schema purchaseSchema = Schema.recordOf(
+      "purchase",
+      Schema.Field.of("ts", Schema.of(Schema.Type.LONG)),
+      Schema.Field.of("user", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("item", Schema.of(Schema.Type.STRING)),
+      Schema.Field.of("price", Schema.of(Schema.Type.DOUBLE)));
+
+    GroupByConfig groupByConfig = new GroupByConfig("item",  "maxPrice:MaxIf(price):condition(test<5)");
+    GroupByAggregator groupByAggregator = new GroupByAggregator(groupByConfig);
+    MockPipelineConfigurer mockConfigurer = new MockPipelineConfigurer(purchaseSchema, Collections.emptyMap());
+    try {
+      groupByAggregator.configurePipeline(mockConfigurer);
+      Assert.fail("Condition with wrong input field that does not exists in schema should fail validation");
+    } catch (ValidationException e) {
+      Assert.assertEquals(1, e.getFailures().size());
+      Assert.assertEquals("test", e.getFailures().get(0).getCauses().get(0).getAttribute("configElement"));
+    }
+  }
 }
