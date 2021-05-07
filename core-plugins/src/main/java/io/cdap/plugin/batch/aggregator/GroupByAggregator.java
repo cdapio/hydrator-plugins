@@ -31,6 +31,7 @@ import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
 import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
 import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
 import io.cdap.plugin.batch.aggregator.function.AggregateFunction;
+import io.cdap.plugin.batch.aggregator.function.JexlCondition;
 import io.cdap.plugin.common.SchemaValidator;
 
 import java.util.ArrayList;
@@ -39,6 +40,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Batch group by aggregator.
@@ -72,6 +74,25 @@ public class GroupByAggregator extends RecordReducibleAggregator<AggregateResult
     put("LOGICALOR", "LogicalOr");
     put("CORRECTEDSUMOFSQUARES", "CorrectedSumOfSquares");
     put("SUMOFSQUARES", "SumOfSquares");
+    put("COUNTIF", "CountIf");
+    put("COUNTDISTINCTIF", "CountDistinctIf");
+    put("SUMIF", "SumIf");
+    put("AVGIF", "AvgIf");
+    put("MINIF", "MinIf");
+    put("MAXIF", "MaxIf");
+    put("STDDEVIF", "StddevIf");
+    put("VARIANCEIF", "VarianceIf");
+    put("COLLECTLISTIF", "CollectListIf");
+    put("COLLECTSETIF", "CollectSetIf");
+    put("LONGESTSTRINGIF", "LongSetStringIf");
+    put("SHORTESTSTRINGIF", "ShortestStringIf");
+    put("CONCATIF", "ConcatIf");
+    put("CONCATDISTINCTIF", "ConcatDistinctIf");
+    put("LOGICALANDIF", "LogicalAndIf");
+    put("LOGICALORIF", "LogicalOrIf");
+    put("CORRECTEDSUMOFSQUARESIF", "CorrectedSumOfSquaresIf");
+    put("SUMOFSQUARESIF", "SumOfSquaresIf");
+    put("ANYIF", "AnyIf");
   }};
 
   private List<String> groupByFields;
@@ -140,6 +161,7 @@ public class GroupByAggregator extends RecordReducibleAggregator<AggregateResult
         validateCountDistinct(inputField, collector, collectorFieldName);
       }
     }
+    validateConditionalFunctions(inputSchema, conf.getAggregates(), collector);
   }
 
   private void validateCountDistinct(Schema.Field inputField, FailureCollector collector, String validationFieldName) {
@@ -175,7 +197,64 @@ public class GroupByAggregator extends RecordReducibleAggregator<AggregateResult
         fllOperations.add(operation);
       }
     }
+    validateConditionalFunctions(context.getInputSchema(), conf.getAggregates(), context.getFailureCollector());
     context.record(fllOperations);
+  }
+
+  private void validateConditionalFunctions(Schema outputSchema, List<GroupByConfig.FunctionInfo> aggregates,
+                                            FailureCollector failureCollector) {
+    // skip if output schema is null
+    if (outputSchema == null) {
+      return;
+    }
+    for (GroupByConfig.FunctionInfo aggregate : aggregates) {
+      if (aggregate.getFunction().isConditional()) {
+        Set<List<String>> variables = JexlCondition.getVariables(aggregate.getCondition());
+        for (List<String> variable : variables) {
+          if (!fieldExistsInOutputSchema(variable, outputSchema)) {
+            failureCollector.addFailure(String.format("Field %s not found in output schema.", variable),
+                                        "Fields used in conditions are required to be available in output schema.")
+              .withConfigElement("aggregates", String.join(".", variable));
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Checks if field exists in a schema.
+   *
+   * @param path   list of string representing path of the field.
+   * @param schema {@link Schema} schema that could contain the field this method is checking for.
+   * @return {@link Boolean} indicator whether field exists on schema or not.
+   *
+   * Example for nested record:
+   * <pre>{@code
+   * {
+   *   "author": {
+   *     "name": "Jan Doe",
+   *     "contact": {
+   *        "e-mail": "jan@doe.com"
+   *                }
+   *            }
+   * }
+   * }</pre>
+   *
+   * and the condition is like this:
+   * author.contact.e-mail.equals('jan@doe.com')
+   */
+  private boolean fieldExistsInOutputSchema(List<String> path, Schema schema) {
+    if (path.size() == 0) {
+      return false;
+    }
+    Schema.Field currentField = schema.getField(path.get(0));
+    if (currentField == null) {
+      return false;
+    }
+    if (path.size() > 1) {
+      return fieldExistsInOutputSchema(path.subList(1, path.size() - 1), currentField.getSchema());
+    }
+    return true;
   }
 
   @Override
