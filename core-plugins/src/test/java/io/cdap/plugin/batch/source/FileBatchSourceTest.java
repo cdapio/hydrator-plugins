@@ -29,8 +29,11 @@ import io.cdap.cdap.api.dataset.table.Table;
 import io.cdap.cdap.api.metadata.MetadataEntity;
 import io.cdap.cdap.api.metadata.MetadataScope;
 import io.cdap.cdap.datapipeline.SmartWorkflow;
+import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.batch.BatchSource;
+import io.cdap.cdap.etl.api.validation.ValidationFailure;
 import io.cdap.cdap.etl.mock.batch.MockSink;
+import io.cdap.cdap.etl.mock.validation.MockFailureCollector;
 import io.cdap.cdap.etl.proto.v2.ETLBatchConfig;
 import io.cdap.cdap.etl.proto.v2.ETLPlugin;
 import io.cdap.cdap.etl.proto.v2.ETLStage;
@@ -47,6 +50,7 @@ import io.cdap.plugin.batch.ETLBatchTestBase;
 import io.cdap.plugin.common.Constants;
 import io.cdap.plugin.common.Properties;
 import io.cdap.plugin.format.FileFormat;
+import io.cdap.plugin.format.plugin.AbstractFileSourceConfig;
 import org.apache.avro.file.DataFileWriter;
 import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.generic.GenericRecord;
@@ -60,6 +64,7 @@ import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.internal.util.reflection.FieldSetter;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -91,6 +96,19 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
                                                               Schema.Field.of("l", Schema.of(Schema.Type.LONG)),
                                                               Schema.Field.of("file",
                                                                               Schema.of(Schema.Type.STRING)));
+
+  private static final Schema RECORD_SCHEMA_VALID_DATE =
+    Schema.recordOf("record",
+                    Schema.Field.of("i", Schema.of(Schema.Type.INT)),
+                    Schema.Field.of("timestamp", Schema.of(Schema.LogicalType.TIMESTAMP_MICROS))
+    );
+  private static final Schema RECORD_SCHEMA_INVALID_DATE =
+    Schema.recordOf("record",
+                    Schema.Field.of("i", Schema.of(Schema.Type.INT)),
+                    Schema.Field.of("date", Schema.of(Schema.LogicalType.DATE)),
+                    Schema.Field.of("file", Schema.of(Schema.Type.STRING))
+    );
+
   @ClassRule
   public static TemporaryFolder temporaryFolder = new TemporaryFolder();
   private static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
@@ -980,6 +998,43 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     List<StructuredRecord> output = MockSink.readOutput(outputManager);
     Assert.assertEquals(expected, output);
+  }
+
+  @Test
+  public void testDelimitedFormatsValidSchema() throws Exception {
+    FileSourceConfig config = new FileSourceConfig();
+    FailureCollector collector = new MockFailureCollector();
+
+    FieldSetter.setField(config, AbstractFileSourceConfig.class.getDeclaredField("referenceName"), "ref");
+    FieldSetter.setField(config, AbstractFileSourceConfig.class.getDeclaredField("format"), "delimited");
+    FieldSetter.setField(config, AbstractFileSourceConfig.class.getDeclaredField("schema"),
+                         RECORD_SCHEMA_VALID_DATE.toString());
+    FieldSetter.setField(config, FileSourceConfig.class.getDeclaredField("path"), "path");
+
+    config.validate(collector);
+    Assert.assertEquals(0, collector.getValidationFailures().size());
+  }
+
+  @Test
+  public void testDelimitedFormatsInValidSchema() throws Exception {
+    FileSourceConfig config = new FileSourceConfig();
+    FailureCollector collector = new MockFailureCollector();
+
+    FieldSetter.setField(config, AbstractFileSourceConfig.class.getDeclaredField("referenceName"), "ref");
+    FieldSetter.setField(config, AbstractFileSourceConfig.class.getDeclaredField("format"), "delimited");
+    FieldSetter.setField(config, AbstractFileSourceConfig.class.getDeclaredField("schema"),
+                         RECORD_SCHEMA_INVALID_DATE.toString());
+    FieldSetter.setField(config, FileSourceConfig.class.getDeclaredField("path"), "path");
+
+    config.validate(collector);
+    Assert.assertEquals(1, collector.getValidationFailures().size());
+
+    List<ValidationFailure.Cause> failureCauses = collector.getValidationFailures().get(0).getCauses();
+    Assert.assertEquals(2, failureCauses.size());
+    Assert.assertEquals("format", failureCauses.get(0).getAttribute("stageConfig"));
+    Assert.assertEquals("date", failureCauses.get(1).getAttribute("outputField"));
+    Assert.assertEquals("Type 'date' in schema is not supported for 'delimited' format.",
+                        collector.getValidationFailures().get(0).getMessage());
   }
 
   private ApplicationManager createSourceAndDeployApp(String appName, File file, String format,
