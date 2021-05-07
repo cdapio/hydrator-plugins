@@ -20,7 +20,9 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
+import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.FailureCollector;
+import io.cdap.plugin.format.FileFormat;
 import io.cdap.plugin.format.plugin.AbstractFileSourceConfig;
 
 import java.lang.reflect.Type;
@@ -80,6 +82,31 @@ public class FileSourceConfig extends AbstractFileSourceConfig {
     } catch (IllegalArgumentException e) {
       collector.addFailure("File system properties must be a valid json.", null)
         .withConfigProperty(NAME_FILE_SYSTEM_PROPERTIES).withStacktrace(e.getStackTrace());
+    }
+    validateSchemaDelimitedFormats(collector);
+  }
+
+  public void validateSchemaDelimitedFormats(FailureCollector collector) {
+    if (getSchema() == null) {
+      return;
+    }
+    if (getFormat().name().toLowerCase().equalsIgnoreCase(FileFormat.CSV.name())
+      || getFormat().name().toLowerCase().equalsIgnoreCase(FileFormat.TSV.name())
+      || getFormat().name().toLowerCase().equalsIgnoreCase(FileFormat.DELIMITED.name())) {
+      for (Schema.Field field : getSchema().getFields()) {
+        Schema.LogicalType type = field.getSchema().getLogicalType();
+        if (type == null) {
+          continue;
+        }
+        if (type.equals(Schema.LogicalType.TIME_MICROS) || type.equals(Schema.LogicalType.TIME_MILLIS)
+        || type.equals(Schema.LogicalType.DATE)) {
+          collector.addFailure(
+            String.format("Type '%s' in schema is not supported for '%s' format.",
+                          type.toString().toLowerCase(), getFormat().name().toLowerCase()),
+           "Supported data types are: 'string', 'timestamp' and 'date'"
+          ).withConfigProperty(NAME_FORMAT).withOutputSchemaField(field.getName());
+        }
+      }
     }
   }
 
