@@ -129,7 +129,6 @@ public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
   protected RecordReader createDBRecordReader(DBInputSplit split, Configuration conf) throws IOException {
     final RecordReader dbRecordReader = super.createDBRecordReader(split, conf);
     return new RecordReader() {
-      private long bytesRead = 0;
       private TaskAttemptContext taskAttemptContext;
 
       @Override
@@ -145,20 +144,12 @@ public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
 
       @Override
       public Object getCurrentKey() throws IOException, InterruptedException {
-        Object key = dbRecordReader.getCurrentKey();
-        if (key instanceof DataSizeReporter) {
-          bytesRead += ((DataSizeReporter) key).getBytesRead();
-        }
-        return key;
+        return dbRecordReader.getCurrentKey();
       }
 
       @Override
       public Object getCurrentValue() throws IOException, InterruptedException {
-        Object value = dbRecordReader.getCurrentValue();
-        if (value instanceof DataSizeReporter) {
-          bytesRead += ((DataSizeReporter) value).getBytesRead();
-        }
-        return value;
+        return dbRecordReader.getCurrentValue();
       }
 
       @Override
@@ -167,7 +158,16 @@ public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
       }
 
       @Override
-      public void close() throws IOException {
+      public void close() throws IOException  {
+        long bytesRead = 0;
+        try {
+          Object value = dbRecordReader.getCurrentValue();
+          if (value instanceof DataSizeReporter) {
+            bytesRead = ((DataSizeReporter) value).getBytesRead();
+          }
+        } catch (InterruptedException e) {
+          LOG.warn("Failed to get DBRecord", e);
+        }
         dbRecordReader.close();
         taskAttemptContext.getCounter(FileInputFormatCounter.BYTES_READ).increment(bytesRead);
         try {
