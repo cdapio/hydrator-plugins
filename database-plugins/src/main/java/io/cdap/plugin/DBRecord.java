@@ -119,6 +119,7 @@ public class DBRecord implements Writable, DBWritable, Configurable, DataSizeRep
    * @param resultSet the {@link ResultSet} to build the {@link StructuredRecord} from
    */
   public void readFields(ResultSet resultSet) throws SQLException {
+    bytesRead = 0;
     ResultSetMetaData metadata = resultSet.getMetaData();
     String outputSchemaString = conf.get(DBUtils.OVERRIDE_SCHEMA, null);
     Schema outputSchema = null;
@@ -243,6 +244,7 @@ public class DBRecord implements Writable, DBWritable, Configurable, DataSizeRep
    * @param stmt the {@link PreparedStatement} to write the {@link StructuredRecord} to
    */
   public void write(PreparedStatement stmt) throws SQLException {
+    bytesWritten = 0;
     Schema recordSchema = record.getSchema();
     List<Schema.Field> schemaFields = recordSchema.getFields();
     for (int i = 0; i < schemaFields.size(); i++) {
