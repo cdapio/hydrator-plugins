@@ -19,6 +19,7 @@ package io.cdap.plugin.db.batch.source;
 import com.google.common.base.Throwables;
 import io.cdap.plugin.ConnectionConfig;
 import io.cdap.plugin.DBUtils;
+import io.cdap.plugin.DataSizeReporter;
 import io.cdap.plugin.JDBCDriverShim;
 import io.cdap.plugin.db.batch.NoOpCommitConnection;
 import io.cdap.plugin.db.batch.TransactionIsolationLevel;
@@ -30,6 +31,7 @@ import org.apache.hadoop.mapreduce.lib.db.DBConfiguration;
 import org.apache.hadoop.mapreduce.lib.db.DBInputFormat;
 import org.apache.hadoop.mapreduce.lib.db.DBWritable;
 import org.apache.hadoop.mapreduce.lib.db.DataDrivenDBInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormatCounter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,9 +129,13 @@ public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
   protected RecordReader createDBRecordReader(DBInputSplit split, Configuration conf) throws IOException {
     final RecordReader dbRecordReader = super.createDBRecordReader(split, conf);
     return new RecordReader() {
+      private long bytesRead = 0;
+      private TaskAttemptContext taskAttemptContext;
+
       @Override
       public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
         dbRecordReader.initialize(split, context);
+        taskAttemptContext = context;
       }
 
       @Override
@@ -139,12 +145,20 @@ public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
 
       @Override
       public Object getCurrentKey() throws IOException, InterruptedException {
-        return dbRecordReader.getCurrentKey();
+        Object key = dbRecordReader.getCurrentKey();
+        if (key instanceof DataSizeReporter) {
+          bytesRead += ((DataSizeReporter) key).getBytesRead();
+        }
+        return key;
       }
 
       @Override
       public Object getCurrentValue() throws IOException, InterruptedException {
-        return dbRecordReader.getCurrentValue();
+        Object value = dbRecordReader.getCurrentValue();
+        if (value instanceof DataSizeReporter) {
+          bytesRead += ((DataSizeReporter) value).getBytesRead();
+        }
+        return value;
       }
 
       @Override
@@ -155,6 +169,7 @@ public class DataDrivenETLDBInputFormat extends DataDrivenDBInputFormat {
       @Override
       public void close() throws IOException {
         dbRecordReader.close();
+        taskAttemptContext.getCounter(FileInputFormatCounter.BYTES_READ).increment(bytesRead);
         try {
           DriverManager.deregisterDriver(driverShim);
         } catch (SQLException e) {

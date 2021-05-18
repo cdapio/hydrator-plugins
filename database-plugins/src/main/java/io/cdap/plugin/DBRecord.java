@@ -59,6 +59,7 @@ public class DBRecord implements Writable, DBWritable, Configurable, DataSizeRep
   private StructuredRecord record;
   private Configuration conf;
   private long bytesWritten;
+  private long bytesRead;
 
   /**
    * Need to cache {@link ResultSetMetaData} of the record for use during writing to a table.
@@ -100,6 +101,13 @@ public class DBRecord implements Writable, DBWritable, Configurable, DataSizeRep
    */
   public long getBytesWritten() {
     return bytesWritten;
+  }
+
+  /**
+   * @return the size of data read.
+   */
+  public long getBytesRead() {
+    return bytesRead;
   }
 
   /**
@@ -163,16 +171,47 @@ public class DBRecord implements Writable, DBWritable, Configurable, DataSizeRep
     Object o = DBUtils.transformValue(sqlType, sqlPrecision, sqlScale, resultSet, originalName,
                                       outputFieldSchema);
     if (o instanceof Date) {
+      bytesRead += Long.BYTES;
       recordBuilder.setDate(field.getName(), ((Date) o).toLocalDate());
     } else if (o instanceof Time) {
+      bytesRead += Integer.BYTES;
       recordBuilder.setTime(field.getName(), ((Time) o).toLocalTime());
     } else if (o instanceof Timestamp) {
+      bytesRead += Long.BYTES;
       Instant instant = ((Timestamp) o).toInstant();
       recordBuilder.setTimestamp(field.getName(), instant.atZone(ZoneId.ofOffset("UTC", ZoneOffset.UTC)));
     } else if (o instanceof BigDecimal) {
       BigDecimal decimal = ((BigDecimal) o);
+      bytesRead += decimal.unscaledValue().bitLength() / Byte.SIZE + Integer.BYTES;
       recordBuilder.setDecimal(field.getName(), decimal);
     } else {
+      if (o != null) {
+        Schema schema = field.getSchema();
+        if (schema.isNullable()) {
+          schema = schema.getNonNullable();
+        }
+        switch (schema.getType()) {
+          case INT:
+          case BOOLEAN:
+            bytesRead += Integer.BYTES;
+            break;
+          case LONG:
+            bytesRead += Long.BYTES;
+            break;
+          case DOUBLE:
+            bytesRead += Double.BYTES;
+            break;
+          case FLOAT:
+            bytesRead += Float.BYTES;
+            break;
+          case STRING:
+            bytesRead += ((String) o).length();
+            break;
+          case BYTES:
+            bytesRead += ((byte[]) o).length;
+            break;
+        }
+      }
       recordBuilder.set(field.getName(), o);
     }
   }

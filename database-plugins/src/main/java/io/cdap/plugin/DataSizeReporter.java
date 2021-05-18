@@ -27,4 +27,10 @@ public interface DataSizeReporter {
    * @returns number of bytes written.
    */
   long getBytesWritten();
+
+  /**
+   * Get the total size in bytes of data read.
+   * @returns number of bytes read.
+   */
+  long getBytesRead();
 }
