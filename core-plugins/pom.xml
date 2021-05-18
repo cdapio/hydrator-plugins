@@ -230,7 +230,8 @@
               io.cdap.plugin.streaming.*;
               io.cdap.plugin.transform.*;
               io.cdap.plugin.validator.*;
-              io.cdap.plugin.error.*
+              io.cdap.plugin.error.*;
+              io.cdap.plugin.connector.*
             </_exportcontents>
             <Embed-Dependency>*;inline=false;scope=compile</Embed-Dependency>
             <Embed-Transitive>true</Embed-Transitive>

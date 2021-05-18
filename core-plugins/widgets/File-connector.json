@@ -1,0 +1,23 @@
+{
+  "metadata": {
+    "spec-version": "1.5"
+  },
+  "configuration-groups": [
+    {
+      "label": "Properties",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Path",
+          "name": "path"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Dummy Config",
+          "name": "dummy"
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}
