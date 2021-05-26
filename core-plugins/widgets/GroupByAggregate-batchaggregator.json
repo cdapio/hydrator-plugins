@@ -32,8 +32,7 @@
           "widget-attributes": {
             "placeholders": {
               "field": "field",
-              "alias": "alias",
-              "condition": "condition"
+              "alias": "alias"
             },
             "dropdownOptions": [
               "Avg",
@@ -95,101 +94,6 @@
               {
                 "label": "Corrected sum of squares",
                 "value": "CorrectedSumOfSquares"
-              },
-              {
-                "label": "Any If",
-                "value": "AnyIf",
-                "hasCondition": true
-              },
-              {
-                "label": "Count If",
-                "value": "CountIf",
-                "hasCondition": true
-              },
-              {
-                "label": "Count Distinct If",
-                "value": "CountDistinctIf",
-                "hasCondition": true
-              },
-              {
-                "label": "Avg If",
-                "value": "AvgIf",
-                "hasCondition": true
-              },
-              {
-                "label": "Max If",
-                "value": "MaxIf",
-                "hasCondition": true
-              },
-              {
-                "label": "Min If",
-                "value": "MinIf",
-                "hasCondition": true
-              },
-              {
-                "label": "Longest String If",
-                "value": "LongestStringIf",
-                "hasCondition": true
-              },
-              {
-                "label": "Shortest String If",
-                "value": "ShortestStringIf",
-                "hasCondition": true
-              },
-              {
-                "label": "Concat If",
-                "value": "ConcatIf",
-                "hasCondition": true
-              },
-              {
-                "label": "Concat Distinct If",
-                "value": "ConcatDistinctIf",
-                "hasCondition": true
-              },
-              {
-                "label": "Sum If",
-                "value": "SumIf",
-                "hasCondition": true
-              },
-              {
-                "label": "Collect List If",
-                "value": "CollectListIf",
-                "hasCondition": true
-              },
-              {
-                "label": "Collect Set If",
-                "value": "CollectSetIf",
-                "hasCondition": true
-              },
-              {
-                "label": "Standard Deviation If",
-                "value": "StddevIf",
-                "hasCondition": true
-              },
-              {
-                "label": "Variance If",
-                "value": "VarianceIf",
-                "hasCondition": true
-              },
-              {
-                "label": "Corrected sum of squares If",
-                "value": "CorrectedSumOfSquaresIf",
-                "hasCondition": true
-              },
-              {
-                "label": "Sum of squares If",
-                "value": "SumOfSquaresIf",
-                "hasCondition": true
-              },
-              {
-                "label": "Logical AND If",
-                "value": "LogicalAndIf",
-                "hasCondition": true
-              },
-              {
-                "label": "Logical OR If",
-                "value": "LogicalOrIf",
-                "hasCondition": true
               }
             ]
           }
