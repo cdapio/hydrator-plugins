@@ -63,15 +63,4 @@ public interface AggregateFunction<T, V extends AggregateFunction> extends Seria
    * @return the schema of the aggregate value returned by this function.
    */
   Schema getOutputSchema();
-
-
-  /**
-   * Validate if record meets provided condition. This method is used by conditional functions.
-   * @param record {@link StructuredRecord} input record.
-   * @param condition {@link Condition} condition to match.
-   * @return {@link boolean} indicates whether condition is matched or not.
-   */
-  default boolean meetCondition(StructuredRecord record, Condition condition) {
-    return condition == null || condition.apply(record);
-  }
 }
