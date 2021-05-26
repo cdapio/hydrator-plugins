@@ -19,53 +19,32 @@ package io.cdap.plugin.batch.aggregator;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
-import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.plugin.batch.aggregator.function.AggregateFunction;
-import io.cdap.plugin.batch.aggregator.function.AnyIf;
 import io.cdap.plugin.batch.aggregator.function.Avg;
-import io.cdap.plugin.batch.aggregator.function.AvgIf;
 import io.cdap.plugin.batch.aggregator.function.CollectList;
-import io.cdap.plugin.batch.aggregator.function.CollectListIf;
 import io.cdap.plugin.batch.aggregator.function.CollectSet;
-import io.cdap.plugin.batch.aggregator.function.CollectSetIf;
 import io.cdap.plugin.batch.aggregator.function.Concat;
 import io.cdap.plugin.batch.aggregator.function.ConcatDistinct;
-import io.cdap.plugin.batch.aggregator.function.ConcatDistinctIf;
-import io.cdap.plugin.batch.aggregator.function.ConcatIf;
 import io.cdap.plugin.batch.aggregator.function.CorrectedSumOfSquares;
-import io.cdap.plugin.batch.aggregator.function.CorrectedSumOfSquaresIf;
 import io.cdap.plugin.batch.aggregator.function.Count;
 import io.cdap.plugin.batch.aggregator.function.CountAll;
 import io.cdap.plugin.batch.aggregator.function.CountDistinct;
-import io.cdap.plugin.batch.aggregator.function.CountDistinctIf;
-import io.cdap.plugin.batch.aggregator.function.CountIf;
 import io.cdap.plugin.batch.aggregator.function.CountNulls;
 import io.cdap.plugin.batch.aggregator.function.First;
-import io.cdap.plugin.batch.aggregator.function.JexlCondition;
 import io.cdap.plugin.batch.aggregator.function.Last;
 import io.cdap.plugin.batch.aggregator.function.LogicalAnd;
-import io.cdap.plugin.batch.aggregator.function.LogicalAndIf;
 import io.cdap.plugin.batch.aggregator.function.LogicalOr;
-import io.cdap.plugin.batch.aggregator.function.LogicalOrIf;
 import io.cdap.plugin.batch.aggregator.function.LongestString;
-import io.cdap.plugin.batch.aggregator.function.LongestStringIf;
 import io.cdap.plugin.batch.aggregator.function.Max;
-import io.cdap.plugin.batch.aggregator.function.MaxIf;
 import io.cdap.plugin.batch.aggregator.function.Min;
-import io.cdap.plugin.batch.aggregator.function.MinIf;
 import io.cdap.plugin.batch.aggregator.function.ShortestString;
-import io.cdap.plugin.batch.aggregator.function.ShortestStringIf;
 import io.cdap.plugin.batch.aggregator.function.Stddev;
-import io.cdap.plugin.batch.aggregator.function.StddevIf;
 import io.cdap.plugin.batch.aggregator.function.Sum;
-import io.cdap.plugin.batch.aggregator.function.SumIf;
 import io.cdap.plugin.batch.aggregator.function.SumOfSquares;
-import io.cdap.plugin.batch.aggregator.function.SumOfSquaresIf;
 import io.cdap.plugin.batch.aggregator.function.Variance;
-import io.cdap.plugin.batch.aggregator.function.VarianceIf;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -109,7 +88,7 @@ public class GroupByConfig extends AggregatorConfig {
 
   /**
    * @return the fields to group by. Returns an empty list if groupByFields contains a macro. Otherwise, the list
-   * returned can never be empty.
+   *         returned can never be empty.
    */
   List<String> getGroupByFields() {
     List<String> fields = new ArrayList<>();
@@ -127,7 +106,7 @@ public class GroupByConfig extends AggregatorConfig {
 
   /**
    * @return the aggregates to perform. Returns an empty list if aggregates contains a macro. Otherwise, the list
-   * returned can never be empty.
+   *         returned can never be empty.
    */
   List<FunctionInfo> getAggregates() {
     List<FunctionInfo> functionInfos = new ArrayList<>();
@@ -168,30 +147,13 @@ public class GroupByConfig extends AggregatorConfig {
           "Could not find closing ')' in function '%s'. Functions must be specified as function(field).",
           functionAndField));
       }
-      int conditionIndex = functionAndField.toLowerCase().indexOf("condition(");
-      // check if condition involved extract substring up to condition otherwise extract up to length of string
-      int fieldEndIndex = (conditionIndex == -1) ? functionAndField.length() - 1 : conditionIndex - 2;
-      String field = functionAndField.substring(leftParanIdx + 1, fieldEndIndex).trim();
+      String field = functionAndField.substring(leftParanIdx + 1, functionAndField.length() - 1).trim();
       if (field.isEmpty()) {
         throw new IllegalArgumentException(String.format(
           "Invalid function '%s'. A field must be given as an argument.", functionAndField));
       }
-      if (conditionIndex == -1 && function.isConditional()) {
-        throw new IllegalArgumentException("Missing 'condition' property for conditional function.");
-      }
-      String functionCondition = null;
-      if (conditionIndex != -1) {
-        // extract condition from the string
-        // example: exampleField:avgIf(field):condition(department.equals('d1'))
-        // before the substring functionCondition is null, but after the substring it will be like:
-        // department.equals('d1')
-        functionCondition = functionAndField.substring(conditionIndex + 10, functionAndField.length() - 1);
-        if (Strings.isNullOrEmpty(functionCondition)) {
-          throw new IllegalArgumentException("The 'condition' property is missing arguments.");
-        }
-        functionCondition = functionCondition.trim();
-      }
-      functionInfos.add(new FunctionInfo(name, field, function, functionCondition));
+
+      functionInfos.add(new FunctionInfo(name, field, function));
     }
 
     if (functionInfos.isEmpty()) {
@@ -207,20 +169,11 @@ public class GroupByConfig extends AggregatorConfig {
     private final String name;
     private final String field;
     private final Function function;
-    private final String condition;
-
-    FunctionInfo(String name, String field, Function function, String condition) {
-      this.name = name;
-      this.field = field;
-      this.function = function;
-      this.condition = condition;
-    }
 
     FunctionInfo(String name, String field, Function function) {
       this.name = name;
       this.field = field;
       this.function = function;
-      this.condition = null;
     }
 
     public String getName() {
@@ -233,10 +186,6 @@ public class GroupByConfig extends AggregatorConfig {
 
     public Function getFunction() {
       return function;
-    }
-
-    public String getCondition() {
-      return condition;
     }
 
     public AggregateFunction getAggregateFunction(Schema fieldSchema) {
@@ -286,44 +235,6 @@ public class GroupByConfig extends AggregatorConfig {
           return new CorrectedSumOfSquares(field, fieldSchema);
         case SUMOFSQUARES:
           return new SumOfSquares(field, fieldSchema);
-        case COUNTIF:
-          return new CountIf(field, JexlCondition.of(condition));
-        case COUNTDISTINCTIF:
-          return new CountDistinctIf(field, JexlCondition.of(condition));
-        case SUMIF:
-          return new SumIf(field, fieldSchema, JexlCondition.of(condition));
-        case AVGIF:
-          return new AvgIf(field, fieldSchema, JexlCondition.of(condition));
-        case MINIF:
-          return new MinIf(field, fieldSchema, JexlCondition.of(condition));
-        case MAXIF:
-          return new MaxIf(field, fieldSchema, JexlCondition.of(condition));
-        case STDDEVIF:
-          return new StddevIf(field, fieldSchema, JexlCondition.of(condition));
-        case VARIANCEIF:
-          return new VarianceIf(field, fieldSchema, JexlCondition.of(condition));
-        case COLLECTLISTIF:
-          return new CollectListIf(field, fieldSchema, JexlCondition.of(condition));
-        case COLLECTSETIF:
-          return new CollectSetIf(field, fieldSchema, JexlCondition.of(condition));
-        case LONGESTSTRINGIF:
-          return new LongestStringIf(field, fieldSchema, JexlCondition.of(condition));
-        case SHORTESTSTRINGIF:
-          return new ShortestStringIf(field, fieldSchema, JexlCondition.of(condition));
-        case CONCATIF:
-          return new ConcatIf(field, fieldSchema, JexlCondition.of(condition));
-        case CONCATDISTINCTIF:
-          return new ConcatDistinctIf(field, fieldSchema, JexlCondition.of(condition));
-        case LOGICALANDIF:
-          return new LogicalAndIf(field, JexlCondition.of(condition));
-        case LOGICALORIF:
-          return new LogicalOrIf(field, JexlCondition.of(condition));
-        case CORRECTEDSUMOFSQUARESIF:
-          return new CorrectedSumOfSquaresIf(field, fieldSchema, JexlCondition.of(condition));
-        case SUMOFSQUARESIF:
-          return new SumOfSquaresIf(field, fieldSchema, JexlCondition.of(condition));
-        case ANYIF:
-          return new AnyIf(field, fieldSchema, JexlCondition.of(condition));
       }
       // should never happen
       throw new IllegalStateException("Unknown function type " + function);
@@ -342,13 +253,12 @@ public class GroupByConfig extends AggregatorConfig {
 
       return Objects.equals(name, that.name) &&
         Objects.equals(field, that.field) &&
-        Objects.equals(function, that.function) &&
-        Objects.equals(condition, that.condition);
+        Objects.equals(function, that.function);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(name, field, function, condition);
+      return Objects.hash(name, field, function);
     }
 
     @Override
@@ -356,67 +266,32 @@ public class GroupByConfig extends AggregatorConfig {
       return "FunctionInfo{" +
         "name='" + name + '\'' +
         ", field='" + field + '\'' +
-        ", function=" + function + '\'' +
-        ", condition=" + condition +
+        ", function=" + function +
         '}';
     }
   }
 
-  enum FunctionType {
-    NONE,
-    CONDITIONAL
-  }
-
   enum Function {
-    COUNT(FunctionType.NONE),
-    COUNTDISTINCT(FunctionType.NONE),
-    SUM(FunctionType.NONE),
-    AVG(FunctionType.NONE),
-    MIN(FunctionType.NONE),
-    MAX(FunctionType.NONE),
-    FIRST(FunctionType.NONE),
-    LAST(FunctionType.NONE),
-    STDDEV(FunctionType.NONE),
-    VARIANCE(FunctionType.NONE),
-    COLLECTLIST(FunctionType.NONE),
-    COLLECTSET(FunctionType.NONE),
-    LONGESTSTRING(FunctionType.NONE),
-    SHORTESTSTRING(FunctionType.NONE),
-    COUNTNULLS(FunctionType.NONE),
-    CONCAT(FunctionType.NONE),
-    CONCATDISTINCT(FunctionType.NONE),
-    LOGICALAND(FunctionType.NONE),
-    LOGICALOR(FunctionType.NONE),
-    CORRECTEDSUMOFSQUARES(FunctionType.NONE),
-    SUMOFSQUARES(FunctionType.NONE),
-    COUNTIF(FunctionType.CONDITIONAL),
-    COUNTDISTINCTIF(FunctionType.CONDITIONAL),
-    SUMIF(FunctionType.CONDITIONAL),
-    AVGIF(FunctionType.CONDITIONAL),
-    MINIF(FunctionType.CONDITIONAL),
-    MAXIF(FunctionType.CONDITIONAL),
-    STDDEVIF(FunctionType.CONDITIONAL),
-    VARIANCEIF(FunctionType.CONDITIONAL),
-    COLLECTLISTIF(FunctionType.CONDITIONAL),
-    COLLECTSETIF(FunctionType.CONDITIONAL),
-    LONGESTSTRINGIF(FunctionType.CONDITIONAL),
-    SHORTESTSTRINGIF(FunctionType.CONDITIONAL),
-    CONCATIF(FunctionType.CONDITIONAL),
-    CONCATDISTINCTIF(FunctionType.CONDITIONAL),
-    LOGICALANDIF(FunctionType.CONDITIONAL),
-    LOGICALORIF(FunctionType.CONDITIONAL),
-    CORRECTEDSUMOFSQUARESIF(FunctionType.CONDITIONAL),
-    SUMOFSQUARESIF(FunctionType.CONDITIONAL),
-    ANYIF(FunctionType.CONDITIONAL);
-
-    private final FunctionType type;
-
-    Function(final FunctionType type) {
-      this.type = type;
-    }
-
-    public boolean isConditional() {
-      return this.type == FunctionType.CONDITIONAL;
-    }
+    COUNT,
+    COUNTDISTINCT,
+    SUM,
+    AVG,
+    MIN,
+    MAX,
+    FIRST,
+    LAST,
+    STDDEV,
+    VARIANCE,
+    COLLECTLIST,
+    COLLECTSET,
+    LONGESTSTRING,
+    SHORTESTSTRING,
+    COUNTNULLS,
+    CONCAT,
+    CONCATDISTINCT,
+    LOGICALAND,
+    LOGICALOR,
+    CORRECTEDSUMOFSQUARES,
+    SUMOFSQUARES
   }
 }
