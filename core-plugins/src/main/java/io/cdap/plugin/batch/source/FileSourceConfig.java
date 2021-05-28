@@ -91,9 +91,15 @@ public class FileSourceConfig extends AbstractFileSourceConfig {
     if (getSchema() == null) {
       return;
     }
-    if (getFormatName().equalsIgnoreCase(FileFormat.CSV.name())
-      || getFormatName().equalsIgnoreCase(FileFormat.TSV.name())
-      || getFormatName().equalsIgnoreCase(FileFormat.DELIMITED.name())) {
+
+    if (containsMacro(NAME_FORMAT)) {
+      return;
+    }
+
+    String formatName = getFormatName();
+    if (formatName.equalsIgnoreCase(FileFormat.CSV.name())
+      || formatName.equalsIgnoreCase(FileFormat.TSV.name())
+      || formatName.equalsIgnoreCase(FileFormat.DELIMITED.name())) {
       for (Schema.Field field : getSchema().getFields()) {
         Schema.LogicalType type = field.getSchema().getLogicalType();
         if (type == null) {
@@ -103,7 +109,7 @@ public class FileSourceConfig extends AbstractFileSourceConfig {
         || type.equals(Schema.LogicalType.DATE)) {
           collector.addFailure(
             String.format("Type '%s' in schema is not supported for '%s' format.",
-                          type.toString().toLowerCase(), getFormatName()),
+                          type.toString().toLowerCase(), formatName),
            "Supported data types are: 'string', 'timestamp' and 'date'"
           ).withConfigProperty(NAME_FORMAT).withOutputSchemaField(field.getName());
         }
