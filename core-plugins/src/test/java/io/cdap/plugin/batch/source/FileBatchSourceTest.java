@@ -740,6 +740,46 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
   }
 
   @Test
+  public void testFileBatchInputFormatMacro() throws Exception {
+    File outputFolder = temporaryFolder.newFolder();
+    File fileText = new File(outputFolder, "test.txt");
+    String outputDatasetName = "test-filesource-text";
+
+    Schema textSchema = Schema.recordOf("file.record",
+                                        Schema.Field.of("offset", Schema.of(Schema.Type.LONG)),
+                                        Schema.Field.of("body", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+                                        Schema.Field.of("file", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
+
+    String appName = "FileSourceText";
+    ApplicationManager appManager = createSourceAndDeployApp(appName, outputFolder, "${format}",
+                                                             outputDatasetName, textSchema);
+
+    FileUtils.writeStringToFile(fileText, "Hello,World!");
+    File emptyFile = new File(outputFolder, "empty");
+    emptyFile.createNewFile();
+
+    Map<String, String> runtimeArguments = ImmutableMap.of("format", "text");
+    appManager.getWorkflowManager(SmartWorkflow.NAME)
+      .startAndWaitForRun(runtimeArguments, ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
+
+    List<StructuredRecord> expected = ImmutableList.of(
+      StructuredRecord.builder(textSchema)
+        .set("offset", (long) 0)
+        .set("body", "Hello,World!")
+        .set("file", fileText.toURI().toString())
+        .build()
+    );
+
+    DataSetManager<Table> outputManager = getDataset(outputDatasetName);
+    List<StructuredRecord> output = MockSink.readOutput(outputManager);
+
+    Assert.assertEquals(expected, output);
+
+    // verify that the external dataset has the given schema
+    verifyDatasetSchema(appName + "TestFile", textSchema);
+  }
+
+  @Test
   public void testFileBatchInputFormatAvro() throws Exception {
     File fileAvro = new File(temporaryFolder.newFolder(), "test.avro");
     String outputDatasetName = "test-filesource-avro";
