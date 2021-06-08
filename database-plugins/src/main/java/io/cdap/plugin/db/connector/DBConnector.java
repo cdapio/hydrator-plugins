@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.db.connector;
 
+import io.cdap.cdap.api.annotation.Category;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
@@ -69,6 +70,7 @@ import javax.annotation.Nullable;
 @Plugin(type = Connector.PLUGIN_TYPE)
 @Name(DBConnector.NAME)
 @Description("This connector creates connections to a Database.")
+@Category("Database")
 public class DBConnector implements DirectConnector {
   public static final String NAME = "Database";
   public static final String ENTITY_TYPE_DATABASE = "DATABASE";
@@ -196,8 +198,7 @@ public class DBConnector implements DirectConnector {
       throw new IllegalArgumentException(String.format("Cannot connect to database via connection string : %s and " +
                                                          "arguments: %s. Make sure you have correct connection " +
                                                          "properties.",
-                                                       config.getConnectionString(), config.getConnectionArguments()),
-                                         e);
+                                                     config.getConnectionString(), config.getConnectionArguments()), e);
     }
   }
 
@@ -274,7 +275,9 @@ public class DBConnector implements DirectConnector {
       String.format("SELECT * FROM %s.%s", schema, table);
     try (Statement statement = connection.createStatement()) {
       statement.setFetchSize(limit);
-      return parseResultSet(statement.executeQuery(query), limit);
+      try (ResultSet resultSet = statement.executeQuery(query)) {
+        return parseResultSet(resultSet, limit);
+      }
     }
   }
 
