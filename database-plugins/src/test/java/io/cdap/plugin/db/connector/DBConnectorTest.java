@@ -24,15 +24,16 @@ import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.connector.BrowseDetail;
 import io.cdap.cdap.etl.api.connector.BrowseEntity;
 import io.cdap.cdap.etl.api.connector.BrowseRequest;
+import io.cdap.cdap.etl.api.connector.ConnectorContext;
 import io.cdap.cdap.etl.api.connector.ConnectorSpec;
 import io.cdap.cdap.etl.api.connector.ConnectorSpecRequest;
 import io.cdap.cdap.etl.api.connector.PluginSpec;
 import io.cdap.cdap.etl.api.connector.SampleRequest;
 import io.cdap.cdap.etl.api.validation.ValidationException;
-import io.cdap.cdap.etl.validation.SimpleFailureCollector;
+import io.cdap.cdap.etl.mock.common.MockConnectorConfigurer;
+import io.cdap.cdap.etl.mock.common.MockConnectorContext;
 import io.cdap.plugin.db.batch.source.DBSource;
 import io.cdap.plugin.db.common.DBBaseConfig;
-import io.cdap.plugin.db.common.DBDifferenceUtils;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -52,7 +53,6 @@ import java.util.Set;
  * -Dpassword -- the password used to connect to database
  * -Dconnection.string -- the JDBC connection string used to connect to database
  * -Ddriver.class -- the fully specified class name of the JDBC drvier class
- * -Ddatabase.name -- the database name
  * -Dschema.name -- the schema name, optional for those DBs that don't support schema
  * -Dtable.name -- the table name
  * -Dconnection.arguments -- the additional connection arguments, optional
@@ -66,7 +66,6 @@ public class DBConnectorTest {
   private static String connectionArguments;
   private static Class driverClass;
   private static String table;
-  private static String database;
   private static String schema;
 
   @BeforeClass
@@ -88,9 +87,6 @@ public class DBConnectorTest {
     Assume.assumeFalse(String.format(messageTemplate, "JDBC driver class"), driver == null);
     driverClass = DBConnectorTest.class.getClassLoader().loadClass(driver);
 
-    database = System.getProperty("database.name");
-    Assume.assumeFalse(String.format(messageTemplate, "database name"), database == null);
-
     schema = System.getProperty("schema.name");
 
     table = System.getProperty("table.name");
@@ -106,7 +102,7 @@ public class DBConnectorTest {
       new DBConnectorConfig(username, password, JDBC_PLUGIN_NAME, connectionString, connectionArguments));
     PluginConfigurer configurer = Mockito.mock(PluginConfigurer.class);
     Mockito.when(configurer.usePluginClass(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(),
-      Mockito.any(PluginProperties.class))).thenReturn(driverClass);
+                                           Mockito.any(PluginProperties.class))).thenReturn(driverClass);
     testTest(connector);
     testBrowse(connector);
     testSample(connector);
@@ -114,9 +110,9 @@ public class DBConnectorTest {
   }
 
   private void testSample(DBConnector connector) throws IOException {
-    List<StructuredRecord> sample = connector.sample(
-      SampleRequest.builder(1).setPath(schema == null ? database + "/" + table : database + "/" + schema + "/" + table)
-        .build());
+    List<StructuredRecord> sample = connector.sample(new MockConnectorContext(new MockConnectorConfigurer()),
+                                                     SampleRequest.builder(1).setPath(schema == null ? table :
+                                                                                        schema + "/" + table).build());
     Assert.assertEquals(1, sample.size());
     StructuredRecord record = sample.get(0);
     Schema tableSchema = record.getSchema();
@@ -128,34 +124,29 @@ public class DBConnectorTest {
 
     //invalid path
     Assert.assertThrows(IllegalArgumentException.class,
-      () -> connector.sample(SampleRequest.builder(1).setPath(schema == null ? "a/b/c" : "a/b/c/d").build()));
+                        () -> connector.sample(new MockConnectorContext(new MockConnectorConfigurer()),
+                                               SampleRequest.builder(1).setPath(schema == null ? "a/b/c" : "a/b/c/d").build()));
 
-    //sample database
-    Assert.assertThrows(IllegalArgumentException.class,
-      () -> connector.sample(SampleRequest.builder(1).setPath(database).build()));
 
     if (schema != null) {
       //sample tableSchema
       Assert.assertThrows(IllegalArgumentException.class,
-        () -> connector.sample(SampleRequest.builder(1).setPath(database + "/" + schema).build()));
+                          () -> connector.sample(new MockConnectorContext(new MockConnectorConfigurer()),
+                                                 SampleRequest.builder(1).setPath(schema).build()));
     }
   }
 
   private void testBrowse(DBConnector connector) throws IOException {
     // browse DB server
-    BrowseDetail detail = connector.browse(BrowseRequest.builder("/").build());
+    BrowseDetail detail = connector.browse(new MockConnectorContext(new MockConnectorConfigurer()),
+                                           BrowseRequest.builder("/").build());
     Assert.assertTrue(detail.getTotalCount() > 0);
     Assert.assertTrue(detail.getEntities().size() > 0);
-    for (BrowseEntity entity : detail.getEntities()) {
-      System.out.println(entity.getType() + " : " + entity.getName());
-      Assert.assertEquals(DBConnector.ENTITY_TYPE_DATABASE, entity.getType());
-      Assert.assertTrue(entity.canBrowse());
-      Assert.assertFalse(entity.canSample());
-    }
 
     if (schema != null) {
       // browse database to list schema
-      detail = connector.browse(BrowseRequest.builder(database).build());
+      detail = connector.browse(new MockConnectorContext(new MockConnectorConfigurer()),
+                                BrowseRequest.builder("/").build());
       Assert.assertTrue(detail.getTotalCount() > 0);
       Assert.assertTrue(detail.getEntities().size() > 0);
       for (BrowseEntity entity : detail.getEntities()) {
@@ -165,7 +156,8 @@ public class DBConnectorTest {
         Assert.assertFalse(entity.canSample());
       }
       // browse schema to list tables
-      detail = connector.browse(BrowseRequest.builder(database + "/" + schema).build());
+      detail = connector.browse(new MockConnectorContext(new MockConnectorConfigurer()),
+                                BrowseRequest.builder(schema).build());
       Assert.assertTrue(detail.getTotalCount() > 0);
       Assert.assertTrue(detail.getEntities().size() > 0);
       for (BrowseEntity entity : detail.getEntities()) {
@@ -178,7 +170,8 @@ public class DBConnectorTest {
     } else {
 
       // browse database to list tables
-      detail = connector.browse(BrowseRequest.builder(database).build());
+      detail = connector.browse(new MockConnectorContext(new MockConnectorConfigurer()),
+                                BrowseRequest.builder("/").build());
       Assert.assertTrue(detail.getTotalCount() > 0);
       Assert.assertTrue(detail.getEntities().size() > 0);
       for (BrowseEntity entity : detail.getEntities()) {
@@ -190,8 +183,8 @@ public class DBConnectorTest {
     }
 
     // browse table
-    detail = connector.browse(
-      BrowseRequest.builder(schema == null ? database + "/" + table : database + "/" + schema + "/" + table).build());
+    detail = connector.browse(new MockConnectorContext(new MockConnectorConfigurer()),
+                              BrowseRequest.builder(schema == null ? table : schema + "/" + table).build());
     Assert.assertEquals(1, detail.getTotalCount());
     Assert.assertEquals(1, detail.getEntities().size());
     for (BrowseEntity entity : detail.getEntities()) {
@@ -203,34 +196,34 @@ public class DBConnectorTest {
 
     // invalid path
     Assert.assertThrows(IllegalArgumentException.class,
-      () -> connector.browse(BrowseRequest.builder(schema == null ? "a/b/c" : "a/b/c/d").build()));
-
-    // not existing database
-    Assert.assertThrows(IllegalArgumentException.class,
-      () -> connector.browse(BrowseRequest.builder("/notexisting").build()));
+                        () -> connector.browse(new MockConnectorContext(new MockConnectorConfigurer()),
+                                               BrowseRequest.builder(schema == null ? "a/b/c" : "a/b/c/d").build()));
 
     // not existing schema or table
     Assert.assertThrows(IllegalArgumentException.class,
-      () -> connector.browse(BrowseRequest.builder(database + "/notexisting").build()));
+                        () -> connector.browse(new MockConnectorContext(new MockConnectorConfigurer()),
+                                               BrowseRequest.builder("/notexisting").build()));
 
     if (schema != null) {
       // not existing table
       Assert.assertThrows(IllegalArgumentException.class,
-        () -> connector.browse(BrowseRequest.builder(database + "/" + schema + "/notexisting").build()));
+                          () -> connector.browse(new MockConnectorContext(new MockConnectorConfigurer()),
+                                                 BrowseRequest.builder(schema + "/notexisting").build()));
     }
   }
 
   private void testTest(DBConnector connector) {
-    SimpleFailureCollector collector = new SimpleFailureCollector();
-    connector.test(collector);
-    ValidationException validationException = collector.getOrThrowException();
+    ConnectorContext context = new MockConnectorContext(new MockConnectorConfigurer());
+    connector.test(context);
+    ValidationException validationException = context.getFailureCollector().getOrThrowException();
     Assert.assertTrue(validationException.getFailures().isEmpty());
   }
 
   private void testGenerateSpec(DBConnector connector) throws IOException {
-    ConnectorSpec connectorSpec = connector.generateSpec(ConnectorSpecRequest.builder()
-      .setPath(schema == null ? database + "/" + table : database + "/" + schema + "/" + table)
-      .setConnection("${conn(connection-id)}").build());
+    ConnectorSpec connectorSpec = connector.generateSpec(new MockConnectorContext((new MockConnectorConfigurer())),
+                                                         ConnectorSpecRequest.builder()
+                                                           .setPath(schema == null ? table : schema + "/" + table)
+                                                           .setConnection("${conn(connection-id)}").build());
     Schema tableSchema = connectorSpec.getSchema();
     for (Schema.Field field : tableSchema.getFields()) {
       Assert.assertNotNull(field.getSchema());
@@ -242,20 +235,11 @@ public class DBConnectorTest {
     Assert.assertEquals(BatchSource.PLUGIN_TYPE, pluginSpec.getType());
 
     Map<String, String> properties = pluginSpec.getProperties();
-    if (DBDifferenceUtils.replaceDatabase(connectionString, database).equals(connectionString)) {
-      Assert.assertEquals("true", properties.get(DBBaseConfig.NAME_USE_CONNECTION));
-      Assert.assertEquals("${conn(connection-id)}", properties.get(DBBaseConfig.NAME_CONNECTION));
-    } else {
-      Assert.assertEquals("false", properties.get(DBBaseConfig.NAME_USE_CONNECTION));
-      Assert.assertEquals(password, properties.get(DBConnectorConfig.PASSWORD));
-      Assert.assertEquals(username, properties.get(DBConnectorConfig.USER));
-      Assert.assertEquals(connectionArguments, properties.get(DBConnectorConfig.CONNECTION_ARGUMENTS));
-      Assert.assertEquals(JDBC_PLUGIN_NAME, properties.get(DBConnectorConfig.JDBC_PLUGIN_NAME));
-    }
-
+    Assert.assertEquals("true", properties.get(DBBaseConfig.NAME_USE_CONNECTION));
+    Assert.assertEquals("${conn(connection-id)}", properties.get(DBBaseConfig.NAME_CONNECTION));
     Assert.assertEquals(schema == null ? String.format("SELECT * FROM %s;", table) :
-        String.format("SELECT * FROM %s.%s;", schema, table),
-      properties.get(DBSource.DBSourceConfig.IMPORT_QUERY));
+                          String.format("SELECT * FROM %s.%s;", schema, table),
+                        properties.get(DBSource.DBSourceConfig.IMPORT_QUERY));
     properties.put("1", properties.get(DBSource.DBSourceConfig.NUM_SPLITS));
   }
 }

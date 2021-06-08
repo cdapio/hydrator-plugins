@@ -20,14 +20,15 @@ import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
-import io.cdap.cdap.api.plugin.PluginConfigurer;
-import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.connector.BrowseDetail;
 import io.cdap.cdap.etl.api.connector.BrowseEntity;
 import io.cdap.cdap.etl.api.connector.BrowseRequest;
 import io.cdap.cdap.etl.api.connector.Connector;
+import io.cdap.cdap.etl.api.connector.ConnectorConfigurer;
+import io.cdap.cdap.etl.api.connector.ConnectorContext;
 import io.cdap.cdap.etl.api.connector.ConnectorSpec;
 import io.cdap.cdap.etl.api.connector.ConnectorSpecRequest;
 import io.cdap.cdap.etl.api.connector.DirectConnector;
@@ -41,17 +42,25 @@ import io.cdap.plugin.db.common.DBBaseConfig;
 import io.cdap.plugin.db.common.DBDifferenceUtils;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.Date;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import javax.annotation.Nullable;
 
 /**
@@ -84,7 +93,7 @@ public class DBConnector implements DirectConnector {
   }
 
   @Override
-  public void configure(PluginConfigurer configurer) {
+  public void configure(ConnectorConfigurer configurer) {
     Class<? extends Driver> driverClass = DBUtils.loadJDBCDriverClass(configurer, config.getJdbcPluginName(),
       String.format("connector.jdbc.%s", config.getJdbcPluginName()), null);
     try {
@@ -98,38 +107,33 @@ public class DBConnector implements DirectConnector {
   }
 
   @Override
-  public void test(FailureCollector collector) throws ValidationException {
+  public void test(ConnectorContext context) throws ValidationException {
     try {
-      java.sql.Connection connection = getConnection(config.getConnectionString(), config.getAllConnectionArguments());
+      java.sql.Connection connection = getConnection();
       connection.getMetaData();
     } catch (Exception e) {
-      collector.addFailure(String.format("Failed to connect to the database : %s.", e.getMessage()),
+      context.getFailureCollector().addFailure(String.format("Failed to connect to the database : %s.", e.getMessage()),
         "Make sure you " + "specify the correct connection properties.").withStacktrace(e.getStackTrace());
     }
   }
 
   @Override
-  public BrowseDetail browse(BrowseRequest browseRequest) throws IOException {
+  public BrowseDetail browse(ConnectorContext context, BrowseRequest browseRequest) throws IOException {
     return connectAndQuery(browseRequest.getPath(), "browse", (connection, path) -> {
-      String database = path.getDatabase();
-      if (database == null) {
-        // browse project to list all databases
-        return listDatabases(connection, browseRequest.getLimit());
-      }
       String schema = path.getSchema();
       if (schema == null && path.supportSchema()) {
-        return listSchemas(connection, database, browseRequest.getLimit());
+        return listSchemas(connection, browseRequest.getLimit());
       }
       String table = path.getTable();
       if (table == null) {
-        return listTables(connection, database, schema, browseRequest.getLimit());
+        return listTables(connection, schema, browseRequest.getLimit());
       }
-      return getTableDetail(connection, database, schema, table);
+      return getTableDetail(connection, schema, table);
     });
   }
 
   @Override
-  public List<StructuredRecord> sample(SampleRequest sampleRequest) throws IOException {
+  public List<StructuredRecord> sample(ConnectorContext context, SampleRequest sampleRequest) throws IOException {
     return connectAndQuery(sampleRequest.getPath(), "sample", (connection, path) -> {
       String table = path.getTable();
       if (table == null) {
@@ -141,30 +145,18 @@ public class DBConnector implements DirectConnector {
   }
 
   @Override
-  public ConnectorSpec generateSpec(ConnectorSpecRequest connectorSpecRequest) throws IOException {
+  public ConnectorSpec generateSpec(ConnectorContext context, ConnectorSpecRequest connectorSpecRequest) throws IOException {
 
     return connectAndQuery(connectorSpecRequest.getPath(), "generate spec", (connection, path) -> {
       ConnectorSpec.Builder specBuilder = ConnectorSpec.builder();
       DatabaseMetaData metaData = connection.getMetaData();
       Map<String, String> properties = new HashMap<>();
-      //we allow users to browse different database than the one specified in the connection string
-      String connectionStr = metaData.getURL();
-      if (!config.getConnectionString().equals(connectionStr)) {
-        properties.put(DBBaseConfig.NAME_USE_CONNECTION, "false");
-        properties.put(DBConnectorConfig.CONNECTION_STRING, connectionStr);
-        properties.put(DBConnectorConfig.CONNECTION_ARGUMENTS, config.getConnectionArguments());
-        properties.put(DBConnectorConfig.JDBC_PLUGIN_NAME, config.getJdbcPluginName());
-        properties.put(DBConnectorConfig.USER, config.getUser());
-        properties.put(DBConnectorConfig.PASSWORD, config.getPassword());
-      } else {
-        properties.put(DBBaseConfig.NAME_USE_CONNECTION, "true");
-        properties.put(DBBaseConfig.NAME_CONNECTION, connectorSpecRequest.getConnectionWithMacro());
-      }
+      properties.put(DBBaseConfig.NAME_USE_CONNECTION, "true");
+      properties.put(DBBaseConfig.NAME_CONNECTION, connectorSpecRequest.getConnectionWithMacro());
       String table = path.getTable();
       if (table != null) {
-        String database = path.getDatabase();
         String schema = path.getSchema();
-        ResultSet columns = metaData.getColumns(database, schema, table, null);
+        ResultSet columns = metaData.getColumns(connection.getCatalog(), schema, table, null);
         List<Schema.Field> fields = new ArrayList<>();
         while (columns.next()) {
           int sqlType = columns.getInt(RESULTSET_COLUMN_DATA_TYPE);
@@ -181,8 +173,8 @@ public class DBConnector implements DirectConnector {
         }
         specBuilder.setSchema(Schema.recordOf("output", fields));
         properties.put(DBSource.DBSourceConfig.IMPORT_QUERY,
-          schema == null ? String.format("SELECT * FROM %s;", table) :
-            String.format("SELECT * FROM %s.%s;", schema, table));
+                       schema == null ? String.format("SELECT * FROM %s;", table) :
+                         String.format("SELECT * FROM %s.%s;", schema, table));
         properties.put(DBSource.DBSourceConfig.NUM_SPLITS, "1");
       }
       return specBuilder.addRelatedPlugin(new PluginSpec(DBSource.NAME, BatchSource.PLUGIN_TYPE, properties)).build();
@@ -196,89 +188,76 @@ public class DBConnector implements DirectConnector {
     }
   }
 
-  private Connection getConnection(String connectionString, Properties arguments) {
+  private Connection getConnection() {
     try {
-      return DriverManager.getConnection(connectionString, arguments);
+      return DriverManager.getConnection(config.getConnectionString(), config.getAllConnectionArguments());
     } catch (SQLException e) {
       throw new IllegalArgumentException(String.format("Cannot connect to database via connection string : %s and " +
-        "arguments: %s. Make sure you have correct connection properties.", connectionString, arguments.toString()), e);
+                                                         "arguments: %s. Make sure you have correct connection properties.", config.getConnectionString(), config.getConnectionArguments()), e);
     }
   }
 
-  private BrowseDetail listDatabases(Connection connection, @Nullable Integer limit) throws SQLException {
-    BrowseDetail.Builder browseDetailBuilder = BrowseDetail.builder();
-    int count = 0;
-    ResultSet databaseResultSet;
-    databaseResultSet = DBDifferenceUtils.getDatabases(connection);
-    int countLimit = limit == null || limit <= 0 ? Integer.MAX_VALUE : limit;
-    while (databaseResultSet.next()) {
-      if (count < countLimit) {
-        String name = databaseResultSet.getString(DBDifferenceUtils.RESULTSET_COLUMN_TABLE_CAT);
-        browseDetailBuilder
-          .addEntity(BrowseEntity.builder(name, "/" + name, ENTITY_TYPE_DATABASE).canBrowse(true).build());
-      }
-      count++;
-    }
-    return browseDetailBuilder.setTotalCount(count).build();
-  }
-
-  private BrowseDetail listSchemas(Connection connection, String database, @Nullable Integer limit)
+  private BrowseDetail listSchemas(Connection connection, @Nullable Integer limit)
     throws SQLException {
     BrowseDetail.Builder browseDetailBuilder = BrowseDetail.builder();
     int count = 0;
     DatabaseMetaData metaData = connection.getMetaData();
-    ResultSet resultSet = metaData.getSchemas();
-    int countLimit = limit == null || limit <= 0 ? Integer.MAX_VALUE : limit;
-    while (resultSet.next()) {
-      String name = resultSet.getString(RESULTSET_COLUMN_TABLE_SCHEM);
-      if (count < countLimit) {
-        browseDetailBuilder.addEntity(
-          BrowseEntity.builder(name, "/" + database + "/" + name, ENTITY_TYPE_SCHEMA).canBrowse(true).build());
+    try (ResultSet resultSet = metaData.getSchemas()) {
+      int countLimit = limit == null || limit <= 0 ? Integer.MAX_VALUE : limit;
+      while (resultSet.next()) {
+        String name = resultSet.getString(RESULTSET_COLUMN_TABLE_SCHEM);
+        if (count < countLimit) {
+          browseDetailBuilder.addEntity(
+            BrowseEntity.builder(name, "/" + name, ENTITY_TYPE_SCHEMA).canBrowse(true).build());
+        }
+        count++;
       }
-      count++;
     }
     return browseDetailBuilder.setTotalCount(count).build();
   }
 
-  private BrowseDetail getTableDetail(Connection connection, String database, @Nullable String schema, String table)
+  private BrowseDetail getTableDetail(Connection connection, @Nullable String schema, String table)
     throws SQLException {
     BrowseDetail.Builder browseDetailBuilder = BrowseDetail.builder();
     DatabaseMetaData metaData = connection.getMetaData();
-    ResultSet resultSet = metaData.getTables(database, schema, table, SUPPORTED_TYPES);
-    if (resultSet.next()) {
-      String name = resultSet.getString(RESULTSET_COLUMN_TABLE_NAME);
-      browseDetailBuilder.addEntity(BrowseEntity
-        .builder(name, schema == null ? "/" + database + "/" + name : "/" + database + "/" + schema + "/" + name,
-          resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE)).canSample(true).build());
-    } else {
-      throw new IllegalArgumentException(String.format("Cannot find table : %s.%s.%s.", database, schema, table));
+    try (ResultSet resultSet = metaData.getTables(connection.getCatalog(), schema, table, SUPPORTED_TYPES)) {
+      if (resultSet.next()) {
+        String name = resultSet.getString(RESULTSET_COLUMN_TABLE_NAME);
+        browseDetailBuilder.addEntity(BrowseEntity
+                                        .builder(name, schema == null ? "/" + name : "/" + schema + "/" + name,
+                                                 resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE)).canSample(true).build());
+      } else {
+        throw new IllegalArgumentException(String.format("Cannot find table : %s.%s.", schema, table));
+      }
     }
     return browseDetailBuilder.setTotalCount(1).build();
   }
 
-  private BrowseDetail listTables(Connection connection, String database, @Nullable String schema,
-    @Nullable Integer limit) throws SQLException {
+  private BrowseDetail listTables(Connection connection, @Nullable String schema,
+                                  @Nullable Integer limit) throws SQLException {
     BrowseDetail.Builder browseDetailBuilder = BrowseDetail.builder();
     int count = 0;
     DatabaseMetaData metaData = connection.getMetaData();
     // make sure schema exists
     if (schema != null) {
       // NOTE Oracle schema name is case sensitive here
-      ResultSet schemas = metaData.getSchemas(database, schema);
-      if (!schemas.next()) {
-        throw new IllegalArgumentException(String.format("Schema '%s' does not exist.", schema));
+      try (ResultSet schemas = metaData.getSchemas(connection.getCatalog(), schema)) {
+        if (!schemas.next()) {
+          throw new IllegalArgumentException(String.format("Schema '%s' does not exist.", schema));
+        }
       }
     }
-    ResultSet resultSet = metaData.getTables(database, schema, null, SUPPORTED_TYPES);
-    int countLimit = limit == null || limit <= 0 ? Integer.MAX_VALUE : limit;
-    while (resultSet.next()) {
-      String name = resultSet.getString(RESULTSET_COLUMN_TABLE_NAME);
-      if (count < countLimit) {
-        browseDetailBuilder.addEntity(BrowseEntity
-          .builder(name, schema == null ? "/" + database + "/" + name : "/" + database + "/" + schema + "/" + name,
-            resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE)).canSample(true).build());
+    try (ResultSet resultSet = metaData.getTables(connection.getCatalog(), schema, null, SUPPORTED_TYPES)) {
+      int countLimit = limit == null || limit <= 0 ? Integer.MAX_VALUE : limit;
+      while (resultSet.next()) {
+        String name = resultSet.getString(RESULTSET_COLUMN_TABLE_NAME);
+        if (count < countLimit) {
+          browseDetailBuilder.addEntity(BrowseEntity
+                                          .builder(name, schema == null ? "/" + name : "/" + schema + "/" + name,
+                                                   resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE)).canSample(true).build());
+        }
+        count++;
       }
-      count++;
     }
     return browseDetailBuilder.setTotalCount(count).build();
   }
@@ -287,22 +266,12 @@ public class DBConnector implements DirectConnector {
     String table, int limit) throws SQLException {
     String productName = connection.getMetaData().getDatabaseProductName();
     String query = DBDifferenceUtils.getTableQueryWithLimit(productName, schema, table, limit);
-    return DBUtils.parseResultSet(connection.createStatement().executeQuery(query));
+    return parseResultSet(connection.createStatement().executeQuery(query));
   }
 
   private <T> T connectAndQuery(String pathStr, String operation, Query<T> query) throws IOException {
-    // parse path as support schema first to get database info
-    DBPath path = new DBPath(pathStr, true);
-    // Some Database don't support multiple catalog in one connection
-    // that means if database is encoded in the connection string, you can only query schemas or tables under that
-    // database (e.g. PostgreSQL) , so need to replace the database info in the connection string
-    String database = path.getDatabase();
-    String connectionString = config.getConnectionString();
-    connectionString = DBDifferenceUtils.replaceDatabase(connectionString, database);
-    try (Connection connection = getConnection(connectionString, config.getAllConnectionArguments())) {
-      if (!connection.getMetaData().supportsSchemasInTableDefinitions()) {
-        path = new DBPath(pathStr, false);
-      }
+    try (Connection connection = getConnection()) {
+      DBPath path = new DBPath(pathStr, connection.getMetaData().supportsSchemasInTableDefinitions());
       return query.run(connection, path);
 
     } catch (SQLException e) {
@@ -312,5 +281,48 @@ public class DBConnector implements DirectConnector {
   @FunctionalInterface
   interface Query<T> {
     T run(Connection connection, DBPath path) throws SQLException;
+  }
+
+  private static List<StructuredRecord> parseResultSet(ResultSet resultSet) throws SQLException {
+    List<StructuredRecord> result = new ArrayList<>();
+    Schema schema = Schema.recordOf("output", DBUtils.getSchemaFields(resultSet, null, null, null));
+    ResultSetMetaData meta = resultSet.getMetaData();
+    while (resultSet.next()) {
+      StructuredRecord.Builder recordBuilder = StructuredRecord.builder(schema);
+      for (int i = 1; i <= meta.getColumnCount(); ++i) {
+        String fieldName = meta.getColumnName(i);
+        int sqlType = meta.getColumnType(i);
+        int sqlPrecision = meta.getPrecision(i);
+        int sqlScale = meta.getScale(i);
+        Schema fieldSchema = schema.getField(fieldName).getSchema();
+        Object value = DBUtils.transformValue(sqlType, sqlPrecision, sqlScale, resultSet, fieldName, fieldSchema);
+        if (fieldSchema.isNullable()) {
+          fieldSchema = fieldSchema.getNonNullable();
+        }
+        if (value instanceof Date) {
+          recordBuilder.setDate(fieldName, ((Date) value).toLocalDate());
+        } else if (value instanceof Time) {
+          recordBuilder.setTime(fieldName, ((Time) value).toLocalTime());
+        } else if (value instanceof Timestamp) {
+          recordBuilder
+            .setTimestamp(fieldName, ((Timestamp) value).toInstant().atZone(ZoneId.ofOffset("UTC", ZoneOffset.UTC)));
+        } else if (value instanceof BigDecimal) {
+          recordBuilder.setDecimal(fieldName, (BigDecimal) value);
+        } else if (value instanceof String && fieldSchema.getLogicalType() == Schema.LogicalType.DATETIME) {
+          //make sure value is in the right format for datetime
+          try {
+            recordBuilder.setDateTime(fieldName, LocalDateTime.parse((String) value));
+          } catch (DateTimeParseException exception) {
+            throw new UnexpectedFormatException(
+              String.format("Datetime field '%s' with value '%s' is not in ISO-8601 format.", fieldName, value),
+              exception);
+          }
+        } else {
+          recordBuilder.set(fieldName, value);
+        }
+      }
+      result.add(recordBuilder.build());
+    }
+    return result;
   }
 }

@@ -40,7 +40,7 @@ public class DBConnectorConfig extends PluginConfig {
   public static final String JDBC_PLUGIN_NAME = "jdbcPluginName";
 
   @Name(CONNECTION_STRING)
-  @Description("JDBC connection string. May include database name.")
+  @Description("JDBC connection string. Must include database name.")
   @Macro
   private String connectionString;
 

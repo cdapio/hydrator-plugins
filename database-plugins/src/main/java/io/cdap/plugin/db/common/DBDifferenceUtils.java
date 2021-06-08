@@ -18,9 +18,6 @@ package io.cdap.plugin.db.common;
 
 import com.google.common.annotations.VisibleForTesting;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import javax.annotation.Nullable;
 
 /**
@@ -34,50 +31,6 @@ public final class DBDifferenceUtils {
   private static final String SQLSERVER_DATABSE_PARAM = "databaseName=";
 
   private DBDifferenceUtils() {
-  }
-
-  /**
-   * Replace the database name in the JDBC connection string with specified database name
-   *
-   * @param connectionString the JDBC connection string
-   * @param database         the database name
-   * @return the replaced JDBC connection string
-   */
-  public static String replaceDatabase(String connectionString, @Nullable String database) {
-    if (database == null) {
-      return connectionString;
-    }
-    //SQLServer connection string is special, it's arguments are separated by ";" :
-    // https://docs.microsoft.com/en-us/sql/connect/jdbc/building-the-connection-url
-    if (connectionString.startsWith("jdbc:sqlserver")) {
-      int databaseStartIndex = connectionString.indexOf(";" + SQLSERVER_DATABSE_PARAM);
-      if (databaseStartIndex < 0) {
-        connectionString = connectionString.endsWith(";") ? connectionString : connectionString + ";";
-        return connectionString + SQLSERVER_DATABSE_PARAM + database + ";";
-      } else {
-        databaseStartIndex += SQLSERVER_DATABSE_PARAM.length() + 1;
-        int databaseEndIndex = connectionString.indexOf(";", databaseStartIndex);
-        if (databaseEndIndex < 0) {
-          databaseEndIndex = connectionString.length();
-        }
-        return connectionString.substring(0, databaseStartIndex) + database +
-          connectionString.substring(databaseEndIndex);
-      }
-    } else {
-      // find the separator between host and port
-      int lastColonIndex = connectionString.lastIndexOf(":");
-      int lastSlashIndex = connectionString.lastIndexOf("/");
-      // arguments starting with "?"
-      int lastQuestionIndex = connectionString.lastIndexOf("?");
-      // in normal case database part is between the last slash and last question mark:
-      // e.g. jdbc:postgresql://localhost:5432/database?param=v&param=2
-      int databaseEndIndex = lastQuestionIndex < 0 ? connectionString.length() : lastQuestionIndex;
-      // if last slash is before last colon, that means there is no database info in the connection string
-      // e.g. jdbc:postgresql://localhost:5432
-      int databaseStartIndex = lastSlashIndex < lastColonIndex ? databaseEndIndex : lastSlashIndex;
-      return connectionString.substring(0, databaseStartIndex) + "/" + database +
-        connectionString.substring(databaseEndIndex);
-    }
   }
 
   /**
@@ -100,30 +53,6 @@ public final class DBDifferenceUtils {
       default:
         return schema == null ? String.format("SELECT * FROM %s LIMIT %d", table, limit) :
           String.format("SELECT * FROM %s.%s LIMIT %d", schema, table, limit);
-    }
-  }
-
-  /**
-   * Get the list of databases
-   * @param connection the connection to the database
-   * @return the result set of list of databases
-   */
-  public static ResultSet getDatabases(Connection connection) throws SQLException {
-    String productName = connection.getMetaData().getDatabaseProductName().trim().toUpperCase();
-    switch (productName) {
-      case DB_PRODUCT_NAME_ORACLE:
-        // Oracle JDBC will return empty result for metaData.getCatalogs()
-        // because Oracle only supports one database per instance.
-        // from Oracle 12c , oracle introduced CDB/PDB concepts
-        // ref : https://oracle-base.com/articles/12c/multitenant-overview-container-database-cdb-12cr1
-        // we don't support list PDBs for now.
-        return connection.createStatement().executeQuery(getOracleDatabasesQuery());
-      case DB_PRODUCT_NAME_POSTGRESQL:
-        //PostgreSQL does not support multiple catalogs from a single connection
-        //metaData.getCatalogs only return the current catalog. So need to handle it differently
-        return connection.createStatement().executeQuery(getPostgreDatabasesQuery());
-      default:
-        return connection.getMetaData().getCatalogs();
     }
   }
 

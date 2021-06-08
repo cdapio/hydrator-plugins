@@ -18,8 +18,6 @@ package io.cdap.plugin;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
-import io.cdap.cdap.api.data.format.StructuredRecord;
-import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.data.schema.UnsupportedTypeException;
 import io.cdap.cdap.api.plugin.PluginConfigurer;
@@ -36,20 +34,12 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.Blob;
 import java.sql.Clob;
-import java.sql.Date;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.sql.Types;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -243,14 +233,13 @@ public final class DBUtils {
    * @return the loaded JDBC driver class
    */
   public static Class<? extends Driver> loadJDBCDriverClass(PluginConfigurer configurer, String jdbcPluginName,
-    String jdbcPluginId, FailureCollector collector) {
+                                                            String jdbcPluginId, @Nullable FailureCollector collector) {
     Class<? extends Driver> jdbcDriverClass =
       configurer.usePluginClass(PLUGIN_TYPE_JDBC, jdbcPluginName, jdbcPluginId, PluginProperties.builder().build());
     if (jdbcDriverClass == null) {
       String error = String.format("Unable to load JDBC Driver class for plugin name '%s'.", jdbcPluginName);
-      String action = String
-        .format("Ensure that plugin '%s' of type '%s' containing the driver has been deployed.", jdbcPluginName,
-          PLUGIN_TYPE_JDBC);
+      String action = String.format(
+        "Ensure that plugin '%s' of type '%s' containing the driver has been deployed.", jdbcPluginName, PLUGIN_TYPE_JDBC);
       if (collector != null) {
         collector.addFailure(error, action).withConfigProperty(DBConnectorConfig.JDBC_PLUGIN_NAME)
           .withPluginNotFound(jdbcPluginId, jdbcPluginName, PLUGIN_TYPE_JDBC);
@@ -466,14 +455,13 @@ public final class DBUtils {
       classLoader.loadClass("oracle.jdbc.driver.OracleDriver");
     } catch (ClassNotFoundException e) {
       LOG.debug("Oracle JDBC Driver not found. Presuming that the DB App is not being run with an Oracle DB. " +
-        "Not attempting to cleanup Oracle MBean.");
+                  "Not attempting to cleanup Oracle MBean.");
       return;
     }
     MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
     Hashtable<String, String> keys = new Hashtable<>();
     keys.put("type", "diagnosability");
-    keys
-      .put("name", classLoader.getClass().getName() + "@" + Integer.toHexString(classLoader.hashCode()).toLowerCase());
+    keys.put("name", classLoader.getClass().getName() + "@" + Integer.toHexString(classLoader.hashCode()).toLowerCase());
     ObjectName oracleJdbcMBeanName;
     try {
       oracleJdbcMBeanName = new ObjectName("com.oracle.jdbc", keys);
@@ -502,48 +490,5 @@ public final class DBUtils {
 
   private DBUtils() {
     throw new AssertionError("Should not instantiate static utility class.");
-  }
-
-  public static List<StructuredRecord> parseResultSet(ResultSet resultSet) throws SQLException {
-    List<StructuredRecord> result = new ArrayList<>();
-    Schema schema = Schema.recordOf("output", getSchemaFields(resultSet, null, null, null));
-    ResultSetMetaData meta = resultSet.getMetaData();
-    while (resultSet.next()) {
-      StructuredRecord.Builder recordBuilder = StructuredRecord.builder(schema);
-      for (int i = 1; i <= meta.getColumnCount(); ++i) {
-        String fieldName = meta.getColumnName(i);
-        int sqlType = meta.getColumnType(i);
-        int sqlPrecision = meta.getPrecision(i);
-        int sqlScale = meta.getScale(i);
-        Schema fieldSchema = schema.getField(fieldName).getSchema();
-        Object value = transformValue(sqlType, sqlPrecision, sqlScale, resultSet, fieldName, fieldSchema);
-        if (fieldSchema.isNullable()) {
-          fieldSchema = fieldSchema.getNonNullable();
-        }
-        if (value instanceof Date) {
-          recordBuilder.setDate(fieldName, ((Date) value).toLocalDate());
-        } else if (value instanceof Time) {
-          recordBuilder.setTime(fieldName, ((Time) value).toLocalTime());
-        } else if (value instanceof Timestamp) {
-          recordBuilder
-            .setTimestamp(fieldName, ((Timestamp) value).toInstant().atZone(ZoneId.ofOffset("UTC", ZoneOffset.UTC)));
-        } else if (value instanceof BigDecimal) {
-          recordBuilder.setDecimal(fieldName, (BigDecimal) value);
-        } else if (value instanceof String && fieldSchema.getLogicalType() == Schema.LogicalType.DATETIME) {
-          //make sure value is in the right format for datetime
-          try {
-            recordBuilder.setDateTime(fieldName, LocalDateTime.parse((String) value));
-          } catch (DateTimeParseException exception) {
-            throw new UnexpectedFormatException(
-              String.format("Datetime field '%s' with value '%s' is not in ISO-8601 format.", fieldName, value),
-              exception);
-          }
-        } else {
-          recordBuilder.set(fieldName, value);
-        }
-      }
-      result.add(recordBuilder.build());
-    }
-    return result;
   }
 }

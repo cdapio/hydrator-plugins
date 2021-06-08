@@ -37,7 +37,6 @@ import javax.annotation.Nullable;
  */
 public class DBPath {
   private final boolean supportSchema;
-  private String database;
   private String schema;
   private String table;
 
@@ -67,26 +66,24 @@ public class DBPath {
 
     String[] parts = path.split("/", -1);
 
-    // path should contain at most three parts : database, schema and table
-    // for those that don't support schema, path should contain at most two parts : database and table
-    if (parts.length > 3 || !supportSchema && parts.length == 3) {
+    // path should contain at most two parts : schema and table
+    // for those that don't support schema, path should contain at most 1 part : table
+    if (parts.length > 2 || !supportSchema && parts.length == 2) {
       throw new IllegalArgumentException(String.format("Path should not contain more than %d parts.",
-        supportSchema ? 3 : 2));
+        supportSchema ? 2 : 1));
     }
 
-    database = parts[0];
-    validateName("Database", database);
-    if (parts.length > 1) {
+    if (parts.length > 0) {
       if (supportSchema) {
-        schema = parts[1];
+        schema = parts[0];
         validateName("Schema", schema);
       } else {
-        table = parts[1];
+        table = parts[0];
         validateName("Table", table);
       }
 
-      if (parts.length == 3) {
-        table = parts[2];
+      if (parts.length == 2) {
+        table = parts[1];
         validateName("Table", table);
       }
     }
@@ -97,11 +94,6 @@ public class DBPath {
       throw new IllegalArgumentException(
         String.format("%s should not be empty.", property));
     }
-  }
-
-  @Nullable
-  public String getDatabase() {
-    return database;
   }
 
   @Nullable

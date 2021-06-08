@@ -30,62 +30,42 @@ public class DBPathTest {
   private void testValidPath(boolean supportSchema) {
     //empty path
     DBPath path = new DBPath("", supportSchema);
-    Assert.assertNull(path.getDatabase());
     Assert.assertNull(path.getSchema());
     Assert.assertNull(path.getTable());
 
     //root path
     path = new DBPath("/", supportSchema);
-    Assert.assertNull(path.getDatabase());
-    Assert.assertNull(path.getSchema());
-    Assert.assertNull(path.getTable());
-
-    //database path
-    path = new DBPath("/database", supportSchema);
-    Assert.assertEquals("database", path.getDatabase());
-    Assert.assertNull(path.getSchema());
-    Assert.assertNull(path.getTable());
-
-    //database path
-    path = new DBPath("/database/", supportSchema);
-    Assert.assertEquals("database", path.getDatabase());
     Assert.assertNull(path.getSchema());
     Assert.assertNull(path.getTable());
 
     if (supportSchema) {
       //schema path
-      path = new DBPath("/database/schema", supportSchema);
-      Assert.assertEquals("database", path.getDatabase());
+      path = new DBPath("/schema", supportSchema);
       Assert.assertEquals("schema", path.getSchema());
       Assert.assertNull(path.getTable());
 
       //schema path
-      path = new DBPath("/database/schema/", supportSchema);
-      Assert.assertEquals("database", path.getDatabase());
+      path = new DBPath("/schema/", supportSchema);
       Assert.assertEquals("schema", path.getSchema());
       Assert.assertNull(path.getTable());
 
       //table path
-      path = new DBPath("/database/schema/table", supportSchema);
-      Assert.assertEquals("database", path.getDatabase());
+      path = new DBPath("/schema/table", supportSchema);
       Assert.assertEquals("schema", path.getSchema());
       Assert.assertEquals("table", path.getTable());
 
       //table path
-      path = new DBPath("/database/schema/table/", supportSchema);
-      Assert.assertEquals("database", path.getDatabase());
+      path = new DBPath("/schema/table/", supportSchema);
       Assert.assertEquals("schema", path.getSchema());
       Assert.assertEquals("table", path.getTable());
     } else {
       //table path
-      path = new DBPath("/database/table", supportSchema);
-      Assert.assertEquals("database", path.getDatabase());
+      path = new DBPath("/table", supportSchema);
       Assert.assertNull(path.getSchema());
       Assert.assertEquals("table", path.getTable());
 
       //table path
-      path = new DBPath("/database/table/", supportSchema);
-      Assert.assertEquals("database", path.getDatabase());
+      path = new DBPath("/table/", supportSchema);
       Assert.assertNull(path.getSchema());
       Assert.assertEquals("table", path.getTable());
     }
@@ -105,29 +85,26 @@ public class DBPathTest {
 
     //more than maximum parts in the path
     if (supportSchema) {
-      Assert.assertThrows("Path should not contain more than 3 parts.", IllegalArgumentException.class,
-        () -> new DBPath("/a/b/c/d", supportSchema));
-    } else {
       Assert.assertThrows("Path should not contain more than 2 parts.", IllegalArgumentException.class,
         () -> new DBPath("/a/b/c", supportSchema));
+    } else {
+      Assert.assertThrows("Path should not contain more than 1 parts.", IllegalArgumentException.class,
+        () -> new DBPath("/a/b", supportSchema));
     }
 
-    //empty database
-    Assert.assertThrows("Database should not be empty.", IllegalArgumentException.class,
-      () -> new DBPath("//", supportSchema));
 
     //empty schema or table
     if (supportSchema) {
       Assert.assertThrows("Schema should not be empty.", IllegalArgumentException.class,
-        () -> new DBPath("database//", supportSchema));
+        () -> new DBPath("//", supportSchema));
       Assert.assertThrows("Schema should not be empty.", IllegalArgumentException.class,
-        () -> new DBPath("database//table", supportSchema));
+        () -> new DBPath("//table", supportSchema));
 
       Assert.assertThrows("Table should not be empty.", IllegalArgumentException.class,
-        () -> new DBPath("database/schema" + "//", supportSchema));
+        () -> new DBPath("/schema//", supportSchema));
     } else {
       Assert.assertThrows("Table should not be empty.", IllegalArgumentException.class,
-        () -> new DBPath("database//", supportSchema));
+        () -> new DBPath("//", supportSchema));
 
     }
   }
