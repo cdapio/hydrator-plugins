@@ -17,10 +17,10 @@
 package io.cdap.plugin;
 
 import com.google.common.base.Throwables;
-import io.cdap.cdap.api.plugin.PluginProperties;
 import io.cdap.cdap.etl.api.Destroyable;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.plugin.db.connector.DBConnectorConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,37 +37,30 @@ import javax.annotation.Nullable;
  */
 public class DBManager implements Destroyable {
   private static final Logger LOG = LoggerFactory.getLogger(DBManager.class);
-  private final ConnectionConfig config;
+  private final DBConnectorConfig config;
   private DriverCleanup driverCleanup;
 
-  public DBManager(ConnectionConfig config) {
+  public DBManager(DBConnectorConfig config) {
     this.config = config;
+  }
+
+  public DBManager(ConnectionConfig config) {
+    this(new DBConnectorConfig(config.user, config.password, config.jdbcPluginName, config.connectionString,
+      config.connectionArguments));
   }
 
   @Nullable
   public Class<? extends Driver> validateJDBCPluginPipeline(PipelineConfigurer pipelineConfigurer,
                                                             String jdbcPluginId, FailureCollector collector) {
     if (!config.containsMacro(DBConfig.USER) && !config.containsMacro(DBConfig.PASSWORD)
-      && config.user == null && config.password != null) {
-      collector.addFailure("Username and password should be provided together.", "Please provide both " +
-        "user name and password, if database supports it or remove password.")
-        .withConfigProperty(ConnectionConfig.USER).withConfigProperty(ConnectionConfig.PASSWORD);
+      && config.getUser() == null && config.getPassword() != null) {
+      collector.addFailure("Username and password should be provided together.",
+                           "Please provide both a username and password. Or, if the database supports it, remove the " +
+                             "password.")
+        .withConfigProperty(DBConnectorConfig.USER).withConfigProperty(DBConnectorConfig.PASSWORD);
     }
 
-    Class<? extends Driver> jdbcDriverClass = pipelineConfigurer.usePluginClass(config.jdbcPluginType,
-                                                                                config.jdbcPluginName,
-                                                                                jdbcPluginId,
-                                                                                PluginProperties.builder().build());
-    if (jdbcDriverClass == null) {
-      collector.addFailure(
-        String.format("Unable to load JDBC Driver class for plugin name '%s'.", config.jdbcPluginName),
-        String.format("Ensure that plugin '%s' of type '%s' containing the driver has been " +
-                        "deployed.", config.jdbcPluginName, config.jdbcPluginType))
-        .withConfigProperty(ConnectionConfig.JDBC_PLUGIN_NAME)
-        .withPluginNotFound(jdbcPluginId, config.jdbcPluginName, config.jdbcPluginType);
-    }
-
-    return jdbcDriverClass;
+    return DBUtils.loadJDBCDriverClass(pipelineConfigurer, config.getJdbcPluginName(), jdbcPluginId, collector);
   }
 
   public boolean tableExists(Class<? extends Driver> jdbcDriverClass, String tableName) {
@@ -79,15 +72,15 @@ public class DBManager implements Destroyable {
       throw Throwables.propagate(e);
     }
 
-    try (Connection connection = DriverManager.getConnection(config.connectionString,
-                                                             config.getConnectionArguments())) {
+    try (Connection connection = DriverManager.getConnection(config.getConnectionString(),
+                                                             config.getAllConnectionArguments())) {
       DatabaseMetaData metadata = connection.getMetaData();
       try (ResultSet rs = metadata.getTables(null, null, tableName, null)) {
         return rs.next();
       }
     } catch (SQLException e) {
       LOG.error("Exception while trying to check the existence of database table {} for connection {}.",
-                tableName, config.connectionString, e);
+                tableName, config.getConnectionString(), e);
       throw Throwables.propagate(e);
     }
   }
@@ -98,8 +91,8 @@ public class DBManager implements Destroyable {
    */
   public void ensureJDBCDriverIsAvailable(Class<? extends Driver> jdbcDriverClass)
     throws IllegalAccessException, InstantiationException, SQLException {
-    driverCleanup = DBUtils.ensureJDBCDriverIsAvailable(jdbcDriverClass, config.connectionString,
-                                                        config.jdbcPluginType, config.jdbcPluginName);
+    driverCleanup =
+      DBUtils.ensureJDBCDriverIsAvailable(jdbcDriverClass, config.getConnectionString(), config.getJdbcPluginName());
   }
 
   @Override

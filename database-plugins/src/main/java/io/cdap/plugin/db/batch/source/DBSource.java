@@ -20,6 +20,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
+import io.cdap.cdap.api.annotation.Metadata;
+import io.cdap.cdap.api.annotation.MetadataProperty;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.batch.Input;
@@ -31,9 +33,10 @@ import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
+import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.batch.BatchSourceContext;
+import io.cdap.cdap.etl.api.connector.Connector;
 import io.cdap.plugin.ConnectionConfig;
-import io.cdap.plugin.DBConfig;
 import io.cdap.plugin.DBManager;
 import io.cdap.plugin.DBRecord;
 import io.cdap.plugin.DBUtils;
@@ -45,6 +48,8 @@ import io.cdap.plugin.common.ReferenceBatchSource;
 import io.cdap.plugin.common.ReferencePluginConfig;
 import io.cdap.plugin.common.SourceInputFormatProvider;
 import io.cdap.plugin.db.batch.TransactionIsolationLevel;
+import io.cdap.plugin.db.common.DBBaseConfig;
+import io.cdap.plugin.db.connector.DBConnector;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.MRJobConfig;
@@ -67,11 +72,13 @@ import javax.annotation.Nullable;
 /**
  * Batch source to read from a DB table
  */
-@Plugin(type = "batchsource")
-@Name("Database")
+@Plugin(type = BatchSource.PLUGIN_TYPE)
+@Name(DBSource.NAME)
 @Description("Reads from a database table(s) using a configurable SQL query." +
   " Outputs one record for each row returned by the query.")
+@Metadata(properties = {@MetadataProperty(key = Connector.PLUGIN_TYPE, value = DBConnector.NAME)})
 public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, StructuredRecord> {
+  public static final String NAME = "Database";
   private static final Logger LOG = LoggerFactory.getLogger(DBSource.class);
   private static final Pattern CONDITIONS_AND = Pattern.compile("\\$conditions (and|or)\\s+",
                                                                 Pattern.CASE_INSENSITIVE);
@@ -79,15 +86,14 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
                                                                 Pattern.CASE_INSENSITIVE);
   private static final Pattern WHERE_CONDITIONS = Pattern.compile("\\s+where \\$conditions",
                                                                   Pattern.CASE_INSENSITIVE);
-
   private final DBSourceConfig sourceConfig;
   private final DBManager dbManager;
   private Class<? extends Driver> driverClass;
 
   public DBSource(DBSourceConfig sourceConfig) {
-    super(new ReferencePluginConfig(sourceConfig.referenceName));
+    super(new ReferencePluginConfig(sourceConfig.getReferenceName()));
     this.sourceConfig = sourceConfig;
-    this.dbManager = new DBManager(sourceConfig);
+    this.dbManager = new DBManager(sourceConfig.getConnection());
   }
 
   @Override
@@ -123,21 +129,21 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     sourceConfig.validate(collector);
     collector.getOrThrowException();
 
-    LOG.debug("pluginType = {}; pluginName = {}; connectionString = {}; importQuery = {}; " +
+    LOG.debug("pluginName = {}; connectionString = {}; importQuery = {}; " +
                 "boundingQuery = {}; transaction isolation level: {}",
-              sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName,
-              sourceConfig.connectionString, sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery(),
+              sourceConfig.getJdbcPluginName(),
+              sourceConfig.getConnectionString(), sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery(),
               sourceConfig.transactionIsolationLevel);
     Configuration hConf = new Configuration();
     hConf.clear();
 
     // Load the plugin class to make sure it is available.
     Class<? extends Driver> driverClass = context.loadPluginClass(getJDBCPluginId());
-    if (sourceConfig.user == null && sourceConfig.password == null) {
-      DBConfiguration.configureDB(hConf, driverClass.getName(), sourceConfig.connectionString);
+    if (sourceConfig.getUser() == null && sourceConfig.getPassword() == null) {
+      DBConfiguration.configureDB(hConf, driverClass.getName(), sourceConfig.getConnectionString());
     } else {
-      DBConfiguration.configureDB(hConf, driverClass.getName(), sourceConfig.connectionString,
-                                  sourceConfig.user, sourceConfig.password);
+      DBConfiguration.configureDB(hConf, driverClass.getName(), sourceConfig.getConnectionString(),
+                                  sourceConfig.getUser(), sourceConfig.getPassword());
     }
     DataDrivenETLDBInputFormat.setInput(hConf, DBRecord.class,
                                         sourceConfig.getImportQuery(), sourceConfig.getBoundingQuery(),
@@ -145,8 +151,8 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     if (sourceConfig.transactionIsolationLevel != null) {
       hConf.set(TransactionIsolationLevel.CONF_KEY, sourceConfig.transactionIsolationLevel);
     }
-    if (sourceConfig.connectionArguments != null) {
-      hConf.set(DBUtils.CONNECTION_ARGUMENTS, sourceConfig.connectionArguments);
+    if (sourceConfig.getConnectionArguments() != null) {
+      hConf.set(DBUtils.CONNECTION_ARGUMENTS, sourceConfig.getConnectionArguments());
     }
     if (sourceConfig.numSplits == null || sourceConfig.numSplits != 1) {
       if (!sourceConfig.getImportQuery().contains("$CONDITIONS")) {
@@ -170,7 +176,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     if (sourceConfig.fetchSize != null) {
       hConf.setInt(DBUtils.FETCH_SIZE, sourceConfig.fetchSize);
     }
-    context.setInput(Input.of(sourceConfig.referenceName,
+    context.setInput(Input.of(sourceConfig.getReferenceName(),
                               new SourceInputFormatProvider(DataDrivenETLDBInputFormat.class, hConf)));
 
     emitLineage(context);
@@ -185,7 +191,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
   @Override
   public void transform(KeyValue<LongWritable, DBRecord> input, Emitter<StructuredRecord> emitter) throws Exception {
     emitter.emit(StructuredRecordUtils.convertCase(
-      input.getValue().getRecord(), FieldCase.toFieldCase(sourceConfig.columnNameCase)));
+      input.getValue().getRecord(), FieldCase.toFieldCase(sourceConfig.getColumnNameCase())));
   }
 
   @Override
@@ -198,7 +204,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
   }
 
   private String getJDBCPluginId() {
-    return String.format("%s.%s.%s", "source", sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName);
+    return String.format("source.%s.%s", DBUtils.PLUGIN_TYPE_JDBC, sourceConfig.getJdbcPluginName());
   }
 
   private Schema getSchema(Class<? extends Driver> driverClass, @Nullable String patternToReplace,
@@ -234,13 +240,12 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
 
     if (driverClass == null) {
       throw new InstantiationException(
-        String.format("Unable to load Driver class with plugin type %s and plugin name %s",
-                      sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName));
+        String.format("Unable to load JDBC driver class with plugin name %s", sourceConfig.getJdbcPluginName()));
     }
 
     try {
-      return DBUtils.ensureJDBCDriverIsAvailable(driverClass, sourceConfig.connectionString,
-                                                 sourceConfig.jdbcPluginType, sourceConfig.jdbcPluginName);
+      return DBUtils
+        .ensureJDBCDriverIsAvailable(driverClass, sourceConfig.getConnectionString(), sourceConfig.getJdbcPluginName());
     } catch (IllegalAccessException | InstantiationException | SQLException e) {
       LOG.error("Unable to load or register driver {}", driverClass, e);
       throw e;
@@ -249,16 +254,16 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
 
   private Connection getConnection() throws SQLException {
     Properties properties =
-      ConnectionConfig.getConnectionArguments(sourceConfig.connectionArguments,
-                                              sourceConfig.user,
-                                              sourceConfig.password);
-    return DriverManager.getConnection(sourceConfig.connectionString, properties);
+      ConnectionConfig.getConnectionArguments(sourceConfig.getConnectionArguments(),
+                                              sourceConfig.getUser(),
+                                              sourceConfig.getPassword());
+    return DriverManager.getConnection(sourceConfig.getConnectionString(), properties);
   }
 
   /**
    * {@link PluginConfig} for {@link DBSource}
    */
-  public static class DBSourceConfig extends DBConfig {
+  public static class DBSourceConfig extends DBBaseConfig {
     public static final String IMPORT_QUERY = "importQuery";
     public static final String BOUNDING_QUERY = "boundingQuery";
     public static final String SPLIT_BY = "splitBy";
@@ -408,7 +413,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     if (schema == null) {
       schema = context.getOutputSchema();
     }
-    LineageRecorder lineageRecorder = new LineageRecorder(context, sourceConfig.referenceName);
+    LineageRecorder lineageRecorder = new LineageRecorder(context, sourceConfig.getReferenceName());
     lineageRecorder.createExternalDataset(schema);
 
     if (schema != null && schema.getFields() != null) {

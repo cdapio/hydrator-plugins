@@ -20,6 +20,10 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.data.schema.UnsupportedTypeException;
+import io.cdap.cdap.api.plugin.PluginConfigurer;
+import io.cdap.cdap.api.plugin.PluginProperties;
+import io.cdap.cdap.etl.api.FailureCollector;
+import io.cdap.plugin.db.connector.DBConnectorConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +56,7 @@ import javax.management.ReflectionException;
  */
 public final class DBUtils {
   private static final Logger LOG = LoggerFactory.getLogger(DBUtils.class);
+  public static final String PLUGIN_TYPE_JDBC = "jdbc";
   public static final String OVERRIDE_SCHEMA = "io.cdap.hydrator.db.override.schema";
   public static final String PATTERN_TO_REPLACE = "io.cdap.plugin.db.pattern.replace";
   public static final String REPLACE_WITH = "io.cdap.plugin.db.replace.with";
@@ -80,8 +85,7 @@ public final class DBUtils {
    * {@link DriverManager} if it is not already registered.
    */
   public static DriverCleanup ensureJDBCDriverIsAvailable(Class<? extends Driver> jdbcDriverClass,
-                                                          String connectionString,
-                                                          String jdbcPluginType, String jdbcPluginName)
+    String connectionString, String jdbcPluginName)
     throws IllegalAccessException, InstantiationException, SQLException {
 
     try {
@@ -90,8 +94,7 @@ public final class DBUtils {
     } catch (SQLException e) {
       // Driver not found. We will try to register it with the DriverManager.
       LOG.debug("Plugin Type: {} and Plugin Name: {}; Driver Class: {} not found. Registering JDBC driver via shim {} ",
-                jdbcPluginType, jdbcPluginName, jdbcDriverClass.getName(),
-                JDBCDriverShim.class.getName());
+        PLUGIN_TYPE_JDBC, jdbcPluginName, jdbcDriverClass.getName(), JDBCDriverShim.class.getName());
       final JDBCDriverShim driverShim = new JDBCDriverShim(jdbcDriverClass.newInstance());
       try {
         DBUtils.deregisterAllDrivers(jdbcDriverClass);
@@ -103,14 +106,14 @@ public final class DBUtils {
     }
   }
 
+
   /**
-   * Given the result set, get the metadata of the result set and return
-   * list of {@link io.cdap.cdap.api.data.schema.Schema.Field},
-   * where name of the field is same as column name and type of the field is obtained using
-   * {@link DBUtils#getSchema(String, int, int, int, String, boolean)}
+   * Given the result set, get the metadata of the result set and return list of {@link
+   * io.cdap.cdap.api.data.schema.Schema.Field}, where name of the field is same as column name and type of the field is
+   * obtained using {@link DBUtils#getSchema(String, int, int, int, String, boolean)}
    *
    * @param resultsetSchema the schema from the db
-   * @param schemaStr schema string to override resultant schema
+   * @param schemaStr       schema string to override resultant schema
    * @return list of schema fields
    */
   public static List<Schema.Field> getSchemaFields(Schema resultsetSchema, @Nullable String schemaStr) {
@@ -125,18 +128,18 @@ public final class DBUtils {
       for (Schema.Field field : schema.getFields()) {
         Schema.Field resultsetField = resultsetSchema.getField(field.getName());
         if (resultsetField == null) {
-          throw new IllegalArgumentException(String.format("Schema field '%s' is not present in input record.",
-                                                           field.getName()));
+          throw new IllegalArgumentException(
+            String.format("Schema field '%s' is not present in input record.", field.getName()));
         }
-        Schema resultsetFieldSchema = resultsetField.getSchema().isNullable() ?
-          resultsetField.getSchema().getNonNullable() : resultsetField.getSchema();
+        Schema resultsetFieldSchema =
+          resultsetField.getSchema().isNullable() ? resultsetField.getSchema().getNonNullable() :
+            resultsetField.getSchema();
         Schema simpleSchema = field.getSchema().isNullable() ? field.getSchema().getNonNullable() : field.getSchema();
 
         if (!isCompatible(resultsetFieldSchema, simpleSchema)) {
-          throw new IllegalArgumentException(String.format("Schema field '%s' has type '%s' but in input record " +
-                                                             "found type '%s'.",
-                                                           field.getName(), simpleSchema.getDisplayName(),
-                                                           resultsetFieldSchema.getDisplayName()));
+          throw new IllegalArgumentException(String
+            .format("Schema field '%s' has type '%s' but in input record " + "found type '%s'.", field.getName(),
+              simpleSchema.getDisplayName(), resultsetFieldSchema.getDisplayName()));
         }
       }
       return schema.getFields();
@@ -150,18 +153,17 @@ public final class DBUtils {
       return true;
     }
     //allow mapping from string to datetime, values will be validated for format
-    if (resultSetSchema.getType() == Schema.Type.STRING && mappedSchema
-      .getLogicalType() == Schema.LogicalType.DATETIME) {
+    if (resultSetSchema.getType() == Schema.Type.STRING &&
+      mappedSchema.getLogicalType() == Schema.LogicalType.DATETIME) {
       return true;
     }
     return false;
   }
 
   /**
-   * Given the result set, get the metadata of the result set and return
-   * list of {@link io.cdap.cdap.api.data.schema.Schema.Field},
-   * where name of the field is same as column name and type of the field is obtained using
-   * {@link DBUtils#getSchema(String, int, int, int, String, boolean)}
+   * Given the result set, get the metadata of the result set and return list of {@link
+   * io.cdap.cdap.api.data.schema.Schema.Field}, where name of the field is same as column name and type of the field is
+   * obtained using {@link DBUtils#getSchema(String, int, int, int, String, boolean)}
    *
    * @param resultSet result set of executed query
    * @return list of schema fields
@@ -172,20 +174,18 @@ public final class DBUtils {
   }
 
   /**
-   * Given the result set, get the metadata of the result set and return
-   * list of {@link io.cdap.cdap.api.data.schema.Schema.Field},
-   * where name of the field is same as column name and type of the field is obtained using
-   * {@link DBUtils#getSchema(String, int, int, int, String, boolean)}
+   * Given the result set, get the metadata of the result set and return list of {@link
+   * io.cdap.cdap.api.data.schema.Schema.Field}, where name of the field is same as column name and type of the field is
+   * obtained using {@link DBUtils#getSchema(String, int, int, int, String, boolean)}
    *
-   * @param resultSet result set of executed query
+   * @param resultSet        result set of executed query
    * @param patternToReplace the pattern to replace in the field name
-   * @param replaceWith the replacement value, if it is null, the pattern will be removed
+   * @param replaceWith      the replacement value, if it is null, the pattern will be removed
    * @return list of schema fields
    * @throws SQLException
    */
   public static List<Schema.Field> getSchemaFields(ResultSet resultSet, @Nullable String patternToReplace,
-                                                   @Nullable String replaceWith, @Nullable Schema outputSchema)
-    throws SQLException {
+    @Nullable String replaceWith, @Nullable Schema outputSchema) throws SQLException {
     List<Schema.Field> schemaFields = Lists.newArrayList();
     ResultSetMetaData metadata = resultSet.getMetaData();
     // ResultSetMetadata columns are numbered starting with 1
@@ -211,8 +211,8 @@ public final class DBUtils {
           }
         }
       }
-      Schema columnSchema = getSchema(columnTypeName, columnSqlType, columnSqlPrecision, columnSqlScale, columnName,
-                                      handleAsDecimal);
+      Schema columnSchema =
+        getSchema(columnTypeName, columnSqlType, columnSqlPrecision, columnSqlScale, columnName, handleAsDecimal);
       if (ResultSetMetaData.columnNullable == metadata.isNullable(i)) {
         columnSchema = Schema.nullableOf(columnSchema);
       }
@@ -222,9 +222,46 @@ public final class DBUtils {
     return schemaFields;
   }
 
-  // given a sql type return schema type
-  private static Schema getSchema(String typeName, int sqlType, int precision, int scale, String columnName,
-                                  boolean handleAsDecimal) throws SQLException {
+  /**
+   * load the specified JDBC driver class
+   *
+   * @param configurer     the plugin configurer
+   * @param jdbcPluginName the jdbc plugin name
+   * @param jdbcPluginId   the unique id of this usage
+   * @param collector      the failure collector
+   * @return the loaded JDBC driver class
+   */
+  public static Class<? extends Driver> loadJDBCDriverClass(PluginConfigurer configurer, String jdbcPluginName,
+                                                            String jdbcPluginId, @Nullable FailureCollector collector) {
+    Class<? extends Driver> jdbcDriverClass =
+      configurer.usePluginClass(PLUGIN_TYPE_JDBC, jdbcPluginName, jdbcPluginId, PluginProperties.builder().build());
+    if (jdbcDriverClass == null) {
+      String error = String.format("Unable to load JDBC Driver class for plugin name '%s'.", jdbcPluginName);
+      String action = String.format(
+        "Ensure that plugin '%s' of type '%s' containing the driver has been deployed.", jdbcPluginName,
+        PLUGIN_TYPE_JDBC);
+      if (collector != null) {
+        collector.addFailure(error, action).withConfigProperty(DBConnectorConfig.JDBC_PLUGIN_NAME)
+          .withPluginNotFound(jdbcPluginId, jdbcPluginName, PLUGIN_TYPE_JDBC);
+      } else {
+        throw new IllegalArgumentException(error + " " + action);
+      }
+    }
+    return jdbcDriverClass;
+  }
+
+  /**
+   * Get a CDAP schema from a given database column definition
+   * @param typeName  data source dependent type name, for a UDT the type name is fully qualified
+   * @param sqlType   SQL type from java.sql.Types
+   * @param precision the number of total digits for numeric types
+   * @param scale     the number of fractional digits for numeric types
+   * @param columnName the column name
+   * @param handleAsDecimal whether to convert numeric types to decimal logical type
+   * @return the converted CDAP schema
+   */
+  public static Schema getSchema(String typeName, int sqlType, int precision, int scale, String columnName,
+    boolean handleAsDecimal) throws SQLException {
     // Type.STRING covers sql types - VARCHAR,CHAR,CLOB,LONGNVARCHAR,LONGVARCHAR,NCHAR,NCLOB,NVARCHAR
     Schema.Type type = Schema.Type.STRING;
     switch (sqlType) {
@@ -295,17 +332,16 @@ public final class DBUtils {
       case Types.REF:
       case Types.SQLXML:
       case Types.STRUCT:
-        throw new SQLException(new UnsupportedTypeException(String.format("Column %s has unsupported SQL type of %s."
-          , columnName, sqlType)));
+        throw new SQLException(new UnsupportedTypeException(
+          String.format("Column %s has unsupported SQL type of %s.", columnName, sqlType)));
     }
 
     return Schema.of(type);
   }
 
   @Nullable
-  public static Object transformValue(int sqlType, int precision, int scale,
-                                      ResultSet resultSet, String fieldName, Schema outputFieldSchema)
-    throws SQLException {
+  public static Object transformValue(int sqlType, int precision, int scale, ResultSet resultSet, String fieldName,
+    Schema outputFieldSchema) throws SQLException {
     Object original = resultSet.getObject(fieldName);
     if (original != null) {
       switch (sqlType) {
@@ -315,7 +351,7 @@ public final class DBUtils {
         case Types.NUMERIC:
         case Types.DECIMAL: {
           if (Schema.LogicalType.DECIMAL == outputFieldSchema.getLogicalType()) {
-              return original;
+            return original;
           } else {
             BigDecimal decimal = (BigDecimal) original;
             if (scale != 0) {
@@ -377,7 +413,7 @@ public final class DBUtils {
       ClassLoader registeredDriverClassLoader = d.getClass().getClassLoader();
       if (registeredDriverClassLoader == null) {
         LOG.debug("Found null classloader for default driver {}. Ignoring since this may be using system classloader.",
-                  d.getClass().getName());
+          d.getClass().getName());
         continue;
       }
       // Remove all objects in this list that were created using the classloader of the caller.
@@ -389,8 +425,8 @@ public final class DBUtils {
   }
 
   /**
-   * Shuts down a cleanup thread com.mysql.jdbc.AbandonedConnectionCleanupThread that mysql driver fails to destroy
-   * If this is not done, the thread keeps a reference to the classloader, thereby causing OOMs or too many open files
+   * Shuts down a cleanup thread com.mysql.jdbc.AbandonedConnectionCleanupThread that mysql driver fails to destroy If
+   * this is not done, the thread keeps a reference to the classloader, thereby causing OOMs or too many open files
    *
    * @param classLoader the unfiltered classloader of the jdbc driver class
    */
@@ -402,7 +438,7 @@ public final class DBUtils {
       } catch (ClassNotFoundException e) {
         // Ok to ignore, since we may not be running mysql
         LOG.trace("Failed to load MySQL abandoned connection cleanup thread class. Presuming DB App is " +
-                    "not being run with MySQL and ignoring", e);
+          "not being run with MySQL and ignoring", e);
         return;
       }
       Method shutdownMethod = mysqlCleanupThreadClass.getMethod("shutdown");
@@ -425,8 +461,8 @@ public final class DBUtils {
     MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
     Hashtable<String, String> keys = new Hashtable<>();
     keys.put("type", "diagnosability");
-    keys.put("name",
-             classLoader.getClass().getName() + "@" + Integer.toHexString(classLoader.hashCode()).toLowerCase());
+    keys.put(
+      "name", classLoader.getClass().getName() + "@" + Integer.toHexString(classLoader.hashCode()).toLowerCase());
     ObjectName oracleJdbcMBeanName;
     try {
       oracleJdbcMBeanName = new ObjectName("com.oracle.jdbc", keys);
