@@ -19,20 +19,20 @@ package io.cdap.plugin.db.connector;
 import javax.annotation.Nullable;
 
 /**
- * BigQuery Path that parses the path in the request of connection service
- * A valid path can start with/without a slash, e.g. "/" , "", "/database/schema/table", "database/schema/table" are
+ * Database Path that parses the path in the request of connection service
+ * A valid path can start with/without a slash, e.g. "/" , "", "/schema/table", "schema/table" are
  * all valid.
- * A valid path can end with/without a slash, e.g. "/", "", "/database/schema/table/", "database/schema/table/" are all
+ * A valid path can end with/without a slash, e.g. "/", "", "/schema/table/", "schema/table/" are all
  * valid.
- * A valid path should contain at most two parts for those DB that don't support schema (e.g. mysql) or three parts
+ * A valid path should contain at most one parts for those DB that don't support schema (e.g. mysql) or two parts
  * for those DB that support schema (e.g. postgresql, oracle, sqlserver) separated by slash. The first part is
- * database name. The second part is schema name for those DB that support schema or table name for those DB that
- * don't support schema. Third part is table name (only applicable for those DB that support schema). Any part is
- * optional. e.g. "/" , "/database" , "/database/schema" (for those DB that support Schema), "database/schema/table"
- * (for those DB that support Schema), "/database/table" (for those DB that don't support Schema)
+ * schema name for those DB that support schema or table name for those DB that don't support schema. The second part is
+ * table name (only applicable for those DB that support schema).
+ * Any part is optional. e.g. "/" , "/schema" (for those DB that support Schema), "schema/table"
+ * (for those DB that support Schema), "/table" (for those DB that don't support Schema)
  * Consecutive slashes are not valid , it will be parsed as there is an empty string part between the slashes. e.g.
- * "//a" will be parsed as database name as empty and schema name or table name as "a". Similarly "/a//" will be parsed
- * as database name as "a" and table name or schema name as empty.
+ * "//a" will be parsed as schema name as empty and table name as "a". Similarly "/a//" will be parsed
+ * as schema name as "a" and table name as empty.
  *
  */
 public class DBPath {

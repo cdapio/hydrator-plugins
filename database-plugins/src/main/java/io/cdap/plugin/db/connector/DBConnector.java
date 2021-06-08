@@ -39,7 +39,6 @@ import io.cdap.plugin.DBUtils;
 import io.cdap.plugin.DriverCleanup;
 import io.cdap.plugin.db.batch.source.DBSource;
 import io.cdap.plugin.db.common.DBBaseConfig;
-import io.cdap.plugin.db.common.DBDifferenceUtils;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -51,6 +50,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -145,7 +145,8 @@ public class DBConnector implements DirectConnector {
   }
 
   @Override
-  public ConnectorSpec generateSpec(ConnectorContext context, ConnectorSpecRequest connectorSpecRequest) throws IOException {
+  public ConnectorSpec generateSpec(ConnectorContext context, ConnectorSpecRequest connectorSpecRequest)
+    throws IOException {
 
     return connectAndQuery(connectorSpecRequest.getPath(), "generate spec", (connection, path) -> {
       ConnectorSpec.Builder specBuilder = ConnectorSpec.builder();
@@ -193,7 +194,10 @@ public class DBConnector implements DirectConnector {
       return DriverManager.getConnection(config.getConnectionString(), config.getAllConnectionArguments());
     } catch (SQLException e) {
       throw new IllegalArgumentException(String.format("Cannot connect to database via connection string : %s and " +
-                                                         "arguments: %s. Make sure you have correct connection properties.", config.getConnectionString(), config.getConnectionArguments()), e);
+                                                         "arguments: %s. Make sure you have correct connection " +
+                                                         "properties.",
+                                                       config.getConnectionString(), config.getConnectionArguments()),
+                                         e);
     }
   }
 
@@ -225,7 +229,8 @@ public class DBConnector implements DirectConnector {
         String name = resultSet.getString(RESULTSET_COLUMN_TABLE_NAME);
         browseDetailBuilder.addEntity(BrowseEntity
                                         .builder(name, schema == null ? "/" + name : "/" + schema + "/" + name,
-                                                 resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE)).canSample(true).build());
+                                                 resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE)).canSample(true)
+                                        .build());
       } else {
         throw new IllegalArgumentException(String.format("Cannot find table : %s.%s.", schema, table));
       }
@@ -254,7 +259,8 @@ public class DBConnector implements DirectConnector {
         if (count < countLimit) {
           browseDetailBuilder.addEntity(BrowseEntity
                                           .builder(name, schema == null ? "/" + name : "/" + schema + "/" + name,
-                                                   resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE)).canSample(true).build());
+                                                   resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE)).canSample(true)
+                                          .build());
         }
         count++;
       }
@@ -263,10 +269,13 @@ public class DBConnector implements DirectConnector {
   }
 
   private List<StructuredRecord> getTableData(Connection connection, @Nullable String schema,
-    String table, int limit) throws SQLException {
-    String productName = connection.getMetaData().getDatabaseProductName();
-    String query = DBDifferenceUtils.getTableQueryWithLimit(productName, schema, table, limit);
-    return parseResultSet(connection.createStatement().executeQuery(query));
+                                              String table, int limit) throws SQLException {
+    String query = schema == null ? String.format("SELECT * FROM %s", table) :
+      String.format("SELECT * FROM %s.%s", schema, table);
+    try (Statement statement = connection.createStatement()) {
+      statement.setFetchSize(limit);
+      return parseResultSet(statement.executeQuery(query), limit);
+    }
   }
 
   private <T> T connectAndQuery(String pathStr, String operation, Query<T> query) throws IOException {
@@ -283,11 +292,12 @@ public class DBConnector implements DirectConnector {
     T run(Connection connection, DBPath path) throws SQLException;
   }
 
-  private static List<StructuredRecord> parseResultSet(ResultSet resultSet) throws SQLException {
+  private static List<StructuredRecord> parseResultSet(ResultSet resultSet, int limit) throws SQLException {
     List<StructuredRecord> result = new ArrayList<>();
     Schema schema = Schema.recordOf("output", DBUtils.getSchemaFields(resultSet, null, null, null));
     ResultSetMetaData meta = resultSet.getMetaData();
-    while (resultSet.next()) {
+    int count = 0;
+    while (resultSet.next() && count < limit) {
       StructuredRecord.Builder recordBuilder = StructuredRecord.builder(schema);
       for (int i = 1; i <= meta.getColumnCount(); ++i) {
         String fieldName = meta.getColumnName(i);
@@ -322,6 +332,7 @@ public class DBConnector implements DirectConnector {
         }
       }
       result.add(recordBuilder.build());
+      count++;
     }
     return result;
   }

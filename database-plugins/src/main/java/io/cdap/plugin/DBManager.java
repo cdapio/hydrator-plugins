@@ -54,7 +54,9 @@ public class DBManager implements Destroyable {
                                                             String jdbcPluginId, FailureCollector collector) {
     if (!config.containsMacro(DBConfig.USER) && !config.containsMacro(DBConfig.PASSWORD)
       && config.getUser() == null && config.getPassword() != null) {
-      collector.addFailure("Username and password should be provided together.", "Please provide both a username and password. Or, if the database supports it, remove the password.")
+      collector.addFailure("Username and password should be provided together.",
+                           "Please provide both a username and password. Or, if the database supports it, remove the " +
+                             "password.")
         .withConfigProperty(DBConnectorConfig.USER).withConfigProperty(DBConnectorConfig.PASSWORD);
     }
 

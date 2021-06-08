@@ -99,13 +99,11 @@ public class DBPathTest {
         () -> new DBPath("//", supportSchema));
       Assert.assertThrows("Schema should not be empty.", IllegalArgumentException.class,
         () -> new DBPath("//table", supportSchema));
-
       Assert.assertThrows("Table should not be empty.", IllegalArgumentException.class,
         () -> new DBPath("/schema//", supportSchema));
     } else {
       Assert.assertThrows("Table should not be empty.", IllegalArgumentException.class,
         () -> new DBPath("//", supportSchema));
-
     }
   }
 }

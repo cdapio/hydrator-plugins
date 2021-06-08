@@ -125,7 +125,8 @@ public class DBConnectorTest {
     //invalid path
     Assert.assertThrows(IllegalArgumentException.class,
                         () -> connector.sample(new MockConnectorContext(new MockConnectorConfigurer()),
-                                               SampleRequest.builder(1).setPath(schema == null ? "a/b/c" : "a/b/c/d").build()));
+                                               SampleRequest.builder(1).setPath(schema == null ? "a/b/c" : "a/b/c/d")
+                                                 .build()));
 
 
     if (schema != null) {

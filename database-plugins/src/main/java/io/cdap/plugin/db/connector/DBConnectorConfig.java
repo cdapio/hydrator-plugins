@@ -81,7 +81,6 @@ public class DBConnectorConfig extends PluginConfig {
     this.connectionArguments = connectionArguments;
   }
 
-
   /**
    * Parses connection arguments into a {@link Properties}.
    *
@@ -139,5 +138,4 @@ public class DBConnectorConfig extends PluginConfig {
   public String getJdbcPluginName() {
     return jdbcPluginName;
   }
-
 }

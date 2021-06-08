@@ -62,7 +62,6 @@ public final class DBUtils {
   public static final String REPLACE_WITH = "io.cdap.plugin.db.replace.with";
   public static final String CONNECTION_ARGUMENTS = "io.cdap.hydrator.db.connection.arguments";
   public static final String FETCH_SIZE = "io.cdap.hydrator.db.fetch.size";
-  private static final String CLASS_NAME_ROWID = "oracle.sql.ROWID";
 
   /**
    * Performs any Database related cleanup
@@ -239,7 +238,8 @@ public final class DBUtils {
     if (jdbcDriverClass == null) {
       String error = String.format("Unable to load JDBC Driver class for plugin name '%s'.", jdbcPluginName);
       String action = String.format(
-        "Ensure that plugin '%s' of type '%s' containing the driver has been deployed.", jdbcPluginName, PLUGIN_TYPE_JDBC);
+        "Ensure that plugin '%s' of type '%s' containing the driver has been deployed.", jdbcPluginName,
+        PLUGIN_TYPE_JDBC);
       if (collector != null) {
         collector.addFailure(error, action).withConfigProperty(DBConnectorConfig.JDBC_PLUGIN_NAME)
           .withPluginNotFound(jdbcPluginId, jdbcPluginName, PLUGIN_TYPE_JDBC);
@@ -461,7 +461,8 @@ public final class DBUtils {
     MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
     Hashtable<String, String> keys = new Hashtable<>();
     keys.put("type", "diagnosability");
-    keys.put("name", classLoader.getClass().getName() + "@" + Integer.toHexString(classLoader.hashCode()).toLowerCase());
+    keys.put(
+      "name", classLoader.getClass().getName() + "@" + Integer.toHexString(classLoader.hashCode()).toLowerCase());
     ObjectName oracleJdbcMBeanName;
     try {
       oracleJdbcMBeanName = new ObjectName("com.oracle.jdbc", keys);
