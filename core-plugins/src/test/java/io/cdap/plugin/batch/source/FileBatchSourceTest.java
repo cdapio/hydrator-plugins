@@ -743,7 +743,7 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
   public void testFileBatchInputFormatMacro() throws Exception {
     File outputFolder = temporaryFolder.newFolder();
     File fileText = new File(outputFolder, "test.txt");
-    String outputDatasetName = "test-filesource-text";
+    String outputDatasetName = UUID.randomUUID().toString();
 
     Schema textSchema = Schema.recordOf("file.record",
                                         Schema.Field.of("offset", Schema.of(Schema.Type.LONG)),
