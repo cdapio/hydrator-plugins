@@ -69,7 +69,7 @@ public class DBBaseConfig extends PluginConfig {
   private DBConnectorConfig connection;
 
   public Boolean getEnableAutoCommit() {
-    return enableAutoCommit;
+    return enableAutoCommit == null ? Boolean.FALSE : enableAutoCommit;
   }
 
   @Nullable
