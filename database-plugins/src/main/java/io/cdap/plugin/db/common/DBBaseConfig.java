@@ -68,8 +68,8 @@ public class DBBaseConfig extends PluginConfig {
   @Description("The existing connection to use.")
   private DBConnectorConfig connection;
 
-  public Boolean getEnableAutoCommit() {
-    return enableAutoCommit == null ? Boolean.FALSE : enableAutoCommit;
+  public boolean getEnableAutoCommit() {
+    return enableAutoCommit == null ? false : enableAutoCommit;
   }
 
   @Nullable
