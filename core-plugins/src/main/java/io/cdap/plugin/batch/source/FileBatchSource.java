@@ -17,10 +17,14 @@
 package io.cdap.plugin.batch.source;
 
 import io.cdap.cdap.api.annotation.Description;
+import io.cdap.cdap.api.annotation.Metadata;
+import io.cdap.cdap.api.annotation.MetadataProperty;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.batch.BatchSourceContext;
+import io.cdap.cdap.etl.api.connector.Connector;
+import io.cdap.plugin.batch.connector.FileConnector;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import io.cdap.plugin.format.plugin.AbstractFileSource;
 
@@ -32,9 +36,11 @@ import java.util.Map;
  * A {@link BatchSource} to use any distributed file system as a Source.
  */
 @Plugin(type = "batchsource")
-@Name("File")
+@Name(FileBatchSource.NAME)
 @Description("Batch source for File Systems")
+@Metadata(properties = {@MetadataProperty(key = Connector.PLUGIN_TYPE, value = FileConnector.NAME)})
 public class FileBatchSource extends AbstractFileSource<FileSourceConfig> {
+  public static final String NAME = "File";
   private final FileSourceConfig config;
 
   public FileBatchSource(FileSourceConfig config) {

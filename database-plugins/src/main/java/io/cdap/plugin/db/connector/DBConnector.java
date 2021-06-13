@@ -211,10 +211,12 @@ public class DBConnector implements DirectConnector {
       int countLimit = limit == null || limit <= 0 ? Integer.MAX_VALUE : limit;
       while (resultSet.next()) {
         String name = resultSet.getString(RESULTSET_COLUMN_TABLE_SCHEM);
-        if (count < countLimit) {
-          browseDetailBuilder.addEntity(
-            BrowseEntity.builder(name, "/" + name, ENTITY_TYPE_SCHEMA).canBrowse(true).build());
+        if (count >= countLimit) {
+          break;
         }
+
+        browseDetailBuilder.addEntity(
+          BrowseEntity.builder(name, "/" + name, ENTITY_TYPE_SCHEMA).canBrowse(true).build());
         count++;
       }
     }
@@ -257,12 +259,13 @@ public class DBConnector implements DirectConnector {
       int countLimit = limit == null || limit <= 0 ? Integer.MAX_VALUE : limit;
       while (resultSet.next()) {
         String name = resultSet.getString(RESULTSET_COLUMN_TABLE_NAME);
-        if (count < countLimit) {
-          browseDetailBuilder.addEntity(BrowseEntity
-                                          .builder(name, schema == null ? "/" + name : "/" + schema + "/" + name,
-                                                   resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE)).canSample(true)
-                                          .build());
+        if (count >= countLimit) {
+          break;
         }
+        browseDetailBuilder.addEntity(BrowseEntity
+                                        .builder(name, schema == null ? "/" + name : "/" + schema + "/" + name,
+                                                 resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE)).canSample(true)
+                                        .build());
         count++;
       }
     }
