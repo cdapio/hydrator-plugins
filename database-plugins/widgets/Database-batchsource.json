@@ -28,7 +28,7 @@
           "label": "Connection",
           "name": "connection",
           "widget-attributes": {
-            "placeholder": "connection id"
+            "connectionType": "Database"
           }
         },
         {
