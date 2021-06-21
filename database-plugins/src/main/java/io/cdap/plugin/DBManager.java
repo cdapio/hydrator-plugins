@@ -20,6 +20,8 @@ import com.google.common.base.Throwables;
 import io.cdap.cdap.etl.api.Destroyable;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.plugin.common.db.DBUtils;
+import io.cdap.plugin.common.db.DriverCleanup;
 import io.cdap.plugin.db.connector.DBConnectorConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,7 +75,7 @@ public class DBManager implements Destroyable {
     }
 
     try (Connection connection = DriverManager.getConnection(config.getConnectionString(),
-                                                             config.getAllConnectionArguments())) {
+                                                             config.getConnectionArgumentsProperties())) {
       DatabaseMetaData metadata = connection.getMetaData();
       try (ResultSet rs = metadata.getTables(null, null, tableName, null)) {
         return rs.next();

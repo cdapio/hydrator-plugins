@@ -100,7 +100,7 @@ public class DBBaseConfig extends PluginConfig {
   }
 
   public Properties getAllConnectionArguments() {
-    return connection.getAllConnectionArguments();
+    return connection.getConnectionArgumentsProperties();
   }
 
   public String getConnectionArguments() {

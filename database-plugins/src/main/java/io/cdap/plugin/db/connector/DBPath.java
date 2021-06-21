@@ -16,6 +16,8 @@
 
 package io.cdap.plugin.db.connector;
 
+import io.cdap.plugin.common.db.DBConnectorPath;
+
 import javax.annotation.Nullable;
 
 /**
@@ -35,7 +37,7 @@ import javax.annotation.Nullable;
  * as schema name as "a" and table name as empty.
  *
  */
-public class DBPath {
+public class DBPath implements DBConnectorPath {
   private final boolean supportSchema;
   private String schema;
   private String table;
@@ -69,8 +71,8 @@ public class DBPath {
     // path should contain at most two parts : schema and table
     // for those that don't support schema, path should contain at most 1 part : table
     if (parts.length > 2 || !supportSchema && parts.length == 2) {
-      throw new IllegalArgumentException(String.format("Path should not contain more than %d parts.",
-        supportSchema ? 2 : 1));
+      throw new IllegalArgumentException(
+        String.format("Path should not contain more than %d parts.", supportSchema ? 2 : 1));
     }
 
     if (parts.length > 0) {
@@ -91,8 +93,7 @@ public class DBPath {
 
   private void validateName(String property, String name) {
     if (name.isEmpty()) {
-      throw new IllegalArgumentException(
-        String.format("%s should not be empty.", property));
+      throw new IllegalArgumentException(String.format("%s should not be empty.", property));
     }
   }
 
@@ -101,12 +102,28 @@ public class DBPath {
     return table;
   }
 
+  @Override
+  public boolean isRoot() {
+    return schema == null && table == null;
+  }
+
   @Nullable
   public String getSchema() {
     return schema;
   }
 
-  public boolean supportSchema() {
-    return this.supportSchema;
+  @Override
+  public boolean containDatabase() {
+    return false;
+  }
+
+  public boolean containSchema() {
+    return supportSchema;
+  }
+
+  @Nullable
+  @Override
+  public String getDatabase() {
+    return null;
   }
 }

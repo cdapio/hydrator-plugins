@@ -18,9 +18,9 @@ package io.cdap.plugin.db.batch.source;
 
 import com.google.common.base.Throwables;
 import io.cdap.plugin.ConnectionConfig;
-import io.cdap.plugin.DBUtils;
 import io.cdap.plugin.DataSizeReporter;
-import io.cdap.plugin.JDBCDriverShim;
+import io.cdap.plugin.common.db.DBUtils;
+import io.cdap.plugin.common.db.JDBCDriverShim;
 import io.cdap.plugin.db.batch.NoOpCommitConnection;
 import io.cdap.plugin.db.batch.TransactionIsolationLevel;
 import org.apache.hadoop.conf.Configuration;
