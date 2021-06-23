@@ -21,7 +21,7 @@
         },
         {
           "widget-type": "plugin-list",
-          "label": "Plugin Name",
+          "label": "JDBC Driver name",
           "name": "jdbcPluginName",
           "widget-attributes": {
             "plugin-type": "jdbc"
