@@ -23,6 +23,7 @@ import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.dataset.lib.KeyValue;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.plugin.common.KeyValueListParser;
+import io.cdap.plugin.common.db.DBConnectorProperties;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +33,7 @@ import javax.annotation.Nullable;
 /**
  * Defines a base {@link PluginConfig} that Database source, sink, and action can all re-use.
  */
-public class DBConnectorConfig extends PluginConfig {
+public class DBConnectorConfig extends PluginConfig implements DBConnectorProperties {
   public static final String CONNECTION_STRING = "connectionString";
   public static final String USER = "user";
   public static final String PASSWORD = "password";
@@ -88,8 +89,8 @@ public class DBConnectorConfig extends PluginConfig {
    * @param user See {@link DBConnectorConfig#user}.
    * @param password See {@link DBConnectorConfig#password}.
    */
-  public static Properties getAllConnectionArguments(@Nullable String connectionArguments,
-                                                  @Nullable String user, @Nullable String password) {
+  public static Properties getConnectionArgumentsProperties(@Nullable String connectionArguments,
+                                                            @Nullable String user, @Nullable String password) {
     KeyValueListParser kvParser = new KeyValueListParser("\\s*;\\s*", "=");
 
     Map<String, String> connectionArgumentsMap = new HashMap<>();
@@ -113,8 +114,9 @@ public class DBConnectorConfig extends PluginConfig {
   /**
    * @return a {@link Properties} of connection arguments, parsed from the config including the username and password.
    */
-  public Properties getAllConnectionArguments() {
-    return getAllConnectionArguments(connectionArguments, user, password);
+  @Override
+  public Properties getConnectionArgumentsProperties() {
+    return getConnectionArgumentsProperties(connectionArguments, user, password);
   }
 
   public String getConnectionArguments() {

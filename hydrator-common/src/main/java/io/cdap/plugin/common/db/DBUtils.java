@@ -14,7 +14,7 @@
  * the License.
  */
 
-package io.cdap.plugin;
+package io.cdap.plugin.common.db;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
@@ -23,7 +23,6 @@ import io.cdap.cdap.api.data.schema.UnsupportedTypeException;
 import io.cdap.cdap.api.plugin.PluginConfigurer;
 import io.cdap.cdap.api.plugin.PluginProperties;
 import io.cdap.cdap.etl.api.FailureCollector;
-import io.cdap.plugin.db.connector.DBConnectorConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -241,7 +240,7 @@ public final class DBUtils {
         "Ensure that plugin '%s' of type '%s' containing the driver has been deployed.", jdbcPluginName,
         PLUGIN_TYPE_JDBC);
       if (collector != null) {
-        collector.addFailure(error, action).withConfigProperty(DBConnectorConfig.JDBC_PLUGIN_NAME)
+        collector.addFailure(error, action).withConfigProperty(DBConnectorProperties.PLUGIN_JDBC_PLUGIN_NAME)
           .withPluginNotFound(jdbcPluginId, jdbcPluginName, PLUGIN_TYPE_JDBC);
       } else {
         throw new IllegalArgumentException(error + " " + action);

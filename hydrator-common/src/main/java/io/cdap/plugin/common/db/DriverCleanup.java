@@ -14,7 +14,7 @@
  * the License.
  */
 
-package io.cdap.plugin;
+package io.cdap.plugin.common.db;
 
 import com.google.common.base.Throwables;
 import io.cdap.cdap.etl.api.Destroyable;

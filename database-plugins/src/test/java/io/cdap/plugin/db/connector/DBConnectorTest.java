@@ -41,8 +41,6 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -58,7 +56,6 @@ import java.util.Set;
  * -Dconnection.arguments -- the additional connection arguments, optional
  */
 public class DBConnectorTest {
-  private static final Set<String> SUPPORTED_TYPES = new HashSet<>(Arrays.asList(DBConnector.SUPPORTED_TYPES));
   private static final String JDBC_PLUGIN_NAME = "jdbc_plugin";
   private static String username;
   private static String password;
@@ -152,7 +149,7 @@ public class DBConnectorTest {
       Assert.assertTrue(detail.getEntities().size() > 0);
       for (BrowseEntity entity : detail.getEntities()) {
         System.out.println(entity.getType() + " : " + entity.getName());
-        Assert.assertEquals(DBConnector.ENTITY_TYPE_SCHEMA, entity.getType());
+        Assert.assertEquals("SCHEMA", entity.getType());
         Assert.assertTrue(entity.canBrowse());
         Assert.assertFalse(entity.canSample());
       }
@@ -163,7 +160,6 @@ public class DBConnectorTest {
       Assert.assertTrue(detail.getEntities().size() > 0);
       for (BrowseEntity entity : detail.getEntities()) {
         System.out.println(entity.getType() + " : " + entity.getName());
-        Assert.assertTrue(SUPPORTED_TYPES.contains(entity.getType()));
         Assert.assertFalse(entity.canBrowse());
         Assert.assertTrue(entity.canSample());
       }
@@ -177,7 +173,6 @@ public class DBConnectorTest {
       Assert.assertTrue(detail.getEntities().size() > 0);
       for (BrowseEntity entity : detail.getEntities()) {
         System.out.println(entity.getType() + " : " + entity.getName());
-        Assert.assertTrue(SUPPORTED_TYPES.contains(entity.getType()));
         Assert.assertFalse(entity.canBrowse());
         Assert.assertTrue(entity.canSample());
       }
@@ -190,7 +185,6 @@ public class DBConnectorTest {
     Assert.assertEquals(1, detail.getEntities().size());
     for (BrowseEntity entity : detail.getEntities()) {
       System.out.println(entity.getType() + " : " + entity.getName());
-      Assert.assertTrue(SUPPORTED_TYPES.contains(entity.getType()));
       Assert.assertFalse(entity.canBrowse());
       Assert.assertTrue(entity.canSample());
     }
