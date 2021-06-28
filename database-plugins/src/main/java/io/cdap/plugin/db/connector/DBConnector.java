@@ -105,6 +105,7 @@ public class DBConnector extends AbstractDBConnector<DBConnectorConfig> implemen
     Map<String, String> properties = new HashMap<>();
     properties.put(DBBaseConfig.NAME_USE_CONNECTION, "true");
     properties.put(DBBaseConfig.NAME_CONNECTION, request.getConnectionWithMacro());
+    properties.put(DBBaseConfig.JDBC_PLUGIN_TYPE, DBUtils.PLUGIN_TYPE_JDBC);
     builder.addRelatedPlugin(new PluginSpec(DBSource.NAME, BatchSource.PLUGIN_TYPE, properties));
 
     String table = path.getTable();

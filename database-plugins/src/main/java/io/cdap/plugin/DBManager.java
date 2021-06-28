@@ -40,15 +40,17 @@ import javax.annotation.Nullable;
 public class DBManager implements Destroyable {
   private static final Logger LOG = LoggerFactory.getLogger(DBManager.class);
   private final DBConnectorConfig config;
-  private DriverCleanup driverCleanup;
+  private final String jdbcPluginType;
 
-  public DBManager(DBConnectorConfig config) {
+  public DBManager(DBConnectorConfig config, String jdbcPluginType) {
     this.config = config;
+    this.jdbcPluginType = jdbcPluginType;
   }
+  private DriverCleanup driverCleanup;
 
   public DBManager(ConnectionConfig config) {
     this(new DBConnectorConfig(config.user, config.password, config.jdbcPluginName, config.connectionString,
-      config.connectionArguments));
+      config.connectionArguments), config.jdbcPluginType);
   }
 
   @Nullable
@@ -62,7 +64,8 @@ public class DBManager implements Destroyable {
         .withConfigProperty(DBConnectorConfig.USER).withConfigProperty(DBConnectorConfig.PASSWORD);
     }
 
-    return DBUtils.loadJDBCDriverClass(pipelineConfigurer, config.getJdbcPluginName(), jdbcPluginId, collector);
+    return DBUtils
+      .loadJDBCDriverClass(pipelineConfigurer, config.getJdbcPluginName(), jdbcPluginType, jdbcPluginId, collector);
   }
 
   public boolean tableExists(Class<? extends Driver> jdbcDriverClass, String tableName) {
@@ -94,7 +97,8 @@ public class DBManager implements Destroyable {
   public void ensureJDBCDriverIsAvailable(Class<? extends Driver> jdbcDriverClass)
     throws IllegalAccessException, InstantiationException, SQLException {
     driverCleanup =
-      DBUtils.ensureJDBCDriverIsAvailable(jdbcDriverClass, config.getConnectionString(), config.getJdbcPluginName());
+      DBUtils.ensureJDBCDriverIsAvailable(jdbcDriverClass, config.getConnectionString(), config.getJdbcPluginName(),
+                                          jdbcPluginType);
   }
 
   @Override

@@ -81,6 +81,13 @@
         },
         {
           "widget-type": "hidden",
+          "name": "jdbcPluginType",
+          "widget-attributes": {
+            "default": "jdbc"
+          }
+        },
+        {
+          "widget-type": "hidden",
           "name": "query"
         },
         {

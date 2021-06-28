@@ -72,11 +72,13 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
   @Override
   public void configure(ConnectorConfigurer configurer) throws IOException {
     driverClass = DBUtils.loadJDBCDriverClass(
-      configurer, config.getJdbcPluginName(), String.format("connector.jdbc.%s", config.getJdbcPluginName()), null);
+      configurer, config.getJdbcPluginName(), DBUtils.PLUGIN_TYPE_JDBC,
+      String.format("connector.jdbc.%s", config.getJdbcPluginName()), null);
 
     try {
       driverCleanup =
-        DBUtils.ensureJDBCDriverIsAvailable(driverClass, config.getConnectionString(), config.getJdbcPluginName());
+        DBUtils.ensureJDBCDriverIsAvailable(driverClass, config.getConnectionString(), config.getJdbcPluginName(),
+                                            DBUtils.PLUGIN_TYPE_JDBC);
     } catch (Exception e) {
       throw new IOException(
         String.format("Failed to register JDBC driver Class, connection string : %s, JDBC plugin name : %s.",
