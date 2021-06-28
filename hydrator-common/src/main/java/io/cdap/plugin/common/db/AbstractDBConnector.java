@@ -93,7 +93,7 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
 
   @Override
   public void test(ConnectorContext context) throws ValidationException {
-    try (Connection connection = getConnection()) {
+    try (Connection connection = getConnection(null)) {
       connection.getMetaData();
     } catch (Exception e) {
       context.getFailureCollector().addFailure(
@@ -104,58 +104,47 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
 
   @Override
   public BrowseDetail browse(ConnectorContext connectorContext, BrowseRequest request) throws IOException {
-    try (Connection connection = getConnection()) {
-      DBConnectorPath dbConnectorPath = getDBConnectorPath(connection, request.getPath());
-      return browse(request, connection, dbConnectorPath);
+    DBConnectorPath dbConnectorPath = getDBConnectorPath(request.getPath());
+    try (Connection connection = getConnection(dbConnectorPath)) {
+      int limit = request.getLimit() == null || request.getLimit() <= 0 ? Integer.MAX_VALUE : request.getLimit();
+      if (dbConnectorPath.isRoot() && dbConnectorPath.containDatabase()) {
+        return listDatabases(connection, limit);
+      }
+      if (dbConnectorPath.containSchema() && dbConnectorPath.getSchema() == null) {
+        return listSchemas(connection, dbConnectorPath.getDatabase(), limit);
+      }
+      if (dbConnectorPath.getTable() == null) {
+        return listTables(connection, dbConnectorPath.getDatabase(), dbConnectorPath.getSchema(), limit);
+      }
+      return getTableDetail(connection, dbConnectorPath.getDatabase(), dbConnectorPath.getSchema(),
+                            dbConnectorPath.getTable());
     } catch (SQLException e) {
       throw new IOException(String.format("Failed to browse for path %s", request.getPath()), e);
     }
   }
 
-  protected BrowseDetail browse(BrowseRequest request, Connection connection, DBConnectorPath dbConnectorPath)
-    throws SQLException {
-    int limit = request.getLimit() == null || request.getLimit() <= 0 ? Integer.MAX_VALUE : request.getLimit();
-    if (dbConnectorPath.isRoot() && dbConnectorPath.containDatabase()) {
-      return listDatabases(connection, limit);
-    }
-    if (dbConnectorPath.containSchema() && dbConnectorPath.getSchema() == null) {
-      return listSchemas(connection, dbConnectorPath.getDatabase(), limit);
-    }
-    if (dbConnectorPath.getTable() == null) {
-      return listTables(connection, dbConnectorPath.getDatabase(), dbConnectorPath.getSchema(), limit);
-    }
-    return getTableDetail(connection, dbConnectorPath.getDatabase(), dbConnectorPath.getSchema(),
-                          dbConnectorPath.getTable());
-  }
-
-  protected abstract DBConnectorPath getDBConnectorPath(Connection connection, String path) throws IOException;
+  protected abstract DBConnectorPath getDBConnectorPath(String path) throws IOException;
 
   @Override
   public ConnectorSpec generateSpec(ConnectorContext connectorContext,
                                     ConnectorSpecRequest request) throws IOException {
-
-    try (Connection connection = getConnection()) {
-      DBConnectorPath dbConnectorPath = getDBConnectorPath(connection, request.getPath());
-      return generateSpec(request, connection, dbConnectorPath);
+    DBConnectorPath dbConnectorPath = getDBConnectorPath(request.getPath());
+    try (Connection connection = getConnection(dbConnectorPath)) {
+      ConnectorSpec.Builder specBuilder = ConnectorSpec.builder();
+      setConnectorSpec(request, dbConnectorPath, specBuilder);
+      String table = dbConnectorPath.getTable();
+      if (table == null) {
+        return specBuilder.build();
+      }
+      String database = dbConnectorPath.getDatabase();
+      validateDatabase(database, connection);
+      String schema = dbConnectorPath.getSchema();
+      validateSchema(database, schema, connection);
+      Schema outputSchema = getTableSchema(connection, database, schema, table);
+      return specBuilder.setSchema(outputSchema).build();
     } catch (SQLException e) {
       throw new IOException(String.format("Failed to generate spec for path %s", request.getPath()), e);
     }
-  }
-
-  protected ConnectorSpec generateSpec(ConnectorSpecRequest request, Connection connection,
-                                         DBConnectorPath dbConnectorPath) throws SQLException {
-    ConnectorSpec.Builder specBuilder = ConnectorSpec.builder();
-    setConnectorSpec(request, dbConnectorPath, specBuilder);
-    String table = dbConnectorPath.getTable();
-    if (table == null) {
-      return specBuilder.build();
-    }
-    String database = dbConnectorPath.getDatabase();
-    validateDatabase(database, connection);
-    String schema = dbConnectorPath.getSchema();
-    validateSchema(database, schema, connection);
-    Schema outputSchema = getTableSchema(connection, database, schema, table);
-    return specBuilder.setSchema(outputSchema).build();
   }
 
   protected Schema getTableSchema(Connection connection, String database,
@@ -311,7 +300,7 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
     }
   }
 
-  protected Connection getConnection() {
+  protected Connection getConnection(@Nullable DBConnectorPath path) {
     return getConnection(config.getConnectionString(), config.getConnectionArgumentsProperties());
   }
 

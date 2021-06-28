@@ -76,9 +76,9 @@ public class DBConnector extends AbstractDBConnector<DBConnectorConfig> implemen
   }
 
   @Override
-  protected DBConnectorPath getDBConnectorPath(Connection connection, String path) throws IOException {
+  protected DBConnectorPath getDBConnectorPath(String path) throws IOException {
     try {
-      return new DBPath(path, connection.getMetaData().supportsSchemasInTableDefinitions());
+      return new DBPath(path, getConnection(null).getMetaData().supportsSchemasInTableDefinitions());
     } catch (SQLException e) {
       throw new IOException(String.format("Failed to parse the path %s for the connector", path), e);
     }
@@ -86,7 +86,7 @@ public class DBConnector extends AbstractDBConnector<DBConnectorConfig> implemen
 
   @Override
   public List<StructuredRecord> sample(ConnectorContext context, SampleRequest sampleRequest) throws IOException {
-    try (Connection connection = getConnection()) {
+    try (Connection connection = getConnection(null)) {
       DBPath path = new DBPath(sampleRequest.getPath(), connection.getMetaData().supportsSchemasInTableDefinitions());
       String table = path.getTable();
       if (table == null) {

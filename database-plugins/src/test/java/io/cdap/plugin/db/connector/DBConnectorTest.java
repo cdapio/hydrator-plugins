@@ -146,7 +146,6 @@ public class DBConnectorTest {
       Assert.assertTrue(detail.getTotalCount() > 0);
       Assert.assertTrue(detail.getEntities().size() > 0);
       for (BrowseEntity entity : detail.getEntities()) {
-        System.out.println(entity.getType() + " : " + entity.getName());
         Assert.assertEquals("SCHEMA", entity.getType());
         Assert.assertTrue(entity.canBrowse());
         Assert.assertFalse(entity.canSample());
@@ -157,7 +156,6 @@ public class DBConnectorTest {
       Assert.assertTrue(detail.getTotalCount() > 0);
       Assert.assertTrue(detail.getEntities().size() > 0);
       for (BrowseEntity entity : detail.getEntities()) {
-        System.out.println(entity.getType() + " : " + entity.getName());
         Assert.assertFalse(entity.canBrowse());
         Assert.assertTrue(entity.canSample());
       }
@@ -170,7 +168,6 @@ public class DBConnectorTest {
       Assert.assertTrue(detail.getTotalCount() > 0);
       Assert.assertTrue(detail.getEntities().size() > 0);
       for (BrowseEntity entity : detail.getEntities()) {
-        System.out.println(entity.getType() + " : " + entity.getName());
         Assert.assertFalse(entity.canBrowse());
         Assert.assertTrue(entity.canSample());
       }
@@ -182,7 +179,6 @@ public class DBConnectorTest {
     Assert.assertEquals(1, detail.getTotalCount());
     Assert.assertEquals(1, detail.getEntities().size());
     for (BrowseEntity entity : detail.getEntities()) {
-      System.out.println(entity.getType() + " : " + entity.getName());
       Assert.assertFalse(entity.canBrowse());
       Assert.assertTrue(entity.canSample());
     }
