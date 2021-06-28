@@ -41,12 +41,12 @@ public class DBManager implements Destroyable {
   private static final Logger LOG = LoggerFactory.getLogger(DBManager.class);
   private final DBConnectorConfig config;
   private final String jdbcPluginType;
+  private DriverCleanup driverCleanup;
 
   public DBManager(DBConnectorConfig config, String jdbcPluginType) {
     this.config = config;
     this.jdbcPluginType = jdbcPluginType;
   }
-  private DriverCleanup driverCleanup;
 
   public DBManager(ConnectionConfig config) {
     this(new DBConnectorConfig(config.user, config.password, config.jdbcPluginName, config.connectionString,

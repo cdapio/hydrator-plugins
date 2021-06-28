@@ -83,6 +83,7 @@ public class DBBaseConfig extends PluginConfig {
   public String getJdbcPluginType() {
     return jdbcPluginType == null ? DBUtils.PLUGIN_TYPE_JDBC : jdbcPluginType;
   }
+
   @Nullable
   protected String cleanQuery(@Nullable String query) {
     if (query == null) {
