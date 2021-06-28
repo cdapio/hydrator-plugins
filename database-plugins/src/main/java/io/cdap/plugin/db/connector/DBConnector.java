@@ -40,6 +40,7 @@ import io.cdap.plugin.db.common.DBBaseConfig;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -85,14 +86,18 @@ public class DBConnector extends AbstractDBConnector<DBConnectorConfig> implemen
 
   @Override
   public List<StructuredRecord> sample(ConnectorContext context, SampleRequest sampleRequest) throws IOException {
-    return connectAndQuery(sampleRequest.getPath(), "sample", (connection, path) -> {
+    try (Connection connection = getConnection()) {
+      DBPath path = new DBPath(sampleRequest.getPath(), connection.getMetaData().supportsSchemasInTableDefinitions());
       String table = path.getTable();
       if (table == null) {
         throw new IllegalArgumentException("Path should contain table name.");
       }
       String schema = path.getSchema();
       return getTableData(connection, schema, table, sampleRequest.getLimit());
-    });
+
+    } catch (SQLException e) {
+      throw new IOException("Failed to sample.", e);
+    }
   }
 
   protected void setConnectorSpec(ConnectorSpecRequest request, DBConnectorPath path,
@@ -116,6 +121,8 @@ public class DBConnector extends AbstractDBConnector<DBConnectorConfig> implemen
 
   private List<StructuredRecord> getTableData(Connection connection, @Nullable String schema,
                                               String table, int limit) throws SQLException {
+    DatabaseMetaData metaData = connection.getMetaData();
+    validateSchema(null, schema, connection);
     String query = schema == null ? String.format("SELECT * FROM %s", table) :
       String.format("SELECT * FROM %s.%s", schema, table);
     try (Statement statement = connection.createStatement()) {
@@ -124,20 +131,6 @@ public class DBConnector extends AbstractDBConnector<DBConnectorConfig> implemen
         return parseResultSet(resultSet, limit);
       }
     }
-  }
-
-  private <T> T connectAndQuery(String pathStr, String operation, Query<T> query) throws IOException {
-    try (Connection connection = getConnection()) {
-      DBPath path = new DBPath(pathStr, connection.getMetaData().supportsSchemasInTableDefinitions());
-      return query.run(connection, path);
-
-    } catch (SQLException e) {
-      throw new IOException(String.format("Failed to %s.", operation), e);
-    }
-  }
-  @FunctionalInterface
-  interface Query<T> {
-    T run(Connection connection, DBPath path) throws SQLException;
   }
 
   private static List<StructuredRecord> parseResultSet(ResultSet resultSet, int limit) throws SQLException {
