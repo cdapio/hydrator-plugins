@@ -95,7 +95,7 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
 
   @Override
   public void test(ConnectorContext context) throws ValidationException {
-    try (Connection connection = getConnection(null)) {
+    try (Connection connection = getConnection()) {
       connection.getMetaData();
     } catch (Exception e) {
       context.getFailureCollector().addFailure(
@@ -302,8 +302,12 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
     }
   }
 
-  protected Connection getConnection(@Nullable DBConnectorPath path) {
+  protected Connection getConnection() {
     return getConnection(config.getConnectionString(), config.getConnectionArgumentsProperties());
+  }
+
+  protected Connection getConnection(DBConnectorPath path) {
+    return getConnection();
   }
 
   protected Connection getConnection(String connectionString, Properties connectionArguments) {
