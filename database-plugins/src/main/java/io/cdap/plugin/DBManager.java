@@ -20,6 +20,8 @@ import com.google.common.base.Throwables;
 import io.cdap.cdap.etl.api.Destroyable;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.plugin.common.db.DBUtils;
+import io.cdap.plugin.common.db.DriverCleanup;
 import io.cdap.plugin.db.connector.DBConnectorConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,15 +40,17 @@ import javax.annotation.Nullable;
 public class DBManager implements Destroyable {
   private static final Logger LOG = LoggerFactory.getLogger(DBManager.class);
   private final DBConnectorConfig config;
+  private final String jdbcPluginType;
   private DriverCleanup driverCleanup;
 
-  public DBManager(DBConnectorConfig config) {
+  public DBManager(DBConnectorConfig config, String jdbcPluginType) {
     this.config = config;
+    this.jdbcPluginType = jdbcPluginType;
   }
 
   public DBManager(ConnectionConfig config) {
     this(new DBConnectorConfig(config.user, config.password, config.jdbcPluginName, config.connectionString,
-      config.connectionArguments));
+      config.connectionArguments), config.jdbcPluginType);
   }
 
   @Nullable
@@ -60,7 +64,8 @@ public class DBManager implements Destroyable {
         .withConfigProperty(DBConnectorConfig.USER).withConfigProperty(DBConnectorConfig.PASSWORD);
     }
 
-    return DBUtils.loadJDBCDriverClass(pipelineConfigurer, config.getJdbcPluginName(), jdbcPluginId, collector);
+    return DBUtils
+      .loadJDBCDriverClass(pipelineConfigurer, config.getJdbcPluginName(), jdbcPluginType, jdbcPluginId, collector);
   }
 
   public boolean tableExists(Class<? extends Driver> jdbcDriverClass, String tableName) {
@@ -73,7 +78,7 @@ public class DBManager implements Destroyable {
     }
 
     try (Connection connection = DriverManager.getConnection(config.getConnectionString(),
-                                                             config.getAllConnectionArguments())) {
+                                                             config.getConnectionArgumentsProperties())) {
       DatabaseMetaData metadata = connection.getMetaData();
       try (ResultSet rs = metadata.getTables(null, null, tableName, null)) {
         return rs.next();
@@ -92,7 +97,8 @@ public class DBManager implements Destroyable {
   public void ensureJDBCDriverIsAvailable(Class<? extends Driver> jdbcDriverClass)
     throws IllegalAccessException, InstantiationException, SQLException {
     driverCleanup =
-      DBUtils.ensureJDBCDriverIsAvailable(jdbcDriverClass, config.getConnectionString(), config.getJdbcPluginName());
+      DBUtils.ensureJDBCDriverIsAvailable(jdbcDriverClass, config.getConnectionString(), config.getJdbcPluginName(),
+                                          jdbcPluginType);
   }
 
   @Override

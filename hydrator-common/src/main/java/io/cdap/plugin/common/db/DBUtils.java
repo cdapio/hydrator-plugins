@@ -14,7 +14,7 @@
  * the License.
  */
 
-package io.cdap.plugin;
+package io.cdap.plugin.common.db;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
@@ -23,7 +23,6 @@ import io.cdap.cdap.api.data.schema.UnsupportedTypeException;
 import io.cdap.cdap.api.plugin.PluginConfigurer;
 import io.cdap.cdap.api.plugin.PluginProperties;
 import io.cdap.cdap.etl.api.FailureCollector;
-import io.cdap.plugin.db.connector.DBConnectorConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,7 +84,7 @@ public final class DBUtils {
    * {@link DriverManager} if it is not already registered.
    */
   public static DriverCleanup ensureJDBCDriverIsAvailable(Class<? extends Driver> jdbcDriverClass,
-    String connectionString, String jdbcPluginName)
+    String connectionString, String jdbcPluginName, String jdbcPluginType)
     throws IllegalAccessException, InstantiationException, SQLException {
 
     try {
@@ -94,7 +93,7 @@ public final class DBUtils {
     } catch (SQLException e) {
       // Driver not found. We will try to register it with the DriverManager.
       LOG.debug("Plugin Type: {} and Plugin Name: {}; Driver Class: {} not found. Registering JDBC driver via shim {} ",
-        PLUGIN_TYPE_JDBC, jdbcPluginName, jdbcDriverClass.getName(), JDBCDriverShim.class.getName());
+                jdbcPluginType, jdbcPluginName, jdbcDriverClass.getName(), JDBCDriverShim.class.getName());
       final JDBCDriverShim driverShim = new JDBCDriverShim(jdbcDriverClass.newInstance());
       try {
         DBUtils.deregisterAllDrivers(jdbcDriverClass);
@@ -232,17 +231,18 @@ public final class DBUtils {
    * @return the loaded JDBC driver class
    */
   public static Class<? extends Driver> loadJDBCDriverClass(PluginConfigurer configurer, String jdbcPluginName,
-                                                            String jdbcPluginId, @Nullable FailureCollector collector) {
+                                                            String jdbcPluginType, String jdbcPluginId,
+                                                            @Nullable FailureCollector collector) {
     Class<? extends Driver> jdbcDriverClass =
-      configurer.usePluginClass(PLUGIN_TYPE_JDBC, jdbcPluginName, jdbcPluginId, PluginProperties.builder().build());
+      configurer.usePluginClass(jdbcPluginType, jdbcPluginName, jdbcPluginId, PluginProperties.builder().build());
     if (jdbcDriverClass == null) {
       String error = String.format("Unable to load JDBC Driver class for plugin name '%s'.", jdbcPluginName);
       String action = String.format(
         "Ensure that plugin '%s' of type '%s' containing the driver has been deployed.", jdbcPluginName,
-        PLUGIN_TYPE_JDBC);
+        jdbcPluginType);
       if (collector != null) {
-        collector.addFailure(error, action).withConfigProperty(DBConnectorConfig.JDBC_PLUGIN_NAME)
-          .withPluginNotFound(jdbcPluginId, jdbcPluginName, PLUGIN_TYPE_JDBC);
+        collector.addFailure(error, action).withConfigProperty(DBConnectorProperties.PLUGIN_JDBC_PLUGIN_NAME)
+          .withPluginNotFound(jdbcPluginId, jdbcPluginName, jdbcPluginType);
       } else {
         throw new IllegalArgumentException(error + " " + action);
       }

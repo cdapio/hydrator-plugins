@@ -8,6 +8,14 @@
       "label": "Basic",
       "properties": [
         {
+          "widget-type": "plugin-list",
+          "label": "JDBC Driver name",
+          "name": "jdbcPluginName",
+          "widget-attributes": {
+            "plugin-type": "jdbc"
+          }
+        },
+        {
           "widget-type": "textbox",
           "label": "Connection String",
           "name": "connectionString"
@@ -30,7 +38,7 @@
       ]
     },
     {
-      "label": "Credentials",
+      "label": "Advanced",
       "properties": [
         {
           "widget-type": "keyvalue",
