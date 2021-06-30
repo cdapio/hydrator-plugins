@@ -39,14 +39,14 @@ import io.cdap.cdap.etl.api.connector.Connector;
 import io.cdap.plugin.ConnectionConfig;
 import io.cdap.plugin.DBManager;
 import io.cdap.plugin.DBRecord;
-import io.cdap.plugin.DBUtils;
-import io.cdap.plugin.DriverCleanup;
 import io.cdap.plugin.FieldCase;
 import io.cdap.plugin.StructuredRecordUtils;
 import io.cdap.plugin.common.LineageRecorder;
 import io.cdap.plugin.common.ReferenceBatchSource;
 import io.cdap.plugin.common.ReferencePluginConfig;
 import io.cdap.plugin.common.SourceInputFormatProvider;
+import io.cdap.plugin.common.db.DBUtils;
+import io.cdap.plugin.common.db.DriverCleanup;
 import io.cdap.plugin.db.batch.TransactionIsolationLevel;
 import io.cdap.plugin.db.common.DBBaseConfig;
 import io.cdap.plugin.db.connector.DBConnector;
@@ -93,7 +93,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
   public DBSource(DBSourceConfig sourceConfig) {
     super(new ReferencePluginConfig(sourceConfig.getReferenceName()));
     this.sourceConfig = sourceConfig;
-    this.dbManager = new DBManager(sourceConfig.getConnection());
+    this.dbManager = new DBManager(sourceConfig.getConnection(), sourceConfig.getJdbcPluginType());
   }
 
   @Override
@@ -204,7 +204,7 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
   }
 
   private String getJDBCPluginId() {
-    return String.format("source.%s.%s", DBUtils.PLUGIN_TYPE_JDBC, sourceConfig.getJdbcPluginName());
+    return String.format("source.%s.%s", sourceConfig.getJdbcPluginType(), sourceConfig.getJdbcPluginName());
   }
 
   private Schema getSchema(Class<? extends Driver> driverClass, @Nullable String patternToReplace,
@@ -245,7 +245,8 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
 
     try {
       return DBUtils
-        .ensureJDBCDriverIsAvailable(driverClass, sourceConfig.getConnectionString(), sourceConfig.getJdbcPluginName());
+        .ensureJDBCDriverIsAvailable(driverClass, sourceConfig.getConnectionString(), sourceConfig.getJdbcPluginName(),
+                                     sourceConfig.getJdbcPluginType());
     } catch (IllegalAccessException | InstantiationException | SQLException e) {
       LOG.error("Unable to load or register driver {}", driverClass, e);
       throw e;

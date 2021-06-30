@@ -14,10 +14,7 @@
  * the License.
  */
 
-package io.cdap.plugin;
-
-import io.cdap.plugin.db.batch.sink.ETLDBOutputFormat;
-import io.cdap.plugin.db.batch.source.DataDrivenETLDBInputFormat;
+package io.cdap.plugin.common.db;
 
 import java.sql.Connection;
 import java.sql.Driver;
@@ -38,9 +35,6 @@ import java.util.logging.Logger;
  * ClassLoader?" Because the DriverManager will refuse to use a driver not loaded by the system ClassLoader.
  * The workaround for this is to create a shim class that implements java.sql.Driver.
  * This shim class will do nothing but call the methods of an instance of a JDBC driver that we loaded dynamically.
- *
- * @see DataDrivenETLDBInputFormat
- * @see ETLDBOutputFormat
  */
 public class JDBCDriverShim implements Driver {
 
