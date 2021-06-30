@@ -21,6 +21,7 @@ import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.plugin.common.Constants;
+import io.cdap.plugin.common.db.DBUtils;
 import io.cdap.plugin.db.connector.DBConnectorConfig;
 
 import java.util.Properties;
@@ -34,6 +35,7 @@ public class DBBaseConfig extends PluginConfig {
   public static final String ENABLE_AUTO_COMMIT = "enableAutoCommit";
   public static final String NAME_USE_CONNECTION = "useConnection";
   public static final String NAME_CONNECTION = "connection";
+  public static final String JDBC_PLUGIN_TYPE = "jdbcPluginType";
 
   @Name(Constants.Reference.REFERENCE_NAME)
   @Description(Constants.Reference.REFERENCE_NAME_DESCRIPTION)
@@ -68,8 +70,18 @@ public class DBBaseConfig extends PluginConfig {
   @Description("The existing connection to use.")
   private DBConnectorConfig connection;
 
+  @Name(JDBC_PLUGIN_TYPE)
+  @Description("Type of the JDBC plugin to use. This is the value of the 'type' key defined in the JSON file " +
+    "for the JDBC plugin. Defaults to 'jdbc'.")
+  @Nullable
+  public String jdbcPluginType;
+
   public boolean getEnableAutoCommit() {
     return enableAutoCommit == null ? false : enableAutoCommit;
+  }
+
+  public String getJdbcPluginType() {
+    return jdbcPluginType == null ? DBUtils.PLUGIN_TYPE_JDBC : jdbcPluginType;
   }
 
   @Nullable
