@@ -32,6 +32,14 @@
           }
         },
         {
+          "widget-type": "plugin-list",
+          "label": "JDBC Driver name",
+          "name": "jdbcPluginName",
+          "widget-attributes": {
+            "plugin-type": "jdbc"
+          }
+        },
+        {
           "widget-type": "textbox",
           "label": "Connection String",
           "name": "connectionString"
@@ -73,23 +81,14 @@
         },
         {
           "widget-type": "hidden",
-          "name": "query"
-        },
-        {
-          "widget-type": "plugin-list",
-          "label": "JDBC Driver name",
-          "name": "jdbcPluginName",
-          "widget-attributes": {
-            "plugin-type": "jdbc"
-          }
-        },
-        {
-          "widget-type": "textbox",
-          "label": "Plugin Type",
           "name": "jdbcPluginType",
           "widget-attributes": {
             "default": "jdbc"
           }
+        },
+        {
+          "widget-type": "hidden",
+          "name": "query"
         },
         {
           "widget-type": "connection-browser",
@@ -235,6 +234,10 @@
         "expression": "useConnection == false"
       },
       "show": [
+        {
+          "type": "property",
+          "name": "jdbcPluginName"
+        },
         {
           "type": "property",
           "name": "user"
