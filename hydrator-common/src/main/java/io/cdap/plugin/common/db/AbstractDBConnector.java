@@ -328,10 +328,9 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
       return DriverManager.getConnection(connectionString, connectionArguments);
     } catch (SQLException e) {
       throw new IllegalArgumentException(String.format("Cannot connect to database via connection string : %s and " +
-                                                         "arguments: %s. Make sure you have correct connection " +
-                                                         "properties.",
-                                                       connectionString,
-                                                       connectionArguments), e);
+                                                         "arguments: %s. Error: %s. Make sure you have correct " +
+                                                         "connection properties.", connectionString,
+                                                       connectionArguments, e.getMessage()), e);
     }
   }
 }
