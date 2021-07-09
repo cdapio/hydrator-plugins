@@ -70,7 +70,7 @@ public class DBConnector extends AbstractDBConnector<DBConnectorConfig> implemen
 
   private final DBConnectorConfig config;
 
-  DBConnector(DBConnectorConfig config) {
+  public DBConnector(DBConnectorConfig config) {
     super(config);
     this.config = config;
   }
@@ -123,7 +123,7 @@ public class DBConnector extends AbstractDBConnector<DBConnectorConfig> implemen
   private List<StructuredRecord> getTableData(Connection connection, @Nullable String schema,
                                               String table, int limit) throws SQLException {
     DatabaseMetaData metaData = connection.getMetaData();
-    validateSchema(null, schema, connection);
+    validateSchema(connection.getCatalog(), schema, connection);
     String query = schema == null ? String.format("SELECT * FROM %s", table) :
       String.format("SELECT * FROM %s.%s", schema, table);
     try (Statement statement = connection.createStatement()) {

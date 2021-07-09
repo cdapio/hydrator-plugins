@@ -139,7 +139,11 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
         return specBuilder.build();
       }
       String database = dbConnectorPath.getDatabase();
-      validateDatabase(database, connection);
+      if (database == null) {
+        database = connection.getCatalog();
+      } else {
+        validateDatabase(database, connection);
+      }
       String schema = dbConnectorPath.getSchema();
       validateSchema(database, schema, connection);
       Schema outputSchema = getTableSchema(connection, database, schema, table);
@@ -151,8 +155,7 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
 
   protected Schema getTableSchema(Connection connection, String database,
                                   String schema, String table) throws SQLException {
-    ResultSet columns = connection.getMetaData()
-      .getColumns(database == null ? connection.getCatalog() : database, schema, table, null);
+    ResultSet columns = connection.getMetaData().getColumns(database, schema, table, null);
     List<Schema.Field> fields = new ArrayList<>();
     while (columns.next()) {
       int sqlType = columns.getInt(RESULTSET_COLUMN_DATA_TYPE);
@@ -204,19 +207,24 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
 
   protected BrowseDetail listSchemas(Connection connection, @Nullable String database, int limit)
     throws SQLException {
-    validateDatabase(database, connection);
+    boolean containsDatabase = false;
+    if (database == null) {
+      database = connection.getCatalog();
+    } else {
+      validateDatabase(database, connection);
+      containsDatabase = true;
+    }
     BrowseDetail.Builder browseDetailBuilder = BrowseDetail.builder();
     int count = 0;
-    try (ResultSet resultSet = connection.getMetaData()
-      .getSchemas(database == null ? connection.getCatalog() : database, null)) {
+    try (ResultSet resultSet = connection.getMetaData().getSchemas(database, null)) {
       while (resultSet.next()) {
         String name = resultSet.getString(RESULTSET_COLUMN_TABLE_SCHEM);
         if (count >= limit) {
           break;
         }
-
         browseDetailBuilder.addEntity(
-          BrowseEntity.builder(name, "/" + name, ENTITY_TYPE_SCHEMA).canBrowse(true).build());
+          BrowseEntity.builder(name, containsDatabase ? "/" + database + "/" + name : "/" + name, ENTITY_TYPE_SCHEMA)
+            .canBrowse(true).build());
         count++;
       }
     }
@@ -225,19 +233,26 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
 
   protected BrowseDetail getTableDetail(Connection connection, @Nullable String database, @Nullable String schema,
                                         String table) throws SQLException {
-    // make sure database exists
-    validateDatabase(database, connection);
+    boolean containsDatabase = false;
+    if (database == null) {
+      database = connection.getCatalog();
+    } else {
+      // make sure database exists
+      validateDatabase(database, connection);
+      containsDatabase = true;
+    }
+
     // make sure schema exists
     validateSchema(database, schema, connection);
     BrowseDetail.Builder browseDetailBuilder = BrowseDetail.builder();
-    try (ResultSet resultSet = connection.getMetaData()
-      .getTables(database == null ? connection.getCatalog() : database, schema, table, null)) {
+    try (ResultSet resultSet = connection.getMetaData().getTables(database, schema, table, null)) {
       if (resultSet.next()) {
         String name = resultSet.getString(RESULTSET_COLUMN_TABLE_NAME);
-        browseDetailBuilder.addEntity(BrowseEntity
-                                        .builder(name, schema == null ? "/" + name : "/" + schema + "/" + name,
-                                                 resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE)).canSample(true)
-                                        .build());
+        browseDetailBuilder.addEntity(BrowseEntity.builder(name,
+                                                           (containsDatabase ? "/" + database : "")
+                                                             + (schema == null ? "" : "/" + schema) + "/" + name,
+                                                           resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE))
+                                        .canSample(true).build());
       } else {
         throw new IllegalArgumentException(String.format("Cannot find table : %s.%s.", schema, table));
       }
@@ -248,22 +263,29 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
   protected BrowseDetail listTables(Connection connection, @Nullable String database, @Nullable String schema,
                                     int limit) throws SQLException {
     BrowseDetail.Builder browseDetailBuilder = BrowseDetail.builder();
-    int count = 0;
-    // make sure database exists
-    validateDatabase(database, connection);
+    boolean containsDatabase = false;
+    if (database == null) {
+      database = connection.getCatalog();
+    } else {
+      // make sure database exists
+      validateDatabase(database, connection);
+      containsDatabase = true;
+    }
     // make sure schema exists
     validateSchema(database, schema, connection);
-    try (ResultSet resultSet = connection.getMetaData()
-      .getTables(database == null ? connection.getCatalog() : database, schema, null, null)) {
+
+    int count = 0;
+    try (ResultSet resultSet = connection.getMetaData().getTables(database, schema, null, null)) {
       while (resultSet.next()) {
         String name = resultSet.getString(RESULTSET_COLUMN_TABLE_NAME);
         if (count >= limit) {
           break;
         }
-        browseDetailBuilder.addEntity(BrowseEntity
-                                        .builder(name, schema == null ? "/" + name : "/" + schema + "/" + name,
-                                                 resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE)).canSample(true)
-                                        .build());
+        browseDetailBuilder.addEntity(BrowseEntity.builder(name,
+                                                           (containsDatabase ? "/" + database : "")
+                                                             + (schema == null ? "" : "/" + schema) + "/" + name,
+                                                           resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE))
+                                        .canSample(true).build());
         count++;
       }
     }
@@ -271,9 +293,6 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
   }
 
   private void validateDatabase(String database, Connection connection) throws SQLException {
-    if (database == null) {
-      return;
-    }
     try (ResultSet catalogs = queryDatabases(connection)) {
       boolean exits = false;
       while (catalogs.next()) {
@@ -294,8 +313,7 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
       return;
     }
     // NOTE Oracle schema name is case sensitive here
-    try (ResultSet schemas = connection.getMetaData()
-      .getSchemas(database == null ? connection.getCatalog() : database, schema)) {
+    try (ResultSet schemas = connection.getMetaData().getSchemas(database, schema)) {
       if (!schemas.next()) {
         throw new IllegalArgumentException(String.format("Schema '%s' does not exist.", schema));
       }
