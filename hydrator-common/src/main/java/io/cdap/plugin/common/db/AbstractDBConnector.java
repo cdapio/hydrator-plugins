@@ -207,10 +207,12 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
 
   protected BrowseDetail listSchemas(Connection connection, @Nullable String database, int limit)
     throws SQLException {
+    boolean containsDatabase = false;
     if (database == null) {
       database = connection.getCatalog();
     } else {
       validateDatabase(database, connection);
+      containsDatabase = true;
     }
     BrowseDetail.Builder browseDetailBuilder = BrowseDetail.builder();
     int count = 0;
@@ -220,9 +222,9 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
         if (count >= limit) {
           break;
         }
-
         browseDetailBuilder.addEntity(
-          BrowseEntity.builder(name, "/" + name, ENTITY_TYPE_SCHEMA).canBrowse(true).build());
+          BrowseEntity.builder(name, containsDatabase ? "/" + database + "/" + name : "/" + name, ENTITY_TYPE_SCHEMA)
+            .canBrowse(true).build());
         count++;
       }
     }
@@ -231,11 +233,13 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
 
   protected BrowseDetail getTableDetail(Connection connection, @Nullable String database, @Nullable String schema,
                                         String table) throws SQLException {
+    boolean containsDatabase = false;
     if (database == null) {
       database = connection.getCatalog();
     } else {
       // make sure database exists
       validateDatabase(database, connection);
+      containsDatabase = true;
     }
 
     // make sure schema exists
@@ -245,8 +249,8 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
       if (resultSet.next()) {
         String name = resultSet.getString(RESULTSET_COLUMN_TABLE_NAME);
         browseDetailBuilder.addEntity(BrowseEntity.builder(name,
-                                                           schema == null ? "/" + database + "/" + name :
-                                                             "/" + database + "/" + schema + "/" + name,
+                                                           (containsDatabase ? "/" + database : "")
+                                                             + (schema == null ? "" : "/" + schema) + "/" + name,
                                                            resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE))
                                         .canSample(true).build());
       } else {
@@ -259,26 +263,27 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
   protected BrowseDetail listTables(Connection connection, @Nullable String database, @Nullable String schema,
                                     int limit) throws SQLException {
     BrowseDetail.Builder browseDetailBuilder = BrowseDetail.builder();
-    int count = 0;
+    boolean containsDatabase = false;
     if (database == null) {
       database = connection.getCatalog();
     } else {
       // make sure database exists
       validateDatabase(database, connection);
+      containsDatabase = true;
     }
     // make sure schema exists
     validateSchema(database, schema, connection);
 
+    int count = 0;
     try (ResultSet resultSet = connection.getMetaData().getTables(database, schema, null, null)) {
       while (resultSet.next()) {
         String name = resultSet.getString(RESULTSET_COLUMN_TABLE_NAME);
         if (count >= limit) {
           break;
         }
-
         browseDetailBuilder.addEntity(BrowseEntity.builder(name,
-                                                           schema == null ? "/" + database + "/" + name :
-                                                             "/" + database + "/" + schema + "/" + name,
+                                                           (containsDatabase ? "/" + database : "")
+                                                             + (schema == null ? "" : "/" + schema) + "/" + name,
                                                            resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE))
                                         .canSample(true).build());
         count++;
