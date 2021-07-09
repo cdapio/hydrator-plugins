@@ -70,7 +70,7 @@ public class DBConnector extends AbstractDBConnector<DBConnectorConfig> implemen
 
   private final DBConnectorConfig config;
 
-  DBConnector(DBConnectorConfig config) {
+  public DBConnector(DBConnectorConfig config) {
     super(config);
     this.config = config;
   }
