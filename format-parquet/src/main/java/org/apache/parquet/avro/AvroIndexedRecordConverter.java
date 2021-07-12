@@ -153,7 +153,7 @@ class AvroIndexedRecordConverter<T extends IndexedRecord> extends GroupConverter
   private static Converter newConverter(Schema schema, Type type,
       GenericData model, ParentValueContainer parent) {
     // this is the modified section
-    if (type.asPrimitiveType().getPrimitiveTypeName() == PrimitiveType.PrimitiveTypeName.INT96) {
+    if (type.isPrimitive() && type.asPrimitiveType().getPrimitiveTypeName() == PrimitiveType.PrimitiveTypeName.INT96) {
       if (schema.getType().equals(Schema.Type.BYTES)) {
         return new AvroConverters.FieldByteBufferConverter(parent);
       } else if (schema.getType().equals(Schema.Type.LONG)) {
