@@ -52,4 +52,9 @@ public interface DBConnectorProperties {
    * Get the jdbc plugin name
    */
   String getJdbcPluginName();
+
+  /**
+   * @return a string of connection arguments in form of key1=val1;key2=val2...
+   */
+  String getConnectionArguments();
 }
