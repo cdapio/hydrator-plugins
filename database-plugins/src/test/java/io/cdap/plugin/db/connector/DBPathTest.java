@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.db.connector;
 
+import io.cdap.plugin.common.db.DBPath;
 import org.junit.Assert;
 import org.junit.Test;
 

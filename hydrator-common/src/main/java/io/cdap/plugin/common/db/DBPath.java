@@ -14,9 +14,7 @@
  * the License.
  */
 
-package io.cdap.plugin.db.connector;
-
-import io.cdap.plugin.common.db.DBConnectorPath;
+package io.cdap.plugin.common.db;
 
 import javax.annotation.Nullable;
 

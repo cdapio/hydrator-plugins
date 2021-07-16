@@ -33,6 +33,7 @@ import io.cdap.cdap.etl.api.connector.PluginSpec;
 import io.cdap.cdap.etl.api.connector.SampleRequest;
 import io.cdap.plugin.common.db.AbstractDBConnector;
 import io.cdap.plugin.common.db.DBConnectorPath;
+import io.cdap.plugin.common.db.DBPath;
 import io.cdap.plugin.common.db.DBUtils;
 import io.cdap.plugin.db.batch.source.DBSource;
 import io.cdap.plugin.db.common.DBBaseConfig;
@@ -103,8 +104,11 @@ public class DBConnector extends AbstractDBConnector<DBConnectorConfig> implemen
   protected void setConnectorSpec(ConnectorSpecRequest request, DBConnectorPath path,
                                   ConnectorSpec.Builder builder) {
     Map<String, String> properties = new HashMap<>();
-    properties.put(DBBaseConfig.NAME_USE_CONNECTION, "true");
-    properties.put(DBBaseConfig.NAME_CONNECTION, request.getConnectionWithMacro());
+    properties.put(DBConnectorConfig.CONNECTION_STRING, config.getConnectionString());
+    properties.put(DBConnectorConfig.JDBC_PLUGIN_NAME, config.getJdbcPluginName());
+    properties.put(DBConnectorConfig.USER, config.getUser());
+    properties.put(DBConnectorConfig.PASSWORD, config.getPassword());
+    properties.put(DBConnectorConfig.CONNECTION_ARGUMENTS, config.getConnectionArguments());
     properties.put(DBBaseConfig.JDBC_PLUGIN_TYPE, DBUtils.PLUGIN_TYPE_JDBC);
     builder.addRelatedPlugin(new PluginSpec(DBSource.NAME, BatchSource.PLUGIN_TYPE, properties));
 

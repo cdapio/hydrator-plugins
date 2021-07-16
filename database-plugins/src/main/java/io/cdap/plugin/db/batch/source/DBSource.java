@@ -352,6 +352,14 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
 
     @SuppressWarnings("checkstyle:WhitespaceAround")
     private void validate(FailureCollector collector) {
+      if (getUseConnection()) {
+        collector.addFailure("Database batch source plugin doesn't support using existing connection.",
+                             "Don't set useConnection property to true.");
+      }
+      if (containsMacro(NAME_CONNECTION)) {
+        collector.addFailure("Database batch source plugin doesn't support using existing connection.",
+                             "Remove macro in connection property.");
+      }
       boolean hasOneSplit = false;
       if (!containsMacro(NUM_SPLITS) && numSplits != null) {
         if (numSplits < 1) {

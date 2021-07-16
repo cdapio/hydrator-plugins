@@ -144,4 +144,8 @@ public class DBBaseConfig extends PluginConfig {
   public String getColumnNameCase() {
     return columnNameCase;
   }
+
+  public boolean getUseConnection() {
+    return useConnection == null ? false : useConnection;
+  }
 }
