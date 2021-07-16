@@ -99,7 +99,7 @@ public class ParquetInputFormatProvider extends PathTrackingInputFormatProvider<
       for (Map.Entry<String, String> entry : conf.getFileSystemProperties().entrySet()) {
         hconf.set(entry.getKey(), entry.getValue());
       }
-      final Path file = conf.getFilePathForSchemaGeneration(filePath, ".+\\.parquet", hconf);
+      final Path file = conf.getFilePathForSchemaGeneration(filePath, ".+\\.parquet", hconf, job);
       reader = AvroParquetReader.builder(file).build();
       GenericData.Record record = (GenericData.Record) reader.read();
       return Schema.parseJson(record.getSchema().toString());
