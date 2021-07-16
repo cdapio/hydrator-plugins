@@ -119,6 +119,7 @@ public class DBConnectorConfig extends PluginConfig implements DBConnectorProper
     return getConnectionArgumentsProperties(connectionArguments, user, password);
   }
 
+  @Override
   public String getConnectionArguments() {
     return connectionArguments;
   }
