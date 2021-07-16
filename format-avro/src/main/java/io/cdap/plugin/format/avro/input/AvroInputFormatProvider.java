@@ -124,7 +124,7 @@ public class AvroInputFormatProvider extends PathTrackingInputFormatProvider<Avr
       for (Map.Entry<String, String> entry : conf.getFileSystemProperties().entrySet()) {
         hconf.set(entry.getKey(), entry.getValue());
       }
-      Path file = conf.getFilePathForSchemaGeneration(filePath, ".+\\.avro", hconf);
+      Path file = conf.getFilePathForSchemaGeneration(filePath, ".+\\.avro", hconf, job);
       DatumReader<GenericRecord> dataReader = new GenericDatumReader<>();
       seekableInput = new FsInput(file, hconf);
       dataFileReader = DataFileReader.openReader(seekableInput, dataReader);

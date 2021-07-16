@@ -24,10 +24,12 @@ import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.api.plugin.PluginPropertyField;
+import io.cdap.plugin.common.batch.JobUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.mapreduce.Job;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -109,12 +111,15 @@ public class PathTrackingConfig extends PluginConfig {
    *
    * @param path path from config
    * @param regexPathFilter the regex used to filter the files
+   * @param job job to retrieve the file system
    * @return {@link Path}
    */
-  public Path getFilePathForSchemaGeneration(String path, String regexPathFilter, Configuration configuration)
+  public Path getFilePathForSchemaGeneration(String path, String regexPathFilter, Configuration configuration, Job job)
     throws IOException {
     Path fsPath = new Path(path);
-    FileSystem fs = FileSystem.get(fsPath.toUri(), configuration);
+    // need this to load the extra class loader to avoid ClassNotFoundException for the file system
+    FileSystem fs = JobUtils.applyWithExtraClassLoader(job, getClass().getClassLoader(),
+                                                       f -> FileSystem.get(fsPath.toUri(), configuration));
 
     if (!fs.exists(fsPath)) {
       throw new IOException("Input path not found");
