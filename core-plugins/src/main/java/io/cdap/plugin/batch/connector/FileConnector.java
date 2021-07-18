@@ -33,6 +33,7 @@ import io.cdap.cdap.etl.api.connector.ConnectorSpec;
 import io.cdap.cdap.etl.api.connector.ConnectorSpecRequest;
 import io.cdap.cdap.etl.api.connector.PluginSpec;
 import io.cdap.plugin.batch.source.FileBatchSource;
+import io.cdap.plugin.common.Constants;
 import io.cdap.plugin.format.connector.AbstractFileConnector;
 import io.cdap.plugin.format.connector.FileTypeDetector;
 
@@ -43,7 +44,8 @@ import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * File connector to browse flat file on local system
@@ -111,8 +113,13 @@ public class FileConnector extends AbstractFileConnector<FileConnector.FileConne
   @Override
   protected void setConnectorSpec(ConnectorSpecRequest request, ConnectorSpec.Builder builder) {
     super.setConnectorSpec(request, builder);
-    builder.addRelatedPlugin(new PluginSpec(FileBatchSource.NAME, BatchSource.PLUGIN_TYPE,
-                                            Collections.singletonMap("path", request.getPath())));
+    // not use ImmutableMap here in case any property is null
+    Map<String, String> properties = new HashMap<>();
+    properties.put("path", request.getPath());
+    properties.put("format", FileTypeDetector.detectFileFormat(
+      FileTypeDetector.detectFileType(request.getPath())).name().toLowerCase());
+    properties.put(Constants.Reference.REFERENCE_NAME, new File(request.getPath()).getName());
+    builder.addRelatedPlugin(new PluginSpec(FileBatchSource.NAME, BatchSource.PLUGIN_TYPE, properties));
   }
 
   private BrowseEntity generateBrowseEntity(File file) throws IOException {

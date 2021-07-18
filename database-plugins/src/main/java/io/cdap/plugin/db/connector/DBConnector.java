@@ -31,6 +31,7 @@ import io.cdap.cdap.etl.api.connector.ConnectorSpecRequest;
 import io.cdap.cdap.etl.api.connector.DirectConnector;
 import io.cdap.cdap.etl.api.connector.PluginSpec;
 import io.cdap.cdap.etl.api.connector.SampleRequest;
+import io.cdap.plugin.common.Constants;
 import io.cdap.plugin.common.db.AbstractDBConnector;
 import io.cdap.plugin.common.db.DBConnectorPath;
 import io.cdap.plugin.common.db.DBPath;
@@ -110,6 +111,9 @@ public class DBConnector extends AbstractDBConnector<DBConnectorConfig> implemen
     properties.put(DBConnectorConfig.PASSWORD, config.getPassword());
     properties.put(DBConnectorConfig.CONNECTION_ARGUMENTS, config.getConnectionArguments());
     properties.put(DBBaseConfig.JDBC_PLUGIN_TYPE, DBUtils.PLUGIN_TYPE_JDBC);
+    if (path.getTable() != null) {
+      properties.put(Constants.Reference.REFERENCE_NAME, path.getTable());
+    }
     builder.addRelatedPlugin(new PluginSpec(DBSource.NAME, BatchSource.PLUGIN_TYPE, properties));
 
     String table = path.getTable();
