@@ -33,6 +33,7 @@ import io.cdap.cdap.etl.api.validation.ValidationException;
 import io.cdap.plugin.common.SourceInputFormatProvider;
 import io.cdap.plugin.common.batch.JobUtils;
 import io.cdap.plugin.common.batch.ThrowableFunction;
+import io.cdap.plugin.format.FileFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -54,6 +55,9 @@ import java.util.UUID;
  */
 public abstract class AbstractFileConnector<T extends PluginConfig>
   implements BatchConnector<NullWritable, StructuredRecord> {
+  // we do not want offset field in the schema
+  private static final String DEFAULT_TEXT_SCHEMA =
+    Schema.recordOf("text", Schema.Field.of("body", Schema.of(Schema.Type.STRING))).toString();
 
   private final T config;
 
@@ -168,13 +172,17 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
       throw new IllegalArgumentException(String.format("The given path %s cannot be sampled.", path));
     }
 
-    String format = FileTypeDetector.detectFileFormat(fileType).name().toLowerCase();
+    FileFormat format = FileTypeDetector.detectFileFormat(fileType);
     PluginProperties.Builder builder = PluginProperties.builder();
     builder.add("path", path);
+    if (format.equals(FileFormat.TEXT)) {
+      builder.add("schema", DEFAULT_TEXT_SCHEMA);
+    }
     builder.addAll(config.getProperties().getProperties());
     builder.addAll(getFileSystemProperties(path));
+
     ValidatingInputFormat inputFormat = context.getPluginConfigurer().usePlugin(
-      ValidatingInputFormat.PLUGIN_TYPE, format, UUID.randomUUID().toString(), builder.build());
+      ValidatingInputFormat.PLUGIN_TYPE, format.name().toLowerCase(), UUID.randomUUID().toString(), builder.build());
 
     if (inputFormat == null) {
       throw new IOException(
