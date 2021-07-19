@@ -113,7 +113,7 @@ public class FileTypeDetector {
     return "unknown";
   }
 
-  protected static FileFormat detectFileFormat(String fileType) {
+  public static FileFormat detectFileFormat(String fileType) {
     // hack for file format, only has text and blob now, json and text are considered to use TEXT, others use BLOB
     if (fileType.contains("text/") || fileType.equals("application/json")) {
       return FileFormat.TEXT;
