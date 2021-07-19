@@ -50,7 +50,7 @@ import java.util.Collections;
  */
 @Plugin(type = Connector.PLUGIN_TYPE)
 @Name(FileConnector.NAME)
-@Description("File connector for local file system")
+@Description("Connection to browse and sample data from the local file system.")
 @Category("File")
 public class FileConnector extends AbstractFileConnector<FileConnector.FileConnectorConfig> {
   public static final String NAME = "File";
