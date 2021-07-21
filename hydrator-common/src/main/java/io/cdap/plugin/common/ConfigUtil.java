@@ -47,17 +47,18 @@ public class ConfigUtil {
 
   public static void validateConnection(PluginConfig config, Boolean useConnection, PluginConfig connection,
                                         FailureCollector collector) {
-    // if use connection is false but connection is provided as macro, fail the validation
-    if (useConnection != null && !useConnection && config.containsMacro(NAME_CONNECTION)) {
+    Map<String, String> rawProperties = config.getRawProperties().getProperties();
+    // if use connection is false but connection is provided, fail the validation
+    if (useConnection != null && !useConnection && rawProperties.get(NAME_CONNECTION) != null) {
       collector.addFailure(
         String.format("Connection cannot be used when %s is set to false.", NAME_USE_CONNECTION),
         String.format("Please set %s to true.", NAME_USE_CONNECTION)).withConfigProperty(NAME_USE_CONNECTION);
     }
-    // if use connection is true but connection is not provided as marco, fail the validation
-    if (useConnection != null && useConnection && !config.containsMacro(NAME_CONNECTION)) {
+    // if use connection is true but connection is not provided , fail the validation
+    if (useConnection != null && useConnection && rawProperties.get(NAME_CONNECTION) == null) {
       collector.addFailure(
         String.format(
-          "Property %s is not provided with a Macro referencing an existing connection when %s is set to true.",
+          "Property %s is not provided when %s is set to true.",
           NAME_CONNECTION, NAME_USE_CONNECTION),
         String.format(
           "Please set a value with a Macro referencing an existing connection for property %s.", NAME_CONNECTION)
