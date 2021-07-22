@@ -163,7 +163,7 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
       int scale = columns.getInt(RESULTSET_COLUMN_DECIMAL_DIGITS);
       int precision = columns.getInt(RESULTSET_COLUMN_COLUMN_SIZE);
       String columnName = columns.getString(RESULTSET_COLUMN_COLUMN_NAME);
-      Schema columnSchema = DBUtils.getSchema(typeName, sqlType, precision, scale, columnName, true);
+      Schema columnSchema = getSchema(sqlType, typeName, scale, precision, columnName, true);
       String isNullable = columns.getString(RESULTSET_COLUMN_IS_NULLABLE);
       if ("YES".equals(isNullable)) {
         columnSchema = Schema.nullableOf(columnSchema);
@@ -172,6 +172,11 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
     }
     Schema outputSchema = Schema.recordOf("output", fields);
     return outputSchema;
+  }
+
+  protected Schema getSchema(int sqlType, String typeName, int scale, int precision, String columnName,
+                             boolean handleAsDecimal) throws SQLException {
+    return DBUtils.getSchema(typeName, sqlType, precision, scale, columnName, handleAsDecimal);
   }
 
   /**
