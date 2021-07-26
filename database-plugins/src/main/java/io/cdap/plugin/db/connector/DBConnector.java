@@ -65,7 +65,7 @@ import javax.annotation.Nullable;
  */
 @Plugin(type = Connector.PLUGIN_TYPE)
 @Name(DBConnector.NAME)
-@Description("Connection to browse and sample data from relational databases using JDBC")
+@Description("Connection to access data in relational databases using JDBC")
 @Category("Database")
 public class DBConnector extends AbstractDBConnector<DBConnectorConfig> implements DirectConnector {
   public static final String NAME = "Database";
