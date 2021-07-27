@@ -179,7 +179,9 @@ public class DelimitedConfig extends PathTrackingConfig {
     String[] columnNames = null;
     String[] rowValue = null;
 
-    try (FileSystem fileSystem = FileSystem.get(filePath.toUri(), configuration);
+    try (FileSystem fileSystem = JobUtils.applyWithExtraClassLoader(job, getClass().getClassLoader(),
+                                                                    f -> FileSystem.get(filePath.toUri(),
+                                                                                        configuration));
          FSDataInputStream input = fileSystem.open(filePath);
          BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(input));
     ) {
