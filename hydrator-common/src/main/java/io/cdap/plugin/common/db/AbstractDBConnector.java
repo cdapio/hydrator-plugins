@@ -46,8 +46,8 @@ import javax.annotation.Nullable;
  * @param <T> type of the plugin config
  */
 public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorProperties> implements Connector {
-  public static final String ENTITY_TYPE_DATABASE = "DATABASE";
-  public static final String ENTITY_TYPE_SCHEMA = "SCHEMA";
+  public static final String ENTITY_TYPE_DATABASE = "database";
+  public static final String ENTITY_TYPE_SCHEMA = "schema";
 
   private static final String RESULTSET_COLUMN_TABLE_NAME = "TABLE_NAME";
   private static final String RESULTSET_COLUMN_TABLE_TYPE = "TABLE_TYPE";
@@ -289,7 +289,7 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
         browseDetailBuilder.addEntity(BrowseEntity.builder(name,
                                                            (containsDatabase ? "/" + database : "")
                                                              + (schema == null ? "" : "/" + schema) + "/" + name,
-                                                           resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE))
+                                                           resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE).toLowerCase())
                                         .canSample(true).build());
         count++;
       }
