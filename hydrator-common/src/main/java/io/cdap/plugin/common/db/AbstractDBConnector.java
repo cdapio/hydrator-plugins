@@ -253,11 +253,12 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
     try (ResultSet resultSet = connection.getMetaData().getTables(database, schema, table, null)) {
       if (resultSet.next()) {
         String name = resultSet.getString(RESULTSET_COLUMN_TABLE_NAME);
-        browseDetailBuilder.addEntity(BrowseEntity.builder(name,
-                                                           (containsDatabase ? "/" + database : "")
-                                                             + (schema == null ? "" : "/" + schema) + "/" + name,
-                                                           resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE))
-                                        .canSample(true).build());
+        browseDetailBuilder.addEntity(
+            BrowseEntity.builder(
+                name,
+                (containsDatabase ? "/" + database : "") + (schema == null ? "" : "/" + schema) + "/" + name,
+                resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE)
+            ).canSample(true).build());
       } else {
         throw new IllegalArgumentException(String.format("Cannot find table : %s.%s.", schema, table));
       }
@@ -286,11 +287,12 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
         if (count >= limit) {
           break;
         }
-        browseDetailBuilder.addEntity(BrowseEntity.builder(name,
-                                                           (containsDatabase ? "/" + database : "")
-                                                             + (schema == null ? "" : "/" + schema) + "/" + name,
-                                                           resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE).toLowerCase())
-                                        .canSample(true).build());
+        browseDetailBuilder.addEntity(
+            BrowseEntity.builder(
+                name,
+                (containsDatabase ? "/" + database : "") + (schema == null ? "" : "/" + schema) + "/" + name,
+                resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE).toLowerCase()
+            ).canSample(true).build());
         count++;
       }
     }
