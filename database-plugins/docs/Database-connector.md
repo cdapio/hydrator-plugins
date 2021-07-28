@@ -1,18 +1,23 @@
-# Database Connector
+# Database Connection
 
 
 Description
 -----------
-This plugin can be used to browse and sample data from relational database using JDBC. This is a generic database
-connector plugin which may not handle some special case for certain special databases that have specific implementation
-of JDBC. Try to use those specific database connector plugins (e.g. oracle connector plugin) if they exist.
+Use this connection to access data in a relational database using JDBC. 
+This is a generic database connection that might not handle some special cases 
+for certain special databases that have a specific implementation of JDBC. 
+Try to use those specific database connections 
+(for example, MySQL, Oracle, Postgres, and SQL Server connections) if they exist.
 
 
 
 Properties
 ----------
-**Plugin Name:** Name of the JDBC plugin to use. This is the value of the 'name' key
-defined in the JSON file for the JDBC plugin.
+**Name:** Name of the connection. Connection names must be unique in a namespace.
+
+**Description:** Description of the connection.
+
+**JDBC Driver name:** Select the JDBC driver to use.
 
 **Connection String:** JDBC connection string including database name.
 
