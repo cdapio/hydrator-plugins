@@ -197,6 +197,7 @@ public final class DBUtils {
       int columnSqlPrecision = metadata.getPrecision(i); // total number of digits
       int columnSqlScale = metadata.getScale(i); // digits after the decimal point
       String columnTypeName = metadata.getColumnTypeName(i);
+      boolean isSigned = metadata.isSigned(i);
       boolean handleAsDecimal = false;
       if (columnSqlType == Types.DECIMAL || columnSqlType == Types.NUMERIC) {
         if (outputSchema == null) {
@@ -210,8 +211,8 @@ public final class DBUtils {
           }
         }
       }
-      Schema columnSchema =
-        getSchema(columnTypeName, columnSqlType, columnSqlPrecision, columnSqlScale, columnName, handleAsDecimal);
+      Schema columnSchema = getSchema(
+        columnTypeName, columnSqlType, columnSqlPrecision, columnSqlScale, columnName, isSigned, handleAsDecimal);
       if (ResultSetMetaData.columnNullable == metadata.isNullable(i)) {
         columnSchema = Schema.nullableOf(columnSchema);
       }
@@ -252,16 +253,33 @@ public final class DBUtils {
 
   /**
    * Get a CDAP schema from a given database column definition
+   *
+   * @param typeName        data source dependent type name, for a UDT the type name is fully qualified
+   * @param sqlType         SQL type from java.sql.Types
+   * @param precision       the number of total digits for numeric types
+   * @param scale           the number of fractional digits for numeric types
+   * @param columnName      the column name
+   * @param handleAsDecimal whether to convert numeric types to decimal logical type
+   * @return the converted CDAP schema
+   */
+  public static Schema getSchema(String typeName, int sqlType, int precision, int scale, String columnName,
+                                 boolean handleAsDecimal) throws SQLException {
+    return getSchema(typeName, sqlType, precision, scale, columnName, true, handleAsDecimal);
+  }
+
+  /**
+   * Get a CDAP schema from a given database column definition
    * @param typeName  data source dependent type name, for a UDT the type name is fully qualified
    * @param sqlType   SQL type from java.sql.Types
    * @param precision the number of total digits for numeric types
    * @param scale     the number of fractional digits for numeric types
    * @param columnName the column name
+   * @param isSigned whether the data type is signed or unsigned
    * @param handleAsDecimal whether to convert numeric types to decimal logical type
    * @return the converted CDAP schema
    */
   public static Schema getSchema(String typeName, int sqlType, int precision, int scale, String columnName,
-    boolean handleAsDecimal) throws SQLException {
+                                 boolean isSigned, boolean handleAsDecimal) throws SQLException {
     // Type.STRING covers sql types - VARCHAR,CHAR,CLOB,LONGNVARCHAR,LONGVARCHAR,NCHAR,NCLOB,NVARCHAR
     Schema.Type type = Schema.Type.STRING;
     switch (sqlType) {
@@ -282,13 +300,20 @@ public final class DBUtils {
         type = Schema.Type.INT;
         break;
       case Types.INTEGER:
-        // CDAP-12211 - handling unsigned integers in mysql
-        type = "int unsigned".equalsIgnoreCase(typeName) ? Schema.Type.LONG : Schema.Type.INT;
+        // SQL INT is 32 bit, thus only signed can be stored in int
+        type = isSigned ? Schema.Type.INT : Schema.Type.LONG;
         break;
 
       case Types.BIGINT:
-        type = Schema.Type.LONG;
-        break;
+        //SQL BIGINT is 64 bit, thus signed can be stored in long without losing precision
+        //or unsigned BIGINT is within the scope of signed long
+        if (isSigned || precision < 19) {
+          type = Schema.Type.LONG;
+          break;
+        } else {
+          // by default scale is 0, big integer won't have any fraction part
+          return Schema.decimalOf(precision);
+        }
 
       case Types.REAL:
       case Types.FLOAT:
@@ -297,9 +322,21 @@ public final class DBUtils {
 
       case Types.NUMERIC:
       case Types.DECIMAL:
+        // decimal type with precision 0 is not supported
+        if (precision == 0) {
+          throw new SQLException(new UnsupportedTypeException(
+            String.format("Column %s has unsupported SQL Type: %s with precision 0.", columnName, typeName)));
+        }
         if (handleAsDecimal) {
           return Schema.decimalOf(precision, scale);
         } else {
+          //SQL DECIMAL can be 5 - 17 bytes, not all can be held in a long
+          if (precision >= 19) {
+            throw new SQLException(
+              new UnsupportedTypeException(String.format("Unsupported SQL Type %s. Unable to store column %s as long." +
+                                                           " Current precision is %d, it has to be less than 19.",
+                                                         typeName, columnName, precision)));
+          }
           // if there are no digits after the point, use integer types
           type = scale != 0 ? Schema.Type.DOUBLE :
             // with 10 digits we can represent 2^32 and LONG is required

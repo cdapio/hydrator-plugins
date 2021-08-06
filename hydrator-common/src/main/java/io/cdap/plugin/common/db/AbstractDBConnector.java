@@ -163,7 +163,8 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
       int scale = columns.getInt(RESULTSET_COLUMN_DECIMAL_DIGITS);
       int precision = columns.getInt(RESULTSET_COLUMN_COLUMN_SIZE);
       String columnName = columns.getString(RESULTSET_COLUMN_COLUMN_NAME);
-      Schema columnSchema = getSchema(sqlType, typeName, scale, precision, columnName, true);
+      boolean isSigned = typeName.toLowerCase().indexOf("unsigned") < 0;
+      Schema columnSchema = getSchema(sqlType, typeName, scale, precision, columnName, isSigned, true);
       String isNullable = columns.getString(RESULTSET_COLUMN_IS_NULLABLE);
       if ("YES".equals(isNullable)) {
         columnSchema = Schema.nullableOf(columnSchema);
@@ -175,8 +176,8 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
   }
 
   protected Schema getSchema(int sqlType, String typeName, int scale, int precision, String columnName,
-                             boolean handleAsDecimal) throws SQLException {
-    return DBUtils.getSchema(typeName, sqlType, precision, scale, columnName, handleAsDecimal);
+                             boolean isSigned, boolean handleAsDecimal) throws SQLException {
+    return DBUtils.getSchema(typeName, sqlType, precision, scale, columnName, isSigned, handleAsDecimal);
   }
 
   /**
@@ -254,11 +255,11 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
       if (resultSet.next()) {
         String name = resultSet.getString(RESULTSET_COLUMN_TABLE_NAME);
         browseDetailBuilder.addEntity(
-            BrowseEntity.builder(
-                name,
-                (containsDatabase ? "/" + database : "") + (schema == null ? "" : "/" + schema) + "/" + name,
-                resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE)
-            ).canSample(true).build());
+          BrowseEntity.builder(
+            name,
+            (containsDatabase ? "/" + database : "") + (schema == null ? "" : "/" + schema) + "/" + name,
+            resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE)
+          ).canSample(true).build());
       } else {
         throw new IllegalArgumentException(String.format("Cannot find table : %s.%s.", schema, table));
       }
@@ -288,11 +289,11 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
           break;
         }
         browseDetailBuilder.addEntity(
-            BrowseEntity.builder(
-                name,
-                (containsDatabase ? "/" + database : "") + (schema == null ? "" : "/" + schema) + "/" + name,
-                resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE).toLowerCase()
-            ).canSample(true).build());
+          BrowseEntity.builder(
+            name,
+            (containsDatabase ? "/" + database : "") + (schema == null ? "" : "/" + schema) + "/" + name,
+            resultSet.getString(RESULTSET_COLUMN_TABLE_TYPE).toLowerCase()
+          ).canSample(true).build());
         count++;
       }
     }
