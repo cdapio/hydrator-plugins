@@ -98,9 +98,8 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
     try (Connection connection = getConnection()) {
       connection.getMetaData();
     } catch (Exception e) {
-      context.getFailureCollector().addFailure(
-        String.format("Failed to connect to the database : %s.", e.getMessage()),
-        "Make sure you " + "specify the correct connection properties.").withStacktrace(e.getStackTrace());
+      context.getFailureCollector().addFailure(e.getMessage(),
+        "Make sure you specify the correct connection properties.").withStacktrace(e.getStackTrace());
     }
   }
 
@@ -340,10 +339,11 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
     try {
       return DriverManager.getConnection(connectionString, connectionArguments);
     } catch (SQLException e) {
-      throw new IllegalArgumentException(String.format("Cannot connect to database via connection string : %s and " +
-                                                         "arguments: %s. Error: %s. Make sure you have correct " +
-                                                         "connection properties.", connectionString,
-                                                       connectionArguments, e.getMessage()), e);
+      Properties args = (Properties) connectionArguments.clone();
+      args.remove("password");
+      throw new IllegalArgumentException(String.format("Failed to create connection to database via connection string" +
+                                                         ": %s and arguments: %s. Error: %s.",
+                                                       connectionString, args, e.getMessage()), e);
     }
   }
 }
