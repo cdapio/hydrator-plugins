@@ -148,6 +148,7 @@ public class DBRecordTest {
     Mockito.when(rsMetaMock.getColumnName(Mockito.eq(1))).thenReturn("integer");
     Mockito.when(rsMetaMock.getColumnType(Mockito.eq(1))).thenReturn(Types.INTEGER);
     Mockito.when(rsMetaMock.isNullable(Mockito.eq(1))).thenReturn(ResultSetMetaData.columnNoNulls);
+    Mockito.when(rsMetaMock.isSigned(Mockito.eq(1))).thenReturn(true);
 
     Mockito.when(rsMetaMock.getColumnName(Mockito.eq(2))).thenReturn("double");
     Mockito.when(rsMetaMock.getColumnType(Mockito.eq(2))).thenReturn(Types.DOUBLE);
