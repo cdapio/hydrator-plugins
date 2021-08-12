@@ -35,8 +35,9 @@ given arguments 'key1' mapped to 'value1' and the argument 'key2' mapped to 'val
 
 Path of the connection
 ----------------------
-To browse, get a sample from, or get the specification for this connection through API (see [Pipeline Microservices](https://cdap.atlassian.net/wiki/spaces/DOCS/pages/975929350/Pipeline+Microservices)),
-the `path` property is required in the request body. It can be in the following form :
+To browse, get a sample from, or get the specification for this connection through
+[Pipeline Microservices](https://cdap.atlassian.net/wiki/spaces/DOCS/pages/975929350/Pipeline+Microservices), the `path`
+property is required in the request body. It can be in the following form :
 
 1. `/{schema}/{table}`
    This path indicates a table. A table is the only one that can be sampled. Browse on this path to return the specified table.
