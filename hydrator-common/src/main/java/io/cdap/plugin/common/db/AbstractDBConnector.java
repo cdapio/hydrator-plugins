@@ -28,6 +28,7 @@ import io.cdap.cdap.etl.api.connector.ConnectorContext;
 import io.cdap.cdap.etl.api.connector.ConnectorSpec;
 import io.cdap.cdap.etl.api.connector.ConnectorSpecRequest;
 import io.cdap.cdap.etl.api.validation.ValidationException;
+import org.apache.commons.lang.exception.ExceptionUtils;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -342,8 +343,8 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
       Properties args = (Properties) connectionArguments.clone();
       args.remove("password");
       throw new IllegalArgumentException(String.format("Failed to create connection to database via connection string" +
-                                                         ": %s and arguments: %s. Error: %s.",
-                                                       connectionString, args, e.getMessage()), e);
+                                                         ": %s and arguments: %s. Error: %s.", connectionString,
+                                                       args, ExceptionUtils.getRootCauseMessage(e), e));
     }
   }
 }
