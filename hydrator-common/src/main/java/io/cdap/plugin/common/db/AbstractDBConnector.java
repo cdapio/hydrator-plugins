@@ -28,7 +28,7 @@ import io.cdap.cdap.etl.api.connector.ConnectorContext;
 import io.cdap.cdap.etl.api.connector.ConnectorSpec;
 import io.cdap.cdap.etl.api.connector.ConnectorSpecRequest;
 import io.cdap.cdap.etl.api.validation.ValidationException;
-import org.apache.commons.lang.exception.ExceptionUtils;
+import io.cdap.plugin.common.util.ExceptionUtils;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -121,7 +121,8 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
       return getTableDetail(connection, dbConnectorPath.getDatabase(), dbConnectorPath.getSchema(),
                             dbConnectorPath.getTable());
     } catch (SQLException e) {
-      throw new IOException(String.format("Failed to browse for path %s", request.getPath()), e);
+      throw new IOException(String.format("Failed to browse for path %s. Error: %s", request.getPath(),
+                                          ExceptionUtils.getRootCauseMessage(e)), e);
     }
   }
 
@@ -149,7 +150,8 @@ public abstract class AbstractDBConnector<T extends PluginConfig & DBConnectorPr
       Schema outputSchema = getTableSchema(connection, database, schema, table);
       return specBuilder.setSchema(outputSchema).build();
     } catch (SQLException e) {
-      throw new IOException(String.format("Failed to generate spec for path %s", request.getPath()), e);
+      throw new IOException(String.format("Failed to generate spec for path %s. Error: %s.", request.getPath(),
+                                          ExceptionUtils.getRootCauseMessage(e)), e);
     }
   }
 
