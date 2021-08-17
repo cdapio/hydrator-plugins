@@ -21,6 +21,8 @@ import io.cdap.cdap.api.annotation.Category;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
+import io.cdap.cdap.api.annotation.Requirements;
+import io.cdap.cdap.api.dataset.lib.FileSet;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.connector.BrowseDetail;
@@ -54,6 +56,7 @@ import java.util.Map;
 @Name(FileConnector.NAME)
 @Description("Connection to browse and sample data from the local file system.")
 @Category("File")
+@Requirements(datasetTypes = FileSet.TYPE)
 public class FileConnector extends AbstractFileConnector<FileConnector.FileConnectorConfig> {
   public static final String NAME = "File";
   static final String FILE_TYPE_KEY = "File Type";
