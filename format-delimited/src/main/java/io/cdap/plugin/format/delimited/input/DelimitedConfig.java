@@ -28,6 +28,7 @@ import io.cdap.plugin.common.batch.JobUtils;
 import io.cdap.plugin.format.delimited.common.DataTypeDetectorStatusKeeper;
 import io.cdap.plugin.format.delimited.common.DataTypeDetectorUtils;
 import io.cdap.plugin.format.input.PathTrackingConfig;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -43,13 +44,12 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
-/**
- * Common config for delimited related formats.
- */
+/** Common config for delimited related formats. */
 public class DelimitedConfig extends PathTrackingConfig {
 
   // properties
   public static final String NAME_DELIMITER = "delimiter";
+  public static final String NAME_ENABLE_QUOTES_VALUES = "enableQuotedValues";
   public static final String NAME_FORMAT = "format";
   public static final String NAME_OVERRIDE = "override";
   public static final String NAME_SAMPLE_SIZE = "sampleSize";
@@ -58,11 +58,19 @@ public class DelimitedConfig extends PathTrackingConfig {
   public static final Map<String, PluginPropertyField> DELIMITED_FIELDS;
 
   // description
-  public static final String DESC_SKIP_HEADER = "Whether to skip the first line of each file. Default value is false.";
+  public static final String DESC_ENABLE_QUOTES =
+      "Whether to treat content between quotes as a " + "value. Default value is false.";
+  public static final String DESC_SKIP_HEADER =
+      "Whether to skip the first line of each file. " + "Default value is false.";
 
   static {
     Map<String, PluginPropertyField> fields = new HashMap<>(FIELDS);
-    fields.put("skipHeader", new PluginPropertyField("skipHeader", DESC_SKIP_HEADER, "boolean", false, true));
+    fields.put(
+        "skipHeader",
+        new PluginPropertyField("skipHeader", DESC_SKIP_HEADER, "boolean", false, true));
+    fields.put(
+        NAME_ENABLE_QUOTES_VALUES,
+        new PluginPropertyField("filenameOnly", DESC_ENABLE_QUOTES, "boolean", false, true));
     DELIMITED_FIELDS = Collections.unmodifiableMap(fields);
   }
 
@@ -71,8 +79,17 @@ public class DelimitedConfig extends PathTrackingConfig {
   @Description(DESC_SKIP_HEADER)
   private Boolean skipHeader;
 
+  @Macro
+  @Nullable
+  @Description(DESC_ENABLE_QUOTES)
+  protected Boolean enableQuotedValues;
+
   public boolean getSkipHeader() {
     return skipHeader == null ? false : skipHeader;
+  }
+
+  public boolean getEnableQuotedValues() {
+    return enableQuotedValues == null ? false : enableQuotedValues;
   }
 
   public Long getSampleSize() {
@@ -115,7 +132,8 @@ public class DelimitedConfig extends PathTrackingConfig {
   }
 
   /**
-   * Parses a list of key-value items of column names and their corresponding data types, manually set by the user.
+   * Parses a list of key-value items of column names and their corresponding data types, manually
+   * set by the user.
    *
    * @return A hashmap of column names and their manually set schemas.
    */
@@ -144,7 +162,8 @@ public class DelimitedConfig extends PathTrackingConfig {
         }
 
         if (overrideDataTypes.containsKey(name)) {
-          throw new IllegalArgumentException(String.format("Cannot convert '%s' to multiple types.", name));
+          throw new IllegalArgumentException(
+              String.format("Cannot convert '%s' to multiple types.", name));
         }
         overrideDataTypes.put(name, schema);
       }
@@ -165,7 +184,8 @@ public class DelimitedConfig extends PathTrackingConfig {
     String regexPathFilter = getProperties().getProperties().get(NAME_REGEX_PATH_FILTER);
     String path = getProperties().getProperties().get(NAME_PATH);
     if (format.equals("delimited") && Strings.isNullOrEmpty(delimiter)) {
-      throw new IllegalArgumentException("Delimiter is required when format is set to 'delimited'.");
+      throw new IllegalArgumentException(
+          "Delimiter is required when format is set to 'delimited'.");
     }
 
     Job job = JobUtils.createInstance();
@@ -179,13 +199,16 @@ public class DelimitedConfig extends PathTrackingConfig {
     String[] columnNames = null;
     String[] rowValue = null;
 
-    try (FileSystem fileSystem = JobUtils.applyWithExtraClassLoader(job, getClass().getClassLoader(),
-                                                                    f -> FileSystem.get(filePath.toUri(),
-                                                                                        configuration));
-         FSDataInputStream input = fileSystem.open(filePath);
-         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(input));
-    ) {
-      for (int rowIndex = 0; rowIndex < getSampleSize() && (line = bufferedReader.readLine()) != null; rowIndex++) {
+    try (FileSystem fileSystem =
+        JobUtils.applyWithExtraClassLoader(
+            job,
+            getClass().getClassLoader(),
+            f -> FileSystem.get(filePath.toUri(), configuration));
+        FSDataInputStream input = fileSystem.open(filePath);
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(input));) {
+      for (int rowIndex = 0;
+          rowIndex < getSampleSize() && (line = bufferedReader.readLine()) != null;
+          rowIndex++) {
         rowValue = line.split(delimiter, -1);
         if (rowIndex == 0) {
           columnNames = DataTypeDetectorUtils.setColumnNames(line, skipHeader, delimiter);
@@ -193,15 +216,16 @@ public class DelimitedConfig extends PathTrackingConfig {
             continue;
           }
         }
-        DataTypeDetectorUtils.detectDataTypeOfRowValues(getOverride(), dataTypeDetectorStatusKeeper, columnNames,
-                rowValue);
+        DataTypeDetectorUtils.detectDataTypeOfRowValues(
+            getOverride(), dataTypeDetectorStatusKeeper, columnNames, rowValue);
       }
       dataTypeDetectorStatusKeeper.validateDataTypeDetector();
     } catch (IOException e) {
       throw new RuntimeException(String.format("Failed to open file at path %s!", path), e);
     }
-    List<Schema.Field> fields = DataTypeDetectorUtils.detectDataTypeOfEachDatasetColumn(getOverride(), columnNames,
-            dataTypeDetectorStatusKeeper);
+    List<Schema.Field> fields =
+        DataTypeDetectorUtils.detectDataTypeOfEachDatasetColumn(
+            getOverride(), columnNames, dataTypeDetectorStatusKeeper);
     return Schema.recordOf("text", fields);
   }
 }
