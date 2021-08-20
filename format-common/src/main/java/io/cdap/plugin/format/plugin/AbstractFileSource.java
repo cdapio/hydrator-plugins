@@ -137,10 +137,10 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
   public void prepareRun(BatchSourceContext context) throws Exception {
     FailureCollector collector = context.getFailureCollector();
     config.validate(collector);
-    String fileFormat = config.getFormatName();
+    String fileFormat = config.getFormatName(); //AVRO, CSV, etc
     ValidatingInputFormat validatingInputFormat;
     try {
-      validatingInputFormat = context.newPluginInstance(fileFormat);
+      validatingInputFormat = context.newPluginInstance(fileFormat); //TODO $$$
     } catch (InvalidPluginConfigException e) {
       Set<String> properties = new HashSet<>(e.getMissingProperties());
       for (InvalidPluginProperty invalidProperty: e.getInvalidProperties()) {
@@ -153,23 +153,24 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
       throw new IllegalArgumentException(errorMessage, e);
     }
 
+    //All of this section is the validations to see if you can proceed with the fileformat
     FormatContext formatContext = new FormatContext(collector, context.getInputSchema());
-    validateInputFormatProvider(formatContext, fileFormat, validatingInputFormat);
+    validateInputFormatProvider(formatContext, fileFormat, validatingInputFormat); //This method calls the validate in our "plugin" provider class
     validatePathField(collector, validatingInputFormat.getSchema(formatContext));
-    collector.getOrThrowException();
+    collector.getOrThrowException(); //This checks if your input provider class has added an error to ITS collector
 
     Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();
 
-    Pattern pattern = config.getFilePattern();
+    Pattern pattern = config.getFilePattern(); //The user has specified - Optional parameter
     if (pattern != null) {
       RegexPathFilter.configure(conf, pattern);
       FileInputFormat.setInputPathFilter(job, RegexPathFilter.class);
     }
-    FileInputFormat.setInputDirRecursive(job, config.shouldReadRecursively());
+    FileInputFormat.setInputDirRecursive(job, config.shouldReadRecursively()); // This is provided for us - not related to inputProvider
 
-    Schema schema = config.getSchema();
-    LineageRecorder lineageRecorder = new LineageRecorder(context, config.getReferenceName());
+    Schema schema = config.getSchema(); // This we need to enforce in our inputProvider (via validates)
+    LineageRecorder lineageRecorder = new LineageRecorder(context, config.getReferenceName()); //Provided for us
     lineageRecorder.createExternalDataset(schema);
 
     if (schema != null && schema.getFields() != null) {
@@ -180,7 +181,7 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
     // set entries here, before FileSystem is used
     for (Map.Entry<String, String> entry : getFileSystemProperties(context).entrySet()) {
       conf.set(entry.getKey(), entry.getValue());
-    }
+    } //Additional Properties we may not need this
 
     Path path = new Path(config.getPath());
     FileSystem pathFileSystem = FileSystem.get(path.toUri(), conf);
@@ -196,10 +197,10 @@ public abstract class AbstractFileSource<T extends PluginConfig & FileSourceProp
       }
     } else {
       FileInputFormat.addInputPath(job, path);
-      FileInputFormat.setMaxInputSplitSize(job, config.getMaxSplitSize());
-      inputFormatClass = validatingInputFormat.getInputFormatClassName();
+      FileInputFormat.setMaxInputSplitSize(job, config.getMaxSplitSize()); // This tells the processor parallel split conditions
+      inputFormatClass = validatingInputFormat.getInputFormatClassName(); //TODO $$$
       Configuration hConf = job.getConfiguration();
-      Map<String, String> inputFormatConfiguration = validatingInputFormat.getInputFormatConfiguration();
+      Map<String, String> inputFormatConfiguration = validatingInputFormat.getInputFormatConfiguration(); //TODO $$
       for (Map.Entry<String, String> propertyEntry : inputFormatConfiguration.entrySet()) {
         hConf.set(propertyEntry.getKey(), propertyEntry.getValue());
       }
