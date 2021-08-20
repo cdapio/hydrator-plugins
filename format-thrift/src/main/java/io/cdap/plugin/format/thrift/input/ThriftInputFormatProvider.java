@@ -48,11 +48,11 @@ public class ThriftInputFormatProvider extends PathTrackingInputFormatProvider<T
     static final String DESC = "Plugin for reading files in thrif format.";
     public static final PluginClass PLUGIN_CLASS =
             new PluginClass(ValidatingInputFormat.PLUGIN_TYPE, NAME, DESC, ThriftInputFormatProvider.class.getName(),
-                    "conf", ThriftConfig.THRIFT_FIELDS);
+                    "conf", PathTrackingConfig.FIELDS);
     // this has to be here to be able to instantiate the correct plugin property field
     private final ThriftConfig conf;
 
-    protected ThriftInputFormatProvider(ThriftConfig conf) {
+    public ThriftInputFormatProvider(ThriftConfig conf) {
         super(conf);
         this.conf = conf;
     }

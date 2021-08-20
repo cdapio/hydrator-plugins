@@ -13,7 +13,6 @@ import org.apache.hadoop.mapreduce.lib.input.CombineFileRecordReaderWrapper;
 import org.apache.hadoop.mapreduce.lib.input.CombineFileSplit;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 

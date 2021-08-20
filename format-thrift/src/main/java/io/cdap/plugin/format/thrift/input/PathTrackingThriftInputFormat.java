@@ -33,11 +33,6 @@ import javax.annotation.Nullable;
  */
 public class PathTrackingThriftInputFormat extends PathTrackingInputFormat {
 
-    /**
-     * @param emittedHeader whether the header was already emitted. This is the case when there are multiple files in
-     *   the same split. The delegate RecordReader for the first split will emit it, and we will need the delegate
-     *   RecordReaders for the other files to skip it.
-     */
     public PathTrackingThriftInputFormat() {
     }
 
