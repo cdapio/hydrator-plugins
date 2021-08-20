@@ -26,8 +26,18 @@ import io.cdap.cdap.api.plugin.PluginPropertyField;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.validation.FormatContext;
 import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
+import io.cdap.plugin.common.batch.JobUtils;
 import io.cdap.plugin.format.input.PathTrackingConfig;
 import io.cdap.plugin.format.input.PathTrackingInputFormatProvider;
+import org.apache.avro.file.DataFileReader;
+import org.apache.avro.file.FileReader;
+import org.apache.avro.file.SeekableInput;
+import org.apache.avro.generic.GenericDatumReader;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.io.DatumReader;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.mapreduce.Job;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -62,7 +72,18 @@ public class ThriftInputFormatProvider extends PathTrackingInputFormatProvider<T
         return ThriftTextInputFormat.class.getName();
     }
 
-    //TODO
+    @Override
+    protected void addFormatProperties(Map<String, String> properties) {
+        Schema schema = conf.getSchema();
+        if (schema != null) {
+//        TODO: Are there any specific properties required to process Thrift
+//            e.g for AVRO `properties.put("avro.schema.input.key", schema.toString());`
+        }
+    }
+
+    //TODO: Once we understand our Schema, write some validations
+    // e.g make sure Required Field exists and has the right schema name ?
+    // e.g. for Text files, Schema requires a field called body exists (this is the text itself per record)
     @Override
     public void validate(FormatContext context) {
         if (conf.containsMacro(ThriftConfig.NAME_SCHEMA)) {
@@ -142,14 +163,11 @@ public class ThriftInputFormatProvider extends PathTrackingInputFormatProvider<T
     }
 
     public static Schema getDefaultSchema(@Nullable String pathField) {
-        List<Schema.Field> fields = new ArrayList<>();
-        //TODO make some default fields ?
-//        fields.add(Schema.Field.of("offset", Schema.of(Schema.Type.LONG)));
-//        fields.add(Schema.Field.of("body", Schema.of(Schema.Type.STRING)));
-//        if (pathField != null && !pathField.isEmpty()) {
-//            fields.add(Schema.Field.of(pathField, Schema.of(Schema.Type.STRING)));
-//        }
-        return Schema.recordOf("textfile", fields);
+        //TODO Should we have some sort of a Default Schema for Thrift ?? e.g. PARC ?
+        // See other InputFormatProviers classes
+        // e.g. for Text you have
+        // * Offset/ Body (required) / path
+        return null;
     }
 
     public static class ThriftConfig extends PathTrackingConfig {
@@ -160,6 +178,7 @@ public class ThriftInputFormatProvider extends PathTrackingInputFormatProvider<T
         public static final String OPTIONAL_FIELD_NAME_B = "ROGER_B";
 
         static {
+            //TODO we are using the default path tracking config fields - do we need a specific thrift one ?
             Map<String, PluginPropertyField> fields = new HashMap<>(FIELDS);
 
             //TODO Put some fields ?
