@@ -55,8 +55,8 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
    * quotes, content within each pair of quotes will not get splitted even if there is delimiter in
    * that. For example, if string is a."b.c"."d.e.f" and delimiter is '.', it will get split into
    * [a, b.c, d.e.f]. if string is "val1.val2", then it will not get splitted since the '.' is
-   * within pair of quotes. if string is "val1.val2"", it's invalid since the last quote is not
-   * closed.
+   * within pair of quotes. if string is "val1.val2"", the quote right after val2 will be kept as
+   * part of the value, so [val1, val2"].
    *
    * @param delimitedString the string to split
    * @param delimiter the separtor
@@ -89,11 +89,6 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
         quotesPos.put(firstQuotePos, i);
         firstQuotePos = -1;
       }
-    }
-
-    // throws exception if there is unclosed quote
-    if (firstQuotePos != -1) {
-      throw new RuntimeException("There is unclosed quote in the value: " + delimitedString);
     }
 
     List<String> result = new ArrayList<>();
