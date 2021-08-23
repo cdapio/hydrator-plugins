@@ -16,7 +16,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
-public class ThriftTextInputFormat extends CombineFileInputFormat<NullWritable, StructuredRecord> {
+public class CombineThriftInputFormat extends CombineFileInputFormat<NullWritable, StructuredRecord> {
 
     @Override
     public List<InputSplit> getSplits(JobContext job) throws IOException {
@@ -27,8 +27,7 @@ public class ThriftTextInputFormat extends CombineFileInputFormat<NullWritable, 
 
     @Override
     public RecordReader<NullWritable, StructuredRecord> createRecordReader(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) throws IOException {
-        CombineFileSplit combineSplit = (CombineFileSplit) inputSplit; //TODO maybe we need to extend CombineFileSplit for thrifts
-        return new CombineFileRecordReader<>(combineSplit, taskAttemptContext, WrapperReader.class);
+        return new CombineFileRecordReader<>((CombineFileSplit) inputSplit, taskAttemptContext, WrapperReader.class);
     }
 
     /**

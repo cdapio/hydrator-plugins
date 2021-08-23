@@ -2,6 +2,7 @@ package io.cdap.plugin.format.thrift.input;
 
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
@@ -12,13 +13,18 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import java.io.IOException;
 
 public class ThriftRecordReader extends RecordReader<NullWritable, StructuredRecord.Builder> {
-    public ThriftRecordReader(RecordReader<LongWritable, Text> delegate, Schema schema) {
 
+    private final RecordReader<LongWritable,Text> delegate;
+    private Schema schema;
+
+    public ThriftRecordReader(RecordReader<LongWritable, Text> delegate, Schema schema) {
+        this.delegate = delegate;
+        this.schema = schema;
     }
 
     @Override
     public void initialize(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
-
+        delegate.initialize(inputSplit, taskAttemptContext);
     }
 
     @Override
