@@ -80,10 +80,14 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
 
         StructuredRecord.Builder builder = StructuredRecord.builder(schema);
         Iterator<Schema.Field> fields = schema.getFields().iterator();
+        Iterable<String> splitDelimitedString = Splitter.on(delimiter).split(delimitedString);
+        int numDataFields = 0;
+        for (String part : splitDelimitedString) {
+          numDataFields++;
+        }
 
-        for (String part : Splitter.on(delimiter).split(delimitedString)) {
+        for (String part : splitDelimitedString) {
           if (!fields.hasNext()) {
-            int numDataFields = delimitedString.split(delimiter).length;
             int numSchemaFields = schema.getFields().size();
             String message = String.format("Found a row with %d fields when the schema only contains %d field%s.",
                                            numDataFields, numSchemaFields, numSchemaFields == 1 ? "" : "s");
