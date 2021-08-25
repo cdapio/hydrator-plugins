@@ -1,14 +1,20 @@
 package io.cdap.plugin.format.thrift.transform;
 
+import io.cdap.cdap.api.data.format.StructuredRecord;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.*;
 import org.apache.thrift.transport.AutoExpandingBufferWriteTransport;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CompactTransformerTest {
 
+    Logger LOG = LoggerFactory.getLogger(CompactTransformerTest.class);
+
     @Test
     public void decode_whenValidTCompactProvided_returnsStructureRecord() throws TException {
+        LOG.debug("Starting test");
         CompactTransformer compactTransformer = new CompactTransformer();
         AutoExpandingBufferWriteTransport transportBuffer = new AutoExpandingBufferWriteTransport(32000, 1.5);
 
@@ -26,7 +32,9 @@ public class CompactTransformerTest {
         byte[] result = new byte[resultSize];
         System.arraycopy(finalBuf, 0, result, 0, resultSize);
 
-        compactTransformer.decode(result);
+        StructuredRecord bob = compactTransformer.decode(result);
+
+        System.out.printf("end" + bob.toString());
     }
 
     private void writeMsg(TProtocol tProtocol, String input) throws TException {

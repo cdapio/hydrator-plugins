@@ -9,6 +9,8 @@ import org.apache.thrift.protocol.TMessage;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TMemoryBuffer;
 import org.apache.thrift.transport.TTransport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,17 +19,24 @@ public class CompactTransformer {
 
     private TProtocol thriftProtocol;
 
+    Logger LOG = LoggerFactory.getLogger(CompactTransformer.class);
+
     public StructuredRecord decode(byte[] thriftRecordBinary) throws TException {
         // Set up buffer for feeding into Thrift protocol
+
+        LOG.debug("Entering Decode Method");
+        System.out.println("Entering Decode Method");
         TTransport byteBuffer = new TMemoryBuffer(thriftRecordBinary.length);
         setThriftProtocol(new TBinaryProtocol(byteBuffer));
 
         //This sets the record to be read
+        LOG.debug("Writing Record to Buffer");
+        System.out.println("Writing Record to Buffer");
         byteBuffer.write(thriftRecordBinary);
 
         StructuredRecord result = readMessage();
 
-        System.out.println("test");
+        LOG.debug("test");
         return result;
     }
 
