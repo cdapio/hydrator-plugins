@@ -55,6 +55,22 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
     </dependency>
+
+    <!--  Used to convert Thrift to Structured Record   -->
+    <!-- https://mvnrepository.com/artifact/org.apache.thrift/libthrift -->
+    <dependency>
+      <groupId>org.apache.thrift</groupId>
+      <artifactId>libthrift</artifactId>
+      <version>0.9.3</version>
+    </dependency>
+
+<!--    Parsed Anon Record-->
+    <dependency>
+      <groupId>com.liveramp</groupId>
+      <artifactId>liveramp_types</artifactId>
+      <version>1.0-SNAPSHOT</version>
+    </dependency>
+
   </dependencies>
 
   <build>
