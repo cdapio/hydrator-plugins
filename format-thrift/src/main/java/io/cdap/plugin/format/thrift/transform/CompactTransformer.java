@@ -1,12 +1,16 @@
 package io.cdap.plugin.format.thrift.transform;
 
 
+import com.liveramp.types.parc.ParsedAnonymizedRecord;
+import com.liveramp.types.parc.ParsedAnonymizedRecord._Fields;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
+import org.apache.thrift.protocol.TField;
 import org.apache.thrift.protocol.TMessage;
 import org.apache.thrift.protocol.TProtocol;
+import org.apache.thrift.protocol.TType;
 import org.apache.thrift.transport.TMemoryBuffer;
 import org.apache.thrift.transport.TTransport;
 import org.slf4j.Logger;
@@ -54,7 +58,11 @@ public class CompactTransformer {
         TMessage msg = prot.readMessageBegin();
 
         for ( Schema.Field field : fields ){
-            recordBuilder.set(field.getName(), msg.name);
+            TField tField = prot.readFieldBegin();
+            if (tField.type == TType.STOP) {
+                break;
+            }
+            recordBuilder.set(field.getName(), prot.readString());
         }
 
         prot.readMessageEnd();
@@ -64,11 +72,10 @@ public class CompactTransformer {
 
     private List<Schema.Field> getParFields() {
         List<Schema.Field> fields = new ArrayList<>();
-        final String PEL = "PEL";
-        final String IDENTIFIER_TYPE = "identifier_type";
 
-        fields.add(Schema.Field.of(PEL, Schema.of(Schema.Type.STRING)));
-        fields.add(Schema.Field.of(IDENTIFIER_TYPE, Schema.of(Schema.Type.STRING)));
+        for (_Fields f: ParsedAnonymizedRecord._Fields.values()){
+            fields.add(Schema.Field.of(f.getFieldName(), Schema.of(Schema.Type.STRING)));
+        }
 
         return fields;
     }
