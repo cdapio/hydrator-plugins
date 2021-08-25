@@ -27,9 +27,7 @@ public class CompactTransformerTest {
     CompactTransformer compactTransformer = new CompactTransformer();
     AutoExpandingBufferWriteTransport transportBuffer = new AutoExpandingBufferWriteTransport(32000, 1.5);
 
-    writeParcFormattedTCompactProtocol(transportBuffer);
-
-//    writeMsg(tProtocol, "test");
+    writeMsg(transportBuffer);
 
     // Flush and return the buffer
     transportBuffer.flush();
@@ -47,7 +45,7 @@ public class CompactTransformerTest {
   }
 
 
-  public void writeParcFormattedTCompactProtocol(AutoExpandingBufferWriteTransport transportBuffer) throws TException {
+  public void writeParcFormattedTCompactProtocol(TCompactProtocol protocol) throws TException {
 
     ParsedAnonymizedRecord par = new ParsedAnonymizedRecord();
 
@@ -75,23 +73,22 @@ public class CompactTransformerTest {
     keyToData.put("keyToAnonStripe","Stripes");
     par.setFieldValue(_Fields.KEY_TO_ANONYMIZED_STRIPPED_VALUES, keyToAnonStripe);
 
-    TCompactProtocol protocol = new TCompactProtocol(transportBuffer);
-
     par.write(protocol);
     System.out.println("TEST");
   }
 
-  private void writeMsg(TProtocol tProtocol, String input) throws TException {
+  private void writeMsg(AutoExpandingBufferWriteTransport transportBuffer) throws TException {
     TMessage msg = new TMessage(
         "testMessageName",
         TType.STRING,
         1);
 
-    tProtocol.writeMessageBegin(msg);
+    TCompactProtocol protocol = new TCompactProtocol(transportBuffer);
+    protocol.writeMessageBegin(msg);
 
-    writeFields(tProtocol, input);
+    writeParcFormattedTCompactProtocol(protocol);
 
-    tProtocol.writeMessageEnd();
+    protocol.writeMessageEnd();
   }
 
 
