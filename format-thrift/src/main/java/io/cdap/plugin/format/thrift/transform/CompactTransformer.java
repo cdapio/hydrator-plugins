@@ -6,11 +6,7 @@ import com.liveramp.types.parc.ParsedAnonymizedRecord._Fields;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import org.apache.thrift.TException;
-import org.apache.thrift.protocol.TBinaryProtocol;
-import org.apache.thrift.protocol.TField;
-import org.apache.thrift.protocol.TMessage;
-import org.apache.thrift.protocol.TProtocol;
-import org.apache.thrift.protocol.TType;
+import org.apache.thrift.protocol.*;
 import org.apache.thrift.transport.TMemoryBuffer;
 import org.apache.thrift.transport.TTransport;
 import org.slf4j.Logger;
@@ -31,7 +27,7 @@ public class CompactTransformer {
         LOG.debug("Entering Decode Method");
         System.out.println("Entering Decode Method");
         TTransport byteBuffer = new TMemoryBuffer(thriftRecordBinary.length);
-        setThriftProtocol(new TBinaryProtocol(byteBuffer));
+        setThriftProtocol(new TCompactProtocol(byteBuffer));
 
         //This sets the record to be read
         LOG.debug("Writing Record to Buffer");
