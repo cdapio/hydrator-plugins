@@ -12,6 +12,7 @@ import org.apache.thrift.TException;
 import org.apache.thrift.protocol.*;
 import org.apache.thrift.transport.AutoExpandingBufferWriteTransport;
 import org.apache.thrift.transport.TTransport;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -54,12 +55,8 @@ public class CompactTransformerTest {
     // Flush and return the buffer
     transportBuffer.flush();
     transportBuffer.close();
-    byte[] finalBuf = transportBuffer.getBuf().array();
-    int resultSize = transportBuffer.getPos();
 
-    // Put the output buffer here
-    byte[] result = new byte[resultSize];
-    System.arraycopy(finalBuf, 0, result, 0, resultSize);
+    byte[] result = trimArrayToBufferPosition(transportBuffer);
 
     StructuredRecord output = compactTransformer.decode(result);
 
@@ -77,6 +74,17 @@ public class CompactTransformerTest {
 
     //Assert Optional field is not null when Set
     assertNotNull(output.get(_Fields.LEGACY_AUDIENCE_KEY.getFieldName()));
+  }
+
+  @NotNull
+  private byte[] trimArrayToBufferPosition(AutoExpandingBufferWriteTransport transportBuffer) {
+    byte[] finalBuf = transportBuffer.getBuf().array();
+    int resultSize = transportBuffer.getPos();
+
+    // Put the output buffer here
+    byte[] result = new byte[resultSize];
+    System.arraycopy(finalBuf, 0, result, 0, resultSize);
+    return result;
   }
 
 
