@@ -25,13 +25,12 @@ public class CompactTransformer {
         // Set up buffer for feeding into Thrift protocol
 
         LOG.debug("Entering Decode Method");
-        System.out.println("Entering Decode Method");
         TTransport byteBuffer = new TMemoryBuffer(thriftRecordBinary.length);
         setThriftProtocol(new TCompactProtocol(byteBuffer));
+        LOG.debug("TProtocol: " + getThriftProtocol().toString());
 
         //This sets the record to be read
         LOG.debug("Writing Record to Buffer");
-        System.out.println("Writing Record to Buffer");
         byteBuffer.write(thriftRecordBinary);
 
         StructuredRecord result = readMessage();
@@ -47,27 +46,39 @@ public class CompactTransformer {
     protected StructuredRecord readMessage () throws TException {
         TProtocol prot = getThriftProtocol();
 
-        List<Schema.Field> fields = getParFields();
-
-        StructuredRecord.Builder recordBuilder =  StructuredRecord.builder(Schema.recordOf("record", fields));
-
+        LOG.debug("Reading Message...");
         TMessage msg = prot.readMessageBegin();
+        LOG.debug("Successfully Read TMessage: " + msg.toString());
 
-        //TODO if you know its definitely a PAR/PARC then you can directly read it
+        LOG.debug("Converting TMessage to PAR via TProtocol...");
         ParsedAnonymizedRecord parsedAnonymizedRecord = new ParsedAnonymizedRecord();
         parsedAnonymizedRecord.read(prot);
-        System.out.println("trial");
 
-        //TODO this is required for when you dont know your schema persay
-//        for ( Schema.Field field : fields ){
-//            TField tField = prot.readFieldBegin();
-//            if (tField.type == TType.STOP) {
-//                break;
-//            }
-//            recordBuilder.set(field.getName(), readFieldValue(tField.type));
-//        }
+        LOG.debug("Converting PAR to Structured Method...");
+        StructuredRecord result = convertParToStructuredRecord(parsedAnonymizedRecord);
+        LOG.debug("Successfully Converted PAR to StructuredRecord: ");
 
         prot.readMessageEnd();
+
+        return result;
+    }
+
+    private StructuredRecord convertParToStructuredRecord(ParsedAnonymizedRecord parsedAnonymizedRecord) {
+        List<Schema.Field> fields = getParFields();
+        StructuredRecord.Builder recordBuilder =  StructuredRecord.builder(Schema.recordOf("record", fields));
+
+//        parsedAnonymizedRecord.
+
+        for ( _Fields field : ParsedAnonymizedRecord._Fields.values() ){
+
+           if (parsedAnonymizedRecord.getFieldValue(field) != null) {
+               recordBuilder.set(field.getFieldName(), parsedAnonymizedRecord.getFieldValue(field));
+           } else {
+               LOG.debug("Value missing for Field " + field.getFieldName());
+               System.out.println("Value missing for Field " + field.getFieldName());
+//               recordBuilder.set(field.getFieldName(), "Test");
+           }
+        }
 
         return recordBuilder.build();
     }
@@ -139,7 +150,7 @@ public class CompactTransformer {
         List<Schema.Field> fields = new ArrayList<>();
 
         for (_Fields f: ParsedAnonymizedRecord._Fields.values()){
-            fields.add(Schema.Field.of(f.getFieldName(), Schema.of(Schema.Type.STRING)));
+            fields.add(Schema.Field.of(f.getFieldName(), Schema.nullableOf(Schema.of(Schema.Type.STRING))));
         }
 
         return fields;
