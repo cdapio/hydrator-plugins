@@ -55,8 +55,13 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
    * quotes, content within each pair of quotes will not get splitted even if there is delimiter in
    * that. For example, if string is a."b.c"."d.e.f" and delimiter is '.', it will get split into
    * [a, b.c, d.e.f]. if string is "val1.val2", then it will not get splitted since the '.' is
-   * within pair of quotes. if string is "val1.val2"", the quote right after val2 will be kept as
-   * part of the value, so [val1, val2"].
+   * within pair of quotes. if string is "val1.val2"", the quote right after val2 will be ignored
+   * since it's matched with the first quote, but the last quote will be kept as part of the value,
+   * because there is not a match, so [val1, val2"]. In general, if the delimited string contains
+   * odd number of quotes, the left quote will match the firstly next quote, and the final single
+   * quote will be read as part of value. if the quotes are not at front and end of a string, for
+   * example: a, b"c,d"e and delimiter is ',', then the delimiter inside the quote won't break the
+   * value, so [a, b"c,d"e].
    *
    * @param delimitedString the string to split
    * @param delimiter the separtor
@@ -64,10 +69,9 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
    */
   @VisibleForTesting
   static List<String> splitQuotesString(String delimitedString, String delimiter) {
-    // use a tree map so we can easily look up if a delimiter is within a pair of quotes
-    // the map has key of index and value to the index of paired quote. The map key is the index of
-    // the starting and the ending quote and the value is the index of the paired quote. An
-    // un-enclosed quote will trigger the exception and fail the pipeline. Example:
+    // Use a tree map so we can easily look up if a delimiter is within a pair of quotes. The map
+    // key is the index of the starting and the ending quote and the value is the index of the
+    // paired quote. Example:
     // pos: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
     //      " | a | , | b | " | , | " | c | , | d | "  |
     // key-value pairs in the map:
@@ -97,31 +101,32 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
       // if the length is not enough for the delimiter, just add it to split
       if (i + delimiter.length() > delimitedString.length()) {
         split.append(delimitedString.charAt(i));
-      } else {
-        // not a delimiter
-        if (!delimitedString.startsWith(delimiter, i)) {
-          split.append(delimitedString.charAt(i));
-          continue;
-        }
+        continue;
+      }
 
-        // find a delimiter
-        // find the prev quote and next quote index
-        Integer prevQuotePos = quotesPos.floorKey(i);
-        Integer nextQuotePos = quotesPos.ceilingKey(i);
-        // if the they exist and they form a pair, we will not split, just add the current character
-        // to split
-        if (prevQuotePos != null
-            && nextQuotePos != null
-            && quotesPos.get(prevQuotePos).equals(nextQuotePos)) {
-          split.append(delimitedString, i, nextQuotePos + 1);
-          i = nextQuotePos;
-        } else {
-          // else we need to add the finding split to result, and increment the index, reset the
-          // split
-          result.add(trimQuotes(split.toString()));
-          i = i + delimiter.length() - 1;
-          split = new StringBuilder();
-        }
+      // not a delimiter
+      if (!delimitedString.startsWith(delimiter, i)) {
+        split.append(delimitedString.charAt(i));
+        continue;
+      }
+
+      // find a delimiter
+      // find the prev quote and next quote index
+      Integer prevQuotePos = quotesPos.floorKey(i);
+      Integer nextQuotePos = quotesPos.ceilingKey(i);
+      // if they exist and they form a pair, we will not split, just add the current character
+      // to split
+      if (prevQuotePos != null
+          && nextQuotePos != null
+          && quotesPos.get(prevQuotePos).equals(nextQuotePos)) {
+        split.append(delimitedString, i, nextQuotePos + 1);
+        i = nextQuotePos;
+      } else {
+        // else we need to add the finding split to result, and increment the index, reset the
+        // split
+        result.add(trimQuotes(split.toString()));
+        i = i + delimiter.length() - 1;
+        split = new StringBuilder();
       }
     }
 

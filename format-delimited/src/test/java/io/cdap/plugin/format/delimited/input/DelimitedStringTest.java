@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020 Cask Data, Inc.
+ * Copyright © 2021 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -90,18 +90,17 @@ public class DelimitedStringTest {
 
   @Test
   public void testBadQuotes() {
-    final String test0 = "Value1,value2.1 value2.2\"value2.2.1,value2.3\",val\"ue3,value4";
-    Assert.assertThrows("There is unclosed quote in the value: " + test0, RuntimeException.class, () -> {
-      PathTrackingDelimitedInputFormat.splitQuotesString(test0, ",");
-    });
+    String test = "Value1,value2.1 value2.2\"value2.2.1,value2.3\",val\"ue3,value4";
+    List<String> expected = ImmutableList.of("Value1", "value2.1 value2.2\"value2.2.1,value2.3\"",
+        "val\"ue3", "value4");
+    Assert.assertEquals(expected, PathTrackingDelimitedInputFormat.splitQuotesString(test, ","));
 
-    final String test1 = "val1\",\"val2";
-    List<String> expected = ImmutableList.of("val1\",\"val2");
-    Assert.assertEquals(expected, PathTrackingDelimitedInputFormat.splitQuotesString(test1, ","));
+    test = "val1\",\"val2";
+    expected = ImmutableList.of("val1\",\"val2");
+    Assert.assertEquals(expected, PathTrackingDelimitedInputFormat.splitQuotesString(test, ","));
 
-    final String test2 = "val1\",\"val2\"";
-    Assert.assertThrows("There is unclosed quote in the value: " + test2, RuntimeException.class, () -> {
-      PathTrackingDelimitedInputFormat.splitQuotesString(test2, ",");
-    });
+    test = "val1\",\"val2\"";
+    expected = ImmutableList.of("val1\",\"val2\"");
+    Assert.assertEquals(expected, PathTrackingDelimitedInputFormat.splitQuotesString(test, ","));
   }
 }

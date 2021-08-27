@@ -671,7 +671,8 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
         !enableQuotedValues ? split :
             StructuredRecord.builder(schema).set("id", 1L).set("val1", join.substring(1, join.length() - 1))
                 .set("file", fileText.toURI().toString()).build(),
-        StructuredRecord.builder(schema).set("id", 2L).set("val1", "sam").set("file", fileText.toURI().toString()).build()
+        StructuredRecord.builder(schema).set("id", 2L).set("val1", "sam")
+            .set("file", fileText.toURI().toString()).build()
     );
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);

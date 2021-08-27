@@ -115,7 +115,6 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
       "is 'csv', 'tsv' or 'delimited'. Default value is false.")
   protected Boolean enableQuotedValues;
 
-
   @Macro
   @Nullable
   @Description("File encoding for the source files. The default encoding is 'UTF-8'")
