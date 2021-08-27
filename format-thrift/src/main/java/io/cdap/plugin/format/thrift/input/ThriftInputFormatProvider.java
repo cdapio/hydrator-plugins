@@ -74,80 +74,80 @@ public class ThriftInputFormatProvider extends PathTrackingInputFormatProvider<T
     // e.g. for Text files, Schema requires a field called body exists (this is the text itself per record)
     @Override
     public void validate(FormatContext context) {
-        if (conf.containsMacro(ThriftConfig.NAME_SCHEMA)) {
-            return;
-        }
+//        if (conf.containsMacro(ThriftConfig.NAME_SCHEMA)) {
+//            return;
+//        }
 
-        FailureCollector collector = context.getFailureCollector();
-        Schema schema;
-        try {
-            schema = conf.getSchema();
-        } catch (Exception e) {
-            collector.addFailure(e.getMessage(), null).withConfigProperty(ThriftConfig.NAME_SCHEMA)
-                    .withStacktrace(e.getStackTrace());
-            throw collector.getOrThrowException();
-        }
-
-        String pathField = conf.getPathField();
-        //TODO: Figure out any Required fields // text must contain '<INSERT FIELD REQUIRED FIELD>' as type '<REQUIRED TYPE>'.
-
-        Schema.Field requiredFieldA = schema.getField(ThriftConfig.REQUIRED_FIELD_NAME_A);
-        if (requiredFieldA == null) {
-            //TODO Are there any fields a THRIFT format must have ?
-            collector.addFailure("The schema for the 'thrift' format must have a field named 'REQUIRED_FIELD_NAME_A'.", null)
-                    .withConfigProperty(ThriftConfig.NAME_SCHEMA);
-        } else {
-            /*
-                Here we do:
-                    * Get the Required Field
-                    * Assert it is of the right Schema type
-             */
-
-            Schema requiredFieldASchema = requiredFieldA.getSchema();
-            requiredFieldASchema = requiredFieldASchema.isNullable() ? requiredFieldASchema.getNonNullable() : requiredFieldASchema;
-            Schema.Type requiredFieldASchemaType = requiredFieldASchema.getType();
-            if (requiredFieldASchemaType != Schema.Type.STRING) { //TODO What is the required field a type of ?
-                collector.addFailure(
-                        String.format("The 'body' field is of unexpected type '%s'.'", requiredFieldASchema.getDisplayName()),
-                        "Change type to '<REQUIRED TYPE>'.").withOutputSchemaField(ThriftConfig.REQUIRED_FIELD_NAME_A);
-            }
-        }
-
-        // fields should be body (required), offset (optional), [pathfield] (optional)
-        boolean expectOptionalA = schema.getField(ThriftConfig.OPTIONAL_FIELD_NAME_A) != null;
-        boolean expectOptionalB =schema.getField(ThriftConfig.OPTIONAL_FIELD_NAME_B) != null;
-        int numExpectedFields = 1;
-        if (expectOptionalA) {
-            numExpectedFields++;
-        }
-        if (expectOptionalB) {
-            numExpectedFields++;
-        }
-
-        int numFields = schema.getFields().size();
-        if (numFields > numExpectedFields) {
-            for (Schema.Field field : schema.getFields()) {
-                String expectedFields;
-                if (expectOptionalA && expectOptionalB) {
-                    expectedFields = String.format("'offset', 'body', and '%s' fields", pathField);
-                } else if (expectOptionalA) {
-                    expectedFields = "'offset' and 'body' fields";
-                } else if (expectOptionalB) {
-                    expectedFields = String.format("'body' and '%s' fields", pathField);
-                } else {
-                    expectedFields = "'body' field";
-                }
-
-                if (field.getName().equals(ThriftConfig.REQUIRED_FIELD_NAME_A) || (expectOptionalB && field.getName().equals(pathField))
-                        || field.getName().equals(ThriftConfig.OPTIONAL_FIELD_NAME_A)) {
-                    continue;
-                }
-
-                collector.addFailure(
-                        String.format("The schema for the 'text' format must only contain the '%s'.", expectedFields),
-                        String.format("Remove additional field '%s'.", field.getName())).withOutputSchemaField(field.getName());
-            }
-        }
+//        FailureCollector collector = context.getFailureCollector();
+//        Schema schema;
+//        try {
+//            schema = conf.getSchema();
+//        } catch (Exception e) {
+//            collector.addFailure(e.getMessage(), null).withConfigProperty(ThriftConfig.NAME_SCHEMA)
+//                    .withStacktrace(e.getStackTrace());
+//            throw collector.getOrThrowException();
+//        }
+//
+//        String pathField = conf.getPathField();
+//        //TODO: Figure out any Required fields // text must contain '<INSERT FIELD REQUIRED FIELD>' as type '<REQUIRED TYPE>'.
+//
+//        Schema.Field requiredFieldA = schema.getField(ThriftConfig.REQUIRED_FIELD_NAME_A);
+//        if (requiredFieldA == null) {
+//            //TODO Are there any fields a THRIFT format must have ?
+//            collector.addFailure("The schema for the 'thrift' format must have a field named 'REQUIRED_FIELD_NAME_A'.", null)
+//                    .withConfigProperty(ThriftConfig.NAME_SCHEMA);
+//        } else {
+//            /*
+//                Here we do:
+//                    * Get the Required Field
+//                    * Assert it is of the right Schema type
+//             */
+//
+//            Schema requiredFieldASchema = requiredFieldA.getSchema();
+//            requiredFieldASchema = requiredFieldASchema.isNullable() ? requiredFieldASchema.getNonNullable() : requiredFieldASchema;
+//            Schema.Type requiredFieldASchemaType = requiredFieldASchema.getType();
+//            if (requiredFieldASchemaType != Schema.Type.STRING) { //TODO What is the required field a type of ?
+//                collector.addFailure(
+//                        String.format("The 'body' field is of unexpected type '%s'.'", requiredFieldASchema.getDisplayName()),
+//                        "Change type to '<REQUIRED TYPE>'.").withOutputSchemaField(ThriftConfig.REQUIRED_FIELD_NAME_A);
+//            }
+//        }
+//
+//        // fields should be body (required), offset (optional), [pathfield] (optional)
+//        boolean expectOptionalA = schema.getField(ThriftConfig.OPTIONAL_FIELD_NAME_A) != null;
+//        boolean expectOptionalB =schema.getField(ThriftConfig.OPTIONAL_FIELD_NAME_B) != null;
+//        int numExpectedFields = 1;
+//        if (expectOptionalA) {
+//            numExpectedFields++;
+//        }
+//        if (expectOptionalB) {
+//            numExpectedFields++;
+//        }
+//
+//        int numFields = schema.getFields().size();
+//        if (numFields > numExpectedFields) {
+//            for (Schema.Field field : schema.getFields()) {
+//                String expectedFields;
+//                if (expectOptionalA && expectOptionalB) {
+//                    expectedFields = String.format("'offset', 'body', and '%s' fields", pathField);
+//                } else if (expectOptionalA) {
+//                    expectedFields = "'offset' and 'body' fields";
+//                } else if (expectOptionalB) {
+//                    expectedFields = String.format("'body' and '%s' fields", pathField);
+//                } else {
+//                    expectedFields = "'body' field";
+//                }
+//
+//                if (field.getName().equals(ThriftConfig.REQUIRED_FIELD_NAME_A) || (expectOptionalB && field.getName().equals(pathField))
+//                        || field.getName().equals(ThriftConfig.OPTIONAL_FIELD_NAME_A)) {
+//                    continue;
+//                }
+//
+//                collector.addFailure(
+//                        String.format("The schema for the 'text' format must only contain the '%s'.", expectedFields),
+//                        String.format("Remove additional field '%s'.", field.getName())).withOutputSchemaField(field.getName());
+//            }
+//        }
     }
 
     public static Schema getDefaultSchema(@Nullable String pathField) {

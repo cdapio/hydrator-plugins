@@ -1,6 +1,7 @@
 package io.cdap.plugin.format.thrift.input;
 
 import io.cdap.cdap.api.data.format.StructuredRecord;
+import io.cdap.plugin.common.batch.JobUtils;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -20,9 +21,8 @@ public class CombineThriftInputFormat extends CombineFileInputFormat<NullWritabl
 
     @Override
     public List<InputSplit> getSplits(JobContext job) throws IOException {
-        //TODO
-        //This needs to be able to understand where exactly in a Thrift file to perform a "safe" split
-        return Collections.emptyList();
+        return JobUtils.applyWithExtraClassLoader(job, getClass().getClassLoader(),
+            CombineThriftInputFormat.super::getSplits);
     }
 
     @Override

@@ -27,6 +27,9 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 import javax.annotation.Nullable;
+import org.apache.parquet.hadoop.ParquetRecordReader;
+import org.apache.parquet.hadoop.thrift.ThriftReadSupport;
+import org.apache.thrift.TBase;
 
 /**
  * Text format that tracks which file each record was read from.
@@ -41,7 +44,8 @@ public class PathTrackingThriftInputFormat extends PathTrackingInputFormat {
                                                                                       TaskAttemptContext context,
                                                                                       @Nullable String pathField,
                                                                                       Schema schema) {
-        RecordReader<LongWritable, Text> delegate = getDefaultRecordReaderDelegate(split, context);
+//        RecordReader<LongWritable, Text> delegate = getDefaultRecordReaderDelegate(split, context);
+        RecordReader<Void, TBase> delegate = new ParquetRecordReader<>(new ThriftReadSupport<>());
         return new ThriftRecordReader(delegate, schema);
     }
 }

@@ -38,7 +38,8 @@ public enum FileFormat {
   ORC(false, true),
   PARQUET(true, true),
   TEXT(true, false),
-  TSV(true, true);
+  TSV(true, true),
+  THRIFT(true, false);
   private final boolean canRead;
   private final boolean canWrite;
 

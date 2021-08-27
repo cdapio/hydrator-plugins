@@ -71,6 +71,13 @@
       <version>1.0-SNAPSHOT</version>
     </dependency>
 
+    <!-- https://mvnrepository.com/artifact/org.apache.parquet/parquet-thrift -->
+    <dependency>
+      <groupId>org.apache.parquet</groupId>
+      <artifactId>parquet-thrift</artifactId>
+      <version>1.12.0</version>
+    </dependency>
+
   </dependencies>
 
   <build>

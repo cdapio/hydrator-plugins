@@ -5,6 +5,7 @@ import com.liveramp.types.parc.ParsedAnonymizedRecord;
 import com.liveramp.types.parc.ParsedAnonymizedRecord._Fields;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.*;
 import org.apache.thrift.transport.TMemoryBuffer;
@@ -55,7 +56,7 @@ public class CompactTransformer {
         parsedAnonymizedRecord.read(prot);
 
         LOG.debug("Converting PAR to Structured Method...");
-        StructuredRecord result = convertParToStructuredRecord(parsedAnonymizedRecord);
+        StructuredRecord result = convertParToStructuredRecord(parsedAnonymizedRecord).build();
         LOG.debug("Successfully Converted PAR to StructuredRecord: ");
 
         prot.readMessageEnd();
@@ -63,11 +64,9 @@ public class CompactTransformer {
         return result;
     }
 
-    private StructuredRecord convertParToStructuredRecord(ParsedAnonymizedRecord parsedAnonymizedRecord) {
+    public StructuredRecord.Builder convertParToStructuredRecord(TBase parsedAnonymizedRecord) {
         List<Schema.Field> fields = getParFields();
         StructuredRecord.Builder recordBuilder =  StructuredRecord.builder(Schema.recordOf("record", fields));
-
-//        parsedAnonymizedRecord.
 
         for ( _Fields field : ParsedAnonymizedRecord._Fields.values() ){
 
@@ -76,11 +75,10 @@ public class CompactTransformer {
            } else {
                LOG.debug("Value missing for Field " + field.getFieldName());
                System.out.println("Value missing for Field " + field.getFieldName());
-//               recordBuilder.set(field.getFieldName(), "Test");
            }
         }
 
-        return recordBuilder.build();
+        return recordBuilder;
     }
 
     protected Object readFieldValue (byte fieldType) throws TException {
