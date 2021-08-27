@@ -667,9 +667,9 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
       StructuredRecord.builder(schema).set("id", 1L).set("val1", "\"a").set("val2", "b").set("val3", "c\"")
         .set("file", fileText.toURI().toString()).build();
     Set<StructuredRecord> expected = ImmutableSet.of(
-        StructuredRecord.builder(schema).set("id", 0L).set("file", fileText.toURI().toString()).build(),
-        StructuredRecord.builder(schema).set("id", 1L).set("file", fileText.toURI().toString()).build(),
-        StructuredRecord.builder(schema).set("id", 2L).set("name", "sam").set("file", fileText.toURI().toString()).build()
+      StructuredRecord.builder(schema).set("id", 0L).set("file", fileText.toURI().toString()).build(),
+      StructuredRecord.builder(schema).set("id", 1L).set("file", fileText.toURI().toString()).build(),
+      StructuredRecord.builder(schema).set("id", 2L).set("name", "sam").set("file", fileText.toURI().toString()).build()
     );
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);

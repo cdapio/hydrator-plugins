@@ -61,15 +61,15 @@ public class DelimitedConfig extends PathTrackingConfig {
 
   // description
   public static final String DESC_ENABLE_QUOTES =
-      "Whether to treat content between quotes as a " + "value. Default value is false.";
+    "Whether to treat content between quotes as a " + "value. Default value is false.";
   public static final String DESC_SKIP_HEADER =
-      "Whether to skip the first line of each file. " + "Default value is false.";
+    "Whether to skip the first line of each file. " + "Default value is false.";
 
   static {
     Map<String, PluginPropertyField> fields = new HashMap<>(FIELDS);
     fields.put("skipHeader", new PluginPropertyField("skipHeader", DESC_SKIP_HEADER, "boolean", false, true));
     fields.put(NAME_ENABLE_QUOTES_VALUES,
-        new PluginPropertyField("filenameOnly", DESC_ENABLE_QUOTES, "boolean", false, true));
+      new PluginPropertyField("filenameOnly", DESC_ENABLE_QUOTES, "boolean", false, true));
     DELIMITED_FIELDS = Collections.unmodifiableMap(fields);
   }
 
@@ -196,10 +196,9 @@ public class DelimitedConfig extends PathTrackingConfig {
     String[] rowValue = null;
 
     try (FileSystem fileSystem = JobUtils.applyWithExtraClassLoader(job, getClass().getClassLoader(),
-        f -> FileSystem.get(filePath.toUri(),
-            configuration));
-        FSDataInputStream input = fileSystem.open(filePath);
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(input));
+      f -> FileSystem.get(filePath.toUri(), configuration));
+      FSDataInputStream input = fileSystem.open(filePath);
+      BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(input));
     ) {
       for (int rowIndex = 0; rowIndex < getSampleSize() && (line = bufferedReader.readLine()) != null; rowIndex++) {
         rowValue = line.split(delimiter, -1);
@@ -210,14 +209,14 @@ public class DelimitedConfig extends PathTrackingConfig {
           }
         }
         DataTypeDetectorUtils.detectDataTypeOfRowValues(getOverride(), dataTypeDetectorStatusKeeper, columnNames,
-            rowValue);
+          rowValue);
       }
       dataTypeDetectorStatusKeeper.validateDataTypeDetector();
     } catch (IOException e) {
       throw new RuntimeException(String.format("Failed to open file at path %s!", path), e);
     }
     List<Schema.Field> fields = DataTypeDetectorUtils.detectDataTypeOfEachDatasetColumn(getOverride(), columnNames,
-        dataTypeDetectorStatusKeeper);
+      dataTypeDetectorStatusKeeper);
     return Schema.recordOf("text", fields);
   }
 }
