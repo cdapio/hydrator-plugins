@@ -643,36 +643,33 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
     String outputDatasetName = UUID.randomUUID().toString();
 
     Schema schema = Schema.recordOf("user",
-        Schema.Field.of("id", Schema.of(Schema.Type.LONG)),
-        Schema.Field.of("val1", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
-        Schema.Field.of("val2", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
-        Schema.Field.of("val3", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
-        Schema.Field.of("file", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
+      Schema.Field.of("id", Schema.of(Schema.Type.LONG)),
+      Schema.Field.of("val1", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+      Schema.Field.of("val2", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+      Schema.Field.of("val3", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+      Schema.Field.of("file", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
 
     String appName = UUID.randomUUID().toString();
     ApplicationManager appManager = createSourceAndDeployApp(appName, fileText, format, outputDatasetName, schema,
-        delimiter, false, true, enableQuotedValues);
+      delimiter, false, true, enableQuotedValues);
 
     String join = Joiner.on(delimiter).join(new String[] {"\"a", "b", "c\""});
     String inputStr = new StringBuilder()
-        .append("0").append("\n")
-        .append("1").append(delimiter).append(join).append("\n")
-        .append("2").append(delimiter).append("sam\n").toString();
+      .append("0").append("\n")
+      .append("1").append(delimiter).append(join).append("\n")
+      .append("2").append(delimiter).append("sam\n").toString();
     FileUtils.writeStringToFile(fileText, inputStr);
 
     appManager.getWorkflowManager(SmartWorkflow.NAME)
-        .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
+      .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     StructuredRecord split =
-        StructuredRecord.builder(schema).set("id", 1L).set("val1", "\"a").set("val2", "b").set("val3", "c\"")
-            .set("file", fileText.toURI().toString()).build();
+      StructuredRecord.builder(schema).set("id", 1L).set("val1", "\"a").set("val2", "b").set("val3", "c\"")
+        .set("file", fileText.toURI().toString()).build();
     Set<StructuredRecord> expected = ImmutableSet.of(
         StructuredRecord.builder(schema).set("id", 0L).set("file", fileText.toURI().toString()).build(),
-        !enableQuotedValues ? split :
-            StructuredRecord.builder(schema).set("id", 1L).set("val1", join.substring(1, join.length() - 1))
-                .set("file", fileText.toURI().toString()).build(),
-        StructuredRecord.builder(schema).set("id", 2L).set("val1", "sam")
-            .set("file", fileText.toURI().toString()).build()
+        StructuredRecord.builder(schema).set("id", 1L).set("file", fileText.toURI().toString()).build(),
+        StructuredRecord.builder(schema).set("id", 2L).set("name", "sam").set("file", fileText.toURI().toString()).build()
     );
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
@@ -680,7 +677,6 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
 
     Assert.assertEquals(expected, output);
   }
-
 
   @Test
   public void testTextFormatWithoutOffset() throws Exception {
