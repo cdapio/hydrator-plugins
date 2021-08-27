@@ -69,7 +69,7 @@ public class DelimitedConfig extends PathTrackingConfig {
     Map<String, PluginPropertyField> fields = new HashMap<>(FIELDS);
     fields.put("skipHeader", new PluginPropertyField("skipHeader", DESC_SKIP_HEADER, "boolean", false, true));
     fields.put(NAME_ENABLE_QUOTES_VALUES,
-      new PluginPropertyField("filenameOnly", DESC_ENABLE_QUOTES, "boolean", false, true));
+      new PluginPropertyField(NAME_ENABLE_QUOTES_VALUES, DESC_ENABLE_QUOTES, "boolean", false, true));
     DELIMITED_FIELDS = Collections.unmodifiableMap(fields);
   }
 
