@@ -42,11 +42,14 @@ is 'csv', 'tsv' or 'delimited'. For example, if this is set to true, a line that
 The first field will have '1' as its value and the second will have 'a, b, c' as its value. The quote characters will be trimmed.
 The newline delimiter cannot be within quotes. For example, rows below are invalid:
   
-   * "ab
+* "ab
      
      c", d
 
-It also assumes the quotes are well enclosed. If there is an unenclosed quote, the data will be determined as invalid and the pipeline will fail.
+It also assumes the quotes are well enclosed. The left quote will match the first following quote right before the delimiter. If there is an 
+unenclosed quote, it will be included as part of data. For example:
+
+* "a, "b"c,d", e" -> [a, b"c,d, e]
 
 **Maximum Split Size:** Maximum size in bytes for each input partition.
 Smaller partitions will increase the level of parallelism, but will require more resources and overhead.

@@ -32,7 +32,9 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 
-/** Reads delimited text into StructuredRecords. */
+/**
+ * Reads delimited text into StructuredRecords.
+ */
 @Plugin(type = ValidatingInputFormat.PLUGIN_TYPE)
 @Name(DelimitedInputFormatProvider.NAME)
 @Description(DelimitedInputFormatProvider.DESC)
@@ -112,7 +114,9 @@ public class DelimitedInputFormatProvider
         String.valueOf(conf.getEnableQuotedValues()));
   }
 
-  /** Plugin config for delimited input format */
+  /**
+   * Plugin config for delimited input format
+   */
   public static class Conf extends DelimitedConfig {
 
     private static final String DELIMITER = "delimiter";

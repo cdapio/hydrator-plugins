@@ -76,7 +76,6 @@
             "plugin-method": "getSchema"
           }
         },
-
         {
           "widget-type": "toggle",
           "name": "enableQuotedValues",
@@ -93,7 +92,6 @@
             }
           }
         },
-
         {
           "widget-type": "toggle",
           "name": "skipHeader",
