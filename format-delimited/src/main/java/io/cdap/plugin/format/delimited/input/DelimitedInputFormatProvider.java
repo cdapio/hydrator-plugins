@@ -95,7 +95,6 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
    * Plugin config for delimited input format
    */
   public static class Conf extends DelimitedConfig {
-
     private static final String DELIMITER = "delimiter";
     private static final String DELIMITER_DESC = "Delimiter to use to separate record fields.";
 
