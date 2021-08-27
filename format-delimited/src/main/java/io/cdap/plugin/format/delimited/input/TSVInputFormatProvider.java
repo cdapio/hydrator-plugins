@@ -28,7 +28,9 @@ import io.cdap.plugin.format.input.PathTrackingConfig;
 import io.cdap.plugin.format.input.PathTrackingInputFormatProvider;
 import java.util.Map;
 
-/** Reads delimited text into StructuredRecords. */
+/**
+ * Reads delimited text into StructuredRecords.
+ */
 @Plugin(type = ValidatingInputFormat.PLUGIN_TYPE)
 @Name(TSVInputFormatProvider.NAME)
 @Description(TSVInputFormatProvider.DESC)
@@ -36,13 +38,8 @@ public class TSVInputFormatProvider extends PathTrackingInputFormatProvider<Deli
   static final String NAME = "tsv";
   static final String DESC = "Plugin for reading files in tsv format.";
   public static final PluginClass PLUGIN_CLASS =
-      new PluginClass(
-          ValidatingInputFormat.PLUGIN_TYPE,
-          NAME,
-          DESC,
-          TSVInputFormatProvider.class.getName(),
-          "conf",
-          DelimitedConfig.DELIMITED_FIELDS);
+    new PluginClass(ValidatingInputFormat.PLUGIN_TYPE, NAME, DESC, TSVInputFormatProvider.class.getName(),
+      "conf", DelimitedConfig.DELIMITED_FIELDS);
   private final DelimitedConfig conf;
 
   public TSVInputFormatProvider(DelimitedConfig conf) {
@@ -67,9 +64,7 @@ public class TSVInputFormatProvider extends PathTrackingInputFormatProvider<Deli
     Schema schema = super.getSchema(context);
     FailureCollector collector = context.getFailureCollector();
     if (!conf.containsMacro(PathTrackingConfig.NAME_SCHEMA) && schema == null) {
-      collector
-          .addFailure(
-              "TSV format cannot be used without specifying a schema.", "Schema must be specified.")
+      collector.addFailure("TSV format cannot be used without specifying a schema.", "Schema must be specified.")
           .withConfigProperty("schema");
     }
   }
@@ -77,10 +72,7 @@ public class TSVInputFormatProvider extends PathTrackingInputFormatProvider<Deli
   @Override
   protected void addFormatProperties(Map<String, String> properties) {
     properties.put(PathTrackingDelimitedInputFormat.DELIMITER, "\t");
-    properties.put(
-        PathTrackingDelimitedInputFormat.SKIP_HEADER, String.valueOf(conf.getSkipHeader()));
-    properties.put(
-        PathTrackingDelimitedInputFormat.ENABLE_QUOTES_VALUE,
-        String.valueOf(conf.getEnableQuotedValues()));
+    properties.put(PathTrackingDelimitedInputFormat.SKIP_HEADER, String.valueOf(conf.getSkipHeader()));
+    properties.put(PathTrackingDelimitedInputFormat.ENABLE_QUOTES_VALUE, String.valueOf(conf.getEnableQuotedValues()));
   }
 }

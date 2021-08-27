@@ -37,9 +37,9 @@ import java.util.Map;
 public class CSVInputFormatProvider extends PathTrackingInputFormatProvider<DelimitedConfig> {
   static final String NAME = "csv";
   static final String DESC = "Plugin for reading files in csv format.";
-  public static final PluginClass PLUGIN_CLASS = new PluginClass(ValidatingInputFormat.PLUGIN_TYPE, NAME, DESC,
-      CSVInputFormatProvider.class.getName(), "conf", DelimitedConfig.DELIMITED_FIELDS);
-  private final DelimitedConfig conf;
+  public static final PluginClass PLUGIN_CLASS =
+      new PluginClass(ValidatingInputFormat.PLUGIN_TYPE, NAME, DESC, CSVInputFormatProvider.class.getName(),
+          "conf", DelimitedConfig.DELIMITED_FIELDS);  private final DelimitedConfig conf;
 
   public CSVInputFormatProvider(DelimitedConfig conf) {
     super(conf);
@@ -71,10 +71,7 @@ public class CSVInputFormatProvider extends PathTrackingInputFormatProvider<Deli
   @Override
   protected void addFormatProperties(Map<String, String> properties) {
     properties.put(PathTrackingDelimitedInputFormat.DELIMITER, ",");
-    properties.put(
-      PathTrackingDelimitedInputFormat.SKIP_HEADER, String.valueOf(conf.getSkipHeader()));
-    properties.put(
-      PathTrackingDelimitedInputFormat.ENABLE_QUOTES_VALUE,
-      String.valueOf(conf.getEnableQuotedValues()));
+    properties.put(PathTrackingDelimitedInputFormat.SKIP_HEADER, String.valueOf(conf.getSkipHeader()));
+    properties.put(PathTrackingDelimitedInputFormat.ENABLE_QUOTES_VALUE, String.valueOf(conf.getEnableQuotedValues()));
   }
 }

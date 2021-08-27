@@ -38,9 +38,10 @@ import java.util.List;
 import java.util.TreeMap;
 import javax.annotation.Nullable;
 
-/** Delimited text format that tracks which file each record was read from. */
+/**
+ * Delimited text format that tracks which file each record was read from.
+ */
 public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
-
   static final String DELIMITER = "delimiter";
   static final String ENABLE_QUOTES_VALUE = "enable_quotes_value";
   static final String SKIP_HEADER = "skip_header";
@@ -146,11 +147,10 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
   }
 
   @Override
-  protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(
-      FileSplit split,
-      TaskAttemptContext context,
-      @Nullable String pathField,
-      @Nullable Schema schema) {
+  protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(FileSplit split,
+    TaskAttemptContext context,
+    @Nullable String pathField,
+    @Nullable Schema schema) {
 
     RecordReader<LongWritable, Text> delegate = getDefaultRecordReaderDelegate(split, context);
     String delimiter = context.getConfiguration().get(DELIMITER);
@@ -160,8 +160,7 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
     return new RecordReader<NullWritable, StructuredRecord.Builder>() {
 
       @Override
-      public void initialize(InputSplit split, TaskAttemptContext context)
-          throws IOException, InterruptedException {
+      public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
         delegate.initialize(split, context);
       }
 
@@ -201,9 +200,9 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
             int numDataFields = splits.size() + 1;
             int numSchemaFields = schema.getFields().size();
             String message =
-                String.format(
-                    "Found a row with %d fields when the schema only contains %d field%s.",
-                    numDataFields, numSchemaFields, numSchemaFields == 1 ? "" : "s");
+              String.format(
+                "Found a row with %d fields when the schema only contains %d field%s.",
+                numDataFields, numSchemaFields, numSchemaFields == 1 ? "" : "s");
             // special error handling for the case when the user most likely set the schema to
             // delimited
             // when they meant to use 'text'.
