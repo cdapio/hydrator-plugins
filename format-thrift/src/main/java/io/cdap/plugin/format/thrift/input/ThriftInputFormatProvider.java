@@ -43,7 +43,7 @@ import java.util.Map;
 @Description(ThriftInputFormatProvider.DESC)
 public class ThriftInputFormatProvider extends PathTrackingInputFormatProvider<ThriftInputFormatProvider.ThriftConfig> {
     static final String NAME = "thrift";
-    static final String DESC = "Plugin for reading files in thrif format.";
+    static final String DESC = "Plugin for reading files in thrift format.";
     public static final PluginClass PLUGIN_CLASS =
             new PluginClass(ValidatingInputFormat.PLUGIN_TYPE, NAME, DESC, ThriftInputFormatProvider.class.getName(),
                     "conf", PathTrackingConfig.FIELDS);

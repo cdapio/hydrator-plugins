@@ -39,7 +39,7 @@ public enum FileFormat {
   PARQUET(true, true),
   TEXT(true, false),
   TSV(true, true),
-  THRIFT(true, false);
+  THRIFT(true, true);
   private final boolean canRead;
   private final boolean canWrite;
 
