@@ -29,44 +29,44 @@ public class DelimitedStringTest {
   public void testStringShorterThanDelimiter() throws Exception {
     String test = "a";
     Assert.assertEquals(Arrays.asList(test.split(",,")),
-        PathTrackingDelimitedInputFormat.splitQuotesString(test, ",,"));
+      PathTrackingDelimitedInputFormat.splitQuotesString(test, ",,"));
     Assert.assertEquals(Arrays.asList(test.split("aa")),
-        PathTrackingDelimitedInputFormat.splitQuotesString(test, "aa"));
+      PathTrackingDelimitedInputFormat.splitQuotesString(test, "aa"));
   }
 
   @Test
   public void testStringWithConsecutiveDelimiter() throws Exception {
     String test = "aaa";
     Assert.assertEquals(Arrays.asList(test.split("a", -1)),
-        PathTrackingDelimitedInputFormat.splitQuotesString(test, "a"));
+      PathTrackingDelimitedInputFormat.splitQuotesString(test, "a"));
     Assert.assertEquals(Arrays.asList(test.split("aa", -1)),
-        PathTrackingDelimitedInputFormat.splitQuotesString(test, "aa"));
+      PathTrackingDelimitedInputFormat.splitQuotesString(test, "aa"));
 
     test = "aaaaaaa";
     Assert.assertEquals(Arrays.asList(test.split("aa", -1)),
-        PathTrackingDelimitedInputFormat.splitQuotesString(test, "aa"));
+      PathTrackingDelimitedInputFormat.splitQuotesString(test, "aa"));
     test = "aaaaaaaa";
     Assert.assertEquals(Arrays.asList(test.split("aa", -1)),
-        PathTrackingDelimitedInputFormat.splitQuotesString(test, "aa"));
+      PathTrackingDelimitedInputFormat.splitQuotesString(test, "aa"));
   }
 
   @Test
   public void testSimpleSplit() throws Exception {
     String test = "a,b,c,d,e";
     Assert.assertEquals(Arrays.asList(test.split(",")),
-        PathTrackingDelimitedInputFormat.splitQuotesString(test, ","));
+      PathTrackingDelimitedInputFormat.splitQuotesString(test, ","));
 
     test = "a1,b1,c1,d1,e1";
     Assert.assertEquals(Arrays.asList(test.split(",")),
-        PathTrackingDelimitedInputFormat.splitQuotesString(test, ","));
+      PathTrackingDelimitedInputFormat.splitQuotesString(test, ","));
 
     test = "1###sam###a@b.com###male";
     Assert.assertEquals(Arrays.asList(test.split("###")),
-        PathTrackingDelimitedInputFormat.splitQuotesString(test, "###"));
+      PathTrackingDelimitedInputFormat.splitQuotesString(test, "###"));
 
     test = "a1,,,b1,,,c1,,,d1,,,e1";
     Assert.assertEquals(Arrays.asList(test.split(",")),
-        PathTrackingDelimitedInputFormat.splitQuotesString(test, ","));
+      PathTrackingDelimitedInputFormat.splitQuotesString(test, ","));
   }
 
   @Test
@@ -92,7 +92,7 @@ public class DelimitedStringTest {
   public void testBadQuotes() {
     String test = "Value1,value2.1 value2.2\"value2.2.1,value2.3\",val\"ue3,value4";
     List<String> expected = ImmutableList.of("Value1", "value2.1 value2.2\"value2.2.1,value2.3\"",
-        "val\"ue3", "value4");
+      "val\"ue3", "value4");
     Assert.assertEquals(expected, PathTrackingDelimitedInputFormat.splitQuotesString(test, ","));
 
     test = "val1\",\"val2";

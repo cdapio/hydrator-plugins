@@ -199,9 +199,9 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
             int numDataFields = splits.size();
             int numSchemaFields = schema.getFields().size();
             String message =
-                String.format(
-                    "Found a row with %d fields when the schema only contains %d field%s.",
-                    numDataFields, numSchemaFields, numSchemaFields == 1 ? "" : "s");
+              String.format(
+                "Found a row with %d fields when the schema only contains %d field%s.",
+                numDataFields, numSchemaFields, numSchemaFields == 1 ? "" : "s");
             // special error handling for the case when the user most likely set the schema to
             // delimited
             // when they meant to use 'text'.

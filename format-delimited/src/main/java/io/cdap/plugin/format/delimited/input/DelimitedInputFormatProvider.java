@@ -38,9 +38,7 @@ import javax.annotation.Nullable;
 @Plugin(type = ValidatingInputFormat.PLUGIN_TYPE)
 @Name(DelimitedInputFormatProvider.NAME)
 @Description(DelimitedInputFormatProvider.DESC)
-public class DelimitedInputFormatProvider
-    extends PathTrackingInputFormatProvider<DelimitedInputFormatProvider.Conf> {
-
+public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvider<DelimitedInputFormatProvider.Conf> {
   public static final PluginClass PLUGIN_CLASS = getPluginClass();
   static final String NAME = "delimited";
   static final String DESC = "Plugin for reading files in delimited format.";
@@ -56,25 +54,10 @@ public class DelimitedInputFormatProvider
     return CombineDelimitedInputFormat.class.getName();
   }
 
-  private static PluginClass getPluginClass() {
-    Map<String, PluginPropertyField> properties = new HashMap<>(DelimitedConfig.DELIMITED_FIELDS);
-    properties.put(
-        "delimiter",
-        new PluginPropertyField("delimiter", Conf.DELIMITER_DESC, "string", false, true));
-    return new PluginClass(
-        ValidatingInputFormat.PLUGIN_TYPE,
-        NAME,
-        DESC,
-        DelimitedInputFormatProvider.class.getName(),
-        "conf",
-        properties);
-  }
-
   @Override
   protected void validate() {
     if (!conf.containsMacro(PathTrackingConfig.NAME_SCHEMA) && conf.getSchema() == null) {
-      throw new IllegalArgumentException(
-          "Delimited format cannot be used without specifying a schema.");
+      throw new IllegalArgumentException("Delimited format cannot be used without specifying a schema.");
     }
   }
 
@@ -84,9 +67,9 @@ public class DelimitedInputFormatProvider
     FailureCollector collector = context.getFailureCollector();
     if (!conf.containsMacro(PathTrackingConfig.NAME_SCHEMA) && schema == null) {
       collector
-          .addFailure(
-              "Delimited format cannot be used without specifying a schema.",
-              "Schema must be specified.")
+        .addFailure(
+          "Delimited format cannot be used without specifying a schema.",
+          "Schema must be specified.")
           .withConfigProperty("schema");
     }
 
@@ -97,21 +80,15 @@ public class DelimitedInputFormatProvider
 
     if (conf.getEnableQuotedValues() && conf.delimiter != null && conf.delimiter.contains("\"")) {
       throw new IllegalArgumentException(
-          String.format(
-              "The delimeter %s cannot contain \" when quotes are enabled as value.",
-              conf.delimiter));
+        String.format("The delimeter %s cannot contain \" when quotes are enabled as value.", conf.delimiter));
     }
   }
 
   @Override
   protected void addFormatProperties(Map<String, String> properties) {
-    properties.put(
-        PathTrackingDelimitedInputFormat.DELIMITER, conf.delimiter == null ? "," : conf.delimiter);
-    properties.put(
-        PathTrackingDelimitedInputFormat.SKIP_HEADER, String.valueOf(conf.getSkipHeader()));
-    properties.put(
-        PathTrackingDelimitedInputFormat.ENABLE_QUOTES_VALUE,
-        String.valueOf(conf.getEnableQuotedValues()));
+    properties.put(PathTrackingDelimitedInputFormat.DELIMITER, conf.delimiter == null ? "," : conf.delimiter);
+    properties.put(PathTrackingDelimitedInputFormat.SKIP_HEADER, String.valueOf(conf.getSkipHeader()));
+    properties.put(PathTrackingDelimitedInputFormat.ENABLE_QUOTES_VALUE, String.valueOf(conf.getEnableQuotedValues()));
   }
 
   /**
@@ -126,5 +103,12 @@ public class DelimitedInputFormatProvider
     @Nullable
     @Description(DELIMITER_DESC)
     private String delimiter;
+  }
+
+  private static PluginClass getPluginClass() {
+    Map<String, PluginPropertyField> properties = new HashMap<>(DelimitedConfig.DELIMITED_FIELDS);
+    properties.put("delimiter", new PluginPropertyField("delimiter", Conf.DELIMITER_DESC, "string", false, true));
+    return new PluginClass(ValidatingInputFormat.PLUGIN_TYPE, NAME, DESC, DelimitedInputFormatProvider.class.getName(),
+      "conf", properties);
   }
 }

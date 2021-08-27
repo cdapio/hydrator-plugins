@@ -131,8 +131,7 @@ public class DelimitedConfig extends PathTrackingConfig {
   }
 
   /**
-   * Parses a list of key-value items of column names and their corresponding data types, manually
-   * set by the user.
+   * Parses a list of key-value items of column names and their corresponding data types, manually set by the user.
    *
    * @return A hashmap of column names and their manually set schemas.
    */
@@ -161,8 +160,7 @@ public class DelimitedConfig extends PathTrackingConfig {
         }
 
         if (overrideDataTypes.containsKey(name)) {
-          throw new IllegalArgumentException(
-              String.format("Cannot convert '%s' to multiple types.", name));
+          throw new IllegalArgumentException(String.format("Cannot convert '%s' to multiple types.", name));
         }
         overrideDataTypes.put(name, schema);
       }
@@ -183,8 +181,7 @@ public class DelimitedConfig extends PathTrackingConfig {
     String regexPathFilter = getProperties().getProperties().get(NAME_REGEX_PATH_FILTER);
     String path = getProperties().getProperties().get(NAME_PATH);
     if (format.equals("delimited") && Strings.isNullOrEmpty(delimiter)) {
-      throw new IllegalArgumentException(
-          "Delimiter is required when format is set to 'delimited'.");
+      throw new IllegalArgumentException("Delimiter is required when format is set to 'delimited'.");
     }
 
     Job job = JobUtils.createInstance();
@@ -198,16 +195,13 @@ public class DelimitedConfig extends PathTrackingConfig {
     String[] columnNames = null;
     String[] rowValue = null;
 
-    try (FileSystem fileSystem =
-        JobUtils.applyWithExtraClassLoader(
-            job,
-            getClass().getClassLoader(),
-            f -> FileSystem.get(filePath.toUri(), configuration));
+    try (FileSystem fileSystem = JobUtils.applyWithExtraClassLoader(job, getClass().getClassLoader(),
+        f -> FileSystem.get(filePath.toUri(),
+            configuration));
         FSDataInputStream input = fileSystem.open(filePath);
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(input));) {
-      for (int rowIndex = 0;
-          rowIndex < getSampleSize() && (line = bufferedReader.readLine()) != null;
-          rowIndex++) {
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(input));
+    ) {
+      for (int rowIndex = 0; rowIndex < getSampleSize() && (line = bufferedReader.readLine()) != null; rowIndex++) {
         rowValue = line.split(delimiter, -1);
         if (rowIndex == 0) {
           columnNames = DataTypeDetectorUtils.setColumnNames(line, skipHeader, delimiter);
@@ -215,16 +209,15 @@ public class DelimitedConfig extends PathTrackingConfig {
             continue;
           }
         }
-        DataTypeDetectorUtils.detectDataTypeOfRowValues(
-            getOverride(), dataTypeDetectorStatusKeeper, columnNames, rowValue);
+        DataTypeDetectorUtils.detectDataTypeOfRowValues(getOverride(), dataTypeDetectorStatusKeeper, columnNames,
+            rowValue);
       }
       dataTypeDetectorStatusKeeper.validateDataTypeDetector();
     } catch (IOException e) {
       throw new RuntimeException(String.format("Failed to open file at path %s!", path), e);
     }
-    List<Schema.Field> fields =
-        DataTypeDetectorUtils.detectDataTypeOfEachDatasetColumn(
-            getOverride(), columnNames, dataTypeDetectorStatusKeeper);
+    List<Schema.Field> fields = DataTypeDetectorUtils.detectDataTypeOfEachDatasetColumn(getOverride(), columnNames,
+        dataTypeDetectorStatusKeeper);
     return Schema.recordOf("text", fields);
   }
 }
