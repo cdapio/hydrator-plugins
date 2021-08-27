@@ -112,7 +112,7 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
   @Macro
   @Nullable
   @Description("Whether to treat content between quotes as a value. This value will only be used if the format " +
-      "is 'csv', 'tsv' or 'delimited'. Default value is false.")
+    "is 'csv', 'tsv' or 'delimited'. Default value is false.")
   protected Boolean enableQuotedValues;
 
   @Macro

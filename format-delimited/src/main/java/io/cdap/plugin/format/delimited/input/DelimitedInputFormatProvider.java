@@ -73,8 +73,7 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
           .withConfigProperty("schema");
     }
 
-    if (conf.containsMacro(DelimitedConfig.NAME_ENABLE_QUOTES_VALUES)
-        || conf.containsMacro(Conf.DELIMITER)) {
+    if (conf.containsMacro(DelimitedConfig.NAME_ENABLE_QUOTES_VALUES) || conf.containsMacro(Conf.DELIMITER)) {
       return;
     }
 

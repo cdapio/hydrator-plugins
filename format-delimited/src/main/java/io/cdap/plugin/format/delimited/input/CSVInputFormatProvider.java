@@ -38,8 +38,8 @@ public class CSVInputFormatProvider extends PathTrackingInputFormatProvider<Deli
   static final String NAME = "csv";
   static final String DESC = "Plugin for reading files in csv format.";
   public static final PluginClass PLUGIN_CLASS =
-      new PluginClass(ValidatingInputFormat.PLUGIN_TYPE, NAME, DESC, CSVInputFormatProvider.class.getName(),
-          "conf", DelimitedConfig.DELIMITED_FIELDS);
+    new PluginClass(ValidatingInputFormat.PLUGIN_TYPE, NAME, DESC, CSVInputFormatProvider.class.getName(),
+      "conf", DelimitedConfig.DELIMITED_FIELDS);
   private final DelimitedConfig conf;
 
   public CSVInputFormatProvider(DelimitedConfig conf) {
