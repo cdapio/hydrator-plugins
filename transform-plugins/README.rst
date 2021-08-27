@@ -201,7 +201,8 @@ Hasher
 :Configuration:
   - **fields:** Specifies the fields to be hashed
   - **hash:** Specifies the hashing algorithm
-
+:Prerequisites:
+    The **fields** to be hashed must be of type `string` and `non-nullable`.
 XMLToJSONConverter
 ------------------
 :ID:
