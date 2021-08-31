@@ -44,8 +44,8 @@ public class PathTrackingThriftInputFormat extends PathTrackingInputFormat {
                                                                                       TaskAttemptContext context,
                                                                                       @Nullable String pathField,
                                                                                       Schema schema) {
-//        RecordReader<LongWritable, Text> delegate = getDefaultRecordReaderDelegate(split, context);
-        RecordReader<Void, TBase> delegate = new ParquetRecordReader<>(new ThriftReadSupport<>());
+        RecordReader<LongWritable, Text> delegate = getDefaultRecordReaderDelegate(split, context);
+//        RecordReader<Void, TBase> delegate = new ParquetRecordReader<>(new ThriftReadSupport<>());
         return new ThriftRecordReader(delegate, schema);
     }
 }

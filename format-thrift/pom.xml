@@ -78,6 +78,13 @@
       <version>1.12.0</version>
     </dependency>
 
+    <!-- https://mvnrepository.com/artifact/com.github.luben/zstd-jni -->
+    <dependency>
+      <groupId>com.github.luben</groupId>
+      <artifactId>zstd-jni</artifactId>
+      <version>1.5.0-4</version>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -85,7 +92,7 @@
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
-        <version>3.3.0</version>
+        <version>3.5.0</version>
         <extensions>true</extensions>
         <configuration>
           <instructions>
