@@ -19,33 +19,40 @@ package io.cdap.plugin.format.thrift.input;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
+import java.io.IOException;
+import javax.annotation.Nullable;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
-
-import javax.annotation.Nullable;
-import org.apache.parquet.hadoop.ParquetRecordReader;
-import org.apache.parquet.hadoop.thrift.ThriftReadSupport;
-import org.apache.thrift.TBase;
+import org.apache.hadoop.mapreduce.lib.input.SequenceFileRecordReader;
 
 /**
  * Text format that tracks which file each record was read from.
  */
 public class PathTrackingThriftInputFormat extends PathTrackingInputFormat {
 
-    public PathTrackingThriftInputFormat() {
-    }
+  public PathTrackingThriftInputFormat() {
+  }
 
-    @Override
-    protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(FileSplit split,
-                                                                                      TaskAttemptContext context,
-                                                                                      @Nullable String pathField,
-                                                                                      Schema schema) {
-        RecordReader<LongWritable, Text> delegate = getDefaultRecordReaderDelegate(split, context);
-//        RecordReader<Void, TBase> delegate = new ParquetRecordReader<>(new ThriftReadSupport<>());
-        return new ThriftRecordReader(delegate, schema);
-    }
+  @Override
+  protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(
+      FileSplit split,
+      TaskAttemptContext context,
+      @Nullable String pathField,
+      Schema schema) {
+//        RecordReader<LongWritable, Text> delegate = getDefaultRecordReaderDelegate(split, context);
+////        RecordReader<Void, TBase> delegate = new ParquetRecordReader<>(new ThriftReadSupport<>());
+//        return new ThriftRecordReader(delegate, schema);
+
+//      SequenceFile.Reader.Option fileOption = SequenceFile.Reader.file(split.getPath());
+//      SequenceFile.Reader reader = new SequenceFile.Reader(new Configuration(), fileOption);
+//      org.apache.hadoop.mapred.FileSplit fileSplitRed = new org.apache.hadoop.mapred.FileSplit(
+//          split.getPath(), split.getStart(), split.getLength(), split.getLocations());
+    SequenceFileRecordReader<LongWritable, Text> reader = new SequenceFileRecordReader<>();
+    return new ThriftRecordReader(reader, schema);
+  }
 }

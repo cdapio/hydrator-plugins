@@ -51,16 +51,18 @@ public class ThriftRecordReader extends RecordReader<NullWritable, StructuredRec
   @Override
   public StructuredRecord.Builder getCurrentValue() throws IOException, InterruptedException {
     Text text = delegate.getCurrentValue();
+    LOG.debug("current value text: " + text);
 
     TDeserializer tdes = new TDeserializer(new Factory());
     ParsedAnonymizedRecord result = new ParsedAnonymizedRecord();
     try {
-      long size = Zstd.decompressedSize(text.getBytes());
-      LOG.debug("decompressed size: " + size);
-      LOG.debug("compressed size: " + text.getBytes().length);
-      byte[] decompress = Zstd.decompress(text.getBytes(), (int) size * 10);
-      LOG.debug("decompressed, decompressed size: " + decompress.length);
-      tdes.deserialize(result, decompress);
+//      long size = Zstd.decompressedSize(text.getBytes());
+      System.out.println("-------------------------------------------------------TEST");
+//      LOG.debug("decompressed size: " + size);
+//      LOG.debug("compressed size: " + text.getBytes().length);
+//      byte[] decompress = Zstd.decompress(text.getBytes(), (int) size * 10);
+//      LOG.debug("decompressed, decompressed size: " + decompress.length);
+      tdes.deserialize(result, text.getBytes());
       LOG.debug("deserialized "+result);
     } catch (TException e) {
       e.printStackTrace();
