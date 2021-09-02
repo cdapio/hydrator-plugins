@@ -19,12 +19,9 @@ package io.cdap.plugin.format.thrift.input;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
-import java.io.IOException;
 import javax.annotation.Nullable;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
@@ -52,7 +49,7 @@ public class PathTrackingThriftInputFormat extends PathTrackingInputFormat {
 //      SequenceFile.Reader reader = new SequenceFile.Reader(new Configuration(), fileOption);
 //      org.apache.hadoop.mapred.FileSplit fileSplitRed = new org.apache.hadoop.mapred.FileSplit(
 //          split.getPath(), split.getStart(), split.getLength(), split.getLocations());
-    SequenceFileRecordReader<LongWritable, Text> reader = new SequenceFileRecordReader<>();
-    return new ThriftRecordReader(reader, schema);
+    SequenceFileRecordReader<BytesWritable, NullWritable> delegate = new SequenceFileRecordReader<>();
+    return new ThriftRecordReader(delegate, schema);
   }
 }

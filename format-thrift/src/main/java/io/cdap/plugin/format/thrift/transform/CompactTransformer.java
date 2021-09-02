@@ -5,16 +5,18 @@ import com.liveramp.types.parc.ParsedAnonymizedRecord;
 import com.liveramp.types.parc.ParsedAnonymizedRecord._Fields;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
-import org.apache.thrift.protocol.*;
+import org.apache.thrift.protocol.TCompactProtocol;
+import org.apache.thrift.protocol.TMessage;
+import org.apache.thrift.protocol.TProtocol;
+import org.apache.thrift.protocol.TType;
 import org.apache.thrift.transport.TMemoryBuffer;
 import org.apache.thrift.transport.TTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class CompactTransformer {
 
@@ -25,18 +27,18 @@ public class CompactTransformer {
     public StructuredRecord decode(byte[] thriftRecordBinary) throws TException {
         // Set up buffer for feeding into Thrift protocol
 
-        LOG.debug("Entering Decode Method");
+        LOG.info("Entering Decode Method");
         TTransport byteBuffer = new TMemoryBuffer(thriftRecordBinary.length);
         setThriftProtocol(new TCompactProtocol(byteBuffer));
-        LOG.debug("TProtocol: " + getThriftProtocol().toString());
+        LOG.info("TProtocol: " + getThriftProtocol().toString());
 
         //This sets the record to be read
-        LOG.debug("Writing Record to Buffer");
+        LOG.info("Writing Record to Buffer");
         byteBuffer.write(thriftRecordBinary);
 
         StructuredRecord result = readMessage();
 
-        LOG.debug("test");
+        LOG.info("test");
         return result;
     }
 
@@ -47,17 +49,17 @@ public class CompactTransformer {
     protected StructuredRecord readMessage () throws TException {
         TProtocol prot = getThriftProtocol();
 
-        LOG.debug("Reading Message...");
+        LOG.info("Reading Message...");
         TMessage msg = prot.readMessageBegin();
-        LOG.debug("Successfully Read TMessage: " + msg.toString());
+        LOG.info("Successfully Read TMessage: " + msg.toString());
 
-        LOG.debug("Converting TMessage to PAR via TProtocol...");
+        LOG.info("Converting TMessage to PAR via TProtocol...");
         ParsedAnonymizedRecord parsedAnonymizedRecord = new ParsedAnonymizedRecord();
         parsedAnonymizedRecord.read(prot);
 
-        LOG.debug("Converting PAR to Structured Method...");
+        LOG.info("Converting PAR to Structured Method...");
         StructuredRecord result = convertParToStructuredRecord(parsedAnonymizedRecord).build();
-        LOG.debug("Successfully Converted PAR to StructuredRecord: ");
+        LOG.info("Successfully Converted PAR to StructuredRecord: ");
 
         prot.readMessageEnd();
 
@@ -73,8 +75,7 @@ public class CompactTransformer {
            if (parsedAnonymizedRecord.getFieldValue(field) != null) {
                recordBuilder.set(field.getFieldName(), parsedAnonymizedRecord.getFieldValue(field));
            } else {
-               LOG.debug("Value missing for Field " + field.getFieldName());
-               System.out.println("Value missing for Field " + field.getFieldName());
+               LOG.info("Value missing for Field " + field.getFieldName());
            }
         }
 
