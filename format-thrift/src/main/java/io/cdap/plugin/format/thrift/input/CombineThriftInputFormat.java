@@ -3,6 +3,8 @@ package io.cdap.plugin.format.thrift.input;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.plugin.common.batch.JobUtils;
 import io.cdap.plugin.format.input.PathTrackingInputFormat;
+import java.io.IOException;
+import java.util.List;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
@@ -12,10 +14,6 @@ import org.apache.hadoop.mapreduce.lib.input.CombineFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.CombineFileRecordReader;
 import org.apache.hadoop.mapreduce.lib.input.CombineFileRecordReaderWrapper;
 import org.apache.hadoop.mapreduce.lib.input.CombineFileSplit;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
 
 public class CombineThriftInputFormat extends CombineFileInputFormat<NullWritable, StructuredRecord> {
 

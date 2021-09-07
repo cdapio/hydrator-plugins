@@ -1,8 +1,8 @@
 package io.cdap.plugin.format.thrift.input;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.liveramp.types.parc.ParsedAnonymizedRecord;
 import io.cdap.cdap.api.data.format.StructuredRecord;
-import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.plugin.format.thrift.transform.CompactTransformer;
 import java.io.IOException;
 import org.apache.hadoop.io.BytesWritable;
@@ -19,15 +19,18 @@ import org.slf4j.LoggerFactory;
 public class ThriftRecordReader extends RecordReader<NullWritable, StructuredRecord.Builder> {
 
   private final RecordReader<BytesWritable, NullWritable> delegate;
-  private Schema schema;
-  private CompactTransformer recordTransformer;
+  private final CompactTransformer recordTransformer;
 
   Logger LOG = LoggerFactory.getLogger(ThriftRecordReader.class);
 
-  public ThriftRecordReader(RecordReader<BytesWritable, NullWritable> delegate, Schema schema) {
+  public ThriftRecordReader(RecordReader<BytesWritable, NullWritable> delegate) {
+    this(delegate, new CompactTransformer());
+  }
+
+  @VisibleForTesting
+  ThriftRecordReader(RecordReader<BytesWritable, NullWritable> delegate, CompactTransformer recordTransformer) {
     this.delegate = delegate;
-    this.schema = schema;
-    this.recordTransformer = new CompactTransformer();
+    this.recordTransformer = recordTransformer;
   }
 
   @Override
@@ -42,29 +45,21 @@ public class ThriftRecordReader extends RecordReader<NullWritable, StructuredRec
   }
 
   @Override
-  public NullWritable getCurrentKey() throws IOException, InterruptedException {
-    BytesWritable text = delegate.getCurrentKey();
-    LOG.info("current key text: " + text);
-    LOG.info("current key to string: " + text.toString());
+  public NullWritable getCurrentKey() {
     return NullWritable.get();
   }
 
   @Override
   public StructuredRecord.Builder getCurrentValue() throws IOException, InterruptedException {
-    NullWritable text = delegate.getCurrentValue();
-    LOG.info("current value text: " + text);
-    LOG.info("current value to string: " + text.toString());
-    BytesWritable keyText = delegate.getCurrentKey();
-    LOG.info("current key text: " + new String(keyText.getBytes()));
-    LOG.info("current key to string: " + keyText.toString());
-
-    TDeserializer tdes = new TDeserializer(new Factory());
+    BytesWritable key = delegate.getCurrentKey();
+    TDeserializer deserializer = new TDeserializer(new Factory());
     ParsedAnonymizedRecord result = new ParsedAnonymizedRecord();
     try {
-      tdes.deserialize(result, keyText.getBytes());
-      LOG.info("deserialized "+result);
+      deserializer.deserialize(result, key.getBytes());
     } catch (TException e) {
-      LOG.error("error in getCurrentValue for text: " + text, e);
+      String message = "Error in getCurrentValue for key : " + key;
+      LOG.error(message, e);
+      throw new IOException(message, e);
     }
 
     LOG.info("PAR is " + result);
@@ -79,5 +74,9 @@ public class ThriftRecordReader extends RecordReader<NullWritable, StructuredRec
   @Override
   public void close() throws IOException {
     delegate.close();
+  }
+
+  RecordReader<BytesWritable, NullWritable> getDelegate() {
+    return delegate;
   }
 }

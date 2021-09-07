@@ -32,24 +32,13 @@ import org.apache.hadoop.mapreduce.lib.input.SequenceFileRecordReader;
  */
 public class PathTrackingThriftInputFormat extends PathTrackingInputFormat {
 
-  public PathTrackingThriftInputFormat() {
-  }
-
   @Override
   protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(
       FileSplit split,
       TaskAttemptContext context,
       @Nullable String pathField,
       Schema schema) {
-//        RecordReader<LongWritable, Text> delegate = getDefaultRecordReaderDelegate(split, context);
-////        RecordReader<Void, TBase> delegate = new ParquetRecordReader<>(new ThriftReadSupport<>());
-//        return new ThriftRecordReader(delegate, schema);
-
-//      SequenceFile.Reader.Option fileOption = SequenceFile.Reader.file(split.getPath());
-//      SequenceFile.Reader reader = new SequenceFile.Reader(new Configuration(), fileOption);
-//      org.apache.hadoop.mapred.FileSplit fileSplitRed = new org.apache.hadoop.mapred.FileSplit(
-//          split.getPath(), split.getStart(), split.getLength(), split.getLocations());
     SequenceFileRecordReader<BytesWritable, NullWritable> delegate = new SequenceFileRecordReader<>();
-    return new ThriftRecordReader(delegate, schema);
+    return new ThriftRecordReader(delegate);
   }
 }
