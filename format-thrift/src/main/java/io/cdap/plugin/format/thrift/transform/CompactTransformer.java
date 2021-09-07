@@ -23,8 +23,6 @@ public class CompactTransformer {
 
       if (parsedAnonymizedRecord.getFieldValue(field) != null) {
         recordBuilder.set(field.getFieldName(), parsedAnonymizedRecord.getFieldValue(field));
-      } else {
-        LOG.info("Value missing for Field " + field.getFieldName());
       }
     }
 
