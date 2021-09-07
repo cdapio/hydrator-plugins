@@ -22,18 +22,10 @@ import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginClass;
-import io.cdap.cdap.api.plugin.PluginPropertyField;
-import io.cdap.cdap.etl.api.FailureCollector;
-import io.cdap.cdap.etl.api.validation.FormatContext;
 import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
 import io.cdap.plugin.format.input.PathTrackingConfig;
 import io.cdap.plugin.format.input.PathTrackingInputFormatProvider;
-
-import javax.annotation.Nullable;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Input reading logic for Thrift files.
@@ -58,15 +50,6 @@ public class ThriftInputFormatProvider extends PathTrackingInputFormatProvider<T
     @Override
     public String getInputFormatClassName() {
         return CombineThriftInputFormat.class.getName();
-    }
-
-    @Override
-    protected void addFormatProperties(Map<String, String> properties) {
-        Schema schema = conf.getSchema();
-        if (schema != null) {
-//        TODO: Are there any specific properties required to process Thrift
-//            e.g for AVRO `properties.put("avro.schema.input.key", schema.toString());`
-        }
     }
 
     public static class ThriftConfig extends PathTrackingConfig {
