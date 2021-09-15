@@ -17,6 +17,9 @@
 package io.cdap.plugin.format.avro;
 
 import com.google.common.collect.Maps;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
@@ -35,6 +38,7 @@ import javax.annotation.Nullable;
 public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, StructuredRecord> {
 
   private final Map<Integer, Schema> schemaCache = Maps.newHashMap();
+  private final Map<String, JsonObject> customTypes = Maps.newHashMap();
 
   public StructuredRecord transform(GenericRecord genericRecord) throws IOException {
     org.apache.avro.Schema genericRecordSchema = genericRecord.getSchema();
@@ -91,9 +95,76 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
     if (schemaCache.containsKey(hashCode)) {
       structuredSchema = schemaCache.get(hashCode);
     } else {
-      structuredSchema = Schema.parseJson(schema.toString());
+      String strSchema = schema.toString();
+      String jsonSchema = preprocessSchema(new Gson().fromJson(strSchema, JsonObject.class)).toString();
+      structuredSchema = Schema.parseJson(jsonSchema);
       schemaCache.put(hashCode, structuredSchema);
     }
     return structuredSchema;
+  }
+
+  private JsonObject preprocessSchema(JsonObject schema) {
+
+    if (!schema.has("type")) {
+      return schema;
+    }
+
+    JsonElement type = schema.get("type");
+
+    if (type.isJsonArray()) {   // Union
+      for (JsonElement subtype : type.getAsJsonArray()) {
+        if (!subtype.isJsonPrimitive()) {
+          preprocessSchema(subtype.getAsJsonObject());
+        } else if (customTypes.containsKey(subtype.getAsString())) {
+          schema.remove("type");
+          schema.add("type", customTypes.get(subtype.getAsString()));
+        }
+      }
+    } else if (type.isJsonObject()) {   // Unnamed Complex type
+      preprocessSchema(type.getAsJsonObject());
+    } else {
+      String typeName = type.getAsString();
+      switch (typeName) {
+        case "record":
+          if (!schema.has("fields")) {
+            return schema;
+          }
+          for (JsonElement field : schema.get("fields").getAsJsonArray()) {
+            preprocessSchema(field.getAsJsonObject());
+          }
+          customTypes.put(schema.getAsJsonPrimitive("name").getAsString(), schema);
+          break;
+
+        case "map":
+          schema.addProperty("keys", "string");
+          if (!schema.get("values").isJsonPrimitive()) {
+            preprocessSchema(schema.getAsJsonObject("values"));
+          }
+          break;
+
+        case "array":
+          JsonElement items = schema.get("items");
+          if (!items.isJsonPrimitive()) {
+            preprocessSchema(schema.getAsJsonObject("items"));
+          } else if (customTypes.containsKey(items.getAsString())) {
+            schema.remove("items");
+            schema.add("items", customTypes.get(items.getAsString()));
+          }
+          break;
+
+        case "enum":
+          customTypes.put(schema.getAsJsonPrimitive("name").getAsString(), schema);
+          break;
+
+        default:
+          if (customTypes.containsKey(typeName)) {
+            schema.remove("type");
+            schema.add("type", customTypes.get(typeName));
+          }
+          break;
+      }
+    }
+
+    return schema;
   }
 }
