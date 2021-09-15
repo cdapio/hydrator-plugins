@@ -17,6 +17,9 @@
 package io.cdap.plugin.format.avro;
 
 import com.google.common.collect.Maps;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
@@ -91,9 +94,58 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
     if (schemaCache.containsKey(hashCode)) {
       structuredSchema = schemaCache.get(hashCode);
     } else {
-      structuredSchema = Schema.parseJson(schema.toString());
+      String strSchema = schema.toString();
+      String jsonSchema = preprocessSchema(new Gson().fromJson(strSchema, JsonObject.class)).toString();
+      structuredSchema = Schema.parseJson(jsonSchema);
       schemaCache.put(hashCode, structuredSchema);
     }
     return structuredSchema;
+  }
+
+  private JsonObject preprocessSchema(JsonObject schema) {
+
+    if (!schema.has("type")) {
+      return schema;
+    }
+
+    JsonElement type = schema.get("type");
+
+    if (type.isJsonArray()) {   // Union
+      for (JsonElement subtype : type.getAsJsonArray()) {
+        if (!subtype.isJsonPrimitive()) {
+          preprocessSchema(subtype.getAsJsonObject());
+        }
+      }
+    } else if (type.isJsonObject()) {   // Unnamed Complex type
+      preprocessSchema(type.getAsJsonObject());
+    } else {
+      String typeName = type.getAsString();
+      switch (typeName) {
+        case "record":
+          for (JsonElement field : schema.get("fields").getAsJsonArray()) {
+            preprocessSchema(field.getAsJsonObject());
+          }
+          break;
+
+        case "map":
+          schema.addProperty("keys", "string");
+          if (!schema.get("values").isJsonPrimitive()) {
+            preprocessSchema(schema.getAsJsonObject("values"));
+          }
+          break;
+
+        case "array":
+          JsonElement items = schema.get("items");
+          if (!items.isJsonPrimitive()) {
+            preprocessSchema(schema.getAsJsonObject("items"));
+          }
+          break;
+
+        default:
+          break;
+      }
+    }
+
+    return schema;
   }
 }
