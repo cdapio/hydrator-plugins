@@ -18,6 +18,7 @@ package io.cdap.plugin.format.avro;
 
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.cdap.cdap.api.data.format.StructuredRecord;
@@ -36,6 +37,8 @@ import javax.annotation.Nullable;
  * Create StructuredRecords from GenericRecords
  */
 public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, StructuredRecord> {
+
+  private static final Gson GSON = new Gson();
 
   private final Map<Integer, Schema> schemaCache = Maps.newHashMap();
   private final Map<String, JsonObject> customTypes = Maps.newHashMap();
@@ -96,7 +99,7 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
       structuredSchema = schemaCache.get(hashCode);
     } else {
       String strSchema = schema.toString();
-      String jsonSchema = preprocessSchema(new Gson().fromJson(strSchema, JsonObject.class)).toString();
+      String jsonSchema = preprocessSchema(GSON.fromJson(strSchema, JsonObject.class)).toString();
       structuredSchema = Schema.parseJson(jsonSchema);
       schemaCache.put(hashCode, structuredSchema);
     }
@@ -112,23 +115,17 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
     JsonElement type = schema.get("type");
 
     if (type.isJsonArray()) {   // Union
-      for (JsonElement subtype : type.getAsJsonArray()) {
-        if (!subtype.isJsonPrimitive()) {
-          preprocessSchema(subtype.getAsJsonObject());
-        } else if (customTypes.containsKey(subtype.getAsString())) {
-          schema.remove("type");
-          schema.add("type", customTypes.get(subtype.getAsString()));
-        }
-      }
+      JsonArray processedUnion = preprocessUnion(type.getAsJsonArray());
+      schema.remove("type");
+      schema.add("type", processedUnion);
     } else if (type.isJsonObject()) {   // Unnamed Complex type
+
       preprocessSchema(type.getAsJsonObject());
     } else {
       String typeName = type.getAsString();
+
       switch (typeName) {
         case "record":
-          if (!schema.has("fields")) {
-            return schema;
-          }
           for (JsonElement field : schema.get("fields").getAsJsonArray()) {
             preprocessSchema(field.getAsJsonObject());
           }
@@ -137,19 +134,13 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
 
         case "map":
           schema.addProperty("keys", "string");
-          if (!schema.get("values").isJsonPrimitive()) {
-            preprocessSchema(schema.getAsJsonObject("values"));
-          }
+          JsonElement value = schema.get("values");
+          processElementInSchema(schema, value, "values");
           break;
 
         case "array":
           JsonElement items = schema.get("items");
-          if (!items.isJsonPrimitive()) {
-            preprocessSchema(schema.getAsJsonObject("items"));
-          } else if (customTypes.containsKey(items.getAsString())) {
-            schema.remove("items");
-            schema.add("items", customTypes.get(items.getAsString()));
-          }
+          processElementInSchema(schema, items, "items");
           break;
 
         case "enum":
@@ -166,5 +157,37 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
     }
 
     return schema;
+  }
+
+  private JsonArray preprocessUnion(JsonArray schema) {
+    JsonArray processedSchema = new JsonArray();
+
+    for (JsonElement subschema: schema) {
+      if (subschema.isJsonPrimitive()) {
+        if (customTypes.containsKey(subschema.getAsString())) {
+          processedSchema.add(customTypes.get(subschema.getAsString()));
+        } else {
+          processedSchema.add(subschema);
+        }
+      } else {
+        preprocessSchema(subschema.getAsJsonObject());
+        processedSchema.add(subschema);
+      }
+    }
+
+    return processedSchema;
+  }
+
+  private void processElementInSchema(JsonObject schema, JsonElement element, String property) {
+    if (element.isJsonObject()) {
+      preprocessSchema(element.getAsJsonObject());
+    } else if (element.isJsonArray()) {
+      JsonArray processedItems = preprocessUnion(element.getAsJsonArray());
+      schema.remove(property);
+      schema.add(property, processedItems);
+    } else if (customTypes.containsKey(element.getAsString())) {
+      schema.remove(property);
+      schema.add(property, customTypes.get(element.getAsString()));
+    }
   }
 }

@@ -131,6 +131,51 @@ public class AvroToStructuredTest {
     Assert.assertEquals(avroToStructuredTransformer.convertSchema(avroSchema), cdapSchema);
   }
 
+  @Test
+  public void testAvroToStructuredConversionForUnions() throws IOException {
+    AvroToStructuredTransformer avroToStructuredTransformer = new AvroToStructuredTransformer();
+
+    String jsonSchema = "{\"type\":\"record\", \"name\":\"rec\", \"fields\":[" +
+        "{\"name\": \"enumfield\", \"type\": " +
+        "{\"type\": \"enum\", \"name\": \"enumtype\", \"symbols\": [\"A\", \"B\", \"C\"]}}," +
+        "{\"name\": \"unionfield\", \"type\": [\"null\", \"string\", \"enumtype\"," +
+        "{\"type\": \"array\", \"items\": [\"int\", \"enumtype\"]}]}]}";
+    org.apache.avro.Schema avroSchema = convertSchema(jsonSchema);
+
+    Schema enumSchema = Schema.enumWith("A", "B", "C");
+    Schema unionSchema = Schema.unionOf(
+        Schema.of(Schema.Type.NULL),
+        Schema.of(Schema.Type.STRING),
+        enumSchema,
+        Schema.arrayOf(Schema.unionOf(Schema.of(Schema.Type.INT), enumSchema)));
+    Schema cdapSchema = Schema.recordOf("rec",
+        Schema.Field.of("enumfield", enumSchema),
+        Schema.Field.of("unionfield", unionSchema));
+
+    Assert.assertEquals(avroToStructuredTransformer.convertSchema(avroSchema), cdapSchema);
+  }
+
+  @Test
+  public void testAvroToStructuredConversionForMapsOfUnions() throws IOException {
+    AvroToStructuredTransformer avroToStructuredTransformer = new AvroToStructuredTransformer();
+
+    String jsonSchema = "{\"type\":\"record\", \"name\":\"rec\"," +
+        "\"fields\":[{\"name\":\"mapfield\",\"type\":" +
+        "{\"type\":\"map\",\"values\":[\"null\", \"string\", {\"type\": \"array\", \"items\": \"int\"}]}}]}";
+    org.apache.avro.Schema avroSchema = convertSchema(jsonSchema);
+
+    Schema unionSchema = Schema.unionOf(
+        Schema.of(Schema.Type.NULL),
+        Schema.of(Schema.Type.STRING),
+        Schema.arrayOf(Schema.of(Schema.Type.INT)));
+    Schema cdapSchema = Schema.recordOf("rec",
+        Schema.Field.of(
+            "mapfield",
+            Schema.mapOf(Schema.of(Schema.Type.STRING), unionSchema)));
+
+    Assert.assertEquals(avroToStructuredTransformer.convertSchema(avroSchema), cdapSchema);
+  }
+
   private org.apache.avro.Schema convertSchema(Schema cdapSchema) {
     return new org.apache.avro.Schema.Parser().parse(cdapSchema.toString());
   }
