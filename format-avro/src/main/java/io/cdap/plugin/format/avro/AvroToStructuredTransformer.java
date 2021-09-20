@@ -30,6 +30,7 @@ import org.apache.avro.generic.GenericRecord;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.Arrays;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -99,7 +100,7 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
       structuredSchema = schemaCache.get(hashCode);
     } else {
       JsonObject gsonSchema = GSON.fromJson(schema.toString(), JsonObject.class);
-      preprocessSchema(gsonSchema);
+      preprocessSchema(gsonSchema, "");
       String processedJsonSchema = gsonSchema.toString();
       structuredSchema = Schema.parseJson(processedJsonSchema);
       schemaCache.put(hashCode, structuredSchema);
@@ -107,7 +108,18 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
     return structuredSchema;
   }
 
-  private void preprocessSchema(JsonObject schema) {
+  private void preprocessSchema(JsonObject schema, String namespace) {
+
+    String qualifiedName = "";
+    if (schema.has("name")) {
+      String givenName = schema.getAsJsonPrimitive("name").getAsString();
+      if (schema.has("namespace")) {
+        namespace = schema.getAsJsonPrimitive("namespace").getAsString();
+      }
+
+      qualifiedName = getQualifiedName(givenName, namespace);
+      namespace = getNamespace(givenName, namespace);
+    }
 
     if (!schema.has("type")) {
       return;
@@ -116,60 +128,66 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
     JsonElement type = schema.get("type");
 
     if (type.isJsonArray()) {   // Union
-      JsonArray processedUnion = preprocessUnion(type.getAsJsonArray());
+      JsonArray processedUnion = preprocessUnion(type.getAsJsonArray(), namespace);
       schema.remove("type");
       schema.add("type", processedUnion);
     } else if (type.isJsonObject()) {   // Unnamed Complex type
 
-      preprocessSchema(type.getAsJsonObject());
+      preprocessSchema(type.getAsJsonObject(), namespace);
     } else {
       String typeName = type.getAsString();
 
       switch (typeName) {
         case "record":
           for (JsonElement field : schema.get("fields").getAsJsonArray()) {
-            preprocessSchema(field.getAsJsonObject());
+            preprocessSchema(field.getAsJsonObject(), namespace);
           }
-          customTypes.put(schema.getAsJsonPrimitive("name").getAsString(), schema);
+          customTypes.put(qualifiedName, schema);
           break;
 
         case "map":
           schema.addProperty("keys", "string");
           JsonElement value = schema.get("values");
-          processElementInSchema(schema, value, "values");
+          processElementInSchema(schema, value, "values", namespace);
           break;
 
         case "array":
           JsonElement items = schema.get("items");
-          processElementInSchema(schema, items, "items");
+          processElementInSchema(schema, items, "items", namespace);
           break;
 
         case "enum":
-          customTypes.put(schema.getAsJsonPrimitive("name").getAsString(), schema);
+          customTypes.put(qualifiedName, schema);
           break;
 
         default:
-          if (customTypes.containsKey(typeName)) {
+          String qualifiedTypeName = getQualifiedName(typeName, namespace);
+          namespace = getNamespace(typeName, namespace);
+          if (customTypes.containsKey(qualifiedTypeName)) {
             schema.remove("type");
-            schema.add("type", customTypes.get(typeName));
+            schema.add("type", customTypes.get(qualifiedTypeName));
           }
           break;
       }
     }
   }
 
-  private JsonArray preprocessUnion(JsonArray schema) {
+  private JsonArray preprocessUnion(JsonArray schema, String namespace) {
     JsonArray processedSchema = new JsonArray();
+    String qualifiedSubschemaName;
 
     for (JsonElement subschema: schema) {
       if (subschema.isJsonPrimitive()) {
-        if (customTypes.containsKey(subschema.getAsString())) {
-          processedSchema.add(customTypes.get(subschema.getAsString()));
+        String subschemaName = subschema.getAsString();
+        qualifiedSubschemaName = getQualifiedName(subschemaName, namespace);
+        namespace = getNamespace(subschemaName, namespace);
+        if (customTypes.containsKey(qualifiedSubschemaName)) {
+          processedSchema.add(customTypes.get(qualifiedSubschemaName));
         } else {
           processedSchema.add(subschema);
         }
       } else {
-        preprocessSchema(subschema.getAsJsonObject());
+        preprocessSchema(subschema.getAsJsonObject(), namespace);
         processedSchema.add(subschema);
       }
     }
@@ -177,16 +195,40 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
     return processedSchema;
   }
 
-  private void processElementInSchema(JsonObject schema, JsonElement element, String property) {
+  private void processElementInSchema(JsonObject schema, JsonElement element, String property, String namespace) {
+    String qualifiedElementName = "";
+    if (element.isJsonPrimitive()) {
+      String elementName = element.getAsString();
+      qualifiedElementName = getQualifiedName(elementName, namespace);
+      namespace = getNamespace(elementName, namespace);
+    }
+
     if (element.isJsonObject()) {
-      preprocessSchema(element.getAsJsonObject());
+      preprocessSchema(element.getAsJsonObject(), namespace);
     } else if (element.isJsonArray()) {
-      JsonArray processedItems = preprocessUnion(element.getAsJsonArray());
+      JsonArray processedItems = preprocessUnion(element.getAsJsonArray(), namespace);
       schema.remove(property);
       schema.add(property, processedItems);
-    } else if (customTypes.containsKey(element.getAsString())) {
+    } else if (customTypes.containsKey(qualifiedElementName)) {
       schema.remove(property);
-      schema.add(property, customTypes.get(element.getAsString()));
+      schema.add(property, customTypes.get(qualifiedElementName));
+    }
+  }
+
+  private String getQualifiedName(String name, String namespace) {
+    if (name.contains(".")) {
+      return name;
+    } else {
+      return (namespace.equals("") ? name : String.format("%s.%s", namespace, name));
+    }
+  }
+
+  private String getNamespace(String name, String namespace) {
+    if (name.contains(".")) {
+      String[] components = name.split("\\.");
+      return String.join(".", Arrays.copyOf(components, components.length - 1));
+    } else {
+      return namespace;
     }
   }
 }

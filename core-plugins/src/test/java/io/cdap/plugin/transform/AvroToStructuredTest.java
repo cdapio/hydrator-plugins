@@ -117,10 +117,12 @@ public class AvroToStructuredTest {
     AvroToStructuredTransformer avroToStructuredTransformer = new AvroToStructuredTransformer();
 
     String jsonSchema = "{\"type\":\"record\", \"name\":\"rec\"," +
-        "\"fields\":[" +
+        "\"namespace\": \"com.google.test\", \"fields\":[" +
         "{\"name\": \"enumfield\", \"type\": " +
-        "{\"type\": \"enum\", \"name\": \"enumtype\", \"symbols\": [\"A\", \"B\", \"C\"]}}," +
-        "{\"name\": \"arr\", \"type\": {\"type\": \"array\", \"items\": \"enumtype\"}}]}";
+        "{\"type\": \"enum\", \"name\": \"enumtype\", \"namespace\": \"com.google.test.enum\"," +
+        "\"symbols\": [\"A\", \"B\", \"C\"]}}," +
+        "{\"name\": \"arr\", \"type\": {\"type\": \"array\", " +
+        "\"items\": \"com.google.test.enum.enumtype\"}}]}";
     org.apache.avro.Schema avroSchema = convertSchema(jsonSchema);
 
     Schema enumSchema = Schema.enumWith("A", "B", "C");
@@ -135,7 +137,7 @@ public class AvroToStructuredTest {
   public void testAvroToStructuredConversionForUnions() throws IOException {
     AvroToStructuredTransformer avroToStructuredTransformer = new AvroToStructuredTransformer();
 
-    String jsonSchema = "{\"type\":\"record\", \"name\":\"rec\", \"fields\":[" +
+    String jsonSchema = "{\"type\":\"record\", \"name\":\"com.google.test.rec\", \"fields\":[" +
         "{\"name\": \"enumfield\", \"type\": " +
         "{\"type\": \"enum\", \"name\": \"enumtype\", \"symbols\": [\"A\", \"B\", \"C\"]}}," +
         "{\"name\": \"unionfield\", \"type\": [\"null\", \"string\", \"enumtype\"," +
