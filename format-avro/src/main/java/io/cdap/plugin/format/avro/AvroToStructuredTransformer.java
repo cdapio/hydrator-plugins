@@ -37,6 +37,8 @@ import javax.annotation.Nullable;
  */
 public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, StructuredRecord> {
 
+  private static final Gson GSON = new Gson();
+
   private final Map<Integer, Schema> schemaCache = Maps.newHashMap();
 
   public StructuredRecord transform(GenericRecord genericRecord) throws IOException {
@@ -94,18 +96,19 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
     if (schemaCache.containsKey(hashCode)) {
       structuredSchema = schemaCache.get(hashCode);
     } else {
-      String strSchema = schema.toString();
-      String jsonSchema = preprocessSchema(new Gson().fromJson(strSchema, JsonObject.class)).toString();
-      structuredSchema = Schema.parseJson(jsonSchema);
+      JsonObject gsonSchema = GSON.fromJson(schema.toString(), JsonObject.class);
+      preprocessSchema(gsonSchema);
+      String processedJsonSchema = gsonSchema.toString();
+      structuredSchema = Schema.parseJson(processedJsonSchema);
       schemaCache.put(hashCode, structuredSchema);
     }
     return structuredSchema;
   }
 
-  private JsonObject preprocessSchema(JsonObject schema) {
+  private void preprocessSchema(JsonObject schema) {
 
     if (!schema.has("type")) {
-      return schema;
+      return;
     }
 
     JsonElement type = schema.get("type");
@@ -145,7 +148,5 @@ public class AvroToStructuredTransformer extends RecordConverter<GenericRecord, 
           break;
       }
     }
-
-    return schema;
   }
 }
