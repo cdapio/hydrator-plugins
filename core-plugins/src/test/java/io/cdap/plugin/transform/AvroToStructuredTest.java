@@ -17,6 +17,7 @@
 package io.cdap.plugin.transform;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.plugin.format.avro.AvroToStructuredTransformer;
@@ -55,10 +56,8 @@ public class AvroToStructuredTest {
       Schema.Field.of("int", Schema.of(Schema.Type.INT)),
       Schema.Field.of("double", Schema.of(Schema.Type.DOUBLE)),
       Schema.Field.of("array", Schema.arrayOf(Schema.of(Schema.Type.FLOAT))),
-      Schema.Field.of("array1", Schema.arrayOf(innerNestedSchema))
-
-      // uncomment this line once [CDAP - 2813 is fixed]. You might have to fix AvroToStructuredTransformer.java
-      // Schema.Field.of("map", Schema.mapOf(Schema.of(Schema.Type.STRING), Schema.of(Schema.Type.STRING)))
+      Schema.Field.of("array1", Schema.arrayOf(innerNestedSchema)),
+      Schema.Field.of("map", Schema.mapOf(Schema.of(Schema.Type.STRING), Schema.of(Schema.Type.STRING)))
     );
 
     Schema schema = Schema.recordOf(
@@ -83,8 +82,7 @@ public class AvroToStructuredTest {
              .set("double", 3.14159)
              .set("array", ImmutableList.of(1.0f, 2.0f))
              .set("array1", ImmutableList.of(inner, inner))
-               // uncomment this line once [CDAP - 2813 is fixed]. You might have to fix AvroToStructuredTransformer
-               // .set("map", ImmutableMap.of("key", "value"))
+             .set("map", ImmutableMap.of("key", "value"))
              .build())
       .build();
 
@@ -98,7 +96,27 @@ public class AvroToStructuredTest {
     Assert.assertEquals(0, array1Result.<Integer>get("int").intValue());
   }
 
+  @Test
+  public void testAvroToStructuredConversionForMaps() throws IOException {
+    AvroToStructuredTransformer avroToStructuredTransformer = new AvroToStructuredTransformer();
+
+    String jsonSchema = "{\"type\":\"record\", \"name\":\"rec\"," +
+        "\"fields\":[{\"name\":\"mapfield\",\"type\":{\"type\":\"map\",\"values\":\"string\"}}]}";
+    org.apache.avro.Schema avroSchema = convertSchema(jsonSchema);
+
+    Schema cdapSchema = Schema.recordOf("rec",
+        Schema.Field.of(
+            "mapfield",
+            Schema.mapOf(Schema.of(Schema.Type.STRING), Schema.of(Schema.Type.STRING))));
+
+    Assert.assertEquals(avroToStructuredTransformer.convertSchema(avroSchema), cdapSchema);
+  }
+
   private org.apache.avro.Schema convertSchema(Schema cdapSchema) {
     return new org.apache.avro.Schema.Parser().parse(cdapSchema.toString());
+  }
+
+  private org.apache.avro.Schema convertSchema(String jsonSchema) {
+    return new org.apache.avro.Schema.Parser().parse(jsonSchema);
   }
 }
