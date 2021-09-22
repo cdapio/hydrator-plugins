@@ -116,4 +116,31 @@ public class DataTypeDetectorUtilsTest {
 
     assertEquals(expectedDataTypeDetectorStatusKeeper, actualDataTypeDetectorStatusKeeper);
   }
+
+  @Test
+  public void testDetectDataTypeOfEachDatasetColumnWithMissingValues() {
+    String[] columnNames = new String[]{"column_A", "column_B", "column_C"};
+    String[] rowValues1 = new String[]{"100A", "2020", "129.99"};
+    // Row 2 has two values instead of 3, so empty string will be padded at the end
+    String[] rowValues2 = new String[]{"Happy", "17.99"};
+    DataTypeDetectorStatusKeeper actualDataTypeDetectorStatusKeeper = new DataTypeDetectorStatusKeeper();
+    DataTypeDetectorUtils.detectDataTypeOfRowValues(new HashMap<>(), actualDataTypeDetectorStatusKeeper, columnNames,
+                                                    rowValues1);
+    DataTypeDetectorUtils.detectDataTypeOfRowValues(new HashMap<>(), actualDataTypeDetectorStatusKeeper, columnNames,
+                                                    rowValues2);
+    actualDataTypeDetectorStatusKeeper.validateDataTypeDetector();
+    Map<String, Schema> override = new HashMap<>();
+
+    List<Schema> actualFields = DataTypeDetectorUtils
+      .detectDataTypeOfEachDatasetColumn(override, columnNames, actualDataTypeDetectorStatusKeeper)
+      .stream().map(Schema.Field::getSchema).collect(Collectors.toList());
+
+    List<Schema> expectedFields = new ArrayList<>(Arrays.asList(
+      Schema.Field.of(columnNames[0], Schema.of(Schema.Type.STRING)),
+      Schema.Field.of(columnNames[1], Schema.of(Schema.Type.DOUBLE)),
+      Schema.Field.of(columnNames[2], Schema.nullableOf(Schema.of(Schema.Type.DOUBLE)))
+    )).stream().map(Schema.Field::getSchema).collect(Collectors.toList());
+
+    assertEquals(expectedFields, actualFields);
+  }
 }
