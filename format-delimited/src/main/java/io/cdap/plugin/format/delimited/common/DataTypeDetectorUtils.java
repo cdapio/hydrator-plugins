@@ -42,9 +42,15 @@ public class DataTypeDetectorUtils {
   public static void detectDataTypeOfRowValues(Map<String, Schema> override,
                                                DataTypeDetectorStatusKeeper dataTypeDetectorStatusKeeper,
                                                String[] columnNames, String[] rowValues) {
+    ArrayList<String> rowValuesList = new ArrayList<>(Arrays.asList(rowValues));
+    // Pad empty strings at the end if fewer values than required
+    // This is the same behaviour exhibited by Spark during pipeline execution
+    while (rowValuesList.size() < columnNames.length) {
+      rowValuesList.add("");
+    }
     for (int columnIndex = 0; columnIndex < columnNames.length; columnIndex++) {
       String name = columnNames[columnIndex];
-      String value = rowValues[columnIndex];
+      String value =  rowValuesList.get(columnIndex);
       if (!override.containsKey(name)) {
         dataTypeDetectorStatusKeeper.addDataType(name, DataTypeDetectorStatusKeeper.detectValueDataType(value));
       }
