@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.format.delimited.common;
 
+import java.math.BigDecimal;
 import java.util.regex.Pattern;
 
 /**
@@ -157,7 +158,7 @@ public class TypeInference {
   private static DataType deepInvestigateDouble(String value) {
     try {
       Double doubleValue = Double.parseDouble(value);
-      if (doubleValue.toString().equals(value)) {
+      if (doubleValue.toString().equals(new BigDecimal(value).stripTrailingZeros().toString())) {
         return DataType.DOUBLE;
       }
       return DataType.STRING;

@@ -151,11 +151,15 @@ public class TypeInferenceTest {
     DataType secondDataType = TypeInference.getDataType(secondValue);
     assertEquals(secondDataType, DataType.DOUBLE);
 
+    String thirdValue = "1789.10";
+    DataType thirdDataType = TypeInference.getDataType(thirdValue);
+    assertEquals(thirdDataType, DataType.DOUBLE);
+
     // Every value that when parsed to Double gets the number of digits shorten, we consider it as a Big Decimal
     // number. Hence we keep it as a string.
-    String thirdValue = "13004.012312312423112122121121212";
-    DataType thirdDataType = TypeInference.getDataType(thirdValue);
-    assertEquals(thirdDataType, DataType.STRING);
+    String fourthValue = "13004.012312312423112122121121212";
+    DataType fourthDataType = TypeInference.getDataType(fourthValue);
+    assertEquals(fourthDataType, DataType.STRING);
   }
 
 
