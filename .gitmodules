@@ -18,11 +18,11 @@
 [submodule "wrangler-transform"]
 	path = wrangler-transform
 	url = ../../data-integrations/wrangler.git
-	branch = develop
+	branch = feature/66-bq-poc
 [submodule "google-cloud"]
 	path = google-cloud
 	url = ../../data-integrations/google-cloud
-	branch = develop
+	branch = feature/66-bq-poc
 [submodule "kafka-plugins"]
 	path = kafka-plugins
 	url = ../../data-integrations/kafka-plugins
