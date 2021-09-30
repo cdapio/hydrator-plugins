@@ -664,19 +664,25 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
       .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
     StructuredRecord split =
-        StructuredRecord.builder(schema).set("id", 1L).set("val1", "\"a").set("val2", "b").set("val3", "c\"")
-            .set("file", fileText.toURI().toString()).build();
+      StructuredRecord.builder(schema).set("id", 1L).set("val1", "\"a").set("val2", "b").set("val3", "c\"")
+        .set("file", fileText.toURI().toString()).build();
     Set<StructuredRecord> expected = ImmutableSet.of(
-        StructuredRecord.builder(schema).set("id", 0L).set("file", fileText.toURI().toString()).build(),
+      StructuredRecord.builder(schema).set("id", 0L).set("file", fileText.toURI().toString()).build(),
         !enableQuotedValues ? split :
-            StructuredRecord.builder(schema).set("id", 1L).set("val1", join.substring(1, join.length() - 1))
-                .set("file", fileText.toURI().toString()).build(),
+          StructuredRecord.builder(schema).set("id", 1L).set("val1", join.substring(1, join.length() - 1))
+            .set("file", fileText.toURI().toString()).build(),
         StructuredRecord.builder(schema).set("id", 2L).set("val1", "sam")
-            .set("file", fileText.toURI().toString()).build()
+          .set("file", fileText.toURI().toString()).build()
     );
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
     Set<StructuredRecord> output = new HashSet<>(MockSink.readOutput(outputManager));
+
+    System.out.println("test::::::::::::::1:" + join.substring(1, join.length() - 1));
+    output.stream().forEach(x -> {
+      // Assert.assertEquals(join.substring(1, join.length() - 1), x.get("val1"));
+      // System.out.println("test::::::::::::::x:"+x.get("val1"));
+    });
 
     Assert.assertEquals(expected, output);
   }

@@ -55,94 +55,57 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
    * quotes, content within each pair of quotes will not get splitted even if there is delimiter in
    * that. For example, if string is a."b.c"."d.e.f" and delimiter is '.', it will get split into
    * [a, b.c, d.e.f]. if string is "val1.val2", then it will not get splitted since the '.' is
-   * within pair of quotes. if string is "val1.val2"", the quote right after val2 will be ignored
-   * since it's matched with the first quote, but the last quote will be kept as part of the value,
-   * because there is not a match, so [val1, val2"]. In general, if the delimited string contains
-   * odd number of quotes, the left quote will match the firstly next quote, and the final single
-   * quote will be read as part of value. if the quotes are not at front and end of a string, for
-   * example: a, b"c,d"e and delimiter is ',', then the delimiter inside the quote won't break the
-   * value, so [a, b"c,d"e].
+   * within pair of quotes. If the delimited string contains odd number of quotes, which mean the
+   * quotes are not closed, an exception will be thrown. The quote within the value will always be
+   * trimed.
    *
    * @param delimitedString the string to split
    * @param delimiter the separtor
    * @return a list of splits of the original string
    */
   @VisibleForTesting
-  static List<String> splitQuotesString(String delimitedString, String delimiter) {
-    // Use a tree map so we can easily look up if a delimiter is within a pair of quotes. The map
-    // key is the index of the starting and the ending quote and the value is the index of the
-    // paired quote. Example:
-    // pos: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
-    //      " | a | , | b | " | , | " | c | , | d | "  |
-    // key-value pairs in the map:
-    // 0 -> 4
-    // 4 -> 0
-    // 6 -> 10
-    // 10 -> 6
-    TreeMap<Integer, Integer> quotesPos = new TreeMap<>();
-    int firstQuotePos = -1;
+  static Iterable<String> splitQuotesString(String delimitedString, String delimiter)
+      throws IOException {
+
+    boolean isWithinQuotes = false;
+    List<String> result = new ArrayList<>();
+    StringBuilder split = new StringBuilder();
+
     for (int i = 0; i < delimitedString.length(); i++) {
-      if (delimitedString.charAt(i) != QUOTE_CHAR) {
+      char cur = delimitedString.charAt(i);
+      if (cur == QUOTE_CHAR) {
+        isWithinQuotes = !isWithinQuotes;
         continue;
       }
 
-      if (firstQuotePos == -1) {
-        firstQuotePos = i;
-      } else {
-        quotesPos.put(i, firstQuotePos);
-        quotesPos.put(firstQuotePos, i);
-        firstQuotePos = -1;
-      }
-    }
-
-    List<String> result = new ArrayList<>();
-    StringBuilder split = new StringBuilder();
-    for (int i = 0; i < delimitedString.length(); i++) {
       // if the length is not enough for the delimiter, just add it to split
       if (i + delimiter.length() > delimitedString.length()) {
-        split.append(delimitedString.charAt(i));
+        split.append(cur);
         continue;
       }
 
       // not a delimiter
       if (!delimitedString.startsWith(delimiter, i)) {
-        split.append(delimitedString.charAt(i));
+        split.append(cur);
         continue;
       }
 
-      // find a delimiter
-      // find the prev quote and next quote index
-      Integer prevQuotePos = quotesPos.floorKey(i);
-      Integer nextQuotePos = quotesPos.ceilingKey(i);
-      // if they exist and they form a pair, we will not split, just add the current character
-      // to split
-      if (prevQuotePos != null
-          && nextQuotePos != null
-          && quotesPos.get(prevQuotePos).equals(nextQuotePos)) {
-        split.append(delimitedString, i, nextQuotePos + 1);
-        i = nextQuotePos;
-      } else {
-        // else we need to add the finding split to result, and increment the index, reset the
-        // split
-        result.add(trimQuotes(split.toString()));
-        i = i + delimiter.length() - 1;
+      // find delimiter not within quotes
+      if (!isWithinQuotes) {
+        result.add(split.toString());
         split = new StringBuilder();
+        i = i + delimiter.length() - 1;
+        continue;
       }
-    }
 
-    // add what is remaining to the result
-    result.add(trimQuotes(split.toString()));
+      // delimiter within quotes
+      split.append(cur);
+    }
+    if (isWithinQuotes) {
+      throw new IOException("Quotes are not enclosed.");
+    }
+    result.add(split.toString());
     return result;
-  }
-
-  /** Trim the quotes if and only if the start and end of the string are quotes */
-  private static String trimQuotes(String string) {
-    if (string.length() > 1
-        && string.charAt(0) == QUOTE_CHAR
-        && string.charAt(string.length() - 1) == '\"') {
-      return string.replaceAll("^\"|\"$", "");
-    }
-    return string;
   }
 
   @Override
@@ -186,18 +149,21 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
 
         StructuredRecord.Builder builder = StructuredRecord.builder(schema);
         Iterator<Schema.Field> fields = schema.getFields().iterator();
-        List<String> splits = new ArrayList<>();
+        Iterable<String> splits;
         if (!enableQuotesValue) {
-          Iterable<String> iter = Splitter.on(delimiter).split(delimitedString);
-          iter.forEach(splits::add);
+          splits = Splitter.on(delimiter).split(delimitedString);
         } else {
           splits = splitQuotesString(delimitedString, delimiter);
         }
 
+        int numSchemaFields = schema.getFields().size();
+        int numDataFields = 0;
+        for (String temp : splits) {
+          numDataFields++;
+        }
+
         for (String part : splits) {
           if (!fields.hasNext()) {
-            int numDataFields = splits.size();
-            int numSchemaFields = schema.getFields().size();
             String message =
               String.format(
                 "Found a row with %d fields when the schema only contains %d field%s.",

@@ -479,6 +479,28 @@
       ]
     }
   ],
+  "filters": [
+    {
+      "name": "delimiter",
+      "expression": "format == 'delimited'",
+      "show": [
+        {
+          "name": "delimiter"
+        }
+      ]
+    },
+    {
+      "name": "enableQuotedValues",
+      "condition": {
+        "expression": "format == 'delimited' || format == 'csv' || format == 'tsv'"
+      },
+      "show": [
+        {
+          "name": "enableQuotedValues"
+        }
+      ]
+    }
+  ],
   "outputs": [
     {
       "name": "schema",

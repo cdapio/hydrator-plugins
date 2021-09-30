@@ -19,7 +19,7 @@ package io.cdap.plugin.format.delimited.input;
 import com.google.common.collect.ImmutableList;
 import org.junit.Assert;
 import org.junit.Test;
-
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -70,13 +70,13 @@ public class DelimitedStringTest {
   }
 
   @Test
-  public void testValidQuotesWithTrimedQuotes() {
+  public void testValidQuotesWithTrimedQuotes() throws Exception {
     String test = "a,\"b,c\"";
     List<String> expected = ImmutableList.of("a", "b,c");
     Assert.assertEquals(expected, PathTrackingDelimitedInputFormat.splitQuotesString(test, ","));
 
     test = "a,\"aaaaa\"aaaab\"aaaac\",c";
-    expected = ImmutableList.of("a", "aaaaa\"aaaab\"aaaac", "c");
+    expected = ImmutableList.of("a", "aaaaaaaaabaaaac", "c");
     Assert.assertEquals(expected, PathTrackingDelimitedInputFormat.splitQuotesString(test, ","));
 
     test = "a,\"b,c\",\"d,e,f\"";
@@ -89,18 +89,11 @@ public class DelimitedStringTest {
   }
 
   @Test
-  public void testBadQuotes() {
-    String test = "Value1,value2.1 value2.2\"value2.2.1,value2.3\",val\"ue3,value4";
-    List<String> expected = ImmutableList.of("Value1", "value2.1 value2.2\"value2.2.1,value2.3\"",
-      "val\"ue3", "value4");
-    Assert.assertEquals(expected, PathTrackingDelimitedInputFormat.splitQuotesString(test, ","));
-
-    test = "val1\",\"val2";
-    expected = ImmutableList.of("val1\",\"val2");
-    Assert.assertEquals(expected, PathTrackingDelimitedInputFormat.splitQuotesString(test, ","));
-
-    test = "val1\",\"val2\"";
-    expected = ImmutableList.of("val1\",\"val2\"");
-    Assert.assertEquals(expected, PathTrackingDelimitedInputFormat.splitQuotesString(test, ","));
+  public void testBadQuotes() throws Exception {
+    final String test = "Value1,value2.1 value2.2\"value2.2.1,value2.3\",val\"ue3,value4";
+    Exception exception = Assert.assertThrows(IOException.class, () -> {
+      PathTrackingDelimitedInputFormat.splitQuotesString(test, ",");
+    });
+    Assert.assertTrue(exception.getMessage().contains("Quotes are not enclosed."));
   }
 }

@@ -66,8 +66,7 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
     Schema schema = super.getSchema(context);
     FailureCollector collector = context.getFailureCollector();
     if (!conf.containsMacro(PathTrackingConfig.NAME_SCHEMA) && schema == null) {
-      collector
-        .addFailure(
+      collector.addFailure(
           "Delimited format cannot be used without specifying a schema.",
           "Schema must be specified.")
           .withConfigProperty("schema");
@@ -78,8 +77,10 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
     }
 
     if (conf.getEnableQuotedValues() && conf.delimiter != null && conf.delimiter.contains("\"")) {
-      throw new IllegalArgumentException(
-        String.format("The delimeter %s cannot contain \" when quotes are enabled as value.", conf.delimiter));
+      collector.addFailure(
+          "The delimiter %s cannot contain \" when quoted values are enabled.",
+          "Check the delimiter.")
+          .withConfigProperty("delimiter");
     }
   }
 
