@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.format.delimited.input;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
@@ -30,7 +31,9 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import javax.annotation.Nullable;
 
 /**
@@ -38,7 +41,71 @@ import javax.annotation.Nullable;
  */
 public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
   static final String DELIMITER = "delimiter";
+  static final String ENABLE_QUOTES_VALUE = "enable_quotes_value";
   static final String SKIP_HEADER = "skip_header";
+
+  private static final String QUOTE = "\"";
+  private static final char QUOTE_CHAR = '\"';
+
+  /**
+   * Split the delimited string based on the delimiter. The delimiter should not contain any quotes.
+   * The method will behave like this: 1. if there is no quote, it will behave same as {@link
+   * String#split(String)} 2. if there are quotes in the string, the method will find pairs of
+   * quotes, content within each pair of quotes will not get splitted even if there is delimiter in
+   * that. For example, if string is a."b.c"."d.e.f" and delimiter is '.', it will get split into
+   * [a, b.c, d.e.f]. if string is "val1.val2", then it will not get splitted since the '.' is
+   * within pair of quotes. If the delimited string contains odd number of quotes, which mean the
+   * quotes are not closed, an exception will be thrown. The quote within the value will always be
+   * trimed.
+   *
+   * @param delimitedString the string to split
+   * @param delimiter the separtor
+   * @return a list of splits of the original string
+   */
+  @VisibleForTesting
+  static Iterable<String> splitQuotesString(String delimitedString, String delimiter)
+    throws IOException {
+
+    boolean isWithinQuotes = false;
+    List<String> result = new ArrayList<>();
+    StringBuilder split = new StringBuilder();
+
+    for (int i = 0; i < delimitedString.length(); i++) {
+      char cur = delimitedString.charAt(i);
+      if (cur == QUOTE_CHAR) {
+        isWithinQuotes = !isWithinQuotes;
+        continue;
+      }
+
+      // if the length is not enough for the delimiter, just add it to split
+      if (i + delimiter.length() > delimitedString.length()) {
+        split.append(cur);
+        continue;
+      }
+
+      // not a delimiter
+      if (!delimitedString.startsWith(delimiter, i)) {
+        split.append(cur);
+        continue;
+      }
+
+      // find delimiter not within quotes
+      if (!isWithinQuotes) {
+        result.add(split.toString());
+        split = new StringBuilder();
+        i = i + delimiter.length() - 1;
+        continue;
+      }
+
+      // delimiter within quotes
+      split.append(cur);
+    }
+    if (isWithinQuotes) {
+      throw new IOException("Quotes are not enclosed.");
+    }
+    result.add(split.toString());
+    return result;
+  }
 
   @Override
   protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(FileSplit split,
@@ -49,6 +116,7 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
     RecordReader<LongWritable, Text> delegate = getDefaultRecordReaderDelegate(split, context);
     String delimiter = context.getConfiguration().get(DELIMITER);
     boolean skipHeader = context.getConfiguration().getBoolean(SKIP_HEADER, false);
+    boolean enableQuotesValue = context.getConfiguration().getBoolean(ENABLE_QUOTES_VALUE, false);
 
     return new RecordReader<NullWritable, StructuredRecord.Builder>() {
 
@@ -80,18 +148,27 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
 
         StructuredRecord.Builder builder = StructuredRecord.builder(schema);
         Iterator<Schema.Field> fields = schema.getFields().iterator();
-        Iterable<String> splitDelimitedString = Splitter.on(delimiter).split(delimitedString);
+        Iterable<String> splits;
+        if (!enableQuotesValue) {
+          splits = Splitter.on(delimiter).split(delimitedString);
+        } else {
+          splits = splitQuotesString(delimitedString, delimiter);
+        }
 
-        for (String part : splitDelimitedString) {
+        int numSchemaFields = schema.getFields().size();
+        int numDataFields = 0;
+        for (String temp : splits) {
+          numDataFields++;
+        }
+
+        for (String part : splits) {
           if (!fields.hasNext()) {
-            int numDataFields = 0;
-            for (String temp : splitDelimitedString) {
-              numDataFields++;
-            }
-            int numSchemaFields = schema.getFields().size();
-            String message = String.format("Found a row with %d fields when the schema only contains %d field%s.",
-                                           numDataFields, numSchemaFields, numSchemaFields == 1 ? "" : "s");
-            // special error handling for the case when the user most likely set the schema to delimited
+            String message =
+              String.format(
+                "Found a row with %d fields when the schema only contains %d field%s.",
+                numDataFields, numSchemaFields, numSchemaFields == 1 ? "" : "s");
+            // special error handling for the case when the user most likely set the schema to
+            // delimited
             // when they meant to use 'text'.
             Schema.Field bodyField = schema.getField("body");
             if (bodyField != null) {
@@ -101,7 +178,11 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
                 throw new IOException(message + " Did you mean to use the 'text' format?");
               }
             }
-            throw new IOException(message + " Check that the schema contains the right number of fields.");
+            if (!enableQuotesValue && delimitedString.contains(QUOTE)) {
+              message += " Check if quoted values should be allowed.";
+            }
+            throw new IOException(
+              message + " Check that the schema contains the right number of fields.");
           }
 
           Schema.Field nextField = fields.next();
@@ -109,7 +190,7 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
             builder.set(nextField.getName(), null);
           } else {
             String fieldName = nextField.getName();
-            //Ensure if date time field, value is in correct format
+            // Ensure if date time field, value is in correct format
             SchemaValidator.validateDateTimeField(nextField.getSchema(), fieldName, part);
             builder.convertAndSet(fieldName, part);
           }
