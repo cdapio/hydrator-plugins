@@ -17,83 +17,101 @@
 package io.cdap.plugin.format.delimited.input;
 
 import com.google.common.collect.ImmutableList;
+import io.cdap.plugin.format.delimited.input.PathTrackingDelimitedInputFormat.SplitQuotesIterator;
 import org.junit.Assert;
 import org.junit.Test;
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
+
 public class DelimitedStringTest {
+
+  private SplitQuotesIterator splitQuotesIterator;
+
+  private List<String> getListFromIterator(Iterator<String> iterator) {
+    List<String> result = new ArrayList();
+    while (iterator.hasNext()) {
+      result.add(iterator.next());
+    }
+    return result;
+  }
 
   @Test
   public void testStringShorterThanDelimiter() throws Exception {
     String test = "a";
     Assert.assertEquals(Arrays.asList(test.split(",,")),
-      PathTrackingDelimitedInputFormat.splitQuotesString(test, ",,"));
+      getListFromIterator(splitQuotesIterator = new SplitQuotesIterator(test, ",,")));
+
     Assert.assertEquals(Arrays.asList(test.split("aa")),
-      PathTrackingDelimitedInputFormat.splitQuotesString(test, "aa"));
+      getListFromIterator(splitQuotesIterator = new SplitQuotesIterator(test, "aa")));
   }
 
   @Test
   public void testStringWithConsecutiveDelimiter() throws Exception {
     String test = "aaa";
     Assert.assertEquals(Arrays.asList(test.split("a", -1)),
-      PathTrackingDelimitedInputFormat.splitQuotesString(test, "a"));
+      getListFromIterator(splitQuotesIterator = new SplitQuotesIterator(test, "a")));
+
+
     Assert.assertEquals(Arrays.asList(test.split("aa", -1)),
-      PathTrackingDelimitedInputFormat.splitQuotesString(test, "aa"));
+      getListFromIterator(splitQuotesIterator = new SplitQuotesIterator(test, "aa")));
 
     test = "aaaaaaa";
     Assert.assertEquals(Arrays.asList(test.split("aa", -1)),
-      PathTrackingDelimitedInputFormat.splitQuotesString(test, "aa"));
+      getListFromIterator(splitQuotesIterator = new SplitQuotesIterator(test, "aa")));
+
     test = "aaaaaaaa";
     Assert.assertEquals(Arrays.asList(test.split("aa", -1)),
-      PathTrackingDelimitedInputFormat.splitQuotesString(test, "aa"));
+      getListFromIterator(splitQuotesIterator = new SplitQuotesIterator(test, "aa")));
   }
 
   @Test
   public void testSimpleSplit() throws Exception {
     String test = "a,b,c,d,e";
     Assert.assertEquals(Arrays.asList(test.split(",")),
-      PathTrackingDelimitedInputFormat.splitQuotesString(test, ","));
+      getListFromIterator(splitQuotesIterator = new SplitQuotesIterator(test, ",")));
 
     test = "a1,b1,c1,d1,e1";
     Assert.assertEquals(Arrays.asList(test.split(",")),
-      PathTrackingDelimitedInputFormat.splitQuotesString(test, ","));
+      getListFromIterator(splitQuotesIterator = new SplitQuotesIterator(test, ",")));
 
     test = "1###sam###a@b.com###male";
     Assert.assertEquals(Arrays.asList(test.split("###")),
-      PathTrackingDelimitedInputFormat.splitQuotesString(test, "###"));
+      getListFromIterator(splitQuotesIterator = new SplitQuotesIterator(test, "###")));
 
     test = "a1,,,b1,,,c1,,,d1,,,e1";
     Assert.assertEquals(Arrays.asList(test.split(",")),
-      PathTrackingDelimitedInputFormat.splitQuotesString(test, ","));
+      getListFromIterator(splitQuotesIterator = new SplitQuotesIterator(test, ",")));
   }
 
   @Test
   public void testValidQuotesWithTrimedQuotes() throws Exception {
     String test = "a,\"b,c\"";
     List<String> expected = ImmutableList.of("a", "b,c");
-    Assert.assertEquals(expected, PathTrackingDelimitedInputFormat.splitQuotesString(test, ","));
+    Assert.assertEquals(expected, getListFromIterator(splitQuotesIterator = new SplitQuotesIterator(test, ",")));
 
     test = "a,\"aaaaa\"aaaab\"aaaac\",c";
     expected = ImmutableList.of("a", "aaaaaaaaabaaaac", "c");
-    Assert.assertEquals(expected, PathTrackingDelimitedInputFormat.splitQuotesString(test, ","));
+    Assert.assertEquals(expected, getListFromIterator(splitQuotesIterator = new SplitQuotesIterator(test, ",")));
 
     test = "a,\"b,c\",\"d,e,f\"";
     expected = ImmutableList.of("a", "b,c", "d,e,f");
-    Assert.assertEquals(expected, PathTrackingDelimitedInputFormat.splitQuotesString(test, ","));
+    Assert.assertEquals(expected, getListFromIterator(splitQuotesIterator = new SplitQuotesIterator(test, ",")));
 
     test = "a###\"b###c\"###\"d###e###f\"";
     expected = ImmutableList.of("a", "b###c", "d###e###f");
-    Assert.assertEquals(expected, PathTrackingDelimitedInputFormat.splitQuotesString(test, "###"));
+    Assert.assertEquals(expected, getListFromIterator(splitQuotesIterator = new SplitQuotesIterator(test, "###")));
   }
 
   @Test
   public void testBadQuotes() throws Exception {
     final String test = "Value1,value2.1 value2.2\"value2.2.1,value2.3\",val\"ue3,value4";
-    Exception exception = Assert.assertThrows(IOException.class, () -> {
-      PathTrackingDelimitedInputFormat.splitQuotesString(test, ",");
+    Exception exception = Assert.assertThrows(Exception.class, () -> {
+      getListFromIterator(splitQuotesIterator = new SplitQuotesIterator(test, ","));
     });
-    Assert.assertTrue(exception.getMessage().contains("Quotes are not enclosed."));
+    Assert.assertTrue(exception.getMessage().contains("Found a line with an unenclosed quote. Ensure that all"
+      + " values are properly quoted, or disable quoted values."));
   }
 }

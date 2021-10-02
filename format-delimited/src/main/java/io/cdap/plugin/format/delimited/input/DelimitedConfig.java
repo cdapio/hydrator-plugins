@@ -62,7 +62,7 @@ public class DelimitedConfig extends PathTrackingConfig {
   public static final String DESC_ENABLE_QUOTES =
     "Whether to treat content between quotes as a value. The default value is false.";
   public static final String DESC_SKIP_HEADER =
-    "Whether to skip the first line of each file. The Default value is false.";
+    "Whether to skip the first line of each file. The default value is false.";
 
   static {
     Map<String, PluginPropertyField> fields = new HashMap<>(FIELDS);
