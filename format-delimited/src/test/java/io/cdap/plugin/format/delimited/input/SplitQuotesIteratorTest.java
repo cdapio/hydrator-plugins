@@ -17,7 +17,6 @@
 package io.cdap.plugin.format.delimited.input;
 
 import com.google.common.collect.ImmutableList;
-import io.cdap.plugin.format.delimited.input.PathTrackingDelimitedInputFormat.SplitQuotesIterator;
 import org.junit.Assert;
 import org.junit.Test;
 import java.util.ArrayList;
@@ -26,7 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 
 
-public class DelimitedStringTest {
+public class SplitQuotesIteratorTest {
 
   private SplitQuotesIterator splitQuotesIterator;
 
@@ -107,8 +106,8 @@ public class DelimitedStringTest {
 
   @Test
   public void testBadQuotes() throws Exception {
-    final String test = "Value1,value2.1 value2.2\"value2.2.1,value2.3\",val\"ue3,value4";
-    Exception exception = Assert.assertThrows(Exception.class, () -> {
+    String test = "Value1,value2.1 value2.2\"value2.2.1,value2.3\",val\"ue3,value4";
+    IllegalArgumentException exception = Assert.assertThrows(IllegalArgumentException.class, () -> {
       getListFromIterator(splitQuotesIterator = new SplitQuotesIterator(test, ","));
     });
     Assert.assertTrue(exception.getMessage().contains("Found a line with an unenclosed quote. Ensure that all"

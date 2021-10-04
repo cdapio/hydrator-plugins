@@ -43,7 +43,6 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
   static final String SKIP_HEADER = "skip_header";
 
   private static final String QUOTE = "\"";
-  private static final char QUOTE_CHAR = '\"';
 
   @Override
   protected RecordReader<NullWritable, StructuredRecord.Builder> createRecordReader(FileSplit split,
@@ -132,10 +131,10 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
       }
 
       private Iterator<String> getSplitsIterator(boolean enableQuotesValue, String delimitedString, String delimiter) {
-        if (!enableQuotesValue) {
-          return Splitter.on(delimiter).split(delimitedString).iterator();
-        } else {
+        if (enableQuotesValue) {
           return new SplitQuotesIterator(delimitedString, delimiter);
+        } else {
+          return Splitter.on(delimiter).split(delimitedString).iterator();
         }
       }
 
@@ -149,83 +148,5 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
         delegate.close();
       }
     };
-  }
-
-  /**
-   * Iterator that provides the splits in the delimited string based on the delimiter. The delimiter
-   * should not contain any quotes. The splitor will behave like this: 1. if there is no quote, it
-   * will behave same as {@link String#split(String)} 2. if there are quotes in the string, the method
-   * will find pairs of quotes, content within each pair of quotes will not get splitted even if there
-   * is delimiter in that. For example, if string is a."b.c"."d.e.f" and delimiter is '.', it will get
-   * split into [a, b.c, d.e.f]. if string is "val1.val2", then it will not get splitted since the '.'
-   * is within pair of quotes. If the delimited string contains odd number of quotes, which mean the
-   * quotes are not closed, an exception will be thrown. The quote within the value will always be
-   * trimed.
-   */
-  @VisibleForTesting
-  static class SplitQuotesIterator extends AbstractIterator<String> {
-    private String delimitedString;
-    private String delimiter;
-    private int index;
-    private boolean endingWithDelimiter = false;
-
-    private SplitQuotesIterator () {}
-    SplitQuotesIterator(String delimitedString, String delimiter) {
-      this.delimitedString = delimitedString;
-      this.delimiter = delimiter;
-      index = 0;
-    }
-
-    @Override
-    protected String computeNext() {
-      // Corner case when the delimiter is in the end of the row
-      if (endingWithDelimiter) {
-        endingWithDelimiter = false;
-        return "";
-      }
-
-      if (index == delimitedString.length()) {
-        return endOfData();
-      }
-
-      boolean isWithinQuotes = false;
-      StringBuilder split = new StringBuilder();
-      while (index < delimitedString.length()) {
-        char cur = delimitedString.charAt(index);
-        if (cur == QUOTE_CHAR) {
-          isWithinQuotes = !isWithinQuotes;
-          index++;
-          continue;
-        }
-
-        // if the length is not enough for the delimiter or it's not a delimiter, just add it to split
-        if (index + delimiter.length() > delimitedString.length() ||
-          !delimitedString.startsWith(delimiter, index)) {
-          split.append(cur);
-          index++;
-          continue;
-        }
-
-        // find delimiter not within quotes
-        if (!isWithinQuotes) {
-          index += delimiter.length();
-          if (index == delimitedString.length()) {
-            endingWithDelimiter = true;
-          }
-          return split.toString();
-        }
-
-        // delimiter within quotes
-        split.append(cur);
-        index++;
-      }
-
-      if (isWithinQuotes) {
-        throw new RuntimeException("Found a line with an unenclosed quote. Ensure that all values are properly"
-          + " quoted, or disable quoted values.");
-      }
-
-      return split.toString();
-    }
   }
 }

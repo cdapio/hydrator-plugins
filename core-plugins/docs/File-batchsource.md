@@ -39,11 +39,11 @@ JSON - is not supported, user has to manually provide the output schema.
 
 **Enable Quoted Values** Whether to treat content between quotes as a value. This value will only be used if the format
 is 'csv', 'tsv' or 'delimited'. For example, if this is set to true, a line that looks like `1, "a, b, c"` will output two fields.
-The first field will have '1' as its value and the second will have `a, b, c` as its value. The quote characters will be trimmed.
+The first field will have `1` as its value and the second will have `a, b, c` as its value. The quote characters will be trimmed.
 The newline delimiter cannot be within quotes.
 
 It also assumes the quotes are well enclosed. The left quote will match the first following quote right before the delimiter. If there is an
-unenclosed quote, an exception will be thrown.
+unenclosed quote, an error will occur.
 
 **Maximum Split Size:** Maximum size in bytes for each input partition.
 Smaller partitions will increase the level of parallelism, but will require more resources and overhead.
