@@ -67,8 +67,21 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
     Schema schema = super.getSchema(context);
     FailureCollector collector = context.getFailureCollector();
     if (!conf.containsMacro(PathTrackingConfig.NAME_SCHEMA) && schema == null) {
-      collector.addFailure("Delimited format cannot be used without specifying a schema.",
-                           "Schema must be specified.").withConfigProperty("schema");
+      collector.addFailure(
+        "Delimited format cannot be used without specifying a schema.",
+        "Schema must be specified.")
+        .withConfigProperty("schema");
+    }
+
+    if (conf.containsMacro(DelimitedConfig.NAME_ENABLE_QUOTES_VALUES) || conf.containsMacro(Conf.DELIMITER)) {
+      return;
+    }
+
+    if (conf.getEnableQuotedValues() && conf.delimiter != null && conf.delimiter.contains("\"")) {
+      collector.addFailure(
+        "The delimiter %s cannot contain \" when quoted values are enabled.",
+        "Check the delimiter.")
+        .withConfigProperty("delimiter");
     }
   }
 
@@ -76,12 +89,14 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
   protected void addFormatProperties(Map<String, String> properties) {
     properties.put(PathTrackingDelimitedInputFormat.DELIMITER, conf.delimiter == null ? "," : conf.delimiter);
     properties.put(PathTrackingDelimitedInputFormat.SKIP_HEADER, String.valueOf(conf.getSkipHeader()));
+    properties.put(PathTrackingDelimitedInputFormat.ENABLE_QUOTES_VALUE, String.valueOf(conf.getEnableQuotedValues()));
   }
 
   /**
    * Plugin config for delimited input format
    */
   public static class Conf extends DelimitedConfig {
+    private static final String DELIMITER = "delimiter";
     private static final String DELIMITER_DESC = "Delimiter to use to separate record fields.";
 
     @Macro
@@ -94,6 +109,6 @@ public class DelimitedInputFormatProvider extends PathTrackingInputFormatProvide
     Map<String, PluginPropertyField> properties = new HashMap<>(DelimitedConfig.DELIMITED_FIELDS);
     properties.put("delimiter", new PluginPropertyField("delimiter", Conf.DELIMITER_DESC, "string", false, true));
     return new PluginClass(ValidatingInputFormat.PLUGIN_TYPE, NAME, DESC, DelimitedInputFormatProvider.class.getName(),
-                           "conf", properties);
+      "conf", properties);
   }
 }

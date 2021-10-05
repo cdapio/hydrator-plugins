@@ -428,7 +428,7 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
 
     String uri = inputFile.toURI().toString();
     ApplicationManager appManager = createSourceAndDeployApp(appName, inputFile, format, outputDatasetName, schema,
-                                                             delimeter, true, false);
+      delimeter, true, false, false);
 
     appManager.getWorkflowManager(SmartWorkflow.NAME).startAndWaitForRun(ProgramRunStatus.COMPLETED,
                                                                          5, TimeUnit.MINUTES);
@@ -622,45 +622,57 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
 
   @Test
   public void testReadCSV() throws Exception {
-    testReadDelimitedText(FileFormat.CSV.name(), ",");
+    testReadDelimitedText(FileFormat.CSV.name(), ",", false);
+    testReadDelimitedText(FileFormat.CSV.name(), ",", true);
   }
 
   @Test
   public void testReadTSV() throws Exception {
-    testReadDelimitedText(FileFormat.TSV.name(), "\t");
+    testReadDelimitedText(FileFormat.TSV.name(), "\t", false);
+    testReadDelimitedText(FileFormat.TSV.name(), "\t", true);
   }
 
   @Test
   public void testReadDelimited() throws Exception {
-    testReadDelimitedText(FileFormat.DELIMITED.name(), "\u0001");
+    testReadDelimitedText(FileFormat.DELIMITED.name(), "\u0001", false);
+    testReadDelimitedText(FileFormat.DELIMITED.name(), "\u0001", true);
   }
 
-  private void testReadDelimitedText(String format, String delimiter) throws Exception {
+  private void testReadDelimitedText(String format, String delimiter, boolean enableQuotedValues) throws Exception {
     File fileText = new File(temporaryFolder.newFolder(), "test.txt");
     String outputDatasetName = UUID.randomUUID().toString();
 
     Schema schema = Schema.recordOf("user",
-                                    Schema.Field.of("id", Schema.of(Schema.Type.LONG)),
-                                    Schema.Field.of("name", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
-                                    Schema.Field.of("file", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
+      Schema.Field.of("id", Schema.of(Schema.Type.LONG)),
+      Schema.Field.of("val1", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+      Schema.Field.of("val2", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+      Schema.Field.of("val3", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+      Schema.Field.of("file", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
 
     String appName = UUID.randomUUID().toString();
     ApplicationManager appManager = createSourceAndDeployApp(appName, fileText, format, outputDatasetName, schema,
-                                                             delimiter, false, true);
+      delimiter, false, true, enableQuotedValues);
 
+    String join = Joiner.on(delimiter).join(new String[] {"\"a", "b", "c\""});
     String inputStr = new StringBuilder()
       .append("0").append("\n")
-      .append("1").append(delimiter).append("\n")
+      .append("1").append(delimiter).append(join).append("\n")
       .append("2").append(delimiter).append("sam\n").toString();
     FileUtils.writeStringToFile(fileText, inputStr);
 
     appManager.getWorkflowManager(SmartWorkflow.NAME)
       .startAndWaitForRun(ProgramRunStatus.COMPLETED, 5, TimeUnit.MINUTES);
 
+    StructuredRecord split =
+      StructuredRecord.builder(schema).set("id", 1L).set("val1", "\"a").set("val2", "b").set("val3", "c\"")
+        .set("file", fileText.toURI().toString()).build();
     Set<StructuredRecord> expected = ImmutableSet.of(
       StructuredRecord.builder(schema).set("id", 0L).set("file", fileText.toURI().toString()).build(),
-      StructuredRecord.builder(schema).set("id", 1L).set("file", fileText.toURI().toString()).build(),
-      StructuredRecord.builder(schema).set("id", 2L).set("name", "sam").set("file", fileText.toURI().toString()).build()
+      !enableQuotedValues ? split :
+        StructuredRecord.builder(schema).set("id", 1L).set("val1", join.substring(1, join.length() - 1))
+          .set("file", fileText.toURI().toString()).build(),
+      StructuredRecord.builder(schema).set("id", 2L).set("val1", "sam")
+        .set("file", fileText.toURI().toString()).build()
     );
 
     DataSetManager<Table> outputManager = getDataset(outputDatasetName);
@@ -1079,14 +1091,15 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
   }
 
   private ApplicationManager createSourceAndDeployApp(String appName, File file, String format,
-                                                      String outputDatasetName, Schema schema) throws Exception {
-    return createSourceAndDeployApp(appName, file, format, outputDatasetName, schema, null, false, true);
+    String outputDatasetName, Schema schema) throws Exception {
+    return createSourceAndDeployApp(appName, file, format, outputDatasetName, schema, null, false, true, false);
   }
 
   private ApplicationManager createSourceAndDeployApp(String appName, File file, String format,
-                                                      String outputDatasetName, Schema schema,
-                                                      @Nullable String delimiter, boolean skipHeader,
-                                                      boolean includePath) throws Exception {
+    String outputDatasetName, Schema schema,
+    @Nullable String delimiter, boolean skipHeader,
+    boolean includePath,
+    boolean enableQuotedValues) throws Exception {
 
     ImmutableMap.Builder<String, String> sourceProperties = ImmutableMap.<String, String>builder()
       .put(Constants.Reference.REFERENCE_NAME, appName + "TestFile")
@@ -1096,6 +1109,9 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
       .put("skipHeader", String.valueOf(skipHeader));
     if (includePath) {
       sourceProperties.put("pathField", "file");
+    }
+    if (enableQuotedValues) {
+      sourceProperties.put("enableQuotedValues", String.valueOf(enableQuotedValues));
     }
     if (delimiter != null) {
       sourceProperties.put("delimiter", delimiter);

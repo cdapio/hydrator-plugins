@@ -111,6 +111,12 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
 
   @Macro
   @Nullable
+  @Description("Whether to treat content between quotes as a value. This value will only be used if the format " +
+    "is 'csv', 'tsv' or 'delimited'. The default value is false.")
+  protected Boolean enableQuotedValues;
+
+  @Macro
+  @Nullable
   @Description("File encoding for the source files. The default encoding is 'UTF-8'")
   private String fileEncoding;
 

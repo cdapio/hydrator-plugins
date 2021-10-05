@@ -50,6 +50,7 @@ public class DelimitedConfig extends PathTrackingConfig {
 
   // properties
   public static final String NAME_DELIMITER = "delimiter";
+  public static final String NAME_ENABLE_QUOTES_VALUES = "enableQuotedValues";
   public static final String NAME_FORMAT = "format";
   public static final String NAME_OVERRIDE = "override";
   public static final String NAME_SAMPLE_SIZE = "sampleSize";
@@ -58,11 +59,16 @@ public class DelimitedConfig extends PathTrackingConfig {
   public static final Map<String, PluginPropertyField> DELIMITED_FIELDS;
 
   // description
-  public static final String DESC_SKIP_HEADER = "Whether to skip the first line of each file. Default value is false.";
+  public static final String DESC_ENABLE_QUOTES =
+    "Whether to treat content between quotes as a value. The default value is false.";
+  public static final String DESC_SKIP_HEADER =
+    "Whether to skip the first line of each file. The default value is false.";
 
   static {
     Map<String, PluginPropertyField> fields = new HashMap<>(FIELDS);
     fields.put("skipHeader", new PluginPropertyField("skipHeader", DESC_SKIP_HEADER, "boolean", false, true));
+    fields.put(NAME_ENABLE_QUOTES_VALUES,
+      new PluginPropertyField(NAME_ENABLE_QUOTES_VALUES, DESC_ENABLE_QUOTES, "boolean", false, true));
     DELIMITED_FIELDS = Collections.unmodifiableMap(fields);
   }
 
@@ -71,8 +77,17 @@ public class DelimitedConfig extends PathTrackingConfig {
   @Description(DESC_SKIP_HEADER)
   private Boolean skipHeader;
 
+  @Macro
+  @Nullable
+  @Description(DESC_ENABLE_QUOTES)
+  protected Boolean enableQuotedValues;
+
   public boolean getSkipHeader() {
     return skipHeader == null ? false : skipHeader;
+  }
+
+  public boolean getEnableQuotedValues() {
+    return enableQuotedValues == null ? false : enableQuotedValues;
   }
 
   public Long getSampleSize() {

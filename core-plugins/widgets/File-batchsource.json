@@ -78,6 +78,22 @@
         },
         {
           "widget-type": "toggle",
+          "name": "enableQuotedValues",
+          "label": "Enable Quoted Values",
+          "widget-attributes": {
+            "default": "false",
+            "on": {
+              "value": "true",
+              "label": "True"
+            },
+            "off": {
+              "value": "false",
+              "label": "False"
+            }
+          }
+        },
+        {
+          "widget-type": "toggle",
           "name": "skipHeader",
           "label": "Skip Header",
           "widget-attributes": {
@@ -459,6 +475,28 @@
         {
           "widget-type": "hidden",
           "name": "copyHeader"
+        }
+      ]
+    }
+  ],
+  "filters": [
+    {
+      "name": "delimiter",
+      "expression": "format == 'delimited'",
+      "show": [
+        {
+          "name": "delimiter"
+        }
+      ]
+    },
+    {
+      "name": "enableQuotedValues",
+      "condition": {
+        "expression": "format == 'delimited' || format == 'csv' || format == 'tsv'"
+      },
+      "show": [
+        {
+          "name": "enableQuotedValues"
         }
       ]
     }
