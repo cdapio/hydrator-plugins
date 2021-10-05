@@ -643,9 +643,11 @@ public class FileBatchSourceTest extends ETLBatchTestBase {
     String outputDatasetName = UUID.randomUUID().toString();
 
     Schema schema = Schema.recordOf("user",
-                                    Schema.Field.of("id", Schema.of(Schema.Type.LONG)),
-                                    Schema.Field.of("name", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
-                                    Schema.Field.of("file", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
+      Schema.Field.of("id", Schema.of(Schema.Type.LONG)),
+      Schema.Field.of("val1", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+      Schema.Field.of("val2", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+      Schema.Field.of("val3", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+      Schema.Field.of("file", Schema.nullableOf(Schema.of(Schema.Type.STRING))));
 
     String appName = UUID.randomUUID().toString();
     ApplicationManager appManager = createSourceAndDeployApp(appName, fileText, format, outputDatasetName, schema,
