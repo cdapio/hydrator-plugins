@@ -36,15 +36,18 @@ import io.cdap.cdap.etl.api.connector.ConnectorSpecRequest;
 import io.cdap.cdap.etl.api.connector.PluginSpec;
 import io.cdap.plugin.batch.source.FileBatchSource;
 import io.cdap.plugin.common.Constants;
+import io.cdap.plugin.common.batch.JobUtils;
 import io.cdap.plugin.format.connector.AbstractFileConnector;
 import io.cdap.plugin.format.connector.FileTypeDetector;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.hadoop.mapreduce.Job;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.attribute.PosixFileAttributes;
-import java.nio.file.attribute.PosixFilePermissions;
-import java.nio.file.attribute.UserPrincipal;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -74,32 +77,32 @@ public class FileConnector extends AbstractFileConnector<FileConnector.FileConne
 
   @Override
   public BrowseDetail browse(ConnectorContext connectorContext, BrowseRequest request) throws IOException {
-    String path = request.getPath();
-    File file = new File(request.getPath());
-    if (!file.exists()) {
+    Path path = new Path(request.getPath());
+    Job job = JobUtils.createInstance();
+    Configuration conf = job.getConfiguration();
+    // need this to load the extra class loader to avoid ClassNotFoundException for the file system
+    FileSystem fs = JobUtils.applyWithExtraClassLoader(job, getClass().getClassLoader(),
+                                                       f -> FileSystem.get(path.toUri(), conf));
+
+    if (!fs.exists(path)) {
       throw new IllegalArgumentException(String.format("The given path %s does not exist", path));
     }
 
     // if it is not a directory, then it is not browsable, return the path itself
+    FileStatus file = fs.getFileStatus(path);
     if (!file.isDirectory()) {
       return BrowseDetail.builder().setTotalCount(1).addEntity(generateBrowseEntity(file)).build();
     }
 
-    // list the files and classify them with file and directory
-    File[] files = file.listFiles();
-    if (files == null) {
-      throw new IOException(String.format("Unable to browse the path %s", path));
-    }
-
-    // sort the files by names
+    FileStatus[] files = fs.listStatus(path);
     Arrays.sort(files);
+
     int count = 0;
-    int limit = request.getLimit() == null || request.getLimit() <= 0 ? files.length :
-                  Math.min(request.getLimit(), files.length);
+    int limit = request.getLimit() == null ? Integer.MAX_VALUE : request.getLimit();
     BrowseDetail.Builder builder = BrowseDetail.builder();
-    for (File value : files) {
+    for (FileStatus fileStatus : files) {
       // do not browse hidden files
-      if (value.isHidden()) {
+      if (fileStatus.getPath().getName().startsWith(".")) {
         continue;
       }
 
@@ -107,7 +110,7 @@ public class FileConnector extends AbstractFileConnector<FileConnector.FileConne
         break;
       }
 
-      builder.addEntity(generateBrowseEntity(value));
+      builder.addEntity(generateBrowseEntity(fileStatus));
       count++;
     }
     return builder.setTotalCount(count).build();
@@ -125,33 +128,36 @@ public class FileConnector extends AbstractFileConnector<FileConnector.FileConne
     builder.addRelatedPlugin(new PluginSpec(FileBatchSource.NAME, BatchSource.PLUGIN_TYPE, properties));
   }
 
-  private BrowseEntity generateBrowseEntity(File file) throws IOException {
-    String path = file.getCanonicalPath();
+  private BrowseEntity generateBrowseEntity(FileStatus file) throws IOException {
+    Path path = file.getPath();
     boolean isDirectory = file.isDirectory();
-    BrowseEntity.Builder builder = BrowseEntity.builder(file.getName(), path, isDirectory ? DIRECTORY_TYPE : FILE_TYPE);
+    String filePath = path.toUri().getPath();
+    BrowseEntity.Builder builder = BrowseEntity.builder(
+      path.getName(), filePath, isDirectory ? DIRECTORY_TYPE : FILE_TYPE);
 
     if (isDirectory) {
       builder.canBrowse(true).canSample(true);
     } else {
-      String fileType = FileTypeDetector.detectFileType(path);
+      String fileType = FileTypeDetector.detectFileType(filePath);
       builder.canSample(FileTypeDetector.isSampleable(fileType));
       builder.addProperty(FILE_TYPE_KEY, BrowseEntityPropertyValue.builder(
         fileType, BrowseEntityPropertyValue.PropertyType.STRING).build());
       builder.addProperty(SIZE_KEY, BrowseEntityPropertyValue.builder(
-        String.valueOf(file.length()), BrowseEntityPropertyValue.PropertyType.SIZE_BYTES).build());
+        String.valueOf(file.getLen()), BrowseEntityPropertyValue.PropertyType.SIZE_BYTES).build());
     }
 
     builder.addProperty(LAST_MODIFIED_KEY, BrowseEntityPropertyValue.builder(
-      String.valueOf(file.lastModified()), BrowseEntityPropertyValue.PropertyType.TIMESTAMP_MILLIS).build());
-    UserPrincipal owner = Files.getOwner(file.toPath());
+      String.valueOf(file.getModificationTime()), BrowseEntityPropertyValue.PropertyType.TIMESTAMP_MILLIS).build());
+    String owner = file.getOwner();
     builder.addProperty(OWNER_KEY, BrowseEntityPropertyValue.builder(
-      owner == null ? "" : owner.getName(), BrowseEntityPropertyValue.PropertyType.STRING).build());
+      owner == null ? "" : owner, BrowseEntityPropertyValue.PropertyType.STRING).build());
     builder.addProperty(GROUP_KEY, BrowseEntityPropertyValue.builder(
-      Files.readAttributes(file.toPath(), PosixFileAttributes.class).group().getName(),
-      BrowseEntityPropertyValue.PropertyType.STRING).build());
+      file.getGroup(), BrowseEntityPropertyValue.PropertyType.STRING).build());
+    FsPermission permission = file.getPermission();
+    String perm =
+      permission.getUserAction().SYMBOL + permission.getGroupAction().SYMBOL + permission.getOtherAction().SYMBOL;
     builder.addProperty(PERMISSION_KEY, BrowseEntityPropertyValue.builder(
-      PosixFilePermissions.toString(Files.getPosixFilePermissions(file.toPath())),
-      BrowseEntityPropertyValue.PropertyType.STRING).build());
+      perm, BrowseEntityPropertyValue.PropertyType.STRING).build());
     return builder.build();
   }
 
