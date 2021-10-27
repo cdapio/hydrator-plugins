@@ -101,7 +101,7 @@ public abstract class AbstractFileSink<T extends PluginConfig & FileSinkProperti
   @Override
   public void prepareRun(BatchSinkContext context) throws Exception {
     FailureCollector collector = context.getFailureCollector();
-    config.validate(collector);
+    config.validate(collector, context.getArguments().asMap());
     String format = config.getFormatName();
     ValidatingOutputFormat validatingOutputFormat = getOutputFormatForRun(context);
     FormatContext formatContext = new FormatContext(collector, context.getInputSchema());
