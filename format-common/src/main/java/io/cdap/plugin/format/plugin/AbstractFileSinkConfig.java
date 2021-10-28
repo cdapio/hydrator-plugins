@@ -27,6 +27,8 @@ import io.cdap.plugin.format.FileFormat;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
+import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -79,6 +81,10 @@ public abstract class AbstractFileSinkConfig extends PluginConfig implements Fil
   }
 
   public void validate(FailureCollector collector) {
+    validate(collector, Collections.emptyMap());
+  }
+
+  public void validate(FailureCollector collector, Map<String, String> arguments) {
     IdUtils.validateReferenceName(referenceName, collector);
     if (suffix != null && !containsMacro(NAME_SUFFIX)) {
       try {

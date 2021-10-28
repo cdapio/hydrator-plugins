@@ -20,6 +20,7 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.plugin.format.FileFormat;
 
+import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -49,6 +50,16 @@ public interface FileSinkProperties {
    */
   default void validate(FailureCollector collector) {
     // no-op
+  }
+
+  /**
+   * Validates the properties and collects validation failures if anything is invalid.
+   *
+   * @param collector failure collector
+   * @param arguments runtime arguments
+   */
+  default void validate(FailureCollector collector, Map<String, String> arguments) {
+    
   }
 
   /**
