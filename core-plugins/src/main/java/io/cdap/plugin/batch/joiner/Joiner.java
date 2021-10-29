@@ -17,6 +17,7 @@
 package io.cdap.plugin.batch.joiner;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
@@ -124,8 +125,25 @@ public class Joiner extends BatchAutoJoiner {
       }
     }
 
+    // Validate Join Left Side property
+    if (!conf.mostSkewedInputContainsMacro() && !Strings.isNullOrEmpty(conf.getMostSkewedInput())
+      && inputs.stream().map(JoinStage::getStageName).noneMatch(sn -> Objects.equals(sn, conf.getMostSkewedInput()))) {
+      collector.addFailure("Only one stage can be specified as the stage with the larger skew.",
+                           "Please select only one stage.")
+        .withConfigProperty(JoinerConfig.MOST_SKEWED_INPUT);
+    }
+
+
     try {
-      JoinDefinition.Builder joinBuilder = JoinDefinition.builder()
+      JoinDefinition.Builder joinBuilder = JoinDefinition.builder();
+
+      // If the user has specified one of the sides as the left side, reorder inputs so the specified left side is
+      // always first.
+      if (!conf.mostSkewedInputContainsMacro() && !Strings.isNullOrEmpty(conf.getMostSkewedInput())) {
+        reorderJoinStages(inputs, conf.getMostSkewedInput());
+      }
+
+      joinBuilder
         .select(conf.getSelectedFields(collector))
         .from(inputs)
         .on(condition);
@@ -262,5 +280,25 @@ public class Joiner extends BatchAutoJoiner {
     }
 
     return operations;
+  }
+
+  /**
+   * Reorders join stages so the supplied stage name is always first.
+   * @param stages list of input stages
+   * @param leftStage stage to move to the first position in the input list.
+   */
+  protected void reorderJoinStages(List<JoinStage> stages, String leftStage) {
+    stages.sort((js1, js2) -> {
+      String s1 = js1.getStageName();
+      String s2 = js2.getStageName();
+
+      if (!s1.equals(leftStage) && s2.equals(leftStage)) {
+        return 1;
+      } else if (s1.equals(leftStage) && !s2.equals(leftStage)) {
+        return -1;
+      } else {
+        return 0;
+      }
+    });
   }
 }
