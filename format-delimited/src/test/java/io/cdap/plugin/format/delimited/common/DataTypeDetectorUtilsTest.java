@@ -44,6 +44,22 @@ public class DataTypeDetectorUtilsTest {
   }
 
   @Test
+  public void testExtractedColumnNamesRegexMetaCharacterDelimiter() {
+    String headerLine = "column_A|column_B|column_C";
+    String[] actualColumnNames = DataTypeDetectorUtils.setColumnNames(headerLine, true, "|");
+    String[] expectedColumnNames = new String[]{"column_A", "column_B", "column_C"};
+    assertArrayEquals(expectedColumnNames, actualColumnNames);
+  }
+
+  @Test
+  public void testGeneratedColumnNamesForRegexMetaCharacterDelimiter() {
+    String dataLine = "John|Doe|27";
+    String[] actualColumnNames = DataTypeDetectorUtils.setColumnNames(dataLine, false, "|");
+    String[] expectedColumnNames = new String[]{"body_0", "body_1", "body_2"};
+    assertArrayEquals(expectedColumnNames, actualColumnNames);
+  }
+
+  @Test
   public void testGeneratedColumnNames() {
     String dataLine = "John;Doe;27";
     String[] actualColumnNames = DataTypeDetectorUtils.setColumnNames(dataLine, false, ";");
