@@ -98,10 +98,13 @@ public class DataTypeDetectorUtils {
    */
   public static String[] setColumnNames(String rawLine, boolean skipHeader, String delimiter) {
     String[] columnNames;
+    final String quotedDelimiter = Pattern.quote(delimiter);
     if (skipHeader) {
-      columnNames = rawLine.split(delimiter);
+      // String.split uses regex. Here we safely escape regex sequences by using Pattern.quote
+      // Pattern.quote returns a literal pattern string
+      columnNames = rawLine.split(quotedDelimiter);
     } else {
-      columnNames = new String[rawLine.split(delimiter, -1).length];
+      columnNames = new String[rawLine.split(quotedDelimiter, -1).length];
       for (int j = 0; j < columnNames.length; j++) {
         columnNames[j] = String.format("%s_%s", "body", j);
       }
