@@ -23,6 +23,7 @@ import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.format.UnexpectedFormatException;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.cdap.etl.api.batch.BatchSink;
 import io.cdap.cdap.etl.api.batch.BatchSource;
 import io.cdap.cdap.etl.api.connector.Connector;
 import io.cdap.cdap.etl.api.connector.ConnectorContext;
@@ -36,6 +37,7 @@ import io.cdap.plugin.common.db.AbstractDBConnector;
 import io.cdap.plugin.common.db.DBConnectorPath;
 import io.cdap.plugin.common.db.DBPath;
 import io.cdap.plugin.common.db.DBUtils;
+import io.cdap.plugin.db.batch.sink.DBSink;
 import io.cdap.plugin.db.batch.source.DBSource;
 import io.cdap.plugin.db.common.DBBaseConfig;
 
@@ -115,7 +117,9 @@ public class DBConnector extends AbstractDBConnector<DBConnectorConfig> implemen
     if (path.getTable() != null) {
       properties.put(Constants.Reference.REFERENCE_NAME, path.getTable());
     }
-    builder.addRelatedPlugin(new PluginSpec(DBSource.NAME, BatchSource.PLUGIN_TYPE, properties));
+    builder
+      .addRelatedPlugin(new PluginSpec(DBSource.NAME, BatchSource.PLUGIN_TYPE, properties))
+      .addRelatedPlugin(new PluginSpec(DBSink.NAME, BatchSink.PLUGIN_TYPE, properties));
 
     String table = path.getTable();
     if (table == null) {

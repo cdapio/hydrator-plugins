@@ -22,6 +22,8 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
+import io.cdap.cdap.api.annotation.Metadata;
+import io.cdap.cdap.api.annotation.MetadataProperty;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
 import io.cdap.cdap.api.data.batch.Output;
@@ -36,7 +38,7 @@ import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
 import io.cdap.cdap.etl.api.batch.BatchSink;
 import io.cdap.cdap.etl.api.batch.BatchSinkContext;
-import io.cdap.plugin.DBConfig;
+import io.cdap.cdap.etl.api.connector.Connector;
 import io.cdap.plugin.DBManager;
 import io.cdap.plugin.DBRecord;
 import io.cdap.plugin.FieldCase;
@@ -45,6 +47,8 @@ import io.cdap.plugin.common.ReferenceBatchSink;
 import io.cdap.plugin.common.ReferencePluginConfig;
 import io.cdap.plugin.common.db.DBUtils;
 import io.cdap.plugin.db.batch.TransactionIsolationLevel;
+import io.cdap.plugin.db.common.DBBaseConfig;
+import io.cdap.plugin.db.connector.DBConnector;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapred.lib.db.DBConfiguration;
 import org.slf4j.Logger;
@@ -69,9 +73,11 @@ import javax.annotation.Nullable;
  * Sink that can be configured to export data to a database table.
  */
 @Plugin(type = BatchSink.PLUGIN_TYPE)
-@Name("Database")
+@Name(DBSink.NAME)
 @Description("Writes records to a database table. Each record will be written to a row in the table.")
+@Metadata(properties = {@MetadataProperty(key = Connector.PLUGIN_TYPE, value = DBConnector.NAME)})
 public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullWritable> {
+  public static final String NAME = "Database";
   private static final Logger LOG = LoggerFactory.getLogger(DBSink.class);
 
   private final DBSinkConfig dbSinkConfig;
@@ -81,28 +87,33 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
   private List<String> columns;
 
   public DBSink(DBSinkConfig dbSinkConfig) {
-    super(new ReferencePluginConfig(dbSinkConfig.referenceName));
+    super(new ReferencePluginConfig(dbSinkConfig.getReferenceName()));
     this.dbSinkConfig = dbSinkConfig;
-    this.dbManager = new DBManager(dbSinkConfig);
+    this.dbManager = new DBManager(dbSinkConfig.getConnection(), dbSinkConfig.getJdbcPluginType());
   }
 
   private String getJDBCPluginId() {
-    return String.format("%s.%s.%s", "sink", dbSinkConfig.jdbcPluginType, dbSinkConfig.jdbcPluginName);
+    return String.format("%s.%s.%s", "sink", dbSinkConfig.jdbcPluginType, dbSinkConfig.getJdbcPluginName());
   }
 
   @Override
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
     FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
+    dbSinkConfig.validate(collector);
     dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId(), collector);
   }
 
   @Override
   public void prepareRun(BatchSinkContext context) {
+    FailureCollector collector = context.getFailureCollector();
+    dbSinkConfig.validate(collector);
+    collector.getOrThrowException();
+    
     LOG.debug("tableName = {}; pluginType = {}; pluginName = {}; connectionString = {}; columns = {}; " +
                 "transaction isolation level: {}",
-              dbSinkConfig.tableName, dbSinkConfig.jdbcPluginType, dbSinkConfig.jdbcPluginName,
-              dbSinkConfig.connectionString, dbSinkConfig.columns, dbSinkConfig.transactionIsolationLevel);
+              dbSinkConfig.tableName, dbSinkConfig.jdbcPluginType, dbSinkConfig.getJdbcPluginName(),
+              dbSinkConfig.getConnectionString(), dbSinkConfig.columns, dbSinkConfig.transactionIsolationLevel);
 
     // Load the plugin class to make sure it is available.
     Class<? extends Driver> driverClass = context.loadPluginClass(getJDBCPluginId());
@@ -112,15 +123,16 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
         dbManager.tableExists(driverClass, dbSinkConfig.tableName),
         "Table %s does not exist. Please check that the 'tableName' property " +
           "has been set correctly, and that the connection string %s points to a valid database.",
-        dbSinkConfig.tableName, dbSinkConfig.connectionString);
+        dbSinkConfig.tableName, dbSinkConfig.getConnectionString());
     } finally {
       DBUtils.cleanup(driverClass);
     }
-    context.addOutput(Output.of(dbSinkConfig.referenceName, new DBOutputFormatProvider(dbSinkConfig, driverClass)));
+    context.addOutput(Output.of(dbSinkConfig.getReferenceName(),
+                                new DBOutputFormatProvider(dbSinkConfig, driverClass)));
 
     Schema schema = context.getInputSchema();
     if (schema != null && schema.getFields() != null) {
-      recordLineage(context, dbSinkConfig.referenceName, schema,
+      recordLineage(context, dbSinkConfig.getReferenceName(), schema,
                     schema.getFields().stream().map(Schema.Field::getName).collect(Collectors.toList()));
     }
   }
@@ -165,8 +177,8 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
     Map<String, Integer> columnToType = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     dbManager.ensureJDBCDriverIsAvailable(driverClass);
 
-    try (Connection connection = DriverManager.getConnection(dbSinkConfig.connectionString,
-                                                             dbSinkConfig.getConnectionArguments())) {
+    try (Connection connection = DriverManager.getConnection(dbSinkConfig.getConnectionString(),
+                                                             dbSinkConfig.getAllConnectionArguments())) {
       try (Statement statement = connection.createStatement();
            // Run a query against the DB table that returns 0 records, but returns valid ResultSetMetadata
            // that can be used to construct DBRecord objects to sink to the database table.
@@ -174,7 +186,7 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
                                                                dbSinkConfig.columns, dbSinkConfig.tableName))
       ) {
         ResultSetMetaData resultSetMetadata = rs.getMetaData();
-        FieldCase fieldCase = FieldCase.toFieldCase(dbSinkConfig.columnNameCase);
+        FieldCase fieldCase = FieldCase.toFieldCase(dbSinkConfig.getColumnNameCase());
         // JDBC driver column indices start with 1
         for (int i = 0; i < rs.getMetaData().getColumnCount(); i++) {
           String name = resultSetMetadata.getColumnName(i + 1);
@@ -209,7 +221,7 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
   /**
    * {@link PluginConfig} for {@link DBSink}
    */
-  public static class DBSinkConfig extends DBConfig {
+  public static class DBSinkConfig extends DBBaseConfig {
     public static final String COLUMNS = "columns";
     public static final String TABLE_NAME = "tableName";
     public static final String TRANSACTION_ISOLATION_LEVEL = "transactionIsolationLevel";
@@ -232,6 +244,17 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
       "and this setting is set to true. For drivers like that, this should be set to TRANSACTION_NONE.")
     @Macro
     public String transactionIsolationLevel;
+
+    private void validate(FailureCollector collector) {
+      if (getUseConnection()) {
+        collector.addFailure("Database batch sink plugin doesn't support using existing connection.",
+                             "Don't set useConnection property to true.");
+      }
+      if (containsMacro(NAME_CONNECTION)) {
+        collector.addFailure("Database batch sink plugin doesn't support using existing connection.",
+                             "Remove macro in connection property.");
+      }
+    }
   }
 
   private static class DBOutputFormatProvider implements OutputFormatProvider {
@@ -244,16 +267,16 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
       if (dbSinkConfig.transactionIsolationLevel != null) {
         conf.put(TransactionIsolationLevel.CONF_KEY, dbSinkConfig.transactionIsolationLevel);
       }
-      if (dbSinkConfig.connectionArguments != null) {
-        conf.put(DBUtils.CONNECTION_ARGUMENTS, dbSinkConfig.connectionArguments);
+      if (dbSinkConfig.getConnectionArguments() != null) {
+        conf.put(DBUtils.CONNECTION_ARGUMENTS, dbSinkConfig.getConnectionArguments());
       }
       conf.put(DBConfiguration.DRIVER_CLASS_PROPERTY, driverClass.getName());
-      conf.put(DBConfiguration.URL_PROPERTY, dbSinkConfig.connectionString);
-      if (dbSinkConfig.user != null) {
-        conf.put(DBConfiguration.USERNAME_PROPERTY, dbSinkConfig.user);
+      conf.put(DBConfiguration.URL_PROPERTY, dbSinkConfig.getConnectionString());
+      if (dbSinkConfig.getUser() != null) {
+        conf.put(DBConfiguration.USERNAME_PROPERTY, dbSinkConfig.getUser());
       }
-      if (dbSinkConfig.password != null) {
-        conf.put(DBConfiguration.PASSWORD_PROPERTY, dbSinkConfig.password);
+      if (dbSinkConfig.getPassword() != null) {
+        conf.put(DBConfiguration.PASSWORD_PROPERTY, dbSinkConfig.getPassword());
       }
       conf.put(DBConfiguration.OUTPUT_TABLE_NAME_PROPERTY, dbSinkConfig.tableName);
       conf.put(DBConfiguration.OUTPUT_FIELD_NAMES_PROPERTY, dbSinkConfig.columns);
