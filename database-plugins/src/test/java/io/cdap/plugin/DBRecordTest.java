@@ -247,6 +247,7 @@ public class DBRecordTest {
     Mockito.when(resultSetMock.getObject("timestamp")).thenReturn(expectedTimestamp);
     Mockito.when(resultSetMock.getTimestamp("timestamp")).thenReturn(expectedTimestamp);
     Mockito.when(resultSetMock.getObject("decimal")).thenReturn(expectedDecimal);
+    Mockito.when(resultSetMock.getBigDecimal("decimal", 3)).thenReturn(expectedDecimal);
     Mockito.when(resultSetMock.getObject("blob")).thenReturn(expectedBlob);
     Mockito.when(resultSetMock.getObject("boolean")).thenReturn(expectedBoolean);
     Mockito.when(resultSetMock.getObject("string")).thenReturn(expectedString);
