@@ -388,7 +388,10 @@ public final class DBUtils {
         case Types.NUMERIC:
         case Types.DECIMAL: {
           if (Schema.LogicalType.DECIMAL == outputFieldSchema.getLogicalType()) {
-            return original;
+            // It's required to pass 'scale' parameter since in the case of some dbs like Oracle, scale of 'BigDecimal'
+            // depends on the scale of actual value. For example for value '77.12'
+            // scale will be '2' even if sql scale is '6'
+            return resultSet.getBigDecimal(fieldName, scale);
           } else {
             BigDecimal decimal = (BigDecimal) original;
             if (scale != 0) {
