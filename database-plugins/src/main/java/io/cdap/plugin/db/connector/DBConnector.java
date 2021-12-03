@@ -160,10 +160,8 @@ public class DBConnector extends AbstractDBConnector<DBConnectorConfig> implemen
         int sqlPrecision = meta.getPrecision(i);
         int sqlScale = meta.getScale(i);
         Schema fieldSchema = schema.getField(fieldName).getSchema();
+        fieldSchema = fieldSchema.isNullable() ? fieldSchema.getNonNullable() : fieldSchema;
         Object value = DBUtils.transformValue(sqlType, sqlPrecision, sqlScale, resultSet, fieldName, fieldSchema);
-        if (fieldSchema.isNullable()) {
-          fieldSchema = fieldSchema.getNonNullable();
-        }
         if (value instanceof Date) {
           recordBuilder.setDate(fieldName, ((Date) value).toLocalDate());
         } else if (value instanceof Time) {
