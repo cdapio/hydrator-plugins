@@ -964,7 +964,6 @@
         <module>kafka-plugins</module>
         <module>amazon-s3-plugins</module>
         <module>condition-plugins</module>
-        <module>e2e-test</module>
         <module>azure</module>
       </modules>
     </profile>
@@ -1080,6 +1079,5 @@
         </plugins>
       </build>
     </profile>
-
   </profiles>
 </project>
