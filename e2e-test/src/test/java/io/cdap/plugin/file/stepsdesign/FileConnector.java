@@ -26,7 +26,7 @@ import io.cdap.e2e.utils.SeleniumDriver;
 import io.cdap.e2e.utils.SeleniumHelper;
 import io.cdap.plugin.file.actions.CdfFileActions;
 import io.cdap.plugin.file.locators.CdfFileLocators;
-import io.cdap.plugin.utils.CdapUtils;
+import io.cdap.plugin.utils.E2ETestUtils;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -82,14 +82,14 @@ public class FileConnector implements CdfHelper {
   public void enterTheFileConnectorPropertiesWithBlankProperty(String property)
     throws IOException, InterruptedException {
     if (property.equalsIgnoreCase("referenceName")) {
-      CdfFileActions.enterFileBucket(CdapUtils.pluginProp("fileCsvFilePath"));
-      CdfFileActions.selectFormat(CdapUtils.pluginProp("fileCSVFileFormat"));
+      CdfFileActions.enterFileBucket(E2ETestUtils.pluginProp("fileCsvFilePath"));
+      CdfFileActions.selectFormat(E2ETestUtils.pluginProp("fileCSVFileFormat"));
     } else if (property.equalsIgnoreCase("path")) {
       CdfFileActions.enterReferenceName();
-      CdfFileActions.selectFormat(CdapUtils.pluginProp("fileCSVFileFormat"));
+      CdfFileActions.selectFormat(E2ETestUtils.pluginProp("fileCSVFileFormat"));
     } else if (property.equalsIgnoreCase("format")) {
       CdfFileActions.enterReferenceName();
-      CdfFileActions.enterFileBucket(CdapUtils.pluginProp("fileCsvFilePath"));
+      CdfFileActions.enterFileBucket(E2ETestUtils.pluginProp("fileCsvFilePath"));
     }
   }
 
@@ -97,7 +97,7 @@ public class FileConnector implements CdfHelper {
   public void validateMandatoryPropertyErrorFor(String property) {
     CdfStudioActions.clickValidateButton();
     SeleniumHelper.waitElementIsVisible(CdfStudioLocators.validateButton);
-    CdapUtils.validateMandatoryPropertyError(property);
+    E2ETestUtils.validateMandatoryPropertyError(property);
   }
 
   @Then("Connect Source as {string} and sink as {string} to establish connection")
@@ -109,9 +109,9 @@ public class FileConnector implements CdfHelper {
   public void enterTheFileConnectorPropertiesWithFilePathAndFormat(String filePath, String format) throws IOException,
     InterruptedException {
     CdfFileActions.enterReferenceName();
-    CdfFileActions.enterFileBucket(CdapUtils.pluginProp(filePath));
-    CdfFileActions.selectFormat(CdapUtils.pluginProp(format));
-    CdfFileActions.enterSampleSize(CdapUtils.pluginProp("fileSampleSize"));
+    CdfFileActions.enterFileBucket(E2ETestUtils.pluginProp(filePath));
+    CdfFileActions.selectFormat(E2ETestUtils.pluginProp(format));
+    CdfFileActions.enterSampleSize(E2ETestUtils.pluginProp("fileSampleSize"));
     CdfFileActions.skipHeader();
   }
 
@@ -119,7 +119,7 @@ public class FileConnector implements CdfHelper {
   public void enterTheFileConnectorPropertiesWithFilePathAndFormatWithPathField
     (String filePath, String format, String pathField) throws IOException, InterruptedException {
     enterTheFileConnectorPropertiesWithFilePathAndFormat(filePath, format);
-    CdfFileActions.enterPathField(CdapUtils.pluginProp(pathField));
+    CdfFileActions.enterPathField(E2ETestUtils.pluginProp(pathField));
   }
 
   @Then("Enter the File connector Properties with file path {string} and format {string} " +
@@ -127,22 +127,22 @@ public class FileConnector implements CdfHelper {
   public void enterTheFileConnectorPropertiesWithFilePathAndFormatWithOverrideFieldAndDataType
     (String filePath, String format, String overrideField, String dataType) throws IOException, InterruptedException {
     enterTheFileConnectorPropertiesWithFilePathAndFormat(filePath, format);
-    CdfFileActions.enterOverride(CdapUtils.pluginProp(overrideField));
-    CdfFileActions.clickOverrideDataType(CdapUtils.pluginProp(dataType));
+    CdfFileActions.enterOverride(E2ETestUtils.pluginProp(overrideField));
+    CdfFileActions.clickOverrideDataType(E2ETestUtils.pluginProp(dataType));
   }
 
   @Then("Enter the File connector Properties with file path {string} and format {string} with delimiter field {string}")
   public void enterTheFileConnectorPropertiesWithFilePathAndFormatWithDelimiterField
     (String filePath, String format, String delimiter) throws IOException, InterruptedException {
     enterTheFileConnectorPropertiesWithFilePathAndFormat(filePath, format);
-    CdfFileActions.enterDelimiterField(CdapUtils.pluginProp(delimiter));
+    CdfFileActions.enterDelimiterField(E2ETestUtils.pluginProp(delimiter));
   }
 
   @Then("Enter the File connector Properties with file path {string} and format {string} with maxSplitSize {string}")
   public void enterTheFileConnectorPropertiesWithFilePathAndFormatWithMaxSplitSize
     (String filePath, String format, String maxSplitSize) throws IOException, InterruptedException {
     enterTheFileConnectorPropertiesWithFilePathAndFormat(filePath, format);
-    CdfFileActions.enterMaxSplitSize(CdapUtils.pluginProp(maxSplitSize));
+    CdfFileActions.enterMaxSplitSize(E2ETestUtils.pluginProp(maxSplitSize));
   }
 
   @Then("Enter the File connector Properties with file path {string} and format {string} " +
@@ -150,7 +150,7 @@ public class FileConnector implements CdfHelper {
   public void enterTheFileConnectorPropertiesWithFilePathAndFormatWithRegexPathFilter
     (String filePath, String format, String regexPathFilter) throws IOException, InterruptedException {
     enterTheFileConnectorPropertiesWithFilePathAndFormat(filePath, format);
-    CdfFileActions.enterRegexPath(CdapUtils.pluginProp(regexPathFilter));
+    CdfFileActions.enterRegexPath(E2ETestUtils.pluginProp(regexPathFilter));
   }
 
   @Then("Capture and validate output schema")
@@ -171,7 +171,7 @@ public class FileConnector implements CdfHelper {
   public void validateFileConnectorProperties() {
     CdfFileActions.clickValidateButton();
     SeleniumHelper.waitElementIsVisible(CdfStudioLocators.pluginValidationSuccessMsg, 10L);
-    String expectedErrorMessage = CdapUtils.errorProp(ERROR_MSG_VALIDATION);
+    String expectedErrorMessage = E2ETestUtils.errorProp(ERROR_MSG_VALIDATION);
     String actualErrorMessage = CdfStudioLocators.pluginValidationSuccessMsg.getText();
     Assert.assertEquals(expectedErrorMessage, actualErrorMessage);
   }
@@ -188,11 +188,11 @@ public class FileConnector implements CdfHelper {
 
   @Then("Enter the BigQuery Sink properties for table {string}")
   public void enterTheBigQuerySinkPropertiesForTable(String tableName) throws IOException {
-    CdfBigQueryPropertiesActions.enterProjectId(CdapUtils.pluginProp("projectId"));
-    CdfBigQueryPropertiesActions.enterDatasetProjectId(CdapUtils.pluginProp("projectId"));
+    CdfBigQueryPropertiesActions.enterProjectId(E2ETestUtils.pluginProp("projectId"));
+    CdfBigQueryPropertiesActions.enterDatasetProjectId(E2ETestUtils.pluginProp("projectId"));
     CdfBigQueryPropertiesActions.enterBigQueryReferenceName("BQ_File_Ref_" + UUID.randomUUID().toString());
-    CdfBigQueryPropertiesActions.enterBigQueryDataset(CdapUtils.pluginProp("dataset"));
-    CdfBigQueryPropertiesActions.enterBigQueryTable(CdapUtils.pluginProp(tableName));
+    CdfBigQueryPropertiesActions.enterBigQueryDataset(E2ETestUtils.pluginProp("dataset"));
+    CdfBigQueryPropertiesActions.enterBigQueryTable(E2ETestUtils.pluginProp(tableName));
     CdfBigQueryPropertiesActions.clickUpdateTable();
     CdfBigQueryPropertiesActions.clickTruncatableSwitch();
   }
@@ -200,7 +200,7 @@ public class FileConnector implements CdfHelper {
   @Then("Validate BigQuery properties")
   public void validateBigQueryProperties() {
     CdfFileActions.clickValidateButton();
-    String expectedErrorMessage = CdapUtils.errorProp(ERROR_MSG_VALIDATION);
+    String expectedErrorMessage = E2ETestUtils.errorProp(ERROR_MSG_VALIDATION);
     String actualErrorMessage = CdfStudioLocators.pluginValidationSuccessMsg.getText();
     Assert.assertEquals(expectedErrorMessage, actualErrorMessage);
   }
@@ -311,14 +311,14 @@ public class FileConnector implements CdfHelper {
 
   @Then("Get Count of no of records transferred to BigQuery in {string}")
   public void getCountOfNoOfRecordsTransferredToBigQueryIn(String tableName) throws IOException, InterruptedException {
-    int countRecords = GcpClient.countBqQuery(CdapUtils.pluginProp(tableName));
+    int countRecords = GcpClient.countBqQuery(E2ETestUtils.pluginProp(tableName));
     BeforeActions.scenario.write("**********No of Records Transferred******************:" + countRecords);
     Assert.assertTrue(countRecords > 0);
   }
 
   @Then("Delete the table {string}")
   public void deleteTheTable(String tableName) throws IOException, InterruptedException {
-    GcpClient.dropBqQuery(CdapUtils.pluginProp(tableName));
+    GcpClient.dropBqQuery(E2ETestUtils.pluginProp(tableName));
     BeforeActions.scenario.write("Table Deleted Successfully");
   }
 
@@ -326,32 +326,32 @@ public class FileConnector implements CdfHelper {
   public void verifyOutputFieldInTargetBigQueryTableContainsSourceFilePath(
     String outputField, String targetTable, String filePath) throws IOException, InterruptedException {
     Optional<String> result = GcpClient
-      .getSoleQueryResult("SELECT distinct " + CdapUtils.pluginProp(outputField) + " as bucket FROM `"
-                            + (CdapUtils.pluginProp("projectId")) + "."
-                            + (CdapUtils.pluginProp("dataset")) + "."
-                            + CdapUtils.pluginProp(targetTable) + "` ");
+      .getSoleQueryResult("SELECT distinct " + E2ETestUtils.pluginProp(outputField) + " as bucket FROM `"
+                            + (E2ETestUtils.pluginProp("projectId")) + "."
+                            + (E2ETestUtils.pluginProp("dataset")) + "."
+                            + E2ETestUtils.pluginProp(targetTable) + "` ");
     String pathFromBQTable = StringUtils.EMPTY;
     if (result.isPresent()) {
       pathFromBQTable = result.get();
     }
     BeforeActions.scenario.write("GCC bucket path in BQ Table :" + pathFromBQTable);
-    Assert.assertEquals("file:" + CdapUtils.pluginProp(filePath), pathFromBQTable);
+    Assert.assertEquals("file:" + E2ETestUtils.pluginProp(filePath), pathFromBQTable);
   }
 
   @Then("Verify datatype of field {string} is overridden to data type {string} in target BigQuery table {string}")
   public void verifyDatatypeOfFieldIsOverriddenToDataTypeInTargetBigQueryTable(
     String field, String dataType, String targetTable) throws IOException, InterruptedException {
     Optional<String> result = GcpClient
-      .getSoleQueryResult("SELECT data_type FROM `" + (CdapUtils.pluginProp("projectId")) + "."
-                            + (CdapUtils.pluginProp("dataset")) + ".INFORMATION_SCHEMA.COLUMNS` " +
-                            "WHERE table_name = '" + CdapUtils.pluginProp(targetTable)
-                            + "' and column_name = '" + CdapUtils.pluginProp(field) + "' ");
+      .getSoleQueryResult("SELECT data_type FROM `" + (E2ETestUtils.pluginProp("projectId")) + "."
+                            + (E2ETestUtils.pluginProp("dataset")) + ".INFORMATION_SCHEMA.COLUMNS` " +
+                            "WHERE table_name = '" + E2ETestUtils.pluginProp(targetTable)
+                            + "' and column_name = '" + E2ETestUtils.pluginProp(field) + "' ");
     String dataTypeInTargetTable = StringUtils.EMPTY;
     if (result.isPresent()) {
       dataTypeInTargetTable = result.get();
     }
     BeforeActions.scenario.write("Data type in target BQ Table :" + dataTypeInTargetTable);
-    Assert.assertEquals(CdapUtils.pluginProp(dataType),
+    Assert.assertEquals(E2ETestUtils.pluginProp(dataType),
                         dataTypeInTargetTable.replace("64", StringUtils.EMPTY).toLowerCase());
   }
 
@@ -359,12 +359,12 @@ public class FileConnector implements CdfHelper {
   public void verifyOutputPathFieldErrorMessageForIncorrectPathField(String pathField) {
       CdfBigQueryPropertiesActions.getSchema();
       SeleniumHelper.waitElementIsVisible(CdfFileLocators.getSchemaLoadComplete, 10L);
-      String expectedErrorMessage = CdapUtils.errorProp(ERROR_MSG_FILE_INVALID_OUTPUTFIELD)
-        .replace("PATH_FIELD", CdapUtils.pluginProp(pathField));
-      String actualErrorMessage = CdapUtils.findPropertyErrorElement("pathField").getText();
+      String expectedErrorMessage = E2ETestUtils.errorProp(ERROR_MSG_FILE_INVALID_OUTPUTFIELD)
+        .replace("PATH_FIELD", E2ETestUtils.pluginProp(pathField));
+      String actualErrorMessage = E2ETestUtils.findPropertyErrorElement("pathField").getText();
       Assert.assertEquals(expectedErrorMessage, actualErrorMessage);
-      String actualColor = CdapUtils.getErrorColor(CdapUtils.findPropertyErrorElement("pathField"));
-      String expectedColor = CdapUtils.errorProp(ERROR_MSG_COLOR);
+      String actualColor = E2ETestUtils.getErrorColor(E2ETestUtils.findPropertyErrorElement("pathField"));
+      String expectedColor = E2ETestUtils.errorProp(ERROR_MSG_COLOR);
       Assert.assertEquals(expectedColor, actualColor);
   }
 
@@ -372,7 +372,7 @@ public class FileConnector implements CdfHelper {
   public void verifyGetSchemaFailsWithError() {
       CdfBigQueryPropertiesActions.getSchema();
       SeleniumHelper.waitElementIsVisible(CdfFileLocators.getSchemaLoadComplete, 10L);
-      String expectedErrorMessage = CdapUtils.errorProp(ERROR_MSG_ERROR_FOUND_VALIDATION);
+      String expectedErrorMessage = E2ETestUtils.errorProp(ERROR_MSG_ERROR_FOUND_VALIDATION);
       String actualErrorMessage = CdfStudioLocators.pluginValidationErrorMsg.getText();
       Assert.assertEquals(expectedErrorMessage, actualErrorMessage);
   }
