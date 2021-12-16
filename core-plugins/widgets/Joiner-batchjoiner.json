@@ -131,6 +131,19 @@
           }
         }
       ]
+    },
+    {
+      "label": "ELT Transformation Pushdown",
+      "properties": [
+        {
+          "widget-type": "multiple-input-stage-selector",
+          "label": "Input with Larger Data Skew",
+          "name": "mostSkewedInput",
+          "widget-attributes": {
+            "singleSelectOnly": "true"
+          }
+        }
+      ]
     }
   ],
   "filters": [

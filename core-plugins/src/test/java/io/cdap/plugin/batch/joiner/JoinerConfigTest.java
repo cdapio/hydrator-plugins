@@ -440,4 +440,62 @@ public class JoinerConfigTest {
     }
   }
 
+  @Test
+  public void testJoinerConfigWithMostSkewedInput() {
+    JoinerConfig config;
+    Joiner joiner;
+    FailureCollector collector;
+    AutoJoinerContext autoJoinerContext;
+    JoinDefinition joinDefinition;
+
+    // Test stages reordering - film
+    config = new JoinerConfig("film.film_id=filmActor.film_id=filmCategory.film_id&" +
+                                "film.film_name=filmActor.film_name=filmCategory.film_name",
+                              SELECTED_FIELDS,
+                              "film,filmActor,filmCategory",
+                              "film");
+
+    joiner = new Joiner(config);
+    collector = new MockFailureCollector();
+    autoJoinerContext = new MockAutoJoinerContext(INPUT_STAGES, collector);
+
+    joinDefinition = joiner.define(autoJoinerContext);
+    Assert.assertNotNull(joinDefinition);
+    Assert.assertNotNull(joinDefinition.getStages());
+    Assert.assertEquals("film", joinDefinition.getStages().get(0).getStageName());
+
+    // Test stages reordering - filmActor
+    config = new JoinerConfig("film.film_id=filmActor.film_id=filmCategory.film_id&" +
+                                "film.film_name=filmActor.film_name=filmCategory.film_name",
+                              SELECTED_FIELDS,
+                              "film,filmActor,filmCategory",
+                              "filmActor");
+
+    joiner = new Joiner(config);
+    collector = new MockFailureCollector();
+    autoJoinerContext = new MockAutoJoinerContext(INPUT_STAGES, collector);
+
+    joinDefinition = joiner.define(autoJoinerContext);
+    Assert.assertNotNull(joinDefinition);
+    Assert.assertNotNull(joinDefinition.getStages());
+    Assert.assertEquals("filmActor", joinDefinition.getStages().get(0).getStageName());
+
+    // Test stages reordering - filmCategory
+    config = new JoinerConfig("film.film_id=filmActor.film_id=filmCategory.film_id&" +
+                                "film.film_name=filmActor.film_name=filmCategory.film_name",
+                              SELECTED_FIELDS,
+                              "film,filmActor,filmCategory",
+                              "filmCategory");
+
+    joiner = new Joiner(config);
+    collector = new MockFailureCollector();
+    autoJoinerContext = new MockAutoJoinerContext(INPUT_STAGES, collector);
+
+    joinDefinition = joiner.define(autoJoinerContext);
+    Assert.assertNotNull(joinDefinition);
+    Assert.assertNotNull(joinDefinition.getStages());
+    Assert.assertEquals("filmCategory", joinDefinition.getStages().get(0).getStageName());
+
+  }
+
 }
