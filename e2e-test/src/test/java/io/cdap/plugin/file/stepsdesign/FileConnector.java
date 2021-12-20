@@ -46,10 +46,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static io.cdap.plugin.utils.GCConstants.ERROR_MSG_COLOR;
-import static io.cdap.plugin.utils.GCConstants.ERROR_MSG_ERROR_FOUND_VALIDATION;
-import static io.cdap.plugin.utils.GCConstants.ERROR_MSG_FILE_INVALID_OUTPUTFIELD;
-import static io.cdap.plugin.utils.GCConstants.ERROR_MSG_VALIDATION;
+import static io.cdap.plugin.utils.E2ETestConstants.ERROR_MSG_COLOR;
+import static io.cdap.plugin.utils.E2ETestConstants.ERROR_MSG_ERROR_FOUND_VALIDATION;
+import static io.cdap.plugin.utils.E2ETestConstants.ERROR_MSG_FILE_INVALID_OUTPUTFIELD;
+import static io.cdap.plugin.utils.E2ETestConstants.ERROR_MSG_VALIDATION;
 
 /**
  * File Connector related Step design.
