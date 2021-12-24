@@ -26,7 +26,7 @@ import org.junit.runner.RunWith;
 @CucumberOptions(
         features = {"src/test/features"},
         glue = {"io.cdap.plugin.file.stepsdesign", "stepsdesign"},
-        tags = {"@File1"},
+        tags = {"@File"},
         monochrome = true,
         plugin = {"pretty", "html:target/cucumber-html-report", "json:target/cucumber-reports/cucumber.json",
           "junit:target/cucumber-reports/cucumber.xml"}

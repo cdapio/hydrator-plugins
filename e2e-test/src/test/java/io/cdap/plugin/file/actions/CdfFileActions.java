@@ -17,6 +17,7 @@
 package io.cdap.plugin.file.actions;
 
 import io.cdap.e2e.pages.locators.CdfBigQueryPropertiesLocators;
+import io.cdap.e2e.pages.locators.CdfStudioLocators;
 import io.cdap.e2e.utils.SeleniumDriver;
 import io.cdap.e2e.utils.SeleniumHelper;
 import io.cdap.plugin.file.locators.CdfFileLocators;
@@ -39,10 +40,12 @@ public class CdfFileActions {
   public static void enterFileBucket(String filepath) throws IOException {
     CdfFileLocators.filePath.sendKeys(filepath);
   }
+
   public static void selectFile() throws InterruptedException {
-    SeleniumHelper.waitElementIsVisible(CdfFileLocators.fileBucket);
-    CdfFileLocators.fileBucket.click();
+    SeleniumHelper.waitElementIsVisible(CdfFileLocators.fileBatchSource);
+    CdfFileLocators.fileBatchSource.click();
   }
+
   public static void enterSampleSize(String sampleSize) {
     CdfFileLocators.sampleSize.sendKeys(sampleSize);
   }
@@ -86,7 +89,7 @@ public class CdfFileActions {
   }
 
   public static void clickPreviewData() {
-    SeleniumHelper.waitAndClick(CdfFileLocators.filePreviewData);
+    SeleniumHelper.waitAndClick(CdfFileLocators.bqPreviewData);
   }
 
   public static void enterDelimiterField(String delimiter) {
@@ -103,5 +106,9 @@ public class CdfFileActions {
 
   public static void clickValidateButton() {
     CdfFileLocators.validateButton.click();
+  }
+
+  public static void clickPreviewPropertiesTab() {
+    CdfFileLocators.previewPropertiesTab.click();
   }
 }

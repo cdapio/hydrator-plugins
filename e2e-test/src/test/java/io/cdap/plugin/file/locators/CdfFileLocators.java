@@ -19,6 +19,8 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.How;
 
+import java.util.List;
+
 /**
  * File Connector Locators.
  */
@@ -50,7 +52,7 @@ public class CdfFileLocators {
   public static WebElement getSchemaButton;
 
   @FindBy(how = How.XPATH, using = "//*[@data-cy=\"plugin-File-batchsource\"]")
-  public static WebElement fileBucket;
+  public static WebElement fileBatchSource;
 
   @FindBy(how = How.XPATH, using = "//*[contains(@class,'plugin-endpoint_File')]")
   public static WebElement fromFile;
@@ -87,4 +89,30 @@ public class CdfFileLocators {
 
   @FindBy(how = How.XPATH, using = "//*[@data-cy='fileRegex'and @class='MuiInputBase-input']")
   public static WebElement regexPath;
+
+  @FindBy(how = How.XPATH, using = "//*[@role='tablist']/li[contains(text(),'Properties')]")
+  public static WebElement previewPropertiesTab;
+
+  @FindBy(how = How.XPATH,
+    using = "//div[@data-cy='Output Schema']//div[@data-cy='schema-fields-list']//*[@placeholder='Field name']")
+  public static List<WebElement> outputSchemaColumnNames;
+
+  @FindBy(how = How.XPATH,
+    using = "//div[@data-cy='Output Schema']//div[@data-cy='schema-fields-list']//select")
+  public static List<WebElement> outputSchemaDataTypes;
+
+  @FindBy(how = How.XPATH,
+    using = "//div[@data-cy='Input Schema']//div[@data-cy='schema-fields-list']//*[@placeholder='Field name']")
+  public static List<WebElement> inputSchemaColumnNames;
+
+  @FindBy(how = How.XPATH,
+    using = "//div[@data-cy='Input Schema']//div[@data-cy='schema-fields-list']//select")
+  public static List<WebElement> inputSchemaDataTypes;
+
+  @FindBy(how = How.XPATH, using = "(//h2[text()='Input Records']/parent::div/div/div/div/div)[1]//div[text()!='']")
+  public static List<WebElement> previewInputRecordColumnNames;
+
+  @FindBy(how = How.XPATH, using =
+    "//*[@data-cy='BigQueryTable-preview-data-btn' and @class='node-preview-data-btn ng-scope']")
+  public static WebElement bqPreviewData;
 }

@@ -25,9 +25,6 @@ import org.openqa.selenium.WebElement;
 import java.io.IOException;
 import java.util.Properties;
 
-import static io.cdap.plugin.utils.E2ETestConstants.ERROR_MSG_COLOR;
-import static io.cdap.plugin.utils.E2ETestConstants.ERROR_MSG_MANDATORY;
-
 /**
  * E2ETestUtils contains the helper functions.
  */
@@ -55,12 +52,12 @@ public class E2ETestUtils {
   }
 
   public static void validateMandatoryPropertyError(String property) {
-    String expectedErrorMessage = errorProp(ERROR_MSG_MANDATORY)
+    String expectedErrorMessage = errorProp(E2ETestConstants.ERROR_MSG_MANDATORY)
       .replaceAll("PROPERTY", property);
     String actualErrorMessage = findPropertyErrorElement(property).getText();
     Assert.assertEquals(expectedErrorMessage, actualErrorMessage);
     String actualColor = E2ETestUtils.getErrorColor(E2ETestUtils.findPropertyErrorElement(property));
-    String expectedColor = E2ETestUtils.errorProp(ERROR_MSG_COLOR);
+    String expectedColor = E2ETestUtils.errorProp(E2ETestConstants.ERROR_MSG_COLOR);
     Assert.assertEquals(expectedColor, actualColor);
   }
 
