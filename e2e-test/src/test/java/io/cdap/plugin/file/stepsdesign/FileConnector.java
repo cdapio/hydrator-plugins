@@ -26,6 +26,7 @@ import io.cdap.e2e.utils.SeleniumDriver;
 import io.cdap.e2e.utils.SeleniumHelper;
 import io.cdap.plugin.file.actions.CdfFileActions;
 import io.cdap.plugin.file.locators.CdfFileLocators;
+import io.cdap.plugin.utils.E2ETestConstants;
 import io.cdap.plugin.utils.E2ETestUtils;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -42,21 +43,19 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-
-import static io.cdap.plugin.utils.E2ETestConstants.ERROR_MSG_COLOR;
-import static io.cdap.plugin.utils.E2ETestConstants.ERROR_MSG_ERROR_FOUND_VALIDATION;
-import static io.cdap.plugin.utils.E2ETestConstants.ERROR_MSG_FILE_INVALID_OUTPUTFIELD;
-import static io.cdap.plugin.utils.E2ETestConstants.ERROR_MSG_VALIDATION;
 
 /**
  * File Connector related Step design.
  **/
 
 public class FileConnector implements CdfHelper {
-  List<String> propertiesOutputSchema = new ArrayList<String>();
+  List<String> propertiesSchemaColumnList = new ArrayList<>();
+  Map<String, String> sourcePropertiesOutputSchema = new HashMap<>();
 
   @Given("Open Datafusion Project to configure pipeline")
   public void openDatafusionProjectToConfigurePipeline() throws IOException, InterruptedException {
@@ -90,6 +89,8 @@ public class FileConnector implements CdfHelper {
     } else if (property.equalsIgnoreCase("format")) {
       CdfFileActions.enterReferenceName();
       CdfFileActions.enterFileBucket(E2ETestUtils.pluginProp("fileCsvFilePath"));
+    } else {
+      Assert.fail("Invalid File Connector Mandatory Field : " + property);
     }
   }
 
@@ -100,7 +101,7 @@ public class FileConnector implements CdfHelper {
     E2ETestUtils.validateMandatoryPropertyError(property);
   }
 
-  @Then("Connect Source as {string} and sink as {string} to establish connection")
+  @Then("Connect source as {string} and sink as {string} to establish connection")
   public void connectSourceAsAndSinkAsToEstablishConnection(String source, String sink) {
     CdfStudioActions.connectSourceAndSink(source, sink);
   }
@@ -113,6 +114,24 @@ public class FileConnector implements CdfHelper {
     CdfFileActions.selectFormat(E2ETestUtils.pluginProp(format));
     CdfFileActions.enterSampleSize(E2ETestUtils.pluginProp("fileSampleSize"));
     CdfFileActions.skipHeader();
+  }
+
+  @Then("Enter the File connector Properties with file path {string} format {string} and fileSampleSize {string}")
+  public void enterTheFileConnectorPropertiesWithFilePathFormatAndFileSampleSize
+    (String filePath, String format, String sampleSize) throws IOException, InterruptedException {
+    CdfFileActions.enterReferenceName();
+    CdfFileActions.enterFileBucket(E2ETestUtils.pluginProp(filePath));
+    CdfFileActions.selectFormat(E2ETestUtils.pluginProp(format));
+    CdfFileActions.enterSampleSize(E2ETestUtils.pluginProp(sampleSize));
+    CdfFileActions.skipHeader();
+  }
+
+  @Then("Enter the File connector Properties with file path {string} and format {string} without Skipheader")
+  public void enterTheFileConnectorPropertiesWithFilePathAndFormatWithoutSkipheader(String filePath, String format)
+    throws IOException, InterruptedException {
+    CdfFileActions.enterReferenceName();
+    CdfFileActions.enterFileBucket(E2ETestUtils.pluginProp(filePath));
+    CdfFileActions.selectFormat(E2ETestUtils.pluginProp(format));
   }
 
   @Then("Enter the File connector Properties with file path {string} and format {string} with Path Field {string}")
@@ -157,21 +176,22 @@ public class FileConnector implements CdfHelper {
   public void captureAndValidateOutputSchema() {
     CdfFileActions.getSchema();
     SeleniumHelper.waitElementIsVisible(CdfFileLocators.getSchemaLoadComplete, 10L);
-    Assert.assertFalse(SeleniumHelper.isElementPresent(CdfStudioLocators.pluginValidationErrorMsg));
-    By schemaXpath = By.xpath("//div[@data-cy='schema-fields-list']//*[@placeholder='Field name']");
-    SeleniumHelper.waitElementIsVisible(SeleniumDriver.getDriver().findElement(schemaXpath), 2L);
-    List<WebElement> propertiesOutputSchemaElements = SeleniumDriver.getDriver().findElements(schemaXpath);
-    for (WebElement element : propertiesOutputSchemaElements) {
-      propertiesOutputSchema.add(element.getAttribute("value"));
+    SeleniumHelper.waitElementIsVisible(CdfFileLocators.outputSchemaColumnNames.get(0), 2L);
+    int index = 0;
+    for (WebElement element : CdfFileLocators.outputSchemaColumnNames) {
+      propertiesSchemaColumnList.add(element.getAttribute("value"));
+      sourcePropertiesOutputSchema.put(element.getAttribute("value"),
+                                       CdfFileLocators.outputSchemaDataTypes.get(index).getAttribute("title"));
+      index++;
     }
-    Assert.assertTrue(propertiesOutputSchema.size() >= 1);
+    Assert.assertTrue(propertiesSchemaColumnList.size() >= 1);
   }
 
   @Then("Validate File connector properties")
   public void validateFileConnectorProperties() {
     CdfFileActions.clickValidateButton();
     SeleniumHelper.waitElementIsVisible(CdfStudioLocators.pluginValidationSuccessMsg, 10L);
-    String expectedErrorMessage = E2ETestUtils.errorProp(ERROR_MSG_VALIDATION);
+    String expectedErrorMessage = E2ETestUtils.errorProp(E2ETestConstants.ERROR_MSG_VALIDATION);
     String actualErrorMessage = CdfStudioLocators.pluginValidationSuccessMsg.getText();
     Assert.assertEquals(expectedErrorMessage, actualErrorMessage);
   }
@@ -200,7 +220,7 @@ public class FileConnector implements CdfHelper {
   @Then("Validate BigQuery properties")
   public void validateBigQueryProperties() {
     CdfFileActions.clickValidateButton();
-    String expectedErrorMessage = E2ETestUtils.errorProp(ERROR_MSG_VALIDATION);
+    String expectedErrorMessage = E2ETestUtils.errorProp(E2ETestConstants.ERROR_MSG_VALIDATION);
     String actualErrorMessage = CdfStudioLocators.pluginValidationSuccessMsg.getText();
     Assert.assertEquals(expectedErrorMessage, actualErrorMessage);
   }
@@ -241,6 +261,11 @@ public class FileConnector implements CdfHelper {
     CdfFileActions.clickPreviewData();
   }
 
+  @Then("Click on PreviewData for BigQuery connector")
+  public void clickOnPreviewDataForBigQueryConnector() {
+    CdfFileActions.clickPreviewData();
+  }
+
   @Then("Save and Deploy Pipeline")
   public void saveAndDeployPipeline() {
     CdfStudioActions.pipelineName();
@@ -274,13 +299,20 @@ public class FileConnector implements CdfHelper {
 
   @Then("Verify Preview output schema matches the outputSchema captured in properties")
   public void verifyPreviewOutputSchemaMatchesTheOutputSchemaCapturedInProperties() {
-    List<String> previewOutputSchema = new ArrayList<String>();
-    List<WebElement> previewOutputSchemaElements = SeleniumDriver.getDriver().findElements(
-      By.xpath("(//h2[text()='Output Records']/parent::div/div/div/div/div)[1]//div[text()!='']"));
-    for (WebElement element : previewOutputSchemaElements) {
-      previewOutputSchema.add(element.getAttribute("title"));
+    List<String> previewSchemaColumnList = new ArrayList<>();
+    for (WebElement element : CdfFileLocators.previewInputRecordColumnNames) {
+      previewSchemaColumnList.add(element.getAttribute("title"));
     }
-    Assert.assertTrue(previewOutputSchema.equals(propertiesOutputSchema));
+    Assert.assertTrue(previewSchemaColumnList.equals(propertiesSchemaColumnList));
+    CdfFileActions.clickPreviewPropertiesTab();
+    Map<String, String> previewSinkInputSchema = new HashMap<>();
+    int index = 0;
+    for (WebElement element : CdfFileLocators.inputSchemaColumnNames) {
+      previewSinkInputSchema.put(element.getAttribute("value"),
+                                 CdfFileLocators.inputSchemaDataTypes.get(index).getAttribute("title"));
+      index++;
+    }
+    Assert.assertTrue(previewSinkInputSchema.equals(sourcePropertiesOutputSchema));
   }
 
   @Then("Close the Preview")
@@ -313,7 +345,7 @@ public class FileConnector implements CdfHelper {
   public void getCountOfNoOfRecordsTransferredToBigQueryIn(String tableName) throws IOException, InterruptedException {
     int countRecords = GcpClient.countBqQuery(E2ETestUtils.pluginProp(tableName));
     BeforeActions.scenario.write("**********No of Records Transferred******************:" + countRecords);
-    Assert.assertTrue(countRecords > 0);
+    Assert.assertEquals(countRecords, recordOut());
   }
 
   @Then("Delete the table {string}")
@@ -334,7 +366,7 @@ public class FileConnector implements CdfHelper {
     if (result.isPresent()) {
       pathFromBQTable = result.get();
     }
-    BeforeActions.scenario.write("GCC bucket path in BQ Table :" + pathFromBQTable);
+    BeforeActions.scenario.write("File path in BQ Table :" + pathFromBQTable);
     Assert.assertEquals("file:" + E2ETestUtils.pluginProp(filePath), pathFromBQTable);
   }
 
@@ -359,12 +391,12 @@ public class FileConnector implements CdfHelper {
   public void verifyOutputPathFieldErrorMessageForIncorrectPathField(String pathField) {
       CdfBigQueryPropertiesActions.getSchema();
       SeleniumHelper.waitElementIsVisible(CdfFileLocators.getSchemaLoadComplete, 10L);
-      String expectedErrorMessage = E2ETestUtils.errorProp(ERROR_MSG_FILE_INVALID_OUTPUTFIELD)
+      String expectedErrorMessage = E2ETestUtils.errorProp(E2ETestConstants.ERROR_MSG_FILE_INVALID_OUTPUTFIELD)
         .replace("PATH_FIELD", E2ETestUtils.pluginProp(pathField));
       String actualErrorMessage = E2ETestUtils.findPropertyErrorElement("pathField").getText();
       Assert.assertEquals(expectedErrorMessage, actualErrorMessage);
       String actualColor = E2ETestUtils.getErrorColor(E2ETestUtils.findPropertyErrorElement("pathField"));
-      String expectedColor = E2ETestUtils.errorProp(ERROR_MSG_COLOR);
+      String expectedColor = E2ETestUtils.errorProp(E2ETestConstants.ERROR_MSG_COLOR);
       Assert.assertEquals(expectedColor, actualColor);
   }
 
@@ -372,7 +404,7 @@ public class FileConnector implements CdfHelper {
   public void verifyGetSchemaFailsWithError() {
       CdfBigQueryPropertiesActions.getSchema();
       SeleniumHelper.waitElementIsVisible(CdfFileLocators.getSchemaLoadComplete, 10L);
-      String expectedErrorMessage = E2ETestUtils.errorProp(ERROR_MSG_ERROR_FOUND_VALIDATION);
+      String expectedErrorMessage = E2ETestUtils.errorProp(E2ETestConstants.ERROR_MSG_ERROR_FOUND_VALIDATION);
       String actualErrorMessage = CdfStudioLocators.pluginValidationErrorMsg.getText();
       Assert.assertEquals(expectedErrorMessage, actualErrorMessage);
   }

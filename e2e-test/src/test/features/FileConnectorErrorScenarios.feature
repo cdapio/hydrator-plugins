@@ -18,7 +18,7 @@ Feature: Verify File plugin error scenarios
     Given Open Datafusion Project to configure pipeline
     When Source is File connector
     When Target is BigQuery
-    Then Connect Source as "File" and sink as "BigQuery" to establish connection
+    Then Connect source as "File" and sink as "BigQuery" to establish connection
     Then Open File connector properties
     Then Enter the File connector Properties with file path "fileCsvFilePath" and format "fileCSVFileFormat" with regex path filter "fileIncorrectRegexPath"
     Then Capture and validate output schema

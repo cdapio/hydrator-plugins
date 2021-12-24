@@ -1,5 +1,5 @@
 Feature: Validate File plugin output schema for different formats
-  @File
+  @File1
   Scenario Outline:FILE Source output schema validation
     Given Open Datafusion Project to configure pipeline
     When Source is File connector
@@ -12,7 +12,7 @@ Feature: Validate File plugin output schema for different formats
       | fileTsvFilePath           | fileTSVFileFormat      |
       | fileBlobFilePath          | fileBlobFileFormat     |
 
-  @File
+  @File1
   Scenario Outline:FILE Source output schema validation for delimited files
     Given Open Datafusion Project to configure pipeline
     When Source is File connector
