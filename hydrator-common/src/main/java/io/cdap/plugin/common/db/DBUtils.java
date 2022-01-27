@@ -330,15 +330,10 @@ public final class DBUtils {
         if (handleAsDecimal) {
           return Schema.decimalOf(precision, scale);
         } else {
-          //SQL DECIMAL can be 5 - 17 bytes, not all can be held in a long
-          if (precision >= 19) {
-            throw new SQLException(
-              new UnsupportedTypeException(String.format("Unsupported SQL Type %s. Unable to store column %s as long." +
-                                                           " Current precision is %d, it has to be less than 19.",
-                                                         typeName, columnName, precision)));
-          }
+
           // if there are no digits after the point, use integer types
-          type = scale != 0 ? Schema.Type.DOUBLE :
+          //SQL DECIMAL can be 5 - 17 bytes, not all can be held in a long
+          type = scale != 0 || precision >= 19 ? Schema.Type.DOUBLE :
             // with 10 digits we can represent 2^32 and LONG is required
             precision > 9 ? Schema.Type.LONG : Schema.Type.INT;
           break;
