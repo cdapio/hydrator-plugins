@@ -52,6 +52,9 @@ import java.util.Properties;
  */
 public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<K, V> {
   public static final String AUTO_COMMIT_ENABLED = "io.cdap.hydrator.db.output.autocommit.enabled";
+  // Batch size before submitting a batch to the SQL engine. If set to 0, no batches will be submitted until commit.
+  public static final String COMMIT_BATCH_SIZE = "io.cdap.plugin.db.output.commit.batch.size";
+  public static final int DEFAULT_COMMIT_BATCH_SIZE = 1000;
 
   private static final Logger LOG = LoggerFactory.getLogger(ETLDBOutputFormat.class);
   private Configuration conf;
@@ -64,6 +67,7 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
     DBConfiguration dbConf = new DBConfiguration(conf);
     String tableName = dbConf.getOutputTableName();
     String[] fieldNames = dbConf.getOutputFieldNames();
+    final int batchSize = conf.getInt(COMMIT_BATCH_SIZE, DEFAULT_COMMIT_BATCH_SIZE);
 
     if (fieldNames == null) {
       fieldNames = new String[dbConf.getOutputFieldCount()];
@@ -76,6 +80,7 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
 
         private boolean emptyData = true;
         private long bytesWritten = 0;
+        private long recordsWritten = 0;
 
         //Implementation of the close method below is the exact implementation in DBOutputFormat except that
         //we check if there is any data to be written and if not, we skip executeBatch call.
@@ -121,6 +126,23 @@ public class ETLDBOutputFormat<K extends DBWritable, V>  extends DBOutputFormat<
           if (value instanceof DataSizeReporter) {
             bytesWritten += ((DataSizeReporter) value).getBytesWritten();
           }
+          recordsWritten++;
+
+          // Submit a batch to the SQL engine every 10k records
+          // This is done to reduce memory usage in the worker, as processed records can now be GC'd.
+          try {
+            if (batchSize > 0 && recordsWritten % batchSize == 0) {
+              getStatement().executeBatch();
+            }
+          } catch (SQLException e) {
+            try {
+              getConnection().rollback();
+            } catch (SQLException ex) {
+              LOG.warn(StringUtils.stringifyException(ex));
+            }
+            throw new IOException(e);
+          }
+
           emptyData = false;
         }
       };
