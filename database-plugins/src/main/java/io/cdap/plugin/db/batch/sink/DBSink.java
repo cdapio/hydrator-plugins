@@ -35,6 +35,7 @@ import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
+import io.cdap.cdap.etl.api.action.SettableArguments;
 import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
 import io.cdap.cdap.etl.api.batch.BatchSink;
 import io.cdap.cdap.etl.api.batch.BatchSinkContext;
@@ -127,8 +128,9 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
     } finally {
       DBUtils.cleanup(driverClass);
     }
+
     context.addOutput(Output.of(dbSinkConfig.getReferenceName(),
-                                new DBOutputFormatProvider(dbSinkConfig, driverClass)));
+                                new DBOutputFormatProvider(dbSinkConfig, driverClass, context.getArguments())));
 
     Schema schema = context.getInputSchema();
     if (schema != null && schema.getFields() != null) {
@@ -260,7 +262,9 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
   private static class DBOutputFormatProvider implements OutputFormatProvider {
     private final Map<String, String> conf;
 
-    DBOutputFormatProvider(DBSinkConfig dbSinkConfig, Class<? extends Driver> driverClass) {
+    DBOutputFormatProvider(DBSinkConfig dbSinkConfig,
+                           Class<? extends Driver> driverClass,
+                           SettableArguments pipelineArguments) {
       this.conf = new HashMap<>();
 
       conf.put(ETLDBOutputFormat.AUTO_COMMIT_ENABLED, String.valueOf(dbSinkConfig.getEnableAutoCommit()));
@@ -280,6 +284,11 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
       }
       conf.put(DBConfiguration.OUTPUT_TABLE_NAME_PROPERTY, dbSinkConfig.tableName);
       conf.put(DBConfiguration.OUTPUT_FIELD_NAMES_PROPERTY, dbSinkConfig.columns);
+
+      // Configure batch size for commit operations is specified.
+      if (pipelineArguments.has(ETLDBOutputFormat.COMMIT_BATCH_SIZE)) {
+        conf.put(ETLDBOutputFormat.COMMIT_BATCH_SIZE, pipelineArguments.get(ETLDBOutputFormat.COMMIT_BATCH_SIZE));
+      }
     }
 
     @Override
