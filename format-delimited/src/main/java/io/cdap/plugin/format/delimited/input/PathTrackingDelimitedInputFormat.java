@@ -93,6 +93,7 @@ public class PathTrackingDelimitedInputFormat extends PathTrackingInputFormat {
             int numDataFields = 0;
             splitsIterator = getSplitsIterator(enableQuotesValue, delimitedString, delimiter);
             while (splitsIterator.hasNext()) {
+              splitsIterator.next();
               numDataFields++;
             }
             int numSchemaFields = schema.getFields().size();

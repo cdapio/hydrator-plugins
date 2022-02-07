@@ -75,6 +75,7 @@ public class FileTypeDetector {
           || "application/avro".equalsIgnoreCase(type)
           || "application/protobuf".equalsIgnoreCase(type)
           || "application/excel".equalsIgnoreCase(type)
+          || "application/parquet".equalsIgnoreCase(type)
           || type.contains("image/")
           || type.contains("text/")) {
       return true;
@@ -114,10 +115,23 @@ public class FileTypeDetector {
   }
 
   public static FileFormat detectFileFormat(String fileType) {
-    // hack for file format, only has text and blob now, json and text are considered to use TEXT, others use BLOB
-    if (fileType.contains("text/") || fileType.equals("application/json")) {
-      return FileFormat.TEXT;
+    switch(fileType) {
+      case "text/csv":
+        return FileFormat.CSV;
+      case "application/json":
+        return FileFormat.JSON;
+      case "text/tab-separated-values":
+        return FileFormat.TSV;
+      case "application/avro":
+        return FileFormat.AVRO;
+      case "application/parquet":
+        return FileFormat.PARQUET;
+      default:
+        // If the file does not start with "text/", the system will default to BLOB
+        if (fileType.contains("text/")) {
+          return FileFormat.TEXT;
+        }
+        return FileFormat.BLOB;
     }
-    return FileFormat.BLOB;
   }
 }

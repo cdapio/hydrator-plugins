@@ -17,15 +17,21 @@
 
 package io.cdap.plugin.format.connector;
 
+import com.google.gson.Gson;
+import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.data.batch.InputFormatProvider;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.plugin.PluginConfig;
 import io.cdap.cdap.api.plugin.PluginProperties;
 import io.cdap.cdap.etl.api.batch.BatchConnector;
+import io.cdap.cdap.etl.api.connector.BrowseEntity;
+import io.cdap.cdap.etl.api.connector.BrowseEntityPropertyValue;
+import io.cdap.cdap.etl.api.connector.BrowseEntityTypeInfo;
 import io.cdap.cdap.etl.api.connector.ConnectorContext;
 import io.cdap.cdap.etl.api.connector.ConnectorSpec;
 import io.cdap.cdap.etl.api.connector.ConnectorSpecRequest;
+import io.cdap.cdap.etl.api.connector.SamplePropertyField;
 import io.cdap.cdap.etl.api.connector.SampleRequest;
 import io.cdap.cdap.etl.api.validation.FormatContext;
 import io.cdap.cdap.etl.api.validation.ValidatingInputFormat;
@@ -34,6 +40,7 @@ import io.cdap.plugin.common.SourceInputFormatProvider;
 import io.cdap.plugin.common.batch.JobUtils;
 import io.cdap.plugin.common.batch.ThrowableFunction;
 import io.cdap.plugin.format.FileFormat;
+import io.cdap.plugin.format.plugin.FileSourceProperties;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -44,8 +51,15 @@ import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -58,18 +72,61 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
   // we do not want offset field in the schema
   private static final String DEFAULT_TEXT_SCHEMA =
     Schema.recordOf("text", Schema.Field.of("body", Schema.of(Schema.Type.STRING))).toString();
-
+  private static final Gson GSON = new Gson();
   private final T config;
+
+  static final String SAMPLE_FORMAT_KEY = "format";
+  static final String SAMPLE_DELIMITER_KEY = "delimiter";
+  static final String SAMPLE_FILE_ENCODING_KEY = "fileEncoding";
+  static final String SAMPLE_FILE_ENCODING_DEFAULT = "UTF-8";
+  static final String SAMPLE_SKIP_HEADER_KEY = "skipHeader";
+  static final List<String> SAMPLE_FIELD_NAMES = Arrays.asList(SAMPLE_FORMAT_KEY, SAMPLE_DELIMITER_KEY,
+                                                               SAMPLE_FILE_ENCODING_KEY, SAMPLE_SKIP_HEADER_KEY);
+
+  private final Set<BrowseEntityTypeInfo> sampleProperties;
 
   protected AbstractFileConnector(T config) {
     this.config = config;
+    this.sampleProperties = new HashSet<>();
+  }
+
+  /**
+   * Adds available sample fields for each different entityType.
+   *
+   * @param entityType
+   * @param fileSourceClass FileSourceProperties class containing the configuration and description of the properties.
+   */
+  protected void initSampleFields(String entityType,  Class<? extends FileSourceProperties> fileSourceClass) {
+    List<Field> sourceFields = new ArrayList<>();
+    for (String sourceFieldName : SAMPLE_FIELD_NAMES) {
+      Class<?> fileClass = fileSourceClass;
+      while (fileClass != null) {
+        try {
+          sourceFields.add(fileClass.getDeclaredField(sourceFieldName));
+          break;
+        } catch (NoSuchFieldException e) {
+          // Check if it's defined in its super class.
+          fileClass = fileClass.getSuperclass();
+        }
+        // Skip sample option as it's not implemented by the source
+      }
+    }
+
+    List<SamplePropertyField> browseEntityTypeInfoList = new ArrayList<>();
+    for (Field field: sourceFields) {
+      browseEntityTypeInfoList.add(
+        new SamplePropertyField(field.getName(),
+                                field.getDeclaredAnnotation(Description.class).value()));
+    }
+    sampleProperties.add(new BrowseEntityTypeInfo(entityType, browseEntityTypeInfoList));
   }
 
   @Override
   public InputFormatProvider getInputFormatProvider(ConnectorContext context,
                                                     SampleRequest sampleRequest) throws IOException {
     String fullPath = getFullPath(sampleRequest.getPath());
-    ValidatingInputFormat inputFormat = getValidatingInputFormat(context, fullPath);
+    Map<String, String> sampleRequestProperties = sampleRequest.getProperties();
+    ValidatingInputFormat inputFormat = getValidatingInputFormat(context, fullPath, sampleRequestProperties);
 
     Job job = JobUtils.createInstance();
     Configuration conf = job.getConfiguration();
@@ -128,7 +185,7 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
     ConnectorSpec.Builder builder = ConnectorSpec.builder();
 
     String path = getFullPath(connectorSpecRequest.getPath());
-    ValidatingInputFormat inputFormat = getValidatingInputFormat(context, path);
+    ValidatingInputFormat inputFormat = getValidatingInputFormat(context, path, connectorSpecRequest.getProperties());
     // TODO: CDAP-18060 in 6.5 this will only have text and blob that will not access the file system,
     //  to support other formats, we need to ensure get schema works
     Schema schema = inputFormat.getSchema(new FormatContext(context.getFailureCollector(), null));
@@ -163,24 +220,75 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
    * @param builder the builder of the spec
    */
   protected void setConnectorSpec(ConnectorSpecRequest request, ConnectorSpec.Builder builder) {
-    // no-op
+    //no op
   }
 
-  private ValidatingInputFormat getValidatingInputFormat(ConnectorContext context, String path) throws IOException {
+  /**
+   * Adds default sampling values to entity.
+   *
+   * @param entity entity to which add the sampling default values
+   * @param fileName name of the file. Used to guess correct format based on extension.
+   */
+  protected void addBrowseSampleDefaultValues(BrowseEntity.Builder entity, String fileName) {
+    entity.addProperty(SAMPLE_FORMAT_KEY, BrowseEntityPropertyValue.builder(
+      FileTypeDetector.detectFileFormat(FileTypeDetector.detectFileType(fileName)).name().toLowerCase(),
+      BrowseEntityPropertyValue.PropertyType.SAMPLE_DEFAULT).build());
+    entity.addProperty(SAMPLE_FILE_ENCODING_KEY, BrowseEntityPropertyValue.builder(
+      SAMPLE_FILE_ENCODING_DEFAULT, BrowseEntityPropertyValue.PropertyType.SAMPLE_DEFAULT).build());
+  }
+
+  /**
+   *
+   * @return Set of available sample properties
+   */
+  protected Set<BrowseEntityTypeInfo> getSampleProperties() {
+    return sampleProperties;
+  }
+
+  /**
+   * Receives a request and returns a map with only the valid sample properties.
+   *
+   * @param request Request containing the sample properties.
+   * @return a Map with chosen sample properties
+   */
+  protected Map<String, String> getAdditionalSpecProperties(ConnectorSpecRequest request) {
+    Map<String, String> requestProperties = request.getProperties();
+    Map<String, String> sampleProperties = new HashMap<>();
+    for (String sampleKey : SAMPLE_FIELD_NAMES) {
+      if (requestProperties.containsKey(sampleKey)) {
+        sampleProperties.put(sampleKey, requestProperties.get(sampleKey));
+      }
+    }
+    return sampleProperties;
+  }
+
+  private ValidatingInputFormat getValidatingInputFormat(ConnectorContext context, String path,
+                                                         Map<String, String> sampleProperties) throws IOException {
+    PluginProperties.Builder builder = PluginProperties.builder();
+    builder.addAll(sampleProperties);
+
     String fileType = FileTypeDetector.detectFileType(path);
     if (!FileTypeDetector.isSampleable(fileType)) {
       throw new IllegalArgumentException(String.format("The given path %s cannot be sampled.", path));
     }
 
-    FileFormat format = FileTypeDetector.detectFileFormat(fileType);
-    PluginProperties.Builder builder = PluginProperties.builder();
     builder.add("path", path);
+    FileFormat format;
+    if (sampleProperties.containsKey("format")) {
+      format = FileFormat.valueOf(sampleProperties.get("format").toUpperCase());
+    } else {
+      format = FileTypeDetector.detectFileFormat(fileType);
+      builder.add("format", format.name());
+    }
+
     if (format.equals(FileFormat.TEXT)) {
       builder.add("schema", DEFAULT_TEXT_SCHEMA);
     }
     builder.addAll(config.getProperties().getProperties());
     builder.addAll(getFileSystemProperties(path));
 
+    // Adding FileSystem properties under its own entry as its used as a config parameter in the plugin.
+    builder.add("fileSystemProperties", GSON.toJson(getFileSystemProperties(path)));
     ValidatingInputFormat inputFormat = context.getPluginConfigurer().usePlugin(
       ValidatingInputFormat.PLUGIN_TYPE, format.name().toLowerCase(), UUID.randomUUID().toString(), builder.build());
 
