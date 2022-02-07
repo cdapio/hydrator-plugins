@@ -8,9 +8,18 @@
       "label": "Connection",
       "properties": [
         {
-          "widget-type": "hidden",
+          "widget-type": "toggle",
+          "label": "Use connection",
           "name": "useConnection",
           "widget-attributes": {
+            "on": {
+              "value": "true",
+              "label": "YES"
+            },
+            "off": {
+              "value": "false",
+              "label": "NO"
+            },
             "default": "false"
           }
         },

@@ -71,6 +71,7 @@ public class DBConnectorConfig extends PluginConfig implements DBConnectorProper
   @Name(JDBC_PLUGIN_NAME)
   @Description("Name of the JDBC plugin to use. This is the value of the 'name' key defined in the JSON file " +
     "for the JDBC plugin.")
+  @Macro
   private String jdbcPluginName;
 
   public DBConnectorConfig(String user, String password, String jdbcPluginName, String connectionString,

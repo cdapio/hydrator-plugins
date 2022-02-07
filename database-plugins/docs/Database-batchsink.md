@@ -18,8 +18,13 @@ Properties
 ----------
 **Reference Name:** Name used to uniquely identify this sink for lineage, annotating metadata, etc.
 
+**Use Connection** Whether to use a connection. If a connection is used, you do not need to provide the credentials.
+
+**Connection** Name of the connection to use. Project and service account information will be provided by the connection.
+You also can use the macro function ${conn(connection-name)}.
+
 **Plugin Name:** Name of the JDBC plugin to use. This is the value of the 'name' key
-defined in the JSON file for the JDBC plugin.
+defined in the JSON file for the JDBC plugin. (Macro-enabled)
 
 **Plugin Type:** Type of the JDBC plugin to use. This is the value of the 'type' key
 defined in the JSON file for the JDBC plugin. Defaults to 'jdbc'.

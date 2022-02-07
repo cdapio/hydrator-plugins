@@ -50,6 +50,7 @@ import io.cdap.plugin.common.db.DBUtils;
 import io.cdap.plugin.db.batch.TransactionIsolationLevel;
 import io.cdap.plugin.db.common.DBBaseConfig;
 import io.cdap.plugin.db.connector.DBConnector;
+import io.cdap.plugin.db.connector.DBConnectorConfig;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapred.lib.db.DBConfiguration;
 import org.slf4j.Logger;
@@ -101,14 +102,16 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
   public void configurePipeline(PipelineConfigurer pipelineConfigurer) {
     super.configurePipeline(pipelineConfigurer);
     FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
-    dbSinkConfig.validate(collector);
-    dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId(), collector);
+    if (dbSinkConfig.containsMacro(DBConnectorConfig.JDBC_PLUGIN_NAME)) {
+      dbManager.validateCredentials(collector);
+    } else {
+      dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId(), collector);
+    }
   }
 
   @Override
   public void prepareRun(BatchSinkContext context) {
     FailureCollector collector = context.getFailureCollector();
-    dbSinkConfig.validate(collector);
     collector.getOrThrowException();
     
     LOG.debug("tableName = {}; pluginType = {}; pluginName = {}; connectionString = {}; columns = {}; " +
@@ -246,17 +249,6 @@ public class DBSink extends ReferenceBatchSink<StructuredRecord, DBRecord, NullW
       "and this setting is set to true. For drivers like that, this should be set to TRANSACTION_NONE.")
     @Macro
     public String transactionIsolationLevel;
-
-    private void validate(FailureCollector collector) {
-      if (getUseConnection()) {
-        collector.addFailure("Database batch sink plugin doesn't support using existing connection.",
-                             "Don't set useConnection property to true.");
-      }
-      if (containsMacro(NAME_CONNECTION)) {
-        collector.addFailure("Database batch sink plugin doesn't support using existing connection.",
-                             "Remove macro in connection property.");
-      }
-    }
   }
 
   private static class DBOutputFormatProvider implements OutputFormatProvider {
