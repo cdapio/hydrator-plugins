@@ -50,6 +50,7 @@ import io.cdap.plugin.common.db.DriverCleanup;
 import io.cdap.plugin.db.batch.TransactionIsolationLevel;
 import io.cdap.plugin.db.common.DBBaseConfig;
 import io.cdap.plugin.db.connector.DBConnector;
+import io.cdap.plugin.db.connector.DBConnectorConfig;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.MRJobConfig;
@@ -101,16 +102,24 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
     super.configurePipeline(pipelineConfigurer);
     FailureCollector collector = pipelineConfigurer.getStageConfigurer().getFailureCollector();
     sourceConfig.validate(collector);
+
+    Schema configuredSchema = sourceConfig.getSchema(collector);
+    if (configuredSchema != null) {
+      pipelineConfigurer.getStageConfigurer().setOutputSchema(configuredSchema);
+    }
+
+    if (sourceConfig.containsMacro(DBConnectorConfig.JDBC_PLUGIN_NAME)) {
+      dbManager.validateCredentials(collector);
+      return;
+    }
+
     Class<? extends Driver> driverClass = dbManager.validateJDBCPluginPipeline(pipelineConfigurer, getJDBCPluginId(),
                                                                                collector);
     // throw exception before deriving schema from database. This is because database schema is derived using import
     // query and its possible that validation failed for import query.
     collector.getOrThrowException();
 
-    Schema configuredSchema = sourceConfig.getSchema(collector);
-    if (configuredSchema != null) {
-      pipelineConfigurer.getStageConfigurer().setOutputSchema(configuredSchema);
-    } else if (!sourceConfig.containsMacro(DBSourceConfig.IMPORT_QUERY)) {
+    if (configuredSchema == null && !sourceConfig.containsMacro(DBSourceConfig.IMPORT_QUERY)) {
       try {
         pipelineConfigurer.getStageConfigurer().setOutputSchema(getSchema(driverClass, sourceConfig.patternToReplace,
                                                                           sourceConfig.replaceWith));
@@ -352,14 +361,6 @@ public class DBSource extends ReferenceBatchSource<LongWritable, DBRecord, Struc
 
     @SuppressWarnings("checkstyle:WhitespaceAround")
     private void validate(FailureCollector collector) {
-      if (getUseConnection()) {
-        collector.addFailure("Database batch source plugin doesn't support using existing connection.",
-                             "Don't set useConnection property to true.");
-      }
-      if (containsMacro(NAME_CONNECTION)) {
-        collector.addFailure("Database batch source plugin doesn't support using existing connection.",
-                             "Remove macro in connection property.");
-      }
       boolean hasOneSplit = false;
       if (!containsMacro(NUM_SPLITS) && numSplits != null) {
         if (numSplits < 1) {

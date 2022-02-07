@@ -53,17 +53,20 @@ public class DBManager implements Destroyable {
       config.connectionArguments), config.jdbcPluginType);
   }
 
-  @Nullable
-  public Class<? extends Driver> validateJDBCPluginPipeline(PipelineConfigurer pipelineConfigurer,
-                                                            String jdbcPluginId, FailureCollector collector) {
+  public void validateCredentials(FailureCollector collector) {
     if (!config.containsMacro(DBConfig.USER) && !config.containsMacro(DBConfig.PASSWORD)
-      && config.getUser() == null && config.getPassword() != null) {
+          && config.getUser() == null && config.getPassword() != null) {
       collector.addFailure("Username and password should be provided together.",
                            "Please provide both a username and password. Or, if the database supports it, remove the " +
                              "password.")
         .withConfigProperty(DBConnectorConfig.USER).withConfigProperty(DBConnectorConfig.PASSWORD);
     }
+  }
 
+  @Nullable
+  public Class<? extends Driver> validateJDBCPluginPipeline(PipelineConfigurer pipelineConfigurer,
+                                                            String jdbcPluginId, FailureCollector collector) {
+    validateCredentials(collector);
     return DBUtils
       .loadJDBCDriverClass(pipelineConfigurer, config.getJdbcPluginName(), jdbcPluginType, jdbcPluginId, collector);
   }

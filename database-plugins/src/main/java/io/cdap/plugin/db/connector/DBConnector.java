@@ -106,13 +106,9 @@ public class DBConnector extends AbstractDBConnector<DBConnectorConfig> implemen
 
   protected void setConnectorSpec(ConnectorSpecRequest request, DBConnectorPath path,
                                   ConnectorSpec.Builder builder) {
-    Map<String, String> rawProperties = config.getRawProperties().getProperties();
     Map<String, String> properties = new HashMap<>();
-    properties.put(DBConnectorConfig.CONNECTION_STRING, rawProperties.get(DBConnectorConfig.CONNECTION_STRING));
-    properties.put(DBConnectorConfig.JDBC_PLUGIN_NAME, rawProperties.get(DBConnectorConfig.JDBC_PLUGIN_NAME));
-    properties.put(DBConnectorConfig.USER, rawProperties.get(DBConnectorConfig.USER));
-    properties.put(DBConnectorConfig.PASSWORD, rawProperties.get(DBConnectorConfig.PASSWORD));
-    properties.put(DBConnectorConfig.CONNECTION_ARGUMENTS, rawProperties.get(DBConnectorConfig.CONNECTION_ARGUMENTS));
+    properties.put(DBBaseConfig.NAME_USE_CONNECTION, "true");
+    properties.put(DBBaseConfig.NAME_CONNECTION, request.getConnectionWithMacro());
     properties.put(DBBaseConfig.JDBC_PLUGIN_TYPE, DBUtils.PLUGIN_TYPE_JDBC);
     if (path.getTable() != null) {
       properties.put(Constants.Reference.REFERENCE_NAME, path.getTable());
