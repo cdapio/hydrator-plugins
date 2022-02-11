@@ -25,17 +25,26 @@ import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageConfigurer;
+import io.cdap.cdap.etl.api.aggregation.DeduplicateAggregationDefinition;
 import io.cdap.cdap.etl.api.batch.BatchAggregator;
 import io.cdap.cdap.etl.api.batch.BatchAggregatorContext;
 import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
+import io.cdap.cdap.etl.api.relational.Engine;
+import io.cdap.cdap.etl.api.relational.ExpressionFactory;
+import io.cdap.cdap.etl.api.relational.InvalidRelation;
+import io.cdap.cdap.etl.api.relational.LinearRelationalTransform;
+import io.cdap.cdap.etl.api.relational.Relation;
+import io.cdap.cdap.etl.api.relational.RelationalTranformContext;
+import io.cdap.cdap.etl.api.relational.StringExpressionFactoryType;
 import io.cdap.plugin.batch.aggregator.function.SelectionFunction;
 import io.cdap.plugin.common.SchemaValidator;
 import io.cdap.plugin.common.TransformLineageRecorderUtils;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import javax.annotation.Nullable;
+
 
 /**
  * Deduplicate aggregator.
@@ -44,7 +53,7 @@ import javax.annotation.Nullable;
 @Name("Deduplicate")
 @Description("Deduplicates input records, optionally restricted to one or more fields. Takes an optional " +
   "filter function to choose one or more records based on a specific field and a selection function.")
-public class DedupAggregator extends RecordReducibleAggregator<StructuredRecord> {
+public class DedupAggregator extends RecordReducibleAggregator<StructuredRecord> implements LinearRelationalTransform {
   private final DedupConfig dedupConfig;
   private List<String> uniqueFields;
   private DedupConfig.DedupFunctionInfo filterFunction;
@@ -190,5 +199,24 @@ public class DedupAggregator extends RecordReducibleAggregator<StructuredRecord>
           .withConfigProperty("filterOperation");
       }
     }
+  }
+
+  @Override
+  public boolean canUseEngine(Engine engine) {
+    Optional<ExpressionFactory<String>> expressionFactory = engine.
+            getExpressionFactory(StringExpressionFactoryType.SQL);
+    return expressionFactory.isPresent();
+  }
+
+  @Override
+  public Relation transform(RelationalTranformContext relationalTranformContext, Relation relation) {
+    DeduplicateAggregationDefinition deduplicateAggregationDefinition = DedupAggregatorUtils
+            .generateAggregationDefinition(relationalTranformContext, relation, filterFunction, uniqueFields);
+
+    if (deduplicateAggregationDefinition == null) {
+      return new InvalidRelation("filterOperation needs to be either min or max");
+    }
+
+    return relation.deduplicate(deduplicateAggregationDefinition);
   }
 }
