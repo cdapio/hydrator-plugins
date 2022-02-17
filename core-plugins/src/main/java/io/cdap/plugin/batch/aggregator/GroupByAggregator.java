@@ -16,6 +16,7 @@
 
 package io.cdap.plugin.batch.aggregator;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Name;
 import io.cdap.cdap.api.annotation.Plugin;
@@ -25,11 +26,20 @@ import io.cdap.cdap.etl.api.Emitter;
 import io.cdap.cdap.etl.api.FailureCollector;
 import io.cdap.cdap.etl.api.PipelineConfigurer;
 import io.cdap.cdap.etl.api.StageConfigurer;
+import io.cdap.cdap.etl.api.aggregation.GroupByAggregationDefinition;
 import io.cdap.cdap.etl.api.batch.BatchAggregator;
 import io.cdap.cdap.etl.api.batch.BatchAggregatorContext;
 import io.cdap.cdap.etl.api.batch.BatchRuntimeContext;
 import io.cdap.cdap.etl.api.lineage.field.FieldOperation;
 import io.cdap.cdap.etl.api.lineage.field.FieldTransformOperation;
+import io.cdap.cdap.etl.api.relational.CoreExpressionCapabilities;
+import io.cdap.cdap.etl.api.relational.Expression;
+import io.cdap.cdap.etl.api.relational.ExpressionFactory;
+import io.cdap.cdap.etl.api.relational.InvalidRelation;
+import io.cdap.cdap.etl.api.relational.LinearRelationalTransform;
+import io.cdap.cdap.etl.api.relational.Relation;
+import io.cdap.cdap.etl.api.relational.RelationalTranformContext;
+import io.cdap.cdap.etl.api.relational.StringExpressionFactoryType;
 import io.cdap.plugin.batch.aggregator.function.AggregateFunction;
 import io.cdap.plugin.batch.aggregator.function.JexlCondition;
 import io.cdap.plugin.common.SchemaValidator;
@@ -40,6 +50,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -50,7 +61,8 @@ import java.util.Set;
 @Description("Groups by one or more fields, then performs one or more aggregate functions on each group. " +
   "Supports `Average`, `Count`, `First`, `Last`, `Max`, `Min`,`Sum`,`Collect List`,`Collect Set`, " +
   "`Standard Deviation`, `Variance`, `Count Distinct` as aggregate functions.")
-public class GroupByAggregator extends RecordReducibleAggregator<AggregateResult> {
+public class GroupByAggregator extends RecordReducibleAggregator<AggregateResult>
+implements LinearRelationalTransform {
   private final GroupByConfig conf;
   private final HashMap<String, String> functionNameMap = new HashMap<String, String>() {{
     put("AVG", "Avg");
@@ -95,13 +107,37 @@ public class GroupByAggregator extends RecordReducibleAggregator<AggregateResult
     put("ANYIF", "AnyIf");
   }};
 
+  private final HashMap<GroupByConfig.Function, String> functionSqlMap =
+    new HashMap<GroupByConfig.Function, String>() {{
+    put(GroupByConfig.Function.AVG, "AVG(%s)");
+    put(GroupByConfig.Function.COUNT, "COUNT(%s)");
+    put(GroupByConfig.Function.MAX, "MAX(%s)");
+    put(GroupByConfig.Function.MIN, "MIN(%s)");
+    put(GroupByConfig.Function.STDDEV, "STDDEV(%s)");
+    put(GroupByConfig.Function.SUM, "SUM(%s)");
+    put(GroupByConfig.Function.VARIANCE, "VARIANCE(%s)");
+    put(GroupByConfig.Function.COLLECTLIST, "ARRAY_AGG(%s)");
+    put(GroupByConfig.Function.COLLECTSET, "ARRAY_AGG(DISTINCT %s)");
+    put(GroupByConfig.Function.COUNTDISTINCT, "COUNT(DISTINCT %s)");
+    put(GroupByConfig.Function.CONCAT, "STRING_AGG(CAST(%s AS STRING))");
+    put(GroupByConfig.Function.CONCATDISTINCT, "STRING_AGG(CAST(%s AS STRING))");
+    put(GroupByConfig.Function.LOGICALAND, "LOGICAL_AND(%s)");
+    put(GroupByConfig.Function.LOGICALOR, "LOGICAL_OR(%s)");
+  }};
+
   private List<String> groupByFields;
   private List<GroupByConfig.FunctionInfo> functionInfos;
   private Schema outputSchema;
+  private GroupByAggregationDefinition aggregationDefinition;
 
   public GroupByAggregator(GroupByConfig conf) {
     super(conf.numPartitions);
     this.conf = conf;
+  }
+
+  @VisibleForTesting
+  GroupByAggregationDefinition getAggregationDefinition() {
+    return aggregationDefinition;
   }
 
   @Override
@@ -392,5 +428,65 @@ public class GroupByAggregator extends RecordReducibleAggregator<AggregateResult
       fields.add(fieldSchema);
     }
     return Schema.recordOf("group.key.schema", fields);
+  }
+
+  @Override
+  public Relation transform(RelationalTranformContext relationalTranformContext, Relation relation) {
+    Optional<ExpressionFactory<String>> expressionFactory = relationalTranformContext
+      .getEngine().getExpressionFactory(StringExpressionFactoryType.SQL);
+    if (!expressionFactory.isPresent()) {
+      return new InvalidRelation("Cannot find an Expression Factory");
+    }
+
+    GroupByAggregationDefinition aggregationDefinition = getAggregationDefinition(expressionFactory.get(), relation);
+
+    if (aggregationDefinition == null) {
+      return new InvalidRelation("Unsupported aggregation definition");
+    }
+    return relation.groupBy(aggregationDefinition);
+  }
+
+  private GroupByAggregationDefinition getAggregationDefinition(ExpressionFactory<String> expressionFactory,
+                                                                Relation relation) {
+    List<String> groupByFields = conf.getGroupByFields();
+    List<GroupByConfig.FunctionInfo> functionInfos = conf.getAggregates();
+
+    List<Expression> groupByExpressions = new ArrayList<>(groupByFields.size());
+    Map<String, Expression> selectExpressions = new HashMap<>();
+
+    for (String field: groupByFields) {
+      String columnName = getColumnName(expressionFactory, relation, field);
+      Expression groupByExpression = expressionFactory.compile(columnName);
+      groupByExpressions.add(groupByExpression);
+      selectExpressions.put(field, groupByExpression);
+    }
+
+    for (GroupByConfig.FunctionInfo aggregate: functionInfos) {
+      String alias = aggregate.getName();
+      String columnName = getColumnName(expressionFactory, relation, aggregate.getField());
+      GroupByConfig.Function function = aggregate.getFunction();
+
+      // Indicates that the function used is unsupported by aggregation pushdown
+      if (!functionSqlMap.containsKey(function)) {
+        return null;
+      }
+
+      String selectSql = String.format(functionSqlMap.get(function), columnName);
+      selectExpressions.put(alias, expressionFactory.compile(selectSql));
+    }
+
+    aggregationDefinition = GroupByAggregationDefinition.builder()
+      .select(selectExpressions)
+      .groupBy(groupByExpressions)
+      .build();
+    return aggregationDefinition;
+  }
+
+  private String getColumnName(ExpressionFactory<String> expressionFactory, Relation relation, String name) {
+    if (expressionFactory.getCapabilities().contains(CoreExpressionCapabilities.CAN_GET_QUALIFIED_COLUMN_NAME)) {
+      return expressionFactory.getQualifiedColumnName(relation, name).extract();
+    } else {
+      return name;
+    }
   }
 }
