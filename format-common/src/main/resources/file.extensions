@@ -62,7 +62,7 @@ cpp	text/plain
 cpt	application/x-compactpro
 crt	application/pkix-cert
 crt	application/x-x509-ca-cert
-csv	text/plain
+csv	text/csv
 csh	text/x-scriptcsh
 css	text/css
 cxx	text/plain
@@ -385,7 +385,7 @@ tiff	image/tiff
 tr	application/x-troff
 tsi	audio/tsp-audio
 tsp	audio/tsplayer
-tsv	text/plain
+tsv	text/tab-separated-values
 turbot	image/florian
 txt	text/plain
 uil	text/x-uil

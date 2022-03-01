@@ -35,6 +35,7 @@ import io.cdap.cdap.etl.api.connector.ConnectorSpec;
 import io.cdap.cdap.etl.api.connector.ConnectorSpecRequest;
 import io.cdap.cdap.etl.api.connector.PluginSpec;
 import io.cdap.plugin.batch.source.FileBatchSource;
+import io.cdap.plugin.batch.source.FileSourceConfig;
 import io.cdap.plugin.common.Constants;
 import io.cdap.plugin.common.batch.JobUtils;
 import io.cdap.plugin.format.connector.AbstractFileConnector;
@@ -73,6 +74,7 @@ public class FileConnector extends AbstractFileConnector<FileConnector.FileConne
 
   public FileConnector(FileConnectorConfig config) {
     super(config);
+    initSampleFields(FILE_TYPE, FileSourceConfig.class);
   }
 
   @Override
@@ -91,7 +93,8 @@ public class FileConnector extends AbstractFileConnector<FileConnector.FileConne
     // if it is not a directory, then it is not browsable, return the path itself
     FileStatus file = fs.getFileStatus(path);
     if (!file.isDirectory()) {
-      return BrowseDetail.builder().setTotalCount(1).addEntity(generateBrowseEntity(file)).build();
+      return BrowseDetail.builder().setTotalCount(1).addEntity(generateBrowseEntity(file))
+        .setSampleProperties(getSampleProperties()).build();
     }
 
     FileStatus[] files = fs.listStatus(path);
@@ -113,17 +116,22 @@ public class FileConnector extends AbstractFileConnector<FileConnector.FileConne
       builder.addEntity(generateBrowseEntity(fileStatus));
       count++;
     }
+    builder.setSampleProperties(getSampleProperties());
     return builder.setTotalCount(count).build();
   }
 
   @Override
   protected void setConnectorSpec(ConnectorSpecRequest request, ConnectorSpec.Builder builder) {
     super.setConnectorSpec(request, builder);
-    // not use ImmutableMap here in case any property is null
-    Map<String, String> properties = new HashMap<>();
+    Map<String, String> properties = new HashMap<>(getAdditionalSpecProperties(request));
     properties.put("path", request.getPath());
-    properties.put("format", FileTypeDetector.detectFileFormat(
-      FileTypeDetector.detectFileType(request.getPath())).name().toLowerCase());
+
+    // Only detect format if it has not been set by sample properties
+    if (!properties.containsKey(FileSourceConfig.NAME_FORMAT)) {
+      properties.put("format", FileTypeDetector.detectFileFormat(
+        FileTypeDetector.detectFileType(request.getPath())).name().toLowerCase());
+    }
+
     properties.put(Constants.Reference.REFERENCE_NAME, new File(request.getPath()).getName());
     builder.addRelatedPlugin(new PluginSpec(FileBatchSource.NAME, BatchSource.PLUGIN_TYPE, properties));
   }
@@ -144,6 +152,7 @@ public class FileConnector extends AbstractFileConnector<FileConnector.FileConne
         fileType, BrowseEntityPropertyValue.PropertyType.STRING).build());
       builder.addProperty(SIZE_KEY, BrowseEntityPropertyValue.builder(
         String.valueOf(file.getLen()), BrowseEntityPropertyValue.PropertyType.SIZE_BYTES).build());
+      addBrowseSampleDefaultValues(builder, filePath);
     }
 
     builder.addProperty(LAST_MODIFIED_KEY, BrowseEntityPropertyValue.builder(
@@ -158,6 +167,7 @@ public class FileConnector extends AbstractFileConnector<FileConnector.FileConne
       permission.getUserAction().SYMBOL + permission.getGroupAction().SYMBOL + permission.getOtherAction().SYMBOL;
     builder.addProperty(PERMISSION_KEY, BrowseEntityPropertyValue.builder(
       perm, BrowseEntityPropertyValue.PropertyType.STRING).build());
+
     return builder.build();
   }
 
