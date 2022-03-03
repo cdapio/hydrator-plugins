@@ -113,16 +113,14 @@ implements LinearRelationalTransform {
     put(GroupByConfig.Function.COUNT, "COUNT(%s)");
     put(GroupByConfig.Function.MAX, "MAX(%s)");
     put(GroupByConfig.Function.MIN, "MIN(%s)");
-    put(GroupByConfig.Function.STDDEV, "STDDEV(%s)");
+    put(GroupByConfig.Function.STDDEV, "STDDEV_POP(%s)");
     put(GroupByConfig.Function.SUM, "SUM(%s)");
-    put(GroupByConfig.Function.VARIANCE, "VARIANCE(%s)");
-    put(GroupByConfig.Function.COLLECTLIST, "ARRAY_AGG(%s)");
-    put(GroupByConfig.Function.COLLECTSET, "ARRAY_AGG(DISTINCT %s)");
-    put(GroupByConfig.Function.COUNTDISTINCT, "COUNT(DISTINCT %s)");
-    put(GroupByConfig.Function.CONCAT, "STRING_AGG(CAST(%s AS STRING))");
-    put(GroupByConfig.Function.CONCATDISTINCT, "STRING_AGG(CAST(%s AS STRING))");
-    put(GroupByConfig.Function.LOGICALAND, "LOGICAL_AND(%s)");
-    put(GroupByConfig.Function.LOGICALOR, "LOGICAL_OR(%s)");
+    put(GroupByConfig.Function.VARIANCE, "VAR_POP(%s)");
+    put(GroupByConfig.Function.COUNTDISTINCT, "COUNT(DISTINCT %s) + IF(COUNTIF(%<s IS NULL) > 0, 1, 0)");
+    put(GroupByConfig.Function.CONCAT, "STRING_AGG(CAST(%s AS STRING), \", \")");
+    put(GroupByConfig.Function.CONCATDISTINCT, "STRING_AGG(DISTINCT CAST(%s AS STRING) , \", \")");
+    put(GroupByConfig.Function.LOGICALAND, "COALESCE(LOGICAL_AND(%s), TRUE)");
+    put(GroupByConfig.Function.LOGICALOR, "COALESCE(LOGICAL_OR(%s), FALSE)");
   }};
 
   private List<String> groupByFields;
