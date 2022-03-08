@@ -78,10 +78,13 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
   static final String SAMPLE_FORMAT_KEY = "format";
   static final String SAMPLE_DELIMITER_KEY = "delimiter";
   static final String SAMPLE_FILE_ENCODING_KEY = "fileEncoding";
+  static final String SAMPLE_ENABLE_QUOTED_VALUES_KEY = "enableQuotedValues";
   static final String SAMPLE_FILE_ENCODING_DEFAULT = "UTF-8";
   static final String SAMPLE_SKIP_HEADER_KEY = "skipHeader";
+
   static final List<String> SAMPLE_FIELD_NAMES = Arrays.asList(SAMPLE_FORMAT_KEY, SAMPLE_DELIMITER_KEY,
-                                                               SAMPLE_FILE_ENCODING_KEY, SAMPLE_SKIP_HEADER_KEY);
+                                                               SAMPLE_FILE_ENCODING_KEY, SAMPLE_SKIP_HEADER_KEY,
+                                                               SAMPLE_ENABLE_QUOTED_VALUES_KEY);
 
   private final Set<BrowseEntityTypeInfo> sampleProperties;
 

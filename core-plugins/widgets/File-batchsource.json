@@ -95,7 +95,7 @@
         {
           "widget-type": "toggle",
           "name": "skipHeader",
-          "label": "Skip Header",
+          "label": "Use First Row as Header",
           "widget-attributes": {
             "default": "false",
             "on": {
