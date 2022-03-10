@@ -186,7 +186,11 @@ public abstract class AbstractFileSourceConfig extends PluginConfig implements F
   @Nullable
   @Override
   public Pattern getFilePattern() {
-    return Strings.isNullOrEmpty(fileRegex) ? null : Pattern.compile(fileRegex);
+    try {
+      return Strings.isNullOrEmpty(fileRegex) ? null : Pattern.compile(fileRegex);
+    } catch (RuntimeException e) {
+      throw new IllegalArgumentException("Invalid file regular expression." + e.getMessage(), e);
+    }
   }
 
   @Override
