@@ -116,6 +116,8 @@ implements LinearRelationalTransform {
     put(GroupByConfig.Function.STDDEV, "STDDEV_POP(%s)");
     put(GroupByConfig.Function.SUM, "SUM(%s)");
     put(GroupByConfig.Function.VARIANCE, "VAR_POP(%s)");
+    put(GroupByConfig.Function.COLLECTLIST, "ARRAY_AGG(%s IGNORE NULLS)");
+    put(GroupByConfig.Function.COLLECTSET, "ARRAY_AGG(DISTINCT %s IGNORE NULLS)");
     put(GroupByConfig.Function.COUNTDISTINCT, "COUNT(DISTINCT %s) + IF(COUNTIF(%<s IS NULL) > 0, 1, 0)");
     put(GroupByConfig.Function.CONCAT, "STRING_AGG(CAST(%s AS STRING), \", \")");
     put(GroupByConfig.Function.CONCATDISTINCT, "STRING_AGG(DISTINCT CAST(%s AS STRING) , \", \")");
