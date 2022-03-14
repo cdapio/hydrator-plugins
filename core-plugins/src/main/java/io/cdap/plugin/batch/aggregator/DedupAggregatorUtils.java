@@ -36,51 +36,56 @@ import java.util.Optional;
  */
 public class DedupAggregatorUtils {
 
-    public static DeduplicateAggregationDefinition generateAggregationDefinition
-            (RelationalTranformContext relationalTranformContext,
-             Relation relation,
-             DedupConfig.DedupFunctionInfo filterFunction,
-             List<String> uniqueFields) {
-        Optional<ExpressionFactory<String>> expressionFactory = relationalTranformContext.getEngine().
-                getExpressionFactory(StringExpressionFactoryType.SQL);
-        DeduplicateAggregationDefinition.FilterFunction aggFilterFunction;
-        if (filterFunction.getFunction() == DedupConfig.Function.MAX) {
-            aggFilterFunction = DeduplicateAggregationDefinition.FilterFunction.MAX;
-        } else if (filterFunction.getFunction() == DedupConfig.Function.MIN) {
-            aggFilterFunction = DeduplicateAggregationDefinition.FilterFunction.MIN;
-        } else {
-            return null;
-        }
-
-        Map<String, Expression> selectExpressions = new HashMap<>();
-        List<Expression> dedupExpressions = new ArrayList<>();
-        ExpressionFactory<String> stringExpressionFactory = expressionFactory.get();
-
-        Expression filterExpression = getColumnName(relation, filterFunction.getField(), stringExpressionFactory);
-
-        for (Schema.Field field : relationalTranformContext.getOutputSchema().getFields()) {
-            selectExpressions.put(field.getName(), getColumnName(relation, field.getName(), stringExpressionFactory));
-        }
-
-
-        for (String uniqueField : uniqueFields) {
-            dedupExpressions.add(getColumnName(relation, uniqueField, stringExpressionFactory));
-        }
-
-        return DeduplicateAggregationDefinition.builder()
-                .select(selectExpressions)
-                .dedupOn(dedupExpressions)
-                .filterDuplicatesBy(filterExpression, aggFilterFunction)
-                .build();
+  public static DeduplicateAggregationDefinition generateAggregationDefinition(RelationalTranformContext ctx,
+                                                                               Relation relation,
+                                                                               DedupConfig.DedupFunctionInfo filter,
+                                                                               List<String> uniqueFields) {
+    Optional<ExpressionFactory<String>> expressionFactory = ctx.getEngine().
+      getExpressionFactory(StringExpressionFactoryType.SQL);
+    DeduplicateAggregationDefinition.FilterFunction aggFilterFunction;
+    switch (filter.getFunction()) {
+      case MAX:
+        aggFilterFunction = DeduplicateAggregationDefinition.FilterFunction.MAX;
+        break;
+      case MIN:
+        aggFilterFunction = DeduplicateAggregationDefinition.FilterFunction.MIN;
+        break;
+      case ANY:
+        aggFilterFunction = DeduplicateAggregationDefinition.FilterFunction.ANY_NULLS_LAST;
+        break;
+      default:
+        return null;
     }
 
-    static Expression getColumnName(Relation relation,
-                                    String name, ExpressionFactory<String> stringExpressionFactory) {
-        if (stringExpressionFactory.getCapabilities()
-                .contains(CoreExpressionCapabilities.CAN_GET_QUALIFIED_COLUMN_NAME)) {
-            return stringExpressionFactory.getQualifiedColumnName(relation, name);
-        } else {
-            return stringExpressionFactory.compile(name);
-        }
+    Map<String, Expression> selectExpressions = new HashMap<>();
+    List<Expression> dedupExpressions = new ArrayList<>();
+    ExpressionFactory<String> stringExpressionFactory = expressionFactory.get();
+
+    Expression filterExpression = getColumnName(relation, filter.getField(), stringExpressionFactory);
+
+    for (Schema.Field field : ctx.getOutputSchema().getFields()) {
+      selectExpressions.put(field.getName(), getColumnName(relation, field.getName(), stringExpressionFactory));
     }
+
+
+    for (String uniqueField : uniqueFields) {
+      dedupExpressions.add(getColumnName(relation, uniqueField, stringExpressionFactory));
+    }
+
+    return DeduplicateAggregationDefinition.builder()
+      .select(selectExpressions)
+      .dedupOn(dedupExpressions)
+      .filterDuplicatesBy(filterExpression, aggFilterFunction)
+      .build();
+  }
+
+  static Expression getColumnName(Relation relation,
+                                  String name, ExpressionFactory<String> stringExpressionFactory) {
+    if (stringExpressionFactory.getCapabilities()
+      .contains(CoreExpressionCapabilities.CAN_GET_QUALIFIED_COLUMN_NAME)) {
+      return stringExpressionFactory.getQualifiedColumnName(relation, name);
+    } else {
+      return stringExpressionFactory.compile(name);
+    }
+  }
 }
