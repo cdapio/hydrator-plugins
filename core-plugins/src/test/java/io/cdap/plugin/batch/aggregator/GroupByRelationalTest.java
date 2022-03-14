@@ -77,6 +77,20 @@ public class GroupByRelationalTest {
   }
 
   @Test
+  public void testMixedValidityGroupBy() {
+    GroupByConfig config = new GroupByConfig("profession",
+                                             "numEmployees: countif(*): condition(salary>100000)," +
+                                               "stddevSal: stddev(salary)," +
+                                               "maxSal: max(salary)");
+    GroupByAggregator aggregator = new GroupByAggregator(config);
+    Relation result = aggregator.transform(relationalTranformContext, relation);
+
+    Assert.assertFalse(result.isValid());
+    Assert.assertEquals("Unsupported aggregation definition",
+                        result.getValidationError());
+  }
+
+  @Test
   public void testConditionalGroupBy() throws Exception {
     GroupByConfig config = new GroupByConfig("profession",
                                              "numEmployees: countif(*): condition(salary>100000)");
