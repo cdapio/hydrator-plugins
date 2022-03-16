@@ -29,6 +29,7 @@ import io.cdap.cdap.etl.mock.common.MockConnectorConfigurer;
 import io.cdap.cdap.etl.mock.common.MockConnectorContext;
 import io.cdap.plugin.batch.source.FileBatchSource;
 import io.cdap.plugin.batch.source.FileSourceConfig;
+import io.cdap.plugin.format.connector.AbstractFileConnector;
 import io.cdap.plugin.format.connector.FileTypeDetector;
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -61,8 +62,11 @@ public class FileConnectorTest {
   private static final String SAMPLE_FILE_ENCODING_KEY = "fileEncoding";
   private static final String SAMPLE_FILE_ENCODING_DEFAULT = "UTF-8";
   private static final String SAMPLE_SKIP_HEADER_KEY = "skipHeader";
+  private static final String SAMPLE_ENABLE_QUOTED_VALUES_KEY = "enableQuotedValues";
   static final List<String> SAMPLE_FIELD_NAMES = Arrays.asList(SAMPLE_FORMAT_KEY, SAMPLE_DELIMITER_KEY,
-                                                               SAMPLE_FILE_ENCODING_KEY, SAMPLE_SKIP_HEADER_KEY);
+                                                               SAMPLE_FILE_ENCODING_KEY, SAMPLE_SKIP_HEADER_KEY,
+                                                               SAMPLE_ENABLE_QUOTED_VALUES_KEY);
+
 
   private static final Set<BrowseEntityTypeInfo> SAMPLE_PROPERTIES = new HashSet<>();
 
