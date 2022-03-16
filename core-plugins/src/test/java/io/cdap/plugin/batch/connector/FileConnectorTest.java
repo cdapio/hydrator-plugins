@@ -63,6 +63,8 @@ public class FileConnectorTest {
   private static final String SAMPLE_FILE_ENCODING_DEFAULT = "UTF-8";
   private static final String SAMPLE_SKIP_HEADER_KEY = "skipHeader";
   private static final String SAMPLE_ENABLE_QUOTED_VALUES_KEY = "enableQuotedValues";
+  private static final String PLUGIN_NAME_PROPERTY_KEY = "_pluginName";
+
   static final List<String> SAMPLE_FIELD_NAMES = Arrays.asList(SAMPLE_FORMAT_KEY, SAMPLE_DELIMITER_KEY,
                                                                SAMPLE_FILE_ENCODING_KEY, SAMPLE_SKIP_HEADER_KEY,
                                                                SAMPLE_ENABLE_QUOTED_VALUES_KEY);
@@ -92,6 +94,11 @@ public class FileConnectorTest {
         new SamplePropertyField(field.getName(),
                                 field.getDeclaredAnnotation(Description.class).value()));
     }
+
+    browseEntityTypeInfoList.add(
+      new SamplePropertyField(PLUGIN_NAME_PROPERTY_KEY, FileBatchSource.NAME)
+    );
+
     SAMPLE_PROPERTIES.add(new BrowseEntityTypeInfo("file", browseEntityTypeInfoList));
   }
 
