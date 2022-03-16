@@ -50,6 +50,7 @@ import org.apache.hadoop.mapreduce.Job;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -74,7 +75,8 @@ public class FileConnector extends AbstractFileConnector<FileConnector.FileConne
 
   public FileConnector(FileConnectorConfig config) {
     super(config);
-    initSampleFields(FILE_TYPE, FileSourceConfig.class);
+    Map<String, String> additionalProperties = Collections.singletonMap(PLUGIN_NAME_PROPERTY_KEY, FileBatchSource.NAME);
+    initSampleFields(FILE_TYPE, FileSourceConfig.class, additionalProperties);
   }
 
   @Override

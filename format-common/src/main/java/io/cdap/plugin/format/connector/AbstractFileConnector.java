@@ -75,6 +75,8 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
   private static final Gson GSON = new Gson();
   private final T config;
 
+  protected static final String PLUGIN_NAME_PROPERTY_KEY = "_pluginName";
+
   static final String SAMPLE_FORMAT_KEY = "format";
   static final String SAMPLE_DELIMITER_KEY = "delimiter";
   static final String SAMPLE_FILE_ENCODING_KEY = "fileEncoding";
@@ -93,14 +95,28 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
     this.sampleProperties = new HashSet<>();
   }
 
+
   /**
    * Adds available sample fields for each different entityType.
    *
    * @param entityType
    * @param fileSourceClass FileSourceProperties class containing the configuration and description of the properties.
    */
-  protected void initSampleFields(String entityType,  Class<? extends FileSourceProperties> fileSourceClass) {
+  protected void initSampleFields(String entityType, Class<? extends FileSourceProperties> fileSourceClass) {
+    initSampleFields(entityType, fileSourceClass, Collections.emptyMap());
+  }
+
+  /**
+   * Adds available sample fields for each different entityType.
+   *
+   * @param entityType
+   * @param fileSourceClass FileSourceProperties class containing the configuration and description of the properties.
+   * @param additionalProperties Map with extra properties to add to the sample properties.
+   */
+  protected void initSampleFields(String entityType, Class<? extends FileSourceProperties> fileSourceClass,
+                                  Map<String, String> additionalProperties) {
     List<Field> sourceFields = new ArrayList<>();
+
     for (String sourceFieldName : SAMPLE_FIELD_NAMES) {
       Class<?> fileClass = fileSourceClass;
       while (fileClass != null) {
@@ -121,6 +137,13 @@ public abstract class AbstractFileConnector<T extends PluginConfig>
         new SamplePropertyField(field.getName(),
                                 field.getDeclaredAnnotation(Description.class).value()));
     }
+
+    for (Map.Entry<String, String> property: additionalProperties.entrySet()) {
+      browseEntityTypeInfoList.add(
+        new SamplePropertyField(property.getKey(), property.getValue())
+      );
+    }
+
     sampleProperties.add(new BrowseEntityTypeInfo(entityType, browseEntityTypeInfoList));
   }
 
