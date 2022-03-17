@@ -110,4 +110,46 @@ public class DedupAggregatorUtilsTest {
                         filterFunction, uniqueFields);
         Assert.assertEquals(null, deduplicateAggregationDefinition);
     }
+
+    @Test
+    public void testDedupAggregatorTransformExpressionFilterFunction() {
+        Mockito.doReturn(Optional.of(expressionFactory)).when(engine).getExpressionFactory(Mockito.any());
+        Mockito.doReturn(capabilities).when(expressionFactory).getCapabilities();
+        Mockito.doReturn(true).when(capabilities).contains(Mockito.any());
+        Mockito.doReturn(extractableExpression).when(expressionFactory).getQualifiedColumnName(Mockito.any(),
+                                                                                               Mockito.any());
+
+        DedupConfig.DedupFunctionInfo min = new DedupConfig.DedupFunctionInfo("filterField",
+                                                                              DedupConfig.Function.MIN);
+        DeduplicateAggregationDefinition minDefinition = DedupAggregatorUtils
+          .generateAggregationDefinition(relationalTranformContext, relation, min, uniqueFields);
+        Assert.assertEquals(DeduplicateAggregationDefinition.FilterFunction.MIN,
+                            minDefinition.getFilterExpressions().get(0).getFilterFunction());
+
+        DedupConfig.DedupFunctionInfo max = new DedupConfig.DedupFunctionInfo("filterField",
+                                                                              DedupConfig.Function.MAX);
+        DeduplicateAggregationDefinition maxDefinition = DedupAggregatorUtils
+          .generateAggregationDefinition(relationalTranformContext, relation, max, uniqueFields);
+        Assert.assertEquals(DeduplicateAggregationDefinition.FilterFunction.MAX,
+                            maxDefinition.getFilterExpressions().get(0).getFilterFunction());
+
+        DedupConfig.DedupFunctionInfo any = new DedupConfig.DedupFunctionInfo("filterField",
+                                                                              DedupConfig.Function.ANY);
+        DeduplicateAggregationDefinition anyDefinition = DedupAggregatorUtils
+          .generateAggregationDefinition(relationalTranformContext, relation, any, uniqueFields);
+        Assert.assertEquals(DeduplicateAggregationDefinition.FilterFunction.ANY_NULLS_LAST,
+                            anyDefinition.getFilterExpressions().get(0).getFilterFunction());
+
+        DedupConfig.DedupFunctionInfo first = new DedupConfig.DedupFunctionInfo("filterField",
+                                                                                DedupConfig.Function.FIRST);
+        DeduplicateAggregationDefinition firstDefinition = DedupAggregatorUtils
+          .generateAggregationDefinition(relationalTranformContext, relation, first, uniqueFields);
+        Assert.assertNull(firstDefinition);
+
+        DedupConfig.DedupFunctionInfo last = new DedupConfig.DedupFunctionInfo("filterField",
+                                                                                DedupConfig.Function.LAST);
+        DeduplicateAggregationDefinition lastDefinition = DedupAggregatorUtils
+          .generateAggregationDefinition(relationalTranformContext, relation, last, uniqueFields);
+        Assert.assertNull(lastDefinition);
+    }
 }

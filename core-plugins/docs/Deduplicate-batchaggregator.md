@@ -4,8 +4,12 @@
 Description
 -----------
 De-duplicates records either using one or more fields or by using the record as a whole. Additionally, it supports logically
-choosing a record out of the duplicate records based on a filter field. Supported logical functions are `max`, `min`,
-`first`, and `last`.
+choosing a record out of the duplicate records based on a filter field. Supported logical functions are `any`, `max` and `min`. 
+
+The `first` and `last` are deprecated and will be removed in later versions of the platform.
+
+The `any` logical function will match any of the records where the value for the specified field is non-null.
+If not found, a record where the value of this field is null will be returned.
 
 Use Case
 --------

@@ -22,6 +22,7 @@ import com.google.common.base.Strings;
 import io.cdap.cdap.api.annotation.Description;
 import io.cdap.cdap.api.annotation.Macro;
 import io.cdap.cdap.api.data.schema.Schema;
+import io.cdap.plugin.batch.aggregator.function.Any;
 import io.cdap.plugin.batch.aggregator.function.First;
 import io.cdap.plugin.batch.aggregator.function.Last;
 import io.cdap.plugin.batch.aggregator.function.MaxSelection;
@@ -50,9 +51,9 @@ public class DedupConfig extends AggregatorConfig {
     "that needs to be deduplicated. This property takes in a field name and the logical operation that needs to be " +
     "performed on that field on the set of records. The syntax is 'field:function'. For example, if we want to " +
     "choose the record with maximum cost for the records with schema 'fname', 'lname', 'item', 'cost', then this " +
-    "field should be set as 'cost:max'. Supported functions are first, last, max, and min. Note that only one pair " +
-    "of field and function is allowed. If this property is not set, one random record will be chosen from the " +
-    "group of 'duplicate' records.")
+    "field should be set as 'cost:max'. Supported functions are any, max, and min. The first and last functions are " +
+    "deprecated. Note that only one pair of field and function is allowed. If this property is not set, one random " +
+    "record will be chosen from the group of 'duplicate' records.")
   @Nullable
   @Macro
   private String filterOperation;
@@ -97,6 +98,11 @@ public class DedupConfig extends AggregatorConfig {
     Function function;
     String fieldName = filterParts.get(0);
     String functionStr = filterParts.get(1);
+
+    // If the function name contains a space, drop everything after the space.
+    if (functionStr.contains(" ")) {
+      functionStr = functionStr.split(" ")[0];
+    }
     try {
       function = Function.valueOf(functionStr.toUpperCase());
     } catch (IllegalArgumentException e) {
@@ -125,9 +131,11 @@ public class DedupConfig extends AggregatorConfig {
 
     public SelectionFunction getSelectionFunction(Schema fieldSchema) {
       switch (function) {
-        case FIRST:
+        case ANY:
+          return new Any(field, fieldSchema);
+        case FIRST: // deprecated
           return new First(field, fieldSchema);
-        case LAST:
+        case LAST: // deprecated
           return new Last(field, fieldSchema);
         case MAX:
           return new MaxSelection(field, fieldSchema);
@@ -167,9 +175,10 @@ public class DedupConfig extends AggregatorConfig {
   }
 
   enum Function {
-    FIRST,
-    LAST,
+    FIRST, // deprecated
+    LAST, // deprecated
     MIN,
-    MAX
+    MAX,
+    ANY
   }
 }

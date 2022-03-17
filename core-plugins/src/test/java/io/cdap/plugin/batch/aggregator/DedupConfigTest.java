@@ -37,4 +37,22 @@ public class DedupConfigTest {
       Assert.assertEquals(expected, actual);
     }
   }
+
+  @Test
+  public void testDeprecatedFirst() {
+    DedupConfig config = new DedupConfig(" user, item, price ",
+                                         "price:First (Deprecated)");
+
+    DedupConfig.DedupFunctionInfo functionInfo = config.getFilter();
+    Assert.assertEquals(DedupConfig.Function.FIRST, functionInfo.getFunction());
+  }
+
+  @Test
+  public void testDeprecatedLast() {
+    DedupConfig config = new DedupConfig(" user, item, price ",
+                                         "price:Last (Deprecated)");
+
+    DedupConfig.DedupFunctionInfo functionInfo = config.getFilter();
+    Assert.assertEquals(DedupConfig.Function.LAST, functionInfo.getFunction());
+  }
 }
