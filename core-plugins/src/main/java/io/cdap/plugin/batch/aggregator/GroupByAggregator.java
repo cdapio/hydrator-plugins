@@ -484,10 +484,17 @@ implements LinearRelationalTransform {
   }
 
   private String getColumnName(ExpressionFactory<String> expressionFactory, Relation relation, String name) {
-    if (expressionFactory.getCapabilities().contains(CoreExpressionCapabilities.CAN_GET_QUALIFIED_COLUMN_NAME)) {
-      return expressionFactory.getQualifiedColumnName(relation, name).extract();
-    } else {
+    // If the column name is *, return as such.
+    if ("*".equals(name)) {
       return name;
     }
+
+    // Verify if the expression factory can provide a quoted column name, and use this if available.
+    if (expressionFactory.getCapabilities().contains(CoreExpressionCapabilities.CAN_GET_QUALIFIED_COLUMN_NAME)) {
+      return expressionFactory.getQualifiedColumnName(relation, name).extract();
+    }
+
+    // Return supplied column name.
+    return name;
   }
 }
