@@ -41,6 +41,7 @@ import io.cdap.plugin.common.SchemaValidator;
 import io.cdap.plugin.common.TransformLineageRecorderUtils;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
@@ -58,6 +59,8 @@ public class DedupAggregator extends RecordReducibleAggregator<StructuredRecord>
   private List<String> uniqueFields;
   private DedupConfig.DedupFunctionInfo filterFunction;
   private SelectionFunction selectionFunction;
+  private static final EnumSet<Schema.Type> ALLOWED_SCHEMA_TYPES = EnumSet.of(Schema.Type.INT, Schema.Type.LONG,
+          Schema.Type.FLOAT, Schema.Type.DOUBLE);
 
   public DedupAggregator(DedupConfig dedupConfig) {
     super(dedupConfig.numPartitions);
@@ -186,7 +189,7 @@ public class DedupAggregator extends RecordReducibleAggregator<StructuredRecord>
       Schema.Field field = inputSchema.getField(uniqueField);
       if (field == null) {
         collector.addFailure(String.format("Field '%s' does not exist in the input schema", uniqueField), "")
-          .withConfigElement("uniqueFields", uniqueField);
+                .withConfigElement("uniqueFields", uniqueField);
       }
     }
 
@@ -194,11 +197,20 @@ public class DedupAggregator extends RecordReducibleAggregator<StructuredRecord>
       Schema.Field field = inputSchema.getField(function.getField());
       if (field == null) {
         collector.addFailure(String.format("Invalid filter %s(%s): Field '%s' does not exist in input schema ",
-                                           function.getFunction(), function.getField(), function.getField()),
-                             null)
-          .withConfigProperty("filterOperation");
+                                function.getFunction(), function.getField(), function.getField()),
+                        null)
+                .withConfigProperty("filterOperation");
       }
-    }
+      Schema.Type fieldType = field.getSchema().isNullable() ?
+              field.getSchema().getNonNullable().getType() : field.getSchema().getType();
+      if ((function.getFunction() == DedupConfig.Function.MAX || function.getFunction() == DedupConfig.Function.MIN)
+        && !ALLOWED_SCHEMA_TYPES.contains(fieldType)) {
+        collector.addFailure(String.format("Unsupported filter operation %s(%s): Field '%s' is non numeric ",
+                                function.getFunction(), function.getField(), function.getField()),
+                        null)
+                .withConfigProperty("filterOperation");
+      }
+  }
   }
 
   @Override
