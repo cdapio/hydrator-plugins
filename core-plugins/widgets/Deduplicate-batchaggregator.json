@@ -22,6 +22,7 @@
           "widget-attributes": {
             "showDelimiter": "false",
             "kv-delimiter" : ":",
+            "kv-pair-limit": 1,
             "delimiter" : ";",
             "dropdownOptions": [
               "Any",
