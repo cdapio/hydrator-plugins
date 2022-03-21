@@ -32,8 +32,13 @@
       <id>cloudera</id>
       <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
     </repository>
-  </repositories>
-
+    <repository>
+      <id>conjars</id>
+      <name>Concurrent Conjars repository</name>
+      <url>https://conjars.org/repo</url>
+      <layout>default</layout>
+    </repository>
+</repositories>
   <dependencies>
     <dependency>
       <groupId>io.cdap.cdap</groupId>
@@ -47,6 +52,11 @@
       <groupId>io.cdap.plugin</groupId>
       <artifactId>hydrator-common</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>eigenbase</groupId>
+      <artifactId>eigenbase-properties</artifactId>
+      <version>1.1.4</version>
     </dependency>
     <dependency>
       <groupId>org.apache.hive.hcatalog</groupId>
