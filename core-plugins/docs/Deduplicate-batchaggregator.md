@@ -7,10 +7,18 @@ De-duplicates records either using one or more fields or by using the record as 
 choosing a record out of the duplicate records based on a filter field. Supported logical functions are `any`, `max` and `min`.
 `min` and `max` must be operated only on numeric filter fields.
 
-The `first` and `last` are deprecated and will be removed in later versions of the platform.
-
 The `any` logical function will match any of the records where the value for the specified field is non-null.
-If not found, a record where the value of this field is null will be returned.
+If not found, a record where the value of this field is null will be returned. 
+
+The `first` and `last` logical functions are deprecated and will be removed in the future versions of the platform.
+ 
+### BigQuery ELT Transformation Pushdown
+
+Deduplicate stages are now eligible to execute in BigQuery when BigQuery ELT Transformation Pushdown is enabled in 
+a pipeline. Deduplicate stages will be executed in BigQuery when a preceding stage has already been executed in BigQuery 
+(such as a Join operation or another aggregation stage). The following filter operations are supported when deduplicating
+records: `any`, `max`, and `min`.
+
 
 Use Case
 --------
@@ -18,19 +26,20 @@ The aggregator is used when you want to filter out duplicates in the input in a 
 
 Properties
 ----------
-**uniqueFields:** An optional comma-separated list of fields on which to perform the deduplication. If none given, each 
+**Unique Fields:** An optional comma-separated list of fields on which to perform the deduplication. If none given, each 
 record will be considered as a whole for deduplication. For example, if the input contain records with fields `fname`, 
 `lname`, `item`, and `cost`, and we want to deduplicate the records by name, then this property should be set to 
 `fname,lname`.
 
-**filterOperation:** An optional property that can be set to predictably choose one or more records from the set of records
+**Filter Operation:** An optional property that can be set to predictably choose one or more records from the set of records
 that needs to be deduplicated. This property takes in a field name and the logical operation that needs to be performed
 on that field on the set of records. The syntax is `field:function`. For example, if we want to choose the record with
 maximum cost for the records with schema `fname`, `lname`, `item`, `cost`, then this field should be set as `cost:max`.
-Supported functions are `first`, `last`, `max`, and `min`. Note that only one pair of field and function is allowed.
-If this property is not set, one random record will be chosen from the group of 'duplicate' records.
+Supported functions are `any`, `max` and `min`. `min` and `max` must be operated only on numeric filter fields.
+The `first` and `last` logical functions are deprecated and will be removed in the future versions of the platform. Note: Only one pair of 
+field and function is allowed. If this property is not set, one random record will be chosen from the group of 'duplicate' records.
 
-**numPartitions:** An optional number of partitions to use when grouping unique fields. If not specified, the execution
+**Number of Partitions:** An optional number of partitions to use when grouping unique fields. If not specified, the execution
 framework will decide on the number to use.
 
 Example

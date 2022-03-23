@@ -12,6 +12,16 @@ Supports `Average`, `Count`, `First`, `Last`, `Max`, `Min`,`Sum`,`Collect List`,
 `Concat If`, `Logical And If`, `Logical Or If`, `Sum Of Squares If`, `Corrected Sum Of Squares If`
 as aggregate functions.
 
+### BigQuery ELT Transformation Pushdown
+
+Group By stages are now eligible to execute in BigQuery when BigQuery ELT Transformation Pushdown 
+is enabled in a pipeline. Group By stages will be executed in BigQuery when a preceding stage has already been 
+executed in BigQuery (such as a Join operation or another aggregation stage). The following aggregation operations are supported 
+in BigQuery: `Average`, `Collect List` (Null values are removed from the output array), `Collect Set` (Null values are 
+removed from the output array), `Concat`, `Concat Distinct`, `Count`, `Count Distinct`, `Count Nulls`, `Logical And`, 
+`Logical Or`, `Max`, `Min`, `Standard Deviation`, `Sum`, and `Variance`. If a Group By stage contains any aggregation operation 
+that is not supported in BigQuery, the stage will be executed in Spark.
+
 Use Case
 --------
 The transform is used when you want to calculate some basic aggregations in your data similar
@@ -19,13 +29,13 @@ to what you could do with a group-by query in SQL.
 
 Properties
 ----------
-**groupByFields:** Comma-separated list of fields to group by.
+**Group by fields:** Comma-separated list of fields to group by.
 Records with the same value for all these fields will be grouped together.
 Records output by this aggregator will contain all the group by fields and aggregate fields.
 For example, if grouping by the ``user`` field and calculating an aggregate ``numActions:count(*)``,
 output records will have a ``user`` field and a ``numActions`` field. (Macro-enabled)
 
-**aggregates:** Aggregates to compute on each group of records.
+**Aggregates:** Aggregates to compute on each group of records.
 Supported aggregate functions are `avg`, `count`, `count(*)`, `first`, `last`, `max`, `min`,`sum`,`collectList`,
 `collectSet`, `countDistinct`, `longestString`, `shortestString`, `countNulls`, `concat`, `variance` `concatDistinct`,
 `stdDev`,`logicalAnd`, `logicalOr`, `sumOfSquares`, `correctedSumOfSquares`, `avgIf`, `countIf`, `maxIf`, `minIf`, 
@@ -43,7 +53,7 @@ that meet the condition bigger than 500.
 The count function differs from count(*) in that it contains non-null values of a specific field,
 while count(*) will count all records regardless of value. (Macro-enabled)
 
-**numPartitions:** Number of partitions to use when grouping fields. If not specified, the execution
+**Number of Partitions:** Number of partitions to use when grouping fields. If not specified, the execution
 framework will decide on the number to use.
 
 Example
