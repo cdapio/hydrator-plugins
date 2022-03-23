@@ -108,6 +108,14 @@ stage A is the skewed input stage.
 
 For more information about Distribution and data skew, please see the **Skew** section of this documentation.
 
+**Input with Larger Data Skew** Skewed joins can cause a lot of shuffling and disk operation in BigQuery, which impacts query performance.
+BigQuery has some general recommendations when executing join operations on Skewed data, which can be found here
+[Data skew](https://cloud.google.com/bigquery/docs/best-practices-performance-patterns#data_skew).
+
+If one of the sides of a join operation is known to be heavily skewed, then this feature can be used so the BigQuery SQL
+engine sorts stages appropriately when building the SQL Join statements. This reduces the possibility of join operations
+running into a resource exceeded error during the join operation execution.
+
 Skew
 ----------
 ### Problem
