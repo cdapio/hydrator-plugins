@@ -22,7 +22,7 @@
 [submodule "google-cloud"]
 	path = google-cloud
 	url = ../../data-integrations/google-cloud
-	branch = release/0.20.0
+	branch = release/0.20
 [submodule "kafka-plugins"]
 	path = kafka-plugins
 	url = ../../data-integrations/kafka-plugins
