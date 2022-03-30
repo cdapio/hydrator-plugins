@@ -53,7 +53,6 @@ import java.util.List;
 import java.util.Map;
 import javax.sql.rowset.serial.SerialBlob;
 
-
 /**
  * Writable class for DB Source/Sink
  *
@@ -176,11 +175,9 @@ public class DBRecord implements Writable, DBWritable, Configurable, DataSizeRep
     // original name has to be used to get result from result set
     Object o = DBUtils.transformValue(sqlType, sqlPrecision, sqlScale, resultSet, originalName,
                                       outputFieldSchema);
-
     if (o instanceof Date) {
       bytesRead += Long.BYTES;
       recordBuilder.setDate(field.getName(), ((Date) o).toLocalDate());
-
     } else if (o instanceof Time) {
       bytesRead += Integer.BYTES;
       recordBuilder.setTime(field.getName(), ((Time) o).toLocalTime());
