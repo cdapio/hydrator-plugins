@@ -32,6 +32,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -188,6 +189,11 @@ public class DBRecord implements Writable, DBWritable, Configurable, DataSizeRep
       BigDecimal decimal = ((BigDecimal) o);
       bytesRead += decimal.unscaledValue().bitLength() / Byte.SIZE + Integer.BYTES;
       recordBuilder.setDecimal(field.getName(), decimal);
+    } else if (o instanceof BigInteger) {
+      BigInteger bigint = ((BigInteger) o);
+      BigDecimal int2dec = new BigDecimal(bigint, 0);
+      bytesRead += int2dec.unscaledValue().bitLength() / Byte.SIZE + Integer.BYTES;
+      recordBuilder.setDecimal(field.getName(), int2dec);
     } else {
       if (o != null) {
         Schema schema = field.getSchema();
