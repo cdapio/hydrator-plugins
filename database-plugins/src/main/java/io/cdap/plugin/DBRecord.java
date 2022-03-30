@@ -32,6 +32,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -51,6 +52,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.sql.rowset.serial.SerialBlob;
+
 
 /**
  * Writable class for DB Source/Sink
@@ -174,9 +176,11 @@ public class DBRecord implements Writable, DBWritable, Configurable, DataSizeRep
     // original name has to be used to get result from result set
     Object o = DBUtils.transformValue(sqlType, sqlPrecision, sqlScale, resultSet, originalName,
                                       outputFieldSchema);
+
     if (o instanceof Date) {
       bytesRead += Long.BYTES;
       recordBuilder.setDate(field.getName(), ((Date) o).toLocalDate());
+
     } else if (o instanceof Time) {
       bytesRead += Integer.BYTES;
       recordBuilder.setTime(field.getName(), ((Time) o).toLocalTime());
@@ -188,6 +192,11 @@ public class DBRecord implements Writable, DBWritable, Configurable, DataSizeRep
       BigDecimal decimal = ((BigDecimal) o);
       bytesRead += decimal.unscaledValue().bitLength() / Byte.SIZE + Integer.BYTES;
       recordBuilder.setDecimal(field.getName(), decimal);
+    } else if (o instanceof BigInteger) {
+      BigInteger bigint = ((BigInteger) o);
+      BigDecimal int2dec = new BigDecimal(bigint, 0);
+      bytesRead += int2dec.unscaledValue().bitLength() / Byte.SIZE + Integer.BYTES;
+      recordBuilder.setDecimal(field.getName(), int2dec);
     } else {
       if (o != null) {
         Schema schema = field.getSchema();
