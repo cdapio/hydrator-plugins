@@ -60,7 +60,7 @@ public class DedupAggregator extends RecordReducibleAggregator<StructuredRecord>
   private DedupConfig.DedupFunctionInfo filterFunction;
   private SelectionFunction selectionFunction;
   private static final EnumSet<Schema.Type> ALLOWED_SCHEMA_TYPES = EnumSet.of(Schema.Type.INT, Schema.Type.LONG,
-          Schema.Type.FLOAT, Schema.Type.DOUBLE);
+          Schema.Type.FLOAT, Schema.Type.DOUBLE, Schema.Type.BYTES, Schema.Type.STRING);
 
   public DedupAggregator(DedupConfig dedupConfig) {
     super(dedupConfig.numPartitions);
@@ -205,7 +205,7 @@ public class DedupAggregator extends RecordReducibleAggregator<StructuredRecord>
               field.getSchema().getNonNullable().getType() : field.getSchema().getType();
       if ((function.getFunction() == DedupConfig.Function.MAX || function.getFunction() == DedupConfig.Function.MIN)
         && !ALLOWED_SCHEMA_TYPES.contains(fieldType)) {
-        collector.addFailure(String.format("Unsupported filter operation %s(%s): Field '%s' is non numeric ",
+        collector.addFailure(String.format("Unsupported filter operation %s(%s): Field '%s' type is not allowed",
                                 function.getFunction(), function.getField(), function.getField()),
                         null)
                 .withConfigProperty("filterOperation");

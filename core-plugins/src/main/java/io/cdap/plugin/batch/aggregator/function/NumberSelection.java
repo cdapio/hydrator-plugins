@@ -19,6 +19,8 @@ package io.cdap.plugin.batch.aggregator.function;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 
+import java.nio.ByteBuffer;
+
 /**
  * Base class for number based selection functions.
  * Allows subclasses to implement typed methods instead of implementing their own casting logic.
@@ -42,6 +44,10 @@ public abstract class NumberSelection implements SelectionFunction {
   protected abstract int compareFloat(float val1, float val2);
 
   protected abstract int compareDouble(double val1, double val2);
+
+  protected abstract int compareBytes(ByteBuffer val1, ByteBuffer val2);
+
+  protected abstract int compareString(String val1, String val2);
 
   @Override
   public StructuredRecord select(StructuredRecord record1, StructuredRecord record2) {
@@ -67,6 +73,10 @@ public abstract class NumberSelection implements SelectionFunction {
         return compareFloat((Float) val1, (Float) val2) > 0 ? record1 : record2;
       case DOUBLE:
         return compareDouble((Double) val1, (Double) val2) > 0 ? record1 : record2;
+      case BYTES:
+        return compareBytes((ByteBuffer) val1, (ByteBuffer) val2) > 0 ? record1 : record2;
+      case STRING:
+        return compareString((String) val1, (String) val2) > 0 ? record1 : record2;
       default:
         throw new IllegalArgumentException(String.format("Field '%s' is of unsupported non-numeric type '%s'. ",
                                                          fieldName, fieldType));

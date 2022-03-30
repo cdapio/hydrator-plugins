@@ -19,6 +19,8 @@ package io.cdap.plugin.batch.aggregator.function;
 import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 
+import java.nio.ByteBuffer;
+
 /**
  * A {@link StructuredRecord} that can be used to select the record with the min value of a given field.
  */
@@ -46,5 +48,15 @@ public class MinSelection extends NumberSelection {
   @Override
   protected int compareDouble(double val1, double val2) {
     return -Double.compare(val1, val2);
+  }
+
+  @Override
+  protected int compareBytes(ByteBuffer val1, ByteBuffer val2) {
+    return -val1.compareTo(val2);
+  }
+
+  @Override
+  protected int compareString(String val1, String val2) {
+    return -String.CASE_INSENSITIVE_ORDER.compare(val1, val2);
   }
 }
