@@ -24,9 +24,18 @@ If the format is 'text', the schema must contain a field named 'body' of type 's
 
 **Get Schema:** Auto-detects schema from file. Supported formats are: avro, parquet, csv, delimited, tsv, blob 
 and text.
+
 Blob - is set by default as field named 'body' of type bytes.
+
 Text - is set by default as two fields: 'body' of type bytes and 'offset' of type 'long'.
+
 JSON - is not supported, user has to manually provide the output schema.
+
+Parquet - If the path is a directory, the plugin will look for files ending in '.parquet' to read the schema from. 
+If no such file can be found, an error will be returned.
+
+Avro - If the path is a directory, the plugin will look for files ending in '.avro' to read the schema from. 
+If no such file can be found, an error will be returned.
 
 **Override:** A list of columns with the corresponding data types for whom the automatic data type detection gets
  skipped. 

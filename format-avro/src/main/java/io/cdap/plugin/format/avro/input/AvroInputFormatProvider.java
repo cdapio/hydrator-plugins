@@ -41,6 +41,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.Job;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -115,35 +116,33 @@ public class AvroInputFormatProvider extends PathTrackingInputFormatProvider<Avr
    */
   public Schema getDefaultSchema(@Nullable FormatContext context) throws IOException {
     String filePath = conf.getProperties().getProperties().getOrDefault("path", null);
-    SeekableInput seekableInput = null;
-    FileReader<GenericRecord> dataFileReader = null;
-    try {
-      Job job = JobUtils.createInstance();
-      Configuration hconf = job.getConfiguration();
-      // set entries here, before FileSystem is used
-      for (Map.Entry<String, String> entry : conf.getFileSystemProperties().entrySet()) {
-        hconf.set(entry.getKey(), entry.getValue());
-      }
-      Path file = conf.getFilePathForSchemaGeneration(filePath, ".+\\.avro", hconf, job);
+    Job job = JobUtils.createInstance();
+    Configuration hconf = job.getConfiguration();
+
+    for (Map.Entry<String, String> entry : conf.getFileSystemProperties().entrySet()) {
+      hconf.set(entry.getKey(), entry.getValue());
+    }
+
+    List<Path> paths = conf.getFilePathsForSchemaGeneration(filePath, ".+\\.avro$", hconf, job);
+    for (Path file : paths) {
       DatumReader<GenericRecord> dataReader = new GenericDatumReader<>();
-      seekableInput = new FsInput(file, hconf);
-      dataFileReader = DataFileReader.openReader(seekableInput, dataReader);
-      GenericRecord firstRecord;
-      if (!dataFileReader.hasNext()) {
-        return null;
-      }
-      firstRecord = dataFileReader.next();
-      return new AvroToStructuredTransformer().convertSchema(firstRecord.getSchema());
-    } catch (IOException e) {
-      context.getFailureCollector().addFailure("Schema parse error", e.getMessage());
-    } finally {
-      if (dataFileReader != null) {
-        dataFileReader.close();
-      }
-      if (seekableInput != null) {
-        seekableInput.close();
+      try (SeekableInput seekableInput = new FsInput(file, hconf);
+           FileReader<GenericRecord> dataFileReader = DataFileReader.openReader(seekableInput, dataReader)) {
+        if (!dataFileReader.hasNext()) {
+          continue;
+        }
+        GenericRecord firstRecord = dataFileReader.next();
+        if (firstRecord == null) {
+          continue;
+        }
+        return new AvroToStructuredTransformer().convertSchema(firstRecord.getSchema());
+      } catch (IOException e) {
+        context.getFailureCollector().addFailure("Schema parse error", e.getMessage());
       }
     }
+    context.getFailureCollector().addFailure("Could not find a valid Avro file to parse schema. " +
+                                               "Expected to find non-empty Avro file with valid schema.",
+                                                 null);
     return null;
   }
 }
