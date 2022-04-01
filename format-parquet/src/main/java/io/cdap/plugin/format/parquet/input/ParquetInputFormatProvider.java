@@ -36,6 +36,7 @@ import org.apache.parquet.avro.AvroParquetReader;
 import org.apache.parquet.hadoop.ParquetReader;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -91,25 +92,28 @@ public class ParquetInputFormatProvider extends PathTrackingInputFormatProvider<
    */
   public Schema getDefaultSchema(FormatContext context) throws IOException {
     String filePath = conf.getProperties().getProperties().getOrDefault("path", null);
-    ParquetReader reader = null;
-    try {
-      Job job = JobUtils.createInstance();
-      Configuration hconf = job.getConfiguration();
-      // set entries here, before FileSystem is used
-      for (Map.Entry<String, String> entry : conf.getFileSystemProperties().entrySet()) {
-        hconf.set(entry.getKey(), entry.getValue());
-      }
-      final Path file = conf.getFilePathForSchemaGeneration(filePath, ".+\\.parquet", hconf, job);
-      reader = AvroParquetReader.builder(file).build();
-      GenericData.Record record = (GenericData.Record) reader.read();
-      return Schema.parseJson(record.getSchema().toString());
-    } catch (IOException e) {
-      context.getFailureCollector().addFailure("Schema error", e.getMessage());
-    } finally {
-      if (reader != null) {
-        reader.close();
+    Job job = JobUtils.createInstance();
+    Configuration hconf = job.getConfiguration();
+
+    for (Map.Entry<String, String> entry : conf.getFileSystemProperties().entrySet()) {
+      hconf.set(entry.getKey(), entry.getValue());
+    }
+
+    List<Path> paths = conf.getFilePathsForSchemaGeneration(filePath, ".+\\.parquet$", hconf, job);
+    for (Path file : paths) {
+      try (ParquetReader reader = AvroParquetReader.builder(file).build()) {
+        GenericData.Record record = (GenericData.Record) reader.read();
+        if (record == null) {
+          continue;
+        }
+        return Schema.parseJson(record.getSchema().toString());
+      } catch (IOException e) {
+        context.getFailureCollector().addFailure("Schema parse error", e.getMessage());
       }
     }
+    context.getFailureCollector().addFailure("Could not find a valid Parquet file to parse schema. " +
+                                                   "Expected to find non-empty Parquet file with valid schema.",
+                                                 null);
     return null;
   }
 
