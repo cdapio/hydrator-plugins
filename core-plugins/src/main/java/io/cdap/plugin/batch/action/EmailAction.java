@@ -78,6 +78,7 @@ public class EmailAction extends PostAction {
     Authenticator authenticator = null;
 
     Properties javaMailProperties = new Properties();
+    String protocolForTransport = config.protocol;
     javaMailProperties.put("mail.smtp.host", config.host);
     javaMailProperties.put("mail.smtp.port", config.port);
     if (!(Strings.isNullOrEmpty(config.username))) {
@@ -93,7 +94,9 @@ public class EmailAction extends PostAction {
       javaMailProperties.put("mail.smtp.ssl.enable", true);
     }
     if ("TLS".equalsIgnoreCase(config.protocol)) {
-      javaMailProperties.put("mail.smtp.starttls.enable", true);
+      javaMailProperties.put("mail.smtp.starttls.enable", "true");
+      javaMailProperties.put("mail.smtp.ssl.trust", config.host);
+      protocolForTransport = "smtp"; // protocol is smtp not tls.
     }
 
     Session session = Session.getInstance(javaMailProperties, authenticator);
@@ -118,7 +121,7 @@ public class EmailAction extends PostAction {
       ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
       Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
       try {
-        Transport transport = session.getTransport(config.protocol);
+        Transport transport = session.getTransport(protocolForTransport);
         transport.connect(config.host, config.port, config.username, config.password);
         try {
           transport.sendMessage(msg, msg.getAllRecipients());
