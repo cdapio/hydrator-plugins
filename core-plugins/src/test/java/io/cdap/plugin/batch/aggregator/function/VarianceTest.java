@@ -19,8 +19,9 @@ package io.cdap.plugin.batch.aggregator.function;
 import io.cdap.cdap.api.data.schema.Schema;
 import org.junit.Test;
 
+import java.util.function.Supplier;
 /**
- *
+ * Test for Variance Aggregator
  */
 public class VarianceTest extends NumberTest {
 
@@ -32,6 +33,10 @@ public class VarianceTest extends NumberTest {
     testFunction(variance, schema, variance1, 0d, 0);
     testFunction(variance, schema, variance1, 2.91666666d, 1, 2, 3, 4, 5, 6);
     testFunction(variance, schema, variance1, 1986.6875d, -10, 0, 3, 100);
+
+    Supplier<AggregateFunction> supplier = () -> new Variance("x", Schema.nullableOf(Schema.of(Schema.Type.INT)));
+    testFunctionSinglePartition(supplier, schema, 575.0882959d, getAgesIntegerIterator());
+    testFunctionNPartitions(supplier, schema, 575.0882959d, getAgesIntegerIterator());
   }
 
   @Test
@@ -42,6 +47,10 @@ public class VarianceTest extends NumberTest {
     testFunction(variance, schema, variance1, 0d, 0L);
     testFunction(variance, schema, variance1, 2.91666666d, 1L, 2L, 3L, 4L, 5L, 6L);
     testFunction(variance, schema, variance1, 1986.6875d, -10L, 0L, 3L, 100L);
+
+    Supplier<AggregateFunction> supplier = () -> new Variance("x", Schema.nullableOf(Schema.of(Schema.Type.LONG)));
+    testFunctionSinglePartition(supplier, schema, 575.0882959d, getAgesLongIterator());
+    testFunctionNPartitions(supplier, schema, 575.0882959d, getAgesLongIterator());
   }
 
   @Test
@@ -53,6 +62,9 @@ public class VarianceTest extends NumberTest {
     testFunction(variance, schema, variance1, 2.91666666d, 1f, 2f, 3f, 4f, 5f, 6f);
     testFunction(variance, schema, variance1, 1986.6875d, -10f, 0f, 3f, 100f);
     testFunction(variance, schema, variance1, 0.00175519d, 0f, 0.1f, 0.01f, 0.001f);
+    Supplier<AggregateFunction> supplier = () -> new Variance("x", Schema.nullableOf(Schema.of(Schema.Type.FLOAT)));
+    testFunctionSinglePartition(supplier, schema, 200394289.455497d, getScoresFloatIterator());
+    testFunctionNPartitions(supplier, schema, 200394289.455497d, getScoresFloatIterator());
   }
 
   @Test
@@ -64,5 +76,9 @@ public class VarianceTest extends NumberTest {
     testFunction(variance, schema, variance1, 2.91666666d, 1d, 2d, 3d, 4d, 5d, 6d);
     testFunction(variance, schema, variance1, 1986.6875d, -10d, 0d, 3d, 100d);
     testFunction(variance, schema, variance1, 0.00175519d, 0d, 0.1d, 0.01d, 0.001d);
+
+    Supplier<AggregateFunction> supplier = () -> new Variance("x", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE)));
+    testFunctionSinglePartition(supplier, schema, 200394289.55525592d, getScoresDoubleIterator());
+    testFunctionNPartitions(supplier, schema, 200394289.55525592d, getScoresDoubleIterator());
   }
 }
