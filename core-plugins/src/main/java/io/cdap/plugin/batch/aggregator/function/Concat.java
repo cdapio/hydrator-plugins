@@ -25,10 +25,10 @@ import io.cdap.cdap.api.data.schema.Schema.Type;
  */
 public class Concat implements AggregateFunction<String, Concat> {
 
+  private static final String SEPARATOR = ", ";
   private final String fieldName;
   private final Schema fieldSchema;
-  private String concatString;
-  private boolean firstString = true;
+  private StringBuilder stringBuilder;
 
   public Concat(String fieldName, Schema fieldSchema) {
     this.fieldName = fieldName;
@@ -45,37 +45,35 @@ public class Concat implements AggregateFunction<String, Concat> {
 
   @Override
   public void initialize() {
-    this.concatString = "";
+    this.stringBuilder = new StringBuilder();
   }
 
   @Override
   public void mergeValue(StructuredRecord record) {
     if (record.get(fieldName) != null) {
       String value = record.get(fieldName);
-      if (firstString) {
-        concatString = value;
-        firstString = false;
-        return;
+      if (stringBuilder.length() > 0) {
+        stringBuilder.append(SEPARATOR);
       }
-      concatString = String.format("%s, %s", concatString, value);
+      stringBuilder.append(value);
     }
   }
 
   @Override
   public void mergeAggregates(Concat otherAgg) {
-    if (otherAgg.getAggregate() == null) {
+    if (otherAgg.stringBuilder.length() == 0) {
       return;
     }
-    if (concatString.equals("")) {
-      concatString = otherAgg.getAggregate();
+    if (stringBuilder.length() == 0) {
+      stringBuilder = otherAgg.stringBuilder;
       return;
     }
-    concatString = String.format("%s, %s", concatString, otherAgg.concatString);
+    stringBuilder.append(SEPARATOR).append(otherAgg.stringBuilder);
   }
 
   @Override
   public String getAggregate() {
-    return concatString;
+    return stringBuilder.toString();
   }
 
   @Override
