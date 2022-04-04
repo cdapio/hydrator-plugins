@@ -16,24 +16,94 @@
 
 package io.cdap.plugin.batch.aggregator.function;
 
+import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Arrays;
 
 /**
- * A test method for Concat Distinct aggregate function
+ * A test method for ConcatDistinct aggregate function
  */
 public class ConcatDistinctTest extends AggregateFunctionTest {
+  static final Schema FIELD_SCHEMA = Schema.of(Schema.Type.STRING);
+  static final Schema RECORD_SCHEMA =
+    Schema.recordOf("test", Schema.Field.of("x", Schema.nullableOf(FIELD_SCHEMA)));
 
   @Test
   public void testConcatDistinct() {
-    Schema fieldSchema = Schema.of(Schema.Type.STRING);
-    Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.nullableOf(fieldSchema)));
-    test(new Concat("x", fieldSchema), schema, "x", "1, 2, 3, 4, 5",
-         Arrays.asList("1", "2", "3", "4", "5"), new Concat("x", fieldSchema));
-    test(new Concat("x", fieldSchema), schema, "x", "2, 3, 4, 5",
-         Arrays.asList(null, "2", "3", "4", "5"), new Concat("x", fieldSchema));
+    Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.nullableOf(FIELD_SCHEMA)));
+    test(new ConcatDistinct("x", FIELD_SCHEMA), schema, "x", "1, 2, 3, 4, 5",
+         Arrays.asList("1", "2", "3", "4", "5"), new ConcatDistinct("x", FIELD_SCHEMA));
+    test(new ConcatDistinct("x", FIELD_SCHEMA), schema, "x", "2, 3, 4, 5",
+         Arrays.asList(null, "2", "3", "4", "5"), new ConcatDistinct("x", FIELD_SCHEMA));
+    test(new ConcatDistinct("x", FIELD_SCHEMA), schema, "x", "2, 3, 5",
+         Arrays.asList(null, "2", "2", "2", "3", "3", "5"), new ConcatDistinct("x", FIELD_SCHEMA));
+  }
+
+  @Test
+  public void testConcatMergeBothEmpty() {
+    ConcatDistinct left = new ConcatDistinct("x", FIELD_SCHEMA);
+    left.initialize();
+    ConcatDistinct right = new ConcatDistinct("x", FIELD_SCHEMA);
+    right.initialize();
+
+    // Merge
+    left.mergeAggregates(right);
+    Assert.assertEquals("", left.getAggregate());
+  }
+
+  @Test
+  public void testConcatMergeLeftEmpty() {
+    ConcatDistinct left = new ConcatDistinct("x", FIELD_SCHEMA);
+    left.initialize();
+    ConcatDistinct right = new ConcatDistinct("x", FIELD_SCHEMA);
+    right.initialize();
+
+    // Populate values on the right side
+    right.mergeValue(StructuredRecord.builder(RECORD_SCHEMA).set("x", "a").build());
+    right.mergeValue(StructuredRecord.builder(RECORD_SCHEMA).set("x", "b").build());
+
+    // Merge
+    left.mergeAggregates(right);
+    Assert.assertEquals("a, b", left.getAggregate());
+  }
+
+  @Test
+  public void testConcatMergeRightEmpty() {
+    ConcatDistinct left = new ConcatDistinct("x", FIELD_SCHEMA);
+    left.initialize();
+    ConcatDistinct right = new ConcatDistinct("x", FIELD_SCHEMA);
+    right.initialize();
+
+    // Populate values on the left side
+    left.mergeValue(StructuredRecord.builder(RECORD_SCHEMA).set("x", "a").build());
+    left.mergeValue(StructuredRecord.builder(RECORD_SCHEMA).set("x", "b").build());
+
+    // Merge
+    left.mergeAggregates(right);
+    Assert.assertEquals("a, b", left.getAggregate());
+  }
+
+  @Test
+  public void testConcatMerge() {
+    ConcatDistinct left = new ConcatDistinct("x", FIELD_SCHEMA);
+    left.initialize();
+    ConcatDistinct right = new ConcatDistinct("x", FIELD_SCHEMA);
+    right.initialize();
+
+    // Populate values on the left side
+    left.mergeValue(StructuredRecord.builder(RECORD_SCHEMA).set("x", "a").build());
+    left.mergeValue(StructuredRecord.builder(RECORD_SCHEMA).set("x", "b").build());
+
+    // Populate values on the right side
+    left.mergeValue(StructuredRecord.builder(RECORD_SCHEMA).set("x", "a").build());
+    left.mergeValue(StructuredRecord.builder(RECORD_SCHEMA).set("x", "c").build());
+
+    // Merge
+    left.mergeAggregates(right);
+    Assert.assertEquals("a, b, c", left.getAggregate());
   }
 
 }

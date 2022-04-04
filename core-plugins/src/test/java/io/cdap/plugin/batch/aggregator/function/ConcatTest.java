@@ -16,8 +16,9 @@
 
 package io.cdap.plugin.batch.aggregator.function;
 
+import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
-import io.cdap.cdap.api.data.schema.Schema.Type;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -26,15 +27,80 @@ import java.util.Arrays;
  * A test method for Concat aggregate function
  */
 public class ConcatTest extends AggregateFunctionTest {
+  static final Schema FIELD_SCHEMA = Schema.of(Schema.Type.STRING);
+  static final Schema RECORD_SCHEMA =
+    Schema.recordOf("test", Schema.Field.of("x", Schema.nullableOf(FIELD_SCHEMA)));
 
   @Test
   public void testConcat() {
-    Schema fieldSchema = Schema.of(Type.STRING);
-    Schema schema = Schema.recordOf("test", Schema.Field.of("x", Schema.nullableOf(fieldSchema)));
-    test(new ConcatDistinct("x", fieldSchema), schema, "x", "1, 2, 3, 4, 5",
-         Arrays.asList("1", "2", "3", "4", "5"), new ConcatDistinct("x", fieldSchema));
-    test(new ConcatDistinct("x", fieldSchema), schema, "x", "2, 3, 5",
-         Arrays.asList(null, "2", "3", "3", "5"), new ConcatDistinct("x", fieldSchema));
+    test(new Concat("x", FIELD_SCHEMA), RECORD_SCHEMA, "x", "1, 2, 3, 4, 5",
+         Arrays.asList("1", "2", "3", "4", "5"), new Concat("x", FIELD_SCHEMA));
+    test(new Concat("x", FIELD_SCHEMA), RECORD_SCHEMA, "x", "2, 3, 3, 5",
+         Arrays.asList(null, "2", "3", "3", "5"), new Concat("x", FIELD_SCHEMA));
+  }
+
+  @Test
+  public void testConcatMergeBothEmpty() {
+    Concat left = new Concat("x", FIELD_SCHEMA);
+    left.initialize();
+    Concat right = new Concat("x", FIELD_SCHEMA);
+    right.initialize();
+
+    // Merge
+    left.mergeAggregates(right);
+    Assert.assertEquals("", left.getAggregate());
+  }
+
+  @Test
+  public void testConcatMergeLeftEmpty() {
+    Concat left = new Concat("x", FIELD_SCHEMA);
+    left.initialize();
+    Concat right = new Concat("x", FIELD_SCHEMA);
+    right.initialize();
+
+    // Populate values on the right side
+    right.mergeValue(StructuredRecord.builder(RECORD_SCHEMA).set("x", "a").build());
+    right.mergeValue(StructuredRecord.builder(RECORD_SCHEMA).set("x", "b").build());
+
+    // Merge
+    left.mergeAggregates(right);
+    Assert.assertEquals("a, b", left.getAggregate());
+  }
+
+  @Test
+  public void testConcatMergeRightEmpty() {
+    Concat left = new Concat("x", FIELD_SCHEMA);
+    left.initialize();
+    Concat right = new Concat("x", FIELD_SCHEMA);
+    right.initialize();
+
+    // Populate values on the left side
+    left.mergeValue(StructuredRecord.builder(RECORD_SCHEMA).set("x", "a").build());
+    left.mergeValue(StructuredRecord.builder(RECORD_SCHEMA).set("x", "b").build());
+
+    // Merge
+    left.mergeAggregates(right);
+    Assert.assertEquals("a, b", left.getAggregate());
+  }
+
+  @Test
+  public void testConcatMerge() {
+    Concat left = new Concat("x", FIELD_SCHEMA);
+    left.initialize();
+    Concat right = new Concat("x", FIELD_SCHEMA);
+    right.initialize();
+
+    // Populate values on the left side
+    left.mergeValue(StructuredRecord.builder(RECORD_SCHEMA).set("x", "a").build());
+    left.mergeValue(StructuredRecord.builder(RECORD_SCHEMA).set("x", "b").build());
+
+    // Populate values on the right side
+    left.mergeValue(StructuredRecord.builder(RECORD_SCHEMA).set("x", "a").build());
+    left.mergeValue(StructuredRecord.builder(RECORD_SCHEMA).set("x", "c").build());
+
+    // Merge
+    left.mergeAggregates(right);
+    Assert.assertEquals("a, b, a, c", left.getAggregate());
   }
 
 }
