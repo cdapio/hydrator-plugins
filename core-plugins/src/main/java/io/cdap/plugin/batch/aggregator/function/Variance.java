@@ -24,10 +24,8 @@ import javax.annotation.Nullable;
 
 /**
  * Calculates Variance
- * Uses online algorithm from wikipedia to compute the variance
- * https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
- * Uses https://www.tandfonline.com/doi/abs/10.1080/00031305.2014.966589 as the way to combine variance from two
- * splits.
+ * Uses E(x^2) - [E(x)]^2 formula for variance calculation
+ * Uses ((n1 * E1) + (n2 * E2)) / (n1 + n2) formula when merging partition
  */
 public class Variance implements AggregateFunction<Double, Variance> {
   private static final String AGG_KEY = "variance";
@@ -37,8 +35,8 @@ public class Variance implements AggregateFunction<Double, Variance> {
   private final String fieldName;
   private final Schema outputSchema;
   private Double variance;
-  private double squareMean;
   private double mean;
+  private double squaredMean;
   private long count;
 
   public Variance(String fieldName, Schema fieldSchema) {
@@ -51,8 +49,8 @@ public class Variance implements AggregateFunction<Double, Variance> {
   @Override
   public void initialize() {
     this.variance = null;
-    this.squareMean = 0d;
     this.mean = 0d;
+    this.squaredMean = 0d;
     this.count = 0L;
   }
 
@@ -63,20 +61,25 @@ public class Variance implements AggregateFunction<Double, Variance> {
       return;
     }
 
-    Number value = (Number) val;
+    Number number = (Number) val;
+    double value = number.doubleValue();
+    double valueSquared = number.doubleValue() * number.doubleValue();
     count++;
 
-    double delta = value.doubleValue() - mean;
-    mean += delta / count;
-    double delta2 = value.doubleValue() - mean;
-    squareMean += delta * delta2;
-    // if we divide by count, the result will be population variance,
-    // count - 1, we will get sample variance
+    // Calculate Delta of the value vs the mean and adjust the mean
+    double delta = (value / count) - (mean / count);
+    mean += delta;
+
+    // Calculate delta of the squared value vs the squared mean and adjust the squared mean
+    double deltaSquared = (valueSquared / count) - (squaredMean / count);
+    squaredMean += deltaSquared;
+
+    // For a single record, variance is 0.
     if (count == 1L) {
       variance = 0d;
       return;
     }
-    variance = squareMean / (count - 1);
+    variance = squaredMean - (mean * mean);
   }
 
   @Override
@@ -88,26 +91,36 @@ public class Variance implements AggregateFunction<Double, Variance> {
       variance = otherAgg.variance;
       count = otherAgg.count;
       mean = otherAgg.mean;
+      squaredMean = otherAgg.squaredMean;
       return;
     }
 
-    long c1 = count;
-    long c2 = otherAgg.count;
-    double m1 = mean;
-    double m2 = otherAgg.mean;
+    // Get values from the aggregator
+    long countLeft = count;
+    long countRight = otherAgg.count;
+    double meanLeft = mean;
+    double meanRight = otherAgg.mean;
+    double squaredMeanLeft = squaredMean;
+    double squaredMeanRight = otherAgg.squaredMean;
 
-    count = c1 + c2;
-    variance = 1d / (count - 1d) * ((c1 - 1d) * variance + (c2 - 1d) * otherAgg.variance +
-                                      c1 * c2 * Math.pow(m1 - m2, 2d) / count);
-    mean = (c1 * m1 + c2 * m2) / count;
+    // Calculate new count
+    count = countLeft + countRight;
+
+    // Combine both counts and means
+    // We divide at every step to reduce the possibility of catastrophic cancellation
+    mean = ((meanLeft / count) * countLeft) + ((meanRight / count) * countRight);
+    squaredMean = ((squaredMeanLeft / count) * countLeft) + ((squaredMeanRight / count) * countRight);
+
+    variance = squaredMean - (mean * mean);
   }
 
   @Nullable
   @Override
   public Double getAggregate() {
-    if (variance != null) {
-      return variance / count * (count - 1);
+    if (variance == null) {
+      return null;
     }
+
     return variance;
   }
 

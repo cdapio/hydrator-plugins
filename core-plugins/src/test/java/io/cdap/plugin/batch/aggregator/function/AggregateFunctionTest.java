@@ -20,7 +20,9 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import org.junit.Assert;
 
+import java.util.Iterator;
 import java.util.List;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /**
@@ -46,5 +48,63 @@ public class AggregateFunctionTest {
     }
     function.mergeAggregates(otherFunc);
     return function.getAggregate();
+  }
+
+  protected Object getAggregateSinglePartition(Supplier<AggregateFunction> supplier,
+                                               Schema schema,
+                                               String fieldName,
+                                               Iterator<?> iterator) {
+    // Initialize empty function
+    AggregateFunction current = supplier.get();
+    current.initialize();
+
+    while (iterator.hasNext()) {
+      // Initialize function for this value and merge a new value.
+      current.mergeValue(StructuredRecord.builder(schema).set(fieldName, iterator.next()).build());
+    }
+
+    return current.getAggregate();
+  }
+
+  protected Object getAggregateMultiplePartitions(Supplier<AggregateFunction> supplier,
+                                                  Schema schema,
+                                                  String fieldName,
+                                                  Iterator<?> iterator) {
+    // Initialize accumulator function
+    AggregateFunction accum = supplier.get();
+    accum.initialize();
+
+    // Initialize window function for the next 10 records.
+    AggregateFunction window = supplier.get();
+    window.initialize();
+
+    int numRecords = 0;
+    boolean mergeDirection = true;
+
+    while (iterator.hasNext()) {
+      // Initialize function for this value and merge a new value.
+      window.mergeValue(StructuredRecord.builder(schema).set(fieldName, iterator.next()).build());
+
+      // Every ten records, we merge aggregators.
+      if (++numRecords % 10 == 0) {
+        // Merge in alternate directions
+        if (mergeDirection) {
+          window.mergeAggregates(accum);
+          accum = window;
+        } else {
+          accum.mergeAggregates(window);
+        }
+        mergeDirection = !mergeDirection;
+
+        // Initialize window again
+        window = supplier.get();
+        window.initialize();
+      }
+    }
+
+    // Merge final time
+    accum.mergeAggregates(window);
+
+    return accum.getAggregate();
   }
 }
