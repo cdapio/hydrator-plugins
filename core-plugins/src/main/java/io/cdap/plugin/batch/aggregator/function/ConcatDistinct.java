@@ -21,6 +21,10 @@ import io.cdap.cdap.api.data.format.StructuredRecord;
 import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.api.data.schema.Schema.Type;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 /**
  * Concatenates only distinct values in the group with a comma
  */
@@ -28,8 +32,7 @@ public class ConcatDistinct implements AggregateFunction<String, ConcatDistinct>
 
   private final String fieldName;
   private final Schema fieldSchema;
-  private String concatString;
-  private boolean firstString = true;
+  private Set<String> values;
 
   public ConcatDistinct(String fieldName, Schema fieldSchema) {
     this.fieldName = fieldName;
@@ -44,41 +47,25 @@ public class ConcatDistinct implements AggregateFunction<String, ConcatDistinct>
 
   @Override
   public void initialize() {
-    concatString = "";
+    values = new LinkedHashSet<>();
   }
 
   @Override
   public void mergeValue(StructuredRecord record) {
     if (record.get(fieldName) != null) {
       String value = record.get(fieldName);
-      if (value != null && !concatString.contains(value)) {
-        if (firstString) {
-          concatString = value;
-          firstString = false;
-          return;
-        }
-        concatString = String.format("%s, %s", concatString, value);
-      }
+      values.add(value);
     }
   }
 
   @Override
   public void mergeAggregates(ConcatDistinct otherAgg) {
-    if (Strings.isNullOrEmpty(otherAgg.getAggregate())) {
-      return;
-    }
-    if (concatString.equals("")) {
-      concatString = otherAgg.getAggregate();
-      return;
-    }
-    if (!concatString.contains(otherAgg.concatString)) {
-      concatString = String.format("%s, %s", concatString, otherAgg.concatString);
-    }
+    values.addAll(otherAgg.values);
   }
 
   @Override
   public String getAggregate() {
-    return concatString;
+    return String.join(", ", values);
   }
 
   @Override
