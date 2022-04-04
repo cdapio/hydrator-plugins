@@ -93,7 +93,9 @@ public class EmailAction extends PostAction {
       javaMailProperties.put("mail.smtp.ssl.enable", true);
     }
     if ("TLS".equalsIgnoreCase(config.protocol)) {
-      javaMailProperties.put("mail.smtp.starttls.enable", true);
+      javaMailProperties.put("mail.smtp.starttls.enable", "true");
+      javaMailProperties.put("mail.smtp.ssl.trust", config.host);
+      config.protocol = "smtp"; // protocol is smtp not tls.
     }
 
     Session session = Session.getInstance(javaMailProperties, authenticator);
