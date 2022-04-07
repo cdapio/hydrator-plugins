@@ -96,27 +96,7 @@ public class AvroToStructuredTest {
     Assert.assertEquals(0, array1Result.<Integer>get("int").intValue());
   }
 
-  @Test
-  public void testAvroToStructuredConversionForMaps() throws IOException {
-    AvroToStructuredTransformer avroToStructuredTransformer = new AvroToStructuredTransformer();
-
-    String jsonSchema = "{\"type\":\"record\", \"name\":\"rec\"," +
-        "\"fields\":[{\"name\":\"mapfield\",\"type\":{\"type\":\"map\",\"values\":\"string\"}}]}";
-    org.apache.avro.Schema avroSchema = convertSchema(jsonSchema);
-
-    Schema cdapSchema = Schema.recordOf("rec",
-        Schema.Field.of(
-            "mapfield",
-            Schema.mapOf(Schema.of(Schema.Type.STRING), Schema.of(Schema.Type.STRING))));
-
-    Assert.assertEquals(avroToStructuredTransformer.convertSchema(avroSchema), cdapSchema);
-  }
-
   private org.apache.avro.Schema convertSchema(Schema cdapSchema) {
     return new org.apache.avro.Schema.Parser().parse(cdapSchema.toString());
-  }
-
-  private org.apache.avro.Schema convertSchema(String jsonSchema) {
-    return new org.apache.avro.Schema.Parser().parse(jsonSchema);
   }
 }
