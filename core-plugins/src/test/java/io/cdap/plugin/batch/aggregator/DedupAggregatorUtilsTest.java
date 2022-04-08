@@ -21,8 +21,10 @@ import io.cdap.cdap.api.data.schema.Schema;
 import io.cdap.cdap.etl.api.aggregation.DeduplicateAggregationDefinition;
 import io.cdap.cdap.etl.api.relational.Capability;
 import io.cdap.cdap.etl.api.relational.Engine;
+import io.cdap.cdap.etl.api.relational.Expression;
 import io.cdap.cdap.etl.api.relational.ExpressionFactory;
 import io.cdap.cdap.etl.api.relational.ExtractableExpression;
+import io.cdap.cdap.etl.api.relational.InvalidExtractableExpressionException;
 import io.cdap.cdap.etl.api.relational.Relation;
 import io.cdap.cdap.etl.api.relational.RelationalTranformContext;
 import org.junit.Assert;
@@ -34,14 +36,17 @@ import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import javax.annotation.Nullable;
 
 /**
  * Test for {@link DedupAggregatorUtils}
  */
 @RunWith(MockitoJUnitRunner.class)
+@SuppressWarnings("unchecked")
 public class DedupAggregatorUtilsTest {
 
     //Mocks used to configure tests
@@ -71,6 +76,17 @@ public class DedupAggregatorUtilsTest {
         Mockito.doReturn(engine).when(relationalTranformContext).getEngine();
         uniqueFields = new ArrayList<>();
         uniqueFields.add("uniqueField");
+        Schema inputSchema = Schema.recordOf(
+          "schema",
+          Schema.Field.of("uniqueField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+          Schema.Field.of("uniqueFieldFloat", Schema.nullableOf(Schema.of(Schema.Type.FLOAT))),
+          Schema.Field.of("uniqueFieldDouble", Schema.nullableOf(Schema.of(Schema.Type.DOUBLE))),
+          Schema.Field.of("uniqueFieldDatetime", Schema.nullableOf(Schema.of(Schema.LogicalType.DATETIME))),
+          Schema.Field.of("selectField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
+          Schema.Field.of("filterField", Schema.nullableOf(Schema.of(Schema.Type.STRING)))
+        );
+        Mockito.doReturn(Collections.singleton("input_rel")).when(relationalTranformContext).getInputRelationNames();
+        Mockito.doReturn(inputSchema).when(relationalTranformContext).getInputSchema(Mockito.eq("input_rel"));
         Schema outputSchema = Schema.recordOf(
                 "schema",
                 Schema.Field.of("uniqueField", Schema.nullableOf(Schema.of(Schema.Type.STRING))),
@@ -151,5 +167,157 @@ public class DedupAggregatorUtilsTest {
         DeduplicateAggregationDefinition lastDefinition = DedupAggregatorUtils
           .generateAggregationDefinition(relationalTranformContext, relation, last, uniqueFields);
         Assert.assertNull(lastDefinition);
+    }
+
+    @Test
+    public void testDedupAggregatorTransformExpressionWithFloatField() {
+        DedupConfig.DedupFunctionInfo any = new DedupConfig.DedupFunctionInfo("filterField",
+                                                                              DedupConfig.Function.ANY);
+        Mockito.doReturn(Optional.of(expressionFactory)).when(engine).getExpressionFactory(Mockito.any());
+
+        // Ensure we suppport all capabilities
+        Mockito.doReturn(capabilities).when(expressionFactory).getCapabilities();
+        Mockito.doReturn(true).when(capabilities).contains(Mockito.any());
+        Mockito.doReturn(extractableExpression)
+          .when(expressionFactory).getQualifiedColumnName(Mockito.any(), Mockito.any());
+
+        // Configure test specific return types
+        Mockito.doReturn(getExtractableExpressionForString("uniqueFieldFloat"))
+          .when(expressionFactory).getQualifiedColumnName(Mockito.any(), Mockito.eq("uniqueFieldFloat"));
+        Mockito.doReturn(getExtractableExpressionForString("CAST(uniqueFieldFloat AS NUMERIC)"))
+          .when(expressionFactory).compile("CAST(uniqueFieldFloat AS NUMERIC)");
+
+        DeduplicateAggregationDefinition anyDefinition = DedupAggregatorUtils
+          .generateAggregationDefinition(relationalTranformContext,
+                                         relation,
+                                         any,
+                                         Collections.singletonList("uniqueFieldFloat"));
+
+        // Ensure method to wrap expression got called
+        Mockito.verify(expressionFactory).compile(Mockito.eq("CAST(uniqueFieldFloat AS NUMERIC)"));
+
+        // Verify expression gets CAST statement
+        Expression exp = anyDefinition.getGroupByExpressions().get(0);
+        Assert.assertTrue(exp instanceof ExtractableExpression);
+        ExtractableExpression<String> extractableExp = (ExtractableExpression<String>) exp;
+        Assert.assertEquals("CAST(uniqueFieldFloat AS NUMERIC)", extractableExp.extract());
+    }
+
+    @Test
+    public void testDedupAggregatorTransformExpressionWithDoubleField() {
+        DedupConfig.DedupFunctionInfo any = new DedupConfig.DedupFunctionInfo("filterField",
+                                                                              DedupConfig.Function.ANY);
+        Mockito.doReturn(Optional.of(expressionFactory)).when(engine).getExpressionFactory(Mockito.any());
+
+        // Ensure we suppport all capabilities
+        Mockito.doReturn(capabilities).when(expressionFactory).getCapabilities();
+        Mockito.doReturn(true).when(capabilities).contains(Mockito.any());
+        Mockito.doReturn(extractableExpression)
+          .when(expressionFactory).getQualifiedColumnName(Mockito.any(), Mockito.any());
+
+        // Configure test specific return types
+        Mockito.doReturn(getExtractableExpressionForString("uniqueFieldDouble"))
+          .when(expressionFactory).getQualifiedColumnName(Mockito.any(), Mockito.eq("uniqueFieldDouble"));
+        Mockito.doReturn(getExtractableExpressionForString("CAST(uniqueFieldDouble AS NUMERIC)"))
+          .when(expressionFactory).compile("CAST(uniqueFieldDouble AS NUMERIC)");
+
+        DeduplicateAggregationDefinition anyDefinition = DedupAggregatorUtils
+          .generateAggregationDefinition(relationalTranformContext,
+                                         relation,
+                                         any,
+                                         Collections.singletonList("uniqueFieldDouble"));
+
+        // Ensure method to wrap expression got called
+        Mockito.verify(expressionFactory).compile(Mockito.eq("CAST(uniqueFieldDouble AS NUMERIC)"));
+
+        // Verify expression gets CAST statement
+        Expression exp = anyDefinition.getGroupByExpressions().get(0);
+        Assert.assertTrue(exp instanceof ExtractableExpression);
+        ExtractableExpression<String> extractableExp = (ExtractableExpression<String>) exp;
+        Assert.assertEquals("CAST(uniqueFieldDouble AS NUMERIC)", extractableExp.extract());
+    }
+
+    @Test
+    public void testDedupAggregatorTransformExpressionWithIntField() {
+        DedupConfig.DedupFunctionInfo any = new DedupConfig.DedupFunctionInfo("filterField",
+                                                                              DedupConfig.Function.ANY);
+        Mockito.doReturn(Optional.of(expressionFactory)).when(engine).getExpressionFactory(Mockito.any());
+
+        // Ensure we suppport all capabilities
+        Mockito.doReturn(capabilities).when(expressionFactory).getCapabilities();
+        Mockito.doReturn(true).when(capabilities).contains(Mockito.any());
+        Mockito.doReturn(extractableExpression)
+          .when(expressionFactory).getQualifiedColumnName(Mockito.any(), Mockito.any());
+
+        // Configure test specific return types
+        Mockito.doReturn(getExtractableExpressionForString("uniqueFieldInt"))
+          .when(expressionFactory).getQualifiedColumnName(Mockito.any(), Mockito.eq("uniqueFieldInt"));
+
+        DeduplicateAggregationDefinition anyDefinition = DedupAggregatorUtils
+          .generateAggregationDefinition(relationalTranformContext,
+                                         relation,
+                                         any,
+                                         Collections.singletonList("uniqueFieldInt"));
+
+        // Ensure method to wrap expression got called
+        Mockito.verify(expressionFactory, Mockito.never()).compile(Mockito.any());
+
+        // Verify expression does not get casted for an int field
+        Expression exp = anyDefinition.getGroupByExpressions().get(0);
+        Assert.assertTrue(exp instanceof ExtractableExpression);
+        ExtractableExpression<String> extractableExp = (ExtractableExpression<String>) exp;
+        Assert.assertEquals("uniqueFieldInt", extractableExp.extract());
+    }
+
+    @Test
+    public void testDedupAggregatorTransformExpressionWithDatetimeField() {
+        DedupConfig.DedupFunctionInfo any = new DedupConfig.DedupFunctionInfo("filterField",
+                                                                              DedupConfig.Function.ANY);
+        Mockito.doReturn(Optional.of(expressionFactory)).when(engine).getExpressionFactory(Mockito.any());
+
+        // Ensure we suppport all capabilities
+        Mockito.doReturn(capabilities).when(expressionFactory).getCapabilities();
+        Mockito.doReturn(true).when(capabilities).contains(Mockito.any());
+        Mockito.doReturn(extractableExpression)
+          .when(expressionFactory).getQualifiedColumnName(Mockito.any(), Mockito.any());
+
+        // Configure test specific return types
+        Mockito.doReturn(getExtractableExpressionForString("uniqueFieldDatetime"))
+          .when(expressionFactory).getQualifiedColumnName(Mockito.any(), Mockito.eq("uniqueFieldDatetime"));
+
+        DeduplicateAggregationDefinition anyDefinition = DedupAggregatorUtils
+          .generateAggregationDefinition(relationalTranformContext,
+                                         relation,
+                                         any,
+                                         Collections.singletonList("uniqueFieldDatetime"));
+
+        // Ensure method to wrap expression got called
+        Mockito.verify(expressionFactory, Mockito.never()).compile(Mockito.any());
+
+        // Verify expression does not get casted for an int field
+        Expression exp = anyDefinition.getGroupByExpressions().get(0);
+        Assert.assertTrue(exp instanceof ExtractableExpression);
+        ExtractableExpression<String> extractableExp = (ExtractableExpression<String>) exp;
+        Assert.assertEquals("uniqueFieldDatetime", extractableExp.extract());
+    }
+
+    private static ExtractableExpression<String> getExtractableExpressionForString(String str) {
+        return new ExtractableExpression<String>() {
+            @Nullable
+            @Override
+            public String extract() throws InvalidExtractableExpressionException {
+                return String.format("%s", str);
+            }
+
+            @Override
+            public boolean isValid() {
+                return true;
+            }
+
+            @Override
+            public String getValidationError() {
+                return null;
+            }
+        };
     }
 }
