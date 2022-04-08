@@ -482,7 +482,9 @@
   "filters": [
     {
       "name": "delimiter",
-      "expression": "format == 'delimited'",
+      "condition": {
+        "expression": "format == 'delimited'"
+      },
       "show": [
         {
           "name": "delimiter"
